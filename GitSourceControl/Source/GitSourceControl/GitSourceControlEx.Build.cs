@@ -6,7 +6,9 @@ public class GitSourceControlEx : ModuleRules
 {
 	public GitSourceControlEx(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PrivateDependencyModuleNames.AddRange(
+        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        PrivateDependencyModuleNames.AddRange(
 			new string[] {
 				"Core",
 				"Slate",
@@ -24,5 +26,8 @@ public class GitSourceControlEx : ModuleRules
 			PrivateDependencyModuleNames.Add("CoreUObject");
 			PrivateDependencyModuleNames.Add("UnrealEd");
 		}
-	}
+
+        OptimizeCode = CodeOptimization.InShippingBuildsOnly;
+
+    }
 }

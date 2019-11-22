@@ -2,31 +2,13 @@
 
 #pragma once
 
+#include "VersionControl/FGitCommitInfo.h"
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FlibGitControlHelper.generated.h"
 
-USTRUCT(BlueprintType)
-struct FGitCommitInfo
-{
-	GENERATED_USTRUCT_BODY()
 
-
-	FORCEINLINE FGitCommitInfo(FString InHash=TEXT(""), FString InCommitContent = TEXT(""), FString InCommitTime = TEXT(""), FString InAuthor = TEXT(""))
-		:mDiffHash(InHash), mCommitContent(InCommitContent),mCommitTime(InCommitTime),mAuthor(InAuthor)
-	{
-
-	}
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FString mDiffHash;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FString mCommitContent;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FString mCommitTime;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FString mAuthor;
-};
 
 UCLASS()
 class HOTPACKAGE_API UFlibGitControlHelper : public UBlueprintFunctionLibrary
@@ -45,5 +27,10 @@ class HOTPACKAGE_API UFlibGitControlHelper : public UBlueprintFunctionLibrary
 	UFUNCTION(BlueprintCallable, Category = "HotPackage|Flib")
 		static bool DiffVersion(const FString& InGitBinaey,const FString& InRepoRoot ,const FString& InBeginCommitHash, const FString& InEndCommitHash, TArray<FString>& OutResault, TArray<FString>& OutErrorMessages);
 	UFUNCTION(BlueprintCallable, Category = "HotPackage|Flib")
-		static bool AllCommitInfo(const FString& InGitBinaey, const FString& InRepoRoot, TArray<FGitCommitInfo>& OutCommitInfo);
+		static bool GitLog(const FString& InGitBinaey, const FString& InRepoRoot, TArray<FGitCommitInfo>& OutCommitInfo);
+
+	UFUNCTION(BlueprintCallable,Category="HotPackage|Flib")
+		static bool GetBranchName(const FString& InPathToGitBinary, const FString& InRepositoryRoot, FString& OutBranchName);
+
+	
 };

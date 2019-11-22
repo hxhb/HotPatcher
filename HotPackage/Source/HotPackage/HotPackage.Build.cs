@@ -1,16 +1,19 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
+using System.IO;
 
 public class HotPackage : ModuleRules
 {
 	public HotPackage(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
-		PublicIncludePaths.AddRange(
-			new string[] {
+
+        PublicIncludePaths.AddRange(
+            new string[] {
 				// ... add public include paths required here ...
+                Path.Combine(ModuleDirectory,"Public/Flib"),
+                Path.Combine(ModuleDirectory,"Public/Struct")
 			}
 			);
 				
@@ -47,8 +50,11 @@ public class HotPackage : ModuleRules
 		DynamicallyLoadedModuleNames.AddRange(
 			new string[]
 			{
+                "AssetRegistry"
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
-	}
+
+        OptimizeCode = CodeOptimization.InShippingBuildsOnly;
+    }
 }

@@ -23,12 +23,13 @@ bool UFlibGitControlHelper::DiffVersion(const FString& InGitBinaey, const FStrin
 {
 	TArray<FString> DiffParams{
 		InBeginCommitHash + FString(TEXT("...")) + InEndCommitHash,
-		TEXT("--name-only")
+		TEXT("--name-only"),
+		TEXT("-r")
 	};
 	return UFlibGitControlHelper::RunGitCommand(FString(TEXT("diff")), InGitBinaey, InRepoRoot, DiffParams, OutResault, OutErrorMessages);
 }
 
-bool UFlibGitControlHelper::AllCommitInfo(const FString& InGitBinaey, const FString& InRepoRoot, TArray<FGitCommitInfo>& OutCommitInfo)
+bool UFlibGitControlHelper::GitLog(const FString& InGitBinaey, const FString& InRepoRoot, TArray<FGitCommitInfo>& OutCommitInfo)
 {
 	TArray<FString> Params{
 		TEXT("--pretty=format:\"%h;-;%s;-;%cd;-;%an\"")
@@ -44,4 +45,9 @@ bool UFlibGitControlHelper::AllCommitInfo(const FString& InGitBinaey, const FStr
 	}
 
 	return runResault;
+}
+
+bool UFlibGitControlHelper::GetBranchName(const FString& InPathToGitBinary, const FString& InRepositoryRoot, FString& OutBranchName)
+{
+	return GitSourceControlUtils::GetBranchName(InPathToGitBinary, InRepositoryRoot, OutBranchName);
 }
