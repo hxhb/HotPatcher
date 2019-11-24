@@ -7,6 +7,7 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
+#include "GenericPlatform/GenericPlatformMisc.h"
 
 #if PLATFORM_LINUX
 #include <sys/ioctl.h>
@@ -145,6 +146,9 @@ namespace GitSourceControlUtils
 
 	FString FindGitBinaryPath()
 	{
+		FString FindEnvGitPath = FPlatformMisc::GetEnvironmentVariable(TEXT("GIT_PATH"));
+		if (!FindEnvGitPath.IsEmpty())
+			return FindEnvGitPath;
 #if PLATFORM_WINDOWS
 		// 1) First of all, look into standard install directories
 		// NOTE using only "git" (or "git.exe") relying on the "PATH" envvar does not always work as expected, depending on the installation:
