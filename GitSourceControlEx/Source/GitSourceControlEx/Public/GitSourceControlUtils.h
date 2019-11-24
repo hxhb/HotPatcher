@@ -3,31 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GitSourceControlRevision.h"
+#include "FGitVersionEx.h"
 
-
-struct FGitVersionEx
-{
-	int Major;
-	int Minor;
-
-	uint32 bHasCatFileWithFilters : 1;
-	uint32 bHasGitLfs : 1;
-	uint32 bHasGitLfsLocking : 1;
-
-	FGitVersionEx()
-		: Major(0)
-		, Minor(0)
-		, bHasCatFileWithFilters(false)
-		, bHasGitLfs(false)
-		, bHasGitLfsLocking(false)
-	{
-	}
-
-	inline bool IsGreaterOrEqualThan(int InMajor, int InMinor) const
-	{
-		return (Major > InMajor) || (Major == InMajor && (Minor >= InMinor));
-	}
-};
 
 namespace GitSourceControlUtils
 {
@@ -52,6 +30,8 @@ bool GITSOURCECONTROLEX_API CheckGitAvailability(const FString& InPathToGitBinar
  * @param OutVersion            The FGitVersionEx to populate
  */
  void GITSOURCECONTROLEX_API ParseGitVersion(const FString& InVersionString, FGitVersionEx* OutVersion);
+
+ FGitVersionEx GITSOURCECONTROLEX_API GetGitVersion(const FString& InGitBinary);
 
 /** 
  * Check git for various optional capabilities by various means.
@@ -127,6 +107,30 @@ bool GITSOURCECONTROLEX_API RunCommand(const FString& InCommand, const FString& 
  * @returns true if the command succeeded and returned no errors
  */
 bool GITSOURCECONTROLEX_API RunCommit(const FString& InPathToGitBinary, const FString& InRepositoryRoot, const TArray<FString>& InParameters, const TArray<FString>& InFiles, TArray<FString>& OutResults, TArray<FString>& OutErrorMessages);
+
+
+/**
+ * Run a Git "log" command and parse it.
+ *
+ * @param	InPathToGitBinary	The path to the Git binary
+ * @param	InRepositoryRoot	The Git repository from where to run the command - usually the Game directory
+ * @param	InFile				The file to be operated on
+ * @param	bMergeConflict		In case of a merge conflict, we also need to get the tip of the "remote branch" (MERGE_HEAD) before the log of the "current branch" (HEAD)
+ * @param	OutErrorMessages	Any errors (from StdErr) as an array per-line
+ * @param	OutHistory			The history of the file
+ */
+bool GITSOURCECONTROLEX_API RunGetHistory(const FString& InPathToGitBinary, const FString& InRepositoryRoot, const FString& InFile, bool bMergeConflict, TArray<FString>& OutErrorMessages, TGitSourceControlHistory& OutHistory, int32 InHistoryDepth = MAX_int32);
+
+/**
+ * Run a Git "cat-file" command to dump the binary content of a revision into a file.
+ *
+ * @param	InPathToGitBinary	The path to the Git binary
+ * @param	InRepositoryRoot	The Git repository from where to run the command - usually the Game directory
+ * @param	InParameter			The parameters to the Git show command (rev:path)
+ * @param	InDumpFileName		The temporary file to dump the revision
+ * @returns true if the command succeeded and returned no errors
+*/
+bool RunDumpToFile(const FString& InPathToGitBinary, const FString& InRepositoryRoot, const FString& InParameter, const FString& InDumpFileName);
 
 
 }

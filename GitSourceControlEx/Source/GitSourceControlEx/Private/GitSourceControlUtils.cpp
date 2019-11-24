@@ -20,8 +20,6 @@ namespace GitSourceControlConstants
 }
 
 
-
-
 namespace GitSourceControlUtils
 {
 
@@ -364,6 +362,19 @@ namespace GitSourceControlUtils
 		}
 	}
 
+	FGitVersionEx GetGitVersion(const FString& InGitBinary)
+	{
+		int32 ReturnCode;
+		FString OutResults;
+		FString OutErrors;
+		FPlatformProcess::ExecProcess(*InGitBinary, TEXT("--version"), &ReturnCode, &OutResults, &OutErrors);
+		
+		FGitVersionEx GitVersion;
+		ParseGitVersion(OutResults, &GitVersion);
+
+		return GitVersion;
+	}
+
 	void FindGitCapabilities(const FString& InPathToGitBinary, FGitVersionEx *OutVersion)
 	{
 		FString InfoMessages;
@@ -540,6 +551,156 @@ namespace GitSourceControlUtils
 		return bResult;
 	}
 
+
+	/**
+	 * Extract the SHA1 identifier and size of a blob (file) from a Git "ls-tree" command.
+	 *
+	 * Example output for the command git ls-tree --long 7fdaeb2 Content/Blueprints/BP_Test.uasset
+	100644 blob a14347dc3b589b78fb19ba62a7e3982f343718bc   70731	Content/Blueprints/BP_Test.uasset
+	*/
+	class FGitLsTreeParser
+	{
+	public:
+		/** Parse the unmerge status: extract the base SHA1 identifier of the file */
+		FGitLsTreeParser(const TArray<FString>& InResults)
+		{
+			const FString& FirstResult = InResults[0];
+			FileHash = FirstResult.Mid(12, 40);
+			int32 IdxTab;
+			if (FirstResult.FindChar('\t', IdxTab))
+			{
+				const FString SizeString = FirstResult.Mid(53, IdxTab - 53);
+				FileSize = FCString::Atoi(*SizeString);
+			}
+		}
+
+		FString FileHash;	///< SHA1 Id of the file (warning: not the commit Id)
+		int32	FileSize;	///< Size of the file (in bytes)
+	};
+
+	/**
+	 * Translate file actions from the given Git log --name-status command to keywords used by the Editor UI.
+	 *
+	 * @see https://www.kernel.org/pub/software/scm/git/docs/git-log.html
+	 * ' ' = unmodified
+	 * 'M' = modified
+	 * 'A' = added
+	 * 'D' = deleted
+	 * 'R' = renamed
+	 * 'C' = copied
+	 * 'T' = type changed
+	 * 'U' = updated but unmerged
+	 * 'X' = unknown
+	 * 'B' = broken pairing
+	 *
+	 * @see SHistoryRevisionListRowContent::GenerateWidgetForColumn(): "add", "edit", "delete", "branch" and "integrate" (everything else is taken like "edit")
+	*/
+	static FString LogStatusToString(TCHAR InStatus)
+	{
+		switch (InStatus)
+		{
+		case TEXT(' '):
+			return FString("unmodified");
+		case TEXT('M'):
+			return FString("modified");
+		case TEXT('A'): // added: keyword "add" to display a specific icon instead of the default "edit" action one
+			return FString("add");
+		case TEXT('D'): // deleted: keyword "delete" to display a specific icon instead of the default "edit" action one
+			return FString("delete");
+		case TEXT('R'): // renamed keyword "branch" to display a specific icon instead of the default "edit" action one
+			return FString("branch");
+		case TEXT('C'): // copied keyword "branch" to display a specific icon instead of the default "edit" action one
+			return FString("branch");
+		case TEXT('T'):
+			return FString("type changed");
+		case TEXT('U'):
+			return FString("unmerged");
+		case TEXT('X'):
+			return FString("unknown");
+		case TEXT('B'):
+			return FString("broked pairing");
+		}
+
+		return FString();
+	}
+
+
+	static void ParseLogResults(const TArray<FString>& InResults, TGitSourceControlHistory& OutHistory,int32 InHistoryDepth)
+	{
+		TSharedRef<FGitSourceControlRevision, ESPMode::ThreadSafe> SourceControlRevision = MakeShareable(new FGitSourceControlRevision);
+
+		for (const auto& Result : InResults)
+		{
+			if (OutHistory.Num() == InHistoryDepth)
+				break;
+			if (Result.StartsWith(TEXT("commit "))) // Start of a new commit
+			{
+				// End of the previous commit
+				if (SourceControlRevision->RevisionNumber != 0)
+				{
+					OutHistory.Add(MoveTemp(SourceControlRevision));
+
+					SourceControlRevision = MakeShareable(new FGitSourceControlRevision);
+				}
+				SourceControlRevision->CommitId = Result.RightChop(7); // Full commit SHA1 hexadecimal string
+				SourceControlRevision->ShortCommitId = SourceControlRevision->CommitId.Left(8); // Short revision ; first 8 hex characters (max that can hold a 32 bit integer)
+				SourceControlRevision->CommitIdNumber = FParse::HexNumber(*SourceControlRevision->ShortCommitId);
+				SourceControlRevision->RevisionNumber = -1; // RevisionNumber will be set at the end, based off the index in the History
+			}
+			else if (Result.StartsWith(TEXT("Author: "))) // Author name & email
+			{
+				// Remove the 'email' part of the UserName
+				FString UserNameEmail = Result.RightChop(8);
+				int32 EmailIndex = 0;
+				if (UserNameEmail.FindLastChar('<', EmailIndex))
+				{
+					SourceControlRevision->UserName = UserNameEmail.Left(EmailIndex - 1);
+				}
+			}
+			else if (Result.StartsWith(TEXT("Date:   "))) // Commit date
+			{
+				FString Date = Result.RightChop(8);
+				SourceControlRevision->Date = FDateTime::FromUnixTimestamp(FCString::Atoi(*Date));
+			}
+			//	else if(Result.IsEmpty()) // empty line before/after commit message has already been taken care by FString::ParseIntoArray()
+			else if (Result.StartsWith(TEXT("    ")))  // Multi-lines commit message
+			{
+				SourceControlRevision->Description += Result.RightChop(4);
+				SourceControlRevision->Description += TEXT("\n");
+			}
+			else // Name of the file, starting with an uppercase status letter ("A"/"M"...)
+			{
+				const TCHAR Status = Result[0];
+				SourceControlRevision->Action = LogStatusToString(Status); // Readable action string ("Added", Modified"...) instead of "A"/"M"...
+				// Take care of special case for Renamed/Copied file: extract the second filename after second tabulation
+				int32 IdxTab;
+				if (Result.FindLastChar('\t', IdxTab))
+				{
+					SourceControlRevision->Filename = Result.RightChop(IdxTab + 1); // relative filename
+				}
+			}
+		}
+		// End of the last commit
+		if (SourceControlRevision->RevisionNumber != 0 && OutHistory.Num() < InHistoryDepth)
+		{
+			OutHistory.Add(MoveTemp(SourceControlRevision));
+		}
+
+		// Then set the revision number of each Revision based on its index (reverse order since the log starts with the most recent change)
+		for (int32 RevisionIndex = 0; RevisionIndex < OutHistory.Num(); RevisionIndex++)
+		{
+			const auto& SourceControlRevisionItem = OutHistory[RevisionIndex];
+			SourceControlRevisionItem->RevisionNumber = OutHistory.Num() - RevisionIndex;
+
+			// Special case of a move ("branch" in Perforce term): point to the previous change (so the next one in the order of the log)
+			if ((SourceControlRevisionItem->Action == "branch") && (RevisionIndex < OutHistory.Num() - 1))
+			{
+				SourceControlRevisionItem->BranchSource = OutHistory[RevisionIndex + 1];
+			}
+		}
+
+	}
+
 	// Run a Git "commit" command by batches
 	bool RunCommit(const FString& InPathToGitBinary, const FString& InRepositoryRoot, const TArray<FString>& InParameters, const TArray<FString>& InFiles, TArray<FString>& OutResults, TArray<FString>& OutErrorMessages)
 	{
@@ -588,7 +749,146 @@ namespace GitSourceControlUtils
 
 		return bResult;
 	}
+	// Run a Git "log" command and parse it.
+	bool RunGetHistory(const FString& InPathToGitBinary, const FString& InRepositoryRoot, const FString& InFile, bool bMergeConflict, TArray<FString>& OutErrorMessages, TGitSourceControlHistory& OutHistory, int32 InHistoryDepth)
+	{
+		bool bResults;
+		{
+			TArray<FString> Results;
+			TArray<FString> Parameters;
+			Parameters.Add(TEXT("--follow")); // follow file renames
+			Parameters.Add(TEXT("--date=raw"));
+			Parameters.Add(TEXT("--name-status")); // relative filename at this revision, preceded by a status character
+			Parameters.Add(TEXT("--pretty=medium")); // make sure format matches expected in ParseLogResults
+			if (bMergeConflict)
+			{
+				// In case of a merge conflict, we also need to get the tip of the "remote branch" (MERGE_HEAD) before the log of the "current branch" (HEAD)
+				// @todo does not work for a cherry-pick! Test for a rebase.
+				Parameters.Add(TEXT("MERGE_HEAD"));
+				Parameters.Add(TEXT("--max-count 1"));
+			}
+			TArray<FString> Files;
+			Files.Add(*InFile);
+			bResults = RunCommand(TEXT("log"), InPathToGitBinary, InRepositoryRoot, Parameters, Files, Results, OutErrorMessages);
+			if (bResults)
+			{
+				ParseLogResults(Results, OutHistory,InHistoryDepth);
+			}
+		}
+		for (auto& Revision : OutHistory)
+		{
+			// Get file (blob) sha1 id and size
+			TArray<FString> Results;
+			TArray<FString> Parameters;
+			Parameters.Add(TEXT("--long")); // Show object size of blob (file) entries.
+			Parameters.Add(Revision->GetRevision());
+			TArray<FString> Files;
+			Files.Add(*Revision->GetFilename());
+			bResults &= RunCommand(TEXT("ls-tree"), InPathToGitBinary, InRepositoryRoot, Parameters, Files, Results, OutErrorMessages);
+			if (bResults && Results.Num())
+			{
+				FGitLsTreeParser LsTree(Results);
+				Revision->FileHash = LsTree.FileHash;
+				Revision->FileSize = LsTree.FileSize;
+			}
+		}
 
+		return bResults;
+	}
+
+
+	// Run a Git `cat-file --filters` command to dump the binary content of a revision into a file.
+	bool RunDumpToFile(const FString& InPathToGitBinary, const FString& InRepositoryRoot, const FString& InParameter, const FString& InDumpFileName)
+	{
+		int32 ReturnCode = -1;
+		FString FullCommand;
+
+		const FGitVersionEx& GitVersion = GetGitVersion(InPathToGitBinary);
+
+		if (!InRepositoryRoot.IsEmpty())
+		{
+			// Specify the working copy (the root) of the git repository (before the command itself)
+			FullCommand = TEXT("-C \"");
+			FullCommand += InRepositoryRoot;
+			FullCommand += TEXT("\" ");
+		}
+
+		// then the git command itself
+		if (GitVersion.bHasCatFileWithFilters)
+		{
+			// Newer versions (2.9.3.windows.2) support smudge/clean filters used by Git LFS, git-fat, git-annex, etc
+			FullCommand += TEXT("cat-file --filters ");
+		}
+		else
+		{
+			// Previous versions fall-back on "git show" like before
+			FullCommand += TEXT("show ");
+		}
+
+		// Append to the command the parameter
+		FullCommand += InParameter;
+
+		const bool bLaunchDetached = false;
+		const bool bLaunchHidden = true;
+		const bool bLaunchReallyHidden = bLaunchHidden;
+
+		void* PipeRead = nullptr;
+		void* PipeWrite = nullptr;
+
+		verify(FPlatformProcess::CreatePipe(PipeRead, PipeWrite));
+
+		FProcHandle ProcessHandle = FPlatformProcess::CreateProc(*InPathToGitBinary, *FullCommand, bLaunchDetached, bLaunchHidden, bLaunchReallyHidden, nullptr, 0, *InRepositoryRoot, PipeWrite);
+		if (ProcessHandle.IsValid())
+		{
+			FPlatformProcess::Sleep(0.01);
+
+			TArray<uint8> BinaryFileContent;
+			while (FPlatformProcess::IsProcRunning(ProcessHandle))
+			{
+				TArray<uint8> BinaryData;
+				FPlatformProcess::ReadPipeToArray(PipeRead, BinaryData);
+				if (BinaryData.Num() > 0)
+				{
+					BinaryFileContent.Append(MoveTemp(BinaryData));
+				}
+			}
+			TArray<uint8> BinaryData;
+			FPlatformProcess::ReadPipeToArray(PipeRead, BinaryData);
+			if (BinaryData.Num() > 0)
+			{
+				BinaryFileContent.Append(MoveTemp(BinaryData));
+			}
+
+			FPlatformProcess::GetProcReturnCode(ProcessHandle, &ReturnCode);
+			if (ReturnCode == 0)
+			{
+				// Save buffer into temp file
+				if (FFileHelper::SaveArrayToFile(BinaryFileContent, *InDumpFileName))
+				{
+					UE_LOG(LogTemp, Log, TEXT("Writed '%s' (%do)"), *InDumpFileName, BinaryFileContent.Num());
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("Could not write %s"), *InDumpFileName);
+					ReturnCode = -1;
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("DumpToFile: ReturnCode=%d"), ReturnCode);
+			}
+
+			FPlatformProcess::CloseProc(ProcessHandle);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to launch 'git cat-file'"));
+		}
+
+		FPlatformProcess::ClosePipe(PipeRead, PipeWrite);
+
+		return (ReturnCode == 0);
+	}
 }
 /**
  * @brief Extract the relative filename from a Git status result.

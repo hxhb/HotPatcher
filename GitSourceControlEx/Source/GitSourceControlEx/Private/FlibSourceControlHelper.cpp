@@ -56,3 +56,45 @@ bool UFlibSourceControlHelper::GetRemoteUrl(const FString& InPathToGitBinary, co
 {
 	return GitSourceControlUtils::GetRemoteUrl(InPathToGitBinary, InRepositoryRoot, OutRemoteUrl);
 }
+
+bool UFlibSourceControlHelper::RunGetHistory(const FString& InPathToGitBinary, const FString& InRepositoryRoot, const FString& InFile, bool bMergeConflict, TArray<FString>& OutErrorMessages, TArray<FGitSourceControlRevisionData>& OutHistory, int32 InHistoryDepth)
+{
+	TGitSourceControlHistory local_resault;
+	bool bRunState = GitSourceControlUtils::RunGetHistory(InPathToGitBinary,InRepositoryRoot,InFile,bMergeConflict,OutErrorMessages,local_resault, InHistoryDepth);
+
+	for (const auto& Item : local_resault)
+	{
+		FGitSourceControlRevisionData PureData;
+		{
+			PureData.Filename = Item.Get().Filename;
+			PureData.CommitId = Item.Get().CommitId;
+			PureData.ShortCommitId = Item.Get().ShortCommitId;
+			PureData.CommitIdNumber = Item.Get().CommitIdNumber;
+			PureData.RevisionNumber = Item.Get().RevisionNumber;
+			PureData.FileHash = Item.Get().FileHash;
+			PureData.Description = Item.Get().Description;
+			PureData.UserName = Item.Get().UserName;
+			PureData.Action = Item.Get().Action;
+			PureData.Date = Item.Get().Date.ToString();
+			PureData.FileSize = Item.Get().FileSize;
+		}
+		// Item.Get().GetRevisionData(CurrentRevisionData);
+		OutHistory.Add(PureData);
+	}
+
+	return bRunState;
+}
+
+bool UFlibSourceControlHelper::GetFileLastCommit(const FString& InPathToGitBinary, const FString& InRepositoryRoot, const FString& InFile, bool bMergeConflict, TArray<FString>& OutErrorMessages, FGitSourceControlRevisionData& OutHistory)
+{
+	TArray<FGitSourceControlRevisionData> result;
+	bool runState = RunGetHistory(InPathToGitBinary, InRepositoryRoot, InFile, bMergeConflict, OutErrorMessages, result, 1);
+
+	if (result.Num() > 0)
+	{
+		runState = runState && true;
+		OutHistory = result[0];
+	}
+
+	return runState;
+}

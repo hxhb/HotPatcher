@@ -13,6 +13,7 @@
 
 #define JSON_MODULE_LIST_SECTION_NAME TEXT("ModuleList")
 #define JSON_ALL_INVALID_ASSET_SECTION_NAME TEXT("InValidAsset")
+
 class FFillArrayDirectoryVisitor : public IPlatformFile::FDirectoryVisitor
 {
 public:
@@ -95,9 +96,13 @@ class ASSETMANAGEREX_API UFlibAssetManageHelper : public UBlueprintFunctionLibra
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static void GetAllInValidAssetInProject(const FString& InProjectDir, FAssetDependenciesInfo InAllDependencies, TArray<FString> &OutInValidAsset);
 
+	// serialize asset dependencies to json string
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool SerializeAssetDependenciesToJson(const FAssetDependenciesInfo& InAssetDependencies,FString& OutJsonStr);
 
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool DiffAssetDependencies(const FAssetDependenciesInfo& InVersionOne, const FAssetDependenciesInfo& InVersionTwo, FAssetDependenciesInfo& OutDifference);
+	// deserialize asset dependencies to FAssetDependenciesIndo from string.
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool DeserializeAssetDependencies(const FString& InStream,FAssetDependenciesInfo& OutAssetDependencies);
 
@@ -105,4 +110,8 @@ class ASSETMANAGEREX_API UFlibAssetManageHelper : public UBlueprintFunctionLibra
 		static bool SaveStringToFile(const FString& InFile, const FString& InString);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool LoadFileToString(const FString& InFile, FString& OutString);
+
+
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool GetPluginModuleAbsDir(const FString& InPluginModuleName, FString& OutPath);
 };

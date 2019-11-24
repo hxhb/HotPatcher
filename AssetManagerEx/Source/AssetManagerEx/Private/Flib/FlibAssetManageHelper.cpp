@@ -196,31 +196,81 @@ FString UFlibAssetManageHelper::ConvAssetPathFromAbsToRelative(const FString& In
 	FString AssetAbsPath = UFlibAssetManageHelper::ConvPath_BackSlash2Slash(InAbsPath);
 #endif
 	FString Resault;
-	if (!(FPaths::DirectoryExists(InProjectDir) || FPaths::DirectoryExists(AssetAbsPath)) ||
-		!AssetAbsPath.Contains(InProjectDir)) return Resault;
+	if (!(FPaths::DirectoryExists(InProjectDir) || FPaths::DirectoryExists(AssetAbsPath))/* || !AssetAbsPath.Contains(InProjectDir)*/) 
+		return Resault;
 
 	bool bIsDir = FPaths::DirectoryExists(AssetAbsPath);
 	bool bIsFile = FPaths::FileExists(AssetAbsPath);
 
-	FString RelativePath = UKismetStringLibrary::GetSubstring(AssetAbsPath, InProjectDir.Len() + FString(TEXT("Content")).Len(), AssetAbsPath.Len() - InProjectDir.Len());
-	if (bIsDir)
 	{
-		Resault = TEXT("/Game") + RelativePath;
-	}
+		FString AssetModuleName;
+		FString AssetModuleAbsPath;
+		FString AssetModuleRelativePath;
 
-	if (bIsFile)
-	{
-		Resault = TEXT("/Game") + RelativePath;
-		int32 FindIndex;
-		if (Resault.FindLastChar('.', FindIndex))
+		TArray<FString> BreakPath;
+		AssetAbsPath.ParseIntoArray(BreakPath, TEXT("/"));
+		int32 ContentIndex=-1;
+		if (BreakPath.Find(TEXT("Content"), ContentIndex))
 		{
-			Resault.RemoveAt(FindIndex, Resault.Len() - FindIndex);
-
-			int32 LastBackSlant;
-			Resault.FindLastChar('/', LastBackSlant);
-			Resault += TEXT(".") + UKismetStringLibrary::GetSubstring(Resault, LastBackSlant + 1, Resault.Len() - LastBackSlant);
+			int32 FindContentStartCount = 0;
+			if (ContentIndex != -1)
+			{
+				AssetModuleName = BreakPath[ContentIndex - 1];
+				FindContentStartCount += ContentIndex;
+			}
+			
+			for (int32 index = 0; index < ContentIndex; ++index)
+			{
+				FindContentStartCount+=BreakPath[index].Len();
+			}
+			AssetModuleAbsPath = UKismetStringLibrary::GetSubstring(AssetAbsPath, 0, FindContentStartCount-1);
 		}
+		
+
+		// /Game
+		if (AssetModuleAbsPath.EndsWith(AssetModuleName) && AssetAbsPath.Contains(AssetModuleAbsPath))
+		{
+			AssetModuleRelativePath = TEXT("/Game");
+		}
+		// Engine
+		if (AssetModuleName == TEXT("Engine") && AssetModuleAbsPath.EndsWith(TEXT("Engine")))
+		{
+			AssetModuleAbsPath = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
+			AssetModuleRelativePath = TEXT("/Engine");
+		}
+		// Other Plugin
+		{
+			FString PluginModulePath;
+			if (UFlibAssetManageHelper::GetPluginModuleAbsDir(AssetModuleName, PluginModulePath))
+			{
+				AssetModuleAbsPath = PluginModulePath;
+				AssetModuleRelativePath = TEXT("/") + AssetModuleName;
+			}
+		}
+
+		FString RelativePath = UKismetStringLibrary::GetSubstring(AssetAbsPath, AssetModuleAbsPath.Len() + FString(TEXT("/Content")).Len(), AssetAbsPath.Len() - AssetModuleAbsPath.Len());
+		if (bIsDir)
+		{
+			Resault = AssetModuleRelativePath / RelativePath;
+		}
+
+		if (bIsFile)
+		{
+			Resault = AssetModuleRelativePath / RelativePath;
+			int32 FindIndex;
+			if (Resault.FindLastChar('.', FindIndex))
+			{
+				Resault.RemoveAt(FindIndex, Resault.Len() - FindIndex);
+
+				int32 LastBackSlant;
+				Resault.FindLastChar('/', LastBackSlant);
+				Resault += TEXT(".") + UKismetStringLibrary::GetSubstring(Resault, LastBackSlant + 1, Resault.Len() - LastBackSlant);
+			}
+		}
+
+
 	}
+
 
 	return Resault;
 }
@@ -397,6 +447,12 @@ bool UFlibAssetManageHelper::SerializeAssetDependenciesToJson(const FAssetDepend
 	return true;
 }
 
+bool UFlibAssetManageHelper::DiffAssetDependencies(const FAssetDependenciesInfo& InVersionOne, const FAssetDependenciesInfo& InVersionTwo, FAssetDependenciesInfo& OutDifference)
+{
+	// for()
+	return false;
+}
+
 bool UFlibAssetManageHelper::DeserializeAssetDependencies(const FString& InStream, FAssetDependenciesInfo& OutAssetDependencies)
 {
 	if (InStream.IsEmpty()) return false;
@@ -433,4 +489,17 @@ bool UFlibAssetManageHelper::SaveStringToFile(const FString& InFile, const FStri
 bool UFlibAssetManageHelper::LoadFileToString(const FString& InFile, FString& OutString)
 {
 	return FFileHelper::LoadFileToString(OutString, *InFile);
+}
+
+bool UFlibAssetManageHelper::GetPluginModuleAbsDir(const FString& InPluginModuleName, FString& OutPath)
+{
+	bool bFindResault = false;
+	TSharedPtr<IPlugin> FoundModule = IPluginManager::Get().FindPlugin(InPluginModuleName);
+
+	if (FoundModule.IsValid())
+	{
+		bFindResault = true;
+		OutPath = FPaths::ConvertRelativePathToFull(FoundModule->GetBaseDir());
+	}
+	return bFindResault;
 }
