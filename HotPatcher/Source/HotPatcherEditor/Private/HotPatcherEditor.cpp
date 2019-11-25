@@ -12,6 +12,8 @@
 #include "HAL/FileManager.h"
 #include "Interfaces/IPluginManager.h"
 
+#include "SWidgetGallery.h"
+
 static const FName HotPatcherTabName("HotPatcher");
 
 #define LOCTEXT_NAMESPACE "FHotPatcherEditorModule"
@@ -34,12 +36,12 @@ void FHotPatcherEditorModule::StartupModule()
 		
 	FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
 	
-	{
-		TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());
-		MenuExtender->AddMenuExtension("WindowLayout", EExtensionHook::After, PluginCommands, FMenuExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddMenuExtension));
+	//{
+	//	TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());
+	//	MenuExtender->AddMenuExtension("WindowLayout", EExtensionHook::After, PluginCommands, FMenuExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddMenuExtension));
 
-		LevelEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
-	}
+	//	LevelEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
+	//}
 	
 	{
 		TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
@@ -47,9 +49,9 @@ void FHotPatcherEditorModule::StartupModule()
 		
 		LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
 	}
-	/*FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateRaw(this, &FHotPatcherEditorModule::OnSpawnPluginTab))
+	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateRaw(this, &FHotPatcherEditorModule::OnSpawnPluginTab))
 		.SetDisplayName(LOCTEXT("FHotPatcherTabTitle", "HotPatcher"))
-		.SetMenuType(ETabSpawnerMenuType::Hidden);*/
+		.SetMenuType(ETabSpawnerMenuType::Hidden);
 
 }
 
@@ -60,6 +62,7 @@ void FHotPatcherEditorModule::ShutdownModule()
 	FHotPatcherStyle::Shutdown();
 
 	FHotPatcherCommands::Unregister();
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(HotPatcherTabName);
 }
 
 void FHotPatcherEditorModule::PluginButtonClicked()
@@ -82,7 +85,11 @@ TSharedRef<class SDockTab> FHotPatcherEditorModule::OnSpawnPluginTab(const class
 {
 	return SNew(SDockTab)
 		.TabRole(ETabRole::NomadTab)
+		.Label(LOCTEXT("HotPatcherTab", "HotPatcher"))
+		.ToolTipText(LOCTEXT("WidgetGalleryTabTextToolTip", "Switch to the widget gallery."))
+		.Clipping(EWidgetClipping::ClipToBounds)
 		[
+			//MakeWidgetGallery()
 			SNew(SHotPatcher)
 		];
 }
