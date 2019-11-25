@@ -24,5 +24,16 @@
 			"Type": "Editor",
 			"LoadingPhase": "Default"
 		}
+	],
+	"Plugins": [
+		{
+			"Name": "GitSourceControlEx",
+			"Enabled": true
+		},
+		{
+			"Name": "AssetManagerEx",
+			"Enabled": true
+		}
 	]
+
 }

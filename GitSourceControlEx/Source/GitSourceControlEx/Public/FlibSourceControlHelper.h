@@ -17,7 +17,7 @@ UCLASS()
 class GITSOURCECONTROLEX_API UFlibSourceControlHelper : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
-
+public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "GitSourceControlEx|Flib")
 		static FString GetGitBinary();
 

@@ -503,3 +503,74 @@ bool UFlibAssetManageHelper::GetPluginModuleAbsDir(const FString& InPluginModule
 	}
 	return bFindResault;
 }
+
+FAssetDependenciesInfo UFlibAssetManageHelper::CombineAssetDependencies(const FAssetDependenciesInfo& A, const FAssetDependenciesInfo& B)
+{
+	FAssetDependenciesInfo resault;
+
+	auto CombineLambda = [&resault](const FAssetDependenciesInfo& InDependencies)
+	{
+		TArray<FString> Keys;
+		InDependencies.mDependencies.GetKeys(Keys);
+		for (const auto& Key : Keys)
+		{
+			if (!resault.mDependencies.Contains(Key))
+			{
+				resault.mDependencies.Add(Key, *InDependencies.mDependencies.Find(Key));
+			}
+			else
+			{
+				TArray<FString>& ExistingAssetList = resault.mDependencies.Find(Key)->mDependAsset;
+				const TArray<FString>& PaddingAssetList = InDependencies.mDependencies.Find(Key)->mDependAsset;
+				for (const auto& PaddingItem : PaddingAssetList)
+				{
+					if (!ExistingAssetList.Contains(PaddingItem))
+					{
+						ExistingAssetList.Add(PaddingItem);
+					}
+				}
+			}
+		}
+	};
+
+	CombineLambda(A);
+	CombineLambda(B);
+
+	return resault;
+
+	
+}
+
+FAssetDependenciesInfo UFlibAssetManageHelper::ParserNewDependencysInfo(const FAssetDependenciesInfo& InNewVersion, const FAssetDependenciesInfo& InOldVersion)
+{
+	FAssetDependenciesInfo resault;
+
+	TArray<FString> NewAKeys;
+	InNewVersion.mDependencies.GetKeys(NewAKeys);
+	TArray<FString> OldBKeys;
+	InOldVersion.mDependencies.GetKeys(OldBKeys);
+
+	for (const auto& AKey : NewAKeys)
+	{
+		if (OldBKeys.Contains(AKey))
+		{
+			const TArray<FString>& NewADepend = InNewVersion.mDependencies.Find(AKey)->mDependAsset;
+			const TArray<FString>& OldBDepend = InOldVersion.mDependencies.Find(AKey)->mDependAsset;
+			for (const auto& ADependItem : NewADepend)
+			{
+				if (!OldBDepend.Contains(ADependItem))
+				{
+					if (!resault.mDependencies.Contains(AKey))
+						resault.mDependencies.Add(AKey, FAssetDependenciesDetail{ AKey,TArray<FString>{} });
+					resault.mDependencies.Find(AKey)->mDependAsset.Add(ADependItem);
+				}
+			}
+		}
+		else
+		{
+			resault.mDependencies.Add(AKey, *InNewVersion.mDependencies.Find(AKey));
+		}
+	}
+
+	return resault;
+}

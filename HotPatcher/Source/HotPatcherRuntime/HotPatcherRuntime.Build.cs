@@ -26,6 +26,9 @@ public class HotPatcherRuntime : ModuleRules
 			new string[]
 			{
 				"Core",
+                "Projects",
+                "AssetManagerEx",
+                "GitSourceControlEx"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

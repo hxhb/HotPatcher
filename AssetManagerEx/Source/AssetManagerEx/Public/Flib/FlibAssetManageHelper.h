@@ -40,7 +40,7 @@ UCLASS()
 class ASSETMANAGEREX_API UFlibAssetManageHelper : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
-
+public:
 	// from relative asset ref to absolute path
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static void GetAssetDependencies(const FString& InAssetRelativePath, FAssetDependenciesInfo& OutDependices);
@@ -114,4 +114,11 @@ class ASSETMANAGEREX_API UFlibAssetManageHelper : public UBlueprintFunctionLibra
 
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetPluginModuleAbsDir(const FString& InPluginModuleName, FString& OutPath);
+
+	UFUNCTION(BlueprintPure, Category = "GWorld|Flib|AssetManager", meta = (CommutativeAssociativeBinaryOperator = "true"))
+	static FAssetDependenciesInfo CombineAssetDependencies(const FAssetDependenciesInfo& A, const FAssetDependenciesInfo& B);
+
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static FAssetDependenciesInfo ParserNewDependencysInfo(const FAssetDependenciesInfo& InNewVersion, const FAssetDependenciesInfo& InOldVersion);
+
 };
