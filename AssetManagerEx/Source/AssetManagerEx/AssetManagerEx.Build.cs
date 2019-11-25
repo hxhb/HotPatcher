@@ -31,6 +31,7 @@ public class AssetManagerEx : ModuleRules
 				"Core",
                 "Json",
                 "Projects",
+                "TargetPlatform",
                 "GitSourceControlEx"
 				// ... add other public dependencies that you statically link with here ...
 			}

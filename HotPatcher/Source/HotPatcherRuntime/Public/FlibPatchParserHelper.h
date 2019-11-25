@@ -26,8 +26,8 @@ class HOTPATCHERRUNTIME_API UFlibPatchParserHelper : public UBlueprintFunctionLi
 	
 	// 对版本有差异的文件做依赖分析，返回所有改动的文件的资源依赖关系
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool ParserDiffAssetDependencies(const FString& InGitBinaey, const FString& InRepoRoot, const FString& InBeginCommitHash, const FString& InEndCommitHash, FAssetDependenciesInfo& OutDiffDependencies);
-
+		static bool ParserDiffAssetDependencies(const FString& InGitBinary, const FString& InRepoRoot, const FString& InBeginCommitHash, const FString& InEndCommitHash, FAssetDependenciesInfo& OutDiffDependencies);
+	
 	// 把非Content的文件过滤掉
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static void FilterContentPathInArray(const TArray<FString>& InAllModuleDirList, const TArray<FString>& InAbsPathList,TArray<FString>& OutPathList);

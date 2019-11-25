@@ -8,6 +8,8 @@
 #include "Json.h"
 #include "SharedPointer.h"
 #include "IPluginManager.h"
+#include "Interfaces/ITargetPlatform.h"
+#include "Interfaces/ITargetPlatformManagerModule.h"
 
 void UFlibAssetManageHelper::GetAssetDependencies(const FString& InAssetRelativePath, FAssetDependenciesInfo& OutDependInfo)
 {
@@ -169,11 +171,12 @@ FString UFlibAssetManageHelper::ConvAssetPathFromRelativeToAbs(const FString& In
 	{
 		if (Item.Contains(AssetName) && Item[AssetName.Len()] == '.')
 		{
-			Resault = SearchDir / Item;
+			Resault = FPaths::Combine(SearchDir, Item);
 			break;
 		}
 	}
 
+	Resault = UFlibAssetManageHelper::ConvPath_BackSlash2Slash(Resault);
 	bool bIsFile = FPaths::FileExists(Resault);
 	return bIsFile ? Resault : TEXT("");
 	
@@ -504,6 +507,22 @@ bool UFlibAssetManageHelper::GetPluginModuleAbsDir(const FString& InPluginModule
 	return bFindResault;
 }
 
+bool UFlibAssetManageHelper::GetEnableModuleAbsDir(const FString& InModuleName, FString& OutPath)
+{
+	if (InModuleName.Equals(TEXT("Engine")))
+	{
+		OutPath = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
+		return true;
+	}
+	if (InModuleName.Equals(TEXT("Game")))
+	{
+		OutPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+		return true;
+	}
+	return UFlibAssetManageHelper::GetPluginModuleAbsDir(InModuleName, OutPath);
+
+}
+
 FAssetDependenciesInfo UFlibAssetManageHelper::CombineAssetDependencies(const FAssetDependenciesInfo& A, const FAssetDependenciesInfo& B)
 {
 	FAssetDependenciesInfo resault;
@@ -573,4 +592,89 @@ FAssetDependenciesInfo UFlibAssetManageHelper::ParserNewDependencysInfo(const FA
 	}
 
 	return resault;
+}
+
+bool UFlibAssetManageHelper::ConvAssetRelativePathToCookedPath(const FString& InProjectAbsDir, const FString& InPlatformName, const FString& InRelativeAssetPath, TArray<FString>& OutCookedAssetPath, TArray<FString>& OutCookedAssetRelativePath)
+{
+	if (!FPaths::DirectoryExists(InProjectAbsDir) || !IsValidPlatform(InPlatformName))
+		return false;
+	
+	FString EngineAbsDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
+	FString CookedRootDir = FPaths::Combine(InProjectAbsDir, TEXT("Saved/Cooked"),InPlatformName);
+	FString ProjectName = FApp::GetProjectName();
+	FString AssetAbsPath = UFlibAssetManageHelper::ConvAssetPathFromRelativeToAbs(InProjectAbsDir,InRelativeAssetPath);
+	
+	FString AssetModuleName=InRelativeAssetPath;
+	{
+		AssetModuleName.RemoveFromStart(TEXT("/"));
+		int32 secondSlashIndex=-1;
+		AssetModuleName.FindChar('/', secondSlashIndex);
+		AssetModuleName = UKismetStringLibrary::GetSubstring(AssetModuleName, 0, secondSlashIndex);
+	}
+
+	bool bIsEngineModule = false;
+	FString AssetBelongModuleBaseDir;
+	FString AssetCookedNotPostfixPath;
+	{
+		
+		if (UFlibAssetManageHelper::GetEnableModuleAbsDir(AssetModuleName, AssetBelongModuleBaseDir))
+		{
+			if (AssetBelongModuleBaseDir.Contains(EngineAbsDir))
+				bIsEngineModule = true;
+		}
+		
+		FString AssetCookedRelativePath;
+		if (bIsEngineModule)
+		{
+			AssetCookedRelativePath = TEXT("Engine") / UKismetStringLibrary::GetSubstring(AssetAbsPath, EngineAbsDir.Len()-1, AssetAbsPath.Len() - EngineAbsDir.Len());		
+		}
+		else
+		{
+			AssetCookedRelativePath = ProjectName / UKismetStringLibrary::GetSubstring(AssetAbsPath, InProjectAbsDir.Len()-1, AssetAbsPath.Len() - InProjectAbsDir.Len());
+		}
+		
+		// remove .uasset / .umap postfix
+		{
+			int32 lastDotIndex = 0;
+			AssetCookedRelativePath.FindLastChar('.', lastDotIndex);
+			AssetCookedRelativePath.RemoveAt(lastDotIndex, AssetCookedRelativePath.Len() - lastDotIndex);
+		}
+
+		AssetCookedNotPostfixPath = FPaths::Combine(CookedRootDir, AssetCookedRelativePath);
+	}
+
+
+
+	FFillArrayDirectoryVisitor FileVisitor;
+	FString SearchDir;
+	{
+		int32 lastSlashIndex;
+		AssetCookedNotPostfixPath.FindLastChar('/', lastSlashIndex);
+		SearchDir = UKismetStringLibrary::GetSubstring(AssetCookedNotPostfixPath, 0, lastSlashIndex);
+	}
+	IFileManager::Get().IterateDirectory(*SearchDir, FileVisitor);
+	for (const auto& FileItem : FileVisitor.Files)
+	{
+		if (FileItem.Contains(AssetCookedNotPostfixPath) && FileItem[AssetCookedNotPostfixPath.Len()] == '.')
+		{
+			OutCookedAssetPath.Add(FileItem);
+			{
+				FString AssetCookedRelativePath = UKismetStringLibrary::GetSubstring(FileItem, CookedRootDir.Len()+1, FileItem.Len() - CookedRootDir.Len());
+				OutCookedAssetRelativePath.Add(FPaths::Combine(TEXT("../../../"), AssetCookedRelativePath));
+			}
+		}
+	}
+	return true;
+}
+
+bool UFlibAssetManageHelper::IsValidPlatform(const FString& PlatformName)
+{
+	TArray<ITargetPlatform*> Platforms = GetTargetPlatformManager()->GetTargetPlatforms();
+
+	for (const auto& PlatformItem : Platforms)
+	{
+		if (PlatformItem->PlatformName().Equals(PlatformName))
+			return true;
+	}
+	return false;
 }

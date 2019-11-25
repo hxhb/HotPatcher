@@ -114,6 +114,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetPluginModuleAbsDir(const FString& InPluginModuleName, FString& OutPath);
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool GetEnableModuleAbsDir(const FString& InModuleName, FString& OutPath);
 
 	UFUNCTION(BlueprintPure, Category = "GWorld|Flib|AssetManager", meta = (CommutativeAssociativeBinaryOperator = "true"))
 	static FAssetDependenciesInfo CombineAssetDependencies(const FAssetDependenciesInfo& A, const FAssetDependenciesInfo& B);
@@ -121,4 +123,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static FAssetDependenciesInfo ParserNewDependencysInfo(const FAssetDependenciesInfo& InNewVersion, const FAssetDependenciesInfo& InOldVersion);
 
+
+	// 将游戏内的资源路径转换为Cooked之后的资源路径
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool ConvAssetRelativePathToCookedPath(const FString& InProjectAbsDir,const FString& InPlatformName, const FString& InRelativeAssetPath, TArray<FString>& OutCookedAssetPath, TArray<FString>& OutCookedAssetRelativePath);
+
+	static bool IsValidPlatform(const FString& PlatformName);
 };

@@ -49,7 +49,7 @@ public:
 	 * @param   InHistoryDepth		return history depth default is MAX_Int32
 	 */
 	UFUNCTION(BlueprintCallable,Category="GitSourceControlEx|Flib")
-	static bool RunGetHistory(const FString& InPathToGitBinary, const FString& InRepositoryRoot, const FString& InFile, bool bMergeConflict, TArray<FString>& OutErrorMessages, TArray<FGitSourceControlRevisionData>& OutHistory,int32 InHistoryDepth);
+		static bool RunGetHistory(const FString& InPathToGitBinary, const FString& InRepositoryRoot, const FString& InFile, bool bMergeConflict, TArray<FString>& OutErrorMessages, TArray<FGitSourceControlRevisionData>& OutHistory,int32 InHistoryDepth);
 
 	UFUNCTION(BlueprintCallable, Category = "GitSourceControlEx|Flib")
 		static bool GetFileLastCommit(const FString& InPathToGitBinary, const FString& InRepositoryRoot, const FString& InFile, bool bMergeConflict, TArray<FString>& OutErrorMessages, FGitSourceControlRevisionData& OutHistory);
