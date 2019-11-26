@@ -299,7 +299,7 @@ FString UFlibAssetManageHelper::ConvPath_Slash2BackSlash(const FString& InPath)
 	InPath.ParseIntoArray(OutArray, TEXT("/"));
 	for (const auto& item : OutArray)
 	{
-		if (!item.IsEmpty() && FPaths::DirectoryExists(ResaultPath + item))
+		if (!item.IsEmpty()/* && FPaths::DirectoryExists(ResaultPath + item)*/)
 		{
 			ResaultPath.Append(item);
 			ResaultPath.Append(TEXT("\\"));
@@ -322,7 +322,7 @@ FString UFlibAssetManageHelper::ConvPath_BackSlash2Slash(const FString& InPath)
 	}
 	for (const auto& item : OutArray)
 	{
-		if (!item.IsEmpty() && FPaths::DirectoryExists(ResaultPath + item))
+		if (!item.IsEmpty()/* && FPaths::DirectoryExists(ResaultPath + item)*/)
 		{
 			ResaultPath.Append(item);
 			ResaultPath.Append(TEXT("/"));
@@ -450,11 +450,6 @@ bool UFlibAssetManageHelper::SerializeAssetDependenciesToJson(const FAssetDepend
 	return true;
 }
 
-bool UFlibAssetManageHelper::DiffAssetDependencies(const FAssetDependenciesInfo& InVersionOne, const FAssetDependenciesInfo& InVersionTwo, FAssetDependenciesInfo& OutDifference)
-{
-	// for()
-	return false;
-}
 
 bool UFlibAssetManageHelper::DeserializeAssetDependencies(const FString& InStream, FAssetDependenciesInfo& OutAssetDependencies)
 {
@@ -677,4 +672,56 @@ bool UFlibAssetManageHelper::IsValidPlatform(const FString& PlatformName)
 			return true;
 	}
 	return false;
+}
+
+bool UFlibAssetManageHelper::GetCookCommandFromAssetDependencies(const FString& InProjectDir,const FString& InPlatformName,const FAssetDependenciesInfo& InAssetDependencies,const TArray<FString> &InCookParams, TArray<FString>& OutCookCommand)
+{
+	if (!FPaths::DirectoryExists(InProjectDir) || !UFlibAssetManageHelper::IsValidPlatform(InPlatformName))
+		return false;
+	OutCookCommand.Empty();
+	// TArray<FString> resault;
+	TArray<FString> Keys;
+	InAssetDependencies.mDependencies.GetKeys(Keys);
+
+	for (const auto& Key : Keys)
+	{
+		for (const auto& AssetItem : InAssetDependencies.mDependencies.Find(Key)->mDependAsset)
+		{
+			TArray<FString> CookedAssetAbsPath;
+			TArray<FString> CookedAssetRelativePath;
+			TArray<FString> FinalCookedCommand;
+			if (ConvAssetRelativePathToCookedPath(InProjectDir,InPlatformName,AssetItem,CookedAssetAbsPath, CookedAssetRelativePath))
+			{
+				if (CombineCookedAssetCommand(CookedAssetAbsPath, CookedAssetRelativePath, InCookParams, FinalCookedCommand))
+				{
+					OutCookCommand.Append(FinalCookedCommand);
+				}
+			}
+
+		}
+	}
+	return true;
+}
+
+bool UFlibAssetManageHelper::CombineCookedAssetCommand(const TArray<FString> &InAbsPath, const TArray<FString>& InRelativePath, const TArray<FString>& InParams, TArray<FString>& OutCommand)
+{
+	OutCommand.Empty();
+	if (InAbsPath.Num() != InRelativePath.Num())
+		return false;
+	int32 AssetNum = InAbsPath.Num();
+	for (int32 index = 0; index < AssetNum; ++index)
+	{
+		FString CurrentCommand = TEXT("\"")+InAbsPath[index] + TEXT("\" \"") + InRelativePath[index]+TEXT("\"");
+		for (const auto& Param : InParams)
+		{
+			CurrentCommand += TEXT(" ") + Param;
+		}
+		OutCommand.Add(CurrentCommand);
+	}
+	return true;
+}
+
+bool UFlibAssetManageHelper::ExportCookPakCommandToFile(const TArray<FString>& InCommand, const FString& InFile)
+{
+	return FFileHelper::SaveStringArrayToFile(InCommand, *InFile);
 }

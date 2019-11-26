@@ -100,8 +100,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool SerializeAssetDependenciesToJson(const FAssetDependenciesInfo& InAssetDependencies,FString& OutJsonStr);
 
-	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool DiffAssetDependencies(const FAssetDependenciesInfo& InVersionOne, const FAssetDependenciesInfo& InVersionTwo, FAssetDependenciesInfo& OutDifference);
 	// deserialize asset dependencies to FAssetDependenciesIndo from string.
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool DeserializeAssetDependencies(const FString& InStream,FAssetDependenciesInfo& OutAssetDependencies);
@@ -129,4 +127,11 @@ public:
 		static bool ConvAssetRelativePathToCookedPath(const FString& InProjectAbsDir,const FString& InPlatformName, const FString& InRelativeAssetPath, TArray<FString>& OutCookedAssetPath, TArray<FString>& OutCookedAssetRelativePath);
 
 	static bool IsValidPlatform(const FString& PlatformName);
+
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool GetCookCommandFromAssetDependencies(const FString& InProjectDir, const FString& InPlatformName, const FAssetDependenciesInfo& InAssetDependencies, const TArray<FString> &InCookParams, TArray<FString>& OutCookCommand);
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool CombineCookedAssetCommand(const TArray<FString> &InAbsPath, const TArray<FString>& InRelativePath, const TArray<FString>& InParams, TArray<FString>& OutCommand);
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool ExportCookPakCommandToFile(const TArray<FString>& InCommand, const FString& InFile);
 };
