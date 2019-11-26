@@ -19,12 +19,89 @@ bool UFlibPatchParserHelper::DiffCommitVersion(const FString& InGitBinaey, const
 
 	for (const auto& Item : OutResault)
 	{
-		OutAbsPathResault.Add(UFlibAssetManageHelper::ConvPath_BackSlash2Slash(FPaths::Combine(InRepoRoot, Item)));
+		FString ItemAbsPath = UFlibPatchParserHelper::ConvGitTrackFilePathToAbsPath(InRepoRoot,Item);
+		if (FPaths::FileExists(ItemAbsPath))
+		{
+			OutAbsPathResault.Add(UFlibAssetManageHelper::ConvPath_BackSlash2Slash(FPaths::Combine(InRepoRoot, Item)));
+			continue;
+		}
+		if (FPaths::DirectoryExists(ItemAbsPath))
+		{
+			FFillArrayDirectoryVisitor FileVisitor;
+			IFileManager::Get().IterateDirectoryRecursively(*Item, FileVisitor);
+			for (const auto& NewFile : FileVisitor.Files)
+			{
+				if (!OutAbsPathResault.Contains(NewFile))
+				{
+					OutAbsPathResault.Add(NewFile);
+				}
+			}
+		}
 	}
 
 	return bRunState;
 }
 
+
+bool UFlibPatchParserHelper::DiffCommitVersionAsAssetDependencies(const FString& InGitBinaey, const FString& InRepoRoot, const FString& InBeginCommitHash, const FString& InEndCommitHash, FAssetDependenciesInfo& OutContentDiffInfo, FAssetDependenciesInfo& OutDiffAssetDependencies)
+{
+	{
+		OutContentDiffInfo = FAssetDependenciesInfo{};
+		OutDiffAssetDependencies = FAssetDependenciesInfo{};
+	}
+	TArray<FString> DiffAssetAbsList;
+	TArray<FString> DiffErrorMsg;
+	bool runState= UFlibPatchParserHelper::DiffCommitVersion(InGitBinaey, InRepoRoot, InBeginCommitHash, InEndCommitHash, DiffAssetAbsList, DiffErrorMsg);;
+	
+
+	if (runState)	
+	{
+		TArray<FString> AllEnableModules;
+		UFlibPatchParserHelper::GetAllEnabledModuleBaseDir(AllEnableModules);
+		TArray<FString> ContentOnlyAbsList;
+		TArray<FString> ContentOnlyPackageList;
+		TArray<FString> ContentOnlyShortNameList;
+		UFlibPatchParserHelper::FilterContentPathInArray(AllEnableModules, DiffAssetAbsList, ContentOnlyAbsList);
+		UFlibAssetManageHelper::ConvAssetPathListFromAbsToRelative(InRepoRoot, ContentOnlyAbsList, ContentOnlyPackageList);
+
+		// Remove asset package postfix
+		for (const auto& AssetPackageName : ContentOnlyPackageList)
+		{
+			FString convResult;
+			if (UFlibAssetManageHelper::RemovePackageAssetPostfix(AssetPackageName, convResult))
+			{
+				ContentOnlyShortNameList.Add(convResult);
+			}
+		}
+		// add to OutContentDiffInfo
+		{
+			for (const auto& AssetItem : ContentOnlyShortNameList)
+			{
+				FString AssetBelongModule = UFlibAssetManageHelper::GetAssetBelongModuleName(AssetItem);
+
+				if (OutContentDiffInfo.mDependencies.Contains(AssetBelongModule))
+				{
+					OutContentDiffInfo.mDependencies.Find(AssetBelongModule)->mDependAsset.Add(AssetItem);
+				}
+				else
+				{
+					OutContentDiffInfo.mDependencies.Add(AssetBelongModule, FAssetDependenciesDetail{ AssetBelongModule,TArray<FString>{AssetItem} });
+				}
+			}
+		}
+
+		FAssetDependenciesInfo OutResult;
+
+		for(const auto& AssetItem:ContentOnlyPackageList)
+		{
+			FAssetDependenciesInfo SignelAssetDep;
+			UFlibAssetManageHelper::GetAssetDependencies(AssetItem, SignelAssetDep);
+			OutDiffAssetDependencies = UFlibAssetManageHelper::CombineAssetDependencies(OutDiffAssetDependencies, SignelAssetDep);
+		}
+			
+	}
+	return runState;
+}
 
 bool UFlibPatchParserHelper::ParserDiffAssetDependencies(const FString& InGitBinaey, const FString& InRepoRoot, const FString& InBeginCommitHash, const FString& InEndCommitHash, FAssetDependenciesInfo& OutDiffDependencies)
 {
@@ -70,7 +147,8 @@ void UFlibPatchParserHelper::FilterContentPathInArray(const TArray<FString>& InA
 bool UFlibPatchParserHelper::IsContentAssetPath(const TArray<FString>& InALLModuleDir, const FString& InAssetAbsPath)
 {
 	FString local_InPath = UFlibAssetManageHelper::ConvPath_BackSlash2Slash(InAssetAbsPath);
-	if (!FPaths::FileExists(local_InPath) && !local_InPath.Contains(TEXT("Content/")))
+	bool bFileValid = FPaths::FileExists(local_InPath);
+	if ( !bFileValid && !local_InPath.Contains(TEXT("Content/")))
 		return false;
 	
 	for (const auto& ModuleItem : InALLModuleDir)
@@ -97,5 +175,17 @@ void UFlibPatchParserHelper::GetAllEnabledModuleBaseDir(TArray<FString>& OutResa
 
 	OutResault.Add(UKismetSystemLibrary::GetProjectDirectory());
 	OutResault.Add(FPaths::ConvertRelativePathToFull(FPaths::EngineDir()));
+}
+
+FString UFlibPatchParserHelper::ConvGitTrackFilePathToAbsPath(const FString& InRepoRootDir, const FString& InTrackFile)
+{
+	FString result;
+	if (!FPaths::DirectoryExists(InRepoRootDir))
+		return result;
+	result = FPaths::Combine(InRepoRootDir, InTrackFile);
+	if (FPaths::FileExists(result))
+		return result;
+	else
+		return TEXT("");
 }
 

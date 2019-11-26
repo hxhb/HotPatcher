@@ -14,7 +14,7 @@
 #define JSON_MODULE_LIST_SECTION_NAME TEXT("ModuleList")
 #define JSON_ALL_INVALID_ASSET_SECTION_NAME TEXT("InValidAsset")
 
-class FFillArrayDirectoryVisitor : public IPlatformFile::FDirectoryVisitor
+class ASSETMANAGEREX_API FFillArrayDirectoryVisitor : public IPlatformFile::FDirectoryVisitor
 {
 public:
 	virtual bool Visit(const TCHAR* FilenameOrDirectory, bool bIsDirectory) override
@@ -92,6 +92,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static void ExportProjectAssetDependencies(const FString& InProjectDir, FAssetDependenciesInfo& OutAllDependencies);
 
+	// 解析资源所属模块
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static FString GetAssetBelongModuleName(const FString& InAssetRelativePath);
+
 	// Get all invalid asset list
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static void GetAllInValidAssetInProject(const FString& InProjectDir, FAssetDependenciesInfo InAllDependencies, TArray<FString> &OutInValidAsset);
@@ -129,9 +133,17 @@ public:
 	static bool IsValidPlatform(const FString& PlatformName);
 
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static TArray<FString> GetAllTargetPlatform();
+
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetCookCommandFromAssetDependencies(const FString& InProjectDir, const FString& InPlatformName, const FAssetDependenciesInfo& InAssetDependencies, const TArray<FString> &InCookParams, TArray<FString>& OutCookCommand);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool CombineCookedAssetCommand(const TArray<FString> &InAbsPath, const TArray<FString>& InRelativePath, const TArray<FString>& InParams, TArray<FString>& OutCommand);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool ExportCookPakCommandToFile(const TArray<FString>& InCommand, const FString& InFile);
+
+
+	// e.g /Game/Map/BP_Test.BP_Test to /Game/Map/BP_Test
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool RemovePackageAssetPostfix(const FString& InPackageName, FString& OutNoPostfixAsset);
 };

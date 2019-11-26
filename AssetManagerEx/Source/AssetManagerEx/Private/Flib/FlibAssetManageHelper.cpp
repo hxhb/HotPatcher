@@ -8,8 +8,11 @@
 #include "Json.h"
 #include "SharedPointer.h"
 #include "IPluginManager.h"
+
+#ifdef __DEVELOPER_MODE__
 #include "Interfaces/ITargetPlatform.h"
 #include "Interfaces/ITargetPlatformManagerModule.h"
+#endif
 
 void UFlibAssetManageHelper::GetAssetDependencies(const FString& InAssetRelativePath, FAssetDependenciesInfo& OutDependInfo)
 {
@@ -88,10 +91,8 @@ void UFlibAssetManageHelper::GatherAssetDependicesInfoRecursively(
 		for (auto &DependItem : local_Dependencies)
 		{
 			FString LongDependentPackageName = DependItem.ToString();
+			FString BelongModuleName = UFlibAssetManageHelper::GetAssetBelongModuleName(LongDependentPackageName);
 
-			int32 BelongModuleNameEndIndex = LongDependentPackageName.Find(TEXT("/"), ESearchCase::IgnoreCase, ESearchDir::FromStart, 1);
-			FString BelongModuleName = UKismetStringLibrary::GetSubstring(LongDependentPackageName, 1, BelongModuleNameEndIndex-1);// (LongDependentPackageName, BelongModuleNameEndIndex);
-			
 			// add a new asset to module category
 			auto AddNewAssetItemLambda = [&InAssetRegistryModule,&OutDependencies](
 				FAssetDependenciesDetail& ModuleAssetDependDetail, 
@@ -297,15 +298,16 @@ FString UFlibAssetManageHelper::ConvPath_Slash2BackSlash(const FString& InPath)
 		InPath.ParseIntoArray(OutArray, TEXT("/"));
 	}*/
 	InPath.ParseIntoArray(OutArray, TEXT("/"));
-	for (const auto& item : OutArray)
+	int32 OutArrayNum = OutArray.Num();
+	for (int32 Index = 0; Index < OutArrayNum; ++Index)
 	{
-		if (!item.IsEmpty()/* && FPaths::DirectoryExists(ResaultPath + item)*/)
+		if (!OutArray[Index].IsEmpty() && Index < OutArrayNum - 1)/* && FPaths::DirectoryExists(ResaultPath + item)*/
 		{
-			ResaultPath.Append(item);
+			ResaultPath.Append(OutArray[Index]);
 			ResaultPath.Append(TEXT("\\"));
 		}
 		else {
-			ResaultPath.Append(item);
+			ResaultPath.Append(OutArray[Index]);
 		}
 	}
 	return ResaultPath;
@@ -320,15 +322,16 @@ FString UFlibAssetManageHelper::ConvPath_BackSlash2Slash(const FString& InPath)
 	{
 		InPath.ParseIntoArray(OutArray, TEXT("/"));
 	}
-	for (const auto& item : OutArray)
+	int32 OutArrayNum = OutArray.Num();
+	for(int32 Index=0; Index < OutArrayNum;++Index)
 	{
-		if (!item.IsEmpty()/* && FPaths::DirectoryExists(ResaultPath + item)*/)
+		if (!OutArray[Index].IsEmpty() && Index < OutArrayNum -1 )/* && FPaths::DirectoryExists(ResaultPath + item)*/
 		{
-			ResaultPath.Append(item);
+			ResaultPath.Append(OutArray[Index]);
 			ResaultPath.Append(TEXT("/"));
 		}
 		else {
-			ResaultPath.Append(item);
+			ResaultPath.Append(OutArray[Index]);
 		}
 	}
 	return ResaultPath;
@@ -372,6 +375,16 @@ void UFlibAssetManageHelper::ExportProjectAssetDependencies(const FString& InPro
 	UFlibAssetManageHelper::GetAssetListDependencies(GameAssetRelativePathList, OutAllDependencies);
 }
 
+
+FString UFlibAssetManageHelper::GetAssetBelongModuleName(const FString& InAssetRelativePath)
+{
+	FString LongDependentPackageName = InAssetRelativePath;
+
+	int32 BelongModuleNameEndIndex = LongDependentPackageName.Find(TEXT("/"), ESearchCase::IgnoreCase, ESearchDir::FromStart, 1);
+	FString BelongModuleName = UKismetStringLibrary::GetSubstring(LongDependentPackageName, 1, BelongModuleNameEndIndex - 1);// (LongDependentPackageName, BelongModuleNameEndIndex);
+
+	return BelongModuleName;
+}
 
 void UFlibAssetManageHelper::GetAllInValidAssetInProject(const FString& InProjectDir, FAssetDependenciesInfo InAllDependencies, TArray<FString> &OutInValidAsset)
 {
@@ -664,14 +677,72 @@ bool UFlibAssetManageHelper::ConvAssetRelativePathToCookedPath(const FString& In
 
 bool UFlibAssetManageHelper::IsValidPlatform(const FString& PlatformName)
 {
+
+	for (const auto& PlatformItem : UFlibAssetManageHelper::GetAllTargetPlatform())
+	{
+		if (PlatformItem.Equals(PlatformName))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+TArray<FString> UFlibAssetManageHelper::GetAllTargetPlatform()
+{
+#ifdef __DEVELOPER_MODE__
 	TArray<ITargetPlatform*> Platforms = GetTargetPlatformManager()->GetTargetPlatforms();
+	TArray<FString> result;
 
 	for (const auto& PlatformItem : Platforms)
 	{
-		if (PlatformItem->PlatformName().Equals(PlatformName))
-			return true;
+		result.Add(PlatformItem->PlatformName());
 	}
-	return false;
+
+#else
+	TArray<FString> result = {
+		"AllDesktop",
+		"MacClient",
+		"MacNoEditor",
+		"MacServer",
+		"Mac",
+		"WindowsClient",
+		"WindowsNoEditor",
+		"WindowsServer",
+		"Windows",
+		"Android",
+		"Android_ASTC",
+		"Android_ATC",
+		"Android_DXT",
+		"Android_ETC1",
+		"Android_ETC1a",
+		"Android_ETC2",
+		"Android_PVRTC",
+		"AndroidClient",
+		"Android_ASTCClient",
+		"Android_ATCClient",
+		"Android_DXTClient",
+		"Android_ETC1Client",
+		"Android_ETC1aClient",
+		"Android_ETC2Client",
+		"Android_PVRTCClient",
+		"Android_Multi",
+		"Android_MultiClient",
+		"HTML5",
+		"IOSClient",
+		"IOS",
+		"TVOSClient",
+		"TVOS",
+		"LinuxClient",
+		"LinuxNoEditor",
+		"LinuxServer",
+		"Linux",
+		"Lumin",
+		"LuminClient" 
+	};
+
+#endif
+	return result;
 }
 
 bool UFlibAssetManageHelper::GetCookCommandFromAssetDependencies(const FString& InProjectDir,const FString& InPlatformName,const FAssetDependenciesInfo& InAssetDependencies,const TArray<FString> &InCookParams, TArray<FString>& OutCookCommand)
@@ -685,6 +756,8 @@ bool UFlibAssetManageHelper::GetCookCommandFromAssetDependencies(const FString& 
 
 	for (const auto& Key : Keys)
 	{
+		if(Key.Equals(TEXT("Script")))
+			continue;
 		for (const auto& AssetItem : InAssetDependencies.mDependencies.Find(Key)->mDependAsset)
 		{
 			TArray<FString> CookedAssetAbsPath;
@@ -724,4 +797,16 @@ bool UFlibAssetManageHelper::CombineCookedAssetCommand(const TArray<FString> &In
 bool UFlibAssetManageHelper::ExportCookPakCommandToFile(const TArray<FString>& InCommand, const FString& InFile)
 {
 	return FFileHelper::SaveStringArrayToFile(InCommand, *InFile);
+}
+
+bool UFlibAssetManageHelper::RemovePackageAssetPostfix(const FString& InPackageName,FString& OutNoPostfixAsset)
+{
+	if (InPackageName.IsEmpty())
+		return false;
+	int32 FoundLastDot;
+	if (InPackageName.FindLastChar('.', FoundLastDot))
+	{
+		OutNoPostfixAsset = UKismetStringLibrary::GetSubstring(InPackageName, 0, FoundLastDot);
+	}
+	return true;
 }
