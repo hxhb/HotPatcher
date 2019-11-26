@@ -25,7 +25,8 @@ public class HotPatcherEditor : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core"
+				"Core",
+                "TargetPlatform"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

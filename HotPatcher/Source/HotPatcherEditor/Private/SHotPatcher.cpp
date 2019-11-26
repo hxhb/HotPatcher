@@ -24,99 +24,71 @@
 #include "Misc/SecureHash.h"
 #include "FileManager.h"
 #include "PackageName.h"
+#include "SGridPanel.h"
+#include "Cook/SProjectCookPage.h"
+#include "VersionControl/SProjectVersionControlPage.h"
 
 #define LOCTEXT_NAMESPACE "FExportPakModule"
 
 void SHotPatcher::Construct(const FArguments& InArgs)
 {
-	CreateTargetAssetListView();
+	CookModel = MakeShareable(new FHotPatcherCookModel);
+	VersionControlModel = MakeShareable(new FHotPatcherVersionControlModel);
 
 	ChildSlot
+	[
+		SNew(SOverlay)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Fill)
 		[
-			SNew(SVerticalBox)
-
-			+ SVerticalBox::Slot()
-			.FillHeight(1.0f)
-			.Padding(2, 0, 0, 0)
+			SNew(SScrollBox)
+			+ SScrollBox::Slot()
+			.Padding(0.0f, 10.0f, 8.0f, 0.0f)
 			[
-				SNew(SBorder)
-				.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
-				.Padding(0.f)
+				SNew(SGridPanel)
+				.FillColumn(1, 1.0f)
+
+				// cook section
+				+ SGridPanel::Slot(0, 0)
+				.Padding(8.0f, 0.0f, 0.0f, 0.0f)
+				.VAlign(VAlign_Top)
 				[
-					SNew(SVerticalBox)
-
-					+ SVerticalBox::Slot()
-					.FillHeight(1.0f)
-					.Padding(4, 4, 4, 4)
-					[
-						SNew(SScrollBox)
-						+ SScrollBox::Slot()
-						[
-							SNew(SVerticalBox)
-
-							+ SVerticalBox::Slot()
-							.Padding(0, 10, 0, 0)
-							[
-								SNew(SBorder)
-								.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
-								[
-									SNew(SVerticalBox)
-									// Static mesh component selection
-									+ SVerticalBox::Slot()
-									.Padding(FEditorStyle::GetMargin("StandardDialog.ContentPadding"))
-									[
-										SNew(SHorizontalBox)
-										+ SHorizontalBox::Slot()
-										.VAlign(VAlign_Center)
-										[
-											SettingsView->AsShared()
-										]
-									]
-								]
-							]
-						]
-					]
-
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					.HAlign(HAlign_Right)
-					.Padding(4, 4, 10, 4)
-					[
-						SNew(SButton)
-						.Text(LOCTEXT("HotPatcher", "Export Pak file(s)"))
-						.OnClicked(this, &SHotPatcher::OnHotPatcherButtonClicked)
-						.IsEnabled(this, &SHotPatcher::CanHotPatcherExecuted)
-					]
+					SNew(STextBlock)
+					.Font(FCoreStyle::GetDefaultFontStyle("Cook", 13))
+					.Text(LOCTEXT("ProjectCookSectionHeader", "Cook"))
 				]
+				+ SGridPanel::Slot(1, 0)
+				.Padding(32.0f, 0.0f, 8.0f, 0.0f)
+				[
+					SNew(SProjectCookPage,CookModel)
+				]
+
+				+ SGridPanel::Slot(0, 1)
+					.ColumnSpan(3)
+					.Padding(0.0f, 16.0f)
+					[
+						SNew(SSeparator)
+						.Orientation(Orient_Horizontal)
+					]
+
+				// Patch Version Control section
+				+ SGridPanel::Slot(0, 2)
+					.Padding(8.0f, 0.0f, 0.0f, 0.0f)
+					.VAlign(VAlign_Top)
+					[
+						SNew(STextBlock)
+						.Font(FCoreStyle::GetDefaultFontStyle("Patch", 13))
+					.Text(LOCTEXT("ProjectPatchSectionHeader", "Patch"))
+					]
+				+ SGridPanel::Slot(1, 2)
+					.Padding(32.0f, 0.0f, 8.0f, 0.0f)
+					[
+						SNew(SProjectVersionControlPage, VersionControlModel)
+					]
 			]
-		];
+		]
+	];
 
-}
-
-
-void SHotPatcher::CreateTargetAssetListView()
-{
-	// Create a property view
-	FPropertyEditorModule& EditModule = FModuleManager::Get().GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
-
-	FDetailsViewArgs DetailsViewArgs;
-	DetailsViewArgs.bUpdatesFromSelection = true;
-	DetailsViewArgs.bLockable = true;
-	DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::ComponentsAndActorsUseNameArea;
-	DetailsViewArgs.bCustomNameAreaLocation = false;
-	DetailsViewArgs.bCustomFilterAreaLocation = true;
-	DetailsViewArgs.DefaultsOnlyVisibility = EEditDefaultsOnlyNodeVisibility::Hide;
-
-	SettingsView = EditModule.CreateDetailView(DetailsViewArgs);;
-}
-
-FReply SHotPatcher::OnHotPatcherButtonClicked()
-{
-	return FReply::Handled();
-}
-bool SHotPatcher::CanHotPatcherExecuted() const
-{
-	return false;
 }
 
 

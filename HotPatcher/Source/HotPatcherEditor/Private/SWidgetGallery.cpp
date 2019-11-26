@@ -119,8 +119,8 @@ public:
 					.Padding(5.0f)
 					[
 						SNew(SGridPanel)
-							.FillColumn(0, 0.5f)
-							.FillColumn(1, 0.5f)
+							.FillColumn(0, 0.15f)
+							.FillColumn(1, 0.85f)
 
 						// SBorder
 						+ SGridPanel::Slot(0, 0)

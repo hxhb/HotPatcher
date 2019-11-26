@@ -85,11 +85,11 @@ TSharedRef<class SDockTab> FHotPatcherEditorModule::OnSpawnPluginTab(const class
 {
 	return SNew(SDockTab)
 		.TabRole(ETabRole::NomadTab)
-		.Label(LOCTEXT("HotPatcherTab", "HotPatcher"))
+		.Label(LOCTEXT("HotPatcherTab", "Hot Patcher"))
 		.ToolTipText(LOCTEXT("WidgetGalleryTabTextToolTip", "Switch to the widget gallery."))
 		.Clipping(EWidgetClipping::ClipToBounds)
 		[
-			//MakeWidgetGallery()
+			// MakeWidgetGallery()
 			SNew(SHotPatcher)
 		];
 }

@@ -6,7 +6,8 @@
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Input/Reply.h"
 #include "Widgets/SCompoundWidget.h"
-
+#include "FHotPatcherCookModel.h"
+#include "FHotPatcherVersionControlModel.h"
 class SHotPatcher : public SCompoundWidget
 {
 
@@ -23,16 +24,8 @@ public:
 	*/
 	void Construct(const FArguments& InArgs);
 
-private:
-
-	FReply OnHotPatcherButtonClicked();
-	bool CanHotPatcherExecuted() const;
-	void CreateTargetAssetListView();
 
 private:
-	/** Inline content area for different tool modes */
-	TSharedPtr<SBox> InlineContentHolder;
-
-	/** Settings view ui element ptr */
-	TSharedPtr<IDetailsView> SettingsView;
+	TSharedPtr<FHotPatcherCookModel> CookModel;
+	TSharedPtr<FHotPatcherVersionControlModel> VersionControlModel;
 };
