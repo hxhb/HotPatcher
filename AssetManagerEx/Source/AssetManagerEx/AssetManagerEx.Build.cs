@@ -31,6 +31,10 @@ public class AssetManagerEx : ModuleRules
 				"Core",
                 "Json",
                 "Projects",
+                "CoreUObject",
+                "Engine",
+                "Slate",
+                "SlateCore",
                 // "TargetPlatform",
                 "GitSourceControlEx"
 				// ... add other public dependencies that you statically link with here ...
@@ -40,11 +44,7 @@ public class AssetManagerEx : ModuleRules
 		
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
-			{
-				"CoreUObject",
-				"Engine",
-				"Slate",
-				"SlateCore"
+			{	
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

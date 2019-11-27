@@ -9,30 +9,12 @@
 #include "AssetRegistryModule.h"
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+
+#include "Struct/AssetManager/FFileArrayDirectoryVisitor.hpp"
 #include "FlibAssetManageHelper.generated.h"
 
 #define JSON_MODULE_LIST_SECTION_NAME TEXT("ModuleList")
 #define JSON_ALL_INVALID_ASSET_SECTION_NAME TEXT("InValidAsset")
-
-class ASSETMANAGEREX_API FFillArrayDirectoryVisitor : public IPlatformFile::FDirectoryVisitor
-{
-public:
-	virtual bool Visit(const TCHAR* FilenameOrDirectory, bool bIsDirectory) override
-	{
-		if (bIsDirectory)
-		{
-			Directories.Add(FilenameOrDirectory);
-		}
-		else
-		{
-			Files.Add(FilenameOrDirectory);
-		}
-		return true;
-	}
-
-	TArray<FString> Directories;
-	TArray<FString> Files;
-};
 
 
 
@@ -146,4 +128,6 @@ public:
 	// e.g /Game/Map/BP_Test.BP_Test to /Game/Map/BP_Test
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool RemovePackageAssetPostfix(const FString& InPackageName, FString& OutNoPostfixAsset);
+
+
 };
