@@ -5,17 +5,17 @@
 #include "CoreMinimal.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
-#include "FHotPatcherVersionControlModel.h"
+#include "FHotPatcherCreatePatchModel.h"
 
 /**
  * Implements the profile page for the session launcher wizard.
  */
-class SProjectVersionControlPage
+class SProjectCreatePatchPage
 	: public SCompoundWidget
 {
 public:
 
-	SLATE_BEGIN_ARGS(SProjectVersionControlPage) { }
+	SLATE_BEGIN_ARGS(SProjectCreatePatchPage) { }
 	SLATE_END_ARGS()
 
 public:
@@ -25,8 +25,8 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherVersionControlModel> InVersionControlModel);
+	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCreatePatchModel> InCreatePatchModel);
 
 private:
-	TSharedPtr<FHotPatcherVersionControlModel> mVersionControlModel;
+	TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
 };

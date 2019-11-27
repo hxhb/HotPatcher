@@ -31,6 +31,27 @@ public:
 		if(mSelectedPlatform.Num()>0)
 			mSelectedPlatform.Reset();
 	}
+
+	void AddSelectedCookMap(const FString& InNewMap)
+	{
+		if (!mSelectedCookMaps.Contains(InNewMap))
+		{
+			mSelectedCookMaps.AddUnique(InNewMap);
+		}
+	}
+	void RemoveSelectedCookMap(const FString& InMap)
+	{
+		if (mSelectedCookMaps.Contains(InMap))
+		{
+			mSelectedCookMaps.Remove(InMap);
+		}
+	}
+	const TArray<FString>& GetAllSelectedCookMap()
+	{
+		return mSelectedCookMaps;
+	}
+
 private:
 	TArray<FString> mSelectedPlatform;
+	TArray<FString> mSelectedCookMaps;
 };

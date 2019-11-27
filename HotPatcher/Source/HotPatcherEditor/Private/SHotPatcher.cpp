@@ -26,14 +26,14 @@
 #include "PackageName.h"
 #include "SGridPanel.h"
 #include "Cook/SProjectCookPage.h"
-#include "VersionControl/SProjectVersionControlPage.h"
+#include "CreatePatch/SProjectCreatePatchPage.h"
 
 #define LOCTEXT_NAMESPACE "FExportPakModule"
 
 void SHotPatcher::Construct(const FArguments& InArgs)
 {
 	CookModel = MakeShareable(new FHotPatcherCookModel);
-	VersionControlModel = MakeShareable(new FHotPatcherVersionControlModel);
+	CreatePatchModel = MakeShareable(new FHotPatcherCreatePatchModel);
 
 	ChildSlot
 	[
@@ -83,7 +83,7 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 				+ SGridPanel::Slot(1, 2)
 					.Padding(32.0f, 0.0f, 8.0f, 0.0f)
 					[
-						SNew(SProjectVersionControlPage, VersionControlModel)
+						SNew(SProjectCreatePatchPage, CreatePatchModel)
 					]
 			]
 		]

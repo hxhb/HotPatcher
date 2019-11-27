@@ -15,7 +15,7 @@ UCLASS()
 class HOTPATCHERRUNTIME_API UFlibPatchParserHelper : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
-
+public:
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static FString GetHotPatcherGitPath();
@@ -55,4 +55,18 @@ class HOTPATCHERRUNTIME_API UFlibPatchParserHelper : public UBlueprintFunctionLi
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static FString ConvGitTrackFilePathToAbsPath(const FString& InRepoRootDir, const FString& InTrackFile);
+
+	/**
+ * Gets the list of available maps for the specified game.
+ *
+ * @param GameName - The name of the game (i.e. Example or UDK).
+ * @param IncludeEngineMaps - Whether maps in the Engine folder should be included.
+ * @param Sorted - Whether the list of maps should be sorted alphabetically.
+ *
+ * @return A list of available map names.
+ */
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static TArray<FString> GetAvailableMaps(FString GameName, bool IncludeEngineMaps, bool Sorted);
+
+	
 };

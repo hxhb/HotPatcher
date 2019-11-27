@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-class FHotPatcherVersionControlModel
+class FHotPatcherCreatePatchModel
 {
 public:
 

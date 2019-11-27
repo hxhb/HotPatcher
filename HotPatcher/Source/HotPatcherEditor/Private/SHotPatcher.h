@@ -7,7 +7,7 @@
 #include "Input/Reply.h"
 #include "Widgets/SCompoundWidget.h"
 #include "FHotPatcherCookModel.h"
-#include "FHotPatcherVersionControlModel.h"
+#include "FHotPatcherCreatePatchModel.h"
 class SHotPatcher : public SCompoundWidget
 {
 
@@ -27,5 +27,5 @@ public:
 
 private:
 	TSharedPtr<FHotPatcherCookModel> CookModel;
-	TSharedPtr<FHotPatcherVersionControlModel> VersionControlModel;
+	TSharedPtr<FHotPatcherCreatePatchModel> CreatePatchModel;
 };

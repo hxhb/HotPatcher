@@ -1,21 +1,21 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
-#include "SProjectVersionControlPage.h"
+#include "SProjectCreatePatchPage.h"
 
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SExpandableArea.h"
 
 
-#define LOCTEXT_NAMESPACE "SProjectVersionControlPage"
+#define LOCTEXT_NAMESPACE "SProjectCreatePatchPage"
 
 
-/* SProjectVersionControlPage interface
+/* SProjectCreatePatchPage interface
  *****************************************************************************/
 
-void SProjectVersionControlPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherVersionControlModel> InVersionControlModel)
+void SProjectCreatePatchPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCreatePatchModel> InCreatePatchModel)
 {
-	mVersionControlModel = InVersionControlModel;
+	mCreatePatchModel = InCreatePatchModel;
 
 	ChildSlot
 	[
@@ -31,7 +31,7 @@ void SProjectVersionControlPage::Construct(const FArguments& InArgs, TSharedPtr<
 			.VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
-				.Text(LOCTEXT("WhichProjectToUseText", "How would you like to VersionControl the content?"))
+				.Text(LOCTEXT("WhichProjectToUseText", "How would you like to CreatePatch the content?"))
 			]
 		]
 		+ SVerticalBox::Slot()
@@ -39,7 +39,7 @@ void SProjectVersionControlPage::Construct(const FArguments& InArgs, TSharedPtr<
 		.Padding(0.0, 8.0, 0.0, 0.0)
 		[
 			SNew(SExpandableArea)
-			.AreaTitle(LOCTEXT("SelectVersionControlPlatform", "Patch Setting"))
+			.AreaTitle(LOCTEXT("SelectCreatePatchPlatform", "Patch Setting"))
 			.InitiallyCollapsed(true)
 			.Padding(8.0)
 			.BodyContent()
@@ -51,8 +51,17 @@ void SProjectVersionControlPage::Construct(const FArguments& InArgs, TSharedPtr<
 			
 		]
 		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(0.0, 8.0, 0.0, 0.0)
+			.AutoHeight()
+			.Padding(0.0, 8.0, 0.0, 0.0)
+
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Right)
+			.Padding(4, 4, 10, 4)
+			[
+				SNew(SButton)
+				.Text(LOCTEXT("GeneratePatch", "Generate Patch"))
+			]
 	];
 }
 

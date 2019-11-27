@@ -6,7 +6,8 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SExpandableArea.h"
 #include "SHotPatcherCookedPlatforms.h"
-
+#include "SHotPatcherCookSetting.h"
+#include "SHotPatcherCookMaps.h"
 
 #define LOCTEXT_NAMESPACE "SProjectCookPage"
 
@@ -40,7 +41,7 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 		.Padding(0.0, 8.0, 0.0, 0.0)
 		[
 			SNew(SExpandableArea)
-			.AreaTitle(LOCTEXT("SelectCookPlatform", "Select Cook Platform"))
+			.AreaTitle(LOCTEXT("CookPlatforms", "Platforms"))
 			.InitiallyCollapsed(true)
 			.Padding(8.0)
 			.BodyContent()
@@ -55,8 +56,55 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 			
 		]
 		+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.0, 8.0, 0.0, 0.0)
+			[
+				SNew(SExpandableArea)
+				.AreaTitle(LOCTEXT("CookMaps", "Map(s)"))
+				.InitiallyCollapsed(true)
+				.Padding(8.0)
+				.BodyContent()
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(SHotPatcherCookMaps, mCookModel)
+					]
+				]
+
+			]
+		+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.0, 8.0, 0.0, 0.0)
+			[
+				SNew(SExpandableArea)
+				.AreaTitle(LOCTEXT("CookSetting", "Settings"))
+				.InitiallyCollapsed(true)
+				.Padding(8.0)
+				.BodyContent()
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(SHotPatcherCookSetting, mCookModel)
+					]
+				]
+
+			]
+		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(0.0, 8.0, 0.0, 0.0)
+
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Right)
+			.Padding(4, 4, 10, 4)
+			[
+				SNew(SButton)
+				.Text(LOCTEXT("RunCook", "Cook Content"))
+			]
 	];
 }
 
