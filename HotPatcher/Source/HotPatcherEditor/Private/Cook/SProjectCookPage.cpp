@@ -5,6 +5,7 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SExpandableArea.h"
+
 #include "SHotPatcherCookedPlatforms.h"
 #include "SHotPatcherCookSetting.h"
 #include "SHotPatcherCookMaps.h"
@@ -94,19 +95,49 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 
 			]
 		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(0.0, 8.0, 0.0, 0.0)
+			.AutoHeight()
+			.Padding(0.0, 8.0, 0.0, 0.0)
 
-			+ SVerticalBox::Slot()
+		+ SVerticalBox::Slot()
 			.AutoHeight()
 			.HAlign(HAlign_Right)
 			.Padding(4, 4, 10, 4)
 			[
 				SNew(SButton)
 				.Text(LOCTEXT("RunCook", "Cook Content"))
+				.OnClicked(this,&SProjectCookPage::RunCook)
 			]
 	];
 }
 
+
+FReply SProjectCookPage::RunCook()
+{
+	FString ProjectFilePath;
+	FString FinalCookCommand;
+	{
+		FString ProjectPath = UKismetSystemLibrary::GetProjectDirectory();
+		FString ProjectName = FString(FApp::GetProjectName()).Append(TEXT(".uproject"));
+		ProjectFilePath = FPaths::Combine(ProjectPath, ProjectName);
+	}
+	FString EngineBin = FPaths::ConvertRelativePathToFull(FPaths::EngineDir() / TEXT("Binaries/Win64/UE4Editor-Cmd.exe"));
+	
+	if (FPaths::FileExists(ProjectFilePath))
+	{
+		FinalCookCommand = TEXT("\"") + ProjectFilePath + TEXT("\"");
+		FinalCookCommand.Append(TEXT(" -run=cook "));
+
+		FString CookParams;
+		FString ErrorMsg;
+		if (mCookModel->CombineAllCookParams(CookParams, ErrorMsg))
+		{
+			FinalCookCommand.Append(CookParams);
+		}
+		
+		FPlatformProcess::CreateProc(*EngineBin, *FinalCookCommand,true,false,false,NULL,NULL,NULL,NULL);
+		
+	}
+	return FReply::Handled();
+}
 
 #undef LOCTEXT_NAMESPACE

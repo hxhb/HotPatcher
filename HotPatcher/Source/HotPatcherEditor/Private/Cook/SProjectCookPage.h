@@ -26,7 +26,8 @@ public:
 	 * @param InArgs The Slate argument list.
 	 */
 	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCookModel> InCookModel);
-
+protected:
+	FReply RunCook();
 private:
 	TSharedPtr<FHotPatcherCookModel> mCookModel;
 };

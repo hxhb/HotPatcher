@@ -38,13 +38,49 @@ void SHotPatcherCookMaps::Construct(const FArguments& InArgs, TSharedPtr<FHotPat
 				.OnGenerateRow(this, &SHotPatcherCookMaps::HandleMapListViewGenerateRow)
 				.SelectionMode(ESelectionMode::None)
 			]
-			// + SVerticalBox::Slot()
-			// 	.AutoHeight()
-			// 	.Padding(0.0f, 6.0f, 0.0f, 4.0f)
-			// 	[
-			// 		SNew(SSeparator)
-			// 		.Orientation(Orient_Horizontal)
-			// 	]
+			
+			+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 6.0f, 0.0f, 4.0f)
+				[
+					SNew(SSeparator)
+					.Orientation(Orient_Horizontal)
+				]
+
+			+ SVerticalBox::Slot()
+				.AutoHeight()
+				[
+					SNew(SHorizontalBox)
+
+					+ SHorizontalBox::Slot()
+					.FillWidth(1.0f)
+					.HAlign(HAlign_Right)
+					[
+						SNew(STextBlock)
+						.Text(LOCTEXT("SelectLabel", "Select:"))
+					]
+
+					+ SHorizontalBox::Slot()
+						.AutoWidth()
+						.Padding(8.0f, 0.0f)
+						[
+							// all Maps hyper-link
+							SNew(SHyperlink)
+							.OnNavigate(this, &SHotPatcherCookMaps::HandleAllMapHyperlinkNavigate, true)
+							.Text(LOCTEXT("AllMapHyperlinkLabel", "All"))
+							.ToolTipText(LOCTEXT("AllMapButtonTooltip", "Select all available Maps."))
+						]
+
+					+ SHorizontalBox::Slot()
+						.AutoWidth()
+						[
+							// no Maps hyper-link
+							SNew(SHyperlink)
+							.OnNavigate(this, &SHotPatcherCookMaps::HandleAllMapHyperlinkNavigate, false)
+							.Text(LOCTEXT("NoMapsHyperlinkLabel", "None"))
+							.ToolTipText(LOCTEXT("NoMapsHyperlinkTooltip", "Deselect all Maps."))
+						]
+				]
 
 		];
 

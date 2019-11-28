@@ -26,12 +26,22 @@ public:
 	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCookModel> InCookModel);
 
 protected:
+	TSharedRef<ITableRow> HandleCookSettingListViewGenerateRow(TSharedPtr<FString> InItem, const TSharedRef<STableViewBase>& OwnerTable);
+	void RefreshSettingsList();
 
-
+	void RegisterExSettingTextBoxToModel();
+	// FReply ConfirmExCookSetting();
 
 private:
+	/** Holds the map list. */
+	TArray<TSharedPtr<FString> > SettingList;
 
+	/** Holds the map list view. */
+	TSharedPtr<SListView<TSharedPtr<FString> > > SettingListView;
 
 	TSharedPtr<FHotPatcherCookModel> mCookModel;
+
+	// Extern Cook Setting Param
+	TSharedPtr<SEditableTextBox> ExternSettingTextBox;
 };
 
