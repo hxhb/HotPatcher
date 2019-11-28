@@ -1,7 +1,7 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
-#include "FHotPatcherCookModel.h"
+#include "Model/FHotPatcherCookModel.h"
 #include "SharedPointer.h"
 #include "FlibPatchParserHelper.h"
 

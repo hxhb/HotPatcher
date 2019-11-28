@@ -106,12 +106,26 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 				SNew(SButton)
 				.Text(LOCTEXT("RunCook", "Cook Content"))
 				.OnClicked(this,&SProjectCookPage::RunCook)
+				.IsEnabled(this,&SProjectCookPage::CanExecuteCook)
 			]
 	];
 }
 
+bool SProjectCookPage::CanExecuteCook()const
+{
+	if (!(mCookModel->GetAllSelectedPlatform().Num() > 0))
+	{
+		return false;
+	}
+	if (!(mCookModel->GetAllSelectedCookMap().Num() > 0) && 
+		!mCookModel->GetAllSelectedSettings().Contains(TEXT("CookAll")))
+	{
+		return false;
+	}
+	return true;
+}
 
-FReply SProjectCookPage::RunCook()
+FReply SProjectCookPage::RunCook()const
 {
 	FString ProjectFilePath;
 	FString FinalCookCommand;
@@ -133,11 +147,56 @@ FReply SProjectCookPage::RunCook()
 		{
 			FinalCookCommand.Append(CookParams);
 		}
-		
-		FPlatformProcess::CreateProc(*EngineBin, *FinalCookCommand,true,false,false,NULL,NULL,NULL,NULL);
+		RunCookProc(EngineBin, FinalCookCommand);
+		// FPlatformProcess::CreateProc(*EngineBin, *FinalCookCommand,true,false,false,NULL,NULL,NULL,NULL);
 		
 	}
 	return FReply::Handled();
 }
 
+
+void SProjectCookPage::RunCookProc(const FString& InBinPath, const FString& InCommand)const
+{
+	void* PipeRead = nullptr;
+	void* PipeWrite = nullptr;
+	int32 ReturnCode = -1;
+
+	verify(FPlatformProcess::CreatePipe(PipeRead, PipeWrite));
+	bool bLaunchDetached = false;
+	bool bLaunchHidden = true;
+	bool bLaunchReallyHidden = true;
+	uint32* OutProcessID = nullptr;
+	int32 PriorityModifier = -1;
+	const TCHAR* OptionalWorkingDirectory = nullptr;
+	FProcHandle ProcessHandle = FPlatformProcess::CreateProc(
+		*InBinPath, *InCommand,
+		bLaunchDetached, bLaunchHidden, bLaunchReallyHidden,
+		OutProcessID, PriorityModifier,
+		OptionalWorkingDirectory,
+		PipeWrite
+	);
+
+	//if (ProcessHandle.IsValid())
+	//{
+	//	FPlatformProcess::WaitForProc(ProcessHandle);
+	//	FPlatformProcess::GetProcReturnCode(ProcessHandle, &ReturnCode);
+	//	if (ReturnCode == 0)
+	//	{
+	//		TArray<FString> OutResults;
+	//		const FString StdOut = FPlatformProcess::ReadPipe(PipeRead);
+	//		StdOut.ParseIntoArray(OutResults, TEXT("\n"), true);
+	//		UE_LOG(LogTemp, Log, TEXT("Cook Task Successfuly:\n%s"), *StdOut);
+	//	}
+	//	else
+	//	{
+	//		TArray<FString> OutErrorMessages;
+	//		const FString StdOut = FPlatformProcess::ReadPipe(PipeRead);
+	//		StdOut.ParseIntoArray(OutErrorMessages, TEXT("\n"), true);
+	//		UE_LOG(LogTemp, Warning, TEXT("Cook Task Falied:\nReturnCode=%d\n%s"), ReturnCode, *StdOut);
+	//	}
+
+	//	FPlatformProcess::ClosePipe(PipeRead, PipeWrite);
+	//	FPlatformProcess::CloseProc(ProcessHandle);
+	//}
+}
 #undef LOCTEXT_NAMESPACE

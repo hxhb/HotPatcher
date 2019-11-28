@@ -8,12 +8,13 @@
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SWidget.h"
 #include "Layout/Margin.h"
-#include "FHotPatcherCookModel.h"
 #include "Styling/SlateTypes.h"
 #include "Widgets/Views/STableRow.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Views/SListView.h"
+
+#include "Model/FHotPatcherCookModel.h"
 
 #define LOCTEXT_NAMESPACE "SProjectCookSettingsListRow"
 

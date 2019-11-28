@@ -2,9 +2,16 @@
 
 #pragma once
 
+#include "AssetManager/FAssetDependenciesInfo.h"
+
+#include "AssetRegistryModule.h"
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FLibAssetManageHelperEx.generated.h"
+
+
+#define JSON_MODULE_LIST_SECTION_NAME TEXT("ModuleList")
+#define JSON_ALL_INVALID_ASSET_SECTION_NAME TEXT("InValidAsset")
 
 USTRUCT(BlueprintType)
 struct FPackageInfo
@@ -48,6 +55,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GWorld|Flib|AssetManager", meta = (CommutativeAssociativeBinaryOperator = "true"))
 		static FAssetDependenciesInfo CombineAssetDependencies(const FAssetDependenciesInfo& A, const FAssetDependenciesInfo& B);
 
+	// Get All invalid reference asset
+	static void GetAllInValidAssetInProject(FAssetDependenciesInfo InAllDependencies, TArray<FString> &OutInValidAsset);
+
 	/*
 	 @Param InLongPackageName: e.g /Game/TEST/BP_Actor don't pass /Game/TEST/BP_Actor.BP_Actor
 	 @Param OutDependices: Output Asset Dependencies
@@ -69,6 +79,16 @@ public:
 		static bool GetModuleAssetsList(const FString& InModuleName, TArray<FString>& OutAssetList);
 		
 		static bool GetModuleAssets(const FString& InModuleName, TArray<FAssetData>& OutAssetData);
+
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool ConvLongPackageNameToCookedPath(const FString& InProjectAbsDir, const FString& InPlatformName, const FString& InLongPackageName, TArray<FString>& OutCookedAssetPath, TArray<FString>& OutCookedAssetRelativePath);
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool GetCookCommandFromAssetDependencies(const FString& InProjectDir, const FString& InPlatformName, const FAssetDependenciesInfo& InAssetDependencies, const TArray<FString> &InCookParams, TArray<FString>& OutCookCommand);
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool CombineCookedAssetCommand(const TArray<FString> &InAbsPath, const TArray<FString>& InRelativePath, const TArray<FString>& InParams, TArray<FString>& OutCommand);
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool ExportCookPakCommandToFile(const TArray<FString>& InCommand, const FString& InFile);
+
 	/*
 		TOOLs Set
 	*/

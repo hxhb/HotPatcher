@@ -5,7 +5,8 @@
 #include "CoreMinimal.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
-#include "FHotPatcherCreatePatchModel.h"
+#include "Model/FHotPatcherCreatePatchModel.h"
+
 
 /**
  * Implements the profile page for the session launcher wizard.
@@ -26,6 +27,12 @@ public:
 	 * @param InArgs The Slate argument list.
 	 */
 	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCreatePatchModel> InCreatePatchModel);
+
+public:
+	FText HandlePatchModeComboButtonContentText() const;
+	void HandleHotPatcherMenuEntryClicked(EHotPatcherActionModes::Type InMode);
+	EVisibility HandleExportPatchVisibility() const;
+	EVisibility HandleExportReleaseVisibility() const;
 
 private:
 	TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;

@@ -13,7 +13,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/SListView.h"
 #include "Widgets/Input/SCheckBox.h"
-#include "FHotPatcherCookModel.h"
+#include "Model/FHotPatcherCookModel.h"
 #include "SharedPointer.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherPlatformListRow"

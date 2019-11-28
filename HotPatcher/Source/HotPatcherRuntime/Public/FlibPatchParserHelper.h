@@ -17,13 +17,13 @@ class HOTPATCHERRUNTIME_API UFlibPatchParserHelper : public UBlueprintFunctionLi
 	GENERATED_BODY()
 public:
 
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static FString GetHotPatcherGitPath();
+	//UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+	//	static FString GetHotPatcherGitPath();
 
-	// 返回两次提交版本的Content文件差异，文件路径为绝对路径
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool DiffCommitVersion(const FString& InGitBinaey, const FString& InRepoRoot, const FString& InBeginCommitHash, const FString& InEndCommitHash, TArray<FString>& OutAbsPathResault, TArray<FString>& OutErrorMessages);
-	
+	//// 返回两次提交版本的Content文件差异，文件路径为绝对路径
+	//UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+	//	static bool DiffCommitVersion(const FString& InGitBinaey, const FString& InRepoRoot, const FString& InBeginCommitHash, const FString& InEndCommitHash, TArray<FString>& OutAbsPathResault, TArray<FString>& OutErrorMessages);
+	//
 	// 
 
 	/*
@@ -35,36 +35,36 @@ public:
 	 * @Param OutContentDiffInfo 两个版本之间的差异信息
 	 * @Param OutDiffAssetDependencies 对所有差异的文件进行依赖分析的结果
 	*/
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool DiffCommitVersionAsAssetDependencies(const FString& InGitBinaey, const FString& InRepoRoot, const FString& InBeginCommitHash, const FString& InEndCommitHash, FAssetDependenciesInfo& OutContentDiffInfo, FAssetDependenciesInfo& OutDiffAssetDependencies);
+	//UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+	//	static bool DiffCommitVersionAsAssetDependencies(const FString& InGitBinaey, const FString& InRepoRoot, const FString& InBeginCommitHash, const FString& InEndCommitHash, FAssetDependenciesInfo& OutContentDiffInfo, FAssetDependenciesInfo& OutDiffAssetDependencies);
 
 
-	// 对版本有差异的文件做依赖分析，返回所有改动的文件的资源依赖关系,可用于与之前版本的对比，分析得到修改和新增了哪些资源
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool ParserDiffAssetDependencies(const FString& InGitBinary, const FString& InRepoRoot, const FString& InBeginCommitHash, const FString& InEndCommitHash, FAssetDependenciesInfo& OutDiffDependencies);
-	
-	// 把非Content的文件过滤掉
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static void FilterContentPathInArray(const TArray<FString>& InAllModuleDirList, const TArray<FString>& InAbsPathList,TArray<FString>& OutPathList);
+	//// 对版本有差异的文件做依赖分析，返回所有改动的文件的资源依赖关系,可用于与之前版本的对比，分析得到修改和新增了哪些资源
+	//UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+	//	static bool ParserDiffAssetDependencies(const FString& InGitBinary, const FString& InRepoRoot, const FString& InBeginCommitHash, const FString& InEndCommitHash, FAssetDependenciesInfo& OutDiffDependencies);
+	//
+	//// 把非Content的文件过滤掉
+	//UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+	//	static void FilterContentPathInArray(const TArray<FString>& InAllModuleDirList, const TArray<FString>& InAbsPathList,TArray<FString>& OutPathList);
 
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool IsContentAssetPath(const TArray<FString>& InALLModuleDir, const FString& InAssetAbsPath);
+	//UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+	//	static bool IsContentAssetPath(const TArray<FString>& InALLModuleDir, const FString& InAssetAbsPath);
 
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static void GetAllEnabledModuleBaseDir(TArray<FString>& OutResault);
+	//UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+	//	static void GetAllEnabledModuleBaseDir(TArray<FString>& OutResault);
 
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static FString ConvGitTrackFilePathToAbsPath(const FString& InRepoRootDir, const FString& InTrackFile);
+	//UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+	//	static FString ConvGitTrackFilePathToAbsPath(const FString& InRepoRootDir, const FString& InTrackFile);
 
 	/**
- * Gets the list of available maps for the specified game.
- *
- * @param GameName - The name of the game (i.e. Example or UDK).
- * @param IncludeEngineMaps - Whether maps in the Engine folder should be included.
- * @param Sorted - Whether the list of maps should be sorted alphabetically.
- *
- * @return A list of available map names.
- */
+	 * Gets the list of available maps for the specified game.
+	 *
+	 * @param GameName - The name of the game (i.e. Example or UDK).
+	 * @param IncludeEngineMaps - Whether maps in the Engine folder should be included.
+	 * @param Sorted - Whether the list of maps should be sorted alphabetically.
+	 *
+	 * @return A list of available map names.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static TArray<FString> GetAvailableMaps(FString GameName, bool IncludeEngineMaps, bool Sorted);
 

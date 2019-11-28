@@ -6,8 +6,8 @@
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Input/Reply.h"
 #include "Widgets/SCompoundWidget.h"
-#include "FHotPatcherCookModel.h"
-#include "FHotPatcherCreatePatchModel.h"
+#include "Model/FHotPatcherCookModel.h"
+#include "Model/FHotPatcherCreatePatchModel.h"
 class SHotPatcher : public SCompoundWidget
 {
 

@@ -50,7 +50,7 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 
 				// cook section
 				+ SGridPanel::Slot(0, 0)
-				.Padding(8.0f, 0.0f, 0.0f, 0.0f)
+				.Padding(8.0f, 10.0f, 0.0f, 0.0f)
 				.VAlign(VAlign_Top)
 				[
 					SNew(STextBlock)

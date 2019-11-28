@@ -7,7 +7,16 @@
 #include "AssetManager/FFileArrayDirectoryVisitor.hpp"
 
 #include "ARFilter.h"
+#include "Kismet/KismetStringLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Json.h"
+#include "SharedPointer.h"
+#include "IPluginManager.h"
 
+#ifdef __DEVELOPER_MODE__
+#include "Interfaces/ITargetPlatform.h"
+#include "Interfaces/ITargetPlatformManagerModule.h"
+#endif
 
 FString UFLibAssetManageHelperEx::ConvVirtualToAbsPath(const FString& InPackagePath)
 {
@@ -171,7 +180,7 @@ void UFLibAssetManageHelperEx::GetAssetDependencies(const FString& InLongPackage
 				UE_LOG(LogTemp, Warning, TEXT("Got mulitple AssetData of %s,please check."), *InLongPackageName);
 			}
 		}
-		UFlibAssetManageHelper::GatherAssetDependicesInfoRecursively(AssetRegistryModule, InLongPackageName, OutDependices);
+		UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(AssetRegistryModule, InLongPackageName, OutDependices);
 	}
 }
 
@@ -266,6 +275,28 @@ bool UFLibAssetManageHelperEx::GetModuleAssets(const FString& InModuleName, TArr
 	return true;
 }
 
+void UFLibAssetManageHelperEx::GetAllInValidAssetInProject(FAssetDependenciesInfo InAllDependencies, TArray<FString> &OutInValidAsset)
+{
+	TArray<FString> Keys;
+	InAllDependencies.mDependencies.GetKeys(Keys);
+	for (const auto& ModuleItem : Keys)
+	{
+		// ignore search /Script Asset
+		if (ModuleItem == TEXT("Script"))
+			continue;
+		FAssetDependenciesDetail ModuleDependencies = InAllDependencies.mDependencies[ModuleItem];
+
+		for (const auto& AssetLongPackageName : ModuleDependencies.mDependAsset)
+		{
+			FString AssetAbsPath = UFLibAssetManageHelperEx::ConvVirtualToAbsPath(AssetLongPackageName);
+			if (!FPaths::FileExists(AssetAbsPath))
+			{
+				OutInValidAsset.Add(AssetLongPackageName);
+			}
+		}
+		
+	}
+}
 const FAssetPackageData* UFLibAssetManageHelperEx::GetPackageDataByPackagePath(const FString& InPackagePath)
 {
 
@@ -287,6 +318,136 @@ const FAssetPackageData* UFLibAssetManageHelperEx::GetPackageDataByPackagePath(c
 	}
 
 	return NULL;
+}
+
+bool UFLibAssetManageHelperEx::ConvLongPackageNameToCookedPath(const FString& InProjectAbsDir, const FString& InPlatformName, const FString& InLongPackageName, TArray<FString>& OutCookedAssetPath, TArray<FString>& OutCookedAssetRelativePath)
+{
+	if (!FPaths::DirectoryExists(InProjectAbsDir) || !IsValidPlatform(InPlatformName))
+		return false;
+
+	FString EngineAbsDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
+	FString CookedRootDir = FPaths::Combine(InProjectAbsDir, TEXT("Saved/Cooked"), InPlatformName);
+	FString ProjectName = FApp::GetProjectName();
+	FString AssetPackagePath;
+	UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InLongPackageName,AssetPackagePath);
+	FString AssetAbsPath = UFLibAssetManageHelperEx::ConvVirtualToAbsPath(AssetPackagePath);
+
+	FString AssetModuleName = InLongPackageName;
+	{
+		AssetModuleName.RemoveFromStart(TEXT("/"));
+		int32 secondSlashIndex = -1;
+		AssetModuleName.FindChar('/', secondSlashIndex);
+		AssetModuleName = UKismetStringLibrary::GetSubstring(AssetModuleName, 0, secondSlashIndex);
+	}
+
+	bool bIsEngineModule = false;
+	FString AssetBelongModuleBaseDir;
+	FString AssetCookedNotPostfixPath;
+	{
+
+		if (UFLibAssetManageHelperEx::GetEnableModuleAbsDir(AssetModuleName, AssetBelongModuleBaseDir))
+		{
+			if (AssetBelongModuleBaseDir.Contains(EngineAbsDir))
+				bIsEngineModule = true;
+		}
+
+		FString AssetCookedRelativePath;
+		if (bIsEngineModule)
+		{
+			AssetCookedRelativePath = TEXT("Engine") / UKismetStringLibrary::GetSubstring(AssetAbsPath, EngineAbsDir.Len() - 1, AssetAbsPath.Len() - EngineAbsDir.Len());
+		}
+		else
+		{
+			AssetCookedRelativePath = ProjectName / UKismetStringLibrary::GetSubstring(AssetAbsPath, InProjectAbsDir.Len() - 1, AssetAbsPath.Len() - InProjectAbsDir.Len());
+		}
+
+		// remove .uasset / .umap postfix
+		{
+			int32 lastDotIndex = 0;
+			AssetCookedRelativePath.FindLastChar('.', lastDotIndex);
+			AssetCookedRelativePath.RemoveAt(lastDotIndex, AssetCookedRelativePath.Len() - lastDotIndex);
+		}
+
+		AssetCookedNotPostfixPath = FPaths::Combine(CookedRootDir, AssetCookedRelativePath);
+	}
+
+
+
+	FFillArrayDirectoryVisitor FileVisitor;
+	FString SearchDir;
+	{
+		int32 lastSlashIndex;
+		AssetCookedNotPostfixPath.FindLastChar('/', lastSlashIndex);
+		SearchDir = UKismetStringLibrary::GetSubstring(AssetCookedNotPostfixPath, 0, lastSlashIndex);
+	}
+	IFileManager::Get().IterateDirectory(*SearchDir, FileVisitor);
+	for (const auto& FileItem : FileVisitor.Files)
+	{
+		if (FileItem.Contains(AssetCookedNotPostfixPath) && FileItem[AssetCookedNotPostfixPath.Len()] == '.')
+		{
+			OutCookedAssetPath.Add(FileItem);
+			{
+				FString AssetCookedRelativePath = UKismetStringLibrary::GetSubstring(FileItem, CookedRootDir.Len() + 1, FileItem.Len() - CookedRootDir.Len());
+				OutCookedAssetRelativePath.Add(FPaths::Combine(TEXT("../../../"), AssetCookedRelativePath));
+			}
+		}
+	}
+	return true;
+}
+
+
+bool UFLibAssetManageHelperEx::GetCookCommandFromAssetDependencies(const FString& InProjectDir, const FString& InPlatformName, const FAssetDependenciesInfo& InAssetDependencies, const TArray<FString> &InCookParams, TArray<FString>& OutCookCommand)
+{
+	if (!FPaths::DirectoryExists(InProjectDir) || !UFLibAssetManageHelperEx::IsValidPlatform(InPlatformName))
+		return false;
+	OutCookCommand.Empty();
+	// TArray<FString> resault;
+	TArray<FString> Keys;
+	InAssetDependencies.mDependencies.GetKeys(Keys);
+
+	for (const auto& Key : Keys)
+	{
+		if (Key.Equals(TEXT("Script")))
+			continue;
+		for (const auto& AssetLongPackageName : InAssetDependencies.mDependencies.Find(Key)->mDependAsset)
+		{
+			TArray<FString> CookedAssetAbsPath;
+			TArray<FString> CookedAssetRelativePath;
+			TArray<FString> FinalCookedCommand;
+			if (UFLibAssetManageHelperEx::ConvLongPackageNameToCookedPath(InProjectDir, InPlatformName, AssetLongPackageName, CookedAssetAbsPath, CookedAssetRelativePath))
+			{
+				if (UFLibAssetManageHelperEx::CombineCookedAssetCommand(CookedAssetAbsPath, CookedAssetRelativePath, InCookParams, FinalCookedCommand))
+				{
+					OutCookCommand.Append(FinalCookedCommand);
+				}
+			}
+
+		}
+	}
+	return true;
+}
+
+bool UFLibAssetManageHelperEx::CombineCookedAssetCommand(const TArray<FString> &InAbsPath, const TArray<FString>& InRelativePath, const TArray<FString>& InParams, TArray<FString>& OutCommand)
+{
+	OutCommand.Empty();
+	if (InAbsPath.Num() != InRelativePath.Num())
+		return false;
+	int32 AssetNum = InAbsPath.Num();
+	for (int32 index = 0; index < AssetNum; ++index)
+	{
+		FString CurrentCommand = TEXT("\"") + InAbsPath[index] + TEXT("\" \"") + InRelativePath[index] + TEXT("\"");
+		for (const auto& Param : InParams)
+		{
+			CurrentCommand += TEXT(" ") + Param;
+		}
+		OutCommand.Add(CurrentCommand);
+	}
+	return true;
+}
+
+bool UFLibAssetManageHelperEx::ExportCookPakCommandToFile(const TArray<FString>& InCommand, const FString& InFile)
+{
+	return FFileHelper::SaveStringArrayToFile(InCommand, *InFile);
 }
 
 
@@ -313,7 +474,7 @@ bool UFLibAssetManageHelperEx::SerializeAssetDependenciesToJson(const FAssetDepe
 		// collect all invalid asset
 		{
 			TArray<FString> AllInValidAssetList;
-			UFlibAssetManageHelper::GetAllInValidAssetInProject(UKismetSystemLibrary::GetProjectDirectory(), InAssetDependencies, AllInValidAssetList);
+			UFLibAssetManageHelperEx::GetAllInValidAssetInProject(InAssetDependencies, AllInValidAssetList);
 			if (AllInValidAssetList.Num() > 0)
 			{
 				TArray<TSharedPtr<FJsonValue>> JsonInvalidAssetList;
@@ -426,7 +587,7 @@ bool UFLibAssetManageHelperEx::GetEnableModuleAbsDir(const FString& InModuleName
 		OutPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 		return true;
 	}
-	return UFlibAssetManageHelper::GetPluginModuleAbsDir(InModuleName, OutPath);
+	return UFLibAssetManageHelperEx::GetPluginModuleAbsDir(InModuleName, OutPath);
 
 }
 
@@ -442,7 +603,7 @@ FString UFLibAssetManageHelperEx::GetAssetBelongModuleName(const FString& InAsse
 
 bool UFLibAssetManageHelperEx::IsValidPlatform(const FString& PlatformName)
 {
-	for (const auto& PlatformItem : UFlibAssetManageHelper::GetAllTargetPlatform())
+	for (const auto& PlatformItem : UFLibAssetManageHelperEx::GetAllTargetPlatform())
 	{
 		if (PlatformItem.Equals(PlatformName))
 		{

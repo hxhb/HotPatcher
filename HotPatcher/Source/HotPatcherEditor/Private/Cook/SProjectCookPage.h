@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
-#include "FHotPatcherCookModel.h"
+#include "Model/FHotPatcherCookModel.h"
 
 /**
  * Implements the profile page for the session launcher wizard.
@@ -27,7 +27,9 @@ public:
 	 */
 	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCookModel> InCookModel);
 protected:
-	FReply RunCook();
+	bool CanExecuteCook()const;
+	void RunCookProc(const FString& InBinPath, const FString& InCommand)const;
+	FReply RunCook()const;
 private:
 	TSharedPtr<FHotPatcherCookModel> mCookModel;
 };

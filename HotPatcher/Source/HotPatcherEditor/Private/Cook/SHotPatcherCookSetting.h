@@ -3,7 +3,7 @@
 #pragma once
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Interfaces/ITargetPlatform.h"
-#include "FHotPatcherCookModel.h"
+#include "Model/FHotPatcherCookModel.h"
 #include "SharedPointer.h"
 /**
  * Implements the cooked platforms panel.
