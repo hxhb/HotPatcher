@@ -4,7 +4,14 @@
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Model/FHotPatcherCreatePatchModel.h"
+#include "ExportPatchSettings.h"
+
+// engine header
+#include "Interfaces/ITargetPlatform.h"
 #include "SharedPointer.h"
+#include "IDetailsView.h"
+#include "PropertyEditorModule.h"
+
 /**
  * Implements the cooked platforms panel.
  */
@@ -26,12 +33,23 @@ public:
 	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCreatePatchModel> InCreateModel);
 
 protected:
+	void CreateExportFilterListView();
+	bool CanExportPatch()const;
+	FReply DoExportPatch();
 
+	FReply DoDiff()const;
+	bool CanDiff()const;
+
+	EVisibility VisibilityDiffButton()const;
 
 private:
 
 	TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
 
+	/** Settings view ui element ptr */
+	TSharedPtr<IDetailsView> SettingsView;
+
+	UExportPatchSettings* ExportPatchSetting;
 
 };
 

@@ -1,7 +1,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/Engine.h"
+#include "Delegates/DelegateCombinations.h"
 
+DECLARE_DELEGATE_OneParam(FRequestExSettings, TArray<FString>&);
 
 class FHotPatcherCookModel
 {
@@ -118,24 +121,25 @@ public:
 		{
 			result.Append(TEXT("-") + Option + TEXT(" "));
 		}
-		if (mExternCookSettingTextBox.Num())
+
+		// Request Ex Options
 		{
-			for (const auto& ExOption : mExternCookSettingTextBox)
+			TArray<FString> ExOptions;
+			OnRequestExSettings.ExecuteIfBound(ExOptions);
+			for (const auto& ExOption : ExOptions)
 			{
-				result.Append(ExOption->GetText().ToString());
+				result.Append(ExOption);
 			}
+
 		}
 
 		OutCommand = result;
 		return true;
 	}
-	void AddExCookSettingTextBox(const TSharedPtr<SEditableTextBox>& InEditableTextBox)
-	{
-		mExternCookSettingTextBox.AddUnique(InEditableTextBox);
-	}
+public:
+	FRequestExSettings OnRequestExSettings;
 private:
 	TArray<FString> mSelectedPlatform;
 	TArray<FString> mSelectedCookMaps;
 	TArray<FString> mOptionSettings;
-	TArray<TSharedPtr<SEditableTextBox>> mExternCookSettingTextBox;
 };

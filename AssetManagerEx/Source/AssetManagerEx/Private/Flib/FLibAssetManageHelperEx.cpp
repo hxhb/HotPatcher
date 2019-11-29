@@ -71,8 +71,16 @@ bool UFLibAssetManageHelperEx::ConvAbsToVirtualPath(const FString& InAbsPath, FS
 
 FString UFLibAssetManageHelperEx::GetLongPackageNameFromPackagePath(const FString& InPackagePath)
 {
-	FStringAssetReference InAssetRef = InPackagePath;
-	return InAssetRef.GetLongPackageName();
+	int32 FoundIndex;
+	if (InPackagePath.FindLastChar('.', FoundIndex))
+	{
+		FStringAssetReference InAssetRef = InPackagePath;
+		return InAssetRef.GetLongPackageName();
+	}
+	else
+	{
+		return InPackagePath;
+	}
 }
 
 FString UFLibAssetManageHelperEx::GetAssetNameFromPackagePath(const FString& InPackagePath)
@@ -241,38 +249,74 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 	}
 }
 
-bool UFLibAssetManageHelperEx::GetModuleAssetsList(const FString& InModuleName, TArray<FString>& OutAssetList)
+
+bool UFLibAssetManageHelperEx::GetModuleAssetsList(const FString& InModuleName, const TArray<FString>& InExFilterPackagePaths, TArray<FAssetDetail>& OutAssetList)
+{
+	TArray<FString> AllEnableModule;
+	UFLibAssetManageHelperEx::GetAllEnabledModuleName(AllEnableModule);
+
+	if (!AllEnableModule.Contains(InModuleName))
+		return false;
+	TArray<FString> AllFilterPackageNames;
+	AllFilterPackageNames.AddUnique(TEXT("/") + InModuleName);
+	for (const auto& ExFilterPackageName : InExFilterPackagePaths)
+	{
+		AllFilterPackageNames.AddUnique(ExFilterPackageName);
+	}
+	return UFLibAssetManageHelperEx::GetAssetsList(AllFilterPackageNames, OutAssetList);
+}
+
+bool UFLibAssetManageHelperEx::GetAssetsList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutAssetList)
 {
 	TArray<FAssetData> AllAssetData;
-	if (UFLibAssetManageHelperEx::GetModuleAssets(InModuleName, AllAssetData))
+	if (UFLibAssetManageHelperEx::GetAssetsData(InFilterPackagePaths, AllAssetData))
 	{
 		for (const auto& AssetDataIndex : AllAssetData)
 		{
-			OutAssetList.Add(AssetDataIndex.PackageName.ToString());
+			FAssetDetail AssetDetail;
+			AssetDetail.mAssetType = AssetDataIndex.AssetClass.ToString();
+			AssetDetail.mLongPackageName = AssetDataIndex.PackageName.ToString();
+
+			UFLibAssetManageHelperEx::GetAssetPackageGUID(AssetDataIndex.PackageName.ToString(), AssetDetail.mGuid);
+			OutAssetList.Add(AssetDetail);
 		}
 		return true;
 	}
 	return false;
 }
 
-bool UFLibAssetManageHelperEx::GetModuleAssets(const FString& InModuleName, TArray<FAssetData>& OutAssetData)
+bool UFLibAssetManageHelperEx::GetAssetsData(const TArray<FString>& InFilterPackagePaths, TArray<FAssetData>& OutAssetData)
 {
 	OutAssetData.Reset();
-	TArray<FString> AllEnableModule;
-	UFLibAssetManageHelperEx::GetAllEnabledModuleName(AllEnableModule);
-	
-	if (!AllEnableModule.Contains(InModuleName))
-		return false;
 
 	FARFilter Filter;
 	Filter.bIncludeOnlyOnDiskAssets = true;
 	Filter.bRecursivePaths = true;
-	Filter.PackagePaths.AddUnique(*(TEXT("/") + InModuleName));
+	for(const auto& FilterPackageName: InFilterPackagePaths)
+	{
+		FString ValidFilterPackageName = FilterPackageName;
+		while (ValidFilterPackageName.EndsWith("/"))
+		{
+			ValidFilterPackageName.RemoveAt(ValidFilterPackageName.Len() - 1);
+		}
+		Filter.PackagePaths.AddUnique(*ValidFilterPackageName);
+	}
 
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 	AssetRegistryModule.Get().GetAssets(Filter, OutAssetData);
 	
 	return true;
+}
+
+bool UFLibAssetManageHelperEx::GetClassStringFromFAssetData(const FAssetData& InAssetData, FString& OutAssetType)
+{
+	bool bRunState = false;
+	if (InAssetData.IsValid())
+	{
+		OutAssetType = InAssetData.AssetClass.ToString();
+		bRunState = true;
+	}
+	return bRunState;
 }
 
 void UFLibAssetManageHelperEx::GetAllInValidAssetInProject(FAssetDependenciesInfo InAllDependencies, TArray<FString> &OutInValidAsset)
@@ -288,13 +332,15 @@ void UFLibAssetManageHelperEx::GetAllInValidAssetInProject(FAssetDependenciesInf
 
 		for (const auto& AssetLongPackageName : ModuleDependencies.mDependAsset)
 		{
-			FString AssetAbsPath = UFLibAssetManageHelperEx::ConvVirtualToAbsPath(AssetLongPackageName);
+			FString AssetPackagePath;
+			if(!UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(AssetLongPackageName,AssetPackagePath))
+				continue;
+			FString AssetAbsPath = UFLibAssetManageHelperEx::ConvVirtualToAbsPath(AssetPackagePath);
 			if (!FPaths::FileExists(AssetAbsPath))
 			{
 				OutInValidAsset.Add(AssetLongPackageName);
 			}
 		}
-		
 	}
 }
 const FAssetPackageData* UFLibAssetManageHelperEx::GetPackageDataByPackagePath(const FString& InPackagePath)

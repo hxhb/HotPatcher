@@ -8,6 +8,12 @@
 #include "Model/FHotPatcherCreatePatchModel.h"
 
 
+// engine header
+#include "Interfaces/ITargetPlatform.h"
+#include "SharedPointer.h"
+#include "IDetailsView.h"
+#include "PropertyEditorModule.h"
+
 /**
  * Implements the profile page for the session launcher wizard.
  */

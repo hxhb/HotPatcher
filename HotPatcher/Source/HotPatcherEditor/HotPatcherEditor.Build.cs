@@ -26,7 +26,9 @@ public class HotPatcherEditor : ModuleRules
 			new string[]
 			{
 				"Core",
-                "TargetPlatform"
+                "TargetPlatform",
+                "PropertyEditor",
+                "AssetManagerEx"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

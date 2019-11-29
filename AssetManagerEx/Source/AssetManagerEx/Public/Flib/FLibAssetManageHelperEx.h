@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AssetManager/FAssetDependenciesInfo.h"
+#include "AssetManager/FAssetDetail.h"
 
 #include "AssetRegistryModule.h"
 #include "CoreMinimal.h"
@@ -74,11 +75,18 @@ public:
 		FAssetDependenciesInfo& OutDependencies
 	);
 
+	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager",meta=(AutoCreateRefTerm="InExFilterPackagePaths",AdvancedDisplay="InExFilterPackagePaths"))
+		static bool GetModuleAssetsList(const FString& InModuleName,const TArray<FString>& InExFilterPackagePaths, TArray<FAssetDetail>& OutAssetList);
 
+	/*
+	 * FilterPackageName format is /Game or /Game/TEST
+	 */
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool GetModuleAssetsList(const FString& InModuleName, TArray<FString>& OutAssetList);
-		
-		static bool GetModuleAssets(const FString& InModuleName, TArray<FAssetData>& OutAssetData);
+		static bool GetAssetsList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutAssetList);
+
+		static bool GetAssetsData(const TArray<FString>& InFilterPackagePaths, TArray<FAssetData>& OutAssetData);
+
+		static bool GetClassStringFromFAssetData(const FAssetData& InAssetData,FString& OutAssetType);
 
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool ConvLongPackageNameToCookedPath(const FString& InProjectAbsDir, const FString& InPlatformName, const FString& InLongPackageName, TArray<FString>& OutCookedAssetPath, TArray<FString>& OutCookedAssetRelativePath);

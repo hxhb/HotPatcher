@@ -29,7 +29,7 @@ protected:
 	TSharedRef<ITableRow> HandleCookSettingListViewGenerateRow(TSharedPtr<FString> InItem, const TSharedRef<STableViewBase>& OwnerTable);
 	void RefreshSettingsList();
 
-	void RegisterExSettingTextBoxToModel();
+	void HandleRequestExSettings(TArray<FString>& OutExSettings);
 	// FReply ConfirmExCookSetting();
 
 private:

@@ -62,31 +62,13 @@ void SHotPatcherCookSetting::Construct(const FArguments& InArgs, TSharedPtr<FHot
 				[
 					SAssignNew(ExternSettingTextBox, SEditableTextBox)
 				]
-				//+ SHorizontalBox::Slot()
-				//.AutoWidth()
-				//[
-				//	SNew(SButton)
-				//	.Text(LOCTEXT("ExParamsConfirm", "Confirm"))
-				//	.HAlign(HAlign_Center)
-				//	.VAlign(VAlign_Center)
-				//	.OnClicked(this, &SHotPatcherCookSetting::ConfirmExCookSetting)
-				//]
 			]
 		];
 
+	mCookModel->OnRequestExSettings.BindRaw(this, &SHotPatcherCookSetting::HandleRequestExSettings);
 	RefreshSettingsList();
-	RegisterExSettingTextBoxToModel();
 }
 
-//FReply SHotPatcherCookSetting::ConfirmExCookSetting()
-//{
-//	if (mCookModel.IsValid())
-//	{
-//		mCookModel->SetExCookSetting(ExternSettingTextBox->GetText().ToString());
-//	}
-//
-//	return FReply::Handled();
-//}
 TSharedRef<ITableRow> SHotPatcherCookSetting::HandleCookSettingListViewGenerateRow(TSharedPtr<FString> InItem, const TSharedRef<STableViewBase>& OwnerTable)
 {
 	return SNew(SProjectCookSettingsListRow, mCookModel.ToSharedRef())
@@ -109,9 +91,12 @@ void SHotPatcherCookSetting::RefreshSettingsList()
 	SettingListView->RequestListRefresh();
 }
 
-void SHotPatcherCookSetting::RegisterExSettingTextBoxToModel()
+void SHotPatcherCookSetting::HandleRequestExSettings(TArray<FString>& OutExSettings)
 {
-	mCookModel->AddExCookSettingTextBox(ExternSettingTextBox);
+	OutExSettings.Reset();
+
+	FString ExOptins = ExternSettingTextBox->GetText().ToString();
+	OutExSettings.Add(ExOptins);
 }
 
 #undef LOCTEXT_NAMESPACE

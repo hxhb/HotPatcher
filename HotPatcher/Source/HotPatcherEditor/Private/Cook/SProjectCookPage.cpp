@@ -148,7 +148,6 @@ FReply SProjectCookPage::RunCook()const
 			FinalCookCommand.Append(CookParams);
 		}
 		RunCookProc(EngineBin, FinalCookCommand);
-		// FPlatformProcess::CreateProc(*EngineBin, *FinalCookCommand,true,false,false,NULL,NULL,NULL,NULL);
 		
 	}
 	return FReply::Handled();
@@ -161,10 +160,10 @@ void SProjectCookPage::RunCookProc(const FString& InBinPath, const FString& InCo
 	void* PipeWrite = nullptr;
 	int32 ReturnCode = -1;
 
-	verify(FPlatformProcess::CreatePipe(PipeRead, PipeWrite));
-	bool bLaunchDetached = false;
-	bool bLaunchHidden = true;
-	bool bLaunchReallyHidden = true;
+	//verify(FPlatformProcess::CreatePipe(PipeRead, PipeWrite));
+	bool bLaunchDetached = true;
+	bool bLaunchHidden = false;
+	bool bLaunchReallyHidden = false;
 	uint32* OutProcessID = nullptr;
 	int32 PriorityModifier = -1;
 	const TCHAR* OptionalWorkingDirectory = nullptr;
@@ -175,7 +174,6 @@ void SProjectCookPage::RunCookProc(const FString& InBinPath, const FString& InCo
 		OptionalWorkingDirectory,
 		PipeWrite
 	);
-
 	//if (ProcessHandle.IsValid())
 	//{
 	//	FPlatformProcess::WaitForProc(ProcessHandle);
