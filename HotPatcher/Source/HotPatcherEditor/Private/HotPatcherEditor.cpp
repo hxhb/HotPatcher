@@ -12,7 +12,6 @@
 #include "HAL/FileManager.h"
 #include "Interfaces/IPluginManager.h"
 
-#include "SWidgetGallery.h"
 
 static const FName HotPatcherTabName("HotPatcher");
 
