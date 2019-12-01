@@ -10,8 +10,9 @@
 #include "Kismet/KismetStringLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Json.h"
-#include "SharedPointer.h"
+#include "Templates/SharedPointer.h"
 #include "IPluginManager.h"
+#include "Engine/AssetManager.h"
 
 #ifdef __DEVELOPER_MODE__
 #include "Interfaces/ITargetPlatform.h"
@@ -144,13 +145,28 @@ FAssetDependenciesInfo UFLibAssetManageHelperEx::CombineAssetDependencies(const 
 			}
 			else
 			{
-				TArray<FString>& ExistingAssetList = resault.mDependencies.Find(Key)->mDependAsset;
-				const TArray<FString>& PaddingAssetList = InDependencies.mDependencies.Find(Key)->mDependAsset;
-				for (const auto& PaddingItem : PaddingAssetList)
+				// combin FAssetDependenciesDetail::mDependAsset
 				{
-					if (!ExistingAssetList.Contains(PaddingItem))
+					TArray<FString>& ExistingAssetList = resault.mDependencies.Find(Key)->mDependAsset;
+					const TArray<FString>& PaddingAssetList = InDependencies.mDependencies.Find(Key)->mDependAsset;
+					for (const auto& PaddingItem : PaddingAssetList)
 					{
-						ExistingAssetList.Add(PaddingItem);
+						if (!ExistingAssetList.Contains(PaddingItem))
+						{
+							ExistingAssetList.Add(PaddingItem);
+						}
+					}
+				}
+				// combin FAssetDependenciesDetail::mDependAsset
+				{
+					TArray<FAssetDetail>& ExistingAssetDetails = resault.mDependencies.Find(Key)->mDependAssetDetails;
+					const TArray<FAssetDetail>& PaddingAssetDetails = InDependencies.mDependencies.Find(Key)->mDependAssetDetails;
+					for (const auto& PaddingDetailItem : PaddingAssetDetails)
+					{
+						if (!ExistingAssetDetails.Contains(PaddingDetailItem))
+						{
+							ExistingAssetDetails.Add(PaddingDetailItem);
+						}
 					}
 				}
 			}
@@ -172,7 +188,7 @@ void UFLibAssetManageHelperEx::GetAssetDependencies(const FString& InLongPackage
 	if (!AssetRef.IsValid())
 		return;
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-
+	
 	if (FPackageName::DoesPackageExist(InLongPackageName))
 	{
 		{
@@ -222,13 +238,31 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 
 			// add a new asset to module category
 			auto AddNewAssetItemLambda = [&InAssetRegistryModule, &OutDependencies](
-				FAssetDependenciesDetail& ModuleAssetDependDetail,
-				FString AssetPackageName)
+				FAssetDependenciesDetail& InModuleAssetDependDetail,
+				const FString& InAssetPackageName
+				)
 			{
-				if (ModuleAssetDependDetail.mDependAsset.Find(AssetPackageName) == INDEX_NONE)
+				if (!InModuleAssetDependDetail.mDependAsset.Contains(InAssetPackageName))
 				{
-					ModuleAssetDependDetail.mDependAsset.Add(AssetPackageName);
-					GatherAssetDependicesInfoRecursively(InAssetRegistryModule, AssetPackageName, OutDependencies);
+					InModuleAssetDependDetail.mDependAsset.Add(InAssetPackageName);
+				 	// FAssetData* AssetPackageData = InAssetRegistryModule.Get().GetAssetPackageData(*InAssetPackageName);
+					UAssetManager& AssetManager = UAssetManager::Get();
+					if (AssetManager.IsValid())
+					{
+						FString PackagePath;
+						UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InAssetPackageName,PackagePath);
+						FAssetData OutAssetData;
+						if (AssetManager.GetAssetDataForPath(FSoftObjectPath{ PackagePath }, OutAssetData))
+						{
+							FAssetDetail AssetDetail;
+							AssetDetail.mPackagePath = PackagePath;
+							AssetDetail.mAssetType = OutAssetData.AssetClass.ToString();
+							UFLibAssetManageHelperEx::GetAssetPackageGUID(PackagePath, AssetDetail.mGuid);
+							InModuleAssetDependDetail.mDependAssetDetails.Add(AssetDetail);
+						}
+					}
+					
+					GatherAssetDependicesInfoRecursively(InAssetRegistryModule, InAssetPackageName, OutDependencies);
 				}
 			};
 
@@ -275,7 +309,7 @@ bool UFLibAssetManageHelperEx::GetAssetsList(const TArray<FString>& InFilterPack
 		{
 			FAssetDetail AssetDetail;
 			AssetDetail.mAssetType = AssetDataIndex.AssetClass.ToString();
-			AssetDetail.mLongPackageName = AssetDataIndex.PackageName.ToString();
+			UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(AssetDataIndex.PackageName.ToString(), AssetDetail.mPackagePath);
 
 			UFLibAssetManageHelperEx::GetAssetPackageGUID(AssetDataIndex.PackageName.ToString(), AssetDetail.mGuid);
 			OutAssetList.Add(AssetDetail);
@@ -517,6 +551,30 @@ bool UFLibAssetManageHelperEx::SerializeAssetDependenciesToJson(const FAssetDepe
 			}
 			RootJsonObject->SetArrayField(JSON_MODULE_LIST_SECTION_NAME, JsonCategoryList);
 		}
+
+
+		// serialize asset list
+		TSharedPtr<FJsonObject> AssetListJsonObject = MakeShareable(new FJsonObject);
+		for (const auto& AssetCategoryItem : AssetCategoryList)
+		{
+
+				// TSharedPtr<FJsonObject> CategoryJsonObject = MakeShareable(new FJsonObject);
+
+				TArray<TSharedPtr<FJsonValue>> CategoryAssetListJsonEntity;
+				const FAssetDependenciesDetail& CategortItem = InAssetDependencies.mDependencies[AssetCategoryItem];
+				TArray<TSharedPtr<FJsonValue>> AssetDetialsJsonObject;
+				for (const auto& AssetItem : CategortItem.mDependAsset)
+				{
+					CategoryAssetListJsonEntity.Add(MakeShareable(new FJsonValueString(AssetItem)));
+					
+				}
+				// CategoryJsonObject->SetArrayField(AssetCategoryItem, CategoryAssetListJsonEntity);
+				AssetListJsonObject->SetArrayField(AssetCategoryItem, CategoryAssetListJsonEntity);
+				
+
+
+		}
+
 		// collect all invalid asset
 		{
 			TArray<FString> AllInValidAssetList;
@@ -528,27 +586,28 @@ bool UFLibAssetManageHelperEx::SerializeAssetDependenciesToJson(const FAssetDepe
 				{
 					JsonInvalidAssetList.Add(MakeShareable(new FJsonValueString(InValidAssetItem)));
 				}
-				RootJsonObject->SetArrayField(JSON_ALL_INVALID_ASSET_SECTION_NAME, JsonInvalidAssetList);
+				AssetListJsonObject->SetArrayField(JSON_ALL_INVALID_ASSET_SECTION_NAME, JsonInvalidAssetList);
 			}
 		}
 
-		// serialize asset list
+		RootJsonObject->SetObjectField(JSON_ALL_ASSETS_LIST_SECTION_NAME, AssetListJsonObject);
+
+		// serilize asset detail
+		TSharedPtr<FJsonObject> AssetDetailsListJsonObject = MakeShareable(new FJsonObject);
 		for (const auto& AssetCategoryItem : AssetCategoryList)
 		{
+			TSharedPtr<FJsonObject> CurrentCategoryJsonObject = MakeShareable(new FJsonObject);
+			const FAssetDependenciesDetail& CategortItem = InAssetDependencies.mDependencies[AssetCategoryItem];
+			for (const auto& AssetDependenciesDetial : CategortItem.mDependAssetDetails)
 			{
-				// TSharedPtr<FJsonObject> CategoryJsonObject = MakeShareable(new FJsonObject);
-
-				TArray<TSharedPtr<FJsonValue>> CategoryAssetListJsonEntity;
-				const FAssetDependenciesDetail& CategortItem = InAssetDependencies.mDependencies[AssetCategoryItem];
-				for (const auto& AssetItem : CategortItem.mDependAsset)
-				{
-					CategoryAssetListJsonEntity.Add(MakeShareable(new FJsonValueString(AssetItem)));
-				}
-				// CategoryJsonObject->SetArrayField(AssetCategoryItem, CategoryAssetListJsonEntity);
-
-				RootJsonObject->SetArrayField(AssetCategoryItem, CategoryAssetListJsonEntity);
+				TSharedPtr<FJsonObject> CurrentJsonObject = UFLibAssetManageHelperEx::SerilizeAssetDetial(AssetDependenciesDetial);
+				FString CurrentPackageName = FSoftObjectPath(AssetDependenciesDetial.mPackagePath).GetLongPackageName();
+				CurrentCategoryJsonObject->SetObjectField(CurrentPackageName, CurrentJsonObject);
 			}
+			AssetDetailsListJsonObject->SetObjectField(AssetCategoryItem, CurrentCategoryJsonObject);
 		}
+
+		RootJsonObject->SetObjectField(JSON_ALL_ASSETS_Detail_SECTION_NAME,AssetDetailsListJsonObject);
 	}
 
 	auto JsonWriter = TJsonWriterFactory<>::Create(&OutJsonStr);
@@ -562,27 +621,76 @@ bool UFLibAssetManageHelperEx::DeserializeAssetDependencies(const FString& InStr
 	if (InStream.IsEmpty()) return false;
 
 	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(InStream);
-	TSharedPtr<FJsonObject> JsonObject;;
-	if (FJsonSerializer::Deserialize(JsonReader, JsonObject))
+	TSharedPtr<FJsonObject> RootJsonObject;;
+	if (FJsonSerializer::Deserialize(JsonReader, RootJsonObject))
 	{
-		TArray<TSharedPtr<FJsonValue>> JsonModuleList = JsonObject->GetArrayField(JSON_MODULE_LIST_SECTION_NAME);
+		TArray<TSharedPtr<FJsonValue>> JsonModuleList = RootJsonObject->GetArrayField(JSON_MODULE_LIST_SECTION_NAME);
 		for (const auto& JsonModuleItem : JsonModuleList)
 		{
 
 			FString ModuleName = JsonModuleItem->AsString();
 
-			TArray<TSharedPtr<FJsonValue>> JsonAssetList = JsonObject->GetArrayField(ModuleName);
+			//deserialize assets list
 			TArray<FString> AssetList;
-
-			for (const auto& JsonAssetItem : JsonAssetList)
 			{
-				FString AssetInfo = JsonAssetItem->AsString();
-				AssetList.Add(AssetInfo);
+				TSharedPtr<FJsonObject> AssetsListJsonObject = RootJsonObject->GetObjectField(JSON_ALL_ASSETS_LIST_SECTION_NAME);
+				TArray<TSharedPtr<FJsonValue>> JsonAssetList = AssetsListJsonObject->GetArrayField(ModuleName);
+
+				for (const auto& JsonAssetItem : JsonAssetList)
+				{
+					FString AssetInfo = JsonAssetItem->AsString();
+					AssetList.Add(AssetInfo);
+				}
+
 			}
-			OutAssetDependencies.mDependencies.Add(ModuleName, FAssetDependenciesDetail{ ModuleName,AssetList });
+			// deserialize Assets detail
+			TArray<FAssetDetail> ModuleAssetDetail;
+			{
+				TSharedPtr<FJsonObject> AssetsDetailJsonObject = RootJsonObject->GetObjectField(JSON_ALL_ASSETS_Detail_SECTION_NAME);
+				TSharedPtr<FJsonObject> ModuleAssetDetailJsonObject = AssetsDetailJsonObject->GetObjectField(ModuleName);
+
+				for (const auto& AssetLongPackageName : AssetList)
+				{
+					TSharedPtr<FJsonObject> CurrentAssetDetail = ModuleAssetDetailJsonObject->GetObjectField(AssetLongPackageName);
+					FString CurrentAssetLongPackageName = CurrentAssetDetail->GetStringField(TEXT("PackagePath"));
+					FString CrrrentAssetType = CurrentAssetDetail->GetStringField(TEXT("AssetType"));
+					FString CurrentAssetGUID = CurrentAssetDetail->GetStringField(TEXT("AssetGUID"));
+
+					ModuleAssetDetail.Add(FAssetDetail{ CurrentAssetLongPackageName,CrrrentAssetType,CurrentAssetGUID });
+				}
+
+			}
+			OutAssetDependencies.mDependencies.Add(ModuleName, FAssetDependenciesDetail( ModuleName,AssetList, ModuleAssetDetail));
 		}
 	}
 	return true;
+}
+  
+TSharedPtr<FJsonObject> UFLibAssetManageHelperEx::SerilizeAssetDetial(const FAssetDetail& InAssetDetail)
+{
+	TSharedPtr<FJsonObject> RootJsonObject = MakeShareable(new FJsonObject);
+	{
+		RootJsonObject->SetStringField("PackagePath", InAssetDetail.mPackagePath);
+		RootJsonObject->SetStringField("AssetType", InAssetDetail.mAssetType);
+		RootJsonObject->SetStringField("AssetGUID", InAssetDetail.mGuid);
+	}
+
+	return RootJsonObject;
+}
+
+FString UFLibAssetManageHelperEx::SerializeAssetDetialArrayToString(const TArray<FAssetDetail>& InAssetDetialList)
+{
+	TSharedPtr<FJsonObject> RootJsonObject=MakeShareable(new FJsonObject);
+
+	for (const auto& AssetDetial : InAssetDetialList)
+	{
+		RootJsonObject->SetObjectField(AssetDetial.mPackagePath, UFLibAssetManageHelperEx::SerilizeAssetDetial(AssetDetial));
+	}
+
+	FString OutJsonStr;
+	auto JsonWriter = TJsonWriterFactory<>::Create(&OutJsonStr);
+	FJsonSerializer::Serialize(RootJsonObject.ToSharedRef(), JsonWriter);
+	return OutJsonStr;
 }
 
 bool UFLibAssetManageHelperEx::SaveStringToFile(const FString& InFile, const FString& InString)

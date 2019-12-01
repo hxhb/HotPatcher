@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Struct/AssetManager/FAssetDependenciesDetail.h"
+#include "Containers/Map.h"
+#include "AssetManager/FAssetDependenciesDetail.h"
 #include "CoreMinimal.h"
 #include "FAssetDependenciesInfo.generated.h"
 

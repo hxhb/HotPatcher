@@ -7,12 +7,15 @@
 
 #include "AssetRegistryModule.h"
 #include "CoreMinimal.h"
+#include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FLibAssetManageHelperEx.generated.h"
 
 
 #define JSON_MODULE_LIST_SECTION_NAME TEXT("ModuleList")
 #define JSON_ALL_INVALID_ASSET_SECTION_NAME TEXT("InValidAsset")
+#define JSON_ALL_ASSETS_LIST_SECTION_NAME TEXT("AssetsList")
+#define JSON_ALL_ASSETS_Detail_SECTION_NAME TEXT("AssetsDetail")
 
 USTRUCT(BlueprintType)
 struct FPackageInfo
@@ -82,7 +85,7 @@ public:
 	 * FilterPackageName format is /Game or /Game/TEST
 	 */
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool GetAssetsList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutAssetList);
+		static bool GetAssetsList(const TArray<FString>& InFilterPackagePaths,TArray<FAssetDetail>& OutAssetList);
 
 		static bool GetAssetsData(const TArray<FString>& InFilterPackagePaths, TArray<FAssetData>& OutAssetData);
 
@@ -108,6 +111,11 @@ public:
 	// deserialize asset dependencies to FAssetDependenciesIndo from string.
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool DeserializeAssetDependencies(const FString& InStream, FAssetDependenciesInfo& OutAssetDependencies);
+
+	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static TSharedPtr<FJsonObject> SerilizeAssetDetial(const FAssetDetail& InAssetDetail);
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static FString SerializeAssetDetialArrayToString(const TArray<FAssetDetail>& InAssetDetialList);
 
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
 		static bool SaveStringToFile(const FString& InFile, const FString& InString);

@@ -36,7 +36,6 @@ public class AssetManagerEx : ModuleRules
                 "Slate",
                 "SlateCore",
                 // "TargetPlatform",
-                "GitSourceControlEx"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
