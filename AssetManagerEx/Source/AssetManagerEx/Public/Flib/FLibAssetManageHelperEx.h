@@ -5,6 +5,7 @@
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "AssetManager/FAssetDetail.h"
 
+#include "Templates/SharedPointer.h"
 #include "AssetRegistryModule.h"
 #include "CoreMinimal.h"
 #include "Templates/SharedPointer.h"
@@ -49,6 +50,8 @@ public:
 		static FString GetAssetNameFromPackagePath(const FString& InPackagePath);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
 		static bool ConvLongPackageNameToPackagePath(const FString& InLongPackageName,FString& OutPackagePath);
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
+		static bool ConvPackagePathToLongPackageName(const FString& InPackagePath, FString& OutLongPackageName);
 
 		static const FAssetPackageData* GetPackageDataByPackagePath(const FString& InShortPackagePath);
 
@@ -71,6 +74,12 @@ public:
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static void GetAssetListDependencies(const TArray<FString>& InLongPackageNameList, FAssetDependenciesInfo& OutDependices);
 
+	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static void GetAssetDependenciesForAssetDetail(const FAssetDetail& InAssetDetail , FAssetDependenciesInfo& OutDependices);
+	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static void GetAssetListDependenciesForAssetDetail(const TArray<FAssetDetail>& InAssetsDetailList, FAssetDependenciesInfo& OutDependices);
+
+
 	// recursive scan assets
 	static void GatherAssetDependicesInfoRecursively(
 		FAssetRegistryModule& InAssetRegistryModule,
@@ -88,8 +97,15 @@ public:
 		static bool GetAssetsList(const TArray<FString>& InFilterPackagePaths,TArray<FAssetDetail>& OutAssetList);
 
 		static bool GetAssetsData(const TArray<FString>& InFilterPackagePaths, TArray<FAssetData>& OutAssetData);
-
+		static bool GetSingleAssetsData(const FString& InPackagePath, FAssetData& OutAssetData);
 		static bool GetClassStringFromFAssetData(const FAssetData& InAssetData,FString& OutAssetType);
+	
+	// 过滤掉没有引用的资源
+		UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+			static void FilterNoRefAssets(const TArray<FAssetDetail>& InAssetsDetail, TArray<FAssetDetail>& OutHasRefAssetsDetail, TArray<FAssetDetail>& OutDontHasRefAssetsDetail);
+
+	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool CombineAssetsDetailAsFAssetDepenInfo(const TArray<FAssetDetail>& InAssetsDetailList,FAssetDependenciesInfo& OutAssetInfo);
 
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool ConvLongPackageNameToCookedPath(const FString& InProjectAbsDir, const FString& InPlatformName, const FString& InLongPackageName, TArray<FString>& OutCookedAssetPath, TArray<FString>& OutCookedAssetRelativePath);
@@ -107,13 +123,17 @@ public:
 	// serialize asset dependencies to json string
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool SerializeAssetDependenciesToJson(const FAssetDependenciesInfo& InAssetDependencies, FString& OutJsonStr);
-
+	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool SerializeAssetDependenciesToJsonObject(const FAssetDependenciesInfo& InAssetDependencies, TSharedPtr<FJsonObject>& OutJsonObject);
 	// deserialize asset dependencies to FAssetDependenciesIndo from string.
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool DeserializeAssetDependencies(const FString& InStream, FAssetDependenciesInfo& OutAssetDependencies);
 
+		static bool DeserializeAssetDependenciesForJsonObject(const TSharedPtr<FJsonObject>& InJsonObject, FAssetDependenciesInfo& OutAssetDependencies);
+
 	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static TSharedPtr<FJsonObject> SerilizeAssetDetial(const FAssetDetail& InAssetDetail);
+		static bool DeserilizeAssetDetial(TSharedPtr<FJsonObject>& InJsonObject,FAssetDetail& OutAssetDetail);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static FString SerializeAssetDetialArrayToString(const TArray<FAssetDetail>& InAssetDetialList);
 

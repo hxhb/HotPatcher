@@ -35,10 +35,19 @@ public:
 	{
 		return VersionId;
 	}
-	FORCEINLINE TArray<FString> GetAssetFilters()const
+	FORCEINLINE TArray<FString> GetAssetIncludeFilters()const
 	{
 		TArray<FString> Result;
-		for (const auto& Filter : AssetFilters)
+		for (const auto& Filter : AssetIncludeFilters)
+		{
+			Result.AddUnique(Filter.Path);
+		}
+		return Result;
+	}
+	FORCEINLINE TArray<FString> GetAssetIgnoreFilters()const
+	{
+		TArray<FString> Result;
+		for (const auto& Filter : AssetIgnoreFilters)
 		{
 			Result.AddUnique(Filter.Path);
 		}
@@ -55,7 +64,9 @@ protected:
 
 	/** You can use copied asset string reference here, e.g. World'/Game/NewMap.NewMap'*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "AssetFilters",meta = (RelativeToGameContentDir, LongPackageName))
-		TArray<FDirectoryPath> AssetFilters;
+		TArray<FDirectoryPath> AssetIncludeFilters;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetFilters", meta = (RelativeToGameContentDir, LongPackageName))
+		TArray<FDirectoryPath> AssetIgnoreFilters;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
 		FDirectoryPath SavePath;

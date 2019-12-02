@@ -2,10 +2,16 @@
 
 // #include "HotPatcherPrivatePCH.h"
 #include "SHotPatcherExportPatch.h"
+#include "FlibHotPatcherEditorHelper.h"
+#include "FlibPatchParserHelper.h"
+#include "FHotPatcherVersion.h"
+#include "FLibAssetManageHelperEx.h"
+
+// engine header
 #include "SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
 
-#include "FlibHotPatcherEditorHelper.h"
+
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCreatePatch"
 
@@ -79,7 +85,7 @@ bool SHotPatcherExportPatch::CanDiff()const
 	{
 		bool bHasBase = !ExportPatchSetting->GetBaseVersion().IsEmpty() && FPaths::FileExists(ExportPatchSetting->GetBaseVersion());
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportPatchSetting->GetAssetFilters().Num();
+		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
 		bool bHasSavePath = !ExportPatchSetting->GetSaveAbsPath().IsEmpty();
 
 		bCanDiff = bHasBase && bHasVersionId && bHasFilter && bHasSavePath;
@@ -105,7 +111,7 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 	{
 		bool bHasBase = !ExportPatchSetting->GetBaseVersion().IsEmpty() && FPaths::FileExists(ExportPatchSetting->GetBaseVersion());
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportPatchSetting->GetAssetFilters().Num();
+		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
 		bool bHasSavePath = !ExportPatchSetting->GetSaveAbsPath().IsEmpty();
 		
 		bCanExport = bHasBase && bHasVersionId && bHasFilter && bHasSavePath;
@@ -115,6 +121,33 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 
 FReply SHotPatcherExportPatch::DoExportPatch()
 {
+	FString BaseVersionContent;
+	FHotPatcherVersion BaseVersion;
+
+	bool bDeserializeStatus = false;
+	{
+		if (UFLibAssetManageHelperEx::LoadFileToString(ExportPatchSetting->GetBaseVersion(), BaseVersionContent))
+		{
+			bDeserializeStatus = UFlibPatchParserHelper::DeserializeHotPatcherVersionFromString(BaseVersionContent, BaseVersion);
+		}
+	}
+
+	if (bDeserializeStatus)
+	{
+		FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
+			ExportPatchSetting->GetVersionId(),
+			BaseVersion.VersionId,
+			FDateTime::UtcNow().ToString(),
+			ExportPatchSetting->GetAssetIncludeFilters(),
+			ExportPatchSetting->GetAssetIgnoreFilters()
+		);
+
+	}
+	else {
+
+		UE_LOG(LogTemp, Error, TEXT("Deserialize Base Version Faild!"));
+	}
+	// parser version difference
 
 	return FReply::Handled();
 }

@@ -13,8 +13,16 @@ struct FHotPatcherVersion
 
 public:
 
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString VersionId;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString BaseVersionId;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString Date;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FString> IncludeFilter;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FString> IgnoreFilter;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FAssetDependenciesInfo AssetInfo;
 };

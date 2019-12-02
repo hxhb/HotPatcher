@@ -5,6 +5,7 @@
 #include "FlibHotPatcherEditorHelper.h"
 #include "FLibAssetManageHelperEx.h"
 #include "AssetManager/FAssetDependenciesInfo.h"
+#include "FHotPatcherVersion.h"
 
 // engine header
 #include "SHyperlink.h"
@@ -75,7 +76,7 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 	if (ExportReleaseSettings)
 	{
 		bool bHasVersion = !ExportReleaseSettings->GetVersionId().IsEmpty();
-		bool bHasFilter = (ExportReleaseSettings->GetAssetFilters().Num() > 0);
+		bool bHasFilter = (ExportReleaseSettings->GetAssetIncludeFilters().Num() > 0);
 		bool bHasSavePath = !(ExportReleaseSettings->GetSavePath().IsEmpty());
 
 		bCanExport = bHasVersion && bHasFilter&&bHasSavePath;
@@ -85,26 +86,25 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 
 FReply SHotPatcherExportRelease::DoExportRelease()
 {
-	//TArray<FString> AllAssets;
-	//TArray<FString> AllFilter;
-	//for (const auto& Filter : ExportReleaseSettings->GetAssetFilters())
-	//{
-	//	AllFilter.AddUnique(Filter);
-	//}
+	FHotPatcherVersion ExportVersion=UFlibPatchParserHelper::ExportReleaseVersionInfo(
+			ExportReleaseSettings->GetVersionId(),
+			TEXT(""),
+			FDateTime::UtcNow().ToString(),
+			ExportReleaseSettings->GetAssetIncludeFilters(),
+			ExportReleaseSettings->GetAssetIgnoreFilters()
+		);
+	
+	FString SaveToJson;
+	if (UFlibPatchParserHelper::SerializeHotPatcherVersionToString(ExportVersion, SaveToJson))
+	{
+		bool runState = UFLibAssetManageHelperEx::SaveStringToFile(
+			FPaths::Combine(ExportReleaseSettings->GetSavePath(), 
+			ExportReleaseSettings->GetVersionId() + TEXT(".json")), 
+			SaveToJson
+		);
 
-	//UFLibAssetManageHelperEx::GetAssetsList(AllFilter, AllAssets);
-	//if (AllAssets.Num())
-	//{
-	//	FAssetDependenciesInfo AssetDependencies;
-	//	UFLibAssetManageHelperEx::GetAssetListDependencies(AllAssets,AssetDependencies);
-	//	FString SaveToJson;
-	//	if (UFLibAssetManageHelperEx::SerializeAssetDependenciesToJson(AssetDependencies, SaveToJson))
-	//	{
-	//		bool runState = UFLibAssetManageHelperEx::SaveStringToFile(FPaths::Combine(ExportReleaseSettings->GetSavePath(), ExportReleaseSettings->GetVersionId() + TEXT(".json")), SaveToJson);
-	//		UE_LOG(LogTemp, Log, TEXT("HotPatcher Export RELEASE is %s."), runState ? TEXT("Success") : TEXT("FAILD"));
-	//	}
-	//}
-
+		UE_LOG(LogTemp, Log, TEXT("HotPatcher Export RELEASE is %s."), runState ? TEXT("Success") : TEXT("FAILD"));
+	}
 	return FReply::Handled();
 }
 

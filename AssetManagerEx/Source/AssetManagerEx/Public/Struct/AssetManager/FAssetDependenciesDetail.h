@@ -15,14 +15,14 @@ struct ASSETMANAGEREX_API FAssetDependenciesDetail
 	FAssetDependenciesDetail() = default;
 	FAssetDependenciesDetail(const FAssetDependenciesDetail&) = default;
 	FAssetDependenciesDetail& operator=(const FAssetDependenciesDetail&) = default;
-	FORCEINLINE FAssetDependenciesDetail(const FString& InModuleCategory, const TArray<FString>& InDependAsset,const TArray<FAssetDetail>& InDependAssetDetails)
-		: mModuleCategory(InModuleCategory), mDependAsset(InDependAsset), mDependAssetDetails(InDependAssetDetails)
+	FORCEINLINE FAssetDependenciesDetail(const FString& InModuleCategory, const TMap<FString, FAssetDetail>& InDependAssetDetails)
+		: mModuleCategory(InModuleCategory), mDependAssetDetails(InDependAssetDetails)
 	{}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		FString mModuleCategory;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	//	TArray<FString> mDependAsset;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		TArray<FString> mDependAsset;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		TArray<FAssetDetail> mDependAssetDetails;
+		TMap<FString,FAssetDetail> mDependAssetDetails;
 };

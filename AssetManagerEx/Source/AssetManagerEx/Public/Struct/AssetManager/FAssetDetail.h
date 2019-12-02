@@ -17,17 +17,6 @@ struct ASSETMANAGEREX_API FAssetDetail
 	FORCEINLINE FAssetDetail(const FString& InAssetPackagePath, const FString& InAsetType,const FString& InGuid)
 		: mPackagePath(InAssetPackagePath), mAssetType(InAsetType), mGuid(InGuid){}
 
-	//FORCEINLINE FAssetDetail(const FAssetData& InAssetData)
-	//	:mPackagePath(InAssetData.PackageName.ToString()),mAssetType(InAssetData.AssetClass.ToString())
-	//{
-	//	FString PackagePath;
-	//	if (UFLibAssetManageHelperEx::ConvPackagePathToPackagePath(mPackagePath, PackagePath))
-	//	{
-	//		UFLibAssetManageHelperEx::GetAssetPackageGUID(PackagePath, mGuid);
-	//	}
-	//	
-	//}
-
 	bool operator==(const FAssetDetail& InRight)const
 	{
 		bool bSamePackageName = mPackagePath == InRight.mPackagePath;
