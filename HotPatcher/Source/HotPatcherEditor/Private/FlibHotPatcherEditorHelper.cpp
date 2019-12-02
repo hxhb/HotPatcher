@@ -14,3 +14,25 @@ TArray<FString> UFlibHotPatcherEditorHelper::GetAllCookOption()
 	};
 	return result;
 }
+
+void UFlibHotPatcherEditorHelper::CreateSaveFileNotify(const FText& InMsg, const FString& InSavedFile)
+{
+	auto Message = InMsg;
+	FNotificationInfo Info(Message);
+	Info.bFireAndForget = true;
+	Info.ExpireDuration = 5.0f;
+	Info.bUseSuccessFailIcons = false;
+	Info.bUseLargeFont = false;
+
+	const FString HyperLinkText = InSavedFile;
+	Info.Hyperlink = FSimpleDelegate::CreateStatic(
+		[](FString SourceFilePath)
+		{
+			FPlatformProcess::ExploreFolder(*SourceFilePath);
+		},
+		HyperLinkText
+		);
+	Info.HyperlinkText = FText::FromString(HyperLinkText);
+
+	FSlateNotificationManager::Get().AddNotification(Info)->SetCompletionState(SNotificationItem::CS_Success);
+}

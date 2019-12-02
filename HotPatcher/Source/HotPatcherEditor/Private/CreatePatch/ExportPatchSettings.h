@@ -60,6 +60,8 @@ public:
 		}
 		return TEXT("");
 	}
+
+	FORCEINLINE TArray<FString> GetPakOptions()const { return PakOptions; }
 	FORCEINLINE bool IsSavePakList()const { return bSavePakList; }
 	FORCEINLINE bool IsSaveDiffAnalysis()const { return bSaveDiffAnalysis; }
 
@@ -75,11 +77,12 @@ protected:
 	/** You can use copied asset string reference here, e.g. World'/Game/NewMap.NewMap'*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|IgnoreFilter", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIgnoreFilters;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Settings")
+		TArray<FString> PakOptions{TEXT("-compress")};
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
-		bool bSavePakList;
+		bool bSavePakList = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
-		bool bSaveDiffAnalysis;
+		bool bSaveDiffAnalysis = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
 		FDirectoryPath SavePath;
 

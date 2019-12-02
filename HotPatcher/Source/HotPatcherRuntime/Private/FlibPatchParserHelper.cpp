@@ -267,13 +267,8 @@ bool UFlibPatchParserHelper::DiffVersion(
 				continue;
 			}
 			
-			if (!OutAddAsset.mDependencies.Contains(NewVersionAssetModule))
 			{
-				OutAddAsset.mDependencies.Add(NewVersionAssetModule, FAssetDependenciesDetail{ NewVersionAssetModule,TMap<FString,FAssetDetail>{} });
-			}
-			else
-			{
-				TMap<FString, FAssetDetail>& CurrentModuleAssetDetails = OutAddAsset.mDependencies.Find(NewVersionAssetModule)->mDependAssetDetails;
+				
 
 				TArray<FString> NewVersionDependAssetsList;
 				InNewVersion.mDependencies.Find(NewVersionAssetModule)->mDependAssetDetails.GetKeys(NewVersionDependAssetsList);
@@ -290,6 +285,12 @@ bool UFlibPatchParserHelper::DiffVersion(
 				{
 					if (!BaseVersionDependAssetsList.Contains(NewAssetItem))
 					{
+						FString BelongModuneName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(NewAssetItem);
+						if (!OutAddAsset.mDependencies.Contains(BelongModuneName))
+						{
+							OutAddAsset.mDependencies.Add(BelongModuneName, FAssetDependenciesDetail{ BelongModuneName,TMap<FString,FAssetDetail>{} });
+						}
+						TMap<FString, FAssetDetail>& CurrentModuleAssetDetails = OutAddAsset.mDependencies.Find(BelongModuneName)->mDependAssetDetails;
 						CurrentModuleAssetDetails.Add(NewAssetItem, *NewVersionAssetModuleDetail.Find(NewAssetItem));
 					}
 				}
@@ -303,12 +304,12 @@ bool UFlibPatchParserHelper::DiffVersion(
 			const FAssetDependenciesDetail& NewVersionModuleAssetsDetail = *InNewVersion.mDependencies.Find(BaseVersionAssetModule);
 
 
-			if (InNewVersion.mDependencies.Find(BaseVersionAssetModule))
+			if (InNewVersion.mDependencies.Contains(BaseVersionAssetModule))
 			{
-				TArray<FString> BeseVersionCurrentModuleKeys;
-				BaseVersionModuleAssetsDetail.mDependAssetDetails.GetKeys(BeseVersionCurrentModuleKeys);
+				TArray<FString> BeseVersionCurrentModuleAssetListKeys;
+				BaseVersionModuleAssetsDetail.mDependAssetDetails.GetKeys(BeseVersionCurrentModuleAssetListKeys);
 
-				for (const auto& AssetItem : BeseVersionCurrentModuleKeys)
+				for (const auto& AssetItem : BeseVersionCurrentModuleAssetListKeys)
 				{
 					const FAssetDetail& BaseVersionAssetDetail = *BaseVersionModuleAssetsDetail.mDependAssetDetails.Find(AssetItem);
 					const FAssetDetail& NewVersionAssetDetail = *NewVersionModuleAssetsDetail.mDependAssetDetails.Find(AssetItem);
@@ -316,12 +317,9 @@ bool UFlibPatchParserHelper::DiffVersion(
 					{
 						if (!OutModifyAsset.mDependencies.Contains(BaseVersionAssetModule))
 						{
-							OutModifyAsset.mDependencies.Add(BaseVersionAssetModule, FAssetDependenciesDetail{ BaseVersionAssetModule,TMap<FString,FAssetDetail>{ {AssetItem,NewVersionAssetDetail}} });
+							OutModifyAsset.mDependencies.Add(BaseVersionAssetModule, FAssetDependenciesDetail{ BaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
 						}
-						else
-						{
-							OutModifyAsset.mDependencies.Find(BaseVersionAssetModule)->mDependAssetDetails.Add(AssetItem, NewVersionAssetDetail);
-						}
+						OutModifyAsset.mDependencies.Find(BaseVersionAssetModule)->mDependAssetDetails.Add(AssetItem, NewVersionAssetDetail);
 					}
 				}
 			}
@@ -329,5 +327,5 @@ bool UFlibPatchParserHelper::DiffVersion(
 
 	}
 
-	return false;
+	return true;
 }

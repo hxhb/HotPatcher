@@ -168,7 +168,7 @@ FAssetDependenciesInfo UFLibAssetManageHelperEx::CombineAssetDependencies(const 
 					TArray<FString> PaddingAssetList;
 					PaddingAssetDetails.GetKeys(PaddingAssetList);
 
-					for (const auto& PaddingDetailItem : ExistingAssetList)
+					for (const auto& PaddingDetailItem : PaddingAssetList)
 					{
 						if (!ExistingAssetDetails.Contains(PaddingDetailItem))
 						{
@@ -405,6 +405,7 @@ void UFLibAssetManageHelperEx::FilterNoRefAssets(const TArray<FAssetDetail>& InA
 					CurrentAssetData.AssetClass == TEXT("MapBuildDataRegistry")
 				)
 				{
+					OutHasRefAssetsDetail.Add(AssetDetail);
 					continue;
 				}
 			}

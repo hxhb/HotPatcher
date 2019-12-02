@@ -2,6 +2,10 @@
 
 #pragma once
 
+#include "Notifications/NotificationManager.h"
+#include "Notifications/SNotificationList.h"
+
+
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FlibHotPatcherEditorHelper.generated.h"
@@ -17,4 +21,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatch|Editor|Flib")
 		static TArray<FString> GetAllCookOption();
+
+
+	static void CreateSaveFileNotify(const FText& InMsg,const FString& InSavedFile);
 };

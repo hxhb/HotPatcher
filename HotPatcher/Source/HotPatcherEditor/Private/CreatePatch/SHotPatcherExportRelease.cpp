@@ -97,12 +97,17 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 	FString SaveToJson;
 	if (UFlibPatchParserHelper::SerializeHotPatcherVersionToString(ExportVersion, SaveToJson))
 	{
-		bool runState = UFLibAssetManageHelperEx::SaveStringToFile(
-			FPaths::Combine(ExportReleaseSettings->GetSavePath(), 
-			ExportReleaseSettings->GetVersionId() + TEXT(".json")), 
-			SaveToJson
+		FString SaveVersionDir = FPaths::Combine(ExportReleaseSettings->GetSavePath(), ExportReleaseSettings->GetVersionId());
+		FString SaveToFile = FPaths::Combine(
+			SaveVersionDir,
+			FString::Printf(TEXT("%s_Release.json"), *ExportReleaseSettings->GetVersionId())
 		);
-
+		bool runState = UFLibAssetManageHelperEx::SaveStringToFile(SaveToFile,SaveToJson);
+		if (runState)
+		{
+			auto Message = LOCTEXT("ExportReleaseSuccessNotification", "Succeed to export HotPatcher Release Version.");
+			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Message, SaveToFile);
+		}
 		UE_LOG(LogTemp, Log, TEXT("HotPatcher Export RELEASE is %s."), runState ? TEXT("Success") : TEXT("FAILD"));
 	}
 	return FReply::Handled();
