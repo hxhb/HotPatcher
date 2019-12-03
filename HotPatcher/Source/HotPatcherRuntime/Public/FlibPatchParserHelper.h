@@ -43,4 +43,5 @@ public:
 								FAssetDependenciesInfo& OutModifyAsset,
 								FAssetDependenciesInfo& OutDeleteAsset
 		);
+
 };

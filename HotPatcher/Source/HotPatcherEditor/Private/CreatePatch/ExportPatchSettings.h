@@ -6,6 +6,7 @@
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
 #include "Engine/EngineTypes.h"
+#include "ETargetPlatform.h"
 #include "ExportPatchSettings.generated.h"
 
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
@@ -61,7 +62,8 @@ public:
 		return TEXT("");
 	}
 
-	FORCEINLINE TArray<FString> GetPakOptions()const { return PakOptions; }
+	FORCEINLINE TArray<FString> GetUnrealPakOptions()const { return UnrealPakOptions; }
+	FORCEINLINE TArray<ETargetPlatform> GetPakTargetPlatforms()const { return PakTargetPlatforms; }
 	FORCEINLINE bool IsSavePakList()const { return bSavePakList; }
 	FORCEINLINE bool IsSaveDiffAnalysis()const { return bSaveDiffAnalysis; }
 
@@ -77,8 +79,10 @@ protected:
 	/** You can use copied asset string reference here, e.g. World'/Game/NewMap.NewMap'*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|IgnoreFilter", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIgnoreFilters;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Settings")
-		TArray<FString> PakOptions{TEXT("-compress")};
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+		TArray<FString> UnrealPakOptions{TEXT("-compress")};
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+		TArray<ETargetPlatform> PakTargetPlatforms;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
 		bool bSavePakList = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")

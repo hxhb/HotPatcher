@@ -201,50 +201,60 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			}
 		}
 
-		// save UnrealPak.exe command file
-		FString PlatformName = TEXT("WindowsNoEditor");
-		FString SavePakCommandPath = FPaths::Combine(
-			CurrentVersionSavePath,
-			FString::Printf(TEXT("PakList_%s_%s_PakCommands.json"), *CurrentVersion.VersionId, *PlatformName)
-		);
-		if (ExportPatchSetting->IsSavePakList())
+		for(const auto &Platform:ExportPatchSetting->GetPakTargetPlatforms())
 		{
-			FString ProjectDir = UKismetSystemLibrary::GetProjectDirectory();
-			
-			TArray<FString> PakParams = ExportPatchSetting->GetPakOptions();
-			TArray<FString> OutPakCommand;
-			UFLibAssetManageHelperEx::GetCookCommandFromAssetDependencies(ProjectDir, PlatformName, AllChangedAssetInfo, PakParams, OutPakCommand);
-
-			
-			if (FFileHelper::SaveStringArrayToFile(OutPakCommand, *SavePakCommandPath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM))
-			{
-				auto Msg = LOCTEXT("SavePatchPakCommand", "Succeed to export the Patch Packaghe Pak Command.");
-				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SavePakCommandPath);
-			}
-		}
-
-		// create UnrealPak.exe create .pak file
-		{
-			FString SavePakFilePath = FPaths::Combine(
+			// save UnrealPak.exe command file
+			FString PlatformName = StaticEnum<ETargetPlatform>()->GetNameByValue((int64)Platform).ToString();
+			FString SavePakCommandPath = FPaths::Combine(
 				CurrentVersionSavePath,
-				FString::Printf(TEXT("%s_%s_%s_Patch.pak"),*CurrentVersion.BaseVersionId,*CurrentVersion.VersionId, *PlatformName)
+				FString::Printf(TEXT("PakList_%s_%s_PakCommands.json"), *CurrentVersion.VersionId, *PlatformName)
 			);
-			FString UnrealPakBinary = FPaths::Combine(
-				FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
-				TEXT("Binaries/Win64/UnrealPak.exe")
-			);
-			FString CommandLine = FString::Printf(
-				TEXT("%s -create=%s"),
-				*(TEXT("\"")+ SavePakFilePath+ TEXT("\"")),
-				*(TEXT("\"") + SavePakCommandPath + TEXT("\""))
-			);
-
-			FProcHandle ProcessHandle = FPlatformProcess::CreateProc(*UnrealPakBinary, *CommandLine, true, false, false, NULL, NULL, NULL, NULL);
-			FPlatformProcess::WaitForProc(ProcessHandle);
-			if (FPaths::FileExists(SavePakFilePath))
+			if (ExportPatchSetting->IsSavePakList())
 			{
-				FText Msg = LOCTEXT("SavedPakFileMsg", "successd to Package the patch as Pak.");
-				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SavePakFilePath);
+				FString ProjectDir = UKismetSystemLibrary::GetProjectDirectory();
+
+				TArray<FString> OutPakCommand;
+				UFLibAssetManageHelperEx::GetCookCommandFromAssetDependencies(ProjectDir, PlatformName, AllChangedAssetInfo, TArray<FString>{}, OutPakCommand);
+
+
+				if (FFileHelper::SaveStringArrayToFile(OutPakCommand, *SavePakCommandPath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM))
+				{
+					auto Msg = LOCTEXT("SavePatchPakCommand", "Succeed to export the Patch Packaghe Pak Command.");
+					UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SavePakCommandPath);
+				}
+			}
+
+			// create UnrealPak.exe create .pak file
+			{
+				FString SavePakFilePath = FPaths::Combine(
+					CurrentVersionSavePath,
+					FString::Printf(TEXT("%s_%s_%s_Patch.pak"), *CurrentVersion.BaseVersionId, *CurrentVersion.VersionId, *PlatformName)
+				);
+				FString UnrealPakBinary = FPaths::Combine(
+					FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
+					TEXT("Binaries/Win64/UnrealPak.exe")
+				);
+				FString CommandLine = FString::Printf(
+					TEXT("%s -create=%s"),
+					*(TEXT("\"") + SavePakFilePath + TEXT("\"")),
+					*(TEXT("\"") + SavePakCommandPath + TEXT("\""))
+				);
+
+				// combine UnrealPak Options
+				TArray<FString> UnrealPakOptions = ExportPatchSetting->GetUnrealPakOptions();
+				for (const auto& Option : UnrealPakOptions)
+				{
+					CommandLine.Append(FString::Printf(TEXT(" %s"), *Option));
+				}
+
+				// create UnrealPak process
+				FProcHandle ProcessHandle = FPlatformProcess::CreateProc(*UnrealPakBinary, *CommandLine, true, false, false, NULL, NULL, NULL, NULL);
+				FPlatformProcess::WaitForProc(ProcessHandle);
+				if (FPaths::FileExists(SavePakFilePath))
+				{
+					FText Msg = LOCTEXT("SavedPakFileMsg", "successd to Package the patch as Pak.");
+					UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SavePakFilePath);
+				}
 			}
 		}
 	}
