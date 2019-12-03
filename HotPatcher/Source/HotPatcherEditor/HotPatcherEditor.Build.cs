@@ -26,6 +26,7 @@ public class HotPatcherEditor : ModuleRules
 			new string[]
 			{
 				"Core",
+                "Json",
                 "TargetPlatform",
                 "PropertyEditor",
                 "AssetManagerEx"

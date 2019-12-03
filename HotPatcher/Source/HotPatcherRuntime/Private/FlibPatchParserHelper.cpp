@@ -329,3 +329,118 @@ bool UFlibPatchParserHelper::DiffVersion(
 
 	return true;
 }
+
+bool UFlibPatchParserHelper::SerializeFileInfoToJsonString(const FFileInfo& InFileInfo, FString& OutJson)
+{
+	bool bRunStatus = false;
+	TSharedPtr<FJsonObject> JsonObject;
+	if (UFlibPatchParserHelper::SerializeFileInfoToJsonObject(InFileInfo, JsonObject))
+	{
+		bRunStatus = UFlibPatchParserHelper::SerializeFileInfoFromJsonObjectToString(JsonObject, OutJson);
+	}
+	return bRunStatus;
+}
+
+bool UFlibPatchParserHelper::SerializeFileInfoFromJsonObjectToString(const TSharedPtr<FJsonObject>& InFileInfoJsonObject, FString& OutJson)
+{
+	bool bRunStatus = false;
+	if (InFileInfoJsonObject.IsValid())
+	{
+		auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&OutJson);
+		FJsonSerializer::Serialize(InFileInfoJsonObject.ToSharedRef(), JsonWriter);
+		bRunStatus = true;
+	}
+	return bRunStatus;
+}
+
+bool UFlibPatchParserHelper::SerializeFileInfoToJsonObject(const FFileInfo& InFileInfo, TSharedPtr<FJsonObject>& OutJsonObject)
+{
+	bool RunStatus = false;
+	
+	if (!OutJsonObject.IsValid())
+		OutJsonObject = MakeShareable(new FJsonObject);
+	
+	OutJsonObject->SetStringField(TEXT("File"), InFileInfo.FileName);
+	OutJsonObject->SetStringField(TEXT("HASH"),InFileInfo.Hash);
+	OutJsonObject->SetNumberField(TEXT("Size"), InFileInfo.FileSize);
+
+	RunStatus = true;
+	return RunStatus;
+}
+
+bool UFlibPatchParserHelper::SerializeFileInfoListToJsonObject(const TArray<FFileInfo>& InFileInfoList, TSharedPtr<FJsonObject>& OutJsonObject)
+{
+	bool bRunStatus = false;
+
+	TSharedPtr<FJsonObject> RootJsonObj = MakeShareable(new FJsonObject);
+	for (const auto& FileInfoItem : InFileInfoList)
+	{
+		TSharedPtr<FJsonObject> CurrentFileJsonObj = MakeShareable(new FJsonObject);
+		if (UFlibPatchParserHelper::SerializeFileInfoToJsonObject(FileInfoItem, CurrentFileJsonObj))
+		{
+			RootJsonObj->SetObjectField(*FileInfoItem.FileName, CurrentFileJsonObj);
+		}
+	}
+	bRunStatus = true;
+	OutJsonObject = RootJsonObj;
+	return bRunStatus;
+}
+
+bool UFlibPatchParserHelper::SerializePlatformPakInfoToString(const TMap<FString, FFileInfo>& InPakFilesMap, FString& OutString)
+{
+	bool bRunStatus = false;
+	TSharedPtr<FJsonObject> RootJsonObj = MakeShareable(new FJsonObject);
+
+	bRunStatus = UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(InPakFilesMap, RootJsonObj);
+
+	auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&OutString);
+	FJsonSerializer::Serialize(RootJsonObj.ToSharedRef(), JsonWriter);
+
+	return bRunStatus;
+}
+
+bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FString, FFileInfo>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject)
+{
+	bool bRunStatus = false;
+	if (!OutJsonObject.IsValid())
+	{
+		OutJsonObject = MakeShareable(new FJsonObject);
+	}
+
+	// serialize
+	{
+		TArray<FString> PakPlatformKeys;
+		InPakFilesMap.GetKeys(PakPlatformKeys);
+
+		for (const auto& PakPlatformKey : PakPlatformKeys)
+		{
+			TSharedPtr<FJsonObject> CurrentPlatformPakJsonObj;
+			if (UFlibPatchParserHelper::SerializeFileInfoToJsonObject(*InPakFilesMap.Find(PakPlatformKey), CurrentPlatformPakJsonObj))
+			{
+				OutJsonObject->SetObjectField(PakPlatformKey, CurrentPlatformPakJsonObj);
+			}
+		}
+		bRunStatus = true;
+	}
+	return bRunStatus;
+}
+
+bool UFlibPatchParserHelper::GetFileInfo(const FString& InFile, FFileInfo& OutFileInfo)
+{
+	bool bRunStatus = false;
+	if (FPaths::FileExists(InFile))
+	{
+		FString PathPart;
+		FString FileNamePart;
+		FString ExtensionPart;
+
+		FPaths::Split(InFile, PathPart, FileNamePart, ExtensionPart);
+
+		FMD5Hash CurrentPakHash = FMD5Hash::HashFile(*InFile);
+		OutFileInfo.FileName = FString::Printf(TEXT("%s.%s"),*FileNamePart,*ExtensionPart);
+		OutFileInfo.Hash = LexToString(CurrentPakHash);
+		OutFileInfo.FileSize = IFileManager::Get().FileSize(*InFile);
+		bRunStatus = true;
+	}
+	return bRunStatus;
+}

@@ -579,7 +579,7 @@ namespace GitSourceControlUtils
 		}
 
 		FString FileHash;	///< SHA1 Id of the file (warning: not the commit Id)
-		int32	FileSize;	///< Size of the file (in bytes)
+		int64	FileSize;	///< Size of the file (in bytes)
 	};
 
 	/**

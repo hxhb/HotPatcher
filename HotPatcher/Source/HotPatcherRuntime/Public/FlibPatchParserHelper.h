@@ -1,9 +1,12 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
+//project header
+#include "FFileInfo.h"
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "FHotPatcherVersion.h"
 
+// engine header
 #include "CoreMinimal.h"
 #include "UnrealString.h"
 #include "Templates/SharedPointer.h"
@@ -44,4 +47,17 @@ public:
 								FAssetDependenciesInfo& OutDeleteAsset
 		);
 
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static bool SerializeFileInfoToJsonString(const FFileInfo& InFileInfo, FString& OutJson);
+
+		static bool SerializeFileInfoFromJsonObjectToString(const TSharedPtr<FJsonObject>& InFileInfoJsonObject, FString& OutJson);
+		static bool SerializeFileInfoToJsonObject(const FFileInfo& InFileInfo, TSharedPtr<FJsonObject>& OutJsonObject);
+
+		static bool SerializeFileInfoListToJsonObject(const TArray<FFileInfo>& InFileInfoList, TSharedPtr<FJsonObject>& OutJsonObject);
+		
+		static bool SerializePlatformPakInfoToString(const TMap<FString, FFileInfo>& InPakFilesMap, FString& OutString);
+		static bool SerializePlatformPakInfoToJsonObject(const TMap<FString, FFileInfo>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject);
+
+		UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+			static bool GetFileInfo(const FString& InFile,FFileInfo& OutFileInfo);
 };

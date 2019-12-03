@@ -6,13 +6,15 @@
 #include "FlibPatchParserHelper.h"
 #include "FHotPatcherVersion.h"
 #include "FLibAssetManageHelperEx.h"
-
+#include "FFileInfo.h"
 // engine header
 #include "SHyperlink.h"
 #include "Misc/FileHelper.h"
 #include "Widgets/Layout/SSeparator.h"
 #include "Kismet/KismetSystemLibrary.h"
-
+#include "Misc/SecureHash.h"
+#include "Dom/JsonObject.h"
+#include "HAL/FileManager.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCreatePatch"
 
@@ -96,13 +98,14 @@ bool SHotPatcherExportPatch::CanDiff()const
 
 EVisibility SHotPatcherExportPatch::VisibilityDiffButton() const
 {
-	if (CanExportPatch())
-	{
-		return EVisibility::Visible;
-	}
-	else {
-		return EVisibility::Collapsed;
-	}
+	//if (CanExportPatch())
+	//{
+	//	return EVisibility::Visible;
+	//}
+	//else {
+	//	return EVisibility::Collapsed;
+	//}
+	return EVisibility::Collapsed;
 }
 
 bool SHotPatcherExportPatch::CanExportPatch()const
@@ -114,7 +117,7 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
 		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
 		bool bHasSavePath = !ExportPatchSetting->GetSaveAbsPath().IsEmpty();
-		
+		bool bHasPakPlatfotm = !!ExportPatchSetting->GetPakTargetPlatforms().Num();
 		bCanExport = bHasBase && bHasVersionId && bHasFilter && bHasSavePath;
 	}
 	return bCanExport;
@@ -176,7 +179,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 
 			FString SaveDiffToFile = FPaths::Combine(
 				CurrentVersionSavePath,
-				FString::Printf(TEXT("%s_%s_diff.json"), *CurrentVersion.BaseVersionId, *CurrentVersion.VersionId)
+				FString::Printf(TEXT("%s_%s_Diff.json"), *CurrentVersion.BaseVersionId, *CurrentVersion.VersionId)
 			);
 			if (UFLibAssetManageHelperEx::SaveStringToFile(SaveDiffToFile, SerializeDiffInfo))
 			{
@@ -201,14 +204,23 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			}
 		}
 
+		TMap<FString,FFileInfo> PakFilesInfoMap;
+
 		for(const auto &Platform:ExportPatchSetting->GetPakTargetPlatforms())
 		{
 			// save UnrealPak.exe command file
-			FString PlatformName = StaticEnum<ETargetPlatform>()->GetNameByValue((int64)Platform).ToString();
+			FString PlatformName;
+			{
+				FString EnumName;
+				StaticEnum<ETargetPlatform>()->GetNameByValue((int64)Platform).ToString().Split(TEXT("::"), &EnumName, &PlatformName,ESearchCase::CaseSensitive,ESearchDir::FromEnd);
+			}
+			
 			FString SavePakCommandPath = FPaths::Combine(
 				CurrentVersionSavePath,
-				FString::Printf(TEXT("PakList_%s_%s_PakCommands.json"), *CurrentVersion.VersionId, *PlatformName)
+				PlatformName,
+				FString::Printf(TEXT("PakList_%s_%s_%s_PakCommands.json"), *CurrentVersion.BaseVersionId, *CurrentVersion.VersionId, *PlatformName)
 			);
+
 			if (ExportPatchSetting->IsSavePakList())
 			{
 				FString ProjectDir = UKismetSystemLibrary::GetProjectDirectory();
@@ -228,7 +240,8 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			{
 				FString SavePakFilePath = FPaths::Combine(
 					CurrentVersionSavePath,
-					FString::Printf(TEXT("%s_%s_%s_Patch.pak"), *CurrentVersion.BaseVersionId, *CurrentVersion.VersionId, *PlatformName)
+					PlatformName,
+					FString::Printf(TEXT("%s_%s_%s_P.pak"), *CurrentVersion.BaseVersionId, *CurrentVersion.VersionId, *PlatformName)
 				);
 				FString UnrealPakBinary = FPaths::Combine(
 					FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
@@ -252,8 +265,32 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 				FPlatformProcess::WaitForProc(ProcessHandle);
 				if (FPaths::FileExists(SavePakFilePath))
 				{
-					FText Msg = LOCTEXT("SavedPakFileMsg", "successd to Package the patch as Pak.");
+					FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
 					UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SavePakFilePath);
+					
+					FFileInfo CurrentPakInfo;
+					if (UFlibPatchParserHelper::GetFileInfo(SavePakFilePath, CurrentPakInfo))
+					{
+						PakFilesInfoMap.Add(PlatformName,CurrentPakInfo);
+					}
+				}
+			}
+		}
+		// serialize pak file info
+		{
+			FString PakFilesInfoStr;
+			UFlibPatchParserHelper::SerializePlatformPakInfoToString(PakFilesInfoMap, PakFilesInfoStr);
+
+			if (!PakFilesInfoStr.IsEmpty())
+			{
+				FString SavePakFilesPath = FPaths::Combine(
+					CurrentVersionSavePath,
+					FString::Printf(TEXT("%s_%s_PakFiles.json"), *CurrentVersion.BaseVersionId, *CurrentVersion.VersionId)
+				);
+				if (UFLibAssetManageHelperEx::SaveStringToFile(SavePakFilesPath, PakFilesInfoStr) && FPaths::FileExists(SavePakFilesPath))
+				{
+					FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Export the Pak File info.");
+					UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SavePakFilesPath);
 				}
 			}
 		}
