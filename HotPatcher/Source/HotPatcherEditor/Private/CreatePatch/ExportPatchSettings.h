@@ -4,6 +4,7 @@
 
 // project header
 #include "ETargetPlatform.h"
+#include "FExternAssetFileInfo.h"
 #include "FlibPatchParserHelper.h"
 
 // engine header
@@ -198,6 +199,28 @@ public:
 		return FJsonSerializer::Serialize(PatchConfigJsonObject.ToSharedRef(), JsonWriter);
 	}
 
+	
+	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
+
+	FORCEINLINE TArray<FString> CombineAddExternFileToCookCommands()
+	{
+		TArray<FString> resault;
+		FString ProjectName = UFlibPatchParserHelper::GetProjectName();
+		for (const auto& ExternFile : GetAddExternFiles())
+		{
+			FString FileAbsPath = FPaths::ConvertRelativePathToFull(ExternFile.FileAbsPath.FilePath);
+			if (FPaths::FileExists(FileAbsPath) &&
+				ExternFile.MountPath.StartsWith(FPaths::Combine(TEXT("../../.."),ProjectName))
+				)
+			{
+				resault.AddUnique(
+					FString::Printf(TEXT("\"%s\" \"%s\""),*FileAbsPath,*ExternFile.MountPath)
+				);
+			}
+		}
+		return resault;
+	}
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "BaseVersion",meta = (RelativeToGameContentDir))
 		FFilePath BaseVersion;
@@ -220,6 +243,8 @@ protected:
 		TArray<FString> UnrealPakOptions{TEXT("-compress")};
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<ETargetPlatform> PakTargetPlatforms;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+		TArray<FExternAssetFileInfo> AddExternFileToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
 		bool bSavePakList = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")

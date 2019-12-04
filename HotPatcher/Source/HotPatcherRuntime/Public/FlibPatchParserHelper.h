@@ -77,4 +77,5 @@ public:
 		static bool ConvProjectIniFilesToCookCommands(const FString& InProjectDir, const FString& InProjectName,const TArray<FString>& InIniFiles, TArray<FString>& OutCommands);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool ConvNotAssetFileToCookCommand(const FString& InProjectDir,const FString& InPlatformName,const FString& InCookedFile,FString& OutCommand);
+
 };

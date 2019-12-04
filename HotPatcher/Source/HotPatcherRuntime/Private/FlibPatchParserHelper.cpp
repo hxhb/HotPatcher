@@ -520,13 +520,14 @@ bool UFlibPatchParserHelper::ConvProjectIniFilesToCookCommands(const FString& In
 
 	{
 		FString RelativePath = FString::Printf(TEXT("../../../%s/Config"),*InProjectName);
-		int32 LastSlashIndex = FPaths::Combine(InProjectDir, TEXT("Config")).Len();
+		int32 LastSlashIndex = FPaths::Combine(InProjectDir, TEXT("Config/")).Len();
 
 		for (const auto& IniFile:InIniFiles)
 		{
 			if (IniFile.Contains(InProjectDir,ESearchCase::CaseSensitive))
 			{
-				FString CookedIniRelativePath = FPaths::Combine(RelativePath, IniFile.Right(LastSlashIndex));
+				FString IniFileName = UKismetStringLibrary::GetSubstring(IniFile, LastSlashIndex, IniFile.Len() - LastSlashIndex);
+				FString CookedIniRelativePath = FPaths::Combine(RelativePath, IniFileName);
 				FString CookCommand = FString::Printf(
 					TEXT("\"%s\" \"%s\""),
 					*IniFile,

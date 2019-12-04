@@ -232,6 +232,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			UFLibAssetManageHelperEx::GetCookCommandFromAssetDependencies(ProjectDir, PlatformName, AllChangedAssetInfo, TArray<FString>{}, OutPakCommand);
 
 			// generated cook command form project ini/AssetRegistry.bin/GlobalShaderCache*.bin
+			// and all extern file
 			{
 				TArray<FString> AllExternCookCommand;
 
@@ -240,6 +241,12 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 				if (!!AllExternCookCommand.Num())
 				{
 					OutPakCommand.Append(AllExternCookCommand);
+				}
+				TArray<FString> AllExternFileToPakCommands = ExportPatchSetting->CombineAddExternFileToCookCommands();
+
+				if (!!AllExternFileToPakCommands.Num())
+				{
+					OutPakCommand.Append(AllExternFileToPakCommands);
 				}
 			}
 			
