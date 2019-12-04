@@ -24,7 +24,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static TArray<FString> GetAvailableMaps(FString GameName, bool IncludeEngineMaps, bool Sorted);
-	
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static FString GetProjectName();
+
 	static FHotPatcherVersion ExportReleaseVersionInfo(const FString& InVersionId,
 														const FString& InBaseVersion,
 														const FString& InDate,
@@ -58,6 +60,21 @@ public:
 		static bool SerializePlatformPakInfoToString(const TMap<FString, FFileInfo>& InPakFilesMap, FString& OutString);
 		static bool SerializePlatformPakInfoToJsonObject(const TMap<FString, FFileInfo>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject);
 
-		UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-			static bool GetFileInfo(const FString& InFile,FFileInfo& OutFileInfo);
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static bool GetFileInfo(const FString& InFile,FFileInfo& OutFileInfo);
+
+	// return abslute path
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static TArray<FString> SearchCookedGlobalShaderCacheFiles(const FString& InProjectDir,const FString& InPlatformName);
+	// return abslute path
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static bool GetCookedAssetRegistryFile(const FString& InProjectDir, const FString& InProjectName, const FString& InPlatformName,FString& OutFile);
+	// return abslute path
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static TArray<FString> SearchProjectIniFiles(const FString& InProjectDir);
+
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static bool ConvProjectIniFilesToCookCommands(const FString& InProjectDir, const FString& InProjectName,const TArray<FString>& InIniFiles, TArray<FString>& OutCommands);
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static bool ConvNotAssetFileToCookCommand(const FString& InProjectDir,const FString& InPlatformName,const FString& InCookedFile,FString& OutCommand);
 };

@@ -2,11 +2,18 @@
 
 #pragma once
 
+// project header
+#include "ETargetPlatform.h"
+#include "FlibPatchParserHelper.h"
+
+// engine header
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
 #include "Engine/EngineTypes.h"
-#include "ETargetPlatform.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonWriter.h"
+#include "Serialization/JsonSerializer.h"
 #include "ExportPatchSettings.generated.h"
 
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
@@ -66,6 +73,130 @@ public:
 	FORCEINLINE TArray<ETargetPlatform> GetPakTargetPlatforms()const { return PakTargetPlatforms; }
 	FORCEINLINE bool IsSavePakList()const { return bSavePakList; }
 	FORCEINLINE bool IsSaveDiffAnalysis()const { return bSaveDiffAnalysis; }
+	FORCEINLINE bool IsSavePatchConfig()const { return bSavePatchConfig; }
+	FORCEINLINE bool IsIncludeAssetRegistry()const { return bIncludeAssetRegistry; }
+	FORCEINLINE bool IsIncludeGlobalShaderCache()const { return bIncludeGlobalShaderCache; }
+	FORCEINLINE bool IsIncludeProjectIni()const { return bIncludeProjectIni; }
+	FORCEINLINE	bool GetAllExternAssetCookCommands(const FString& InProjectDir, const FString& InPlatform, TArray<FString>& OutCookCommands)
+	{
+		OutCookCommands.Reset();
+		TArray<FString> SearchAssetList;
+		if (IsIncludeAssetRegistry())
+		{
+			FString AssetRegistryCookCommand;
+			if (UFlibPatchParserHelper::GetCookedAssetRegistryFile(InProjectDir, UFlibPatchParserHelper::GetProjectName(), InPlatform, AssetRegistryCookCommand))
+			{
+				SearchAssetList.AddUnique(AssetRegistryCookCommand);
+			}
+		}
+
+		if (IsIncludeGlobalShaderCache())
+		{
+			TArray<FString> GlobalShaderCacheList = UFlibPatchParserHelper::SearchCookedGlobalShaderCacheFiles(InProjectDir, InPlatform);
+			if (!!GlobalShaderCacheList.Num())
+			{
+				SearchAssetList.Append(GlobalShaderCacheList);
+			}
+		}
+
+		// combine as cook commands
+		{
+			for (const auto& AssetFile:SearchAssetList)
+			{
+				FString CurrentCommand;
+				if (UFlibPatchParserHelper::ConvNotAssetFileToCookCommand(InProjectDir, InPlatform, AssetFile, CurrentCommand))
+				{
+					OutCookCommands.AddUnique(CurrentCommand);
+				}
+			}
+		}
+
+		if (IsIncludeProjectIni())
+		{
+			TArray<FString> IniFiles = UFlibPatchParserHelper::SearchProjectIniFiles(InProjectDir);
+			TArray<FString> IniCookCommmands;
+			UFlibPatchParserHelper::ConvProjectIniFilesToCookCommands(
+				InProjectDir,
+				UFlibPatchParserHelper::GetProjectName(),
+				IniFiles,
+				IniCookCommmands
+			);
+			if (!!IniCookCommmands.Num())
+			{
+				OutCookCommands.Append(IniCookCommmands);
+			}
+		}
+		return true;
+	}
+
+	FORCEINLINE bool SerializePatchConfigToJsonObject(TSharedPtr<FJsonObject>& OutJsonObject)const
+	{
+		if (!OutJsonObject.IsValid())
+		{
+			OutJsonObject = MakeShareable(new FJsonObject);
+		}
+		OutJsonObject->SetStringField(TEXT("VersionId"), GetVersionId());
+		OutJsonObject->SetStringField(TEXT("BaseVersion"), GetBaseVersion());
+		
+		auto SerializeArrayLambda = [&OutJsonObject](const TArray<FString>& InArray,const FString& InJsonArrayName)
+		{
+			TArray<TSharedPtr<FJsonValue>> ArrayJsonValueList;
+			for (const auto& ArrayItem : InArray)
+			{
+				ArrayJsonValueList.Add(MakeShareable(new FJsonValueString(ArrayItem)));
+			}
+			OutJsonObject->SetArrayField(InJsonArrayName, ArrayJsonValueList);
+		};
+		auto ConvDirPathsToStrings = [](const TArray<FDirectoryPath>& InDirPaths)->TArray<FString>
+		{
+			TArray<FString> Resault;
+			for (const auto& Dir : InDirPaths)
+			{
+				Resault.Add(Dir.Path);
+			}
+			return Resault;
+		};
+
+		SerializeArrayLambda(ConvDirPathsToStrings(AssetIncludeFilters), TEXT("AssetIncludeFilter"));
+		SerializeArrayLambda(ConvDirPathsToStrings(AssetIgnoreFilters), TEXT("AssetIgnoreFilter"));
+
+		OutJsonObject->SetBoolField(TEXT("bIncludeAssetRegistry"), IsIncludeAssetRegistry());
+		OutJsonObject->SetBoolField(TEXT("bIncludeGlobalShaderCache"), IsIncludeGlobalShaderCache());
+		OutJsonObject->SetBoolField(TEXT("bIncludeProjectIni"), IsIncludeProjectIni());
+		SerializeArrayLambda(GetUnrealPakOptions(), TEXT("UnrealPakOptions"));
+
+		// serialize platform list
+		{
+			TArray<FString> AllPlatforms;
+			for (const auto &Platform : GetPakTargetPlatforms())
+			{
+				// save UnrealPak.exe command file
+				FString PlatformName;
+				{	
+					FString EnumName;
+					StaticEnum<ETargetPlatform>()->GetNameByValue((int64)Platform).ToString().Split(TEXT("::"), &EnumName, &PlatformName, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+				}
+				AllPlatforms.AddUnique(PlatformName);
+			}
+			SerializeArrayLambda(AllPlatforms, TEXT("TargetPlatforms"));
+		}
+
+		OutJsonObject->SetBoolField(TEXT("bSavePakList"), IsSavePakList());
+		OutJsonObject->SetBoolField(TEXT("bSaveDiffAnalysis"), IsSaveDiffAnalysis());
+		OutJsonObject->SetBoolField(TEXT("bSavePatchConfig"), IsSavePatchConfig());
+		OutJsonObject->SetStringField(TEXT("SavePath"),GetSaveAbsPath());
+
+		return true;
+	}
+
+	FORCEINLINE bool SerializePatchConfigToString(FString& OutSerializedStr)const
+	{
+		TSharedPtr<FJsonObject> PatchConfigJsonObject = MakeShareable(new FJsonObject);
+		SerializePatchConfigToJsonObject(PatchConfigJsonObject);
+
+		auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&OutSerializedStr);
+		return FJsonSerializer::Serialize(PatchConfigJsonObject.ToSharedRef(), JsonWriter);
+	}
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "BaseVersion",meta = (RelativeToGameContentDir))
@@ -80,6 +211,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|IgnoreFilter", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIgnoreFilters;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+		bool bIncludeAssetRegistry;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+		bool bIncludeGlobalShaderCache;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+		bool bIncludeProjectIni;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<FString> UnrealPakOptions{TEXT("-compress")};
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<ETargetPlatform> PakTargetPlatforms;
@@ -87,6 +224,8 @@ protected:
 		bool bSavePakList = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
 		bool bSaveDiffAnalysis = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+		bool bSavePatchConfig;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
 		FDirectoryPath SavePath;
 

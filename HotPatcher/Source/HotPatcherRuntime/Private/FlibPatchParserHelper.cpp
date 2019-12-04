@@ -1,9 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
+// project header
 #include "FlibPatchParserHelper.h"
 #include "FlibAssetManageHelperEx.h"
+#include "Struct/AssetManager/FFileArrayDirectoryVisitor.hpp"
+
+// engine header
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetStringLibrary.h"
 #include "Interfaces/IPluginManager.h"
 #include "Serialization/JsonSerializer.h"
 #include "Engine/EngineTypes.h"
@@ -45,6 +49,11 @@ TArray<FString> UFlibPatchParserHelper::GetAvailableMaps(FString GameName, bool 
 	}
 
 	return Result;
+}
+
+FString UFlibPatchParserHelper::GetProjectName()
+{
+	return FApp::GetProjectName();
 }
 
 FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(const FString& InVersionId, const FString& InBaseVersion,const FString& InDate, const TArray<FString>& InIncludeFilter, const TArray<FString>& InIgnoreFilter)
@@ -440,6 +449,115 @@ bool UFlibPatchParserHelper::GetFileInfo(const FString& InFile, FFileInfo& OutFi
 		OutFileInfo.FileName = FString::Printf(TEXT("%s.%s"),*FileNamePart,*ExtensionPart);
 		OutFileInfo.Hash = LexToString(CurrentPakHash);
 		OutFileInfo.FileSize = IFileManager::Get().FileSize(*InFile);
+		bRunStatus = true;
+	}
+	return bRunStatus;
+}
+
+TArray<FString> UFlibPatchParserHelper::SearchCookedGlobalShaderCacheFiles(const FString& InProjectDir, const FString& InPlatformName)
+{
+	TArray<FString> Resault;
+	if (UFLibAssetManageHelperEx::IsValidPlatform(InPlatformName))
+	{
+		FString CookedEngineFolder = FPaths::Combine(InProjectDir,TEXT("Saved/Cooked"),InPlatformName,TEXT("Engine"));
+		if (FPaths::DirectoryExists(CookedEngineFolder))
+		{
+			TArray<FString> FoundGlobalShaderCacheFiles;
+			IFileManager::Get().FindFiles(FoundGlobalShaderCacheFiles, *CookedEngineFolder, TEXT("bin"));
+
+			for (const auto& GlobalShaderCache : FoundGlobalShaderCacheFiles)
+			{
+				Resault.AddUnique(FPaths::Combine(CookedEngineFolder, GlobalShaderCache));
+			}
+		}
+	}
+	return Resault;
+}
+
+bool UFlibPatchParserHelper::GetCookedAssetRegistryFile(const FString& InProjectDir,const FString& InProjectName, const FString& InPlatformName, FString& OutFile)
+{
+	bool bRunStatus = false;
+	if (UFLibAssetManageHelperEx::IsValidPlatform(InPlatformName))
+	{
+		FString CookedPAssetRegistryFile = FPaths::Combine(InProjectDir, TEXT("Saved/Cooked"), InPlatformName, InProjectName,TEXT("AssetRegistry.bin"));
+		if (FPaths::FileExists(CookedPAssetRegistryFile))
+		{
+			bRunStatus = true;
+			OutFile = CookedPAssetRegistryFile;
+		}
+	}
+
+	return bRunStatus;
+}
+
+TArray<FString> UFlibPatchParserHelper::SearchProjectIniFiles(const FString& InProjectDir)
+{
+	TArray<FString> Resault;
+	FString ConfigFolder = FPaths::Combine(InProjectDir, TEXT("Config"));
+	if (FPaths::DirectoryExists(InProjectDir) && FPaths::DirectoryExists(ConfigFolder))
+	{
+		TArray<FString> FoundAllIniFiles;
+		IFileManager::Get().FindFiles(FoundAllIniFiles, *ConfigFolder, TEXT("ini"));
+		
+		for (const auto& IniFile:FoundAllIniFiles)
+		{
+			if(!IniFile.StartsWith(TEXT("DefaultEditor")))
+				Resault.AddUnique(FPaths::Combine(ConfigFolder, IniFile));
+		}
+	}
+	return Resault;
+}
+
+bool UFlibPatchParserHelper::ConvProjectIniFilesToCookCommands(const FString& InProjectDir,const FString& InProjectName, const TArray<FString>& InIniFiles, TArray<FString>& OutCommands)
+{
+	OutCommands.Reset();
+	bool bRunStatus = false;
+	if (!FPaths::DirectoryExists(InProjectDir))
+		return false;
+	FString UProjectFile = FPaths::Combine(InProjectDir, InProjectName + TEXT(".uproject"));
+	if (!FPaths::FileExists(UProjectFile))
+		return false;
+
+	{
+		FString RelativePath = FString::Printf(TEXT("../../../%s/Config"),*InProjectName);
+		int32 LastSlashIndex = FPaths::Combine(InProjectDir, TEXT("Config")).Len();
+
+		for (const auto& IniFile:InIniFiles)
+		{
+			if (IniFile.Contains(InProjectDir,ESearchCase::CaseSensitive))
+			{
+				FString CookedIniRelativePath = FPaths::Combine(RelativePath, IniFile.Right(LastSlashIndex));
+				FString CookCommand = FString::Printf(
+					TEXT("\"%s\" \"%s\""),
+					*IniFile,
+					*CookedIniRelativePath
+				);
+				OutCommands.AddUnique(CookCommand);
+			}
+		}
+		bRunStatus = true;
+	}
+	return bRunStatus;
+}
+
+bool UFlibPatchParserHelper::ConvNotAssetFileToCookCommand(const FString& InProjectDir, const FString& InPlatformName, const FString& InCookedFile, FString& OutCommand)
+{
+	bool bRunStatus = false;
+	if (FPaths::FileExists(InCookedFile))
+	{
+		FString CookPlatformAbsPath = FPaths::Combine(InProjectDir, TEXT("Saved/Cooked"), InPlatformName);
+
+		FString RelativePath = UKismetStringLibrary::GetSubstring(InCookedFile, CookPlatformAbsPath.Len() + 1, InCookedFile.Len() - CookPlatformAbsPath.Len());
+		FString AssetFileRelativeCookPath = FString::Printf(
+			TEXT("../../../%s"),
+			*RelativePath
+		);
+
+		OutCommand = FString::Printf(
+			TEXT("\"%s\" \"%s\""),
+			*InCookedFile,
+			*AssetFileRelativeCookPath
+		);
 		bRunStatus = true;
 	}
 	return bRunStatus;
