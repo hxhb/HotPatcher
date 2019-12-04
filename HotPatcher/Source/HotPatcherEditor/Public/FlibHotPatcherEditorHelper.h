@@ -2,7 +2,12 @@
 
 #pragma once
 
+#include "FExternAssetFileInfo.h"
+
 // engine header
+#include "SharedPointer.h"
+#include "Dom/JsonObject.h"
+
 #include "Notifications/NotificationManager.h"
 #include "Notifications/SNotificationList.h"
 #include "CoreMinimal.h"
@@ -23,4 +28,6 @@ public:
 
 
 	static void CreateSaveFileNotify(const FText& InMsg,const FString& InSavedFile);
+
+	static bool SerializeExAssetFileInfoToJsonObject(const FExternAssetFileInfo& InExFileInfo, TSharedPtr<FJsonObject>& OutJsonObject);
 };

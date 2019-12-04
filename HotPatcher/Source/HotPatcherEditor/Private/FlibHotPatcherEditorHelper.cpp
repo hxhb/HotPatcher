@@ -36,3 +36,20 @@ void UFlibHotPatcherEditorHelper::CreateSaveFileNotify(const FText& InMsg, const
 
 	FSlateNotificationManager::Get().AddNotification(Info)->SetCompletionState(SNotificationItem::CS_Success);
 }
+
+bool UFlibHotPatcherEditorHelper::SerializeExAssetFileInfoToJsonObject(const FExternAssetFileInfo& InExFileInfo, TSharedPtr<FJsonObject>& OutJsonObject)
+{
+	bool bRunStatus = false;
+
+	if (!OutJsonObject.IsValid())
+	{
+		OutJsonObject = MakeShareable(new FJsonObject);
+	}
+
+	OutJsonObject->SetStringField(TEXT("FileAbsPath"), FPaths::ConvertRelativePathToFull(InExFileInfo.FileAbsPath.FilePath));
+	OutJsonObject->SetStringField(TEXT("MountPath"), InExFileInfo.MountPath);
+
+	bRunStatus = true;
+
+	return bRunStatus;
+}

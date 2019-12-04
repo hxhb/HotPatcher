@@ -48,7 +48,7 @@ void SHotPatcherCookSetting::Construct(const FArguments& InArgs, TSharedPtr<FHot
 				.VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
-					.Text(LOCTEXT("ProjectCookSettingExParama", "Extern Options:"))
+					.Text(LOCTEXT("ProjectCookSettingExParama", "Other Options:"))
 				]
 			]
 			+ SVerticalBox::Slot()

@@ -32,22 +32,22 @@ void FHotPatcherEditorModule::StartupModule()
 		FHotPatcherCommands::Get().PluginAction,
 		FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::PluginButtonClicked),
 		FCanExecuteAction());
-		
-	FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
-	
-	//{
-	//	TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());
-	//	MenuExtender->AddMenuExtension("WindowLayout", EExtensionHook::After, PluginCommands, FMenuExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddMenuExtension));
 
-	//	LevelEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
-	//}
-	
+	FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
+
 	{
-		TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
-		ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddToolbarExtension));
-		
-		LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
+		TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());
+		MenuExtender->AddMenuExtension("WindowLayout", EExtensionHook::After, PluginCommands, FMenuExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddMenuExtension));
+
+		LevelEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
 	}
+
+	// {
+	// 	TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
+	// 	ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddToolbarExtension));
+
+	// 	LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
+	// }
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateRaw(this, &FHotPatcherEditorModule::OnSpawnPluginTab))
 		.SetDisplayName(LOCTEXT("FHotPatcherTabTitle", "HotPatcher"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);

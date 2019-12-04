@@ -13,7 +13,6 @@
 #include "Widgets/Layout/SSeparator.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Misc/SecureHash.h"
-
 #include "HAL/FileManager.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCreatePatch"
