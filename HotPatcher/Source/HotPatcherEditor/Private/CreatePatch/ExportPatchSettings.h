@@ -222,7 +222,7 @@ public:
 		FString ProjectName = UFlibPatchParserHelper::GetProjectName();
 		for (const auto& ExternFile : GetAddExternFiles())
 		{
-			FString FileAbsPath = FPaths::ConvertRelativePathToFull(ExternFile.FileAbsPath.FilePath);
+			FString FileAbsPath = FPaths::ConvertRelativePathToFull(ExternFile.FilePath.FilePath);
 			if (FPaths::FileExists(FileAbsPath) &&
 				ExternFile.MountPath.StartsWith(FPaths::Combine(TEXT("../../.."),ProjectName))
 				)

@@ -15,14 +15,14 @@ public:
 	FExternAssetFileInfo& operator=(const FExternAssetFileInfo&) = default;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion", meta = (RelativeToGameContentDir))
-		FFilePath FileAbsPath;
+		FFilePath FilePath;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 		FString MountPath = TEXT("../../../");
 
 
 	bool operator==(const FExternAssetFileInfo& Right)const
 	{
-		bool bIsSamePath = (FileAbsPath.FilePath == Right.FileAbsPath.FilePath);
+		bool bIsSamePath = (FilePath.FilePath == Right.FilePath.FilePath);
 		bool bIsSameMountPath = (MountPath == Right.MountPath);
 		return bIsSamePath && bIsSameMountPath;
 	}

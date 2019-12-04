@@ -2,6 +2,7 @@
 
 
 #include "FlibHotPatcherEditorHelper.h"
+#include "Misc/SecureHash.h"
 
 TArray<FString> UFlibHotPatcherEditorHelper::GetAllCookOption()
 {
@@ -45,8 +46,10 @@ bool UFlibHotPatcherEditorHelper::SerializeExAssetFileInfoToJsonObject(const FEx
 	{
 		OutJsonObject = MakeShareable(new FJsonObject);
 	}
-
-	OutJsonObject->SetStringField(TEXT("FileAbsPath"), FPaths::ConvertRelativePathToFull(InExFileInfo.FileAbsPath.FilePath));
+	FString FileAbsPath = FPaths::ConvertRelativePathToFull(InExFileInfo.FilePath.FilePath);
+	FMD5Hash FileMD5Hash = FMD5Hash::HashFile(*FileAbsPath);
+	OutJsonObject->SetStringField(TEXT("FilePath"), FileAbsPath);
+	OutJsonObject->SetStringField(TEXT("MD5Hash"), LexToString(FileMD5Hash));
 	OutJsonObject->SetStringField(TEXT("MountPath"), InExFileInfo.MountPath);
 
 	bRunStatus = true;
