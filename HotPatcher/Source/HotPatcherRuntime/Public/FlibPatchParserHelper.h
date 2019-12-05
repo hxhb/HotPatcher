@@ -26,6 +26,10 @@ public:
 		static TArray<FString> GetAvailableMaps(FString GameName, bool IncludeEngineMaps, bool Sorted);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static FString GetProjectName();
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static FString GetUnrealPakBinary();
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static FString GetUE4CmdBinary();
 
 	static FHotPatcherVersion ExportReleaseVersionInfo(const FString& InVersionId,
 														const FString& InBaseVersion,

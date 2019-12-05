@@ -113,7 +113,11 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 	bool bCanExport = false;
 	if (ExportPatchSetting)
 	{
-		bool bHasBase = !ExportPatchSetting->GetBaseVersion().IsEmpty() && FPaths::FileExists(ExportPatchSetting->GetBaseVersion());
+		bool bHasBase = false;
+		if (ExportPatchSetting->IsByBaseVersion())
+			bHasBase = !ExportPatchSetting->GetBaseVersion().IsEmpty() && FPaths::FileExists(ExportPatchSetting->GetBaseVersion());
+		else
+			bHasBase = true;
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
 		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
 		bool bHasSavePath = !ExportPatchSetting->GetSaveAbsPath().IsEmpty();
@@ -129,17 +133,18 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	FHotPatcherVersion BaseVersion;
 
 	bool bDeserializeStatus = false;
+
+	if(ExportPatchSetting->IsByBaseVersion())
 	{
 		if (UFLibAssetManageHelperEx::LoadFileToString(ExportPatchSetting->GetBaseVersion(), BaseVersionContent))
 		{
 			bDeserializeStatus = UFlibPatchParserHelper::DeserializeHotPatcherVersionFromString(BaseVersionContent, BaseVersion);
 		}
-	}
-
-	if (!bDeserializeStatus)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Deserialize Base Version Faild!"));
-		return FReply::Handled();
+		if (!bDeserializeStatus)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Deserialize Base Version Faild!"));
+			return FReply::Handled();
+		}
 	}
 
 	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
@@ -249,10 +254,8 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 				PlatformName,
 				FString::Printf(TEXT("%s_%s_P.pak"), *CurrentVersion.VersionId, *PlatformName)
 			);
-			FString UnrealPakBinary = FPaths::Combine(
-				FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
-				TEXT("Binaries/Win64/UnrealPak.exe")
-			);
+			FString UnrealPakBinary = UFlibPatchParserHelper::GetUnrealPakBinary();
+
 			FString CommandLine = FString::Printf(
 				TEXT("%s -create=%s"),
 				*(TEXT("\"") + SavePakFilePath + TEXT("\"")),
@@ -290,8 +293,6 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		}
 	}
 
-	//FSlowTask SlowTask_SavePatchInfo(4.0f);
-	//SlowTask_SavePatchInfo.MakeDialog();
 	// save difference to file
 	{
 		{
@@ -348,7 +349,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		{
 			FString SavePakFilesPath = FPaths::Combine(
 				CurrentVersionSavePath,
-				FString::Printf(TEXT("%s_%s_PakFiles.json"), *CurrentVersion.BaseVersionId, *CurrentVersion.VersionId)
+				FString::Printf(TEXT("%s_PakFilesInfo.json"), *CurrentVersion.VersionId)
 			);
 			if (UFLibAssetManageHelperEx::SaveStringToFile(SavePakFilesPath, PakFilesInfoStr) && FPaths::FileExists(SavePakFilesPath))
 			{

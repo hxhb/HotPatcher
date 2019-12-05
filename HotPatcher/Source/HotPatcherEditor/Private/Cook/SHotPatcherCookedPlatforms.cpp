@@ -19,7 +19,8 @@ void SHotPatcherCookedPlatforms::Construct(const FArguments& InArgs, TSharedPtr<
 			SNew(SVerticalBox)
 
 			+ SVerticalBox::Slot()
-			.FillHeight(1.0f)
+			.AutoHeight()
+			.MaxHeight(256.0f)
 			[
 				// platform menu
 				SAssignNew(PlatformListView, SListView<TSharedPtr<FString> >)

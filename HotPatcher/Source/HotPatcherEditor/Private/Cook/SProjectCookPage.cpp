@@ -1,14 +1,17 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
 #include "SProjectCookPage.h"
+#include "SHotPatcherCookedPlatforms.h"
+#include "SHotPatcherCookSetting.h"
+#include "SHotPatcherCookMaps.h"
+#include "FlibPatchParserHelper.h"
 
+// Engine Header
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SExpandableArea.h"
 
-#include "SHotPatcherCookedPlatforms.h"
-#include "SHotPatcherCookSetting.h"
-#include "SHotPatcherCookMaps.h"
+
 
 #define LOCTEXT_NAMESPACE "SProjectCookPage"
 
@@ -134,7 +137,7 @@ FReply SProjectCookPage::RunCook()const
 		FString ProjectName = FString(FApp::GetProjectName()).Append(TEXT(".uproject"));
 		ProjectFilePath = FPaths::Combine(ProjectPath, ProjectName);
 	}
-	FString EngineBin = FPaths::ConvertRelativePathToFull(FPaths::EngineDir() / TEXT("Binaries/Win64/UE4Editor-Cmd.exe"));
+	FString EngineBin = UFlibPatchParserHelper::GetUE4CmdBinary();
 	
 	if (FPaths::FileExists(ProjectFilePath))
 	{

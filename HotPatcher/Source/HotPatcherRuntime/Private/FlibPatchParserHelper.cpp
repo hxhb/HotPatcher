@@ -56,6 +56,38 @@ FString UFlibPatchParserHelper::GetProjectName()
 	return FApp::GetProjectName();
 }
 
+FString UFlibPatchParserHelper::GetUnrealPakBinary()
+{
+#if PLATFORM_WINDOWS
+	return FPaths::Combine(
+		FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
+		TEXT("Binaries"),
+#if PLATFORM_64BITS	
+		TEXT("Win64"),
+#else
+		TEXT("Win32"),
+#endif
+		TEXT("UnrealPak.exe")
+	);
+#endif
+}
+
+FString UFlibPatchParserHelper::GetUE4CmdBinary()
+{
+#if PLATFORM_WINDOWS
+	return FPaths::Combine(
+		FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
+		TEXT("Binaries"),
+#if PLATFORM_64BITS	
+		TEXT("Win64"),
+#else
+		TEXT("Win32"),
+#endif
+		TEXT("UE4Editor-Cmd.exe")
+	);
+#endif
+}
+
 FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(const FString& InVersionId, const FString& InBaseVersion,const FString& InDate, const TArray<FString>& InIncludeFilter, const TArray<FString>& InIgnoreFilter)
 {
 	FHotPatcherVersion ExportVersion;

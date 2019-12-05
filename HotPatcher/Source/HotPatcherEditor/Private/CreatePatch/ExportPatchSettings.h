@@ -74,11 +74,13 @@ public:
 	FORCEINLINE TArray<FString> GetUnrealPakOptions()const { return UnrealPakOptions; }
 	FORCEINLINE TArray<ETargetPlatform> GetPakTargetPlatforms()const { return PakTargetPlatforms; }
 	FORCEINLINE bool IsSavePakList()const { return bSavePakList; }
-	FORCEINLINE bool IsSaveDiffAnalysis()const { return bSaveDiffAnalysis; }
+	FORCEINLINE bool IsSaveDiffAnalysis()const { return IsByBaseVersion() && bSaveDiffAnalysis; }
 	FORCEINLINE bool IsSavePatchConfig()const { return bSavePatchConfig; }
 	FORCEINLINE bool IsIncludeAssetRegistry()const { return bIncludeAssetRegistry; }
 	FORCEINLINE bool IsIncludeGlobalShaderCache()const { return bIncludeGlobalShaderCache; }
 	FORCEINLINE bool IsIncludeProjectIni()const { return bIncludeProjectIni; }
+	FORCEINLINE bool IsByBaseVersion()const { return bByBaseVersion; }
+
 	FORCEINLINE	bool GetAllExternAssetCookCommands(const FString& InProjectDir, const FString& InPlatform, TArray<FString>& OutCookCommands)
 	{
 		OutCookCommands.Reset();
@@ -138,6 +140,7 @@ public:
 			OutJsonObject = MakeShareable(new FJsonObject);
 		}
 		OutJsonObject->SetStringField(TEXT("VersionId"), GetVersionId());
+		OutJsonObject->SetBoolField(TEXT("bByBaseVersion"), IsByBaseVersion());
 		OutJsonObject->SetStringField(TEXT("BaseVersion"), GetBaseVersion());
 		
 		auto SerializeArrayLambda = [&OutJsonObject](const TArray<FString>& InArray,const FString& InJsonArrayName)
@@ -236,7 +239,9 @@ public:
 	}
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "BaseVersion",meta = (RelativeToGameContentDir))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
+		bool bByBaseVersion = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "BaseVersion",meta = (RelativeToGameContentDir, EditCondition="bByBaseVersion"))
 		FFilePath BaseVersion;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchSettings")
 		FString VersionId;
@@ -263,7 +268,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSavePakList = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bByBaseVersion"))
 		bool bSaveDiffAnalysis = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSavePatchConfig = true;
