@@ -13,6 +13,7 @@
 #include "Widgets/Layout/SSeparator.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Misc/SecureHash.h"
+#include "Misc/ScopedSlowTask.h"
 #include "HAL/FileManager.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCreatePatch"
@@ -170,40 +171,10 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 
 	FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(AddAssetDependInfo, ModifyAssetDependInfo);
 
-	// save difference to file
-	{
-		if (ExportPatchSetting->IsSaveDiffAnalysis())
-		{
-			FString SerializeDiffInfo;
-			UFLibAssetManageHelperEx::SerializeAssetDependenciesToJson(AllChangedAssetInfo, SerializeDiffInfo);
 
-			FString SaveDiffToFile = FPaths::Combine(
-				CurrentVersionSavePath,
-				FString::Printf(TEXT("%s_%s_Diff.json"), *CurrentVersion.BaseVersionId, *CurrentVersion.VersionId)
-			);
-			if (UFLibAssetManageHelperEx::SaveStringToFile(SaveDiffToFile, SerializeDiffInfo))
-			{
-				auto Msg = LOCTEXT("SavePatchDiffInfo", "Succeed to export New Patch Diff Info.");
-				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveDiffToFile);
-			}
-		}
-	}
-
-	// save Patch track asset info to file
-	{
-		FString SerializeCurrentVersionInfo;
-		UFlibPatchParserHelper::SerializeHotPatcherVersionToString(CurrentVersion, SerializeCurrentVersionInfo);
-	
-		FString SaveCurrentVersionToFile = FPaths::Combine(
-			CurrentVersionSavePath,
-			FString::Printf(TEXT("%s_Release.json"), *CurrentVersion.VersionId)
-		);
-		if (UFLibAssetManageHelperEx::SaveStringToFile(SaveCurrentVersionToFile, SerializeCurrentVersionInfo))
-		{
-			auto Msg = LOCTEXT("SavePatchDiffInfo", "Succeed to export New Release Info.");
-			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveCurrentVersionToFile);
-		}
-	}
+	float AmountOfWorkProgress = 2.f * ExportPatchSetting->GetPakTargetPlatforms().Num() + 4.0f;
+	FScopedSlowTask UnrealPakSlowTask(AmountOfWorkProgress);
+	UnrealPakSlowTask.MakeDialog();
 
 	// package all selected platform
 	TMap<FString,FFileInfo> PakFilesInfoMap;
@@ -215,7 +186,13 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			FString EnumName;
 			StaticEnum<ETargetPlatform>()->GetNameByValue((int64)Platform).ToString().Split(TEXT("::"), &EnumName, &PlatformName,ESearchCase::CaseSensitive,ESearchDir::FromEnd);
 		}
-			
+		
+		// Update Progress Dialog
+		{
+			FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPakCommands", "Generating UnrealPak Commands of {0} Platform."), FText::FromString(PlatformName));
+			UnrealPakSlowTask.EnterProgressFrame(1.0, Dialog);
+		}
+
 		FString SavePakCommandPath = FPaths::Combine(
 			CurrentVersionSavePath,
 			PlatformName,
@@ -259,7 +236,12 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 				}
 			}
 		}
-
+		
+		// Update SlowTask Progress
+		{
+			FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Pak list of {0} Platform."), FText::FromString(PlatformName));
+			UnrealPakSlowTask.EnterProgressFrame(1.0, Dialog);
+		}
 		// create UnrealPak.exe create .pak file
 		{
 			FString SavePakFilePath = FPaths::Combine(
@@ -287,6 +269,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			// create UnrealPak process
 			FProcHandle ProcessHandle = FPlatformProcess::CreateProc(*UnrealPakBinary, *CommandLine, true, false, false, NULL, NULL, NULL, NULL);
 			FPlatformProcess::WaitForProc(ProcessHandle);
+
 			if (FPaths::FileExists(SavePakFilePath))
 			{
 				FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
@@ -307,8 +290,57 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		}
 	}
 
+	//FSlowTask SlowTask_SavePatchInfo(4.0f);
+	//SlowTask_SavePatchInfo.MakeDialog();
+	// save difference to file
+	{
+		{
+			FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportPatch","ExportPatchDiffFile","Generating Diff info of version {0}"),FText::FromString(CurrentVersion.VersionId));
+			UnrealPakSlowTask.EnterProgressFrame(1.0, DiaLogMsg);
+		}
+		if (ExportPatchSetting->IsSaveDiffAnalysis())
+		{
+			FString SerializeDiffInfo;
+			UFLibAssetManageHelperEx::SerializeAssetDependenciesToJson(AllChangedAssetInfo, SerializeDiffInfo);
+
+			FString SaveDiffToFile = FPaths::Combine(
+				CurrentVersionSavePath,
+				FString::Printf(TEXT("%s_%s_Diff.json"), *CurrentVersion.BaseVersionId, *CurrentVersion.VersionId)
+			);
+			if (UFLibAssetManageHelperEx::SaveStringToFile(SaveDiffToFile, SerializeDiffInfo))
+			{
+				auto Msg = LOCTEXT("SavePatchDiffInfo", "Succeed to export New Patch Diff Info.");
+				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveDiffToFile);
+			}
+	}
+	}
+
+	// save Patch track asset info to file
+	{
+		{
+			FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportPatch", "ExportPatchAssetInfo", "Generating Patch Tacked Asset info of version {0}"), FText::FromString(CurrentVersion.VersionId));
+			UnrealPakSlowTask.EnterProgressFrame(1.0, DiaLogMsg);
+		}
+		FString SerializeCurrentVersionInfo;
+		UFlibPatchParserHelper::SerializeHotPatcherVersionToString(CurrentVersion, SerializeCurrentVersionInfo);
+
+		FString SaveCurrentVersionToFile = FPaths::Combine(
+			CurrentVersionSavePath,
+			FString::Printf(TEXT("%s_Release.json"), *CurrentVersion.VersionId)
+		);
+		if (UFLibAssetManageHelperEx::SaveStringToFile(SaveCurrentVersionToFile, SerializeCurrentVersionInfo))
+		{
+			auto Msg = LOCTEXT("SavePatchDiffInfo", "Succeed to export New Release Info.");
+			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveCurrentVersionToFile);
+		}
+	}
+
 	// serialize all pak file info
 	{
+		{
+			FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportPatch", "ExportPatchPakFileInfo", "Generating All Platform Pak info of version {0}"), FText::FromString(CurrentVersion.VersionId));
+			UnrealPakSlowTask.EnterProgressFrame(1.0, DiaLogMsg);
+		}
 		FString PakFilesInfoStr;
 		UFlibPatchParserHelper::SerializePlatformPakInfoToString(PakFilesInfoMap, PakFilesInfoStr);
 
@@ -328,6 +360,11 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 
 	// serialize patch config
 	{
+		{
+			FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportPatch", "ExportPatchConfig", "Generating Current Patch Config of version {0}"), FText::FromString(CurrentVersion.VersionId));
+			UnrealPakSlowTask.EnterProgressFrame(1.0, DiaLogMsg);
+		}
+
 		FString SaveConfigPath = FPaths::Combine(
 			CurrentVersionSavePath,
 			FString::Printf(TEXT("%s_PatchConfig.json"),*CurrentVersion.VersionId)
