@@ -1,5 +1,7 @@
 ## HotPatcher参数说明
 
+![](https://imzlp.me/notes/index/UE4/Plugins/HotPatcher/HotPatcher-Export-Patch.png)
+
 - **bByBaseVersion**：是否是基于某个基础版本的Patch，若为`false`，则只打包选择的过滤器文件（依然会分析依赖）和添加的外部文件，若为`true`则必须要指定一个基础版本，否则无法执行Patch。同时该属性也会控制是否生成`Diff`信息，若为`false`则不生成`Diff`（没有基础版本diff也无意义）。
 - **BaseVersion**：该选项应选择Patch所基于的版本文件，可以`ByRelease`或者上次一的Patch生成，默认为`*_Release.json`。
 
@@ -28,7 +30,7 @@ Pak中的所有文件可以通过`IPlatformFile`来访问。
 
 - **PakTargetPlatforms**：该数组为选择要打出的Patch的平台，可以多选，一定要注意所选的平台已经被Cook。
 
-- **SavePakList**：是否存储`UnrealPak.exe` 的`-Create`参数文件。
+- **SavePakList**：是否存储`UnrealPak.exe` 的`-Create`参数文件（打出pak的所有文件信息）。
 
 - **SaveDiffAnalysis**：是否存储当前的Patch版本与Base版本的差异信息。
 
