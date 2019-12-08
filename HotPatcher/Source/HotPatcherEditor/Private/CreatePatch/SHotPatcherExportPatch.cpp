@@ -42,16 +42,13 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 			]
 			+ SVerticalBox::Slot()
 			.AutoHeight()
-			.Padding(0.0, 8.0, 0.0, 0.0)
-			
-			+ SVerticalBox::Slot()
-			.AutoHeight()
 			.HAlign(HAlign_Right)
 			.Padding(4, 4, 10, 4)
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot()
 				.HAlign(HAlign_Right)
+				.AutoWidth()
 				.Padding(0, 0, 4, 0)
 				[
 					SNew(SButton)
@@ -62,6 +59,7 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 				]
 				+ SHorizontalBox::Slot()
 				.HAlign(HAlign_Right)
+				.AutoWidth()
 				.Padding(0, 0, 4, 0)
 				[
 					SNew(SButton)
@@ -72,10 +70,11 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 				]
 				+ SHorizontalBox::Slot()
 					.HAlign(HAlign_Right)
+					.AutoWidth()
 					.Padding(0, 0, 4, 0)
 					[
 						SNew(SButton)
-						.Text(LOCTEXT("GenerateCurrentPatch", "GeneratePatch"))
+						.Text(LOCTEXT("GeneratePatch", "GeneratePatch"))
 						.IsEnabled(this, &SHotPatcherExportPatch::CanExportPatch)
 						.OnClicked(this, &SHotPatcherExportPatch::DoExportPatch)
 					]
@@ -146,24 +145,7 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		DeleteAssetDependInfo
 	);
 
-	// FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(AddAssetDependInfo, ModifyAssetDependInfo);
-
-	FString SerializeDiffInfo;
-	{
-		FString AddAssetJsonStr;
-		UFLibAssetManageHelperEx::SerializeAssetDependenciesToJson(AddAssetDependInfo, AddAssetJsonStr);
-		FString ChangedAssetJsonStr;
-		UFLibAssetManageHelperEx::SerializeAssetDependenciesToJson(ModifyAssetDependInfo, ChangedAssetJsonStr);
-		FString DeletedAssetJsonStr;
-		UFLibAssetManageHelperEx::SerializeAssetDependenciesToJson(DeleteAssetDependInfo, DeletedAssetJsonStr);
-
-		SerializeDiffInfo = FString::Printf(
-			TEXT("Add Assets:\n%s\n\nModify Assets:\n%s\n\nDelete Assets:%s\n"),
-			*AddAssetJsonStr,
-			*ChangedAssetJsonStr,
-			*DeletedAssetJsonStr
-		);
-	}
+	FString SerializeDiffInfo = UFlibPatchParserHelper::SerializeDiffInfomationToString(AddAssetDependInfo, ModifyAssetDependInfo, DeleteAssetDependInfo);
 
 	DiffWidget->SetContent(SerializeDiffInfo);
 	DiffWidget->SetVisibility(EVisibility::Visible);
@@ -282,6 +264,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		DeleteAssetDependInfo
 	);
 
+	// handle add & modify asset only
 	FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(AddAssetDependInfo, ModifyAssetDependInfo);
 
 
@@ -409,8 +392,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		}
 		if (ExportPatchSetting->IsSaveDiffAnalysis())
 		{
-			FString SerializeDiffInfo;
-			UFLibAssetManageHelperEx::SerializeAssetDependenciesToJson(AllChangedAssetInfo, SerializeDiffInfo);
+			FString SerializeDiffInfo = UFlibPatchParserHelper::SerializeDiffInfomationToString(AddAssetDependInfo, ModifyAssetDependInfo, DeleteAssetDependInfo);
 
 			FString SaveDiffToFile = FPaths::Combine(
 				CurrentVersionSavePath,

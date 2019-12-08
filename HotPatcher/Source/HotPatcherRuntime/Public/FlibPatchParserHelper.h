@@ -66,6 +66,11 @@ public:
 		static bool SerializePlatformPakInfoToJsonObject(const TMap<FString, FFileInfo>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject);
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static FString SerializeDiffInfomationToString(const FAssetDependenciesInfo& InAddAsset,
+		 									 const FAssetDependenciesInfo& InModifyAsset,
+											 const FAssetDependenciesInfo& InDeleteAsset);
+
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool GetFileInfo(const FString& InFile,FFileInfo& OutFileInfo);
 
 	// return abslute path

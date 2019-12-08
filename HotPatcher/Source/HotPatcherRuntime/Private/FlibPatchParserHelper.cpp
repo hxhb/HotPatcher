@@ -483,6 +483,49 @@ bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FSt
 	return bRunStatus;
 }
 
+FString UFlibPatchParserHelper::SerializeDiffInfomationToString(const FAssetDependenciesInfo& InAddAsset,
+	const FAssetDependenciesInfo& InModifyAsset,
+	const FAssetDependenciesInfo& InDeleteAsset)
+{
+	TSharedPtr<FJsonObject> RootJsonObject = MakeShareable(new FJsonObject);
+
+	FString SerializeDiffInfo;
+	{
+		// is empty Info
+		auto IsEmptyInfo = [](const FAssetDependenciesInfo& InAssetInfo)->bool
+		{
+			TArray<FString> Keys;
+			InAssetInfo.mDependencies.GetKeys(Keys);
+
+			return Keys.Num() == 0;
+		};
+
+		auto SerializeAssetInfoToJson = [&RootJsonObject,&IsEmptyInfo](const FAssetDependenciesInfo& InAssetInfo, const FString& InDescrible)->bool
+		{
+			bool bRunStatus = false;
+			if (!IsEmptyInfo(InAssetInfo))
+			{
+				TSharedPtr<FJsonObject> AssetsJsonObject = MakeShareable(new FJsonObject);
+				bRunStatus = UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(InAssetInfo, AssetsJsonObject);
+				if (bRunStatus)
+				{
+					RootJsonObject->SetObjectField(InDescrible, AssetsJsonObject);
+				}
+			}
+			return bRunStatus;
+		};
+
+		SerializeAssetInfoToJson(InAddAsset, TEXT("AddedAssets"));
+		SerializeAssetInfoToJson(InModifyAsset, TEXT("ModifiedAssets"));
+		SerializeAssetInfoToJson(InDeleteAsset, TEXT("DeletedAssets"));
+	}
+
+	auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&SerializeDiffInfo);
+	FJsonSerializer::Serialize(RootJsonObject.ToSharedRef(), JsonWriter);
+
+	return SerializeDiffInfo;
+}
+
 bool UFlibPatchParserHelper::GetFileInfo(const FString& InFile, FFileInfo& OutFileInfo)
 {
 	bool bRunStatus = false;
@@ -522,6 +565,7 @@ TArray<FString> UFlibPatchParserHelper::SearchCookedGlobalShaderCacheFiles(const
 	}
 	return Resault;
 }
+
 
 bool UFlibPatchParserHelper::GetCookedAssetRegistryFile(const FString& InProjectDir,const FString& InProjectName, const FString& InPlatformName, FString& OutFile)
 {
