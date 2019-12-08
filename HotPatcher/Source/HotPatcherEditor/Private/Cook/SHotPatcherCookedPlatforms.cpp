@@ -17,7 +17,6 @@ void SHotPatcherCookedPlatforms::Construct(const FArguments& InArgs, TSharedPtr<
 	ChildSlot
 		[
 			SNew(SVerticalBox)
-
 			+ SVerticalBox::Slot()
 			.AutoHeight()
 			.MaxHeight(256.0f)

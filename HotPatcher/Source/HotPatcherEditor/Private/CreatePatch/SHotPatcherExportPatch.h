@@ -5,13 +5,14 @@
 #include "Interfaces/ITargetPlatform.h"
 #include "Model/FHotPatcherCreatePatchModel.h"
 #include "ExportPatchSettings.h"
+#include "SHotPatcherInformations.h"
 
 // engine header
 #include "Interfaces/ITargetPlatform.h"
 #include "SharedPointer.h"
 #include "IDetailsView.h"
 #include "PropertyEditorModule.h"
-
+#include "Widgets/Text/SMultiLineEditableText.h"
 /**
  * Implements the cooked platforms panel.
  */
@@ -39,9 +40,9 @@ protected:
 
 	FReply DoDiff()const;
 	bool CanDiff()const;
-
+	FReply DoClearDiff()const;
 	EVisibility VisibilityDiffButton()const;
-
+	EVisibility VisibilityClearDiffButton()const;
 private:
 
 	TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
@@ -51,5 +52,6 @@ private:
 
 	UExportPatchSettings* ExportPatchSetting;
 
+	TSharedPtr<SHotPatcherInformations> DiffWidget;
 };
 

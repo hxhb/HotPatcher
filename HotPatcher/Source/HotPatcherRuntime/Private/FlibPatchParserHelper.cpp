@@ -88,7 +88,7 @@ FString UFlibPatchParserHelper::GetUE4CmdBinary()
 #endif
 }
 
-FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(const FString& InVersionId, const FString& InBaseVersion,const FString& InDate, const TArray<FString>& InIncludeFilter, const TArray<FString>& InIgnoreFilter)
+FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(const FString& InVersionId, const FString& InBaseVersion,const FString& InDate, const TArray<FString>& InIncludeFilter, const TArray<FString>& InIgnoreFilter, bool InIncludeHasRefAssetsOnly)
 {
 	FHotPatcherVersion ExportVersion;
 	{
@@ -119,17 +119,24 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(const FStrin
 
 	TArray<FAssetDetail> FinalAssetsList;
 	{
-		TArray<FAssetDetail> AllHasRefAssets;
+		TArray<FAssetDetail> AllNeedPakRefAssets;
 		{
 			TArray<FAssetDetail> AllAssets;
 			UFLibAssetManageHelperEx::GetAssetsList(ExportVersion.IncludeFilter, AllAssets);
-			TArray<FAssetDetail> AllDontHasRefAssets;
-			UFLibAssetManageHelperEx::FilterNoRefAssets(AllAssets, AllHasRefAssets, AllDontHasRefAssets);
+			if (InIncludeHasRefAssetsOnly)
+			{
+				TArray<FAssetDetail> AllDontHasRefAssets;
+				UFLibAssetManageHelperEx::FilterNoRefAssets(AllAssets, AllNeedPakRefAssets, AllDontHasRefAssets);
+			}
+			else
+			{
+				AllNeedPakRefAssets = AllAssets;
+			}
 		}
 		// 剔除ignore filter中指定的资源
 		if (ExportVersion.IgnoreFilter.Num() > 0)
 		{
-			for (const auto& AssetDetail : AllHasRefAssets)
+			for (const auto& AssetDetail : AllNeedPakRefAssets)
 			{
 				bool bIsIgnore = false;
 				for (const auto& IgnoreFilter : ExportVersion.IgnoreFilter)
@@ -148,7 +155,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(const FStrin
 		}
 		else
 		{
-			FinalAssetsList = AllHasRefAssets;
+			FinalAssetsList = AllNeedPakRefAssets;
 		}
 	}
 
@@ -352,15 +359,25 @@ bool UFlibPatchParserHelper::DiffVersion(
 
 				for (const auto& AssetItem : BeseVersionCurrentModuleAssetListKeys)
 				{
-					const FAssetDetail& BaseVersionAssetDetail = *BaseVersionModuleAssetsDetail.mDependAssetDetails.Find(AssetItem);
-					const FAssetDetail& NewVersionAssetDetail = *NewVersionModuleAssetsDetail.mDependAssetDetails.Find(AssetItem);
-					if (!(NewVersionAssetDetail == BaseVersionAssetDetail))
+					const FAssetDetail* BaseVersionAssetDetail = BaseVersionModuleAssetsDetail.mDependAssetDetails.Find(AssetItem);
+					const FAssetDetail* NewVersionAssetDetail = NewVersionModuleAssetsDetail.mDependAssetDetails.Find(AssetItem);
+					if (!NewVersionAssetDetail)
+					{
+						if (!OutDeleteAsset.mDependencies.Contains(BaseVersionAssetModule))
+						{
+							OutDeleteAsset.mDependencies.Add(BaseVersionAssetModule, FAssetDependenciesDetail{ BaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
+						}
+						OutDeleteAsset.mDependencies.Find(BaseVersionAssetModule)->mDependAssetDetails.Add(AssetItem, *BaseVersionAssetDetail);
+						continue;
+					}
+
+					if (!(*NewVersionAssetDetail == *BaseVersionAssetDetail))
 					{
 						if (!OutModifyAsset.mDependencies.Contains(BaseVersionAssetModule))
 						{
 							OutModifyAsset.mDependencies.Add(BaseVersionAssetModule, FAssetDependenciesDetail{ BaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
 						}
-						OutModifyAsset.mDependencies.Find(BaseVersionAssetModule)->mDependAssetDetails.Add(AssetItem, NewVersionAssetDetail);
+						OutModifyAsset.mDependencies.Find(BaseVersionAssetModule)->mDependAssetDetails.Add(AssetItem, *NewVersionAssetDetail);
 					}
 				}
 			}

@@ -35,7 +35,8 @@ public:
 														const FString& InBaseVersion,
 														const FString& InDate,
 														const TArray<FString>& InIncludeFilter,
-														const TArray<FString>& InIgnoreFilter
+														const TArray<FString>& InIgnoreFilter,
+														bool InIncludeHasRefAssetsOnly = false
 														);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool SerializeHotPatcherVersionToString(const FHotPatcherVersion& InVersion, FString& OutResault);

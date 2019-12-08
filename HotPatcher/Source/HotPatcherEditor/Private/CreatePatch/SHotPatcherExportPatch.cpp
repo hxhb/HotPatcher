@@ -11,6 +11,8 @@
 #include "SHyperlink.h"
 #include "Misc/FileHelper.h"
 #include "Widgets/Layout/SSeparator.h"
+#include "Widgets/Text/SMultiLineEditableText.h"
+
 #include "Kismet/KismetSystemLibrary.h"
 #include "Misc/SecureHash.h"
 #include "Misc/ScopedSlowTask.h"
@@ -53,19 +55,40 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 				.Padding(0, 0, 4, 0)
 				[
 					SNew(SButton)
-					.Text(LOCTEXT("DiffVersion", "Diff"))
+					.Text(LOCTEXT("Diff", "Diff"))
 					.IsEnabled(this, &SHotPatcherExportPatch::CanDiff)
 					.OnClicked(this, &SHotPatcherExportPatch::DoDiff)
 					.Visibility(this, &SHotPatcherExportPatch::VisibilityDiffButton)
 				]
-				+SHorizontalBox::Slot()
+				+ SHorizontalBox::Slot()
 				.HAlign(HAlign_Right)
+				.Padding(0, 0, 4, 0)
 				[
 					SNew(SButton)
-					.Text(LOCTEXT("GeneratePatch", "Generate Patch"))
-					.IsEnabled(this, &SHotPatcherExportPatch::CanExportPatch)
-					.OnClicked(this, &SHotPatcherExportPatch::DoExportPatch)
+					.Text(LOCTEXT("ClearDiff", "ClearDiff"))
+					.IsEnabled(this, &SHotPatcherExportPatch::CanDiff)
+					.OnClicked(this, &SHotPatcherExportPatch::DoClearDiff)
+					.Visibility(this, &SHotPatcherExportPatch::VisibilityClearDiffButton)
 				]
+				+ SHorizontalBox::Slot()
+					.HAlign(HAlign_Right)
+					.Padding(0, 0, 4, 0)
+					[
+						SNew(SButton)
+						.Text(LOCTEXT("GenerateCurrentPatch", "GeneratePatch"))
+						.IsEnabled(this, &SHotPatcherExportPatch::CanExportPatch)
+						.OnClicked(this, &SHotPatcherExportPatch::DoExportPatch)
+					]
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			.Padding(4, 4, 10, 4)
+			[
+				SAssignNew(DiffWidget, SHotPatcherInformations)
+				.Visibility(EVisibility::Collapsed)
+				
 			]
 
 		];
@@ -77,7 +100,73 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 
 FReply SHotPatcherExportPatch::DoDiff()const
 {
+	FString BaseVersionContent;
+	FHotPatcherVersion BaseVersion;
 
+	bool bDeserializeStatus = false;
+
+	if (ExportPatchSetting->IsByBaseVersion())
+	{
+		if (UFLibAssetManageHelperEx::LoadFileToString(ExportPatchSetting->GetBaseVersion(), BaseVersionContent))
+		{
+			bDeserializeStatus = UFlibPatchParserHelper::DeserializeHotPatcherVersionFromString(BaseVersionContent, BaseVersion);
+		}
+		if (!bDeserializeStatus)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Deserialize Base Version Faild!"));
+			return FReply::Handled();
+		}
+	}
+
+	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
+		ExportPatchSetting->GetVersionId(),
+		BaseVersion.VersionId,
+		FDateTime::UtcNow().ToString(),
+		ExportPatchSetting->GetAssetIncludeFilters(),
+		ExportPatchSetting->GetAssetIgnoreFilters(),
+		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
+	);
+
+	FString CurrentVersionSavePath = FPaths::Combine(ExportPatchSetting->GetSaveAbsPath(), CurrentVersion.VersionId);
+
+	// parser version difference
+
+	FAssetDependenciesInfo BaseVersionAssetDependInfo = BaseVersion.AssetInfo;
+	FAssetDependenciesInfo CurrentVersionAssetDependInfo = CurrentVersion.AssetInfo;
+
+	FAssetDependenciesInfo AddAssetDependInfo;
+	FAssetDependenciesInfo ModifyAssetDependInfo;
+	FAssetDependenciesInfo DeleteAssetDependInfo;
+
+	UFlibPatchParserHelper::DiffVersion(
+		CurrentVersionAssetDependInfo,
+		BaseVersionAssetDependInfo,
+		AddAssetDependInfo,
+		ModifyAssetDependInfo,
+		DeleteAssetDependInfo
+	);
+
+	// FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(AddAssetDependInfo, ModifyAssetDependInfo);
+
+	FString SerializeDiffInfo;
+	{
+		FString AddAssetJsonStr;
+		UFLibAssetManageHelperEx::SerializeAssetDependenciesToJson(AddAssetDependInfo, AddAssetJsonStr);
+		FString ChangedAssetJsonStr;
+		UFLibAssetManageHelperEx::SerializeAssetDependenciesToJson(ModifyAssetDependInfo, ChangedAssetJsonStr);
+		FString DeletedAssetJsonStr;
+		UFLibAssetManageHelperEx::SerializeAssetDependenciesToJson(DeleteAssetDependInfo, DeletedAssetJsonStr);
+
+		SerializeDiffInfo = FString::Printf(
+			TEXT("Add Assets:\n%s\n\nModify Assets:\n%s\n\nDelete Assets:%s\n"),
+			*AddAssetJsonStr,
+			*ChangedAssetJsonStr,
+			*DeletedAssetJsonStr
+		);
+	}
+
+	DiffWidget->SetContent(SerializeDiffInfo);
+	DiffWidget->SetVisibility(EVisibility::Visible);
 
 	return FReply::Handled();
 }
@@ -89,23 +178,39 @@ bool SHotPatcherExportPatch::CanDiff()const
 		bool bHasBase = !ExportPatchSetting->GetBaseVersion().IsEmpty() && FPaths::FileExists(ExportPatchSetting->GetBaseVersion());
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
 		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
-		bool bHasSavePath = !ExportPatchSetting->GetSaveAbsPath().IsEmpty();
 
-		bCanDiff = bHasBase && bHasVersionId && bHasFilter && bHasSavePath;
+		bCanDiff = bHasBase && bHasVersionId && bHasFilter;
 	}
 	return bCanDiff;
 }
 
+FReply SHotPatcherExportPatch::DoClearDiff()const
+{
+	DiffWidget->SetContent(TEXT(""));
+	DiffWidget->SetVisibility(EVisibility::Collapsed);
+	return FReply::Handled();
+}
+
 EVisibility SHotPatcherExportPatch::VisibilityDiffButton() const
 {
-	//if (CanExportPatch())
-	//{
-	//	return EVisibility::Visible;
-	//}
-	//else {
-	//	return EVisibility::Collapsed;
-	//}
-	return EVisibility::Collapsed;
+	if (CanExportPatch())
+	{
+		return EVisibility::Visible;
+	}
+	else {
+		return EVisibility::Hidden;
+	}
+}
+
+EVisibility SHotPatcherExportPatch::VisibilityClearDiffButton() const
+{
+	if (CanExportPatch())
+	{
+		return EVisibility::Visible;
+	}
+	else {
+		return EVisibility::Hidden;
+	}
 }
 
 bool SHotPatcherExportPatch::CanExportPatch()const
@@ -120,9 +225,11 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 			bHasBase = true;
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
 		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
+		bool bHasExternFiles = !!ExportPatchSetting->GetAddExternFiles().Num();
+
 		bool bHasSavePath = !ExportPatchSetting->GetSaveAbsPath().IsEmpty();
 		bool bHasPakPlatfotm = !!ExportPatchSetting->GetPakTargetPlatforms().Num();
-		bCanExport = bHasBase && bHasVersionId && bHasFilter && bHasSavePath;
+		bCanExport = bHasBase && bHasVersionId && (bHasFilter || bHasExternFiles) && bHasSavePath;
 	}
 	return bCanExport;
 }
@@ -152,7 +259,8 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		BaseVersion.VersionId,
 		FDateTime::UtcNow().ToString(),
 		ExportPatchSetting->GetAssetIncludeFilters(),
-		ExportPatchSetting->GetAssetIgnoreFilters()
+		ExportPatchSetting->GetAssetIgnoreFilters(),
+		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
 	);
 
 	FString CurrentVersionSavePath = FPaths::Combine(ExportPatchSetting->GetSaveAbsPath(), CurrentVersion.VersionId);
@@ -313,7 +421,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 				auto Msg = LOCTEXT("SavePatchDiffInfo", "Succeed to export New Patch Diff Info.");
 				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveDiffToFile);
 			}
-	}
+		}
 	}
 
 	// save Patch track asset info to file

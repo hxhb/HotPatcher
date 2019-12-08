@@ -80,7 +80,7 @@ public:
 	FORCEINLINE bool IsIncludeGlobalShaderCache()const { return bIncludeGlobalShaderCache; }
 	FORCEINLINE bool IsIncludeProjectIni()const { return bIncludeProjectIni; }
 	FORCEINLINE bool IsByBaseVersion()const { return bByBaseVersion; }
-
+	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 	FORCEINLINE	bool GetAllExternAssetCookCommands(const FString& InProjectDir, const FString& InPlatform, TArray<FString>& OutCookCommands)
 	{
 		OutCookCommands.Reset();
@@ -246,25 +246,28 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchSettings")
 		FString VersionId;
 
-	/** You can use copied asset string reference here, e.g. World'/Game/NewMap.NewMap'*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchSettings|IncludeFilter",meta = (RelativeToGameContentDir, LongPackageName))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchSettings",meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
-	/** You can use copied asset string reference here, e.g. World'/Game/NewMap.NewMap'*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|IgnoreFilter", meta = (RelativeToGameContentDir, LongPackageName))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIgnoreFilters;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
+		bool bIncludeHasRefAssetsOnly;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
 		bool bIncludeAssetRegistry;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
 		bool bIncludeGlobalShaderCache;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
 		bool bIncludeProjectIni;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
 		TArray<FExternAssetFileInfo> AddExternFileToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<FString> UnrealPakOptions{TEXT("-compress")};
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<ETargetPlatform> PakTargetPlatforms;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options|Encrypt")
+	//	bool bUseEncrypt;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options|Encrypt",EditCondition = )
+	//	FFilePath CryptoJson;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSavePakList = true;
