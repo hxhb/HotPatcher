@@ -91,7 +91,8 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 			TEXT(""),
 			FDateTime::UtcNow().ToString(),
 			ExportReleaseSettings->GetAssetIncludeFilters(),
-			ExportReleaseSettings->GetAssetIgnoreFilters()
+			ExportReleaseSettings->GetAssetIgnoreFilters(),
+			ExportReleaseSettings->IsIncludeHasRefAssetsOnly()
 		);
 	
 	FString SaveToJson;

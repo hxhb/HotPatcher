@@ -40,7 +40,10 @@ public:
 		TArray<FString> Result;
 		for (const auto& Filter : AssetIncludeFilters)
 		{
-			Result.AddUnique(Filter.Path);
+			if (!Filter.Path.IsEmpty())
+			{
+				Result.AddUnique(Filter.Path);
+			}
 		}
 		return Result;
 	}
@@ -49,7 +52,10 @@ public:
 		TArray<FString> Result;
 		for (const auto& Filter : AssetIgnoreFilters)
 		{
-			Result.AddUnique(Filter.Path);
+			if (!Filter.Path.IsEmpty())
+			{
+				Result.AddUnique(Filter.Path);
+			}
 		}
 		return Result;
 	}
@@ -58,16 +64,19 @@ public:
 		return SavePath.Path;
 	}
 
+	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Version")
 		FString VersionId;
 
 	/** You can use copied asset string reference here, e.g. World'/Game/NewMap.NewMap'*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "AssetFilters",meta = (RelativeToGameContentDir, LongPackageName))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "ReleaseSetting|AssetFilters",meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetFilters", meta = (RelativeToGameContentDir, LongPackageName))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|AssetFilters", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIgnoreFilters;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting")
+		bool bIncludeHasRefAssetsOnly;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
 		FDirectoryPath SavePath;
 };

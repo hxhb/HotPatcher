@@ -1,5 +1,6 @@
 #include "ExportPatchSettings.h"
 #include "FLibAssetManageHelperEx.h"
+#include "HAL/PlatformFilemanager.h"
 
 UExportPatchSettings::UExportPatchSettings()
 {
@@ -16,7 +17,10 @@ TArray<FString> UExportPatchSettings::GetAssetIncludeFilters()const
 	TArray<FString> Result;
 	for (const auto& Filter : AssetIncludeFilters)
 	{
-		Result.AddUnique(Filter.Path);
+		if(!Filter.Path.IsEmpty())
+		{
+			Result.AddUnique(Filter.Path);
+		}
 	}
 	return Result;
 }
@@ -26,7 +30,10 @@ TArray<FString> UExportPatchSettings::GetAssetIgnoreFilters()const
 	TArray<FString> Result;
 	for (const auto& Filter : AssetIgnoreFilters)
 	{
-		Result.AddUnique(Filter.Path);
+		if (!Filter.Path.IsEmpty())
+		{
+			Result.AddUnique(Filter.Path);
+		}
 	}
 	return Result;
 }

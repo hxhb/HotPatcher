@@ -424,6 +424,56 @@ void UFLibAssetManageHelperEx::FilterNoRefAssets(const TArray<FAssetDetail>& InA
 	}
 }
 
+void UFLibAssetManageHelperEx::FilterNoRefAssetsWithIgnoreFilter(const TArray<FAssetDetail>& InAssetsDetail, const TArray<FString>& InIgnoreFilters, TArray<FAssetDetail>& OutHasRefAssetsDetail, TArray<FAssetDetail>& OutDontHasRefAssetsDetail)
+{
+	OutHasRefAssetsDetail.Reset();
+	OutDontHasRefAssetsDetail.Reset();
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	for (const auto& AssetDetail : InAssetsDetail)
+	{
+		FSoftObjectPath CurrentObjectSoftRef{ AssetDetail.mPackagePath };
+		FAssetIdentifier CurrentAssetId{ *CurrentObjectSoftRef.GetLongPackageName() };
+
+		// ignore scan Map Asset reference
+		{
+			FAssetData CurrentAssetData;
+			if (UFLibAssetManageHelperEx::GetSingleAssetsData(AssetDetail.mPackagePath, CurrentAssetData))
+			{
+				if (CurrentAssetData.AssetClass == TEXT("World") ||
+					CurrentAssetData.AssetClass == TEXT("MapBuildDataRegistry")
+				)
+				{
+					bool bIsIgnoreAsset = false;
+					for (const auto& IgnoreFilter : InIgnoreFilters)
+					{
+						if (CurrentAssetData.PackagePath.ToString().StartsWith(*IgnoreFilter))
+						{
+							bIsIgnoreAsset = true;
+							break;
+						}
+					}
+
+					if (!bIsIgnoreAsset)
+					{
+						OutHasRefAssetsDetail.Add(AssetDetail);
+						continue;
+					}
+				}
+			}
+		}
+
+
+		TArray<FAssetIdentifier> CurrentAssetRefList;
+		AssetRegistryModule.Get().GetReferencers(CurrentAssetId, CurrentAssetRefList);
+		if (CurrentAssetRefList.Num() > 1 || (CurrentAssetRefList.Num() > 0 && !(CurrentAssetRefList[0] == CurrentAssetId)))
+		{
+			OutHasRefAssetsDetail.Add(AssetDetail);
+		}
+		else {
+			OutDontHasRefAssetsDetail.Add(AssetDetail);
+		}
+	}
+}
 bool UFLibAssetManageHelperEx::CombineAssetsDetailAsFAssetDepenInfo(const TArray<FAssetDetail>& InAssetsDetailList, FAssetDependenciesInfo& OutAssetInfo)
 {
 	FAssetDependenciesInfo result;

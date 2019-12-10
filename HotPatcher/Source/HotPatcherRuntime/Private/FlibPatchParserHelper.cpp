@@ -127,7 +127,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(const FStrin
 			if (InIncludeHasRefAssetsOnly)
 			{
 				TArray<FAssetDetail> AllDontHasRefAssets;
-				UFLibAssetManageHelperEx::FilterNoRefAssets(AllAssets, AllNeedPakRefAssets, AllDontHasRefAssets);
+				UFLibAssetManageHelperEx::FilterNoRefAssetsWithIgnoreFilter(AllAssets, ExportVersion.IgnoreFilter ,AllNeedPakRefAssets, AllDontHasRefAssets);
 			}
 			else
 			{
