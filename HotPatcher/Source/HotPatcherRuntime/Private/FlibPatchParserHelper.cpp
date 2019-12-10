@@ -6,6 +6,7 @@
 #include "Struct/AssetManager/FFileArrayDirectoryVisitor.hpp"
 
 // engine header
+#include "Misc/SecureHash.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "Interfaces/IPluginManager.h"
@@ -388,18 +389,18 @@ bool UFlibPatchParserHelper::DiffVersion(
 	return true;
 }
 
-bool UFlibPatchParserHelper::SerializeFileInfoToJsonString(const FFileInfo& InFileInfo, FString& OutJson)
+bool UFlibPatchParserHelper::SerializePakFileInfoToJsonString(const FPakFileInfo& InFileInfo, FString& OutJson)
 {
 	bool bRunStatus = false;
 	TSharedPtr<FJsonObject> JsonObject;
-	if (UFlibPatchParserHelper::SerializeFileInfoToJsonObject(InFileInfo, JsonObject))
+	if (UFlibPatchParserHelper::SerializePakFileInfoToJsonObject(InFileInfo, JsonObject))
 	{
-		bRunStatus = UFlibPatchParserHelper::SerializeFileInfoFromJsonObjectToString(JsonObject, OutJson);
+		bRunStatus = UFlibPatchParserHelper::SerializePakFileInfoFromJsonObjectToString(JsonObject, OutJson);
 	}
 	return bRunStatus;
 }
 
-bool UFlibPatchParserHelper::SerializeFileInfoFromJsonObjectToString(const TSharedPtr<FJsonObject>& InFileInfoJsonObject, FString& OutJson)
+bool UFlibPatchParserHelper::SerializePakFileInfoFromJsonObjectToString(const TSharedPtr<FJsonObject>& InFileInfoJsonObject, FString& OutJson)
 {
 	bool bRunStatus = false;
 	if (InFileInfoJsonObject.IsValid())
@@ -411,7 +412,7 @@ bool UFlibPatchParserHelper::SerializeFileInfoFromJsonObjectToString(const TShar
 	return bRunStatus;
 }
 
-bool UFlibPatchParserHelper::SerializeFileInfoToJsonObject(const FFileInfo& InFileInfo, TSharedPtr<FJsonObject>& OutJsonObject)
+bool UFlibPatchParserHelper::SerializePakFileInfoToJsonObject(const FPakFileInfo& InFileInfo, TSharedPtr<FJsonObject>& OutJsonObject)
 {
 	bool RunStatus = false;
 	
@@ -422,11 +423,16 @@ bool UFlibPatchParserHelper::SerializeFileInfoToJsonObject(const FFileInfo& InFi
 	OutJsonObject->SetStringField(TEXT("HASH"),InFileInfo.Hash);
 	OutJsonObject->SetNumberField(TEXT("Size"), InFileInfo.FileSize);
 
+	TSharedPtr<FJsonObject> PakVersionJsonObject = MakeShareable(new FJsonObject);
+	if (UFlibPakHelper::SerializePakVersionToJsonObject(InFileInfo.PakVersion, PakVersionJsonObject))
+	{
+		OutJsonObject->SetObjectField(TEXT("PakVersion"),PakVersionJsonObject);
+	}
 	RunStatus = true;
 	return RunStatus;
 }
 
-bool UFlibPatchParserHelper::SerializeFileInfoListToJsonObject(const TArray<FFileInfo>& InFileInfoList, TSharedPtr<FJsonObject>& OutJsonObject)
+bool UFlibPatchParserHelper::SerializePakFileInfoListToJsonObject(const TArray<FPakFileInfo>& InFileInfoList, TSharedPtr<FJsonObject>& OutJsonObject)
 {
 	bool bRunStatus = false;
 
@@ -434,7 +440,7 @@ bool UFlibPatchParserHelper::SerializeFileInfoListToJsonObject(const TArray<FFil
 	for (const auto& FileInfoItem : InFileInfoList)
 	{
 		TSharedPtr<FJsonObject> CurrentFileJsonObj = MakeShareable(new FJsonObject);
-		if (UFlibPatchParserHelper::SerializeFileInfoToJsonObject(FileInfoItem, CurrentFileJsonObj))
+		if (UFlibPatchParserHelper::SerializePakFileInfoToJsonObject(FileInfoItem, CurrentFileJsonObj))
 		{
 			RootJsonObj->SetObjectField(*FileInfoItem.FileName, CurrentFileJsonObj);
 		}
@@ -444,7 +450,7 @@ bool UFlibPatchParserHelper::SerializeFileInfoListToJsonObject(const TArray<FFil
 	return bRunStatus;
 }
 
-bool UFlibPatchParserHelper::SerializePlatformPakInfoToString(const TMap<FString, FFileInfo>& InPakFilesMap, FString& OutString)
+bool UFlibPatchParserHelper::SerializePlatformPakInfoToString(const TMap<FString, FPakFileInfo>& InPakFilesMap, FString& OutString)
 {
 	bool bRunStatus = false;
 	TSharedPtr<FJsonObject> RootJsonObj = MakeShareable(new FJsonObject);
@@ -457,7 +463,7 @@ bool UFlibPatchParserHelper::SerializePlatformPakInfoToString(const TMap<FString
 	return bRunStatus;
 }
 
-bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FString, FFileInfo>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject)
+bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FString, FPakFileInfo>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject)
 {
 	bool bRunStatus = false;
 	if (!OutJsonObject.IsValid())
@@ -473,7 +479,7 @@ bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FSt
 		for (const auto& PakPlatformKey : PakPlatformKeys)
 		{
 			TSharedPtr<FJsonObject> CurrentPlatformPakJsonObj;
-			if (UFlibPatchParserHelper::SerializeFileInfoToJsonObject(*InPakFilesMap.Find(PakPlatformKey), CurrentPlatformPakJsonObj))
+			if (UFlibPatchParserHelper::SerializePakFileInfoToJsonObject(*InPakFilesMap.Find(PakPlatformKey), CurrentPlatformPakJsonObj))
 			{
 				OutJsonObject->SetObjectField(PakPlatformKey, CurrentPlatformPakJsonObj);
 			}
@@ -526,7 +532,7 @@ FString UFlibPatchParserHelper::SerializeDiffInfomationToString(const FAssetDepe
 	return SerializeDiffInfo;
 }
 
-bool UFlibPatchParserHelper::GetFileInfo(const FString& InFile, FFileInfo& OutFileInfo)
+bool UFlibPatchParserHelper::GetPakFileInfo(const FString& InFile, FPakFileInfo& OutFileInfo)
 {
 	bool bRunStatus = false;
 	if (FPaths::FileExists(InFile))
@@ -655,4 +661,12 @@ bool UFlibPatchParserHelper::ConvNotAssetFileToCookCommand(const FString& InProj
 		bRunStatus = true;
 	}
 	return bRunStatus;
+}
+
+FString UFlibPatchParserHelper::HashStringWithSHA1(const FString &InString)
+{
+	FSHAHash StringHash;
+	FSHA1::HashBuffer(TCHAR_TO_ANSI(*InString), InString.Len(), StringHash.Hash);
+	return StringHash.ToString();
+
 }

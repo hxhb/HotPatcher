@@ -41,8 +41,10 @@ protected:
 	FReply DoDiff()const;
 	bool CanDiff()const;
 	FReply DoClearDiff()const;
-	EVisibility VisibilityDiffButton()const;
-	EVisibility VisibilityClearDiffButton()const;
+	EVisibility VisibilityDiffButtons()const;
+
+	void SetInformationContent(const FString& InContent)const;
+	void SetInfomationContentVisibility(EVisibility InVisibility)const;
 private:
 
 	TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;

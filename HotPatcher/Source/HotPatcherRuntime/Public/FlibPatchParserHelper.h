@@ -2,9 +2,10 @@
 
 #pragma once
 //project header
-#include "FFileInfo.h"
+#include "FPakFileInfo.h"
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "FHotPatcherVersion.h"
+#include "FlibPakHelper.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -55,15 +56,15 @@ public:
 		);
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool SerializeFileInfoToJsonString(const FFileInfo& InFileInfo, FString& OutJson);
+		static bool SerializePakFileInfoToJsonString(const FPakFileInfo& InFileInfo, FString& OutJson);
 
-		static bool SerializeFileInfoFromJsonObjectToString(const TSharedPtr<FJsonObject>& InFileInfoJsonObject, FString& OutJson);
-		static bool SerializeFileInfoToJsonObject(const FFileInfo& InFileInfo, TSharedPtr<FJsonObject>& OutJsonObject);
+		static bool SerializePakFileInfoFromJsonObjectToString(const TSharedPtr<FJsonObject>& InFileInfoJsonObject, FString& OutJson);
+		static bool SerializePakFileInfoToJsonObject(const FPakFileInfo& InFileInfo, TSharedPtr<FJsonObject>& OutJsonObject);
 
-		static bool SerializeFileInfoListToJsonObject(const TArray<FFileInfo>& InFileInfoList, TSharedPtr<FJsonObject>& OutJsonObject);
+		static bool SerializePakFileInfoListToJsonObject(const TArray<FPakFileInfo>& InFileInfoList, TSharedPtr<FJsonObject>& OutJsonObject);
 		
-		static bool SerializePlatformPakInfoToString(const TMap<FString, FFileInfo>& InPakFilesMap, FString& OutString);
-		static bool SerializePlatformPakInfoToJsonObject(const TMap<FString, FFileInfo>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject);
+		static bool SerializePlatformPakInfoToString(const TMap<FString, FPakFileInfo>& InPakFilesMap, FString& OutString);
+		static bool SerializePlatformPakInfoToJsonObject(const TMap<FString, FPakFileInfo>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject);
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static FString SerializeDiffInfomationToString(const FAssetDependenciesInfo& InAddAsset,
@@ -71,7 +72,7 @@ public:
 											 const FAssetDependenciesInfo& InDeleteAsset);
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool GetFileInfo(const FString& InFile,FFileInfo& OutFileInfo);
+		static bool GetPakFileInfo(const FString& InFile,FPakFileInfo& OutFileInfo);
 
 	// return abslute path
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
@@ -87,5 +88,8 @@ public:
 		static bool ConvProjectIniFilesToCookCommands(const FString& InProjectDir, const FString& InProjectName,const TArray<FString>& InIniFiles, TArray<FString>& OutCommands);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool ConvNotAssetFileToCookCommand(const FString& InProjectDir,const FString& InPlatformName,const FString& InCookedFile,FString& OutCommand);
+
+
+	static FString HashStringWithSHA1(const FString &InString);
 
 };

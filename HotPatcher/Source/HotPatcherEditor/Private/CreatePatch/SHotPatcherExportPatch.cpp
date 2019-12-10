@@ -6,7 +6,7 @@
 #include "FlibPatchParserHelper.h"
 #include "FHotPatcherVersion.h"
 #include "FLibAssetManageHelperEx.h"
-#include "FFileInfo.h"
+#include "FPakFileInfo.h"
 // engine header
 #include "SHyperlink.h"
 #include "Misc/FileHelper.h"
@@ -55,7 +55,7 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 					.Text(LOCTEXT("Diff", "Diff"))
 					.IsEnabled(this, &SHotPatcherExportPatch::CanDiff)
 					.OnClicked(this, &SHotPatcherExportPatch::DoDiff)
-					.Visibility(this, &SHotPatcherExportPatch::VisibilityDiffButton)
+					.Visibility(this, &SHotPatcherExportPatch::VisibilityDiffButtons)
 				]
 				+ SHorizontalBox::Slot()
 				.HAlign(HAlign_Right)
@@ -66,7 +66,7 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 					.Text(LOCTEXT("ClearDiff", "ClearDiff"))
 					.IsEnabled(this, &SHotPatcherExportPatch::CanDiff)
 					.OnClicked(this, &SHotPatcherExportPatch::DoClearDiff)
-					.Visibility(this, &SHotPatcherExportPatch::VisibilityClearDiffButton)
+					.Visibility(this, &SHotPatcherExportPatch::VisibilityDiffButtons)
 				]
 				+ SHorizontalBox::Slot()
 					.HAlign(HAlign_Right)
@@ -147,8 +147,8 @@ FReply SHotPatcherExportPatch::DoDiff()const
 
 	FString SerializeDiffInfo = UFlibPatchParserHelper::SerializeDiffInfomationToString(AddAssetDependInfo, ModifyAssetDependInfo, DeleteAssetDependInfo);
 
-	DiffWidget->SetContent(SerializeDiffInfo);
-	DiffWidget->SetVisibility(EVisibility::Visible);
+	SetInformationContent(SerializeDiffInfo);
+	SetInfomationContentVisibility(EVisibility::Visible);
 
 	return FReply::Handled();
 }
@@ -168,31 +168,36 @@ bool SHotPatcherExportPatch::CanDiff()const
 
 FReply SHotPatcherExportPatch::DoClearDiff()const
 {
-	DiffWidget->SetContent(TEXT(""));
-	DiffWidget->SetVisibility(EVisibility::Collapsed);
+	SetInformationContent(TEXT(""));
+	SetInfomationContentVisibility(EVisibility::Collapsed);
+
 	return FReply::Handled();
 }
 
-EVisibility SHotPatcherExportPatch::VisibilityDiffButton() const
+EVisibility SHotPatcherExportPatch::VisibilityDiffButtons() const
 {
-	if (CanExportPatch())
+	bool bHasBase = false;
+	if (ExportPatchSetting->IsByBaseVersion())
+		bHasBase = !ExportPatchSetting->GetBaseVersion().IsEmpty() && FPaths::FileExists(ExportPatchSetting->GetBaseVersion());
+
+	if (bHasBase && CanExportPatch())
 	{
 		return EVisibility::Visible;
 	}
 	else {
-		return EVisibility::Hidden;
+		return EVisibility::Collapsed;
 	}
 }
 
-EVisibility SHotPatcherExportPatch::VisibilityClearDiffButton() const
+
+void SHotPatcherExportPatch::SetInformationContent(const FString& InContent)const
 {
-	if (CanExportPatch())
-	{
-		return EVisibility::Visible;
-	}
-	else {
-		return EVisibility::Hidden;
-	}
+	DiffWidget->SetContent(InContent);
+}
+
+void SHotPatcherExportPatch::SetInfomationContentVisibility(EVisibility InVisibility)const
+{
+	DiffWidget->SetVisibility(InVisibility);
 }
 
 bool SHotPatcherExportPatch::CanExportPatch()const
@@ -218,34 +223,19 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 
 FReply SHotPatcherExportPatch::DoExportPatch()
 {
-	FString BaseVersionContent;
+
 	FHotPatcherVersion BaseVersion;
 
-	bool bDeserializeStatus = false;
-
-	if(ExportPatchSetting->IsByBaseVersion())
+	if (ExportPatchSetting->IsByBaseVersion() && !ExportPatchSetting->GetBaseVersionInfo(BaseVersion))
 	{
-		if (UFLibAssetManageHelperEx::LoadFileToString(ExportPatchSetting->GetBaseVersion(), BaseVersionContent))
-		{
-			bDeserializeStatus = UFlibPatchParserHelper::DeserializeHotPatcherVersionFromString(BaseVersionContent, BaseVersion);
-		}
-		if (!bDeserializeStatus)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Deserialize Base Version Faild!"));
-			return FReply::Handled();
-		}
+		UE_LOG(LogTemp, Error, TEXT("Deserialize Base Version Faild!"));
+		return FReply::Handled();
 	}
 
-	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
-		ExportPatchSetting->GetVersionId(),
-		BaseVersion.VersionId,
-		FDateTime::UtcNow().ToString(),
-		ExportPatchSetting->GetAssetIncludeFilters(),
-		ExportPatchSetting->GetAssetIgnoreFilters(),
-		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
-	);
 
-	FString CurrentVersionSavePath = FPaths::Combine(ExportPatchSetting->GetSaveAbsPath(), CurrentVersion.VersionId);
+	FHotPatcherVersion CurrentVersion = ExportPatchSetting->GetNewPatchVersionInfo();
+
+	FString CurrentVersionSavePath = ExportPatchSetting->GetCurrentVersionSavePath();
 
 	// parser version difference
 
@@ -272,56 +262,40 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	FScopedSlowTask UnrealPakSlowTask(AmountOfWorkProgress);
 	UnrealPakSlowTask.MakeDialog();
 
-	// package all selected platform
-	TMap<FString,FFileInfo> PakFilesInfoMap;
-	for(const auto &Platform:ExportPatchSetting->GetPakTargetPlatforms())
+	// save pakversion.json
+	FPakVersion PakVersion = UExportPatchSettings::GetPakVersion(CurrentVersion, FDateTime::UtcNow().ToString());
 	{
-		// save UnrealPak.exe command file
-		FString PlatformName;
+		if (ExportPatchSetting->IsIncludePakVersion())
 		{
-			FString EnumName;
-			StaticEnum<ETargetPlatform>()->GetNameByValue((int64)Platform).ToString().Split(TEXT("::"), &EnumName, &PlatformName,ESearchCase::CaseSensitive,ESearchDir::FromEnd);
+			FString SavePakVersionFilePath = UExportPatchSettings::GetSavePakVersionPath(CurrentVersionSavePath, CurrentVersion);
+
+			FString OutString;
+			if (UFlibPakHelper::SerializePakVersionToString(PakVersion, OutString))
+			{
+				UFLibAssetManageHelperEx::SaveStringToFile(SavePakVersionFilePath, OutString);
+			}
 		}
-		
+	}
+
+	// package all selected platform
+	TMap<FString,FPakFileInfo> PakFilesInfoMap;
+	for(const auto& PlatformName :ExportPatchSetting->GetPakTargetPlatformNames())
+	{
 		// Update Progress Dialog
 		{
 			FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPakCommands", "Generating UnrealPak Commands of {0} Platform."), FText::FromString(PlatformName));
 			UnrealPakSlowTask.EnterProgressFrame(1.0, Dialog);
 		}
 
-		FString SavePakCommandPath = FPaths::Combine(
-			CurrentVersionSavePath,
-			PlatformName,
-			FString::Printf(TEXT("PakList_%s_%s_%s_PakCommands.txt"), *CurrentVersion.BaseVersionId, *CurrentVersion.VersionId, *PlatformName)
-		);
+		FString SavePakCommandPath = UExportPatchSettings::GetSavePakCommandsPath(CurrentVersionSavePath, PlatformName, CurrentVersion);
 
 		// combine all cook commands
 		{
 			FString ProjectDir = UKismetSystemLibrary::GetProjectDirectory();
 
 			// generated cook command form asset list
-			TArray<FString> OutPakCommand;
-			UFLibAssetManageHelperEx::GetCookCommandFromAssetDependencies(ProjectDir, PlatformName, AllChangedAssetInfo, TArray<FString>{}, OutPakCommand);
+			TArray<FString> OutPakCommand = ExportPatchSetting->CombineAllCookCommandsInTheSetting(PlatformName, AllChangedAssetInfo);
 
-			// generated cook command form project ini/AssetRegistry.bin/GlobalShaderCache*.bin
-			// and all extern file
-			{
-				TArray<FString> AllExternCookCommand;
-
-				ExportPatchSetting->GetAllExternAssetCookCommands(ProjectDir, PlatformName, AllExternCookCommand);
-
-				if (!!AllExternCookCommand.Num())
-				{
-					OutPakCommand.Append(AllExternCookCommand);
-				}
-				TArray<FString> AllExternFileToPakCommands = ExportPatchSetting->CombineAddExternFileToCookCommands();
-
-				if (!!AllExternFileToPakCommands.Num())
-				{
-					OutPakCommand.Append(AllExternFileToPakCommands);
-				}
-			}
-			
 			// save paklist to file
 			if (FFileHelper::SaveStringArrayToFile(OutPakCommand, *SavePakCommandPath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM))
 			{
@@ -338,6 +312,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Pak list of {0} Platform."), FText::FromString(PlatformName));
 			UnrealPakSlowTask.EnterProgressFrame(1.0, Dialog);
 		}
+
 		// create UnrealPak.exe create .pak file
 		{
 			FString SavePakFilePath = FPaths::Combine(
@@ -369,9 +344,10 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 				FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
 				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SavePakFilePath);
 				
-				FFileInfo CurrentPakInfo;
-				if (UFlibPatchParserHelper::GetFileInfo(SavePakFilePath, CurrentPakInfo))
+				FPakFileInfo CurrentPakInfo;
+				if (UFlibPatchParserHelper::GetPakFileInfo(SavePakFilePath, CurrentPakInfo))
 				{
+					CurrentPakInfo.PakVersion = PakVersion;
 					PakFilesInfoMap.Add(PlatformName,CurrentPakInfo);
 				}
 			}
@@ -384,12 +360,22 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		}
 	}
 
+	// delete pakversion.json
+	{
+		FString PakVersionSavedPath = UExportPatchSettings::GetSavePakVersionPath(CurrentVersionSavePath,CurrentVersion);
+		if (ExportPatchSetting->IsIncludePakVersion() && FPaths::FileExists(PakVersionSavedPath))
+		{
+			IFileManager::Get().Delete(*PakVersionSavedPath);
+		}
+	}
+	
 	// save difference to file
 	{
 		{
 			FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportPatch","ExportPatchDiffFile","Generating Diff info of version {0}"),FText::FromString(CurrentVersion.VersionId));
 			UnrealPakSlowTask.EnterProgressFrame(1.0, DiaLogMsg);
 		}
+
 		if (ExportPatchSetting->IsSaveDiffAnalysis())
 		{
 			FString SerializeDiffInfo = UFlibPatchParserHelper::SerializeDiffInfomationToString(AddAssetDependInfo, ModifyAssetDependInfo, DeleteAssetDependInfo);
@@ -406,7 +392,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		}
 	}
 
-	// save Patch track asset info to file
+	// save Patch Tracked asset info to file
 	{
 		{
 			FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportPatch", "ExportPatchAssetInfo", "Generating Patch Tacked Asset info of version {0}"), FText::FromString(CurrentVersion.VersionId));

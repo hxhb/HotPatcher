@@ -1,18 +1,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "FFileInfo.generated.h"
+#include "FPakVersion.generated.h"
 
 USTRUCT(BlueprintType)
-struct FFileInfo
+struct FPakVersion
 {
 	GENERATED_USTRUCT_BODY()
 public:
-
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	FString FileName;
+		FString VersionId;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	FString Hash;
+		FString BaseVersionId;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	int32 FileSize;
+		FString Date;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+		FString CheckCode;
 };
