@@ -80,16 +80,23 @@ public:
 	// return abslute path
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool GetCookedAssetRegistryFile(const FString& InProjectDir, const FString& InProjectName, const FString& InPlatformName,FString& OutFile);
-	// return abslute path
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static TArray<FString> SearchProjectIniFiles(const FString& InProjectDir);
+
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool ConvProjectIniFilesToCookCommands(const FString& InProjectDir, const FString& InProjectName,const TArray<FString>& InIniFiles, TArray<FString>& OutCommands);
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static bool ConvIniFilesToCookCommands(const FString& InEngineAbsDir, const FString& InProjectAbsDir, const FString& InProjectName, const TArray<FString>& InIniFiles, TArray<FString>& OutCommands);
+		UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool ConvNotAssetFileToCookCommand(const FString& InProjectDir,const FString& InPlatformName,const FString& InCookedFile,FString& OutCommand);
 
-
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 	static FString HashStringWithSHA1(const FString &InString);
 
+	// return abslute path
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+	static TArray<FString> GetProjectIniFiles(const FString& InProjectDir);
+
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+	static TArray<FString> GetEngineConfigs(const FString& InPlatformName);
+
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+	static TArray<FString> GetEnabledPluginConfigs(const FString& InPlatformName);
 };

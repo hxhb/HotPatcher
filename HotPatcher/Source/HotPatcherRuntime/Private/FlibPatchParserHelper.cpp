@@ -11,7 +11,10 @@
 #include "Kismet/KismetStringLibrary.h"
 #include "Interfaces/IPluginManager.h"
 #include "Serialization/JsonSerializer.h"
+#include "HAL/FileManager.h"
 #include "Engine/EngineTypes.h"
+#include "Misc/Paths.h"
+
 TArray<FString> UFlibPatchParserHelper::GetAvailableMaps(FString GameName, bool IncludeEngineMaps, bool Sorted)
 {
 	TArray<FString> Result;
@@ -589,7 +592,7 @@ bool UFlibPatchParserHelper::GetCookedAssetRegistryFile(const FString& InProject
 	return bRunStatus;
 }
 
-TArray<FString> UFlibPatchParserHelper::SearchProjectIniFiles(const FString& InProjectDir)
+TArray<FString> UFlibPatchParserHelper::GetProjectIniFiles(const FString& InProjectDir)
 {
 	TArray<FString> Resault;
 	FString ConfigFolder = FPaths::Combine(InProjectDir, TEXT("Config"));
@@ -607,35 +610,62 @@ TArray<FString> UFlibPatchParserHelper::SearchProjectIniFiles(const FString& InP
 	return Resault;
 }
 
-bool UFlibPatchParserHelper::ConvProjectIniFilesToCookCommands(const FString& InProjectDir,const FString& InProjectName, const TArray<FString>& InIniFiles, TArray<FString>& OutCommands)
+bool UFlibPatchParserHelper::ConvIniFilesToCookCommands(const FString& InEngineAbsDir,const FString& InProjectAbsDir,const FString& InProjectName, const TArray<FString>& InIniFiles, TArray<FString>& OutCommands)
 {
 	OutCommands.Reset();
 	bool bRunStatus = false;
-	if (!FPaths::DirectoryExists(InProjectDir))
+	if (!FPaths::DirectoryExists(InProjectAbsDir) || !FPaths::DirectoryExists(InEngineAbsDir))
 		return false;
-	FString UProjectFile = FPaths::Combine(InProjectDir, InProjectName + TEXT(".uproject"));
+	FString UProjectFile = FPaths::Combine(InProjectAbsDir, InProjectName + TEXT(".uproject"));
 	if (!FPaths::FileExists(UProjectFile))
 		return false;
 
+	for (const auto& IniFile : InIniFiles)
 	{
-		FString RelativePath = FString::Printf(TEXT("../../../%s/Config"),*InProjectName);
-		int32 LastSlashIndex = FPaths::Combine(InProjectDir, TEXT("Config/")).Len();
-
-		for (const auto& IniFile:InIniFiles)
+		bool bIsInProjectIni = false;
+		if (IniFile.Contains(InProjectAbsDir))
 		{
-			if (IniFile.Contains(InProjectDir,ESearchCase::CaseSensitive))
+			bIsInProjectIni = true;
+		}
+
+		{
+			FString IniAbsDir;
+			FString IniFileName;
+			FString IniExtention;
+			FPaths::Split(IniFile, IniAbsDir, IniFileName, IniExtention);
+
+			FString RelativePath;
+
+			if (bIsInProjectIni)
 			{
-				FString IniFileName = UKismetStringLibrary::GetSubstring(IniFile, LastSlashIndex, IniFile.Len() - LastSlashIndex);
-				FString CookedIniRelativePath = FPaths::Combine(RelativePath, IniFileName);
-				FString CookCommand = FString::Printf(
-					TEXT("\"%s\" \"%s\""),
+				RelativePath = FString::Printf(
+					TEXT("../../../%s/"), 
+					*InProjectName
+				);
+				
+				FString RelativeToProjectDir = UKismetStringLibrary::GetSubstring(IniAbsDir, InProjectAbsDir.Len(), IniAbsDir.Len() - InProjectAbsDir.Len());
+				RelativePath = FPaths::Combine(RelativePath, RelativeToProjectDir);
+			}
+			else
+			{
+				RelativePath = FString::Printf(
+					TEXT("../../../Engine/")
+				);
+				FString RelativeToEngineDir = UKismetStringLibrary::GetSubstring(IniAbsDir, InEngineAbsDir.Len(), IniAbsDir.Len() - InEngineAbsDir.Len());
+				RelativePath = FPaths::Combine(RelativePath, RelativeToEngineDir);
+			}
+
+			FString IniFileNameWithExten = FString::Printf(TEXT("%s.%s"),*IniFileName,*IniExtention);
+			FString CookedIniRelativePath = FPaths::Combine(RelativePath, IniFileNameWithExten);
+			FString CookCommand = FString::Printf(
+				TEXT("\"%s\" \"%s\""),
 					*IniFile,
 					*CookedIniRelativePath
-				);
-				OutCommands.AddUnique(CookCommand);
-			}
+			);
+			OutCommands.AddUnique(CookCommand);
+	
+			bRunStatus = true;
 		}
-		bRunStatus = true;
 	}
 	return bRunStatus;
 }
@@ -669,4 +699,71 @@ FString UFlibPatchParserHelper::HashStringWithSHA1(const FString &InString)
 	FSHA1::HashBuffer(TCHAR_TO_ANSI(*InString), InString.Len(), StringHash.Hash);
 	return StringHash.ToString();
 
+}
+
+TArray<FString> UFlibPatchParserHelper::GetEngineConfigs(const FString& InPlatformName)
+{
+	TArray<FString> Result;
+	const FString EngineConfigAbsDir = FPaths::ConvertRelativePathToFull(FPaths::EngineConfigDir());
+
+	if (FPaths::DirectoryExists(EngineConfigAbsDir))
+	{
+		FFillArrayDirectoryVisitor Visitor;
+		
+		IFileManager::Get().IterateDirectory(*EngineConfigAbsDir, Visitor);
+
+		for (const auto& IniFile : Visitor.Files)
+		{
+			if (!FPaths::GetCleanFilename(IniFile).Contains(TEXT("Editor")))
+			{
+				Result.Add(IniFile);
+			}
+		}
+		int32 PlatformNameBeginIndex= EngineConfigAbsDir.Len() + 1;
+		for (const auto& PlatformIniDirectory : Visitor.Directories)
+		{
+			FString DirectoryName = UKismetStringLibrary::GetSubstring(PlatformIniDirectory, PlatformNameBeginIndex, PlatformIniDirectory.Len() - PlatformNameBeginIndex);
+			if (InPlatformName.Contains(DirectoryName))
+			{
+				FFillArrayDirectoryVisitor PlatformVisitor;
+
+				IFileManager::Get().IterateDirectory(*PlatformIniDirectory, PlatformVisitor);
+				
+				for (const auto& PlatformIni : PlatformVisitor.Files)
+				{
+					Result.Add(PlatformIni);
+				}
+			}
+		}
+	}
+	return Result;
+}
+
+TArray<FString> UFlibPatchParserHelper::GetEnabledPluginConfigs(const FString& InPlatformName)
+{
+	TArray<FString> result;
+	TArray<TSharedRef<IPlugin>> AllEnablePlugins = IPluginManager::Get().GetEnabledPlugins();
+
+	for (const auto& Plugin : AllEnablePlugins)
+	{
+		FString PluginAbsPath;
+		if (UFLibAssetManageHelperEx::GetPluginModuleAbsDir(Plugin->GetName(), PluginAbsPath))
+		{
+			FString PluginIniPath = FPaths::Combine(PluginAbsPath, TEXT("Config"));
+			
+			if (FPaths::DirectoryExists(PluginIniPath))
+			{
+				FFillArrayDirectoryVisitor PluginIniVisitor;
+				IFileManager::Get().IterateDirectory(*PluginIniPath, PluginIniVisitor);
+
+				for (const auto& IniFile : PluginIniVisitor.Files)
+				{
+					result.AddUnique(IniFile);
+				}
+			}
+			
+		}
+	}
+
+	return result;
 }

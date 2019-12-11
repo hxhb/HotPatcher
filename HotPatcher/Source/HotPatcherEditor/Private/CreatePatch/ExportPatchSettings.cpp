@@ -224,21 +224,44 @@ bool UExportPatchSettings::GetAllExternAssetCookCommands(const FString& InProjec
 		}
 	}
 
-	if (IsIncludeProjectIni())
+	FString EngineAbsDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
+
+	auto CombineIniCookCommands = [&OutCookCommands,&InProjectDir,&EngineAbsDir,&InPlatform](const TArray<FString>& IniFiles)
 	{
-		TArray<FString> IniFiles = UFlibPatchParserHelper::SearchProjectIniFiles(InProjectDir);
+		TArray<FString> result;
+
 		TArray<FString> IniCookCommmands;
-		UFlibPatchParserHelper::ConvProjectIniFilesToCookCommands(
-		InProjectDir,
-		UFlibPatchParserHelper::GetProjectName(),
-		IniFiles,
-		IniCookCommmands
+		UFlibPatchParserHelper::ConvIniFilesToCookCommands(
+			EngineAbsDir,
+			InProjectDir,
+			UFlibPatchParserHelper::GetProjectName(),
+			IniFiles,
+			IniCookCommmands
 		);
 		if (!!IniCookCommmands.Num())
 		{
-		OutCookCommands.Append(IniCookCommmands);
+			OutCookCommands.Append(IniCookCommmands);
 		}
+		
+	};
+
+	if (IsIncludeProjectIni())
+	{
+		TArray<FString> ProjectIniFiles = UFlibPatchParserHelper::GetProjectIniFiles(InProjectDir);
+		CombineIniCookCommands(ProjectIniFiles);
+
 	}
+	if (IsIncludeEngineIni())
+	{
+		TArray<FString> EngineIniFiles = UFlibPatchParserHelper::GetEngineConfigs(InPlatform);
+		CombineIniCookCommands(EngineIniFiles);
+	}
+	if (IsIncludePluginIni())
+	{
+		TArray<FString> PluginIniFiles = UFlibPatchParserHelper::GetEnabledPluginConfigs(InPlatform);
+		CombineIniCookCommands(PluginIniFiles);
+	}
+
 	return true;
 	}
 
@@ -276,6 +299,8 @@ bool UExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObje
 
 	OutJsonObject->SetBoolField(TEXT("bIncludeAssetRegistry"), IsIncludeAssetRegistry());
 	OutJsonObject->SetBoolField(TEXT("bIncludeGlobalShaderCache"), IsIncludeGlobalShaderCache());
+	OutJsonObject->SetBoolField(TEXT("bIncludeEngineIni"), IsIncludeEngineIni());
+	OutJsonObject->SetBoolField(TEXT("bIncludePluginIni"), IsIncludePluginIni());
 	OutJsonObject->SetBoolField(TEXT("bIncludeProjectIni"), IsIncludeProjectIni());
 
 	// serialize all add extern file to pak
