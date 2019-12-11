@@ -63,6 +63,7 @@ public:
 
 	FORCEINLINE bool IsIncludeAssetRegistry()const { return bIncludeAssetRegistry; }
 	FORCEINLINE bool IsIncludeGlobalShaderCache()const { return bIncludeGlobalShaderCache; }
+	FORCEINLINE bool IsIncludeShaderBytecode()const { return bIncludeShaderBytecode; }
 	FORCEINLINE bool IsIncludeEngineIni()const { return bIncludeEngineIni; }
 	FORCEINLINE bool IsIncludePluginIni()const { return bIncludePluginIni; }
 	FORCEINLINE bool IsIncludeProjectIni()const { return bIncludeProjectIni; }
@@ -99,6 +100,9 @@ protected:
 		bool bIncludeAssetRegistry;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
 		bool bIncludeGlobalShaderCache;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
+		bool bIncludeShaderBytecode;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
 		bool bIncludeEngineIni;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")

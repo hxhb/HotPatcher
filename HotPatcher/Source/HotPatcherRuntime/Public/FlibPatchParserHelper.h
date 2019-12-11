@@ -74,13 +74,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool GetPakFileInfo(const FString& InFile,FPakFileInfo& OutFileInfo);
 
-	// return abslute path
+	// Cooked/PLATFORM_NAME/Engine/GlobalShaderCache-*.bin
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static TArray<FString> SearchCookedGlobalShaderCacheFiles(const FString& InProjectDir,const FString& InPlatformName);
-	// return abslute path
+		static TArray<FString> GetCookedGlobalShaderCacheFiles(const FString& InProjectDir,const FString& InPlatformName);
+	// Cooked/PLATFORN_NAME/PROJECT_NAME/AssetRegistry.bin
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool GetCookedAssetRegistryFile(const FString& InProjectDir, const FString& InProjectName, const FString& InPlatformName,FString& OutFile);
-
+		static bool GetCookedAssetRegistryFiles(const FString& InProjectAbsDir, const FString& InProjectName, const FString& InPlatformName,FString& OutFiles);
+	// Cooked/PLATFORN_NAME/PROJECT_NAME/Content/ShaderArchive-*.ushaderbytecode
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static bool GetCookedShaderBytecodeFiles(const FString& InProjectAbsDir, const FString& InProjectName, const FString& InPlatformName,bool InGalobalBytecode,bool InProjectBytecode, TArray<FString>& OutFiles);
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool ConvIniFilesToCookCommands(const FString& InEngineAbsDir, const FString& InProjectAbsDir, const FString& InProjectName, const TArray<FString>& InIniFiles, TArray<FString>& OutCommands);

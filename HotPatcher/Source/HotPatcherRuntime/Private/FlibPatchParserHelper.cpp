@@ -555,7 +555,7 @@ bool UFlibPatchParserHelper::GetPakFileInfo(const FString& InFile, FPakFileInfo&
 	return bRunStatus;
 }
 
-TArray<FString> UFlibPatchParserHelper::SearchCookedGlobalShaderCacheFiles(const FString& InProjectDir, const FString& InPlatformName)
+TArray<FString> UFlibPatchParserHelper::GetCookedGlobalShaderCacheFiles(const FString& InProjectDir, const FString& InPlatformName)
 {
 	TArray<FString> Resault;
 	if (UFLibAssetManageHelperEx::IsValidPlatform(InPlatformName))
@@ -576,19 +576,52 @@ TArray<FString> UFlibPatchParserHelper::SearchCookedGlobalShaderCacheFiles(const
 }
 
 
-bool UFlibPatchParserHelper::GetCookedAssetRegistryFile(const FString& InProjectDir,const FString& InProjectName, const FString& InPlatformName, FString& OutFile)
+bool UFlibPatchParserHelper::GetCookedAssetRegistryFiles(const FString& InProjectAbsDir,const FString& InProjectName, const FString& InPlatformName, FString& OutFiles)
 {
 	bool bRunStatus = false;
 	if (UFLibAssetManageHelperEx::IsValidPlatform(InPlatformName))
 	{
-		FString CookedPAssetRegistryFile = FPaths::Combine(InProjectDir, TEXT("Saved/Cooked"), InPlatformName, InProjectName,TEXT("AssetRegistry.bin"));
+		FString CookedPAssetRegistryFile = FPaths::Combine(InProjectAbsDir, TEXT("Saved/Cooked"), InPlatformName, InProjectName,TEXT("AssetRegistry.bin"));
 		if (FPaths::FileExists(CookedPAssetRegistryFile))
 		{
 			bRunStatus = true;
-			OutFile = CookedPAssetRegistryFile;
+			OutFiles = CookedPAssetRegistryFile;
 		}
 	}
 
+	return bRunStatus;
+}
+
+bool UFlibPatchParserHelper::GetCookedShaderBytecodeFiles(const FString& InProjectAbsDir, const FString& InProjectName, const FString& InPlatformName, bool InGalobalBytecode, bool InProjectBytecode, TArray<FString>& OutFiles)
+{
+	bool bRunStatus = false;
+	OutFiles.Reset();
+
+	if (UFLibAssetManageHelperEx::IsValidPlatform(InPlatformName))
+	{
+		FString CookedContentDir = FPaths::Combine(InProjectAbsDir, TEXT("Saved/Cooked"), InPlatformName, InProjectName, TEXT("Content"));
+
+		if (FPaths::DirectoryExists(CookedContentDir))
+		{
+			TArray<FString> ShaderbytecodeFiles;
+			IFileManager::Get().FindFiles(ShaderbytecodeFiles, *CookedContentDir, TEXT("ushaderbytecode"));
+
+			for (const auto& ShaderByteCodeFile : ShaderbytecodeFiles)
+			{
+				if (InGalobalBytecode && ShaderByteCodeFile.Contains(TEXT("Global")))
+				{
+					OutFiles.AddUnique(FPaths::Combine(CookedContentDir, ShaderByteCodeFile));
+				}
+				if (InProjectBytecode && ShaderByteCodeFile.Contains(InProjectName))
+				{
+					OutFiles.AddUnique(FPaths::Combine(CookedContentDir, ShaderByteCodeFile));
+				}
+				
+			}
+
+			bRunStatus = !!ShaderbytecodeFiles.Num();
+		}
+	}
 	return bRunStatus;
 }
 
@@ -759,6 +792,22 @@ TArray<FString> UFlibPatchParserHelper::GetEnabledPluginConfigs(const FString& I
 				for (const auto& IniFile : PluginIniVisitor.Files)
 				{
 					result.AddUnique(IniFile);
+				}
+
+				for (const auto& IniDir : PluginIniVisitor.Directories)
+				{
+					FString ChildFolderName  = UKismetStringLibrary::GetSubstring(IniDir, PluginIniPath.Len(), IniDir.Len() - PluginIniPath.Len());
+					
+					if (InPlatformName.Contains(ChildFolderName))
+					{
+						FFillArrayDirectoryVisitor PluginChildIniVisitor;
+						IFileManager::Get().IterateDirectoryRecursively(*IniDir, PluginChildIniVisitor);
+						
+						for (const auto& IniFile : PluginChildIniVisitor.Files)
+						{
+							result.AddUnique(IniFile);
+						}
+					}
 				}
 			}
 			

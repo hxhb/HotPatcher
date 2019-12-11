@@ -8,7 +8,8 @@
 - **IncludeFilter**：当前Patch扫描哪些目录下的资源变动。
 - **IgnoreFilter**：当前Patch忽略哪些目录下的资源变动。
 - **IncludeAssetRegistry**：在当前的Patch打出的Pak中包含`AssetRegistry.bin`文件。
-- **IncludeGlobalShaderCache**：在当前的Patch打出的Pak中包含`GlobalShaderCache-*.bin`文件。
+- **IncludeGlobalShaderCache**：在当前的Patch打出的Pak中包含`Cooked\Engine\GlobalShaderCache-*.bin`文件。
+- **IncludeShaderBytecode**：在当前Patch打出的Pak中包含`PROJECT_NAME\Content\ShaderArchive*.ushaderbytecode`文件。
 - **IncludeEngineIni**：在当前打出的Patch中包含引擎目录下的ini，也会包含平台相关的ini
 - **IncludePluginIni**：在当前打出的Patch中包含所有启用的插件中的ini（引擎目录和项目目录的插件都会包含）
 - **IncludeProjectIni**：在当前的Patch打出的Pak中包含项目的ini文件（不会包含`DefaultEditor*.ini`）

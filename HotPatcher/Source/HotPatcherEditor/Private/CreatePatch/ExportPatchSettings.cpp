@@ -194,10 +194,13 @@ bool UExportPatchSettings::GetAllExternAssetCookCommands(const FString& InProjec
 {
 	OutCookCommands.Reset();
 	TArray<FString> SearchAssetList;
+
+	FString ProjectName = UFlibPatchParserHelper::GetProjectName();
+
 	if (IsIncludeAssetRegistry())
 	{
 		FString AssetRegistryCookCommand;
-		if (UFlibPatchParserHelper::GetCookedAssetRegistryFile(InProjectDir, UFlibPatchParserHelper::GetProjectName(), InPlatform, AssetRegistryCookCommand))
+		if (UFlibPatchParserHelper::GetCookedAssetRegistryFiles(InProjectDir, UFlibPatchParserHelper::GetProjectName(), InPlatform, AssetRegistryCookCommand))
 		{
 		SearchAssetList.AddUnique(AssetRegistryCookCommand);
 		}
@@ -205,10 +208,22 @@ bool UExportPatchSettings::GetAllExternAssetCookCommands(const FString& InProjec
 
 	if (IsIncludeGlobalShaderCache())
 	{
-		TArray<FString> GlobalShaderCacheList = UFlibPatchParserHelper::SearchCookedGlobalShaderCacheFiles(InProjectDir, InPlatform);
+		TArray<FString> GlobalShaderCacheList = UFlibPatchParserHelper::GetCookedGlobalShaderCacheFiles(InProjectDir, InPlatform);
 		if (!!GlobalShaderCacheList.Num())
 		{
 		SearchAssetList.Append(GlobalShaderCacheList);
+		}
+	}
+
+	if (IsIncludeShaderBytecode())
+	{
+		TArray<FString> ShaderByteCodeFiles;
+		
+		if (UFlibPatchParserHelper::GetCookedShaderBytecodeFiles(InProjectDir, ProjectName, InPlatform, true, true, ShaderByteCodeFiles) &&
+			!!ShaderByteCodeFiles.Num()
+		)
+		{
+			SearchAssetList.Append(ShaderByteCodeFiles);
 		}
 	}
 
@@ -299,6 +314,7 @@ bool UExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObje
 
 	OutJsonObject->SetBoolField(TEXT("bIncludeAssetRegistry"), IsIncludeAssetRegistry());
 	OutJsonObject->SetBoolField(TEXT("bIncludeGlobalShaderCache"), IsIncludeGlobalShaderCache());
+	OutJsonObject->SetBoolField(TEXT("bIncludeShaderBytecode"), IsIncludeShaderBytecode());
 	OutJsonObject->SetBoolField(TEXT("bIncludeEngineIni"), IsIncludeEngineIni());
 	OutJsonObject->SetBoolField(TEXT("bIncludePluginIni"), IsIncludePluginIni());
 	OutJsonObject->SetBoolField(TEXT("bIncludeProjectIni"), IsIncludeProjectIni());
