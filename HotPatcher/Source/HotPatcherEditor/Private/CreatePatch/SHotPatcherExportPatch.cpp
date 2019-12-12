@@ -336,7 +336,9 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			}
 
 			// create UnrealPak process
-			FProcHandle ProcessHandle = FPlatformProcess::CreateProc(*UnrealPakBinary, *CommandLine, true, false, false, NULL, NULL, NULL, NULL);
+
+			uint32 *ProcessID = NULL;
+            FProcHandle ProcessHandle = FPlatformProcess::CreateProc(*UnrealPakBinary, *CommandLine, true, false, false, ProcessID, 0, NULL, NULL, NULL);
 			FPlatformProcess::WaitForProc(ProcessHandle);
 
 			if (FPaths::FileExists(SavePakFilePath))

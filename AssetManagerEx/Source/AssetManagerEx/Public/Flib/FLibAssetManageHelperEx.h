@@ -164,8 +164,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
 		static bool FindFilesRecursive(const FString& InStartDir, TArray<FString>& OutFileList, bool InRecursive = true);
 
-	// conversion / to \ 
+	// conversion slash to back slash
 	static FString ConvPath_Slash2BackSlash(const FString& InPath);
-	// conversion \ to /
+	// conversion back slash to slash
 	static FString ConvPath_BackSlash2Slash(const FString& InPath);
 };

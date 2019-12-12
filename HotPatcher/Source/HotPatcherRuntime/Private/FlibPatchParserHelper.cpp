@@ -74,6 +74,14 @@ FString UFlibPatchParserHelper::GetUnrealPakBinary()
 		TEXT("UnrealPak.exe")
 	);
 #endif
+#if PLATFORM_MAC
+    return FPaths::Combine(
+            FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
+            TEXT("Binaries"),
+            TEXT("Mac"),
+            TEXT("UnrealPak")
+    );
+#endif
 }
 
 FString UFlibPatchParserHelper::GetUE4CmdBinary()
@@ -88,6 +96,14 @@ FString UFlibPatchParserHelper::GetUE4CmdBinary()
 		TEXT("Win32"),
 #endif
 		TEXT("UE4Editor-Cmd.exe")
+	);
+#endif
+#if PLATFORM_MAC
+    return FPaths::Combine(
+		FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
+		TEXT("Binaries"),
+		TEXT("Mac"),
+		TEXT("UE4Editor-Cmd")
 	);
 #endif
 }
