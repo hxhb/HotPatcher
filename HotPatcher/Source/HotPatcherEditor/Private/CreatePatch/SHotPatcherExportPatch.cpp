@@ -216,7 +216,7 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 
 		bool bHasSavePath = !ExportPatchSetting->GetSaveAbsPath().IsEmpty();
 		bool bHasPakPlatfotm = !!ExportPatchSetting->GetPakTargetPlatforms().Num();
-		bCanExport = bHasBase && bHasVersionId && (bHasFilter || bHasExternFiles) && bHasSavePath;
+		bCanExport = bHasBase && bHasVersionId && (bHasFilter || bHasExternFiles) && bHasPakPlatfotm && bHasSavePath;
 	}
 	return bCanExport;
 }
