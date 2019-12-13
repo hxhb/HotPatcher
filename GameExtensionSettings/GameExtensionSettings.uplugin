@@ -1,0 +1,29 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "GameExtensionSettings",
+	"Description": "",
+	"Category": "Other",
+	"CreatedBy": "imzlp",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"Installed": false,
+	"WhitelistPlatforms" :
+			[
+				"Win32",
+				"Win64",
+				"Mac",
+			],
+	"Modules": [
+		{
+			"Name": "GameExtensionSettings",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	]
+}
