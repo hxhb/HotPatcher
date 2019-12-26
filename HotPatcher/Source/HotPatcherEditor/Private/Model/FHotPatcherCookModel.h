@@ -138,6 +138,9 @@ public:
 	}
 public:
 	FRequestExSettings OnRequestExSettings;
+
+	/** The list of active system messages */
+	TSharedPtr<SNotificationList> NotificationListPtr;
 private:
 	TArray<FString> mSelectedPlatform;
 	TArray<FString> mSelectedCookMaps;

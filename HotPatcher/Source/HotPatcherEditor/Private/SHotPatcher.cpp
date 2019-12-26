@@ -87,9 +87,23 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 					]
 			]
 		]
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Bottom)
+		.Padding(15)
+		[
+			SAssignNew(NotificationListPtr, SNotificationList)
+		]
 	];
 
+	CookModel->NotificationListPtr = GetNotificationListPtr();
+	CreatePatchModel->NotificationListPtr = GetNotificationListPtr();
 }
 
+
+TSharedPtr<SNotificationList> SHotPatcher::GetNotificationListPtr() const
+{
+	return NotificationListPtr;
+}
 
 #undef LOCTEXT_NAMESPACE

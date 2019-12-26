@@ -6,6 +6,7 @@
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Model/FHotPatcherCookModel.h"
+#include "ThreadUtils/FProcWorkerThread.hpp"
 
 /**
  * Implements the profile page for the session launcher wizard.
@@ -26,10 +27,22 @@ public:
 	 * @param InArgs The Slate argument list.
 	 */
 	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCookModel> InCookModel);
+	
+
 protected:
 	bool CanExecuteCook()const;
 	void RunCookProc(const FString& InBinPath, const FString& InCommand)const;
 	FReply RunCook()const;
+
+protected:
+	static void ReceiveOutputMsg(const FString& InMsg);
+	void SpawnRuningCookNotification();
+	void SpawnEndCookNotification();
 private:
+
+	/** The pending progress message */
+	TWeakPtr<SNotificationItem> PendingProgressPtr;
+
 	TSharedPtr<FHotPatcherCookModel> mCookModel;
+	mutable TSharedPtr<FProcWorkerThread> mCookProcWorkingThread;
 };

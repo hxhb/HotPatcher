@@ -23,9 +23,13 @@ public:
 	* @param	InArgs			A declaration from which to construct the widget
 	*/
 	void Construct(const FArguments& InArgs);
+	TSharedPtr<SNotificationList> GetNotificationListPtr()const;
 
 
 private:
+	/** The list of active system messages */
+	TSharedPtr<SNotificationList> NotificationListPtr;
+
 	TSharedPtr<FHotPatcherCookModel> CookModel;
 	TSharedPtr<FHotPatcherCreatePatchModel> CreatePatchModel;
 };

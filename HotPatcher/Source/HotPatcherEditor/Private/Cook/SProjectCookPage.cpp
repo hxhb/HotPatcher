@@ -5,12 +5,13 @@
 #include "SHotPatcherCookSetting.h"
 #include "SHotPatcherCookMaps.h"
 #include "FlibPatchParserHelper.h"
+#include "ThreadUtils/FProcWorkerThread.hpp"
 
 // Engine Header
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SExpandableArea.h"
-
+#include "Async.h"
 
 
 #define LOCTEXT_NAMESPACE "SProjectCookPage"
@@ -157,47 +158,48 @@ FReply SProjectCookPage::RunCook()const
 }
 
 
+void SProjectCookPage::ReceiveOutputMsg(const FString& InMsg)
+{
+	UE_LOG(LogTemp, Log, TEXT("%s"), *InMsg);
+}
+
+
+void SProjectCookPage::SpawnRuningCookNotification()
+{
+	if (PendingProgressPtr.IsValid())
+	{
+		PendingProgressPtr.Pin()->ExpireAndFadeout();
+	}
+	FNotificationInfo Info(LOCTEXT("CookNotificationInProgress", "Cook Operation In Progress"));
+
+	Info.bFireAndForget = false;
+
+	PendingProgressPtr = mCookModel->NotificationListPtr->AddNotification(Info);
+	PendingProgressPtr.Pin()->SetCompletionState(SNotificationItem::CS_Pending);
+
+}
+
+
+void SProjectCookPage::SpawnEndCookNotification()
+{
+	TSharedPtr<SNotificationItem> NotificationItem = PendingProgressPtr.Pin();
+
+	if (NotificationItem.IsValid())
+	{
+		NotificationItem->SetText(LOCTEXT("CookNotification", "Cook Operation Finished!"));
+		NotificationItem->SetCompletionState(SNotificationItem::CS_Success);
+		NotificationItem->ExpireAndFadeout();
+
+		PendingProgressPtr.Reset();
+	}
+}
+
 void SProjectCookPage::RunCookProc(const FString& InBinPath, const FString& InCommand)const
 {
-	void* PipeRead = nullptr;
-	void* PipeWrite = nullptr;
-	int32 ReturnCode = -1;
-
-	//verify(FPlatformProcess::CreatePipe(PipeRead, PipeWrite));
-	bool bLaunchDetached = true;
-	bool bLaunchHidden = false;
-	bool bLaunchReallyHidden = false;
-	uint32* OutProcessID = nullptr;
-	int32 PriorityModifier = -1;
-	const TCHAR* OptionalWorkingDirectory = nullptr;
-	FProcHandle ProcessHandle = FPlatformProcess::CreateProc(
-		*InBinPath, *InCommand,
-		bLaunchDetached, bLaunchHidden, bLaunchReallyHidden,
-		OutProcessID, PriorityModifier,
-		OptionalWorkingDirectory,
-		PipeWrite
-	);
-	//if (ProcessHandle.IsValid())
-	//{
-	//	FPlatformProcess::WaitForProc(ProcessHandle);
-	//	FPlatformProcess::GetProcReturnCode(ProcessHandle, &ReturnCode);
-	//	if (ReturnCode == 0)
-	//	{
-	//		TArray<FString> OutResults;
-	//		const FString StdOut = FPlatformProcess::ReadPipe(PipeRead);
-	//		StdOut.ParseIntoArray(OutResults, TEXT("\n"), true);
-	//		UE_LOG(LogTemp, Log, TEXT("Cook Task Successfuly:\n%s"), *StdOut);
-	//	}
-	//	else
-	//	{
-	//		TArray<FString> OutErrorMessages;
-	//		const FString StdOut = FPlatformProcess::ReadPipe(PipeRead);
-	//		StdOut.ParseIntoArray(OutErrorMessages, TEXT("\n"), true);
-	//		UE_LOG(LogTemp, Warning, TEXT("Cook Task Falied:\nReturnCode=%d\n%s"), ReturnCode, *StdOut);
-	//	}
-
-	//	FPlatformProcess::ClosePipe(PipeRead, PipeWrite);
-	//	FPlatformProcess::CloseProc(ProcessHandle);
-	//}
+	mCookProcWorkingThread = MakeShareable(new FProcWorkerThread(TEXT("CookThread"),InBinPath,InCommand));
+	mCookProcWorkingThread->OutputMsgDelegate.AddStatic(&SProjectCookPage::ReceiveOutputMsg);
+	//mCookProcWorkingThread->BeginDelegate.AddRaw(this,&SProjectCookPage::SpawnRuningCookNotification);
+	//mCookProcWorkingThread->EndDelegate.AddRaw(this,&SProjectCookPage::SpawnEndCookNotification);
+	mCookProcWorkingThread->Execute();
 }
 #undef LOCTEXT_NAMESPACE
