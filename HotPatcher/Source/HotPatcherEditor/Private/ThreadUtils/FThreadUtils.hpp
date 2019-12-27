@@ -1,6 +1,7 @@
 #pragma once
 #include "HAL/Runnable.h"
 #include "HAL/RunnableThread.h"
+DECLARE_MULTICAST_DELEGATE(FThreadStatusDelegate);
 
 namespace EThreadStatus
 {
@@ -65,7 +66,8 @@ public:
 	{
 		return mThreadStatus;
 	}
-
+public:
+	FThreadStatusDelegate CancelDelegate;
 protected:
 	FString mThreadName;
 	FCallback mRunFunc;

@@ -37,9 +37,10 @@ protected:
 protected:
 	static void ReceiveOutputMsg(const FString& InMsg);
 	void SpawnRuningCookNotification();
-	void SpawnEndCookNotification();
+	void SpawnCookSuccessedNotification();
+	void SpawnCookFaildNotification();
 private:
-
+	bool InCooking=false;
 	/** The pending progress message */
 	TWeakPtr<SNotificationItem> PendingProgressPtr;
 

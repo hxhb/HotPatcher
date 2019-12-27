@@ -117,6 +117,7 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 
 bool SProjectCookPage::CanExecuteCook()const
 {
+
 	if (!(mCookModel->GetAllSelectedPlatform().Num() > 0))
 	{
 		return false;
@@ -126,7 +127,8 @@ bool SProjectCookPage::CanExecuteCook()const
 	{
 		return false;
 	}
-	return true;
+
+	return !InCooking;
 }
 
 FReply SProjectCookPage::RunCook()const
@@ -166,40 +168,78 @@ void SProjectCookPage::ReceiveOutputMsg(const FString& InMsg)
 
 void SProjectCookPage::SpawnRuningCookNotification()
 {
-	if (PendingProgressPtr.IsValid())
+	SProjectCookPage* ProjectCookPage=this;
+	AsyncTask(ENamedThreads::GameThread, [ProjectCookPage]()
 	{
-		PendingProgressPtr.Pin()->ExpireAndFadeout();
-	}
-	FNotificationInfo Info(LOCTEXT("CookNotificationInProgress", "Cook Operation In Progress"));
+		if (ProjectCookPage->PendingProgressPtr.IsValid())
+		{
+			ProjectCookPage->PendingProgressPtr.Pin()->ExpireAndFadeout();
+		}
+		FNotificationInfo Info(LOCTEXT("CookNotificationInProgress", "Cooking in porogress"));
 
-	Info.bFireAndForget = false;
+		Info.bFireAndForget = false;
 
-	PendingProgressPtr = mCookModel->NotificationListPtr->AddNotification(Info);
-	PendingProgressPtr.Pin()->SetCompletionState(SNotificationItem::CS_Pending);
+		ProjectCookPage->PendingProgressPtr = FSlateNotificationManager::Get().AddNotification(Info);
+
+		ProjectCookPage->PendingProgressPtr.Pin()->SetCompletionState(SNotificationItem::CS_Pending);
+		ProjectCookPage->InCooking = true;
+	});
 
 }
 
 
-void SProjectCookPage::SpawnEndCookNotification()
+void SProjectCookPage::SpawnCookSuccessedNotification()
 {
-	TSharedPtr<SNotificationItem> NotificationItem = PendingProgressPtr.Pin();
+	SProjectCookPage* ProjectCookPage = this;
+	AsyncTask(ENamedThreads::GameThread, [ProjectCookPage]() {
+		TSharedPtr<SNotificationItem> NotificationItem = ProjectCookPage->PendingProgressPtr.Pin();
 
-	if (NotificationItem.IsValid())
-	{
-		NotificationItem->SetText(LOCTEXT("CookNotification", "Cook Operation Finished!"));
-		NotificationItem->SetCompletionState(SNotificationItem::CS_Success);
-		NotificationItem->ExpireAndFadeout();
+		if (NotificationItem.IsValid())
+		{
+			NotificationItem->SetText(LOCTEXT("CookSuccessedNotification", "Cook Finished!"));
+			NotificationItem->SetCompletionState(SNotificationItem::CS_Success);
+			NotificationItem->ExpireAndFadeout();
 
-		PendingProgressPtr.Reset();
-	}
+			ProjectCookPage->PendingProgressPtr.Reset();
+		}
+
+		ProjectCookPage->InCooking = false;
+	});
+}
+
+
+void SProjectCookPage::SpawnCookFaildNotification()
+{
+	SProjectCookPage* ProjectCookPage = this;
+	AsyncTask(ENamedThreads::GameThread, [ProjectCookPage]() {
+		TSharedPtr<SNotificationItem> NotificationItem = ProjectCookPage->PendingProgressPtr.Pin();
+
+		if (NotificationItem.IsValid())
+		{
+			NotificationItem->SetText(LOCTEXT("CookFaildNotification", "Cook Faild!"));
+			NotificationItem->SetCompletionState(SNotificationItem::CS_Fail);
+			NotificationItem->ExpireAndFadeout();
+
+			ProjectCookPage->PendingProgressPtr.Reset();
+			ProjectCookPage->InCooking = false;
+		}
+	});
 }
 
 void SProjectCookPage::RunCookProc(const FString& InBinPath, const FString& InCommand)const
 {
-	mCookProcWorkingThread = MakeShareable(new FProcWorkerThread(TEXT("CookThread"),InBinPath,InCommand));
-	mCookProcWorkingThread->OutputMsgDelegate.AddStatic(&SProjectCookPage::ReceiveOutputMsg);
-	//mCookProcWorkingThread->BeginDelegate.AddRaw(this,&SProjectCookPage::SpawnRuningCookNotification);
-	//mCookProcWorkingThread->EndDelegate.AddRaw(this,&SProjectCookPage::SpawnEndCookNotification);
-	mCookProcWorkingThread->Execute();
+	if (mCookProcWorkingThread.IsValid() && mCookProcWorkingThread->GetThreadStatus()==EThreadStatus::Busy)
+	{
+		mCookProcWorkingThread->Cancel();
+	}
+	else
+	{
+		mCookProcWorkingThread = MakeShareable(new FProcWorkerThread(TEXT("CookThread"), InBinPath, InCommand));
+		mCookProcWorkingThread->ProcOutputMsgDelegate.AddStatic(&SProjectCookPage::ReceiveOutputMsg);
+		mCookProcWorkingThread->ProcBeginDelegate.AddRaw(this, &SProjectCookPage::SpawnRuningCookNotification);
+		mCookProcWorkingThread->ProcSuccessedDelegate.AddRaw(this, &SProjectCookPage::SpawnCookSuccessedNotification);
+		mCookProcWorkingThread->ProcFaildDelegate.AddRaw(this, &SProjectCookPage::SpawnCookFaildNotification);
+		mCookProcWorkingThread->Execute();
+	}
 }
 #undef LOCTEXT_NAMESPACE

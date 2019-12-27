@@ -6,6 +6,7 @@
 DECLARE_MULTICAST_DELEGATE_OneParam(FOutputMsgDelegate, const FString&);
 DECLARE_MULTICAST_DELEGATE(FProcStatusDelegate);
 
+
 class FProcWorkerThread : public FThread
 {
 public:
@@ -23,7 +24,7 @@ public:
 			mProcessHandle = FPlatformProcess::CreateProc(*mProgramPath, *mPragramParams, false, true, true, &mProcessID, 0, NULL, mWritePipe,mReadPipe);
 			if (mProcessHandle.IsValid() && FPlatformProcess::IsApplicationRunning(mProcessID))
 			{
-				BeginDelegate.Broadcast();
+				ProcBeginDelegate.Broadcast();
 			}
 
 			while (mProcessHandle.IsValid() && FPlatformProcess::IsApplicationRunning(mProcessID))
@@ -33,9 +34,23 @@ public:
 				FString NewLine = FPlatformProcess::ReadPipe(mReadPipe);
 				if (NewLine.Len() > 0)
 				{
-					OutputMsgDelegate.Broadcast(NewLine);
+					ProcOutputMsgDelegate.Broadcast(NewLine);
 				}
 			}
+
+			int32 ProcReturnCode;
+			if (FPlatformProcess::GetProcReturnCode(mProcessHandle,&ProcReturnCode))
+			{
+				if (ProcReturnCode == 0)
+				{
+					ProcSuccessedDelegate.Broadcast();
+				}
+				else
+				{
+					ProcFaildDelegate.Broadcast();
+				}
+			}
+			
 		}
 		mThreadStatus = EThreadStatus::Completed;
 		return 0;
@@ -44,7 +59,7 @@ public:
 	{
 		if (mProcessHandle.IsValid())
 		{
-			EndDelegate.Broadcast();
+			
 		}
 	}
 	virtual void Cancel()override
@@ -59,15 +74,17 @@ public:
 			mProcessID = 0;
 		}
 		mThreadStatus = EThreadStatus::Canceled;
+		CancelDelegate.Broadcast();
 	}
 
 	virtual uint32 GetProcesId()const { return mProcessID; }
 	virtual FProcHandle GetProcessHandle()const { return mProcessHandle; }
 
 public:
-	FProcStatusDelegate BeginDelegate;
-	FProcStatusDelegate EndDelegate;
-	FOutputMsgDelegate OutputMsgDelegate;
+	FProcStatusDelegate ProcBeginDelegate;
+	FProcStatusDelegate ProcSuccessedDelegate;
+	FProcStatusDelegate ProcFaildDelegate;
+	FOutputMsgDelegate ProcOutputMsgDelegate;
 
 private:
 	FRunnableThread* mThread;

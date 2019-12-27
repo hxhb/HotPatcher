@@ -24,9 +24,6 @@ public:
 		return PatcherMode;
 	}
 
-	/** The list of active system messages */
-	TSharedPtr<SNotificationList> NotificationListPtr;
-
 private:
 
 	EHotPatcherActionModes::Type PatcherMode;
