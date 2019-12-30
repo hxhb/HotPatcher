@@ -8,6 +8,8 @@
 #include "Model/FHotPatcherCookModel.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogCookPage, Log, All);
+
 /**
  * Implements the profile page for the session launcher wizard.
  */
@@ -35,6 +37,8 @@ protected:
 	FReply RunCook()const;
 
 protected:
+	TArray<FString> GetDefaultCookParams()const;
+
 	static void ReceiveOutputMsg(const FString& InMsg);
 	void SpawnRuningCookNotification();
 	void SpawnCookSuccessedNotification();

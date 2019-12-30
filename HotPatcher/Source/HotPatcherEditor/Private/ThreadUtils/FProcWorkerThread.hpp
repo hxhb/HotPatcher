@@ -27,6 +27,7 @@ public:
 				ProcBeginDelegate.Broadcast();
 			}
 
+			FString Line;
 			while (mProcessHandle.IsValid() && FPlatformProcess::IsApplicationRunning(mProcessID))
 			{
 				FPlatformProcess::Sleep(0.0f);
@@ -34,7 +35,23 @@ public:
 				FString NewLine = FPlatformProcess::ReadPipe(mReadPipe);
 				if (NewLine.Len() > 0)
 				{
-					ProcOutputMsgDelegate.Broadcast(NewLine);
+					// process the string to break it up in to lines
+					Line += NewLine;
+					TArray<FString> StringArray;
+					int32 count = Line.ParseIntoArray(StringArray, TEXT("\n"), true);
+					if (count > 1)
+					{
+						for (int32 Index = 0; Index < count - 1; ++Index)
+						{
+							StringArray[Index].TrimEndInline();
+							ProcOutputMsgDelegate.Broadcast(StringArray[Index]);
+						}
+						Line = StringArray[count - 1];
+						if (NewLine.EndsWith(TEXT("\n")))
+						{
+							Line += TEXT("\n");
+						}
+					}
 				}
 			}
 
@@ -70,6 +87,7 @@ public:
 		if (mProcessHandle.IsValid() && FPlatformProcess::IsApplicationRunning(mProcessID))
 		{
 			FPlatformProcess::TerminateProc(mProcessHandle, true);
+			ProcFaildDelegate.Broadcast();
 			mProcessHandle.Reset();
 			mProcessID = 0;
 		}

@@ -16,6 +16,7 @@
 
 #define LOCTEXT_NAMESPACE "SProjectCookPage"
 
+DEFINE_LOG_CATEGORY(LogCookPage);
 
 /* SProjectCookPage interface
  *****************************************************************************/
@@ -153,6 +154,14 @@ FReply SProjectCookPage::RunCook()const
 		{
 			FinalCookCommand.Append(CookParams);
 		}
+		for (const auto& DefaultCookParam : GetDefaultCookParams())
+		{
+			if (!FinalCookCommand.Contains(DefaultCookParam))
+			{
+				FinalCookCommand.Append(TEXT(" ") + DefaultCookParam);
+			}
+		}
+
 		RunCookProc(EngineBin, FinalCookCommand);
 		
 	}
@@ -160,9 +169,25 @@ FReply SProjectCookPage::RunCook()const
 }
 
 
+TArray<FString> SProjectCookPage::GetDefaultCookParams() const
+{
+	return TArray<FString>{"-NoLogTimes", "-UTF8Output"};
+}
+
 void SProjectCookPage::ReceiveOutputMsg(const FString& InMsg)
 {
-	UE_LOG(LogTemp, Log, TEXT("%s"), *InMsg);
+	if (InMsg.Contains(TEXT("Error:")))
+	{
+		UE_LOG(LogCookPage, Error, TEXT("%s"), *InMsg);
+	}
+	else if (InMsg.Contains(TEXT("Warning:")))
+	{
+		UE_LOG(LogCookPage, Warning, TEXT("%s"), *InMsg);
+	}
+	else
+	{
+		UE_LOG(LogCookPage, Log, TEXT("%s"), *InMsg);
+	}
 }
 
 
@@ -175,7 +200,7 @@ void SProjectCookPage::SpawnRuningCookNotification()
 		{
 			ProjectCookPage->PendingProgressPtr.Pin()->ExpireAndFadeout();
 		}
-		FNotificationInfo Info(LOCTEXT("CookNotificationInProgress", "Cooking in porogress"));
+		FNotificationInfo Info(LOCTEXT("CookNotificationInProgress", "Cook in porogress"));
 
 		Info.bFireAndForget = false;
 
