@@ -43,6 +43,7 @@ protected:
 	void SpawnRuningCookNotification();
 	void SpawnCookSuccessedNotification();
 	void SpawnCookFaildNotification();
+	void CancelCookMission();
 private:
 	bool InCooking=false;
 	/** The pending progress message */

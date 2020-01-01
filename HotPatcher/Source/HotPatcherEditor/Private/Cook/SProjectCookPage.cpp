@@ -11,6 +11,7 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SExpandableArea.h"
+#include "Widgets/Notifications/SNotificationList.h"
 #include "Async.h"
 
 
@@ -203,6 +204,10 @@ void SProjectCookPage::SpawnRuningCookNotification()
 		FNotificationInfo Info(LOCTEXT("CookNotificationInProgress", "Cook in porogress"));
 
 		Info.bFireAndForget = false;
+		Info.ButtonDetails.Add(FNotificationButtonInfo(LOCTEXT("RunningCookNotificationCancelButton", "Cancel"), FText(),
+			FSimpleDelegate::CreateLambda([ProjectCookPage]() {ProjectCookPage->CancelCookMission(); }),
+			SNotificationItem::CS_Pending
+		));
 
 		ProjectCookPage->PendingProgressPtr = FSlateNotificationManager::Get().AddNotification(Info);
 
@@ -229,6 +234,7 @@ void SProjectCookPage::SpawnCookSuccessedNotification()
 		}
 
 		ProjectCookPage->InCooking = false;
+		UE_LOG(LogCookPage, Log, TEXT("The Cook Mission is Successfuly."))
 	});
 }
 
@@ -248,9 +254,18 @@ void SProjectCookPage::SpawnCookFaildNotification()
 			ProjectCookPage->PendingProgressPtr.Reset();
 			ProjectCookPage->InCooking = false;
 		}
+		UE_LOG(LogCookPage, Error, TEXT("The Cook Mission is faild."))
 	});
 }
 
+void SProjectCookPage::CancelCookMission()
+{
+	if (mCookProcWorkingThread.IsValid() && mCookProcWorkingThread->GetThreadStatus() == EThreadStatus::Busy)
+	{
+		mCookProcWorkingThread->Cancel();
+	}
+	UE_LOG(LogCookPage, Error, TEXT("The Cook Mission is canceled."));
+}
 void SProjectCookPage::RunCookProc(const FString& InBinPath, const FString& InCommand)const
 {
 	if (mCookProcWorkingThread.IsValid() && mCookProcWorkingThread->GetThreadStatus()==EThreadStatus::Busy)
