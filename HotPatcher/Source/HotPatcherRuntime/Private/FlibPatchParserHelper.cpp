@@ -82,6 +82,7 @@ FString UFlibPatchParserHelper::GetUnrealPakBinary()
             TEXT("UnrealPak")
     );
 #endif
+	return TEXT("")；
 }
 
 FString UFlibPatchParserHelper::GetUE4CmdBinary()
