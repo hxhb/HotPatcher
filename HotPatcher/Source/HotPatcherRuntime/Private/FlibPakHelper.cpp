@@ -6,7 +6,10 @@
 #include "PlatformFilemanager.h"
 #include "Misc/ScopeExit.h"
 
-
+// Engine Header
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonReader.h"
+#include "Misc/FileHelper.h"
 
 void UFlibPakHelper::ExecMountPak(FString InPakPath, int32 InPakOrder, FString InMountPoint)
 {
