@@ -74,6 +74,7 @@ FString UFlibPatchParserHelper::GetUnrealPakBinary()
 		TEXT("UnrealPak.exe")
 	);
 #endif
+
 #if PLATFORM_MAC
     return FPaths::Combine(
             FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
@@ -82,7 +83,8 @@ FString UFlibPatchParserHelper::GetUnrealPakBinary()
             TEXT("UnrealPak")
     );
 #endif
-	return TEXT("")；
+
+	return TEXT("");
 }
 
 FString UFlibPatchParserHelper::GetUE4CmdBinary()
