@@ -109,6 +109,7 @@ FString UFlibPatchParserHelper::GetUE4CmdBinary()
 		TEXT("UE4Editor-Cmd")
 	);
 #endif
+	return TEXT("");
 }
 
 FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(const FString& InVersionId, const FString& InBaseVersion,const FString& InDate, const TArray<FString>& InIncludeFilter, const TArray<FString>& InIgnoreFilter, bool InIncludeHasRefAssetsOnly)
