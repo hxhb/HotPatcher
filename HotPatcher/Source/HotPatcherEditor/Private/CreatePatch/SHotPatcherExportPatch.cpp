@@ -192,6 +192,11 @@ EVisibility SHotPatcherExportPatch::VisibilityDiffButtons() const
 }
 
 
+bool SHotPatcherExportPatch::InformationContentIsVisibility() const
+{
+	return DiffWidget->GetVisibility() == EVisibility::Visible;
+}
+
 void SHotPatcherExportPatch::SetInformationContent(const FString& InContent)const
 {
 	DiffWidget->SetContent(InContent);
@@ -267,6 +272,45 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	// handle add & modify asset only
 	FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(AddAssetDependInfo, ModifyAssetDependInfo);
 
+	// 检查所修改的资源是否被Cook过
+	{
+		FString GenErrorMsg;
+		for (const auto& PlatformName : ExportPatchSetting->GetPakTargetPlatformNames())
+		{
+			TArray<FAssetDetail> ValidCookAssets;
+			TArray<FAssetDetail> InvalidCookAssets;
+
+			UFlibHotPatcherEditorHelper::CheckInvalidCookFilesByAssetDependenciesInfo(UKismetSystemLibrary::GetProjectDirectory(), PlatformName, AllChangedAssetInfo, ValidCookAssets, InvalidCookAssets);
+
+			if (InvalidCookAssets.Num() > 0)
+			{
+				GenErrorMsg.Append(FString::Printf(TEXT("\n%s UnCooked Assets:\n"),*PlatformName));
+
+				for (const auto& Asset : InvalidCookAssets)
+				{
+					FString AssetLongPackageName;
+					UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath, AssetLongPackageName);
+					GenErrorMsg.Append(FString::Printf(TEXT("\t%s\n"),*AssetLongPackageName));
+				}
+			}
+		}
+		if (!GenErrorMsg.IsEmpty())
+		{
+			SetInformationContent(GenErrorMsg);
+			SetInfomationContentVisibility(EVisibility::Visible);
+			return FReply::Handled();
+		}
+		else
+		{
+			if (InformationContentIsVisibility())
+			{
+				SetInformationContent(TEXT(""));
+				SetInfomationContentVisibility(EVisibility::Collapsed);
+			}
+		}
+
+		
+	}
 
 	float AmountOfWorkProgress = 2.f * ExportPatchSetting->GetPakTargetPlatforms().Num() + 4.0f;
 	FScopedSlowTask UnrealPakSlowTask(AmountOfWorkProgress);

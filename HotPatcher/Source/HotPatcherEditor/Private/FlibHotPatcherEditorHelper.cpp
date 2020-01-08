@@ -38,6 +38,43 @@ Info.HyperlinkText = FText::FromString(HyperLinkText);
 FSlateNotificationManager::Get().AddNotification(Info)->SetCompletionState(SNotificationItem::CS_Success);
 }
 
+void UFlibHotPatcherEditorHelper::CheckInvalidCookFilesByAssetDependenciesInfo(
+	const FString& InProjectAbsDir, 
+	const FString& InPlatformName, 
+	const FAssetDependenciesInfo& InAssetDependencies, 
+	TArray<FAssetDetail>& OutValidAssets, 
+	TArray<FAssetDetail>& OutInvalidAssets)
+{
+	OutValidAssets.Empty();
+	OutInvalidAssets.Empty();
+	TArray<FAssetDetail> AllAssetDetails;
+	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(InAssetDependencies,AllAssetDetails);
+
+	for (const auto& AssetDetail : AllAssetDetails)
+	{
+		TArray<FString> CookedAssetPath;
+		TArray<FString> CookedAssetRelativePath;
+		FString AssetLongPackageName;
+		UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(AssetDetail.mPackagePath, AssetLongPackageName);
+		if (UFLibAssetManageHelperEx::ConvLongPackageNameToCookedPath(
+			InProjectAbsDir,
+			InPlatformName,
+			AssetLongPackageName,
+			CookedAssetPath,
+			CookedAssetRelativePath))
+		{
+			if (CookedAssetPath.Num() > 0)
+			{
+				OutValidAssets.Add(AssetDetail);
+			}
+			else
+			{
+				OutInvalidAssets.Add(AssetDetail);
+			}
+		}
+	}
+}
+
 FHotPatcherVersion UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
 	const FString& InVersionId,
 	const FString& InBaseVersion,

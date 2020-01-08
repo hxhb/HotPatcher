@@ -79,6 +79,8 @@ public:
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static void GetAssetListDependenciesForAssetDetail(const TArray<FAssetDetail>& InAssetsDetailList, FAssetDependenciesInfo& OutDependices);
 
+	// 获取FAssetDependenciesInfo中所有的FAssetDetail
+	static void GetAssetDetailsByAssetDependenciesInfo(const FAssetDependenciesInfo& InAssetDependencies,TArray<FAssetDetail>& OutAssetDetails);
 
 	// recursive scan assets
 	static void GatherAssetDependicesInfoRecursively(

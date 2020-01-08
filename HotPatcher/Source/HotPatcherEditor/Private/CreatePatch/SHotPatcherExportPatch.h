@@ -43,6 +43,7 @@ protected:
 	FReply DoClearDiff()const;
 	EVisibility VisibilityDiffButtons()const;
 
+	bool InformationContentIsVisibility()const;
 	void SetInformationContent(const FString& InContent)const;
 	void SetInfomationContentVisibility(EVisibility InVisibility)const;
 private:

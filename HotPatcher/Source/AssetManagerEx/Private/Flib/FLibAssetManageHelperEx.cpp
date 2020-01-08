@@ -248,6 +248,26 @@ void UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(const TArr
 	OutDependices = result;
 }
 
+void UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(const FAssetDependenciesInfo& InAssetDependencies,TArray<FAssetDetail>& OutAssetDetails)
+{
+		OutAssetDetails.Empty();
+		TArray<FString> Keys;
+		InAssetDependencies.mDependencies.GetKeys(Keys);
+
+		for (const auto& Key : Keys)
+		{
+			TMap<FString, FAssetDetail> ModuleAssetDetails = InAssetDependencies.mDependencies.Find(Key)->mDependAssetDetails;
+
+			TArray<FString> ModuleAssetKeys;
+			ModuleAssetDetails.GetKeys(ModuleAssetKeys);
+
+			for (const auto& ModuleAssetKey : ModuleAssetKeys)
+			{
+				OutAssetDetails.Add(*ModuleAssetDetails.Find(ModuleAssetKey));
+			}
+		}
+}
+
 void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 	FAssetRegistryModule& InAssetRegistryModule,
 	const FString& InTargetLongPackageName,
