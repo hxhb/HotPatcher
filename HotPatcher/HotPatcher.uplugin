@@ -29,12 +29,11 @@
 			"Name": "HotPatcherEditor",
 			"Type": "Editor",
 			"LoadingPhase": "Default"
-		}
-	],
-	"Plugins": [
+		},
 		{
 			"Name": "AssetManagerEx",
-			"Enabled": true
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault"
 		}
 	]
 

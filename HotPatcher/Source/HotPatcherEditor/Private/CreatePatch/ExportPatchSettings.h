@@ -96,35 +96,35 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchSettings")
 		FString VersionId;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchSettings|AssetFilter",meta = (RelativeToGameContentDir, LongPackageName))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchSettings|Asset Filter",meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|AssetFilter", meta = (RelativeToGameContentDir, LongPackageName))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Asset Filter", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIgnoreFilters;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|AssetFilter")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Asset Filter")
 		bool bIncludeHasRefAssetsOnly;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|SpecifyAssets")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Specify Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|CookedFiles")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Cooked Files")
 		bool bIncludeAssetRegistry;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|CookedFiles")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Cooked Files")
 		bool bIncludeGlobalShaderCache;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|CookedFiles")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Cooked Files")
 		bool bIncludeShaderBytecode;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Config")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Ini Config Files")
 		bool bIncludeEngineIni;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Config")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Ini Config Files")
 		bool bIncludePluginIni;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Config")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Ini Config Files")
 		bool bIncludeProjectIni;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extention")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files")
 		TArray<FExternAssetFileInfo> AddExternFileToPak;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extention")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files")
 		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extention")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files")
 		bool bIncludePakVersionFile;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extention",meta=(EditCondition = "bIncludePakVersionFile"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))
 		FString PakVersionFileMountPoint;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<FString> UnrealPakOptions{TEXT("-compress")};
