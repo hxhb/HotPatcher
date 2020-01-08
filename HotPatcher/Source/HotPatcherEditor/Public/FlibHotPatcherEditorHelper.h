@@ -3,11 +3,15 @@
 #pragma once
 
 #include "FExternAssetFileInfo.h"
+#include "FExternDirectoryInfo.h"
+#include "FPatcherSpecifyAsset.h"
+
+// RUNTIME
+#include "FHotPatcherVersion.h"
 
 // engine header
 #include "SharedPointer.h"
 #include "Dom/JsonObject.h"
-
 #include "Notifications/NotificationManager.h"
 #include "Notifications/SNotificationList.h"
 #include "CoreMinimal.h"
@@ -26,8 +30,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HotPatch|Editor|Flib")
 		static TArray<FString> GetAllCookOption();
 
+	static FHotPatcherVersion ExportReleaseVersionInfo(const FString& InVersionId,
+		const FString& InBaseVersion,
+		const FString& InDate,
+		const TArray<FString>& InIncludeFilter,
+		const TArray<FString>& InIgnoreFilter,
+		const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
+		bool InIncludeHasRefAssetsOnly = false
+	);
 
 	static void CreateSaveFileNotify(const FText& InMsg,const FString& InSavedFile);
 
 	static bool SerializeExAssetFileInfoToJsonObject(const FExternAssetFileInfo& InExFileInfo, TSharedPtr<FJsonObject>& OutJsonObject);
+	static bool SerializeExDirectoryInfoToJsonObject(const FExternDirectoryInfo& InExDirectoryInfo, TSharedPtr<FJsonObject>& OutJsonObject);
+
 };

@@ -95,10 +95,13 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetAssetsList(const TArray<FString>& InFilterPackagePaths,TArray<FAssetDetail>& OutAssetList);
-
+		static bool GetSpecifyAssetData(const FString& InLongPackageName, TArray<FAssetData>& OutAssetData,bool InIncludeOnlyOnDiskAssets);
 		static bool GetAssetsData(const TArray<FString>& InFilterPackagePaths, TArray<FAssetData>& OutAssetData);
 		static bool GetSingleAssetsData(const FString& InPackagePath, FAssetData& OutAssetData);
 		static bool GetClassStringFromFAssetData(const FAssetData& InAssetData,FString& OutAssetType);
+		static bool ConvFAssetDataToFAssetDetail(const FAssetData& InAssetData,FAssetDetail& OutAssetDetail);
+	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool GetSpecifyAssetDetail(const FString& InLongPackageName, FAssetDetail& OutAssetDetail);
 	
 	// 过滤掉没有引用的资源
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")

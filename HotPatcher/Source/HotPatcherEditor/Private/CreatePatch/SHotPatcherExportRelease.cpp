@@ -86,12 +86,13 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 
 FReply SHotPatcherExportRelease::DoExportRelease()
 {
-	FHotPatcherVersion ExportVersion=UFlibPatchParserHelper::ExportReleaseVersionInfo(
+	FHotPatcherVersion ExportVersion= UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
 			ExportReleaseSettings->GetVersionId(),
 			TEXT(""),
 			FDateTime::UtcNow().ToString(),
 			ExportReleaseSettings->GetAssetIncludeFilters(),
 			ExportReleaseSettings->GetAssetIgnoreFilters(),
+			TArray<FPatcherSpecifyAsset>{},
 			ExportReleaseSettings->IsIncludeHasRefAssetsOnly()
 		);
 	

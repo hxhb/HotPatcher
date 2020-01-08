@@ -117,12 +117,13 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		}
 	}
 
-	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
+	FHotPatcherVersion CurrentVersion = UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
 		ExportPatchSetting->GetVersionId(),
 		BaseVersion.VersionId,
 		FDateTime::UtcNow().ToString(),
 		ExportPatchSetting->GetAssetIncludeFilters(),
 		ExportPatchSetting->GetAssetIgnoreFilters(),
+		ExportPatchSetting->GetIncludeSpecifyAssets(),
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
 	);
 
@@ -160,8 +161,9 @@ bool SHotPatcherExportPatch::CanDiff()const
 		bool bHasBase = !ExportPatchSetting->GetBaseVersion().IsEmpty() && FPaths::FileExists(ExportPatchSetting->GetBaseVersion());
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
 		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
+		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
 
-		bCanDiff = bHasBase && bHasVersionId && bHasFilter;
+		bCanDiff = bHasBase && bHasVersionId && (bHasFilter || bHasSpecifyAssets);
 	}
 	return bCanDiff;
 }
@@ -212,11 +214,19 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 			bHasBase = true;
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
 		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
+		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
 		bool bHasExternFiles = !!ExportPatchSetting->GetAddExternFiles().Num();
-
+		bool bHasExDirs = !!ExportPatchSetting->GetAddExternDirectory().Num();
 		bool bHasSavePath = !ExportPatchSetting->GetSaveAbsPath().IsEmpty();
 		bool bHasPakPlatfotm = !!ExportPatchSetting->GetPakTargetPlatforms().Num();
-		bCanExport = bHasBase && bHasVersionId && (bHasFilter || bHasExternFiles) && bHasPakPlatfotm && bHasSavePath;
+
+		bool bHasAnyPakFiles = (
+			bHasFilter || bHasSpecifyAssets || bHasExternFiles || bHasExDirs ||
+			ExportPatchSetting->IsIncludeEngineIni()||
+			ExportPatchSetting->IsIncludePluginIni()||
+			ExportPatchSetting->IsIncludeProjectIni()
+		);
+		bCanExport = bHasBase && bHasVersionId && bHasAnyPakFiles && bHasPakPlatfotm && bHasSavePath;
 	}
 	return bCanExport;
 }
