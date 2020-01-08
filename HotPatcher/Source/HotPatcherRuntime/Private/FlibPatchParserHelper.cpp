@@ -109,96 +109,10 @@ FString UFlibPatchParserHelper::GetUE4CmdBinary()
 		TEXT("UE4Editor-Cmd")
 	);
 #endif
+	return TEXT("");
 }
 
-FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(const FString& InVersionId, const FString& InBaseVersion,const FString& InDate, const TArray<FString>& InIncludeFilter, const TArray<FString>& InIgnoreFilter, bool InIncludeHasRefAssetsOnly)
-{
-	FHotPatcherVersion ExportVersion;
-	{
-		ExportVersion.VersionId = InVersionId;
-		ExportVersion.Date = InDate;
-		ExportVersion.BaseVersionId = InBaseVersion;
-	}
-	
 
-	// add Include Filter
-	{
-		TArray<FString> AllIncludeFilter;
-		for (const auto& Filter : InIncludeFilter)
-		{
-			AllIncludeFilter.AddUnique(Filter);
-			ExportVersion.IncludeFilter.AddUnique(Filter);
-		}
-	}
-	// add Ignore Filter
-	{
-		TArray<FString> AllIgnoreFilter;
-		for (const auto& Filter : InIgnoreFilter)
-		{
-			AllIgnoreFilter.AddUnique(Filter);
-			ExportVersion.IgnoreFilter.AddUnique(Filter);
-		}
-	}
-
-	TArray<FAssetDetail> FinalAssetsList;
-	{
-		TArray<FAssetDetail> AllNeedPakRefAssets;
-		{
-			TArray<FAssetDetail> AllAssets;
-			UFLibAssetManageHelperEx::GetAssetsList(ExportVersion.IncludeFilter, AllAssets);
-			if (InIncludeHasRefAssetsOnly)
-			{
-				TArray<FAssetDetail> AllDontHasRefAssets;
-				UFLibAssetManageHelperEx::FilterNoRefAssetsWithIgnoreFilter(AllAssets, ExportVersion.IgnoreFilter ,AllNeedPakRefAssets, AllDontHasRefAssets);
-			}
-			else
-			{
-				AllNeedPakRefAssets = AllAssets;
-			}
-		}
-		// 剔除ignore filter中指定的资源
-		if (ExportVersion.IgnoreFilter.Num() > 0)
-		{
-			for (const auto& AssetDetail : AllNeedPakRefAssets)
-			{
-				bool bIsIgnore = false;
-				for (const auto& IgnoreFilter : ExportVersion.IgnoreFilter)
-				{
-					if (AssetDetail.mPackagePath.StartsWith(IgnoreFilter))
-					{
-						bIsIgnore = true;
-						break;
-					}
-				}
-				if (!bIsIgnore)
-				{
-					FinalAssetsList.Add(AssetDetail);
-				}
-			}
-		}
-		else
-		{
-			FinalAssetsList = AllNeedPakRefAssets;
-		}
-	}
-
-	// 分析资源依赖
-	FAssetDependenciesInfo FinalResault;
-	if (FinalAssetsList.Num())
-	{
-		FAssetDependenciesInfo AllAssetListInfo;
-		UFLibAssetManageHelperEx::CombineAssetsDetailAsFAssetDepenInfo(FinalAssetsList, AllAssetListInfo);
-
-		FAssetDependenciesInfo AssetDependencies;
-		UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(FinalAssetsList, AssetDependencies);
-
-		FinalResault = UFLibAssetManageHelperEx::CombineAssetDependencies(AllAssetListInfo, AssetDependencies);
-
-	}
-	ExportVersion.AssetInfo = FinalResault;
-
-	return ExportVersion;
-}
 
 bool UFlibPatchParserHelper::SerializeHotPatcherVersionToString(const FHotPatcherVersion& InVersion, FString& OutResault)
 {

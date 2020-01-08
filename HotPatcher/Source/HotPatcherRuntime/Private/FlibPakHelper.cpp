@@ -297,13 +297,13 @@ bool UFlibPakHelper::LoadFilesByPak(const FString& InPakFile, TArray<FString>& O
 	TArray<FString> AllFiles;
 	auto ScanAllFilesLambda = [&AllFiles](const FPakFile* InPakFileIns)->bool
 	{
-		bool bRunStatus = false;
+		bool bLambdaRunStatus = false;
 		if (InPakFileIns)
 		{
 			InPakFileIns->FindFilesAtPath(AllFiles, *InPakFileIns->GetMountPoint(), true, false, true);
-			bRunStatus = true;
+			bLambdaRunStatus = true;
 		}
-		return bRunStatus;
+		return bLambdaRunStatus;
 	};
 	bRunStatus = UFlibPakHelper::LoadPakDoSomething(InPakFile, ScanAllFilesLambda);
 	OutFiles = AllFiles;
@@ -317,7 +317,7 @@ bool UFlibPakHelper::LoadVersionInfoByPak(const FString& InPakFile, FPakVersion&
 	TArray<FPakVersion> AllVersionInfo;
 	auto ScanAllFilesLambda = [&AllVersionInfo](const FPakFile* InPakFile)->bool
 	{
-		bool bRunStatus = false;
+		bool bLambdaRunStatus = false;
 		if (InPakFile)
 		{
 			// UE_LOG(LogTemp, Log, TEXT("Scan All Files Lambda: InPakFile is not null."));
@@ -343,13 +343,13 @@ bool UFlibPakHelper::LoadVersionInfoByPak(const FString& InPakFile, FPakVersion&
 					{
 						// UE_LOG(LogTemp, Log, TEXT("Scan All Files Lambda: Deserialize File Success."));
 						AllVersionInfo.Add(CurrentPakVersionInfo);
-						bRunStatus = true;
+						bLambdaRunStatus = true;
 					}
 				}
 			}
 			
 		}
-		return bRunStatus;
+		return bLambdaRunStatus;
 	};
 	bRunStatus = UFlibPakHelper::LoadPakDoSomething(InPakFile, ScanAllFilesLambda);
 

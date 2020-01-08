@@ -5,6 +5,8 @@
 // project header
 #include "ETargetPlatform.h"
 #include "FExternAssetFileInfo.h"
+#include "FExternDirectoryInfo.h"
+#include "FPatcherSpecifyAsset.h"
 #include "FlibPatchParserHelper.h"
 #include "FlibHotPatcherEditorHelper.h"
 
@@ -43,6 +45,8 @@ public:
 	
 	TArray<FString> GetAssetIncludeFilters()const;
 	TArray<FString> GetAssetIgnoreFilters()const;
+	FORCEINLINE TArray<FPatcherSpecifyAsset> GetIncludeSpecifyAssets()const { return IncludeSpecifyAssets; };
+
 	FString GetSaveAbsPath()const;
 	TArray<FString> GetAllExternalCookCommands()const;
 	bool GetAllExternAssetCookCommands(const FString& InProjectDir, const FString& InPlatform, TArray<FString>& OutCookCommands)const;
@@ -69,15 +73,17 @@ public:
 	FORCEINLINE bool IsIncludeProjectIni()const { return bIncludeProjectIni; }
 
 	FORCEINLINE bool IsByBaseVersion()const { return bByBaseVersion; }
+
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 	FORCEINLINE bool IsIncludePakVersion()const { return bIncludePakVersionFile; }
 	FORCEINLINE FString GetPakVersionFileMountPoint()const { return PakVersionFileMountPoint; }
 	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
-
+	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
 	static FPakVersion GetPakVersion(const FHotPatcherVersion& InHotPatcherVersion,const FString& InUtcTime);
 	static FString GetSavePakVersionPath(const FString& InSaveAbsPath,const FHotPatcherVersion& InVersion);
 	static FString GetSavePakCommandsPath(const FString& InSaveAbsPath, const FString& InPlatfornName, const FHotPatcherVersion& InVersion);
 
+	TArray<FString> CombineAllExternDirectoryCookCommand()const;
 	TArray<FString> CombineAllCookCommandsInTheSetting(const FString& InPlatformName, const FAssetDependenciesInfo& AllChangedAssetInfo)const;
 	FHotPatcherVersion GetNewPatchVersionInfo()const;
 	bool GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion)const;
@@ -90,30 +96,35 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchSettings")
 		FString VersionId;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchSettings",meta = (RelativeToGameContentDir, LongPackageName))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchSettings|AssetFilter",meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings", meta = (RelativeToGameContentDir, LongPackageName))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|AssetFilter", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIgnoreFilters;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|AssetFilter")
 		bool bIncludeHasRefAssetsOnly;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|SpecifyAssets")
+		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|CookedFiles")
 		bool bIncludeAssetRegistry;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|CookedFiles")
 		bool bIncludeGlobalShaderCache;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|CookedFiles")
 		bool bIncludeShaderBytecode;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Config")
 		bool bIncludeEngineIni;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Config")
 		bool bIncludePluginIni;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Config")
 		bool bIncludeProjectIni;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extention")
 		TArray<FExternAssetFileInfo> AddExternFileToPak;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extention")
+		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extention")
 		bool bIncludePakVersionFile;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings",meta=(EditCondition = "bIncludePakVersionFile"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extention",meta=(EditCondition = "bIncludePakVersionFile"))
 		FString PakVersionFileMountPoint;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<FString> UnrealPakOptions{TEXT("-compress")};

@@ -17,7 +17,7 @@
 		[
 			"Win32",
 			"Win64",
-			"Mac",
+			"Mac"
 		],
 	"Modules": [
 		{

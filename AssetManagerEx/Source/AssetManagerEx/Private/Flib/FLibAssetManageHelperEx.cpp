@@ -334,15 +334,19 @@ bool UFLibAssetManageHelperEx::GetAssetsList(const TArray<FString>& InFilterPack
 		for (const auto& AssetDataIndex : AllAssetData)
 		{
 			FAssetDetail AssetDetail;
-			AssetDetail.mAssetType = AssetDataIndex.AssetClass.ToString();
-			UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(AssetDataIndex.PackageName.ToString(), AssetDetail.mPackagePath);
-
-			UFLibAssetManageHelperEx::GetAssetPackageGUID(AssetDataIndex.PackageName.ToString(), AssetDetail.mGuid);
+			UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(AssetDataIndex, AssetDetail);
 			OutAssetList.Add(AssetDetail);
 		}
 		return true;
 	}
 	return false;
+}
+
+
+bool UFLibAssetManageHelperEx::GetSpecifyAssetData(const FString& InLongPackageName, TArray<FAssetData>& OutAssetData, bool InIncludeOnlyOnDiskAssets)
+{
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	return AssetRegistryModule.Get().GetAssetsByPackageName(*InLongPackageName, OutAssetData, InIncludeOnlyOnDiskAssets);
 }
 
 bool UFLibAssetManageHelperEx::GetAssetsData(const TArray<FString>& InFilterPackagePaths, TArray<FAssetData>& OutAssetData)
@@ -384,6 +388,35 @@ bool UFLibAssetManageHelperEx::GetClassStringFromFAssetData(const FAssetData& In
 		bRunState = true;
 	}
 	return bRunState;
+}
+
+
+bool UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(const FAssetData& InAssetData, FAssetDetail& OutAssetDetail)
+{
+	FAssetDetail AssetDetail;
+	AssetDetail.mAssetType = InAssetData.AssetClass.ToString();
+	UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InAssetData.PackageName.ToString(), AssetDetail.mPackagePath);
+
+	UFLibAssetManageHelperEx::GetAssetPackageGUID(InAssetData.PackageName.ToString(), AssetDetail.mGuid);
+
+	OutAssetDetail = AssetDetail;
+	return true;
+}
+
+bool UFLibAssetManageHelperEx::GetSpecifyAssetDetail(const FString& InLongPackageName, FAssetDetail& OutAssetDetail)
+{
+
+	bool bRunStatus = false;
+	TArray<FAssetData> AssetData;
+	if (UFLibAssetManageHelperEx::GetSpecifyAssetData(InLongPackageName, AssetData, true))
+	{
+		if (AssetData.Num() > 0)
+		{
+			UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(AssetData[0], OutAssetDetail);
+			bRunStatus = true;
+		}
+	}
+	return bRunStatus;
 }
 
 void UFLibAssetManageHelperEx::FilterNoRefAssets(const TArray<FAssetDetail>& InAssetsDetail, TArray<FAssetDetail>& OutHasRefAssetsDetail, TArray<FAssetDetail>& OutDontHasRefAssetsDetail)
@@ -603,8 +636,6 @@ bool UFLibAssetManageHelperEx::ConvLongPackageNameToCookedPath(const FString& In
 
 		AssetCookedNotPostfixPath = FPaths::Combine(CookedRootDir, AssetCookedRelativePath);
 	}
-
-
 
 	FFillArrayDirectoryVisitor FileVisitor;
 	FString SearchDir;

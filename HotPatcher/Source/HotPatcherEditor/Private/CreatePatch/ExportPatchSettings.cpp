@@ -1,6 +1,10 @@
 #include "ExportPatchSettings.h"
 #include "FLibAssetManageHelperEx.h"
+
+// engine header
+#include "Dom/JsonValue.h"
 #include "HAL/PlatformFilemanager.h"
+#include "Kismet/KismetStringLibrary.h"
 
 UExportPatchSettings::UExportPatchSettings()
 {
@@ -88,10 +92,42 @@ FString UExportPatchSettings::GetSavePakCommandsPath(const FString& InSaveAbsPat
 	FString SavePakCommandPath = FPaths::Combine(
 		InSaveAbsPath,
 		InPlatfornName,
-		FString::Printf(TEXT("PakList_%s_%s_%s_PakCommands.txt"), *InVersion.BaseVersionId, *InVersion.VersionId, *InPlatfornName)
+		!InVersion.BaseVersionId.IsEmpty()?
+		FString::Printf(TEXT("PakList_%s_%s_%s_PakCommands.txt"), *InVersion.BaseVersionId, *InVersion.VersionId, *InPlatfornName):
+		FString::Printf(TEXT("PakList_%s_%s_PakCommands.txt"), *InVersion.VersionId, *InPlatfornName)	
 	);
 
 	return SavePakCommandPath;
+}
+
+
+TArray<FString> UExportPatchSettings::CombineAllExternDirectoryCookCommand() const
+{
+	
+	TArray<FString> CookCommandResault;
+	if (!GetAddExternDirectory().Num())
+		return CookCommandResault;
+
+	for (const auto& DirectoryItem : GetAddExternDirectory())
+	{
+		FString DirAbsPath = FPaths::ConvertRelativePathToFull(DirectoryItem.DirectoryPath.Path);
+		if (!DirAbsPath.IsEmpty() && FPaths::DirectoryExists(DirAbsPath))
+		{
+			TArray<FString> DirectoryAllFiles;
+			if (UFLibAssetManageHelperEx::FindFilesRecursive(DirAbsPath, DirectoryAllFiles, true))
+			{
+				int32 ParentDirectoryIndex = DirAbsPath.Len();
+				for (const auto& File : DirectoryAllFiles)
+				{
+					FString RelativeParentPath = UKismetStringLibrary::GetSubstring(File, ParentDirectoryIndex, File.Len() - ParentDirectoryIndex);
+					FString RelativeMountPointPath = FPaths::Combine(DirectoryItem.MountPoint, RelativeParentPath);
+					CookCommandResault.Add(FString::Printf(TEXT("\"%s\" \"%s\""),*File,*RelativeMountPointPath));
+				}
+			}
+		}
+	}
+
+	return CookCommandResault;
 }
 
 TArray<FString> UExportPatchSettings::CombineAllCookCommandsInTheSetting(const FString& InPlatformName,const FAssetDependenciesInfo& AllChangedAssetInfo) const
@@ -122,6 +158,12 @@ TArray<FString> UExportPatchSettings::CombineAllCookCommandsInTheSetting(const F
 			if (!!AllExternFileToPakCommands.Num())
 			{
 				OutPakCommand.Append(AllExternFileToPakCommands);
+			}
+
+			TArray<FString> AllExtensionDirectoryToPakCommands = this->CombineAllExternDirectoryCookCommand();
+			if (!!AllExtensionDirectoryToPakCommands.Num())
+			{
+				OutPakCommand.Append(AllExtensionDirectoryToPakCommands);
 			}
 		}
 
@@ -155,12 +197,13 @@ FHotPatcherVersion UExportPatchSettings::GetNewPatchVersionInfo() const
 	FHotPatcherVersion BaseVersionInfo;
 	this->GetBaseVersionInfo(BaseVersionInfo);
 
-	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
+	FHotPatcherVersion CurrentVersion = UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
 		this->GetVersionId(),
 		BaseVersionInfo.VersionId,
 		FDateTime::UtcNow().ToString(),
 		this->GetAssetIncludeFilters(),
 		this->GetAssetIgnoreFilters(),
+		this->GetIncludeSpecifyAssets(),
 		this->IsIncludeHasRefAssetsOnly()
 	);
 
@@ -295,7 +338,7 @@ bool UExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObje
 		TArray<TSharedPtr<FJsonValue>> ArrayJsonValueList;
 		for (const auto& ArrayItem : InArray)
 		{
-		ArrayJsonValueList.Add(MakeShareable(new FJsonValueString(ArrayItem)));
+			ArrayJsonValueList.Add(MakeShareable(new FJsonValueString(ArrayItem)));
 		}
 		OutJsonObject->SetArrayField(InJsonArrayName, ArrayJsonValueList);
 	};
@@ -330,7 +373,18 @@ bool UExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObje
 		}
 		OutJsonObject->SetObjectField(TEXT("AddExFilesToPak"), AddExFilesJsonObject);
 	}
-	
+	// serialize all add extern directory to pak
+	{
+		TArray<TSharedPtr<FJsonValue>> AddExDirectoryJsonObjectList;
+		for (const auto& ExDirectoryInfo : GetAddExternDirectory())
+		{
+			TSharedPtr<FJsonObject> CurrentDirJsonObject;
+			UFlibHotPatcherEditorHelper::SerializeExDirectoryInfoToJsonObject(ExDirectoryInfo, CurrentDirJsonObject);
+			AddExDirectoryJsonObjectList.Add(MakeShareable(new FJsonValueObject(CurrentDirJsonObject)));
+		}
+		OutJsonObject->SetArrayField(TEXT("AddExDirectoryToPak"), AddExDirectoryJsonObjectList);
+	}
+
 	// serialize pakversion
 	{
 		OutJsonObject->SetBoolField(TEXT("bIncludePakVersion"), IsIncludePakVersion());
