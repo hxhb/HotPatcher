@@ -73,7 +73,7 @@ bool UFLibAssetManageHelperEx::ConvAbsToVirtualPath(const FString& InAbsPath, FS
 void UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(bool bForceRefresh)
 {
 	UAssetManager& AssetManager = UAssetManager::Get();
-	AssetManager.UpdateCachedAssetData(bForceRefresh);
+	AssetManager.UpdateManagementDatabase(bForceRefresh);
 }
 
 FString UFLibAssetManageHelperEx::GetLongPackageNameFromPackagePath(const FString& InPackagePath)
