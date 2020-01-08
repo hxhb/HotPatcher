@@ -284,7 +284,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 
 			if (InvalidCookAssets.Num() > 0)
 			{
-				GenErrorMsg.Append(FString::Printf(TEXT("\n%s UnCooked Assets:\n"),*PlatformName));
+				GenErrorMsg.Append(FString::Printf(TEXT("%s UnCooked Assets:\n"),*PlatformName));
 
 				for (const auto& Asset : InvalidCookAssets)
 				{
