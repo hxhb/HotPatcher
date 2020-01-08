@@ -354,6 +354,19 @@ bool UExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObje
 
 	SerializeArrayLambda(ConvDirPathsToStrings(AssetIncludeFilters), TEXT("AssetIncludeFilter"));
 	SerializeArrayLambda(ConvDirPathsToStrings(AssetIgnoreFilters), TEXT("AssetIgnoreFilter"));
+	OutJsonObject->SetBoolField(TEXT("bIncludeHasRefAssetsOnly"), IsIncludeHasRefAssetsOnly());
+
+	// serialize specify asset
+	{
+		TArray<TSharedPtr<FJsonValue>> SpecifyAssetJsonValueObjectList;
+		for (const auto& SpecifyAsset : GetIncludeSpecifyAssets())
+		{
+			TSharedPtr<FJsonObject> CurrentAssetJsonObject;
+			UFlibHotPatcherEditorHelper::SerializeSpecifyAssetInfoToJsonObject(SpecifyAsset, CurrentAssetJsonObject);
+			SpecifyAssetJsonValueObjectList.Add(MakeShareable(new FJsonValueObject(CurrentAssetJsonObject)));
+		}
+		OutJsonObject->SetArrayField(TEXT("IncludeSpecifyAssets"), SpecifyAssetJsonValueObjectList);
+	}
 
 	OutJsonObject->SetBoolField(TEXT("bIncludeAssetRegistry"), IsIncludeAssetRegistry());
 	OutJsonObject->SetBoolField(TEXT("bIncludeGlobalShaderCache"), IsIncludeGlobalShaderCache());
@@ -367,9 +380,9 @@ bool UExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObje
 		TSharedPtr<FJsonObject> AddExFilesJsonObject = MakeShareable(new FJsonObject);
 		for (const auto& ExFileInfo : GetAddExternFiles())
 		{
-		TSharedPtr<FJsonObject> CurrentFileJsonObject;
-		UFlibHotPatcherEditorHelper::SerializeExAssetFileInfoToJsonObject(ExFileInfo, CurrentFileJsonObject);
-		AddExFilesJsonObject->SetObjectField(ExFileInfo.MountPath,CurrentFileJsonObject);
+			TSharedPtr<FJsonObject> CurrentFileJsonObject;
+			UFlibHotPatcherEditorHelper::SerializeExAssetFileInfoToJsonObject(ExFileInfo, CurrentFileJsonObject);
+			AddExFilesJsonObject->SetObjectField(ExFileInfo.MountPath, CurrentFileJsonObject);
 		}
 		OutJsonObject->SetObjectField(TEXT("AddExFilesToPak"), AddExFilesJsonObject);
 	}

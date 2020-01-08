@@ -206,3 +206,17 @@ bool UFlibHotPatcherEditorHelper::SerializeExDirectoryInfoToJsonObject(const FEx
 
 	return bRunStatus;
 }
+
+bool UFlibHotPatcherEditorHelper::SerializeSpecifyAssetInfoToJsonObject(const FPatcherSpecifyAsset& InSpecifyAsset, TSharedPtr<FJsonObject>& OutJsonObject)
+{
+	bool bRunStatus = false;
+
+	if (!OutJsonObject.IsValid())
+	{
+		OutJsonObject = MakeShareable(new FJsonObject);
+	}
+	OutJsonObject->SetStringField(TEXT("Asset"), InSpecifyAsset.Asset.GetLongPackageName());
+	OutJsonObject->SetBoolField(TEXT("bAnalysisAssetDependencies"), InSpecifyAsset.bAnalysisAssetDependencies);
+	bRunStatus = true;
+	return bRunStatus;
+}
