@@ -70,6 +70,12 @@ bool UFLibAssetManageHelperEx::ConvAbsToVirtualPath(const FString& InAbsPath, FS
 	return runState;
 }
 
+void UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(bool bForceRefresh)
+{
+	UAssetManager& AssetManager = UAssetManager::Get();
+	AssetManager.UpdateCachedAssetData(bForceRefresh);
+}
+
 FString UFLibAssetManageHelperEx::GetLongPackageNameFromPackagePath(const FString& InPackagePath)
 {
 	int32 FoundIndex;

@@ -247,6 +247,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		return FReply::Handled();
 	}
 
+	UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(true);
 
 	FHotPatcherVersion CurrentVersion = ExportPatchSetting->GetNewPatchVersionInfo();
 

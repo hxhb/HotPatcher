@@ -40,6 +40,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
 		static bool ConvAbsToVirtualPath(const FString& InAbsPath,FString& OutPackagePath);
 
+
+	static void UpdateAssetMangerDatabase(bool bForceRefresh);
 	// - AssetPath : /Game/BP/BP_Actor.BP_Actor
 	// - LongPackageName : /Game/BP/BP_Actor
 	// - AssetName : BP_Actor
