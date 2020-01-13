@@ -273,6 +273,26 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	// handle add & modify asset only
 	FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(AddAssetDependInfo, ModifyAssetDependInfo);
 
+	auto ErrorMsgShowLambda = [this](const FString& InErrorMsg)->bool
+	{
+		bool bHasError = false;
+		if (!InErrorMsg.IsEmpty())
+		{
+			this->SetInformationContent(InErrorMsg);
+			this->SetInfomationContentVisibility(EVisibility::Visible);
+			bHasError = true;
+		}
+		else
+		{
+			if (this->InformationContentIsVisibility())
+			{
+				this->SetInformationContent(TEXT(""));
+				this->SetInfomationContentVisibility(EVisibility::Collapsed);
+			}
+		}
+		return bHasError;
+	};
+
 	// 检查所修改的资源是否被Cook过
 	{
 		FString GenErrorMsg;
@@ -295,19 +315,45 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 				}
 			}
 		}
-		if (!GenErrorMsg.IsEmpty())
+		if (ErrorMsgShowLambda(GenErrorMsg)) return FReply::Handled();
+	}
+
+	// 检查添加的外部文件是否有重复
+	{
+		TArray<FString> AllExternList;
+		TArray<FString> RepeatList;
+
+		const TArray<FString>& AllExternFileToPakCommands = ExportPatchSetting->CombineAddExternFileToCookCommands();
+		const TArray<FString>& AllExtensionDirectoryToPakCommands = ExportPatchSetting->CombineAllExternDirectoryCookCommand();
+
+		auto FilterRepeatLambda = [&AllExternList,&RepeatList](const TArray<FString>& InList)
 		{
-			SetInformationContent(GenErrorMsg);
-			SetInfomationContentVisibility(EVisibility::Visible);
-			return FReply::Handled();
-		}
-		else
-		{
-			if (InformationContentIsVisibility())
+			for (const auto& Item:InList)
 			{
-				SetInformationContent(TEXT(""));
-				SetInfomationContentVisibility(EVisibility::Collapsed);
+				if (!AllExternList.Contains(Item))
+				{
+					AllExternList.Add(Item);
+					continue;
+				}
+				
+				if (!RepeatList.Contains(Item))
+				{
+					RepeatList.Add(Item);
+				}
 			}
+		};
+
+		FilterRepeatLambda(AllExternFileToPakCommands);
+		FilterRepeatLambda(AllExtensionDirectoryToPakCommands);
+
+		if (RepeatList.Num() > 0)
+		{
+			FString ErrorMsg = FString::Printf(TEXT("Repeat Extern File(s):\n"));
+			for (const auto& RepeatFile : RepeatList)
+			{
+				ErrorMsg.Append(FString::Printf(TEXT("\t%s\n"), *RepeatFile));
+			}	
+			if (ErrorMsgShowLambda(ErrorMsg)) return FReply::Handled();
 		}
 
 		

@@ -111,6 +111,7 @@ TArray<FString> UExportPatchSettings::CombineAllExternDirectoryCookCommand() con
 	for (const auto& DirectoryItem : GetAddExternDirectory())
 	{
 		FString DirAbsPath = FPaths::ConvertRelativePathToFull(DirectoryItem.DirectoryPath.Path);
+		FPaths::MakeStandardFilename(DirAbsPath);
 		if (!DirAbsPath.IsEmpty() && FPaths::DirectoryExists(DirAbsPath))
 		{
 			TArray<FString> DirectoryAllFiles;
@@ -121,6 +122,7 @@ TArray<FString> UExportPatchSettings::CombineAllExternDirectoryCookCommand() con
 				{
 					FString RelativeParentPath = UKismetStringLibrary::GetSubstring(File, ParentDirectoryIndex, File.Len() - ParentDirectoryIndex);
 					FString RelativeMountPointPath = FPaths::Combine(DirectoryItem.MountPoint, RelativeParentPath);
+					FPaths::MakeStandardFilename(RelativeMountPointPath);
 					CookCommandResault.Add(FString::Printf(TEXT("\"%s\" \"%s\""),*File,*RelativeMountPointPath));
 				}
 			}
@@ -447,13 +449,15 @@ TArray<FString> UExportPatchSettings::CombineAddExternFileToCookCommands()const
 	for (const auto& ExternFile : GetAddExternFiles())
 	{
 		FString FileAbsPath = FPaths::ConvertRelativePathToFull(ExternFile.FilePath.FilePath);
+		FPaths::MakeStandardFilename(FileAbsPath);
+
 		if (FPaths::FileExists(FileAbsPath) &&
-		ExternFile.MountPath.StartsWith(FPaths::Combine(TEXT("../../.."),ProjectName))
+			ExternFile.MountPath.StartsWith(FPaths::Combine(TEXT("../../.."),ProjectName))
 		)
 		{
-		resault.AddUnique(
-			FString::Printf(TEXT("\"%s\" \"%s\""),*FileAbsPath,*ExternFile.MountPath)
-		);
+			resault.AddUnique(
+				FString::Printf(TEXT("\"%s\" \"%s\""),*FileAbsPath,*ExternFile.MountPath)
+			);
 		}
 	}
 	return resault;
