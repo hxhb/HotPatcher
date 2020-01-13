@@ -293,70 +293,74 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		return bHasError;
 	};
 
-	// 检查所修改的资源是否被Cook过
+	// 错误处理
 	{
 		FString GenErrorMsg;
-		for (const auto& PlatformName : ExportPatchSetting->GetPakTargetPlatformNames())
+		// 检查所修改的资源是否被Cook过
 		{
-			TArray<FAssetDetail> ValidCookAssets;
-			TArray<FAssetDetail> InvalidCookAssets;
 
-			UFlibHotPatcherEditorHelper::CheckInvalidCookFilesByAssetDependenciesInfo(UKismetSystemLibrary::GetProjectDirectory(), PlatformName, AllChangedAssetInfo, ValidCookAssets, InvalidCookAssets);
-
-			if (InvalidCookAssets.Num() > 0)
+			for (const auto& PlatformName : ExportPatchSetting->GetPakTargetPlatformNames())
 			{
-				GenErrorMsg.Append(FString::Printf(TEXT("%s UnCooked Assets:\n"),*PlatformName));
+				TArray<FAssetDetail> ValidCookAssets;
+				TArray<FAssetDetail> InvalidCookAssets;
 
-				for (const auto& Asset : InvalidCookAssets)
+				UFlibHotPatcherEditorHelper::CheckInvalidCookFilesByAssetDependenciesInfo(UKismetSystemLibrary::GetProjectDirectory(), PlatformName, AllChangedAssetInfo, ValidCookAssets, InvalidCookAssets);
+
+				if (InvalidCookAssets.Num() > 0)
 				{
-					FString AssetLongPackageName;
-					UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath, AssetLongPackageName);
-					GenErrorMsg.Append(FString::Printf(TEXT("\t%s\n"),*AssetLongPackageName));
+					GenErrorMsg.Append(FString::Printf(TEXT("%s UnCooked Assets:\n"), *PlatformName));
+
+					for (const auto& Asset : InvalidCookAssets)
+					{
+						FString AssetLongPackageName;
+						UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath, AssetLongPackageName);
+						GenErrorMsg.Append(FString::Printf(TEXT("\t%s\n"), *AssetLongPackageName));
+					}
 				}
 			}
 		}
+
+		// 检查添加的外部文件是否有重复
+		{
+			TArray<FString> AllExternList;
+			TArray<FString> RepeatList;
+
+			const TArray<FString>& AllExternFileToPakCommands = ExportPatchSetting->CombineAddExternFileToCookCommands();
+			const TArray<FString>& AllExtensionDirectoryToPakCommands = ExportPatchSetting->CombineAllExternDirectoryCookCommand();
+
+			auto FilterRepeatLambda = [&AllExternList, &RepeatList](const TArray<FString>& InList)
+			{
+				for (const auto& Item : InList)
+				{
+					if (!AllExternList.Contains(Item))
+					{
+						AllExternList.Add(Item);
+						continue;
+					}
+
+					if (!RepeatList.Contains(Item))
+					{
+						RepeatList.Add(Item);
+					}
+				}
+			};
+
+			FilterRepeatLambda(AllExternFileToPakCommands);
+			FilterRepeatLambda(AllExtensionDirectoryToPakCommands);
+
+			if (RepeatList.Num() > 0)
+			{
+				GenErrorMsg.Append(FString::Printf(TEXT("Repeat Extern File(s):\n")));
+				for (const auto& RepeatFile : RepeatList)
+				{
+					GenErrorMsg.Append(FString::Printf(TEXT("\t%s\n"), *RepeatFile));
+				}
+
+			}
+		}
+
+		// 如果有错误信息 则输出后退出
 		if (ErrorMsgShowLambda(GenErrorMsg)) return FReply::Handled();
-	}
-
-	// 检查添加的外部文件是否有重复
-	{
-		TArray<FString> AllExternList;
-		TArray<FString> RepeatList;
-
-		const TArray<FString>& AllExternFileToPakCommands = ExportPatchSetting->CombineAddExternFileToCookCommands();
-		const TArray<FString>& AllExtensionDirectoryToPakCommands = ExportPatchSetting->CombineAllExternDirectoryCookCommand();
-
-		auto FilterRepeatLambda = [&AllExternList,&RepeatList](const TArray<FString>& InList)
-		{
-			for (const auto& Item:InList)
-			{
-				if (!AllExternList.Contains(Item))
-				{
-					AllExternList.Add(Item);
-					continue;
-				}
-				
-				if (!RepeatList.Contains(Item))
-				{
-					RepeatList.Add(Item);
-				}
-			}
-		};
-
-		FilterRepeatLambda(AllExternFileToPakCommands);
-		FilterRepeatLambda(AllExtensionDirectoryToPakCommands);
-
-		if (RepeatList.Num() > 0)
-		{
-			FString ErrorMsg = FString::Printf(TEXT("Repeat Extern File(s):\n"));
-			for (const auto& RepeatFile : RepeatList)
-			{
-				ErrorMsg.Append(FString::Printf(TEXT("\t%s\n"), *RepeatFile));
-			}	
-			if (ErrorMsgShowLambda(ErrorMsg)) return FReply::Handled();
-		}
-
-		
 	}
 
 	float AmountOfWorkProgress = 2.f * ExportPatchSetting->GetPakTargetPlatforms().Num() + 4.0f;
