@@ -159,6 +159,22 @@ bool UFlibPatchParserHelper::SerializeHotPatcherVersionToJsonObject(const FHotPa
 			RootJsonObject->SetArrayField(TEXT("IgnoreFilter"), AllIgnoreFilterJsonObj);
 
 		}
+		RootJsonObject->SetBoolField(TEXT("bIncludeHasRefAssetsOnly"), InVersion.bIncludeHasRefAssetsOnly);
+
+		// serialize specify assets
+		{
+			TArray<TSharedPtr<FJsonValue>> AllSpecifyJsonObj;
+			for(const auto& SpeficyAsset: InVersion.IncludeSpecifyAssets)
+			{
+				TSharedPtr<FJsonObject> SpecifyJsonObj = MakeShareable(new FJsonObject);
+				FString LongPackageName;
+				bool bConvStatus = UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(SpeficyAsset.Asset.ToString(), LongPackageName);
+				SpecifyJsonObj->SetStringField(TEXT("Asset"), bConvStatus?LongPackageName:SpeficyAsset.Asset.ToString());
+				SpecifyJsonObj->SetBoolField(TEXT("bAnalysisAssetDependencies"), SpeficyAsset.bAnalysisAssetDependencies);
+				AllSpecifyJsonObj.Add(MakeShareable(new FJsonValueObject(SpecifyJsonObj)));
+			}
+			RootJsonObject->SetArrayField(TEXT("IncludeSpecifyAssets"), AllSpecifyJsonObj);
+		}
 
 		TSharedPtr<FJsonObject> AssetInfoJsonObject;
 		bool bSerializeAssetInfoStatus = UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(InVersion.AssetInfo, AssetInfoJsonObject);
@@ -251,10 +267,7 @@ bool UFlibPatchParserHelper::DiffVersion(
 				OutAddAsset.mDependencies.Add(NewVersionAssetModule, *InNewVersion.mDependencies.Find(NewVersionAssetModule));
 				continue;
 			}
-			
 			{
-				
-
 				TArray<FString> NewVersionDependAssetsList;
 				InNewVersion.mDependencies.Find(NewVersionAssetModule)->mDependAssetDetails.GetKeys(NewVersionDependAssetsList);
 

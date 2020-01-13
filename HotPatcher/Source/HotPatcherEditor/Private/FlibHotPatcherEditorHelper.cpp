@@ -111,6 +111,8 @@ FHotPatcherVersion UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
 			ExportVersion.IgnoreFilter.AddUnique(Filter);
 		}
 	}
+	ExportVersion.bIncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
+	ExportVersion.IncludeSpecifyAssets = InIncludeSpecifyAsset;
 
 	TArray<FAssetDetail> FilterAssetList;
 	{
@@ -154,19 +156,6 @@ FHotPatcherVersion UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
 		}
 
 	}
-
-	
-	//if (FilterAssetList.Num())
-	//{
-	//	FAssetDependenciesInfo AllFilterAssetListInfo;
-	//	UFLibAssetManageHelperEx::CombineAssetsDetailAsFAssetDepenInfo(FilterAssetList, AllFilterAssetListInfo);
-
-	//	FAssetDependenciesInfo AssetDependencies;
-	//	UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(FilterAssetList, AssetDependencies);
-
-	//	FilterAssetDependencies = UFLibAssetManageHelperEx::CombineAssetDependencies(AllFilterAssetListInfo, AssetDependencies);
-
-	//}
 
 	auto AnalysisAssetDependency = [](const TArray<FAssetDetail>& InAssetDetail,bool bInAnalysisDepend)->FAssetDependenciesInfo
 	{

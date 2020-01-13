@@ -1,7 +1,7 @@
 #pragma once
 // project header
 #include "AssetManager/FAssetDependenciesInfo.h"
-
+#include "FPatcherSpecifyAsset.h"
 // engine header
 #include "CoreMinimal.h"
 #include "FHotPatcherVersion.generated.h"
@@ -23,6 +23,10 @@ public:
 	TArray<FString> IncludeFilter;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FString> IgnoreFilter;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIncludeHasRefAssetsOnly;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FAssetDependenciesInfo AssetInfo;
 };
