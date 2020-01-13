@@ -304,7 +304,7 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 						FString PackagePath;
 						UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InAssetPackageName,PackagePath);
 						FAssetData OutAssetData;
-						if (AssetManager.GetAssetDataForPath(FSoftObjectPath{ PackagePath }, OutAssetData))
+						if (AssetManager.GetAssetDataForPath(FSoftObjectPath{ PackagePath }, OutAssetData) && OutAssetData.IsValid())
 						{
 							FAssetDetail AssetDetail;
 							AssetDetail.mPackagePath = PackagePath;
@@ -359,6 +359,8 @@ bool UFLibAssetManageHelperEx::GetAssetsList(const TArray<FString>& InFilterPack
 	{
 		for (const auto& AssetDataIndex : AllAssetData)
 		{
+			if (!AssetDataIndex.IsValid() || AssetDataIndex.IsRedirector())
+				continue;
 			FAssetDetail AssetDetail;
 			UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(AssetDataIndex, AssetDetail);
 			OutAssetList.Add(AssetDetail);
@@ -419,6 +421,8 @@ bool UFLibAssetManageHelperEx::GetClassStringFromFAssetData(const FAssetData& In
 
 bool UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(const FAssetData& InAssetData, FAssetDetail& OutAssetDetail)
 {
+	if (!InAssetData.IsValid())
+		return false;
 	FAssetDetail AssetDetail;
 	AssetDetail.mAssetType = InAssetData.AssetClass.ToString();
 	UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InAssetData.PackageName.ToString(), AssetDetail.mPackagePath);
@@ -458,7 +462,7 @@ void UFLibAssetManageHelperEx::FilterNoRefAssets(const TArray<FAssetDetail>& InA
 		// ignore scan Map Asset reference
 		{
 			FAssetData CurrentAssetData;
-			if (UFLibAssetManageHelperEx::GetSingleAssetsData(AssetDetail.mPackagePath, CurrentAssetData))
+			if (UFLibAssetManageHelperEx::GetSingleAssetsData(AssetDetail.mPackagePath, CurrentAssetData) && CurrentAssetData.IsValid())
 			{
 				if (CurrentAssetData.AssetClass == TEXT("World") || 
 					CurrentAssetData.AssetClass == TEXT("MapBuildDataRegistry")
@@ -496,7 +500,7 @@ void UFLibAssetManageHelperEx::FilterNoRefAssetsWithIgnoreFilter(const TArray<FA
 		// ignore scan Map Asset reference
 		{
 			FAssetData CurrentAssetData;
-			if (UFLibAssetManageHelperEx::GetSingleAssetsData(AssetDetail.mPackagePath, CurrentAssetData))
+			if (UFLibAssetManageHelperEx::GetSingleAssetsData(AssetDetail.mPackagePath, CurrentAssetData) && CurrentAssetData.IsValid())
 			{
 				if (CurrentAssetData.AssetClass == TEXT("World") ||
 					CurrentAssetData.AssetClass == TEXT("MapBuildDataRegistry")
