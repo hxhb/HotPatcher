@@ -72,8 +72,10 @@ bool UFLibAssetManageHelperEx::ConvAbsToVirtualPath(const FString& InAbsPath, FS
 
 void UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(bool bForceRefresh)
 {
+#if WITH_EDITOR
 	UAssetManager& AssetManager = UAssetManager::Get();
 	AssetManager.UpdateManagementDatabase(bForceRefresh);
+#endif
 }
 
 FString UFLibAssetManageHelperEx::GetLongPackageNameFromPackagePath(const FString& InPackagePath)
@@ -370,6 +372,25 @@ bool UFLibAssetManageHelperEx::GetAssetsList(const TArray<FString>& InFilterPack
 	return false;
 }
 
+
+bool UFLibAssetManageHelperEx::GetRedirectorList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutRedirector)
+{
+	TArray<FAssetData> AllAssetData;
+	if (UFLibAssetManageHelperEx::GetAssetsData(InFilterPackagePaths, AllAssetData))
+	{
+		for (const auto& AssetDataIndex : AllAssetData)
+		{
+			if (AssetDataIndex.IsValid() && AssetDataIndex.IsRedirector())
+			{
+				FAssetDetail AssetDetail;
+				UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(AssetDataIndex, AssetDetail);
+				OutRedirector.Add(AssetDetail);
+			}
+		}
+		return true;
+	}
+	return false;
+}
 
 bool UFLibAssetManageHelperEx::GetSpecifyAssetData(const FString& InLongPackageName, TArray<FAssetData>& OutAssetData, bool InIncludeOnlyOnDiskAssets)
 {
