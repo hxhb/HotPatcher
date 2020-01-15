@@ -42,12 +42,12 @@ void FHotPatcherEditorModule::StartupModule()
 		LevelEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
 	}
 
-	// {
-	// 	TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
-	// 	ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddToolbarExtension));
+	 {
+	 	TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
+	 	ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddToolbarExtension));
 
-	// 	LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
-	// }
+	 	LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
+	 }
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateRaw(this, &FHotPatcherEditorModule::OnSpawnPluginTab))
 		.SetDisplayName(LOCTEXT("FHotPatcherTabTitle", "HotPatcher"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
