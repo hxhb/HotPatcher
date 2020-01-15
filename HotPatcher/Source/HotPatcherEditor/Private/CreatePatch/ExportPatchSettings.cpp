@@ -7,6 +7,7 @@
 #include "Kismet/KismetStringLibrary.h"
 
 UExportPatchSettings::UExportPatchSettings()
+	:UnrealPakOptions{ TEXT("-compress") }
 {
 	
 	PakVersionFileMountPoint = FPaths::Combine(

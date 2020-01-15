@@ -127,7 +127,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))
 		FString PakVersionFileMountPoint;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-		TArray<FString> UnrealPakOptions{TEXT("-compress")};
+		TArray<FString> UnrealPakOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<ETargetPlatform> PakTargetPlatforms;
 
