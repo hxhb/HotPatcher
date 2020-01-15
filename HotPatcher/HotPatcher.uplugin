@@ -6,19 +6,13 @@
 	"Description": "",
 	"Category": "Other",
 	"CreatedBy": "imzlp",
-	"CreatedByURL": "",
-	"DocsURL": "",
+	"CreatedByURL": "https://imzlp.me/",
+	"DocsURL": "https://imzlp.me/posts/17590/",
 	"MarketplaceURL": "",
 	"SupportURL": "",
 	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"Installed": false,
-	"WhitelistPlatforms" :
-		[
-			"Win32",
-			"Win64",
-			"Mac"
-		],
 	"Modules": [
 		{
 			"Name": "HotPatcherRuntime",
@@ -36,5 +30,4 @@
 			"LoadingPhase": "PreDefault"
 		}
 	]
-
 }
