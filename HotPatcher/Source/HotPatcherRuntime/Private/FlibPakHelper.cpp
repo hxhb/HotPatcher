@@ -4,9 +4,10 @@
 #include "FlibPakHelper.h"
 #include "IPlatformFilePak.h"
 #include "PlatformFilemanager.h"
-#include "Misc/ScopeExit.h"
+#include "AssetManager/FFileArrayDirectoryVisitor.hpp"
 
 // Engine Header
+#include "Misc/ScopeExit.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonReader.h"
 #include "Misc/FileHelper.h"
@@ -95,19 +96,8 @@ bool UFlibPakHelper::ScanPlatformDirectory(const FString& InRelativePath, bool b
 	{
 		TArray<FString> Files;
 		TArray<FString> Dirs;
-		auto FallArrayDirVisitor = [&Files, &Dirs](const TCHAR* InItem, bool bInDir)->bool
-		{
-			if (bInDir)
-			{
-				Dirs.AddUnique(InItem);
-			}
-			else
-			{
-				Files.AddUnique(InItem);
-			}
-			return true;
-		};
 
+		FFillArrayDirectoryVisitor FallArrayDirVisitor;
 		if (bRecursively)
 		{
 			PlatformFile.IterateDirectoryRecursively(*InRelativePath, FallArrayDirVisitor);
@@ -116,6 +106,8 @@ bool UFlibPakHelper::ScanPlatformDirectory(const FString& InRelativePath, bool b
 		{
 			PlatformFile.IterateDirectory(*InRelativePath, FallArrayDirVisitor);
 		}
+		Files = FallArrayDirVisitor.Files;
+		Dirs = FallArrayDirVisitor.Directories;
 
 		if (bIncludeFile)
 		{

@@ -418,7 +418,8 @@ bool UExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObje
 		FString PlatformName;
 		{	
 			FString EnumName;
-			StaticEnum<ETargetPlatform>()->GetNameByValue((int64)Platform).ToString().Split(TEXT("::"), &EnumName, &PlatformName, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+			UEnum* ETargetPlatformEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("ETargetPlatform"), true);	
+			ETargetPlatformEnum->GetNameByValue((int64)Platform).ToString().Split(TEXT("::"), &EnumName, &PlatformName, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
 		}
 		AllPlatforms.AddUnique(PlatformName);
 		}
@@ -473,7 +474,8 @@ TArray<FString> UExportPatchSettings::GetPakTargetPlatformNames() const
 		FString PlatformName;
 		{
 			FString EnumName;
-			StaticEnum<ETargetPlatform>()->GetNameByValue((int64)Platform).ToString().Split(TEXT("::"), &EnumName, &PlatformName, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+			const UEnum* ETargetPlatformEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("ETargetPlatform"), true);
+			ETargetPlatformEnum->GetNameByValue((int64)Platform).ToString().Split(TEXT("::"), &EnumName, &PlatformName, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
 		}
 		Resault.Add(PlatformName);
 	}
