@@ -157,9 +157,15 @@ public:
 
 	static FString GetAssetBelongModuleName(const FString& InAssetRelativePath);
 
+	// conv /Game/AAAA/ to /D:/PROJECTNAME/Content/AAAA/
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
+		static bool ConvRelativeDirToAbsDir(const FString& InRelativePath, FString& OutAbsPath);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
 		static void GetAllEnabledModuleName(TArray<FString>& OutEnabledModule);
-
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
+		static bool GetModuleNameByRelativePath(const FString& InRelativePath, FString& OutModuleName);
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
+		static bool ModuleIsEnabled(const FString& InModuleName);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
 		static bool GetEnableModuleAbsDir(const FString& InModuleName, FString& OutPath);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")

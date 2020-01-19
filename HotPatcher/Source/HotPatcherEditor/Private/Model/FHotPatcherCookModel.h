@@ -1,10 +1,14 @@
 #pragma once
 
+#include "FLibAssetManageHelperEx.h"
+
+// engine header
 #include "CoreMinimal.h"
 #include "Engine/Engine.h"
 #include "Delegates/DelegateCombinations.h"
 
-DECLARE_DELEGATE_OneParam(FRequestExSettings, TArray<FString>&);
+DECLARE_DELEGATE_OneParam(FRequestExSettingsDlg, TArray<FString>&);
+DECLARE_DELEGATE_OneParam(FRequestSpecifyCookFilterDlg, TArray<FDirectoryPath>&);
 
 class FHotPatcherCookModel
 {
@@ -79,6 +83,13 @@ public:
 		return mOptionSettings;
 	}
 
+	TArray<FDirectoryPath> GetAlwayCookFilters()
+	{
+		TArray<FDirectoryPath> CookFilters;
+		OnRequestSpecifyCookFilter.ExecuteIfBound(CookFilters);
+		return CookFilters;
+	}
+
 	bool CombineAllCookParams(FString& OutCommand,FString& OutFaildReson)
 	{
 		FString result;
@@ -87,9 +98,9 @@ public:
 			OutFaildReson = TEXT("Not Selected any Platform.");
 			return false;
 		}
-		if (!(mSelectedCookMaps.Num() > 0)&& !mOptionSettings.Contains(TEXT("CookAll")))
+		if (!(mSelectedCookMaps.Num() > 0 || GetAlwayCookFilters().Num() > 0)&& !mOptionSettings.Contains(TEXT("CookAll")))
 		{
-			OutFaildReson = TEXT("Not Selected any Map.");
+			OutFaildReson = TEXT("Not Selected any Cookable things.");
 			return false;
 		}
 		result.Append(TEXT("-targetplatform="));
@@ -122,6 +133,21 @@ public:
 			result.Append(TEXT("-") + Option + TEXT(" "));
 		}
 
+		// request cook directory
+		{
+			for (const auto& CookFilter : GetAlwayCookFilters())
+			{
+				FString FilterFullPath;
+				if (UFLibAssetManageHelperEx::ConvRelativeDirToAbsDir(CookFilter.Path, FilterFullPath))
+				{
+					if (FPaths::DirectoryExists(FilterFullPath))
+					{
+						result.Append(FString::Printf(TEXT("-COOKDIR=\"%s\" "), *FilterFullPath));
+					}
+				}
+			}
+		}
+
 		// Request Ex Options
 		{
 			TArray<FString> ExOptions;
@@ -133,12 +159,14 @@ public:
 
 		}
 
+
+
 		OutCommand = result;
 		return true;
 	}
 public:
-	FRequestExSettings OnRequestExSettings;
-
+	FRequestExSettingsDlg OnRequestExSettings;
+	FRequestSpecifyCookFilterDlg OnRequestSpecifyCookFilter;
 private:
 	TArray<FString> mSelectedPlatform;
 	TArray<FString> mSelectedCookMaps;

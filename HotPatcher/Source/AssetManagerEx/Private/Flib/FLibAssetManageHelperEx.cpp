@@ -649,13 +649,8 @@ bool UFLibAssetManageHelperEx::ConvLongPackageNameToCookedPath(const FString& In
 	UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InLongPackageName,AssetPackagePath);
 	FString AssetAbsPath = UFLibAssetManageHelperEx::ConvVirtualToAbsPath(AssetPackagePath);
 
-	FString AssetModuleName = InLongPackageName;
-	{
-		AssetModuleName.RemoveFromStart(TEXT("/"));
-		int32 secondSlashIndex = -1;
-		AssetModuleName.FindChar('/', secondSlashIndex);
-		AssetModuleName = UKismetStringLibrary::GetSubstring(AssetModuleName, 0, secondSlashIndex);
-	}
+	FString AssetModuleName;
+	GetModuleNameByRelativePath(InLongPackageName,AssetModuleName);
 
 	bool bIsEngineModule = false;
 	FString AssetBelongModuleBaseDir;
@@ -1013,6 +1008,29 @@ void UFLibAssetManageHelperEx::GetAllEnabledModuleName(TArray<FString>& OutEnabl
 	}
 }
 
+
+bool UFLibAssetManageHelperEx::ModuleIsEnabled(const FString& InModuleName)
+{
+	TArray<FString> AllEnabledModules;
+	UFLibAssetManageHelperEx::GetAllEnabledModuleName(AllEnabledModules);
+
+	return AllEnabledModules.Contains(InModuleName);
+}
+
+bool UFLibAssetManageHelperEx::GetModuleNameByRelativePath(const FString& InRelativePath, FString& OutModuleName)
+{
+	if (InRelativePath.IsEmpty()) return false;
+	FString BelongModuleName = InRelativePath;
+	{
+		BelongModuleName.RemoveFromStart(TEXT("/"));
+		int32 secondSlashIndex = -1;
+		if(BelongModuleName.FindChar('/', secondSlashIndex))
+			BelongModuleName = UKismetStringLibrary::GetSubstring(BelongModuleName, 0, secondSlashIndex);
+	}
+	OutModuleName = BelongModuleName;
+	return true;
+}
+
 bool UFLibAssetManageHelperEx::GetEnableModuleAbsDir(const FString& InModuleName, FString& OutPath)
 {
 	if (InModuleName.Equals(TEXT("Engine")))
@@ -1037,6 +1055,32 @@ FString UFLibAssetManageHelperEx::GetAssetBelongModuleName(const FString& InAsse
 	FString BelongModuleName = UKismetStringLibrary::GetSubstring(LongDependentPackageName, 1, BelongModuleNameEndIndex - 1);// (LongDependentPackageName, BelongModuleNameEndIndex);
 
 	return BelongModuleName;
+}
+
+
+bool UFLibAssetManageHelperEx::ConvRelativeDirToAbsDir(const FString& InRelativePath, FString& OutAbsPath)
+{
+	bool bRunStatus = false;
+	FString BelongModuleName;
+	if (UFLibAssetManageHelperEx::GetModuleNameByRelativePath(InRelativePath, BelongModuleName))
+	{
+		if (UFLibAssetManageHelperEx::ModuleIsEnabled(BelongModuleName))
+		{
+			FString ModuleAbsPath;
+			if (!UFLibAssetManageHelperEx::GetEnableModuleAbsDir(BelongModuleName, ModuleAbsPath))
+				return false;
+
+			FString RelativeToModule = InRelativePath.Replace(*BelongModuleName, TEXT("Content"));
+		
+			FString FinalFilterPath = FPaths::Combine(ModuleAbsPath, RelativeToModule);
+			if (FPaths::DirectoryExists(FinalFilterPath))
+			{
+				OutAbsPath = FinalFilterPath;
+				bRunStatus = true;
+			}
+		}
+	}
+	return bRunStatus;
 }
 
 bool UFLibAssetManageHelperEx::IsValidPlatform(const FString& PlatformName)

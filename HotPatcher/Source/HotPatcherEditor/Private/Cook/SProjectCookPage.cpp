@@ -4,6 +4,7 @@
 #include "SHotPatcherCookedPlatforms.h"
 #include "SHotPatcherCookSetting.h"
 #include "SHotPatcherCookMaps.h"
+#include "SHotPatcherCookSpecifyCookFilter.h"
 #include "FlibPatchParserHelper.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
 
@@ -86,6 +87,25 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 			.Padding(0.0, 8.0, 0.0, 0.0)
 			[
 				SNew(SExpandableArea)
+				.AreaTitle(LOCTEXT("CookFilter", "Filter(s)"))
+				.InitiallyCollapsed(true)
+				.Padding(8.0)
+				.BodyContent()
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(SHotPatcherCookSpecifyCookFilter, mCookModel)
+					]
+				]
+
+			]
+		+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.0, 8.0, 0.0, 0.0)
+			[
+				SNew(SExpandableArea)
 				.AreaTitle(LOCTEXT("CookSetting", "Settings"))
 				.InitiallyCollapsed(true)
 				.Padding(8.0)
@@ -120,17 +140,14 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 bool SProjectCookPage::CanExecuteCook()const
 {
 
-	if (!(mCookModel->GetAllSelectedPlatform().Num() > 0))
-	{
-		return false;
-	}
-	if (!(mCookModel->GetAllSelectedCookMap().Num() > 0) && 
-		!mCookModel->GetAllSelectedSettings().Contains(TEXT("CookAll")))
-	{
-		return false;
-	}
-
-	return !InCooking;
+	bool bCanCook = !!mCookModel->GetAllSelectedPlatform().Num() &&
+					(
+						!!mCookModel->GetAllSelectedCookMap().Num() ||
+						!!mCookModel->GetAlwayCookFilters().Num() ||
+						mCookModel->GetAllSelectedSettings().Contains(TEXT("CookAll"))
+					);
+	
+	return !InCooking && bCanCook;
 }
 
 FReply SProjectCookPage::RunCook()const
@@ -155,6 +172,11 @@ FReply SProjectCookPage::RunCook()const
 		{
 			FinalCookCommand.Append(CookParams);
 		}
+		else
+		{
+			UE_LOG(LogCookPage, Error, TEXT("The Cook Mission faild, %s"),*ErrorMsg);
+			return FReply::Handled();
+		}
 		for (const auto& DefaultCookParam : GetDefaultCookParams())
 		{
 			if (!FinalCookCommand.Contains(DefaultCookParam))
@@ -162,7 +184,8 @@ FReply SProjectCookPage::RunCook()const
 				FinalCookCommand.Append(TEXT(" ") + DefaultCookParam);
 			}
 		}
-
+		UE_LOG(LogCookPage, Log, TEXT("The Cook Mission is Staring..."));
+		UE_LOG(LogCookPage, Log, TEXT("CookCommand:%s %s"),*EngineBin,*FinalCookCommand);
 		RunCookProc(EngineBin, FinalCookCommand);
 		
 	}

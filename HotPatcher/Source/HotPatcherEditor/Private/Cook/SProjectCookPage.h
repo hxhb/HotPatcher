@@ -48,7 +48,6 @@ private:
 	bool InCooking=false;
 	/** The pending progress message */
 	TWeakPtr<SNotificationItem> PendingProgressPtr;
-
 	TSharedPtr<FHotPatcherCookModel> mCookModel;
 	mutable TSharedPtr<FProcWorkerThread> mCookProcWorkingThread;
 };
