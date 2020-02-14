@@ -93,8 +93,61 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 		];
 
 	ExportPatchSetting = UExportPatchSettings::Get();
-	SettingsView->SetObject(ExportPatchSetting);
+	SettingsView->SetObject(ExportPatchSetting.Get());
 
+}
+
+void SHotPatcherExportPatch::ImportConfig()
+{
+	UE_LOG(LogTemp, Log, TEXT("Patch Import Config"));
+	TArray<FString> Files = this->OpenFileDialog();
+	if (!Files.Num()) return;
+
+	FString LoadFile = Files[0];
+
+	FString JsonContent;
+	if (UFLibAssetManageHelperEx::LoadFileToString(LoadFile, JsonContent))
+	{
+		UFlibHotPatcherEditorHelper::DeserializePatchConfig(ExportPatchSetting,JsonContent);
+		SettingsView->ForceRefresh();
+	}
+	
+}
+void SHotPatcherExportPatch::ExportConfig()const
+{
+	UE_LOG(LogTemp, Log, TEXT("Patch Export Config"));
+	TArray<FString> Files = this->SaveFileDialog();
+
+	if (!Files.Num()) return;
+
+	FString SaveToFile = Files[0].EndsWith(TEXT(".json")) ? Files[0] : Files[0].Append(TEXT(".json"));
+
+	if (ExportPatchSetting)
+	{
+		if (ExportPatchSetting->IsSavePatchConfig())
+		{
+			FString SerializedJsonStr;
+			ExportPatchSetting->SerializePatchConfigToString(SerializedJsonStr);
+
+			if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile))
+			{
+				FText Msg = LOCTEXT("SavedPatchConfigMas", "Successd to Export the Patch Config.");
+				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveToFile);
+			}
+		}
+	}
+}
+
+void SHotPatcherExportPatch::ClearConfig()
+{
+	UE_LOG(LogTemp, Log, TEXT("Patch Clear Config"));
+	UFlibHotPatcherEditorHelper::DeserializePatchConfig(ExportPatchSetting, TEXT("{}"));
+	SettingsView->ForceRefresh();
+
+}
+void SHotPatcherExportPatch::DoGenerate()
+{
+	DoExportPatch();
 }
 
 FReply SHotPatcherExportPatch::DoDiff()const
@@ -179,8 +232,11 @@ FReply SHotPatcherExportPatch::DoClearDiff()const
 EVisibility SHotPatcherExportPatch::VisibilityDiffButtons() const
 {
 	bool bHasBase = false;
-	if (ExportPatchSetting->IsByBaseVersion())
-		bHasBase = !ExportPatchSetting->GetBaseVersion().IsEmpty() && FPaths::FileExists(ExportPatchSetting->GetBaseVersion());
+	if (ExportPatchSetting && ExportPatchSetting->IsByBaseVersion())
+	{
+		FString BaseVersionFile = ExportPatchSetting->GetBaseVersion();
+		bHasBase = !BaseVersionFile.IsEmpty() && FPaths::FileExists(BaseVersionFile);
+	}
 
 	if (bHasBase && CanExportPatch())
 	{
@@ -423,7 +479,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			FString SavePakFilePath = FPaths::Combine(
 				CurrentVersionSavePath,
 				PlatformName,
-				FString::Printf(TEXT("%s_%s_P.pak"), *CurrentVersion.VersionId, *PlatformName)
+				FString::Printf(TEXT("%s_%s_001_P.pak"), *CurrentVersion.VersionId, *PlatformName)
 			);
 			FString UnrealPakBinary = UFlibPatchParserHelper::GetUnrealPakBinary();
 

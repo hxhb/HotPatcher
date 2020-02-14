@@ -29,18 +29,18 @@ public:
 
 	UExportPatchSettings();
 
-	FORCEINLINE static UExportPatchSettings* Get()
+	FORCEINLINE static TSharedPtr<UExportPatchSettings> Get()
 	{
 		static bool bInitialized = false;
 		// This is a singleton, use default object
 		UExportPatchSettings* DefaultSettings = GetMutableDefault<UExportPatchSettings>();
-
+		DefaultSettings->AddToRoot();
 		if (!bInitialized)
 		{
 			bInitialized = true;
 		}
 
-		return DefaultSettings;
+		return MakeShareable(DefaultSettings);
 	}
 	
 	TArray<FString> GetAssetIncludeFilters()const;
@@ -52,6 +52,8 @@ public:
 	bool GetAllExternAssetCookCommands(const FString& InProjectDir, const FString& InPlatform, TArray<FString>& OutCookCommands)const;
 	bool SerializePatchConfigToJsonObject(TSharedPtr<FJsonObject>& OutJsonObject)const;
 	bool SerializePatchConfigToString(FString& OutSerializedStr)const;
+	void DeserializePatchConfig(const FString& InContent);
+
 	TArray<FString> CombineAddExternFileToCookCommands()const;
 
 	FORCEINLINE FString GetVersionId()const { return VersionId; }
@@ -88,7 +90,7 @@ public:
 	FHotPatcherVersion GetNewPatchVersionInfo()const;
 	bool GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion)const;
 	FString GetCurrentVersionSavePath()const;
-protected:
+public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "BaseVersion",meta = (RelativeToGameContentDir, EditCondition="bByBaseVersion"))

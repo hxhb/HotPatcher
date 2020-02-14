@@ -4,6 +4,7 @@
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Model/FHotPatcherCreatePatchModel.h"
 #include "ExportReleaseSettings.h"
+#include "SHotPatcherPatchableBase.h"
 
 // engine header
 #include "Interfaces/ITargetPlatform.h"
@@ -15,7 +16,7 @@
  * Implements the cooked platforms panel.
  */
 class SHotPatcherExportRelease
-	: public SCompoundWidget
+	: public SHotPatcherPatchableBase
 {
 public:
 
@@ -31,6 +32,12 @@ public:
 	 */
 	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCreatePatchModel> InCreateModel);
 
+public:
+	virtual void ImportConfig();
+	virtual void ExportConfig()const;
+	virtual void ClearConfig();
+	virtual void DoGenerate();
+
 protected:
 	void CreateExportFilterListView();
 	bool CanExportRelease()const;
@@ -38,11 +45,11 @@ protected:
 
 private:
 
-	TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
+	// TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
 
 	/** Settings view ui element ptr */
 	TSharedPtr<IDetailsView> SettingsView;
 
-	UExportReleaseSettings* ExportReleaseSettings;
+	TSharedPtr<UExportReleaseSettings> ExportReleaseSettings;
 };
 

@@ -6,7 +6,7 @@
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Model/FHotPatcherCreatePatchModel.h"
-
+#include "SHotPatcherPatchableBase.h"
 
 // engine header
 #include "Interfaces/ITargetPlatform.h"
@@ -40,6 +40,15 @@ public:
 	EVisibility HandleExportPatchVisibility() const;
 	EVisibility HandleExportReleaseVisibility() const;
 
+	EVisibility HandleOperatorConfigVisibility()const;
+protected:
+	FReply DoExportConfig()const;
+	FReply DoImportConfig()const;
+	FReply DoClearConfig()const;
+
+	TSharedPtr<IPatchableInterface> GetActivePatchable()const;
 private:
 	TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
+	TSharedPtr<SHotPatcherPatchableBase> mPatch;
+	TSharedPtr<SHotPatcherPatchableBase> mRelease;
 };

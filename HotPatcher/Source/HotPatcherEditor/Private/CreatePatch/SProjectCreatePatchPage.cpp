@@ -1,15 +1,15 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
 #include "SProjectCreatePatchPage.h"
+#include "SHotPatcherExportPatch.h"
+#include "SHotPatcherExportRelease.h"
 
+// engine header
 #include "Framework/Commands/UIAction.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SExpandableArea.h"
-
-#include "SHotPatcherExportPatch.h"
-#include "SHotPatcherExportRelease.h"
 
 #define LOCTEXT_NAMESPACE "SProjectCreatePatchPage"
 
@@ -50,18 +50,45 @@ void SProjectCreatePatchPage::Construct(const FArguments& InArgs, TSharedPtr<FHo
 				.AutoWidth()
 				.Padding(8.0, 0.0, 0.0, 0.0)
 				[
+					SNew(SButton)
+					.Text(LOCTEXT("ImportConfig", "Import"))
+					.OnClicked(this,&SProjectCreatePatchPage::DoImportConfig)
+					.Visibility(this,&SProjectCreatePatchPage::HandleOperatorConfigVisibility)
+				]
+			+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(5.0, 0.0, 0.0, 0.0)
+				[
+					SNew(SButton)
+					.Text(LOCTEXT("ExportConfig", "Export"))
+					.OnClicked(this,&SProjectCreatePatchPage::DoExportConfig)
+					.Visibility(this, &SProjectCreatePatchPage::HandleOperatorConfigVisibility)
+				]
+			+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(5.0, 0.0, 0.0, 0.0)
+				[
+					SNew(SButton)
+					.Text(LOCTEXT("ClearConfig", "Clear"))
+					.OnClicked(this, &SProjectCreatePatchPage::DoClearConfig)
+					.Visibility(this, &SProjectCreatePatchPage::HandleOperatorConfigVisibility)
+				]
+			+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(5.0, 0.0, 0.0, 0.0)
+				[
 					// cooking mode menu
 					SNew(SComboButton)
 					.ButtonContent()
-				[
-					SNew(STextBlock)
-					.Text(this, &SProjectCreatePatchPage::HandlePatchModeComboButtonContentText)
-				]
-				.ContentPadding(FMargin(6.0, 2.0))
-				.MenuContent()
-				[
-					PatchModeMenuBuilder.MakeWidget()
-				]
+					[
+						SNew(STextBlock)
+						.Text(this, &SProjectCreatePatchPage::HandlePatchModeComboButtonContentText)
+					]
+					.ContentPadding(FMargin(6.0, 2.0))
+					.MenuContent()
+					[
+						PatchModeMenuBuilder.MakeWidget()
+					]
 				]
 		]
 
@@ -69,19 +96,68 @@ void SProjectCreatePatchPage::Construct(const FArguments& InArgs, TSharedPtr<FHo
 			.AutoHeight()
 			.Padding(0.0, 8.0, 0.0, 0.0)
 			[
-				SNew(SHotPatcherExportPatch, mCreatePatchModel)
+				SAssignNew(mPatch,SHotPatcherExportPatch, mCreatePatchModel)
 				.Visibility(this,&SProjectCreatePatchPage::HandleExportPatchVisibility)
 			]
 		+ SVerticalBox::Slot()
 			.AutoHeight()
 			.Padding(0.0, 8.0, 0.0, 0.0)
 			[
-				SNew(SHotPatcherExportRelease, mCreatePatchModel)
+				SAssignNew(mRelease,SHotPatcherExportRelease, mCreatePatchModel)
 				.Visibility(this, &SProjectCreatePatchPage::HandleExportReleaseVisibility)
 			]
 	];
 
 	HandleHotPatcherMenuEntryClicked(EHotPatcherActionModes::ByPatch);
+}
+
+FReply SProjectCreatePatchPage::DoImportConfig()const
+{
+	if (GetActivePatchable().IsValid())
+	{
+		GetActivePatchable()->ImportConfig();
+	}
+	return FReply::Handled();
+}
+
+FReply SProjectCreatePatchPage::DoExportConfig()const
+{
+	if (GetActivePatchable().IsValid())
+	{
+		GetActivePatchable()->ExportConfig();
+	}
+	return FReply::Handled();
+}
+FReply SProjectCreatePatchPage::DoClearConfig()const
+{
+	if (GetActivePatchable().IsValid())
+	{
+		GetActivePatchable()->ClearConfig();
+	}
+	return FReply::Handled();
+}
+
+TSharedPtr<IPatchableInterface> SProjectCreatePatchPage::GetActivePatchable()const
+{
+	TSharedPtr<IPatchableInterface> result;
+	if (mCreatePatchModel.IsValid())
+	{
+
+		switch (mCreatePatchModel->GetPatcherMode())
+		{
+			case EHotPatcherActionModes::ByPatch:
+			{
+				result = mPatch;
+				break;
+			}
+			case EHotPatcherActionModes::ByRelease:
+			{
+				result = mRelease;
+				break;
+			}
+		}
+	}
+	return result;
 }
 
 EVisibility SProjectCreatePatchPage::HandleExportPatchVisibility() const
@@ -108,8 +184,10 @@ EVisibility SProjectCreatePatchPage::HandleExportReleaseVisibility() const
 
 	return EVisibility::Collapsed;
 }
-
-
+EVisibility SProjectCreatePatchPage::HandleOperatorConfigVisibility()const
+{
+	return EVisibility::Visible;
+}
 void SProjectCreatePatchPage::HandleHotPatcherMenuEntryClicked(EHotPatcherActionModes::Type InMode)
 {
 	if (mCreatePatchModel.IsValid())

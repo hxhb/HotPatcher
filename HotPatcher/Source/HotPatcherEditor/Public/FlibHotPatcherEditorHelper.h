@@ -47,4 +47,7 @@ public:
 	static bool SerializeExDirectoryInfoToJsonObject(const FExternDirectoryInfo& InExDirectoryInfo, TSharedPtr<FJsonObject>& OutJsonObject);
 	static bool SerializeSpecifyAssetInfoToJsonObject(const FPatcherSpecifyAsset& InSpecifyAsset, TSharedPtr<FJsonObject>& OutJsonObject);
 
+	static TSharedPtr<class UExportPatchSettings> DeserializePatchConfig(TSharedPtr<class UExportPatchSettings> InNewSetting,const FString& InContent);
+
+	static TSharedPtr<class UExportReleaseSettings> DeserializeReleaseConfig(TSharedPtr<class UExportReleaseSettings> InNewSetting, const FString& InContent);
 };

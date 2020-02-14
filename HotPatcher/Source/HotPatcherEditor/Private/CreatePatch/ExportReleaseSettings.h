@@ -22,7 +22,7 @@ public:
 	{
 	}
 
-	FORCEINLINE static UExportReleaseSettings* Get()
+	FORCEINLINE static TSharedPtr<UExportReleaseSettings> Get()
 	{
 		static bool bInitialized = false;
 		// This is a singleton, use default object
@@ -33,8 +33,65 @@ public:
 			bInitialized = true;
 		}
 
-		return DefaultSettings;
+		return MakeShareable(DefaultSettings);
 	}
+
+	FORCEINLINE bool SerializeReleaseConfigToString(FString& OutJsonString)
+	{
+		TSharedPtr<FJsonObject> ReleaseConfigJsonObject = MakeShareable(new FJsonObject);
+		SerializeReleaseConfigToJsonObject(ReleaseConfigJsonObject);
+
+		auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&OutJsonString);
+		return FJsonSerializer::Serialize(ReleaseConfigJsonObject.ToSharedRef(), JsonWriter);
+	}
+
+	FORCEINLINE bool SerializeReleaseConfigToJsonObject(TSharedPtr<FJsonObject>& OutJsonObject)
+	{
+		if (!OutJsonObject.IsValid())
+		{
+			OutJsonObject = MakeShareable(new FJsonObject);
+		}
+		OutJsonObject->SetStringField(TEXT("VersionId"), GetVersionId());
+
+		auto SerializeArrayLambda = [&OutJsonObject](const TArray<FString>& InArray, const FString& InJsonArrayName)
+		{
+			TArray<TSharedPtr<FJsonValue>> ArrayJsonValueList;
+			for (const auto& ArrayItem : InArray)
+			{
+				ArrayJsonValueList.Add(MakeShareable(new FJsonValueString(ArrayItem)));
+			}
+			OutJsonObject->SetArrayField(InJsonArrayName, ArrayJsonValueList);
+		};
+		auto ConvDirPathsToStrings = [](const TArray<FDirectoryPath>& InDirPaths)->TArray<FString>
+		{
+			TArray<FString> Resault;
+			for (const auto& Dir : InDirPaths)
+			{
+				Resault.Add(Dir.Path);
+			}
+			return Resault;
+		};
+
+		SerializeArrayLambda(ConvDirPathsToStrings(AssetIncludeFilters), TEXT("AssetIncludeFilters"));
+		SerializeArrayLambda(ConvDirPathsToStrings(AssetIgnoreFilters), TEXT("AssetIgnoreFilters"));
+
+		OutJsonObject->SetBoolField(TEXT("bIncludeHasRefAssetsOnly"), IsIncludeHasRefAssetsOnly());
+
+		// serialize specify asset
+		{
+			TArray<TSharedPtr<FJsonValue>> SpecifyAssetJsonValueObjectList;
+			for (const auto& SpecifyAsset : GetSpecifyAssets())
+			{
+				TSharedPtr<FJsonObject> CurrentAssetJsonObject;
+				UFlibHotPatcherEditorHelper::SerializeSpecifyAssetInfoToJsonObject(SpecifyAsset, CurrentAssetJsonObject);
+				SpecifyAssetJsonValueObjectList.Add(MakeShareable(new FJsonValueObject(CurrentAssetJsonObject)));
+			}
+			OutJsonObject->SetArrayField(TEXT("IncludeSpecifyAssets"), SpecifyAssetJsonValueObjectList);
+		}
+
+		OutJsonObject->SetStringField(TEXT("SavePath"), GetSavePath());
+	}
+
 	FORCEINLINE FString GetVersionId()const
 	{
 		return VersionId;
@@ -72,7 +129,7 @@ public:
 
 	FORCEINLINE TArray<FPatcherSpecifyAsset> GetSpecifyAssets()const { return IncludeSpecifyAssets; }
 
-protected:
+public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Version")
 		FString VersionId;
 

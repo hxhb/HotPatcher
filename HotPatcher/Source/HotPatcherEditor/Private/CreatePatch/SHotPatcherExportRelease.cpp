@@ -10,6 +10,8 @@
 // engine header
 #include "SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
+#include "HAL/FileManager.h"
+#include "Misc/FileHelper.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherExportRelease"
 
@@ -51,7 +53,56 @@ void SHotPatcherExportRelease::Construct(const FArguments& InArgs, TSharedPtr<FH
 		];
 
 	ExportReleaseSettings = UExportReleaseSettings::Get();
-	SettingsView->SetObject(ExportReleaseSettings);
+	SettingsView->SetObject(ExportReleaseSettings.Get());
+}
+
+void SHotPatcherExportRelease::ImportConfig()
+{
+	UE_LOG(LogTemp, Log, TEXT("Release Import Config"));
+	TArray<FString> Files = this->OpenFileDialog();
+	if (!Files.Num()) return;
+
+	FString LoadFile = Files[0];
+
+	FString JsonContent;
+	if (UFLibAssetManageHelperEx::LoadFileToString(LoadFile, JsonContent))
+	{
+		UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
+		SettingsView->ForceRefresh();
+	}
+}
+void SHotPatcherExportRelease::ExportConfig()const
+{
+	UE_LOG(LogTemp, Log, TEXT("Release Export Config"));
+	TArray<FString> Files = this->SaveFileDialog();
+
+	if (!Files.Num()) return;
+
+	FString SaveToFile = Files[0].EndsWith(TEXT(".json")) ? Files[0] : Files[0].Append(TEXT(".json"));
+
+	if (ExportReleaseSettings)
+	{
+
+		FString SerializedJsonStr;
+		ExportReleaseSettings->SerializeReleaseConfigToString(SerializedJsonStr);
+
+		if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile))
+		{
+			FText Msg = LOCTEXT("SavedPatchConfigMas", "Successd to Export the Patch Config.");
+			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveToFile);
+		}
+	}
+}
+
+void SHotPatcherExportRelease::ClearConfig()
+{
+	UE_LOG(LogTemp, Log, TEXT("Release Clear Config"));
+	UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, TEXT("{}"));
+	SettingsView->ForceRefresh();
+}
+void SHotPatcherExportRelease::DoGenerate()
+{
+	UE_LOG(LogTemp, Log, TEXT("Release DoGenerate"));
 }
 
 void SHotPatcherExportRelease::CreateExportFilterListView()

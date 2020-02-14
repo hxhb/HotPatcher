@@ -6,6 +6,7 @@
 #include "Model/FHotPatcherCreatePatchModel.h"
 #include "ExportPatchSettings.h"
 #include "SHotPatcherInformations.h"
+#include "SHotPatcherPatchableBase.h"
 
 // engine header
 #include "Interfaces/ITargetPlatform.h"
@@ -17,7 +18,7 @@
  * Implements the cooked platforms panel.
  */
 class SHotPatcherExportPatch
-	: public SCompoundWidget
+	: public SHotPatcherPatchableBase
 {
 public:
 
@@ -33,6 +34,13 @@ public:
 	 */
 	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCreatePatchModel> InCreateModel);
 
+// IPatchableInterface
+public:
+	virtual void ImportConfig();
+	virtual void ExportConfig()const;
+	virtual void ClearConfig();
+	virtual void DoGenerate();
+
 protected:
 	void CreateExportFilterListView();
 	bool CanExportPatch()const;
@@ -46,14 +54,16 @@ protected:
 	bool InformationContentIsVisibility()const;
 	void SetInformationContent(const FString& InContent)const;
 	void SetInfomationContentVisibility(EVisibility InVisibility)const;
+
+
 private:
 
-	TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
+	// TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
 
 	/** Settings view ui element ptr */
 	TSharedPtr<IDetailsView> SettingsView;
 
-	UExportPatchSettings* ExportPatchSetting;
+	TSharedPtr<UExportPatchSettings> ExportPatchSetting;
 
 	TSharedPtr<SHotPatcherInformations> DiffWidget;
 };

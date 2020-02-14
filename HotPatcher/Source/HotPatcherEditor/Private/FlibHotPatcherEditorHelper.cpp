@@ -2,6 +2,10 @@
 
 
 #include "FlibHotPatcherEditorHelper.h"
+#include "CreatePatch/ExportPatchSettings.h"
+#include "CreatePatch/ExportReleaseSettings.h"
+
+// engine header
 #include "Misc/SecureHash.h"
 
 TArray<FString> UFlibHotPatcherEditorHelper::GetAllCookOption()
@@ -245,4 +249,223 @@ bool UFlibHotPatcherEditorHelper::SerializeSpecifyAssetInfoToJsonObject(const FP
 	OutJsonObject->SetBoolField(TEXT("bAnalysisAssetDependencies"), InSpecifyAsset.bAnalysisAssetDependencies);
 	bRunStatus = true;
 	return bRunStatus;
+}
+
+
+TSharedPtr<UExportPatchSettings> UFlibHotPatcherEditorHelper::DeserializePatchConfig(TSharedPtr<UExportPatchSettings> InNewSetting,const FString& InContent)
+{
+#define DESERIAL_BOOL_BY_NAME(SettingObject,JsonObject,MemberName) SettingObject->MemberName = JsonObject->GetBoolField(TEXT(#MemberName));
+#define DESERIAL_STRING_BY_NAME(SettingObject,JsonObject,MemberName) SettingObject->MemberName = JsonObject->GetStringField(TEXT(#MemberName));
+	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(InContent);
+	TSharedPtr<FJsonObject> JsonObject;
+	if (FJsonSerializer::Deserialize(JsonReader, JsonObject))
+	{
+		// 
+		{
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bByBaseVersion);
+			InNewSetting->BaseVersion.FilePath = JsonObject->GetStringField(TEXT("BaseVersion"));
+			DESERIAL_STRING_BY_NAME(InNewSetting, JsonObject, VersionId);
+
+
+			auto ParserAssetFilter = [JsonObject](const FString& InFilterName) -> TArray<FDirectoryPath>
+			{
+				TArray<TSharedPtr<FJsonValue>> FilterArray = JsonObject->GetArrayField(InFilterName);
+
+				TArray<FDirectoryPath> FilterResult;
+				for (const auto& Filter : FilterArray)
+				{
+					FDirectoryPath CurrentFilterPath;
+					CurrentFilterPath.Path = Filter->AsString();
+					UE_LOG(LogTemp, Log, TEXT("Filter: %s"), *CurrentFilterPath.Path);
+					FilterResult.Add(CurrentFilterPath);
+				}
+				return FilterResult;
+			};
+
+			InNewSetting->AssetIncludeFilters = ParserAssetFilter(TEXT("AssetIncludeFilters"));
+			InNewSetting->AssetIgnoreFilters = ParserAssetFilter(TEXT("AssetIgnoreFilters"));
+
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludeHasRefAssetsOnly);
+
+			// PatcherSprcifyAsset
+			{
+				TArray<FPatcherSpecifyAsset> SpecifyAssets;
+				TArray<TSharedPtr<FJsonValue>> SpecifyAssetsJsonObj = JsonObject->GetArrayField(TEXT("IncludeSpecifyAssets"));
+
+				for (const auto& InSpecifyAsset : SpecifyAssetsJsonObj)
+				{
+					FPatcherSpecifyAsset CurrentAsset;
+					TSharedPtr<FJsonObject> SpecifyJsonObj = InSpecifyAsset->AsObject();
+					CurrentAsset.Asset = SpecifyJsonObj->GetStringField(TEXT("Asset"));
+					CurrentAsset.bAnalysisAssetDependencies = SpecifyJsonObj->GetBoolField(TEXT("bAnalysisAssetDependencies"));
+					SpecifyAssets.Add(CurrentAsset);
+				}
+				InNewSetting->IncludeSpecifyAssets = SpecifyAssets;
+			}
+
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludeAssetRegistry);
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludeGlobalShaderCache);
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludeShaderBytecode);
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludeEngineIni);
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludePluginIni);
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludeProjectIni);
+			// extern
+			{
+				// extern file 
+				{
+					TArray<FExternAssetFileInfo> AddExternFileToPak;
+
+					TArray<TSharedPtr<FJsonValue>> ExternalFileJsonValues;
+
+					ExternalFileJsonValues = JsonObject->GetArrayField(TEXT("AddExternFileToPak"));
+
+					for (const auto& FileJsonValue : ExternalFileJsonValues)
+					{
+						FExternAssetFileInfo CurrentExFile;
+						TSharedPtr<FJsonObject> FileJsonObjectValue = FileJsonValue->AsObject();
+
+						CurrentExFile.FilePath.FilePath = FileJsonObjectValue->GetStringField(TEXT("FilePath"));
+						CurrentExFile.MountPath = FileJsonObjectValue->GetStringField(TEXT("MountPath"));
+
+						AddExternFileToPak.Add(CurrentExFile);
+					}
+					InNewSetting->AddExternFileToPak = AddExternFileToPak;
+				}
+				// extern directory
+				{
+					TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
+					TArray<TSharedPtr<FJsonValue>> ExternalDirJsonValues;
+
+					ExternalDirJsonValues = JsonObject->GetArrayField(TEXT("AddExternDirectoryToPak"));
+
+					for (const auto& FileJsonValue : ExternalDirJsonValues)
+					{
+						FExternDirectoryInfo CurrentExDir;
+						TSharedPtr<FJsonObject> FileJsonObjectValue = FileJsonValue->AsObject();
+
+						CurrentExDir.DirectoryPath.Path = FileJsonObjectValue->GetStringField(TEXT("Directory"));
+						CurrentExDir.MountPoint = FileJsonObjectValue->GetStringField(TEXT("MountPoint"));
+
+						AddExternDirectoryToPak.Add(CurrentExDir);
+					}
+					InNewSetting->AddExternDirectoryToPak = AddExternDirectoryToPak;
+				}
+			}
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludePakVersionFile);
+			DESERIAL_STRING_BY_NAME(InNewSetting, JsonObject, PakVersionFileMountPoint);
+
+			// UnrealPakOptions
+			{
+				
+				TArray<TSharedPtr<FJsonValue>> UnrealPakOptionsJsonValues;
+				UnrealPakOptionsJsonValues = JsonObject->GetArrayField(TEXT("UnrealPakOptions"));
+
+				TArray<FString> FinalOptions;
+
+				for (const auto& Option : UnrealPakOptionsJsonValues)
+				{
+					FinalOptions.Add(Option->AsString());
+				}
+
+				InNewSetting->UnrealPakOptions = FinalOptions;
+			}
+			
+			// TargetPlatform
+			{
+
+				TArray<TSharedPtr<FJsonValue>> TargetPlatforms;
+				TargetPlatforms = JsonObject->GetArrayField(TEXT("PakTargetPlatforms"));
+
+				TArray<ETargetPlatform> FinalTargetPlatforms;
+				
+				for(const auto& Platform:TargetPlatforms)
+				{
+					FString EnumName = TEXT("ETargetPlatform::");
+					EnumName.Append(Platform->AsString());
+
+					UEnum* ETargetPlatformEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("ETargetPlatform"), true);
+					
+					int32 EnumIndex = ETargetPlatformEnum->GetIndexByName(FName(*EnumName));
+					if (EnumIndex != INDEX_NONE)
+					{
+						UE_LOG(LogTemp, Log, TEXT("FOUND ENUM INDEX SUCCESS"));
+						int32 EnumValue = ETargetPlatformEnum->GetValueByIndex(EnumIndex);
+						ETargetPlatform CurrentEnum = (ETargetPlatform)EnumValue;
+						FinalTargetPlatforms.Add(CurrentEnum);
+					}
+					else
+					{
+						UE_LOG(LogTemp, Log, TEXT("FOUND ENUM INDEX FAILD"));
+					}
+				}
+				InNewSetting->PakTargetPlatforms = FinalTargetPlatforms;
+			}
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bSavePakList);
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bSaveDiffAnalysis);
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bSavePatchConfig);
+
+			InNewSetting->SavePath.Path = JsonObject->GetStringField(TEXT("SavePath"));
+		}
+	}
+
+#undef DESERIAL_BOOL_BY_NAME
+#undef DESERIAL_STRING_BY_NAME
+	return InNewSetting;
+}
+
+TSharedPtr<class UExportReleaseSettings> UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(TSharedPtr<class UExportReleaseSettings> InNewSetting, const FString& InContent)
+{
+#define DESERIAL_BOOL_BY_NAME(SettingObject,JsonObject,MemberName) SettingObject->MemberName = JsonObject->GetBoolField(TEXT(#MemberName));
+#define DESERIAL_STRING_BY_NAME(SettingObject,JsonObject,MemberName) SettingObject->MemberName = JsonObject->GetStringField(TEXT(#MemberName));
+	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(InContent);
+	TSharedPtr<FJsonObject> JsonObject;
+	if (FJsonSerializer::Deserialize(JsonReader, JsonObject))
+	{
+		// 
+		{
+			DESERIAL_STRING_BY_NAME(InNewSetting, JsonObject, VersionId);
+
+
+			auto ParserAssetFilter = [JsonObject](const FString& InFilterName) -> TArray<FDirectoryPath>
+			{
+				TArray<TSharedPtr<FJsonValue>> FilterArray = JsonObject->GetArrayField(InFilterName);
+
+				TArray<FDirectoryPath> FilterResult;
+				for (const auto& Filter : FilterArray)
+				{
+					FDirectoryPath CurrentFilterPath;
+					CurrentFilterPath.Path = Filter->AsString();
+					UE_LOG(LogTemp, Log, TEXT("Filter: %s"), *CurrentFilterPath.Path);
+					FilterResult.Add(CurrentFilterPath);
+				}
+				return FilterResult;
+			};
+
+			InNewSetting->AssetIncludeFilters = ParserAssetFilter(TEXT("AssetIncludeFilters"));
+			InNewSetting->AssetIgnoreFilters = ParserAssetFilter(TEXT("AssetIgnoreFilters"));
+
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludeHasRefAssetsOnly);
+
+			// PatcherSprcifyAsset
+			{
+				TArray<FPatcherSpecifyAsset> SpecifyAssets;
+				TArray<TSharedPtr<FJsonValue>> SpecifyAssetsJsonObj = JsonObject->GetArrayField(TEXT("IncludeSpecifyAssets"));
+
+				for (const auto& InSpecifyAsset : SpecifyAssetsJsonObj)
+				{
+					FPatcherSpecifyAsset CurrentAsset;
+					TSharedPtr<FJsonObject> SpecifyJsonObj = InSpecifyAsset->AsObject();
+					CurrentAsset.Asset = SpecifyJsonObj->GetStringField(TEXT("Asset"));
+					CurrentAsset.bAnalysisAssetDependencies = SpecifyJsonObj->GetBoolField(TEXT("bAnalysisAssetDependencies"));
+					SpecifyAssets.Add(CurrentAsset);
+				}
+				InNewSetting->IncludeSpecifyAssets = SpecifyAssets;
+			}
+			InNewSetting->SavePath.Path = JsonObject->GetStringField(TEXT("SavePath"));
+		}
+	}
+
+#undef DESERIAL_BOOL_BY_NAME
+#undef DESERIAL_STRING_BY_NAME
+	return InNewSetting;
 }

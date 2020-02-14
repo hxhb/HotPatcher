@@ -355,8 +355,8 @@ bool UExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObje
 		return Resault;
 	};
 
-	SerializeArrayLambda(ConvDirPathsToStrings(AssetIncludeFilters), TEXT("AssetIncludeFilter"));
-	SerializeArrayLambda(ConvDirPathsToStrings(AssetIgnoreFilters), TEXT("AssetIgnoreFilter"));
+	SerializeArrayLambda(ConvDirPathsToStrings(AssetIncludeFilters), TEXT("AssetIncludeFilters"));
+	SerializeArrayLambda(ConvDirPathsToStrings(AssetIgnoreFilters), TEXT("AssetIgnoreFilters"));
 	OutJsonObject->SetBoolField(TEXT("bIncludeHasRefAssetsOnly"), IsIncludeHasRefAssetsOnly());
 
 	// serialize specify asset
@@ -380,14 +380,14 @@ bool UExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObje
 
 	// serialize all add extern file to pak
 	{
-		TSharedPtr<FJsonObject> AddExFilesJsonObject = MakeShareable(new FJsonObject);
+		TArray<TSharedPtr<FJsonValue>> AddExFilesJsonObjectList;
 		for (const auto& ExFileInfo : GetAddExternFiles())
 		{
 			TSharedPtr<FJsonObject> CurrentFileJsonObject;
 			UFlibHotPatcherEditorHelper::SerializeExAssetFileInfoToJsonObject(ExFileInfo, CurrentFileJsonObject);
-			AddExFilesJsonObject->SetObjectField(ExFileInfo.MountPath, CurrentFileJsonObject);
+			AddExFilesJsonObjectList.Add(MakeShareable(new FJsonValueObject(CurrentFileJsonObject)));
 		}
-		OutJsonObject->SetObjectField(TEXT("AddExFilesToPak"), AddExFilesJsonObject);
+		OutJsonObject->SetArrayField(TEXT("AddExternFileToPak"), AddExFilesJsonObjectList);
 	}
 	// serialize all add extern directory to pak
 	{
@@ -398,12 +398,12 @@ bool UExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObje
 			UFlibHotPatcherEditorHelper::SerializeExDirectoryInfoToJsonObject(ExDirectoryInfo, CurrentDirJsonObject);
 			AddExDirectoryJsonObjectList.Add(MakeShareable(new FJsonValueObject(CurrentDirJsonObject)));
 		}
-		OutJsonObject->SetArrayField(TEXT("AddExDirectoryToPak"), AddExDirectoryJsonObjectList);
+		OutJsonObject->SetArrayField(TEXT("AddExternDirectoryToPak"), AddExDirectoryJsonObjectList);
 	}
 
 	// serialize pakversion
 	{
-		OutJsonObject->SetBoolField(TEXT("bIncludePakVersion"), IsIncludePakVersion());
+		OutJsonObject->SetBoolField(TEXT("bIncludePakVersionFile"), IsIncludePakVersion());
 		OutJsonObject->SetStringField(TEXT("PakVersionFileMountPoint"), GetPakVersionFileMountPoint());
 	}
 	// serialize UnrealPakOptions
@@ -423,7 +423,7 @@ bool UExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObje
 		}
 		AllPlatforms.AddUnique(PlatformName);
 		}
-		SerializeArrayLambda(AllPlatforms, TEXT("TargetPlatforms"));
+		SerializeArrayLambda(AllPlatforms, TEXT("PakTargetPlatforms"));
 	}
 
 	OutJsonObject->SetBoolField(TEXT("bSavePakList"), IsSavePakList());
@@ -442,6 +442,7 @@ bool UExportPatchSettings::SerializePatchConfigToString(FString& OutSerializedSt
 	auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&OutSerializedStr);
 	return FJsonSerializer::Serialize(PatchConfigJsonObject.ToSharedRef(), JsonWriter);
 }
+
 
 
 TArray<FString> UExportPatchSettings::CombineAddExternFileToCookCommands()const
