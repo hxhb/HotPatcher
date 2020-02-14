@@ -141,7 +141,10 @@ void SHotPatcherExportPatch::ExportConfig()const
 void SHotPatcherExportPatch::ClearConfig()
 {
 	UE_LOG(LogTemp, Log, TEXT("Patch Clear Config"));
-	UFlibHotPatcherEditorHelper::DeserializePatchConfig(ExportPatchSetting, TEXT("{}"));
+	TSharedPtr<UExportPatchSettings> DefaultSetting = MakeShareable(NewObject<UExportPatchSettings>());
+	FString DefaultSettingJson;
+	DefaultSetting->SerializePatchConfigToString(DefaultSettingJson);
+	UFlibHotPatcherEditorHelper::DeserializePatchConfig(ExportPatchSetting, DefaultSettingJson);
 	SettingsView->ForceRefresh();
 
 }

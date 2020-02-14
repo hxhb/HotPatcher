@@ -88,7 +88,7 @@ public:
 			}
 			OutJsonObject->SetArrayField(TEXT("IncludeSpecifyAssets"), SpecifyAssetJsonValueObjectList);
 		}
-
+		OutJsonObject->SetBoolField(TEXT("bSaveReleaseConfig"), IsSaveConfig());
 		OutJsonObject->SetStringField(TEXT("SavePath"), GetSavePath());
 	}
 
@@ -120,11 +120,9 @@ public:
 		}
 		return Result;
 	}
-	FORCEINLINE FString GetSavePath()const
-	{
-		return SavePath.Path;
-	}
+	FORCEINLINE FString GetSavePath()const{return SavePath.Path;}
 
+	FORCEINLINE bool IsSaveConfig()const {return bSaveReleaseConfig;}
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 
 	FORCEINLINE TArray<FPatcherSpecifyAsset> GetSpecifyAssets()const { return IncludeSpecifyAssets; }
@@ -142,6 +140,8 @@ public:
 		bool bIncludeHasRefAssetsOnly;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Specify Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+		bool bSaveReleaseConfig;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
 		FDirectoryPath SavePath;
 };

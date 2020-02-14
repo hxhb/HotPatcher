@@ -97,7 +97,12 @@ void SHotPatcherExportRelease::ExportConfig()const
 void SHotPatcherExportRelease::ClearConfig()
 {
 	UE_LOG(LogTemp, Log, TEXT("Release Clear Config"));
-	UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, TEXT("{}"));
+
+	TSharedPtr<UExportReleaseSettings> DefaultSetting = MakeShareable(NewObject<UExportReleaseSettings>());
+
+	FString DefaultSettingJson;
+	DefaultSetting->SerializeReleaseConfigToString(DefaultSettingJson);
+	UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, DefaultSettingJson);
 	SettingsView->ForceRefresh();
 }
 void SHotPatcherExportRelease::DoGenerate()
@@ -148,10 +153,12 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 			ExportReleaseSettings->IsIncludeHasRefAssetsOnly()
 		);
 	
+	FString SaveVersionDir = FPaths::Combine(ExportReleaseSettings->GetSavePath(), ExportReleaseSettings->GetVersionId());
+
 	FString SaveToJson;
 	if (UFlibPatchParserHelper::SerializeHotPatcherVersionToString(ExportVersion, SaveToJson))
 	{
-		FString SaveVersionDir = FPaths::Combine(ExportReleaseSettings->GetSavePath(), ExportReleaseSettings->GetVersionId());
+		
 		FString SaveToFile = FPaths::Combine(
 			SaveVersionDir,
 			FString::Printf(TEXT("%s_Release.json"), *ExportReleaseSettings->GetVersionId())
@@ -163,6 +170,21 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Message, SaveToFile);
 		}
 		UE_LOG(LogTemp, Log, TEXT("HotPatcher Export RELEASE is %s."), runState ? TEXT("Success") : TEXT("FAILD"));
+	}
+	FString ConfigJson;
+	if (ExportReleaseSettings->SerializeReleaseConfigToString(ConfigJson))
+	{
+		FString SaveToFile = FPaths::Combine(
+			SaveVersionDir,
+			FString::Printf(TEXT("%s_ReleaseConfig.json"), *ExportReleaseSettings->GetVersionId())
+		);
+		bool runState = UFLibAssetManageHelperEx::SaveStringToFile(SaveToFile, ConfigJson);
+		if (runState)
+		{
+			auto Message = LOCTEXT("ExportReleaseConfigSuccessNotification", "Succeed to export HotPatcher Release Config.");
+			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Message, SaveToFile);
+		}
+		UE_LOG(LogTemp, Log, TEXT("HotPatcher Export RELEASE CONFIG is %s."), runState ? TEXT("Success") : TEXT("FAILD"));
 	}
 	return FReply::Handled();
 }
