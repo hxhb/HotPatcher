@@ -253,10 +253,9 @@ bool UFlibPatchParserHelper::DeSerializeHotPatcherVersionFromJsonObject(const TS
 
 		// deserialize extern files
 		{
-			
 			TArray<TSharedPtr<FJsonValue>> AllExternalFilesJsonObj;
 			AllExternalFilesJsonObj = InJsonObject->GetArrayField(TEXT("ExternalFiles"));
-			UE_LOG(LogTemp, Warning, TEXT("External Files num %d"), AllExternalFilesJsonObj.Num());
+			// UE_LOG(LogTemp, Warning, TEXT("External Files num %d"), AllExternalFilesJsonObj.Num());
 
 			for (const auto& FileJsonObj : AllExternalFilesJsonObj)
 			{
@@ -421,7 +420,7 @@ bool UFlibPatchParserHelper::DiffVersionExFiles(
 
 		for (const auto& NewVersionFile : NewVersionFilesKeys)
 		{
-			UE_LOG(LogTemp, Log, TEXT("check file %s."), *NewVersionFile);
+			// UE_LOG(LogTemp, Log, TEXT("check file %s."), *NewVersionFile);
 			if (InBaseVersion.ExternalFiles.Contains(NewVersionFile))
 			{
 				const FExternAssetFileInfo& NewFile = *InBaseVersion.ExternalFiles.Find(NewVersionFile);

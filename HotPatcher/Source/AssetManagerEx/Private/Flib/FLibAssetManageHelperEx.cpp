@@ -607,7 +607,7 @@ void UFLibAssetManageHelperEx::GetAllInValidAssetInProject(FAssetDependenciesInf
 			FString AssetPackagePath;
 			if(!UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(AssetLongPackageName,AssetPackagePath))
 				continue;
-			UE_LOG(LogTemp, Log, TEXT("Asset %s"), *AssetPackagePath);
+			// UE_LOG(LogTemp, Log, TEXT("Asset %s"), *AssetPackagePath);
 			FString AssetAbsPath = UFLibAssetManageHelperEx::ConvVirtualToAbsPath(AssetPackagePath);
 			if (!FPaths::FileExists(AssetAbsPath))
 			{

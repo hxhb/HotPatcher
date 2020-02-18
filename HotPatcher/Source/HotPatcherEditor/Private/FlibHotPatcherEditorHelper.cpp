@@ -235,7 +235,7 @@ TSharedPtr<UExportPatchSettings> UFlibHotPatcherEditorHelper::DeserializePatchCo
 				{
 					FDirectoryPath CurrentFilterPath;
 					CurrentFilterPath.Path = Filter->AsString();
-					UE_LOG(LogTemp, Log, TEXT("Filter: %s"), *CurrentFilterPath.Path);
+					// UE_LOG(LogTemp, Log, TEXT("Filter: %s"), *CurrentFilterPath.Path);
 					FilterResult.Add(CurrentFilterPath);
 				}
 				return FilterResult;
@@ -348,14 +348,14 @@ TSharedPtr<UExportPatchSettings> UFlibHotPatcherEditorHelper::DeserializePatchCo
 					int32 EnumIndex = ETargetPlatformEnum->GetIndexByName(FName(*EnumName));
 					if (EnumIndex != INDEX_NONE)
 					{
-						UE_LOG(LogTemp, Log, TEXT("FOUND ENUM INDEX SUCCESS:%s"),*EnumName);
+						// UE_LOG(LogTemp, Log, TEXT("FOUND ENUM INDEX SUCCESS:%s"),*EnumName);
 						int32 EnumValue = ETargetPlatformEnum->GetValueByIndex(EnumIndex);
 						ETargetPlatform CurrentEnum = (ETargetPlatform)EnumValue;
 						FinalTargetPlatforms.Add(CurrentEnum);
 					}
 					else
 					{
-						UE_LOG(LogTemp, Log, TEXT("FOUND ENUM INDEX FAILD:%s"), *EnumName);
+						// UE_LOG(LogTemp, Log, TEXT("FOUND ENUM INDEX FAILD:%s"), *EnumName);
 					}
 				}
 				InNewSetting->PakTargetPlatforms = FinalTargetPlatforms;
@@ -578,7 +578,7 @@ TSharedPtr<class UExportReleaseSettings> UFlibHotPatcherEditorHelper::Deserializ
 				{
 					FDirectoryPath CurrentFilterPath;
 					CurrentFilterPath.Path = Filter->AsString();
-					UE_LOG(LogTemp, Log, TEXT("Filter: %s"), *CurrentFilterPath.Path);
+					// UE_LOG(LogTemp, Log, TEXT("Filter: %s"), *CurrentFilterPath.Path);
 					FilterResult.Add(CurrentFilterPath);
 				}
 				return FilterResult;
