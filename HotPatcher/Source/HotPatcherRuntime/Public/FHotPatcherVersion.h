@@ -2,6 +2,8 @@
 // project header
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "FPatcherSpecifyAsset.h"
+#include "FExternAssetFileInfo.h"
+
 // engine header
 #include "CoreMinimal.h"
 #include "FHotPatcherVersion.generated.h"
@@ -29,4 +31,6 @@ public:
 	TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FAssetDependenciesInfo AssetInfo;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TMap<FString, FExternAssetFileInfo> ExternalFiles;
 };

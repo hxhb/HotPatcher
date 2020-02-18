@@ -7,7 +7,7 @@
 #include "Kismet/KismetStringLibrary.h"
 
 UExportPatchSettings::UExportPatchSettings()
-	:UnrealPakOptions{ TEXT("-compress") }
+	: bEnableExternFilesDiff(true),UnrealPakOptions{ TEXT("-compress") }
 {
 	
 	PakVersionFileMountPoint = FPaths::Combine(
@@ -109,31 +109,37 @@ TArray<FString> UExportPatchSettings::CombineAllExternDirectoryCookCommand() con
 	if (!GetAddExternDirectory().Num())
 		return CookCommandResault;
 
-	for (const auto& DirectoryItem : GetAddExternDirectory())
-	{
-		FString DirAbsPath = FPaths::ConvertRelativePathToFull(DirectoryItem.DirectoryPath.Path);
-		FPaths::MakeStandardFilename(DirAbsPath);
-		if (!DirAbsPath.IsEmpty() && FPaths::DirectoryExists(DirAbsPath))
-		{
-			TArray<FString> DirectoryAllFiles;
-			if (UFLibAssetManageHelperEx::FindFilesRecursive(DirAbsPath, DirectoryAllFiles, true))
-			{
-				int32 ParentDirectoryIndex = DirAbsPath.Len();
-				for (const auto& File : DirectoryAllFiles)
-				{
-					FString RelativeParentPath = UKismetStringLibrary::GetSubstring(File, ParentDirectoryIndex, File.Len() - ParentDirectoryIndex);
-					FString RelativeMountPointPath = FPaths::Combine(DirectoryItem.MountPoint, RelativeParentPath);
-					FPaths::MakeStandardFilename(RelativeMountPointPath);
-					CookCommandResault.Add(FString::Printf(TEXT("\"%s\" \"%s\""),*File,*RelativeMountPointPath));
-				}
-			}
-		}
-	}
+	//for (const auto& DirectoryItem : GetAddExternDirectory())
+	//{
+	//	FString DirAbsPath = FPaths::ConvertRelativePathToFull(DirectoryItem.DirectoryPath.Path);
+	//	FPaths::MakeStandardFilename(DirAbsPath);
+	//	if (!DirAbsPath.IsEmpty() && FPaths::DirectoryExists(DirAbsPath))
+	//	{
+	//		TArray<FString> DirectoryAllFiles;
+	//		if (UFLibAssetManageHelperEx::FindFilesRecursive(DirAbsPath, DirectoryAllFiles, true))
+	//		{
+	//			int32 ParentDirectoryIndex = DirAbsPath.Len();
+	//			for (const auto& File : DirectoryAllFiles)
+	//			{
+	//				FString RelativeParentPath = UKismetStringLibrary::GetSubstring(File, ParentDirectoryIndex, File.Len() - ParentDirectoryIndex);
+	//				FString RelativeMountPointPath = FPaths::Combine(DirectoryItem.MountPoint, RelativeParentPath);
+	//				FPaths::MakeStandardFilename(RelativeMountPointPath);
+	//				
+	//			}
+	//		}
+	//	}
+	//}
 
+	TArray<FExternAssetFileInfo> ExFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
+
+	for (const auto& File : ExFiles)
+	{
+		CookCommandResault.Add(FString::Printf(TEXT("\"%s\" \"%s\""), *File.FilePath.FilePath, *File.MountPath));
+	}
 	return CookCommandResault;
 }
 
-TArray<FString> UExportPatchSettings::CombineAllCookCommandsInTheSetting(const FString& InPlatformName,const FAssetDependenciesInfo& AllChangedAssetInfo) const
+TArray<FString> UExportPatchSettings::CombineAllCookCommandsInTheSetting(const FString& InPlatformName,const FAssetDependenciesInfo& AllChangedAssetInfo,const TArray<FExternAssetFileInfo>& AllChangedExFiles, bool bDiffExFiles) const
 {
 	// combine all cook commands
 	{
@@ -155,19 +161,24 @@ TArray<FString> UExportPatchSettings::CombineAllCookCommandsInTheSetting(const F
 				OutPakCommand.Append(AllExternCookCommand);
 			}
 
-
-			TArray<FString> AllExternFileToPakCommands = this->CombineAddExternFileToCookCommands();
-
-			if (!!AllExternFileToPakCommands.Num())
+			// external not-asset files
 			{
-				OutPakCommand.Append(AllExternFileToPakCommands);
+				TArray<FExternAssetFileInfo> ExFiles;
+				if (bDiffExFiles)
+				{
+					ExFiles = AllChangedExFiles;
+				}
+				else
+				{
+					ExFiles = GetAllExternFiles();
+				
+				}
+				for (const auto& File : ExFiles)
+				{
+					OutPakCommand.Add(FString::Printf(TEXT("\"%s\" \"%s\""), *File.FilePath.FilePath, *File.MountPath));
+				}
 			}
 
-			TArray<FString> AllExtensionDirectoryToPakCommands = this->CombineAllExternDirectoryCookCommand();
-			if (!!AllExtensionDirectoryToPakCommands.Num())
-			{
-				OutPakCommand.Append(AllExtensionDirectoryToPakCommands);
-			}
 		}
 
 		// add PakVersion.json to cook commands
@@ -207,6 +218,7 @@ FHotPatcherVersion UExportPatchSettings::GetNewPatchVersionInfo() const
 		this->GetAssetIncludeFilters(),
 		this->GetAssetIgnoreFilters(),
 		this->GetIncludeSpecifyAssets(),
+		this->GetAllExternFiles(true),
 		this->IsIncludeHasRefAssetsOnly()
 	);
 
@@ -328,111 +340,8 @@ bool UExportPatchSettings::GetAllExternAssetCookCommands(const FString& InProjec
 
 bool UExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObject>& OutJsonObject)const
 {
-	if (!OutJsonObject.IsValid())
-	{
-		OutJsonObject = MakeShareable(new FJsonObject);
-	}
-	OutJsonObject->SetStringField(TEXT("VersionId"), GetVersionId());
-	OutJsonObject->SetBoolField(TEXT("bByBaseVersion"), IsByBaseVersion());
-	OutJsonObject->SetStringField(TEXT("BaseVersion"), GetBaseVersion());
-	
-	auto SerializeArrayLambda = [&OutJsonObject](const TArray<FString>& InArray,const FString& InJsonArrayName)
-	{
-		TArray<TSharedPtr<FJsonValue>> ArrayJsonValueList;
-		for (const auto& ArrayItem : InArray)
-		{
-			ArrayJsonValueList.Add(MakeShareable(new FJsonValueString(ArrayItem)));
-		}
-		OutJsonObject->SetArrayField(InJsonArrayName, ArrayJsonValueList);
-	};
-	auto ConvDirPathsToStrings = [](const TArray<FDirectoryPath>& InDirPaths)->TArray<FString>
-	{
-		TArray<FString> Resault;
-		for (const auto& Dir : InDirPaths)
-		{
-		Resault.Add(Dir.Path);
-		}
-		return Resault;
-	};
-
-	SerializeArrayLambda(ConvDirPathsToStrings(AssetIncludeFilters), TEXT("AssetIncludeFilters"));
-	SerializeArrayLambda(ConvDirPathsToStrings(AssetIgnoreFilters), TEXT("AssetIgnoreFilters"));
-	OutJsonObject->SetBoolField(TEXT("bIncludeHasRefAssetsOnly"), IsIncludeHasRefAssetsOnly());
-
-	// serialize specify asset
-	{
-		TArray<TSharedPtr<FJsonValue>> SpecifyAssetJsonValueObjectList;
-		for (const auto& SpecifyAsset : GetIncludeSpecifyAssets())
-		{
-			TSharedPtr<FJsonObject> CurrentAssetJsonObject;
-			UFlibHotPatcherEditorHelper::SerializeSpecifyAssetInfoToJsonObject(SpecifyAsset, CurrentAssetJsonObject);
-			SpecifyAssetJsonValueObjectList.Add(MakeShareable(new FJsonValueObject(CurrentAssetJsonObject)));
-		}
-		OutJsonObject->SetArrayField(TEXT("IncludeSpecifyAssets"), SpecifyAssetJsonValueObjectList);
-	}
-
-	OutJsonObject->SetBoolField(TEXT("bIncludeAssetRegistry"), IsIncludeAssetRegistry());
-	OutJsonObject->SetBoolField(TEXT("bIncludeGlobalShaderCache"), IsIncludeGlobalShaderCache());
-	OutJsonObject->SetBoolField(TEXT("bIncludeShaderBytecode"), IsIncludeShaderBytecode());
-	OutJsonObject->SetBoolField(TEXT("bIncludeEngineIni"), IsIncludeEngineIni());
-	OutJsonObject->SetBoolField(TEXT("bIncludePluginIni"), IsIncludePluginIni());
-	OutJsonObject->SetBoolField(TEXT("bIncludeProjectIni"), IsIncludeProjectIni());
-
-	// serialize all add extern file to pak
-	{
-		TArray<TSharedPtr<FJsonValue>> AddExFilesJsonObjectList;
-		for (const auto& ExFileInfo : GetAddExternFiles())
-		{
-			TSharedPtr<FJsonObject> CurrentFileJsonObject;
-			UFlibHotPatcherEditorHelper::SerializeExAssetFileInfoToJsonObject(ExFileInfo, CurrentFileJsonObject);
-			AddExFilesJsonObjectList.Add(MakeShareable(new FJsonValueObject(CurrentFileJsonObject)));
-		}
-		OutJsonObject->SetArrayField(TEXT("AddExternFileToPak"), AddExFilesJsonObjectList);
-	}
-	// serialize all add extern directory to pak
-	{
-		TArray<TSharedPtr<FJsonValue>> AddExDirectoryJsonObjectList;
-		for (const auto& ExDirectoryInfo : GetAddExternDirectory())
-		{
-			TSharedPtr<FJsonObject> CurrentDirJsonObject;
-			UFlibHotPatcherEditorHelper::SerializeExDirectoryInfoToJsonObject(ExDirectoryInfo, CurrentDirJsonObject);
-			AddExDirectoryJsonObjectList.Add(MakeShareable(new FJsonValueObject(CurrentDirJsonObject)));
-		}
-		OutJsonObject->SetArrayField(TEXT("AddExternDirectoryToPak"), AddExDirectoryJsonObjectList);
-	}
-
-	// serialize pakversion
-	{
-		OutJsonObject->SetBoolField(TEXT("bIncludePakVersionFile"), IsIncludePakVersion());
-		OutJsonObject->SetStringField(TEXT("PakVersionFileMountPoint"), GetPakVersionFileMountPoint());
-	}
-	// serialize UnrealPakOptions
-	SerializeArrayLambda(GetUnrealPakOptions(), TEXT("UnrealPakOptions"));
-
-	// serialize platform list
-	{
-		TArray<FString> AllPlatforms;
-		for (const auto &Platform : GetPakTargetPlatforms())
-		{
-		// save UnrealPak.exe command file
-		FString PlatformName;
-		{	
-			FString EnumName;
-			UEnum* ETargetPlatformEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("ETargetPlatform"), true);	
-			ETargetPlatformEnum->GetNameByValue((int64)Platform).ToString().Split(TEXT("::"), &EnumName, &PlatformName, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
-		}
-		AllPlatforms.AddUnique(PlatformName);
-		}
-		SerializeArrayLambda(AllPlatforms, TEXT("PakTargetPlatforms"));
-	}
-
-	OutJsonObject->SetBoolField(TEXT("bSavePakList"), IsSavePakList());
-	OutJsonObject->SetBoolField(TEXT("bSaveDiffAnalysis"), IsSaveDiffAnalysis());
-	OutJsonObject->SetBoolField(TEXT("bSavePatchConfig"), IsSavePatchConfig());
-	OutJsonObject->SetStringField(TEXT("SavePath"),GetSaveAbsPath());
-
-	return true;
-	}
+	return UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(this, OutJsonObject);
+}
 
 bool UExportPatchSettings::SerializePatchConfigToString(FString& OutSerializedStr)const
 {
@@ -448,19 +357,23 @@ bool UExportPatchSettings::SerializePatchConfigToString(FString& OutSerializedSt
 TArray<FString> UExportPatchSettings::CombineAddExternFileToCookCommands()const
 {
 	TArray<FString> resault;
-	FString ProjectName = UFlibPatchParserHelper::GetProjectName();
+	// FString ProjectName = UFlibPatchParserHelper::GetProjectName();
 	for (const auto& ExternFile : GetAddExternFiles())
 	{
 		FString FileAbsPath = FPaths::ConvertRelativePathToFull(ExternFile.FilePath.FilePath);
 		FPaths::MakeStandardFilename(FileAbsPath);
 
 		if (FPaths::FileExists(FileAbsPath) &&
-			ExternFile.MountPath.StartsWith(FPaths::Combine(TEXT("../../.."),ProjectName))
+			ExternFile.MountPath.StartsWith(FPaths::Combine(TEXT("../../..")/*,ProjectName*/))
 		)
 		{
 			resault.AddUnique(
 				FString::Printf(TEXT("\"%s\" \"%s\""),*FileAbsPath,*ExternFile.MountPath)
 			);
+		}
+		else
+		{
+			UE_LOG(LogTemp,Warning,TEXT("File mount point is invalid,is %s"), *ExternFile.MountPath)
 		}
 	}
 	return resault;

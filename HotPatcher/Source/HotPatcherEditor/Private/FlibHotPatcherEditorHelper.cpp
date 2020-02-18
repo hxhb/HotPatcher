@@ -86,6 +86,7 @@ FHotPatcherVersion UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
 	const TArray<FString>& InIncludeFilter,
 	const TArray<FString>& InIgnoreFilter,
 	const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
+	const TArray<FExternAssetFileInfo>& InAllExternFiles,
 	bool InIncludeHasRefAssetsOnly
 )
 {
@@ -199,56 +200,14 @@ FHotPatcherVersion UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
 
 	ExportVersion.AssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(FilterAssetDependencies,SpecifyAssetDependencies);
 
+	for (const auto& File : InAllExternFiles)
+	{
+		if (!ExportVersion.ExternalFiles.Contains(File.FilePath.FilePath))
+		{
+			ExportVersion.ExternalFiles.Add(File.MountPath, File);
+		}
+	}
 	return ExportVersion;
-}
-
-bool UFlibHotPatcherEditorHelper::SerializeExAssetFileInfoToJsonObject(const FExternAssetFileInfo& InExFileInfo, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool bRunStatus = false;
-
-	if (!OutJsonObject.IsValid())
-	{
-		OutJsonObject = MakeShareable(new FJsonObject);
-	}
-	FString FileAbsPath = FPaths::ConvertRelativePathToFull(InExFileInfo.FilePath.FilePath);
-	FMD5Hash FileMD5Hash = FMD5Hash::HashFile(*FileAbsPath);
-	OutJsonObject->SetStringField(TEXT("FilePath"), FileAbsPath);
-	OutJsonObject->SetStringField(TEXT("MD5Hash"), LexToString(FileMD5Hash));
-	OutJsonObject->SetStringField(TEXT("MountPath"), InExFileInfo.MountPath);
-
-	bRunStatus = true;
-
-	return bRunStatus;
-}
-
-bool UFlibHotPatcherEditorHelper::SerializeExDirectoryInfoToJsonObject(const FExternDirectoryInfo& InExDirectoryInfo, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool bRunStatus = false;
-
-	if (!OutJsonObject.IsValid())
-	{
-		OutJsonObject = MakeShareable(new FJsonObject);
-	}
-	FString DirectoryAbsPath = FPaths::ConvertRelativePathToFull(InExDirectoryInfo.DirectoryPath.Path);
-	OutJsonObject->SetStringField(TEXT("Directory"), DirectoryAbsPath);
-	OutJsonObject->SetStringField(TEXT("MountPoint"), InExDirectoryInfo.MountPoint);
-	bRunStatus = true;
-
-	return bRunStatus;
-}
-
-bool UFlibHotPatcherEditorHelper::SerializeSpecifyAssetInfoToJsonObject(const FPatcherSpecifyAsset& InSpecifyAsset, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool bRunStatus = false;
-
-	if (!OutJsonObject.IsValid())
-	{
-		OutJsonObject = MakeShareable(new FJsonObject);
-	}
-	OutJsonObject->SetStringField(TEXT("Asset"), InSpecifyAsset.Asset.GetLongPackageName());
-	OutJsonObject->SetBoolField(TEXT("bAnalysisAssetDependencies"), InSpecifyAsset.bAnalysisAssetDependencies);
-	bRunStatus = true;
-	return bRunStatus;
 }
 
 
@@ -309,6 +268,7 @@ TSharedPtr<UExportPatchSettings> UFlibHotPatcherEditorHelper::DeserializePatchCo
 			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludeEngineIni);
 			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludePluginIni);
 			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludeProjectIni);
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bEnableExternFilesDiff);
 			// extern
 			{
 				// extern file 
@@ -413,6 +373,189 @@ TSharedPtr<UExportPatchSettings> UFlibHotPatcherEditorHelper::DeserializePatchCo
 	return InNewSetting;
 }
 
+bool UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(const UExportPatchSettings*const InPatchSetting,TSharedPtr<FJsonObject>& OutJsonObject)
+{
+	if (!InPatchSetting) return false;
+
+	if (!OutJsonObject.IsValid())
+	{
+		OutJsonObject = MakeShareable(new FJsonObject);
+	}
+	OutJsonObject->SetStringField(TEXT("VersionId"), InPatchSetting->GetVersionId());
+	OutJsonObject->SetBoolField(TEXT("bByBaseVersion"), InPatchSetting->IsByBaseVersion());
+	OutJsonObject->SetStringField(TEXT("BaseVersion"), InPatchSetting->GetBaseVersion());
+
+	auto SerializeArrayLambda = [&OutJsonObject](const TArray<FString>& InArray, const FString& InJsonArrayName)
+	{
+		TArray<TSharedPtr<FJsonValue>> ArrayJsonValueList;
+		for (const auto& ArrayItem : InArray)
+		{
+			ArrayJsonValueList.Add(MakeShareable(new FJsonValueString(ArrayItem)));
+		}
+		OutJsonObject->SetArrayField(InJsonArrayName, ArrayJsonValueList);
+	};
+	auto ConvDirPathsToStrings = [](const TArray<FDirectoryPath>& InDirPaths)->TArray<FString>
+	{
+		TArray<FString> Resault;
+		for (const auto& Dir : InDirPaths)
+		{
+			Resault.Add(Dir.Path);
+		}
+		return Resault;
+	};
+
+	SerializeArrayLambda(ConvDirPathsToStrings(InPatchSetting->AssetIncludeFilters), TEXT("AssetIncludeFilters"));
+	SerializeArrayLambda(ConvDirPathsToStrings(InPatchSetting->AssetIgnoreFilters), TEXT("AssetIgnoreFilters"));
+	OutJsonObject->SetBoolField(TEXT("bIncludeHasRefAssetsOnly"), InPatchSetting->IsIncludeHasRefAssetsOnly());
+
+	// serialize specify asset
+	{
+		TArray<TSharedPtr<FJsonValue>> SpecifyAssetJsonValueObjectList;
+		for (const auto& SpecifyAsset : InPatchSetting->GetIncludeSpecifyAssets())
+		{
+			TSharedPtr<FJsonObject> CurrentAssetJsonObject;
+			UFlibPatchParserHelper::SerializeSpecifyAssetInfoToJsonObject(SpecifyAsset, CurrentAssetJsonObject);
+			SpecifyAssetJsonValueObjectList.Add(MakeShareable(new FJsonValueObject(CurrentAssetJsonObject)));
+		}
+		OutJsonObject->SetArrayField(TEXT("IncludeSpecifyAssets"), SpecifyAssetJsonValueObjectList);
+	}
+
+	OutJsonObject->SetBoolField(TEXT("bIncludeAssetRegistry"), InPatchSetting->IsIncludeAssetRegistry());
+	OutJsonObject->SetBoolField(TEXT("bIncludeGlobalShaderCache"), InPatchSetting->IsIncludeGlobalShaderCache());
+	OutJsonObject->SetBoolField(TEXT("bIncludeShaderBytecode"), InPatchSetting->IsIncludeShaderBytecode());
+	OutJsonObject->SetBoolField(TEXT("bIncludeEngineIni"), InPatchSetting->IsIncludeEngineIni());
+	OutJsonObject->SetBoolField(TEXT("bIncludePluginIni"), InPatchSetting->IsIncludePluginIni());
+	OutJsonObject->SetBoolField(TEXT("bIncludeProjectIni"), InPatchSetting->IsIncludeProjectIni());
+	OutJsonObject->SetBoolField(TEXT("bIncludeProjectIni"), InPatchSetting->IsEnableExternFilesDiff());
+	// serialize all add extern file to pak
+	{
+		TArray<TSharedPtr<FJsonValue>> AddExFilesJsonObjectList;
+		for (const auto& ExFileInfo : InPatchSetting->GetAddExternFiles())
+		{
+			TSharedPtr<FJsonObject> CurrentFileJsonObject;
+			UFlibPatchParserHelper::SerializeExAssetFileInfoToJsonObject(ExFileInfo, CurrentFileJsonObject);
+			AddExFilesJsonObjectList.Add(MakeShareable(new FJsonValueObject(CurrentFileJsonObject)));
+		}
+		OutJsonObject->SetArrayField(TEXT("AddExternFileToPak"), AddExFilesJsonObjectList);
+	}
+	// serialize all add extern directory to pak
+	{
+		TArray<TSharedPtr<FJsonValue>> AddExDirectoryJsonObjectList;
+		for (const auto& ExDirectoryInfo : InPatchSetting->GetAddExternDirectory())
+		{
+			TSharedPtr<FJsonObject> CurrentDirJsonObject;
+			UFlibPatchParserHelper::SerializeExDirectoryInfoToJsonObject(ExDirectoryInfo, CurrentDirJsonObject);
+			AddExDirectoryJsonObjectList.Add(MakeShareable(new FJsonValueObject(CurrentDirJsonObject)));
+		}
+		OutJsonObject->SetArrayField(TEXT("AddExternDirectoryToPak"), AddExDirectoryJsonObjectList);
+	}
+
+	// serialize pakversion
+	{
+		OutJsonObject->SetBoolField(TEXT("bIncludePakVersionFile"), InPatchSetting->IsIncludePakVersion());
+		OutJsonObject->SetStringField(TEXT("PakVersionFileMountPoint"), InPatchSetting->GetPakVersionFileMountPoint());
+	}
+	// serialize UnrealPakOptions
+	SerializeArrayLambda(InPatchSetting->GetUnrealPakOptions(), TEXT("UnrealPakOptions"));
+
+	// serialize platform list
+	{
+		TArray<FString> AllPlatforms;
+		for (const auto &Platform : InPatchSetting->GetPakTargetPlatforms())
+		{
+			// save UnrealPak.exe command file
+			FString PlatformName;
+			{
+				FString EnumName;
+				UEnum* ETargetPlatformEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("ETargetPlatform"), true);
+				ETargetPlatformEnum->GetNameByValue((int64)Platform).ToString().Split(TEXT("::"), &EnumName, &PlatformName, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+			}
+			AllPlatforms.AddUnique(PlatformName);
+		}
+		SerializeArrayLambda(AllPlatforms, TEXT("PakTargetPlatforms"));
+	}
+
+	OutJsonObject->SetBoolField(TEXT("bSavePakList"), InPatchSetting->IsSavePakList());
+	OutJsonObject->SetBoolField(TEXT("bSaveDiffAnalysis"), InPatchSetting->IsSaveDiffAnalysis());
+	OutJsonObject->SetBoolField(TEXT("bSavePatchConfig"), InPatchSetting->IsSavePatchConfig());
+	OutJsonObject->SetStringField(TEXT("SavePath"), InPatchSetting->GetSaveAbsPath());
+
+	return true;
+}
+
+bool UFlibHotPatcherEditorHelper::SerializeReleaseConfigToJsonObject(const UExportReleaseSettings*const InReleaseSetting, TSharedPtr<FJsonObject>& OutJsonObject)
+{
+	if (!OutJsonObject.IsValid())
+	{
+		OutJsonObject = MakeShareable(new FJsonObject);
+	}
+	OutJsonObject->SetStringField(TEXT("VersionId"), InReleaseSetting->GetVersionId());
+
+	auto SerializeArrayLambda = [&OutJsonObject](const TArray<FString>& InArray, const FString& InJsonArrayName)
+	{
+		TArray<TSharedPtr<FJsonValue>> ArrayJsonValueList;
+		for (const auto& ArrayItem : InArray)
+		{
+			ArrayJsonValueList.Add(MakeShareable(new FJsonValueString(ArrayItem)));
+		}
+		OutJsonObject->SetArrayField(InJsonArrayName, ArrayJsonValueList);
+	};
+	auto ConvDirPathsToStrings = [](const TArray<FDirectoryPath>& InDirPaths)->TArray<FString>
+	{
+		TArray<FString> Resault;
+		for (const auto& Dir : InDirPaths)
+		{
+			Resault.Add(Dir.Path);
+		}
+		return Resault;
+	};
+
+	SerializeArrayLambda(ConvDirPathsToStrings(InReleaseSetting->AssetIncludeFilters), TEXT("AssetIncludeFilters"));
+	SerializeArrayLambda(ConvDirPathsToStrings(InReleaseSetting->AssetIgnoreFilters), TEXT("AssetIgnoreFilters"));
+
+	OutJsonObject->SetBoolField(TEXT("bIncludeHasRefAssetsOnly"), InReleaseSetting->IsIncludeHasRefAssetsOnly());
+
+	// serialize specify asset
+	{
+		TArray<TSharedPtr<FJsonValue>> SpecifyAssetJsonValueObjectList;
+		for (const auto& SpecifyAsset : InReleaseSetting->GetSpecifyAssets())
+		{
+			TSharedPtr<FJsonObject> CurrentAssetJsonObject;
+			UFlibPatchParserHelper::SerializeSpecifyAssetInfoToJsonObject(SpecifyAsset, CurrentAssetJsonObject);
+			SpecifyAssetJsonValueObjectList.Add(MakeShareable(new FJsonValueObject(CurrentAssetJsonObject)));
+		}
+		OutJsonObject->SetArrayField(TEXT("IncludeSpecifyAssets"), SpecifyAssetJsonValueObjectList);
+	}
+
+	// serialize all add extern file to pak
+	{
+		TArray<TSharedPtr<FJsonValue>> AddExFilesJsonObjectList;
+		for (const auto& ExFileInfo : InReleaseSetting->GetAddExternFiles())
+		{
+			TSharedPtr<FJsonObject> CurrentFileJsonObject;
+			UFlibPatchParserHelper::SerializeExAssetFileInfoToJsonObject(ExFileInfo, CurrentFileJsonObject);
+			AddExFilesJsonObjectList.Add(MakeShareable(new FJsonValueObject(CurrentFileJsonObject)));
+		}
+		OutJsonObject->SetArrayField(TEXT("AddExternFileToPak"), AddExFilesJsonObjectList);
+	}
+	// serialize all add extern directory to pak
+	{
+		TArray<TSharedPtr<FJsonValue>> AddExDirectoryJsonObjectList;
+		for (const auto& ExDirectoryInfo : InReleaseSetting->GetAddExternDirectory())
+		{
+			TSharedPtr<FJsonObject> CurrentDirJsonObject;
+			UFlibPatchParserHelper::SerializeExDirectoryInfoToJsonObject(ExDirectoryInfo, CurrentDirJsonObject);
+			AddExDirectoryJsonObjectList.Add(MakeShareable(new FJsonValueObject(CurrentDirJsonObject)));
+		}
+		OutJsonObject->SetArrayField(TEXT("AddExternDirectoryToPak"), AddExDirectoryJsonObjectList);
+	}
+
+	OutJsonObject->SetBoolField(TEXT("bSaveReleaseConfig"), InReleaseSetting->IsSaveConfig());
+	OutJsonObject->SetStringField(TEXT("SavePath"), InReleaseSetting->GetSavePath());
+
+	return true;
+}
+
 TSharedPtr<class UExportReleaseSettings> UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(TSharedPtr<class UExportReleaseSettings> InNewSetting, const FString& InContent)
 {
 #define DESERIAL_BOOL_BY_NAME(SettingObject,JsonObject,MemberName) SettingObject->MemberName = JsonObject->GetBoolField(TEXT(#MemberName));
@@ -462,6 +605,49 @@ TSharedPtr<class UExportReleaseSettings> UFlibHotPatcherEditorHelper::Deserializ
 				InNewSetting->IncludeSpecifyAssets = SpecifyAssets;
 			}
 
+			// extern
+			{
+				// extern file 
+				{
+					TArray<FExternAssetFileInfo> AddExternFileToPak;
+
+					TArray<TSharedPtr<FJsonValue>> ExternalFileJsonValues;
+
+					ExternalFileJsonValues = JsonObject->GetArrayField(TEXT("AddExternFileToPak"));
+
+					for (const auto& FileJsonValue : ExternalFileJsonValues)
+					{
+						FExternAssetFileInfo CurrentExFile;
+						TSharedPtr<FJsonObject> FileJsonObjectValue = FileJsonValue->AsObject();
+
+						CurrentExFile.FilePath.FilePath = FileJsonObjectValue->GetStringField(TEXT("FilePath"));
+						CurrentExFile.MountPath = FileJsonObjectValue->GetStringField(TEXT("MountPath"));
+
+						AddExternFileToPak.Add(CurrentExFile);
+					}
+					InNewSetting->AddExternFileToPak = AddExternFileToPak;
+				}
+				// extern directory
+				{
+					TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
+					TArray<TSharedPtr<FJsonValue>> ExternalDirJsonValues;
+
+					ExternalDirJsonValues = JsonObject->GetArrayField(TEXT("AddExternDirectoryToPak"));
+
+					for (const auto& FileJsonValue : ExternalDirJsonValues)
+					{
+						FExternDirectoryInfo CurrentExDir;
+						TSharedPtr<FJsonObject> FileJsonObjectValue = FileJsonValue->AsObject();
+
+						CurrentExDir.DirectoryPath.Path = FileJsonObjectValue->GetStringField(TEXT("Directory"));
+						CurrentExDir.MountPoint = FileJsonObjectValue->GetStringField(TEXT("MountPoint"));
+
+						AddExternDirectoryToPak.Add(CurrentExDir);
+					}
+					InNewSetting->AddExternDirectoryToPak = AddExternDirectoryToPak;
+				}
+			}
+
 			InNewSetting->bSaveReleaseConfig = JsonObject->GetBoolField(TEXT("bSaveReleaseConfig"));
 			InNewSetting->SavePath.Path = JsonObject->GetStringField(TEXT("SavePath"));
 		}
@@ -471,3 +657,4 @@ TSharedPtr<class UExportReleaseSettings> UFlibHotPatcherEditorHelper::Deserializ
 #undef DESERIAL_STRING_BY_NAME
 	return InNewSetting;
 }
+

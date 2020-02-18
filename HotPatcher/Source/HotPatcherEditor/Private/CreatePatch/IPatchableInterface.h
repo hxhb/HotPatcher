@@ -11,6 +11,6 @@ class IPatchableInterface
 public:
 	virtual void ImportConfig()=0;
 	virtual void ExportConfig()const=0;
-	virtual void ClearConfig() = 0;
+	virtual void ResetConfig() = 0;
 	virtual void DoGenerate()=0;
 };

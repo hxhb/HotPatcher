@@ -94,7 +94,7 @@ void SHotPatcherExportRelease::ExportConfig()const
 	}
 }
 
-void SHotPatcherExportRelease::ClearConfig()
+void SHotPatcherExportRelease::ResetConfig()
 {
 	UE_LOG(LogTemp, Log, TEXT("Release Clear Config"));
 
@@ -150,6 +150,7 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 			ExportReleaseSettings->GetAssetIncludeFilters(),
 			ExportReleaseSettings->GetAssetIgnoreFilters(),
 			ExportReleaseSettings->GetSpecifyAssets(),
+			ExportReleaseSettings->GetAllExternFiles(true),
 			ExportReleaseSettings->IsIncludeHasRefAssetsOnly()
 		);
 	

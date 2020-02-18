@@ -69,8 +69,8 @@ void SProjectCreatePatchPage::Construct(const FArguments& InArgs, TSharedPtr<FHo
 				.Padding(5.0, 0.0, 0.0, 0.0)
 				[
 					SNew(SButton)
-					.Text(LOCTEXT("ClearConfig", "Clear"))
-					.OnClicked(this, &SProjectCreatePatchPage::DoClearConfig)
+					.Text(LOCTEXT("ResetConfig", "Reset"))
+					.OnClicked(this, &SProjectCreatePatchPage::DoResetConfig)
 					.Visibility(this, &SProjectCreatePatchPage::HandleOperatorConfigVisibility)
 				]
 			+ SHorizontalBox::Slot()
@@ -128,11 +128,11 @@ FReply SProjectCreatePatchPage::DoExportConfig()const
 	}
 	return FReply::Handled();
 }
-FReply SProjectCreatePatchPage::DoClearConfig()const
+FReply SProjectCreatePatchPage::DoResetConfig()const
 {
 	if (GetActivePatchable().IsValid())
 	{
-		GetActivePatchable()->ClearConfig();
+		GetActivePatchable()->ResetConfig();
 	}
 	return FReply::Handled();
 }

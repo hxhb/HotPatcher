@@ -42,6 +42,27 @@ public:
 
 		return MakeShareable(DefaultSettings);
 	}
+
+	FORCEINLINE TArray<FExternAssetFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const
+	{
+		TArray<FExternAssetFileInfo>&& AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
+
+		for (auto& ExFile : GetAddExternFiles())
+		{
+			if (!AllExternFiles.Contains(ExFile))
+			{
+				AllExternFiles.Add(ExFile);
+			}
+		}
+		if (InGeneratedHash)
+		{
+			for (auto& ExFile : AllExternFiles)
+			{
+				ExFile.GenerateFileHash();
+			}
+		}
+		return AllExternFiles;
+	}
 	
 	TArray<FString> GetAssetIncludeFilters()const;
 	TArray<FString> GetAssetIgnoreFilters()const;
@@ -75,7 +96,7 @@ public:
 	FORCEINLINE bool IsIncludeProjectIni()const { return bIncludeProjectIni; }
 
 	FORCEINLINE bool IsByBaseVersion()const { return bByBaseVersion; }
-
+	FORCEINLINE bool IsEnableExternFilesDiff()const { return bEnableExternFilesDiff; }
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 	FORCEINLINE bool IsIncludePakVersion()const { return bIncludePakVersionFile; }
 	FORCEINLINE FString GetPakVersionFileMountPoint()const { return PakVersionFileMountPoint; }
@@ -86,7 +107,7 @@ public:
 	static FString GetSavePakCommandsPath(const FString& InSaveAbsPath, const FString& InPlatfornName, const FHotPatcherVersion& InVersion);
 
 	TArray<FString> CombineAllExternDirectoryCookCommand()const;
-	TArray<FString> CombineAllCookCommandsInTheSetting(const FString& InPlatformName, const FAssetDependenciesInfo& AllChangedAssetInfo)const;
+	TArray<FString> CombineAllCookCommandsInTheSetting(const FString& InPlatformName, const FAssetDependenciesInfo& AllChangedAssetInfo, const TArray<FExternAssetFileInfo>& AllChangedExFiles,bool bDiffExFiles=true)const;
 	FHotPatcherVersion GetNewPatchVersionInfo()const;
 	bool GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion)const;
 	FString GetCurrentVersionSavePath()const;
@@ -120,6 +141,8 @@ public:
 		bool bIncludePluginIni;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Ini Config Files")
 		bool bIncludeProjectIni;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files")
+		bool bEnableExternFilesDiff;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files")
 		TArray<FExternAssetFileInfo> AddExternFileToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files")

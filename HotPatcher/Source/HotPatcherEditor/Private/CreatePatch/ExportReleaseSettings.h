@@ -47,49 +47,7 @@ public:
 
 	FORCEINLINE bool SerializeReleaseConfigToJsonObject(TSharedPtr<FJsonObject>& OutJsonObject)
 	{
-		if (!OutJsonObject.IsValid())
-		{
-			OutJsonObject = MakeShareable(new FJsonObject);
-		}
-		OutJsonObject->SetStringField(TEXT("VersionId"), GetVersionId());
-
-		auto SerializeArrayLambda = [&OutJsonObject](const TArray<FString>& InArray, const FString& InJsonArrayName)
-		{
-			TArray<TSharedPtr<FJsonValue>> ArrayJsonValueList;
-			for (const auto& ArrayItem : InArray)
-			{
-				ArrayJsonValueList.Add(MakeShareable(new FJsonValueString(ArrayItem)));
-			}
-			OutJsonObject->SetArrayField(InJsonArrayName, ArrayJsonValueList);
-		};
-		auto ConvDirPathsToStrings = [](const TArray<FDirectoryPath>& InDirPaths)->TArray<FString>
-		{
-			TArray<FString> Resault;
-			for (const auto& Dir : InDirPaths)
-			{
-				Resault.Add(Dir.Path);
-			}
-			return Resault;
-		};
-
-		SerializeArrayLambda(ConvDirPathsToStrings(AssetIncludeFilters), TEXT("AssetIncludeFilters"));
-		SerializeArrayLambda(ConvDirPathsToStrings(AssetIgnoreFilters), TEXT("AssetIgnoreFilters"));
-
-		OutJsonObject->SetBoolField(TEXT("bIncludeHasRefAssetsOnly"), IsIncludeHasRefAssetsOnly());
-
-		// serialize specify asset
-		{
-			TArray<TSharedPtr<FJsonValue>> SpecifyAssetJsonValueObjectList;
-			for (const auto& SpecifyAsset : GetSpecifyAssets())
-			{
-				TSharedPtr<FJsonObject> CurrentAssetJsonObject;
-				UFlibHotPatcherEditorHelper::SerializeSpecifyAssetInfoToJsonObject(SpecifyAsset, CurrentAssetJsonObject);
-				SpecifyAssetJsonValueObjectList.Add(MakeShareable(new FJsonValueObject(CurrentAssetJsonObject)));
-			}
-			OutJsonObject->SetArrayField(TEXT("IncludeSpecifyAssets"), SpecifyAssetJsonValueObjectList);
-		}
-		OutJsonObject->SetBoolField(TEXT("bSaveReleaseConfig"), IsSaveConfig());
-		OutJsonObject->SetStringField(TEXT("SavePath"), GetSavePath());
+		return UFlibHotPatcherEditorHelper::SerializeReleaseConfigToJsonObject(this, OutJsonObject);
 	}
 
 	FORCEINLINE FString GetVersionId()const
@@ -120,12 +78,37 @@ public:
 		}
 		return Result;
 	}
+
+	FORCEINLINE TArray<FExternAssetFileInfo> GetAllExternFiles(bool InGeneratedHash = false)const
+	{
+		TArray<FExternAssetFileInfo>&& AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
+
+		for (auto& ExFile : GetAddExternFiles())
+		{
+			if (!AllExternFiles.Contains(ExFile))
+			{
+				AllExternFiles.Add(ExFile);
+			}
+		}
+		if (InGeneratedHash)
+		{
+			for (auto& ExFile : AllExternFiles)
+			{
+				ExFile.GenerateFileHash();
+			}
+		}
+		return AllExternFiles;
+	}
+
 	FORCEINLINE FString GetSavePath()const{return SavePath.Path;}
 
 	FORCEINLINE bool IsSaveConfig()const {return bSaveReleaseConfig;}
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 
 	FORCEINLINE TArray<FPatcherSpecifyAsset> GetSpecifyAssets()const { return IncludeSpecifyAssets; }
+
+	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
+	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Version")
@@ -140,6 +123,10 @@ public:
 		bool bIncludeHasRefAssetsOnly;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Specify Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Extern Files")
+		TArray<FExternAssetFileInfo> AddExternFileToPak;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Extern Files")
+		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSaveReleaseConfig;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")

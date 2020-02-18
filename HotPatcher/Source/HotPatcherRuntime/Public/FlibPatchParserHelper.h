@@ -6,6 +6,8 @@
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "FHotPatcherVersion.h"
 #include "FlibPakHelper.h"
+#include "FExternDirectoryInfo.h"
+#include "FExternDirectoryInfo.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -41,11 +43,18 @@ public:
 
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool DiffVersion(const FAssetDependenciesInfo& InNewVersion, 
+		static bool DiffVersionAssets(const FAssetDependenciesInfo& InNewVersion, 
 								const FAssetDependenciesInfo& InBaseVersion,
 								FAssetDependenciesInfo& OutAddAsset,
 								FAssetDependenciesInfo& OutModifyAsset,
 								FAssetDependenciesInfo& OutDeleteAsset
+		);
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static bool DiffVersionExFiles(const FHotPatcherVersion& InNewVersion,
+			const FHotPatcherVersion& InBaseVersion,
+			TArray<FExternAssetFileInfo>& OutAddFiles,
+			TArray<FExternAssetFileInfo>& OutModifyFiles,
+			TArray<FExternAssetFileInfo>& OutDeleteFiles
 		);
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
@@ -60,9 +69,14 @@ public:
 		static bool SerializePlatformPakInfoToJsonObject(const TMap<FString, FPakFileInfo>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject);
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static FString SerializeDiffInfomationToString(const FAssetDependenciesInfo& InAddAsset,
+		static FString SerializeDiffAssetsInfomationToString(const FAssetDependenciesInfo& InAddAsset,
 		 									 const FAssetDependenciesInfo& InModifyAsset,
 											 const FAssetDependenciesInfo& InDeleteAsset);
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static FString SerializeDiffExternalFilesInfomationToString(
+			const TArray<FExternAssetFileInfo>& InAddFiles,
+			const TArray<FExternAssetFileInfo>& InModifyFiles,
+			const TArray<FExternAssetFileInfo>& InDeleteFiles);
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool GetPakFileInfo(const FString& InFile,FPakFileInfo& OutFileInfo);
@@ -94,4 +108,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 	static TArray<FString> GetEnabledPluginConfigs(const FString& InPlatformName);
+
+
+	static bool SerializeExAssetFileInfoToJsonObject(const FExternAssetFileInfo& InExFileInfo, TSharedPtr<FJsonObject>& OutJsonObject);
+	static bool SerializeExDirectoryInfoToJsonObject(const FExternDirectoryInfo& InExDirectoryInfo, TSharedPtr<FJsonObject>& OutJsonObject);
+	static bool SerializeSpecifyAssetInfoToJsonObject(const FPatcherSpecifyAsset& InSpecifyAsset, TSharedPtr<FJsonObject>& OutJsonObject);
+
+	static TArray<FExternAssetFileInfo> ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys);
+	static TArray<FAssetDetail> ParserExFilesInfoAsAssetDetailInfo(const TArray<FExternAssetFileInfo>& InExFiles);
 };

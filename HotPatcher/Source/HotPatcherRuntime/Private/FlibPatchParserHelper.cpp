@@ -176,10 +176,27 @@ bool UFlibPatchParserHelper::SerializeHotPatcherVersionToJsonObject(const FHotPa
 			RootJsonObject->SetArrayField(TEXT("IncludeSpecifyAssets"), AllSpecifyJsonObj);
 		}
 
-		TSharedPtr<FJsonObject> AssetInfoJsonObject;
-		bool bSerializeAssetInfoStatus = UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(InVersion.AssetInfo, AssetInfoJsonObject);
+		TSharedPtr<FJsonObject> AssetInfoJsonObject = MakeShareable(new FJsonObject);
+		bool bSerializeAssetInfoStatus = UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(InVersion.AssetInfo, AssetInfoJsonObject, TArray<FString>{TEXT("Script")});
 
 		RootJsonObject->SetObjectField(TEXT("AssetInfo"), AssetInfoJsonObject);
+
+		// serialize all extern file
+		{
+			TArray<TSharedPtr<FJsonValue>> ExternalFilesJsonObJList;
+
+			TArray<FString> ExternalFilesKeys;
+			InVersion.ExternalFiles.GetKeys(ExternalFilesKeys);
+			for (auto& ExFile : ExternalFilesKeys)
+			{
+				TSharedPtr<FJsonObject> CurrentFile;
+				if (UFlibPatchParserHelper::SerializeExAssetFileInfoToJsonObject(*InVersion.ExternalFiles.Find(ExFile), CurrentFile))
+				{
+					ExternalFilesJsonObJList.Add(MakeShareable(new FJsonValueObject(CurrentFile)));
+				}
+			}
+			RootJsonObject->SetArrayField(TEXT("ExternalFiles"), ExternalFilesJsonObJList);
+		}
 		bRunStatus = true;
 	}
 	OutJsonObject = RootJsonObject;
@@ -233,12 +250,34 @@ bool UFlibPatchParserHelper::DeSerializeHotPatcherVersionFromJsonObject(const TS
 		{
 			OutVersion.AssetInfo = DeserialAssetInfo;
 		}
+
+		// deserialize extern files
+		{
+			
+			TArray<TSharedPtr<FJsonValue>> AllExternalFilesJsonObj;
+			AllExternalFilesJsonObj = InJsonObject->GetArrayField(TEXT("ExternalFiles"));
+			UE_LOG(LogTemp, Warning, TEXT("External Files num %d"), AllExternalFilesJsonObj.Num());
+
+			for (const auto& FileJsonObj : AllExternalFilesJsonObj)
+			{
+				FExternAssetFileInfo CurrentFile;
+				CurrentFile.FilePath.FilePath = FileJsonObj->AsObject()->GetStringField(TEXT("FilePath"));
+				CurrentFile.MountPath = FileJsonObj->AsObject()->GetStringField(TEXT("MountPath"));
+				CurrentFile.FileHash = FileJsonObj->AsObject()->GetStringField(TEXT("MD5Hash"));
+
+				//UE_LOG(LogTemp, Warning, TEXT("External Files filepath %s"), *CurrentFile.FilePath.FilePath);
+				//UE_LOG(LogTemp, Warning, TEXT("External Files filehash %s"), *CurrentFile.FileHash);
+				//UE_LOG(LogTemp, Warning, TEXT("External Files mountpath %s"), *CurrentFile.MountPath);
+
+				OutVersion.ExternalFiles.Add(CurrentFile.MountPath,CurrentFile);
+			}
+		}
 		bRunStatus = true;
 	}
 	return bRunStatus;
 }
 
-bool UFlibPatchParserHelper::DiffVersion(
+bool UFlibPatchParserHelper::DiffVersionAssets(
 	const FAssetDependenciesInfo& InNewVersion,
 	const FAssetDependenciesInfo& InBaseVersion,
 	FAssetDependenciesInfo& OutAddAsset,
@@ -338,6 +377,75 @@ bool UFlibPatchParserHelper::DiffVersion(
 	return true;
 }
 
+bool UFlibPatchParserHelper::DiffVersionExFiles(
+	const FHotPatcherVersion& InNewVersion,
+	const FHotPatcherVersion& InBaseVersion,
+	TArray<FExternAssetFileInfo>& OutAddFiles,
+	TArray<FExternAssetFileInfo>& OutModifyFiles,
+	TArray<FExternAssetFileInfo>& OutDeleteFiles
+)
+{
+	OutAddFiles.Empty();
+	OutModifyFiles.Empty();
+	OutDeleteFiles.Empty();
+
+	auto ParserAddFiles = [](const FHotPatcherVersion& InNewVersion, const FHotPatcherVersion& InBaseVersion, TArray<FExternAssetFileInfo>& OutAddFiles)
+	{
+		TArray<FString> NewVersionFilesKeys;
+		InNewVersion.ExternalFiles.GetKeys(NewVersionFilesKeys);
+
+		TArray<FString> BaseVersionFilesKeys;
+		InBaseVersion.ExternalFiles.GetKeys(BaseVersionFilesKeys);
+
+		for (const auto& NewVersionFile : NewVersionFilesKeys)
+		{
+			if (!InBaseVersion.ExternalFiles.Contains(NewVersionFile))
+			{
+				OutAddFiles.Add(*InNewVersion.ExternalFiles.Find(NewVersionFile));
+			}
+		}
+	};
+
+	// Parser Add Files
+	ParserAddFiles(InNewVersion, InBaseVersion, OutAddFiles);
+	// Parser delete Files
+	ParserAddFiles(InBaseVersion, InNewVersion, OutDeleteFiles);
+	
+	// Parser modify Files
+	{
+		TArray<FString> NewVersionFilesKeys;
+		InNewVersion.ExternalFiles.GetKeys(NewVersionFilesKeys);
+
+		TArray<FString> BaseVersionFilesKeys;
+		InBaseVersion.ExternalFiles.GetKeys(BaseVersionFilesKeys);
+
+		for (const auto& NewVersionFile : NewVersionFilesKeys)
+		{
+			UE_LOG(LogTemp, Log, TEXT("check file %s."), *NewVersionFile);
+			if (InBaseVersion.ExternalFiles.Contains(NewVersionFile))
+			{
+				const FExternAssetFileInfo& NewFile = *InBaseVersion.ExternalFiles.Find(NewVersionFile);
+				const FExternAssetFileInfo& BaseFile = *InNewVersion.ExternalFiles.Find(NewVersionFile);
+				bool bIsSame = NewFile == BaseFile;
+				if (!bIsSame)
+				{
+					UE_LOG(LogTemp, Log, TEXT("%s is same."), *NewFile.MountPath);
+					OutModifyFiles.Add(*InNewVersion.ExternalFiles.Find(NewVersionFile));
+				}
+				else
+				{
+					UE_LOG(LogTemp, Log, TEXT("%s is not same."), *NewFile.MountPath);
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Log, TEXT("base version not contains %s."), *NewVersionFile);
+			}
+		}
+	}
+
+	return true;
+}
 bool UFlibPatchParserHelper::SerializePakFileInfoToJsonString(const FPakFileInfo& InFileInfo, FString& OutJson)
 {
 	bool bRunStatus = false;
@@ -438,7 +546,7 @@ bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FSt
 	return bRunStatus;
 }
 
-FString UFlibPatchParserHelper::SerializeDiffInfomationToString(const FAssetDependenciesInfo& InAddAsset,
+FString UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(const FAssetDependenciesInfo& InAddAsset,
 	const FAssetDependenciesInfo& InModifyAsset,
 	const FAssetDependenciesInfo& InDeleteAsset)
 {
@@ -461,7 +569,7 @@ FString UFlibPatchParserHelper::SerializeDiffInfomationToString(const FAssetDepe
 			if (!IsEmptyInfo(InAssetInfo))
 			{
 				TSharedPtr<FJsonObject> AssetsJsonObject = MakeShareable(new FJsonObject);
-				bRunStatus = UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(InAssetInfo, AssetsJsonObject);
+				bRunStatus = UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(InAssetInfo, AssetsJsonObject, TArray<FString>{"Script"});
 				if (bRunStatus)
 				{
 					RootJsonObject->SetObjectField(InDescrible, AssetsJsonObject);
@@ -481,6 +589,34 @@ FString UFlibPatchParserHelper::SerializeDiffInfomationToString(const FAssetDepe
 	return SerializeDiffInfo;
 }
 
+
+FString UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(
+	const TArray<FExternAssetFileInfo>& InAddFiles,
+	const TArray<FExternAssetFileInfo>& InModifyFiles,
+	const TArray<FExternAssetFileInfo>& InDeleteFiles)
+{
+	TSharedPtr<FJsonObject> RootJsonObject = MakeShareable(new FJsonObject);
+	auto ParserFilesWithDescribleLambda = [&RootJsonObject](const TArray<FExternAssetFileInfo>& InFiles,const FString& InDescrible)
+	{
+		TArray<TSharedPtr<FJsonValue>> FileJsonValueList;
+		for (const auto& File : InFiles)
+		{
+			FileJsonValueList.Add(MakeShareable(new FJsonValueString(File.MountPath)));
+		}
+		RootJsonObject->SetArrayField(InDescrible,FileJsonValueList);
+	};
+	
+
+	ParserFilesWithDescribleLambda(InAddFiles, TEXT("AddFiles"));
+	ParserFilesWithDescribleLambda(InModifyFiles, TEXT("ModifyFiles"));
+	ParserFilesWithDescribleLambda(InDeleteFiles, TEXT("DeleteFiles"));
+
+	FString SerializeDiffInfo;
+	auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&SerializeDiffInfo);
+	FJsonSerializer::Serialize(RootJsonObject.ToSharedRef(), JsonWriter);
+
+	return SerializeDiffInfo;
+}
 bool UFlibPatchParserHelper::GetPakFileInfo(const FString& InFile, FPakFileInfo& OutFileInfo)
 {
 	bool bRunStatus = false;
@@ -762,3 +898,111 @@ TArray<FString> UFlibPatchParserHelper::GetEnabledPluginConfigs(const FString& I
 
 	return result;
 }
+
+
+#include "Flib/FLibAssetManageHelperEx.h"
+#include "Kismet/KismetStringLibrary.h"
+
+TArray<FExternAssetFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys)
+{
+	TArray<FExternAssetFileInfo> result;
+
+	if (!InExternDirectorys.Num())
+		return result;
+
+	for (const auto& DirectoryItem : InExternDirectorys)
+	{
+		FString DirAbsPath = FPaths::ConvertRelativePathToFull(DirectoryItem.DirectoryPath.Path);
+		FPaths::MakeStandardFilename(DirAbsPath);
+		if (!DirAbsPath.IsEmpty() && FPaths::DirectoryExists(DirAbsPath))
+		{
+			TArray<FString> DirectoryAllFiles;
+			if (UFLibAssetManageHelperEx::FindFilesRecursive(DirAbsPath, DirectoryAllFiles, true))
+			{
+				int32 ParentDirectoryIndex = DirAbsPath.Len();
+				for (const auto& File : DirectoryAllFiles)
+				{
+					FString RelativeParentPath = UKismetStringLibrary::GetSubstring(File, ParentDirectoryIndex, File.Len() - ParentDirectoryIndex);
+					FString RelativeMountPointPath = FPaths::Combine(DirectoryItem.MountPoint, RelativeParentPath);
+					FPaths::MakeStandardFilename(RelativeMountPointPath);
+
+					FExternAssetFileInfo CurrentFile;
+					CurrentFile.FilePath.FilePath = File;
+
+					CurrentFile.MountPath = RelativeMountPointPath;
+					if (!result.Contains(CurrentFile))
+						result.Add(CurrentFile);
+
+				}
+			}
+		}
+	}
+	return result;
+}
+
+
+TArray<FAssetDetail> UFlibPatchParserHelper::ParserExFilesInfoAsAssetDetailInfo(const TArray<FExternAssetFileInfo>& InExFiles)
+{
+	TArray<FAssetDetail> result;
+
+	for (auto& File : InExFiles)
+	{
+		FAssetDetail CurrentFile;
+		CurrentFile.mAssetType = TEXT("ExternalFile");
+		CurrentFile.mPackagePath = File.MountPath;
+		//CurrentFile.mGuid = File.GetFileHash();
+		result.Add(CurrentFile);
+	}
+
+	return result;
+
+}
+
+bool UFlibPatchParserHelper::SerializeExAssetFileInfoToJsonObject(const FExternAssetFileInfo& InExFileInfo, TSharedPtr<FJsonObject>& OutJsonObject)
+{
+	bool bRunStatus = false;
+
+	if (!OutJsonObject.IsValid())
+	{
+		OutJsonObject = MakeShareable(new FJsonObject);
+	}
+	FString FileAbsPath = FPaths::ConvertRelativePathToFull(InExFileInfo.FilePath.FilePath);
+	OutJsonObject->SetStringField(TEXT("FilePath"), FileAbsPath);
+	OutJsonObject->SetStringField(TEXT("MD5Hash"), InExFileInfo.FileHash.IsEmpty()?InExFileInfo.GetFileHash(): InExFileInfo.FileHash);
+	OutJsonObject->SetStringField(TEXT("MountPath"), InExFileInfo.MountPath);
+
+	bRunStatus = true;
+
+	return bRunStatus;
+}
+
+bool UFlibPatchParserHelper::SerializeExDirectoryInfoToJsonObject(const FExternDirectoryInfo& InExDirectoryInfo, TSharedPtr<FJsonObject>& OutJsonObject)
+{
+	bool bRunStatus = false;
+
+	if (!OutJsonObject.IsValid())
+	{
+		OutJsonObject = MakeShareable(new FJsonObject);
+	}
+	FString DirectoryAbsPath = FPaths::ConvertRelativePathToFull(InExDirectoryInfo.DirectoryPath.Path);
+	OutJsonObject->SetStringField(TEXT("Directory"), DirectoryAbsPath);
+	OutJsonObject->SetStringField(TEXT("MountPoint"), InExDirectoryInfo.MountPoint);
+	bRunStatus = true;
+
+	return bRunStatus;
+}
+
+bool UFlibPatchParserHelper::SerializeSpecifyAssetInfoToJsonObject(const FPatcherSpecifyAsset& InSpecifyAsset, TSharedPtr<FJsonObject>& OutJsonObject)
+{
+	bool bRunStatus = false;
+
+	if (!OutJsonObject.IsValid())
+	{
+		OutJsonObject = MakeShareable(new FJsonObject);
+	}
+	OutJsonObject->SetStringField(TEXT("Asset"), InSpecifyAsset.Asset.GetLongPackageName());
+	OutJsonObject->SetBoolField(TEXT("bAnalysisAssetDependencies"), InSpecifyAsset.bAnalysisAssetDependencies);
+	bRunStatus = true;
+	return bRunStatus;
+}
+

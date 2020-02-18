@@ -30,24 +30,25 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HotPatch|Editor|Flib")
 		static TArray<FString> GetAllCookOption();
 
-	static FHotPatcherVersion ExportReleaseVersionInfo(const FString& InVersionId,
+	static FHotPatcherVersion ExportReleaseVersionInfo(
+		const FString& InVersionId,
 		const FString& InBaseVersion,
 		const FString& InDate,
 		const TArray<FString>& InIncludeFilter,
 		const TArray<FString>& InIgnoreFilter,
 		const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
+		const TArray<FExternAssetFileInfo>& InAllExternFiles,
 		bool InIncludeHasRefAssetsOnly = false
 	);
 
 	static void CreateSaveFileNotify(const FText& InMsg,const FString& InSavedFile);
 
-	
 	static void CheckInvalidCookFilesByAssetDependenciesInfo(const FString& InProjectAbsDir, const FString& InPlatformName, const FAssetDependenciesInfo& InAssetDependencies,TArray<FAssetDetail>& OutValidAssets,TArray<FAssetDetail>& OutInvalidAssets);
-	static bool SerializeExAssetFileInfoToJsonObject(const FExternAssetFileInfo& InExFileInfo, TSharedPtr<FJsonObject>& OutJsonObject);
-	static bool SerializeExDirectoryInfoToJsonObject(const FExternDirectoryInfo& InExDirectoryInfo, TSharedPtr<FJsonObject>& OutJsonObject);
-	static bool SerializeSpecifyAssetInfoToJsonObject(const FPatcherSpecifyAsset& InSpecifyAsset, TSharedPtr<FJsonObject>& OutJsonObject);
 
+	static bool SerializePatchConfigToJsonObject(const class UExportPatchSettings*const InPatchSetting, TSharedPtr<FJsonObject>& OutJsonObject);
 	static TSharedPtr<class UExportPatchSettings> DeserializePatchConfig(TSharedPtr<class UExportPatchSettings> InNewSetting,const FString& InContent);
-
+	static bool SerializeReleaseConfigToJsonObject(const class UExportReleaseSettings*const InReleaseSetting, TSharedPtr<FJsonObject>& OutJsonObject);
 	static TSharedPtr<class UExportReleaseSettings> DeserializeReleaseConfig(TSharedPtr<class UExportReleaseSettings> InNewSetting, const FString& InContent);
+
+
 };

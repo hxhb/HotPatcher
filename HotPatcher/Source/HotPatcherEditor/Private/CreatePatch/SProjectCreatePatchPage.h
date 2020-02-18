@@ -44,7 +44,7 @@ public:
 protected:
 	FReply DoExportConfig()const;
 	FReply DoImportConfig()const;
-	FReply DoClearConfig()const;
+	FReply DoResetConfig()const;
 
 	TSharedPtr<IPatchableInterface> GetActivePatchable()const;
 private:

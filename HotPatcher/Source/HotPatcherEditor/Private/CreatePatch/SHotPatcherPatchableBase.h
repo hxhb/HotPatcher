@@ -36,7 +36,7 @@ public:
 
 	FORCEINLINE virtual void ImportConfig() override {};
 	FORCEINLINE virtual void ExportConfig()const override {};
-	FORCEINLINE virtual void ClearConfig() override {};
+	FORCEINLINE virtual void ResetConfig() override {};
 	FORCEINLINE virtual void DoGenerate() override {};
 
 

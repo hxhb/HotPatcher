@@ -588,14 +588,15 @@ bool UFLibAssetManageHelperEx::CombineAssetsDetailAsFAssetDepenInfo(const TArray
 	return true;
 }
 
-void UFLibAssetManageHelperEx::GetAllInValidAssetInProject(FAssetDependenciesInfo InAllDependencies, TArray<FString> &OutInValidAsset)
+void UFLibAssetManageHelperEx::GetAllInValidAssetInProject(FAssetDependenciesInfo InAllDependencies, TArray<FString> &OutInValidAsset,TArray<FString> InIgnoreModules)
 {
 	TArray<FString> Keys;
 	InAllDependencies.mDependencies.GetKeys(Keys);
+
 	for (const auto& ModuleItem : Keys)
 	{
 		// ignore search /Script Asset
-		if (ModuleItem == TEXT("Script"))
+		if (InIgnoreModules.Contains(ModuleItem))
 			continue;
 		FAssetDependenciesDetail ModuleDependencies = InAllDependencies.mDependencies[ModuleItem];
 
@@ -606,6 +607,7 @@ void UFLibAssetManageHelperEx::GetAllInValidAssetInProject(FAssetDependenciesInf
 			FString AssetPackagePath;
 			if(!UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(AssetLongPackageName,AssetPackagePath))
 				continue;
+			UE_LOG(LogTemp, Log, TEXT("Asset %s"), *AssetPackagePath);
 			FString AssetAbsPath = UFLibAssetManageHelperEx::ConvVirtualToAbsPath(AssetPackagePath);
 			if (!FPaths::FileExists(AssetAbsPath))
 			{
@@ -783,21 +785,23 @@ bool UFLibAssetManageHelperEx::SerializeAssetDependenciesToJson(const FAssetDepe
 }
 
 
-bool UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(const FAssetDependenciesInfo& InAssetDependencies, TSharedPtr<FJsonObject>& OutJsonObject)
+bool UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(const FAssetDependenciesInfo& InAssetDependencies, TSharedPtr<FJsonObject>& OutJsonObject, TArray<FString> InIgnoreModules)
 {
 	bool bRunStatus = false;
-	TSharedPtr<FJsonObject> RootJsonObject = MakeShareable(new FJsonObject);
+	if(!OutJsonObject.IsValid())
+		OutJsonObject = MakeShareable(new FJsonObject);
+
 	{
 		// collect all module name
 		TArray<FString> AssetCategoryList;
-		InAssetDependencies.mDependencies.GetKeys(AssetCategoryList);
+		InAssetDependencies.mDependencies.GetKeys(AssetCategoryList);		
 		{
 			TArray<TSharedPtr<FJsonValue>> JsonCategoryList;
 			for (const auto& AssetCategoryItem : AssetCategoryList)
 			{
 				JsonCategoryList.Add(MakeShareable(new FJsonValueString(AssetCategoryItem)));
 			}
-			RootJsonObject->SetArrayField(JSON_MODULE_LIST_SECTION_NAME, JsonCategoryList);
+			OutJsonObject->SetArrayField(JSON_MODULE_LIST_SECTION_NAME, JsonCategoryList);
 		}
 
 
@@ -822,14 +826,12 @@ bool UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(const FAss
 			// CategoryJsonObject->SetArrayField(AssetCategoryItem, CategoryAssetListJsonEntity);
 			AssetListJsonObject->SetArrayField(AssetCategoryItem, CategoryAssetListJsonEntity);
 
-
-
 		}
 
 		// collect all invalid asset
 		{
 			TArray<FString> AllInValidAssetList;
-			UFLibAssetManageHelperEx::GetAllInValidAssetInProject(InAssetDependencies, AllInValidAssetList);
+			UFLibAssetManageHelperEx::GetAllInValidAssetInProject(InAssetDependencies, AllInValidAssetList,InIgnoreModules);
 			if (AllInValidAssetList.Num() > 0)
 			{
 				TArray<TSharedPtr<FJsonValue>> JsonInvalidAssetList;
@@ -841,7 +843,7 @@ bool UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(const FAss
 			}
 		}
 
-		RootJsonObject->SetObjectField(JSON_ALL_ASSETS_LIST_SECTION_NAME, AssetListJsonObject);
+		OutJsonObject->SetObjectField(JSON_ALL_ASSETS_LIST_SECTION_NAME, AssetListJsonObject);
 
 		// serilize asset detail
 		TSharedPtr<FJsonObject> AssetDetailsListJsonObject = MakeShareable(new FJsonObject);
@@ -862,9 +864,8 @@ bool UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(const FAss
 			AssetDetailsListJsonObject->SetObjectField(AssetCategoryItem, CurrentCategoryJsonObject);
 		}
 
-		RootJsonObject->SetObjectField(JSON_ALL_ASSETS_Detail_SECTION_NAME, AssetDetailsListJsonObject);
+		OutJsonObject->SetObjectField(JSON_ALL_ASSETS_Detail_SECTION_NAME, AssetDetailsListJsonObject);
 	}
-	OutJsonObject = RootJsonObject;
 	return true;
 }
 

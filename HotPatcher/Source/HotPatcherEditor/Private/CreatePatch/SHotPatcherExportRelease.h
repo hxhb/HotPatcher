@@ -35,7 +35,7 @@ public:
 public:
 	virtual void ImportConfig();
 	virtual void ExportConfig()const;
-	virtual void ClearConfig();
+	virtual void ResetConfig();
 	virtual void DoGenerate();
 
 protected:

@@ -87,7 +87,6 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 			[
 				SAssignNew(DiffWidget, SHotPatcherInformations)
 				.Visibility(EVisibility::Collapsed)
-				
 			]
 
 		];
@@ -138,7 +137,7 @@ void SHotPatcherExportPatch::ExportConfig()const
 	}
 }
 
-void SHotPatcherExportPatch::ClearConfig()
+void SHotPatcherExportPatch::ResetConfig()
 {
 	UE_LOG(LogTemp, Log, TEXT("Patch Clear Config"));
 	TSharedPtr<UExportPatchSettings> DefaultSetting = MakeShareable(NewObject<UExportPatchSettings>());
@@ -180,6 +179,7 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		ExportPatchSetting->GetAssetIncludeFilters(),
 		ExportPatchSetting->GetAssetIgnoreFilters(),
 		ExportPatchSetting->GetIncludeSpecifyAssets(),
+		ExportPatchSetting->GetAllExternFiles(true),
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
 	);
 
@@ -194,7 +194,7 @@ FReply SHotPatcherExportPatch::DoDiff()const
 	FAssetDependenciesInfo ModifyAssetDependInfo;
 	FAssetDependenciesInfo DeleteAssetDependInfo;
 
-	UFlibPatchParserHelper::DiffVersion(
+	UFlibPatchParserHelper::DiffVersionAssets(
 		CurrentVersionAssetDependInfo,
 		BaseVersionAssetDependInfo,
 		AddAssetDependInfo,
@@ -202,8 +202,39 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		DeleteAssetDependInfo
 	);
 
-	FString SerializeDiffInfo = UFlibPatchParserHelper::SerializeDiffInfomationToString(AddAssetDependInfo, ModifyAssetDependInfo, DeleteAssetDependInfo);
+	TArray<FExternAssetFileInfo> AddExternalFiles;
+	TArray<FExternAssetFileInfo> ModifyExternalFiles;
+	TArray<FExternAssetFileInfo> DeleteExternalFiles;
 
+	UFlibPatchParserHelper::DiffVersionExFiles(CurrentVersion, BaseVersion, AddExternalFiles, ModifyExternalFiles, DeleteExternalFiles);
+
+	// debug
+	//{
+	//	auto VersionPrint = [](const FHotPatcherVersion& CurrentVersion)
+	//	{
+	//		TArray<FString> Keys;
+	//		CurrentVersion.ExternalFiles.GetKeys(Keys);
+
+	//		for (const auto& File : Keys)
+	//		{
+	//			FExternAssetFileInfo CurrentFile = *CurrentVersion.ExternalFiles.Find(File);
+	//			UE_LOG(LogTemp, Warning, TEXT("new External Files filepath %s"), *CurrentFile.FilePath.FilePath);
+	//			UE_LOG(LogTemp, Warning, TEXT("new External Files filehash %s"), *CurrentFile.FileHash);
+	//			UE_LOG(LogTemp, Warning, TEXT("new External Files mountpath %s"), *CurrentFile.MountPath);
+	//		}
+	//	};
+
+	//	UE_LOG(LogTemp, Warning, TEXT("---------------------"));
+	//	VersionPrint(CurrentVersion);
+	//	UE_LOG(LogTemp, Warning, TEXT("---------------------"));
+	//	VersionPrint(BaseVersion);
+	//	UE_LOG(LogTemp, Warning, TEXT("---------------------"));
+	//}
+	FString SerializeDiffInfo =
+		FString::Printf(TEXT("%s\n%s\n"),
+			*UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(AddAssetDependInfo, ModifyAssetDependInfo, DeleteAssetDependInfo),
+			ExportPatchSetting->IsEnableExternFilesDiff()?*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(AddExternalFiles, ModifyExternalFiles, DeleteExternalFiles):TEXT("")
+		);
 	SetInformationContent(SerializeDiffInfo);
 	SetInfomationContentVisibility(EVisibility::Visible);
 
@@ -321,13 +352,23 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	FAssetDependenciesInfo ModifyAssetDependInfo;
 	FAssetDependenciesInfo DeleteAssetDependInfo;
 
-	UFlibPatchParserHelper::DiffVersion(
+	UFlibPatchParserHelper::DiffVersionAssets(
 		CurrentVersionAssetDependInfo,
 		BaseVersionAssetDependInfo,
 		AddAssetDependInfo,
 		ModifyAssetDependInfo,
 		DeleteAssetDependInfo
 	);
+
+	TArray<FExternAssetFileInfo> AddExternalFiles;
+	TArray<FExternAssetFileInfo> ModifyExternalFiles;
+	TArray<FExternAssetFileInfo> DeleteExternalFiles;
+
+	UFlibPatchParserHelper::DiffVersionExFiles(CurrentVersion, BaseVersion, AddExternalFiles, ModifyExternalFiles, DeleteExternalFiles);
+
+	TArray<FExternAssetFileInfo> AllChangedExternalFiles;
+	AllChangedExternalFiles.Append(AddExternalFiles);
+	AllChangedExternalFiles.Append(ModifyExternalFiles);
 
 	// handle add & modify asset only
 	FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(AddAssetDependInfo, ModifyAssetDependInfo);
@@ -380,43 +421,45 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		}
 
 		// 检查添加的外部文件是否有重复
-		{
-			TArray<FString> AllExternList;
-			TArray<FString> RepeatList;
+		//{
+		//	TArray<FString> AllExternList;
+		//	TArray<FString> RepeatList;
 
-			const TArray<FString>& AllExternFileToPakCommands = ExportPatchSetting->CombineAddExternFileToCookCommands();
-			const TArray<FString>& AllExtensionDirectoryToPakCommands = ExportPatchSetting->CombineAllExternDirectoryCookCommand();
+		//	const TArray<FString>& AllExternFileToPakCommands = ExportPatchSetting->CombineAddExternFileToCookCommands();
+		//	const TArray<FString>& AllExtensionDirectoryToPakCommands = ExportPatchSetting->CombineAllExternDirectoryCookCommand();
 
-			auto FilterRepeatLambda = [&AllExternList, &RepeatList](const TArray<FString>& InList)
-			{
-				for (const auto& Item : InList)
-				{
-					if (!AllExternList.Contains(Item))
-					{
-						AllExternList.Add(Item);
-						continue;
-					}
+		//	auto FilterRepeatLambda = [&AllExternList, &RepeatList](const TArray<FString>& InList)
+		//	{
+		//		for (const auto& Item : InList)
+		//		{
+		//			if (!AllExternList.Contains(Item))
+		//			{
+		//				AllExternList.Add(Item);
+		//				continue;
+		//			}
 
-					if (!RepeatList.Contains(Item))
-					{
-						RepeatList.Add(Item);
-					}
-				}
-			};
+		//			if (!RepeatList.Contains(Item))
+		//			{
+		//				RepeatList.Add(Item);
+		//			}
+		//		}
+		//	};
 
-			FilterRepeatLambda(AllExternFileToPakCommands);
-			FilterRepeatLambda(AllExtensionDirectoryToPakCommands);
+		//	FilterRepeatLambda(AllExternFileToPakCommands);
+		//	FilterRepeatLambda(AllExtensionDirectoryToPakCommands);
 
-			if (RepeatList.Num() > 0)
-			{
-				GenErrorMsg.Append(FString::Printf(TEXT("Repeat Extern File(s):\n")));
-				for (const auto& RepeatFile : RepeatList)
-				{
-					GenErrorMsg.Append(FString::Printf(TEXT("\t%s\n"), *RepeatFile));
-				}
+		//	if (RepeatList.Num() > 0)
+		//	{
+		//		GenErrorMsg.Append(FString::Printf(TEXT("Repeat Extern File(s):\n")));
+		//		for (const auto& RepeatFile : RepeatList)
+		//		{
+		//			GenErrorMsg.Append(FString::Printf(TEXT("\t%s\n"), *RepeatFile));
+		//		}
 
-			}
-		}
+		//	}
+		//}
+
+
 
 		// 如果有错误信息 则输出后退出
 		if (ErrorMsgShowLambda(GenErrorMsg)) return FReply::Handled();
@@ -458,7 +501,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			FString ProjectDir = UKismetSystemLibrary::GetProjectDirectory();
 
 			// generated cook command form asset list
-			TArray<FString> OutPakCommand = ExportPatchSetting->CombineAllCookCommandsInTheSetting(PlatformName, AllChangedAssetInfo);
+			TArray<FString> OutPakCommand = ExportPatchSetting->CombineAllCookCommandsInTheSetting(PlatformName, AllChangedAssetInfo, AllChangedExternalFiles);
 
 			// save paklist to file
 			if (FFileHelper::SaveStringArrayToFile(OutPakCommand, *SavePakCommandPath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM))
@@ -544,7 +587,12 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 
 		if (ExportPatchSetting->IsSaveDiffAnalysis())
 		{
-			FString SerializeDiffInfo = UFlibPatchParserHelper::SerializeDiffInfomationToString(AddAssetDependInfo, ModifyAssetDependInfo, DeleteAssetDependInfo);
+			FString SerializeDiffInfo =
+				FString::Printf(TEXT("%s\n%s\n"),
+					*UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(AddAssetDependInfo, ModifyAssetDependInfo, DeleteAssetDependInfo),
+					*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(AddExternalFiles, ModifyExternalFiles, DeleteExternalFiles)
+				);
+
 
 			FString SaveDiffToFile = FPaths::Combine(
 				CurrentVersionSavePath,
