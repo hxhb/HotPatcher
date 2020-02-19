@@ -409,7 +409,7 @@ bool UFlibPatchParserHelper::DiffVersionExFiles(
 	ParserAddFiles(InNewVersion, InBaseVersion, OutAddFiles);
 	// Parser delete Files
 	ParserAddFiles(InBaseVersion, InNewVersion, OutDeleteFiles);
-	
+
 	// Parser modify Files
 	{
 		TArray<FString> NewVersionFilesKeys;
@@ -428,12 +428,8 @@ bool UFlibPatchParserHelper::DiffVersionExFiles(
 				bool bIsSame = NewFile == BaseFile;
 				if (!bIsSame)
 				{
-					UE_LOG(LogTemp, Log, TEXT("%s is same."), *NewFile.MountPath);
+					// UE_LOG(LogTemp, Log, TEXT("%s is not same."), *NewFile.MountPath);
 					OutModifyFiles.Add(*InNewVersion.ExternalFiles.Find(NewVersionFile));
-				}
-				else
-				{
-					UE_LOG(LogTemp, Log, TEXT("%s is not same."), *NewFile.MountPath);
 				}
 			}
 			else
@@ -545,13 +541,14 @@ bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FSt
 	return bRunStatus;
 }
 
-FString UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(const FAssetDependenciesInfo& InAddAsset,
+bool UFlibPatchParserHelper::SerializeDiffAssetsInfomationToJsonObject(const FAssetDependenciesInfo& InAddAsset,
 	const FAssetDependenciesInfo& InModifyAsset,
-	const FAssetDependenciesInfo& InDeleteAsset)
+	const FAssetDependenciesInfo& InDeleteAsset,
+	 TSharedPtr<FJsonObject>& OutJsonObject)
 {
-	TSharedPtr<FJsonObject> RootJsonObject = MakeShareable(new FJsonObject);
+	if(!OutJsonObject.IsValid())
+		OutJsonObject = MakeShareable(new FJsonObject);
 
-	FString SerializeDiffInfo;
 	{
 		// is empty Info
 		auto IsEmptyInfo = [](const FAssetDependenciesInfo& InAssetInfo)->bool
@@ -562,7 +559,7 @@ FString UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(const FAss
 			return Keys.Num() == 0;
 		};
 
-		auto SerializeAssetInfoToJson = [&RootJsonObject,&IsEmptyInfo](const FAssetDependenciesInfo& InAssetInfo, const FString& InDescrible)->bool
+		auto SerializeAssetInfoToJson = [&OutJsonObject, &IsEmptyInfo](const FAssetDependenciesInfo& InAssetInfo, const FString& InDescrible)->bool
 		{
 			bool bRunStatus = false;
 			if (!IsEmptyInfo(InAssetInfo))
@@ -571,7 +568,7 @@ FString UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(const FAss
 				bRunStatus = UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(InAssetInfo, AssetsJsonObject, TArray<FString>{"Script"});
 				if (bRunStatus)
 				{
-					RootJsonObject->SetObjectField(InDescrible, AssetsJsonObject);
+					OutJsonObject->SetObjectField(InDescrible, AssetsJsonObject);
 				}
 			}
 			return bRunStatus;
@@ -582,37 +579,61 @@ FString UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(const FAss
 		SerializeAssetInfoToJson(InDeleteAsset, TEXT("DeletedAssets"));
 	}
 
-	auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&SerializeDiffInfo);
-	FJsonSerializer::Serialize(RootJsonObject.ToSharedRef(), JsonWriter);
+	return !!InAddAsset.mDependencies.Num() || !!InModifyAsset.mDependencies.Num() || !!InDeleteAsset.mDependencies.Num();
+}
 
+FString UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(const FAssetDependenciesInfo& InAddAsset,
+	const FAssetDependenciesInfo& InModifyAsset,
+	const FAssetDependenciesInfo& InDeleteAsset)
+{
+	FString SerializeDiffInfo;
+	TSharedPtr<FJsonObject> RootJsonObject;
+	if (UFlibPatchParserHelper::SerializeDiffAssetsInfomationToJsonObject(InAddAsset, InModifyAsset, InDeleteAsset, RootJsonObject))
+	{
+		auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&SerializeDiffInfo);
+		FJsonSerializer::Serialize(RootJsonObject.ToSharedRef(), JsonWriter);
+	}
+	
 	return SerializeDiffInfo;
 }
 
-
-FString UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(
+bool UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToJsonObject(
 	const TArray<FExternAssetFileInfo>& InAddFiles,
 	const TArray<FExternAssetFileInfo>& InModifyFiles,
-	const TArray<FExternAssetFileInfo>& InDeleteFiles)
+	const TArray<FExternAssetFileInfo>& InDeleteFiles,
+	TSharedPtr<FJsonObject>& OutJsonObject)
 {
-	TSharedPtr<FJsonObject> RootJsonObject = MakeShareable(new FJsonObject);
-	auto ParserFilesWithDescribleLambda = [&RootJsonObject](const TArray<FExternAssetFileInfo>& InFiles,const FString& InDescrible)
+	if(!OutJsonObject.IsValid())
+		OutJsonObject = MakeShareable(new FJsonObject);
+	auto ParserFilesWithDescribleLambda = [&OutJsonObject](const TArray<FExternAssetFileInfo>& InFiles, const FString& InDescrible)
 	{
 		TArray<TSharedPtr<FJsonValue>> FileJsonValueList;
 		for (const auto& File : InFiles)
 		{
 			FileJsonValueList.Add(MakeShareable(new FJsonValueString(File.MountPath)));
 		}
-		RootJsonObject->SetArrayField(InDescrible,FileJsonValueList);
+		OutJsonObject->SetArrayField(InDescrible, FileJsonValueList);
 	};
-	
 
 	ParserFilesWithDescribleLambda(InAddFiles, TEXT("AddFiles"));
 	ParserFilesWithDescribleLambda(InModifyFiles, TEXT("ModifyFiles"));
 	ParserFilesWithDescribleLambda(InDeleteFiles, TEXT("DeleteFiles"));
 
+	return !!InAddFiles.Num() || !!InModifyFiles.Num() || !!InDeleteFiles.Num();
+}
+
+FString UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(
+	const TArray<FExternAssetFileInfo>& InAddFiles,
+	const TArray<FExternAssetFileInfo>& InModifyFiles,
+	const TArray<FExternAssetFileInfo>& InDeleteFiles)
+{
 	FString SerializeDiffInfo;
-	auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&SerializeDiffInfo);
-	FJsonSerializer::Serialize(RootJsonObject.ToSharedRef(), JsonWriter);
+	TSharedPtr<FJsonObject> RootJsonObject;
+	if (UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToJsonObject(InAddFiles, InModifyFiles, InDeleteFiles,RootJsonObject))
+	{
+		auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&SerializeDiffInfo);
+		FJsonSerializer::Serialize(RootJsonObject.ToSharedRef(), JsonWriter);
+	}
 
 	return SerializeDiffInfo;
 }

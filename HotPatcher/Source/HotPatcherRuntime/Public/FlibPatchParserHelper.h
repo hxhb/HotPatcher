@@ -68,10 +68,22 @@ public:
 		static bool SerializePlatformPakInfoToString(const TMap<FString, FPakFileInfo>& InPakFilesMap, FString& OutString);
 		static bool SerializePlatformPakInfoToJsonObject(const TMap<FString, FPakFileInfo>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject);
 
+		static bool SerializeDiffAssetsInfomationToJsonObject(const FAssetDependenciesInfo& InAddAsset,
+				const FAssetDependenciesInfo& InModifyAsset,
+				const FAssetDependenciesInfo& InDeleteAsset,
+				TSharedPtr<FJsonObject>& OutJsonObject);
+
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static FString SerializeDiffAssetsInfomationToString(const FAssetDependenciesInfo& InAddAsset,
 		 									 const FAssetDependenciesInfo& InModifyAsset,
 											 const FAssetDependenciesInfo& InDeleteAsset);
+
+		static bool SerializeDiffExternalFilesInfomationToJsonObject(
+			const TArray<FExternAssetFileInfo>& InAddFiles,
+			const TArray<FExternAssetFileInfo>& InModifyFiles,
+			const TArray<FExternAssetFileInfo>& InDeleteFiles,
+			TSharedPtr<FJsonObject>& OutJsonObject);
+
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static FString SerializeDiffExternalFilesInfomationToString(
 			const TArray<FExternAssetFileInfo>& InAddFiles,
