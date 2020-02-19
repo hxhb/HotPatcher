@@ -233,7 +233,9 @@ FReply SHotPatcherExportPatch::DoDiff()const
 	FString SerializeDiffInfo =
 		FString::Printf(TEXT("%s\n%s\n"),
 			*UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(AddAssetDependInfo, ModifyAssetDependInfo, DeleteAssetDependInfo),
-			ExportPatchSetting->IsEnableExternFilesDiff()?*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(AddExternalFiles, ModifyExternalFiles, DeleteExternalFiles):TEXT("")
+			ExportPatchSetting->IsEnableExternFilesDiff()?
+			*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(AddExternalFiles, ModifyExternalFiles, DeleteExternalFiles):
+			*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(ExportPatchSetting->GetAllExternFiles(), TArray<FExternAssetFileInfo>{}, TArray<FExternAssetFileInfo>{})
 		);
 	SetInformationContent(SerializeDiffInfo);
 	SetInfomationContentVisibility(EVisibility::Visible);
@@ -501,7 +503,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			FString ProjectDir = UKismetSystemLibrary::GetProjectDirectory();
 
 			// generated cook command form asset list
-			TArray<FString> OutPakCommand = ExportPatchSetting->CombineAllCookCommandsInTheSetting(PlatformName, AllChangedAssetInfo, AllChangedExternalFiles);
+			TArray<FString> OutPakCommand = ExportPatchSetting->CombineAllCookCommandsInTheSetting(PlatformName, AllChangedAssetInfo, AllChangedExternalFiles,ExportPatchSetting->IsEnableExternFilesDiff());
 
 			// save paklist to file
 			if (FFileHelper::SaveStringArrayToFile(OutPakCommand, *SavePakCommandPath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM))
@@ -590,7 +592,9 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			FString SerializeDiffInfo =
 				FString::Printf(TEXT("%s\n%s\n"),
 					*UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(AddAssetDependInfo, ModifyAssetDependInfo, DeleteAssetDependInfo),
-					*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(AddExternalFiles, ModifyExternalFiles, DeleteExternalFiles)
+					ExportPatchSetting->IsEnableExternFilesDiff()?
+					*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(AddExternalFiles, ModifyExternalFiles, DeleteExternalFiles):
+					*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(ExportPatchSetting->GetAllExternFiles(), TArray<FExternAssetFileInfo>{}, TArray<FExternAssetFileInfo>{})
 				);
 
 

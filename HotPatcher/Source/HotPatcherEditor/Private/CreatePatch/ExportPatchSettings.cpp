@@ -175,6 +175,7 @@ TArray<FString> UExportPatchSettings::CombineAllCookCommandsInTheSetting(const F
 				}
 				for (const auto& File : ExFiles)
 				{
+					// UE_LOG(LogTemp, Warning, TEXT("CookCommand %s"), *FString::Printf(TEXT("\"%s\" \"%s\""), *File.FilePath.FilePath, *File.MountPath));
 					OutPakCommand.Add(FString::Printf(TEXT("\"%s\" \"%s\""), *File.FilePath.FilePath, *File.MountPath));
 				}
 			}
