@@ -22,18 +22,18 @@ public:
 	{
 	}
 
-	FORCEINLINE static TSharedPtr<UExportReleaseSettings> Get()
+	FORCEINLINE static UExportReleaseSettings* Get()
 	{
 		static bool bInitialized = false;
 		// This is a singleton, use default object
 		UExportReleaseSettings* DefaultSettings = GetMutableDefault<UExportReleaseSettings>();
-
+		DefaultSettings->AddToRoot();
 		if (!bInitialized)
 		{
 			bInitialized = true;
 		}
 
-		return MakeShareable(DefaultSettings);
+		return DefaultSettings;
 	}
 
 	FORCEINLINE bool SerializeReleaseConfigToString(FString& OutJsonString)

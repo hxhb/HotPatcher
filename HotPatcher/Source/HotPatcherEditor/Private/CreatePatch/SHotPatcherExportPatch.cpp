@@ -92,7 +92,7 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 		];
 
 	ExportPatchSetting = UExportPatchSettings::Get();
-	SettingsView->SetObject(ExportPatchSetting.Get());
+	SettingsView->SetObject(ExportPatchSetting);
 
 }
 

@@ -53,7 +53,8 @@ void SHotPatcherExportRelease::Construct(const FArguments& InArgs, TSharedPtr<FH
 		];
 
 	ExportReleaseSettings = UExportReleaseSettings::Get();
-	SettingsView->SetObject(ExportReleaseSettings.Get());
+	SettingsView->SetObject(ExportReleaseSettings);
+	
 }
 
 void SHotPatcherExportRelease::ImportConfig()

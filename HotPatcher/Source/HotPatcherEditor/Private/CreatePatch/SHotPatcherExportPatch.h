@@ -63,7 +63,7 @@ private:
 	/** Settings view ui element ptr */
 	TSharedPtr<IDetailsView> SettingsView;
 
-	TSharedPtr<UExportPatchSettings> ExportPatchSetting;
+	UExportPatchSettings* ExportPatchSetting;
 
 	TSharedPtr<SHotPatcherInformations> DiffWidget;
 };

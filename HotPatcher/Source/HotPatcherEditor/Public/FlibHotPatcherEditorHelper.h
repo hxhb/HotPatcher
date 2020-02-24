@@ -46,9 +46,9 @@ public:
 	static void CheckInvalidCookFilesByAssetDependenciesInfo(const FString& InProjectAbsDir, const FString& InPlatformName, const FAssetDependenciesInfo& InAssetDependencies,TArray<FAssetDetail>& OutValidAssets,TArray<FAssetDetail>& OutInvalidAssets);
 
 	static bool SerializePatchConfigToJsonObject(const class UExportPatchSettings*const InPatchSetting, TSharedPtr<FJsonObject>& OutJsonObject);
-	static TSharedPtr<class UExportPatchSettings> DeserializePatchConfig(TSharedPtr<class UExportPatchSettings> InNewSetting,const FString& InContent);
+	static class UExportPatchSettings* DeserializePatchConfig(class UExportPatchSettings* InNewSetting,const FString& InContent);
 	static bool SerializeReleaseConfigToJsonObject(const class UExportReleaseSettings*const InReleaseSetting, TSharedPtr<FJsonObject>& OutJsonObject);
-	static TSharedPtr<class UExportReleaseSettings> DeserializeReleaseConfig(TSharedPtr<class UExportReleaseSettings> InNewSetting, const FString& InContent);
+	static class UExportReleaseSettings* DeserializeReleaseConfig(class UExportReleaseSettings* InNewSetting, const FString& InContent);
 
 
 };

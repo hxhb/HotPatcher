@@ -211,7 +211,7 @@ FHotPatcherVersion UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
 }
 
 
-TSharedPtr<UExportPatchSettings> UFlibHotPatcherEditorHelper::DeserializePatchConfig(TSharedPtr<UExportPatchSettings> InNewSetting,const FString& InContent)
+UExportPatchSettings* UFlibHotPatcherEditorHelper::DeserializePatchConfig(UExportPatchSettings* InNewSetting,const FString& InContent)
 {
 #define DESERIAL_BOOL_BY_NAME(SettingObject,JsonObject,MemberName) SettingObject->MemberName = JsonObject->GetBoolField(TEXT(#MemberName));
 #define DESERIAL_STRING_BY_NAME(SettingObject,JsonObject,MemberName) SettingObject->MemberName = JsonObject->GetStringField(TEXT(#MemberName));
@@ -426,7 +426,7 @@ bool UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(const UExport
 	OutJsonObject->SetBoolField(TEXT("bIncludeEngineIni"), InPatchSetting->IsIncludeEngineIni());
 	OutJsonObject->SetBoolField(TEXT("bIncludePluginIni"), InPatchSetting->IsIncludePluginIni());
 	OutJsonObject->SetBoolField(TEXT("bIncludeProjectIni"), InPatchSetting->IsIncludeProjectIni());
-	OutJsonObject->SetBoolField(TEXT("bIncludeProjectIni"), InPatchSetting->IsEnableExternFilesDiff());
+	OutJsonObject->SetBoolField(TEXT("bEnableExternFilesDiff"), InPatchSetting->IsEnableExternFilesDiff());
 	// serialize all add extern file to pak
 	{
 		TArray<TSharedPtr<FJsonValue>> AddExFilesJsonObjectList;
@@ -556,7 +556,7 @@ bool UFlibHotPatcherEditorHelper::SerializeReleaseConfigToJsonObject(const UExpo
 	return true;
 }
 
-TSharedPtr<class UExportReleaseSettings> UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(TSharedPtr<class UExportReleaseSettings> InNewSetting, const FString& InContent)
+class UExportReleaseSettings* UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(class UExportReleaseSettings* InNewSetting, const FString& InContent)
 {
 #define DESERIAL_BOOL_BY_NAME(SettingObject,JsonObject,MemberName) SettingObject->MemberName = JsonObject->GetBoolField(TEXT(#MemberName));
 #define DESERIAL_STRING_BY_NAME(SettingObject,JsonObject,MemberName) SettingObject->MemberName = JsonObject->GetStringField(TEXT(#MemberName));

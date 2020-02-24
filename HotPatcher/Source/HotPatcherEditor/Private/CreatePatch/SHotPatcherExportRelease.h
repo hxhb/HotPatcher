@@ -50,6 +50,6 @@ private:
 	/** Settings view ui element ptr */
 	TSharedPtr<IDetailsView> SettingsView;
 
-	TSharedPtr<UExportReleaseSettings> ExportReleaseSettings;
+	UExportReleaseSettings* ExportReleaseSettings;
 };
 

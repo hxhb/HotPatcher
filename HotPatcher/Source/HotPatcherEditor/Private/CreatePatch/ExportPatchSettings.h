@@ -29,7 +29,7 @@ public:
 
 	UExportPatchSettings();
 
-	FORCEINLINE static TSharedPtr<UExportPatchSettings> Get()
+	FORCEINLINE static UExportPatchSettings* Get()
 	{
 		static bool bInitialized = false;
 		// This is a singleton, use default object
@@ -40,7 +40,7 @@ public:
 			bInitialized = true;
 		}
 
-		return MakeShareable(DefaultSettings);
+		return DefaultSettings;
 	}
 
 	FORCEINLINE TArray<FExternAssetFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const
