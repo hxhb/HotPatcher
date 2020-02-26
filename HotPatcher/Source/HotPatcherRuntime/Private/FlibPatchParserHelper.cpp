@@ -388,19 +388,19 @@ bool UFlibPatchParserHelper::DiffVersionExFiles(
 	OutModifyFiles.Empty();
 	OutDeleteFiles.Empty();
 
-	auto ParserAddFiles = [](const FHotPatcherVersion& InNewVersion, const FHotPatcherVersion& InBaseVersion, TArray<FExternAssetFileInfo>& OutAddFiles)
+	auto ParserAddFiles = [](const FHotPatcherVersion& lInNewVersion, const FHotPatcherVersion& lInBaseVersion, TArray<FExternAssetFileInfo>& lOutAddFiles)
 	{
 		TArray<FString> NewVersionFilesKeys;
-		InNewVersion.ExternalFiles.GetKeys(NewVersionFilesKeys);
+		lInNewVersion.ExternalFiles.GetKeys(NewVersionFilesKeys);
 
 		TArray<FString> BaseVersionFilesKeys;
-		InBaseVersion.ExternalFiles.GetKeys(BaseVersionFilesKeys);
+		lInBaseVersion.ExternalFiles.GetKeys(BaseVersionFilesKeys);
 
 		for (const auto& NewVersionFile : NewVersionFilesKeys)
 		{
-			if (!InBaseVersion.ExternalFiles.Contains(NewVersionFile))
+			if (!lInBaseVersion.ExternalFiles.Contains(NewVersionFile))
 			{
-				OutAddFiles.Add(*InNewVersion.ExternalFiles.Find(NewVersionFile));
+				lOutAddFiles.Add(*lInNewVersion.ExternalFiles.Find(NewVersionFile));
 			}
 		}
 	};

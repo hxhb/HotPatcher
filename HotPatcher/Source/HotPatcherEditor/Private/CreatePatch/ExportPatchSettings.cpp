@@ -130,7 +130,7 @@ TArray<FString> UExportPatchSettings::CombineAllExternDirectoryCookCommand() con
 	//	}
 	//}
 
-	TArray<FExternAssetFileInfo> ExFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
+	TArray<FExternAssetFileInfo>&& ExFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
 
 	for (const auto& File : ExFiles)
 	{
