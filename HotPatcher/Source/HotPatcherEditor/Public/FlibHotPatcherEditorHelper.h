@@ -10,10 +10,10 @@
 #include "FHotPatcherVersion.h"
 
 // engine header
-#include "SharedPointer.h"
+#include "Templates/SharedPointer.h"
 #include "Dom/JsonObject.h"
-#include "Notifications/NotificationManager.h"
-#include "Notifications/SNotificationList.h"
+#include "Framework/Notifications/NotificationManager.h"
+#include "Widgets/Notifications/SNotificationList.h"
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FlibHotPatcherEditorHelper.generated.h"

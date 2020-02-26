@@ -3,7 +3,7 @@
 // #include "HotPatcherPrivatePCH.h"
 #include "SHotPatcherCookSetting.h"
 #include "SProjectCookSettingsListRow.h"
-#include "SHyperlink.h"
+#include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
 
 #include "FlibHotPatcherEditorHelper.h"

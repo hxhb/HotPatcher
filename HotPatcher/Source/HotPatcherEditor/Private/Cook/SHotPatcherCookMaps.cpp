@@ -3,7 +3,7 @@
 // #include "HotPatcherPrivatePCH.h"
 #include "SHotPatcherCookMaps.h"
 #include "SProjectCookMapListRow.h"
-#include "SHyperlink.h"
+#include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
 #include "FlibPatchParserHelper.h"
 #include "Kismet/KismetSystemLibrary.h"

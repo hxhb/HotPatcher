@@ -1,6 +1,6 @@
 #pragma once
 #include "CoreMinimal.h"
-#include "GenericPlatformFile.h"
+#include "GenericPlatform/GenericPlatformFile.h"
 
 class ASSETMANAGEREX_API FFillArrayDirectoryVisitor : public IPlatformFile::FDirectoryVisitor
 {

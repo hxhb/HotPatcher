@@ -11,8 +11,8 @@
 #include "IDesktopPlatform.h"
 #include "DesktopPlatformModule.h"
 
-#include "SHyperlink.h"
 #include "Misc/FileHelper.h"
+#include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
 #include "Widgets/Text/SMultiLineEditableText.h"
 

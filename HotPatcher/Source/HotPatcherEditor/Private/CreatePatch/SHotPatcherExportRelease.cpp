@@ -8,7 +8,7 @@
 #include "FHotPatcherVersion.h"
 
 // engine header
-#include "SHyperlink.h"
+#include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
 #include "HAL/FileManager.h"
 #include "Misc/FileHelper.h"

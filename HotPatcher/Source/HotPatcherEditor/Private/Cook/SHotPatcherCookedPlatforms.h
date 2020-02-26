@@ -4,7 +4,7 @@
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Model/FHotPatcherCookModel.h"
-#include "SharedPointer.h"
+#include "Templates/SharedPointer.h"
 /**
  * Implements the cooked platforms panel.
  */

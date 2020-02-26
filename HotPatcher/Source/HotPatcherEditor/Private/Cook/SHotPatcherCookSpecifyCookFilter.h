@@ -2,13 +2,13 @@
 
 #pragma once
 #include "Model/FHotPatcherCookModel.h"
-#include "SharedPointer.h"
+#include "Templates/SharedPointer.h"
 #include "FlibPatchParserHelper.h"
 #include "SpecifyCookFilterSetting.h"
 
 // engine header
 #include "IDetailsView.h"
-#include "SharedPointer.h"
+#include "Templates/SharedPointer.h"
 #include "PropertyEditorModule.h"
 #include "Kismet/KismetSystemLibrary.h"
 /**

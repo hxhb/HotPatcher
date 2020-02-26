@@ -11,7 +11,7 @@
 
 // engine header
 #include "CoreMinimal.h"
-#include "UnrealString.h"
+#include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FlibPatchParserHelper.generated.h"
