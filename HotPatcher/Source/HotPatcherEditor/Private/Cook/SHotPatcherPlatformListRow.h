@@ -14,7 +14,7 @@
 #include "Widgets/Views/SListView.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "Model/FHotPatcherCookModel.h"
-#include "SharedPointer.h"
+#include "Templates/SharedPointer.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherPlatformListRow"
 

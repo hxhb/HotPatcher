@@ -3,7 +3,7 @@
 // #include "HotPatcherPrivatePCH.h"
 #include "SHotPatcherCookedPlatforms.h"
 #include "SHotPatcherPlatformListRow.h"
-#include "SHyperlink.h"
+#include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCookedPlatforms"

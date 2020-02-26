@@ -11,7 +11,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Json.h"
 #include "Templates/SharedPointer.h"
-#include "IPluginManager.h"
+#include "Interfaces/IPluginManager.h"
 #include "Engine/AssetManager.h"
 #include "AssetData.h"
 #ifdef __DEVELOPER_MODE__

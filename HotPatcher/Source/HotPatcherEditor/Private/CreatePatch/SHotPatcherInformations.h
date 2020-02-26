@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-#include "SharedPointer.h"
+#include "Templates/SharedPointer.h"
 #include "IDetailsView.h"
 #include "PropertyEditorModule.h"
 #include "Widgets/Text/SMultiLineEditableText.h"

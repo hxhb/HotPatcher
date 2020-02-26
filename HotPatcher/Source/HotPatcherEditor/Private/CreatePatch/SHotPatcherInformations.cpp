@@ -1,11 +1,11 @@
 #include "SHotPatcherInformations.h"
 
 // engine header
-#include "SHyperlink.h"
+#include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Layout/SScrollBox.h"
-#include "SGridPanel.h"
+#include "Widgets/Layout/SGridPanel.h"
 #include "Widgets/Layout/SHeader.h"
 #include "Internationalization/Internationalization.h"
 void SHotPatcherInformations::Construct(const FArguments& InArgs)

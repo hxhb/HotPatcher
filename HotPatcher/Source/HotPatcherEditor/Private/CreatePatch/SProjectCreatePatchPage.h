@@ -10,7 +10,7 @@
 
 // engine header
 #include "Interfaces/ITargetPlatform.h"
-#include "SharedPointer.h"
+#include "Templates/SharedPointer.h"
 #include "IDetailsView.h"
 #include "PropertyEditorModule.h"
 

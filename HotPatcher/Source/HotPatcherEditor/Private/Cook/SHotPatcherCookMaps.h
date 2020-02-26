@@ -2,7 +2,7 @@
 
 #pragma once
 #include "Model/FHotPatcherCookModel.h"
-#include "SharedPointer.h"
+#include "Templates/SharedPointer.h"
 #include "FlibPatchParserHelper.h"
 
 
