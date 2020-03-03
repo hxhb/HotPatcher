@@ -26,7 +26,7 @@ class HOTPATCHERRUNTIME_API UFlibPatchParserHelper : public UBlueprintFunctionLi
 public:
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static TArray<FString> GetAvailableMaps(FString GameName, bool IncludeEngineMaps, bool Sorted);
+		static TArray<FString> GetAvailableMaps(FString GameName, bool IncludeEngineMaps,bool IncludePluginMaps, bool Sorted);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static FString GetProjectName();
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")

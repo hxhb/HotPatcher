@@ -340,10 +340,13 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 
 bool UFLibAssetManageHelperEx::GetModuleAssetsList(const FString& InModuleName, const TArray<FString>& InExFilterPackagePaths, TArray<FAssetDetail>& OutAssetList)
 {
-	TArray<FString> AllEnableModule;
-	UFLibAssetManageHelperEx::GetAllEnabledModuleName(AllEnableModule);
+	TMap<FString, FString> AllEnableModules;
+	TArray<FString> AllEnableModuleNames;
+	UFLibAssetManageHelperEx::GetAllEnabledModuleName(AllEnableModules);
 
-	if (!AllEnableModule.Contains(InModuleName))
+	AllEnableModules.GetKeys(AllEnableModuleNames);
+
+	if (!AllEnableModuleNames.Contains(InModuleName))
 		return false;
 	TArray<FString> AllFilterPackageNames;
 	AllFilterPackageNames.AddUnique(TEXT("/") + InModuleName);
@@ -996,25 +999,26 @@ bool UFLibAssetManageHelperEx::GetPluginModuleAbsDir(const FString& InPluginModu
 	return bFindResault;
 }
 
-void UFLibAssetManageHelperEx::GetAllEnabledModuleName(TArray<FString>& OutEnabledModule)
+void UFLibAssetManageHelperEx::GetAllEnabledModuleName(TMap<FString, FString>& OutModules)
 {
-	OutEnabledModule.Reset();
-	OutEnabledModule.Add(TEXT("Game"));
-	OutEnabledModule.Add(TEXT("Engine"));
+	OutModules.Add(TEXT("Game"), FPaths::ProjectDir());
+	OutModules.Add(TEXT("Engine"), FPaths::EngineContentDir());
+
 	TArray<TSharedRef<IPlugin>> AllPlugin = IPluginManager::Get().GetEnabledPlugins();
 
 	for (const auto& PluginItem : AllPlugin)
 	{
-		OutEnabledModule.Add(PluginItem.Get().GetName());
+		OutModules.Add(PluginItem.Get().GetName(), PluginItem.Get().GetBaseDir());
 	}
 }
 
 
 bool UFLibAssetManageHelperEx::ModuleIsEnabled(const FString& InModuleName)
 {
-	TArray<FString> AllEnabledModules;
+	TMap<FString,FString> AllEnabledModules;
 	UFLibAssetManageHelperEx::GetAllEnabledModuleName(AllEnabledModules);
-
+	TArray<FString> AllEnableModuleNames;
+	AllEnabledModules.GetKeys(AllEnableModuleNames);
 	return AllEnabledModules.Contains(InModuleName);
 }
 

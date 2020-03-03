@@ -37,7 +37,7 @@ protected:
 		{
 			if (AllMap)
 			{
-				TArray<FString> Maps = UFlibPatchParserHelper::GetAvailableMaps(UKismetSystemLibrary::GetProjectDirectory(),false,true);
+				TArray<FString> Maps = UFlibPatchParserHelper::GetAvailableMaps(UKismetSystemLibrary::GetProjectDirectory(),false,false,true);
 
 				for (int32 MapIndex = 0; MapIndex < Maps.Num(); ++MapIndex)
 				{
@@ -62,5 +62,6 @@ private:
 	TSharedPtr<SListView<TSharedPtr<FString> > > MapListView;
 
 	TSharedPtr<FHotPatcherCookModel> mCookModel;
+
 };
 

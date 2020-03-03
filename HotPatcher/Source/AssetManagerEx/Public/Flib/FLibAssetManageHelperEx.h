@@ -161,7 +161,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
 		static bool ConvRelativeDirToAbsDir(const FString& InRelativePath, FString& OutAbsPath);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
-		static void GetAllEnabledModuleName(TArray<FString>& OutEnabledModule);
+		static void GetAllEnabledModuleName(TMap<FString, FString>& OutModules);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
 		static bool GetModuleNameByRelativePath(const FString& InRelativePath, FString& OutModuleName);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")

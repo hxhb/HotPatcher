@@ -51,15 +51,13 @@ void SHotPatcherCookMaps::Construct(const FArguments& InArgs, TSharedPtr<FHotPat
 				.AutoHeight()
 				[
 					SNew(SHorizontalBox)
-
 					+ SHorizontalBox::Slot()
-					.FillWidth(1.0f)
-					.HAlign(HAlign_Right)
-					[
-						SNew(STextBlock)
-						.Text(LOCTEXT("SelectLabel", "Select:"))
-					]
-
+						.FillWidth(1.0f)
+						.HAlign(HAlign_Right)
+						[
+							SNew(STextBlock)
+							.Text(LOCTEXT("SelectLabel", "Select:"))
+						]
 					+ SHorizontalBox::Slot()
 						.AutoWidth()
 						.Padding(8.0f, 0.0f)
@@ -92,7 +90,7 @@ void SHotPatcherCookMaps::RefreshMapList()
 	MapList.Reset();
 
 
-	TArray<FString> AvailableMaps = UFlibPatchParserHelper::GetAvailableMaps(UKismetSystemLibrary::GetProjectDirectory(), false, true);
+	TArray<FString> AvailableMaps = UFlibPatchParserHelper::GetAvailableMaps(UKismetSystemLibrary::GetProjectDirectory(), false, false, true);
 	for (int32 AvailableMapIndex = 0; AvailableMapIndex < AvailableMaps.Num(); ++AvailableMapIndex)
 	{
 		FString& Map = AvailableMaps[AvailableMapIndex];
@@ -108,6 +106,5 @@ TSharedRef<ITableRow> SHotPatcherCookMaps::HandleMapListViewGenerateRow(TSharedP
 		.MapName(InItem)
 		.OwnerTableView(OwnerTable);
 }
-
 
 #undef LOCTEXT_NAMESPACE

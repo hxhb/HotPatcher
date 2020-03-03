@@ -4,6 +4,7 @@
 #include "FlibPatchParserHelper.h"
 #include "FlibAssetManageHelperEx.h"
 #include "Struct/AssetManager/FFileArrayDirectoryVisitor.hpp"
+#include "FLibAssetManageHelperEx.h"
 
 // engine header
 #include "Misc/SecureHash.h"
@@ -15,44 +16,49 @@
 #include "Engine/EngineTypes.h"
 #include "Misc/Paths.h"
 
-TArray<FString> UFlibPatchParserHelper::GetAvailableMaps(FString GameName, bool IncludeEngineMaps, bool Sorted)
+TArray<FString> UFlibPatchParserHelper::GetAvailableMaps(FString GameName, bool IncludeEngineMaps, bool IncludePluginMaps, bool Sorted)
 {
-	TArray<FString> Result;
-	TArray<FString> EnginemapNames;
-	TArray<FString> ProjectMapNames;
-
 	const FString WildCard = FString::Printf(TEXT("*%s"), *FPackageName::GetMapPackageExtension());
+	TArray<FString> AllMaps;
+	TMap<FString,FString> AllEnableModules;
 
-	// Scan all Content folder, because not all projects follow Content/Maps convention
-	IFileManager::Get().FindFilesRecursive(ProjectMapNames, *FPaths::Combine(*FPaths::RootDir(), *GameName, TEXT("Content")), *WildCard, true, false);
+	UFLibAssetManageHelperEx::GetAllEnabledModuleName(AllEnableModules);
 
-	// didn't find any, let's check the base GameName just in case it is a full path
-	if (ProjectMapNames.Num() == 0)
+	auto ScanMapsByModuleName = [WildCard,&AllMaps](const FString& InModuleBaseDir)
 	{
-		IFileManager::Get().FindFilesRecursive(ProjectMapNames, *FPaths::Combine(*GameName, TEXT("Content")), *WildCard, true, false);
-	}
+		TArray<FString> OutMaps;
+		IFileManager::Get().FindFilesRecursive(OutMaps, *FPaths::Combine(*InModuleBaseDir, TEXT("Content")), *WildCard, true, false);
+		
+		for (const auto& MapPath : OutMaps)
+		{
+			AllMaps.Add(FPaths::GetBaseFilename(MapPath));
+		}
+	};
 
-	for (int32 i = 0; i < ProjectMapNames.Num(); i++)
-	{
-		Result.Add(FPaths::GetBaseFilename(ProjectMapNames[i]));
-	}
-
+	ScanMapsByModuleName(AllEnableModules[TEXT("Game")]);
 	if (IncludeEngineMaps)
 	{
-		IFileManager::Get().FindFilesRecursive(EnginemapNames, *FPaths::Combine(*FPaths::RootDir(), TEXT("Engine"), TEXT("Content"), TEXT("Maps")), *WildCard, true, false);
+		ScanMapsByModuleName(AllEnableModules[TEXT("Engine")]);
+	}
+	if (IncludePluginMaps)
+	{
+		TArray<FString> AllModuleNames;
+		AllEnableModules.GetKeys(AllModuleNames);
 
-		for (int32 i = 0; i < EnginemapNames.Num(); i++)
+		for (const auto& ModuleName : AllModuleNames)
 		{
-			Result.Add(FPaths::GetBaseFilename(EnginemapNames[i]));
+			if (!ModuleName.Equals(TEXT("Game")) && !ModuleName.Equals(TEXT("Engine")))
+			{
+				ScanMapsByModuleName(AllEnableModules[ModuleName]);
+			}
 		}
 	}
-
 	if (Sorted)
 	{
-		Result.Sort();
+		AllMaps.Sort();
 	}
 
-	return Result;
+	return AllMaps;
 }
 
 FString UFlibPatchParserHelper::GetProjectName()
