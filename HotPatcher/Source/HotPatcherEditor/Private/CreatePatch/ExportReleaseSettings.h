@@ -81,7 +81,7 @@ public:
 
 	FORCEINLINE TArray<FExternAssetFileInfo> GetAllExternFiles(bool InGeneratedHash = false)const
 	{
-		TArray<FExternAssetFileInfo>&& AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
+		TArray<FExternAssetFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
 
 		for (auto& ExFile : GetAddExternFiles())
 		{
