@@ -67,6 +67,11 @@ public:
 					ProcFaildDelegate.Broadcast();
 				}
 			}
+			else
+			{
+				ProcFaildDelegate.Broadcast();
+
+			}
 			
 		}
 		mThreadStatus = EThreadStatus::Completed;
@@ -74,15 +79,16 @@ public:
 	}
 	virtual void Exit()override
 	{
-		if (mProcessHandle.IsValid())
-		{
-			
-		}
+		Cancel();
 	}
 	virtual void Cancel()override
 	{
 		if (GetThreadStatus() != EThreadStatus::Busy)
+		{
+			CancelDelegate.Broadcast();
 			return;
+		}
+			
 		mThreadStatus = EThreadStatus::Canceling;
 		if (mProcessHandle.IsValid() && FPlatformProcess::IsApplicationRunning(mProcessID))
 		{
