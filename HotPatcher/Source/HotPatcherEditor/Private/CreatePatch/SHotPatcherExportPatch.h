@@ -7,6 +7,7 @@
 #include "ExportPatchSettings.h"
 #include "SHotPatcherInformations.h"
 #include "SHotPatcherPatchableBase.h"
+#include "FPatchVersionDiff.h"
 
 // engine header
 #include "Interfaces/ITargetPlatform.h"
@@ -56,6 +57,21 @@ protected:
 	void SetInfomationContentVisibility(EVisibility InVisibility)const;
 
 
+
+protected:
+	bool CheckSelectedAssetsCookStatus(const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets,FString& OutMsg)const;
+
+	FPatchVersionDiff DiffPatchVersion(const FHotPatcherVersion& Base, const FHotPatcherVersion& New)const;
+
+	bool CheckPatchRequire(const FPatchVersionDiff& InDiff)const;
+	bool ShowMsg(const FString& InMsg)const;
+	bool SavePatchVersionJson(const FHotPatcherVersion& InSaveVersion,const FString& InSavePath,FPakVersion& OutPakVersion);
+	bool SavePatchDiffJson(const FHotPatcherVersion& InSaveVersion, const FPatchVersionDiff& InDiff);
+	bool SavePakCommands(const FString& InPlatformName, const FPatchVersionDiff& InDiffInfo, const FString& InSavePath);
+
+
+	FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion)const;
+	FProcHandle DoUnrealPak(const FString& PakCommandPath,const FString& SavePakPath, TArray<FString> UnrealPakOptions);
 private:
 
 	// TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;

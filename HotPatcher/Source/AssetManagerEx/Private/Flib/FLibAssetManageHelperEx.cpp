@@ -711,7 +711,7 @@ bool UFLibAssetManageHelperEx::ConvLongPackageNameToCookedPath(const FString& In
 }
 
 
-bool UFLibAssetManageHelperEx::GetCookCommandFromAssetDependencies(const FString& InProjectDir, const FString& InPlatformName, const FAssetDependenciesInfo& InAssetDependencies, const TArray<FString> &InCookParams, TArray<FString>& OutCookCommand)
+bool UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(const FString& InProjectDir, const FString& InPlatformName, const FAssetDependenciesInfo& InAssetDependencies, const TArray<FString> &InCookParams, TArray<FString>& OutCookCommand)
 {
 	if (!FPaths::DirectoryExists(InProjectDir) || !UFLibAssetManageHelperEx::IsValidPlatform(InPlatformName))
 		return false;

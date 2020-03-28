@@ -88,7 +88,7 @@ FString UExportPatchSettings::GetSavePakVersionPath(const FString& InSaveAbsPath
 	return SavePakVersionFilePath;
 }
 
-FString UExportPatchSettings::GetSavePakCommandsPath(const FString& InSaveAbsPath,const FString& InPlatfornName, const FHotPatcherVersion& InVersion)
+FString UExportPatchSettings::GetPakCommandsSaveToPath(const FString& InSaveAbsPath,const FString& InPlatfornName, const FHotPatcherVersion& InVersion)
 {
 	FString SavePakCommandPath = FPaths::Combine(
 		InSaveAbsPath,
@@ -102,7 +102,7 @@ FString UExportPatchSettings::GetSavePakCommandsPath(const FString& InSaveAbsPat
 }
 
 
-TArray<FString> UExportPatchSettings::CombineAllExternDirectoryCookCommand() const
+TArray<FString> UExportPatchSettings::MakeAllExternDirectoryAsPakCommand() const
 {
 	
 	TArray<FString> CookCommandResault;
@@ -139,26 +139,33 @@ TArray<FString> UExportPatchSettings::CombineAllExternDirectoryCookCommand() con
 	return CookCommandResault;
 }
 
-TArray<FString> UExportPatchSettings::CombineAllCookCommandsInTheSetting(const FString& InPlatformName,const FAssetDependenciesInfo& AllChangedAssetInfo,const TArray<FExternAssetFileInfo>& AllChangedExFiles, bool bDiffExFiles) const
+TArray<FString> UExportPatchSettings::MakeAllPakCommandsByTheSetting(const FString& InPlatformName, const FPatchVersionDiff& InVersionDiff, bool bDiffExFiles) const
 {
+
+	FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(InVersionDiff.AddAssetDependInfo, InVersionDiff.ModifyAssetDependInfo);
+
+	TArray<FExternAssetFileInfo> AllChangedExternalFiles;
+	AllChangedExternalFiles.Append(InVersionDiff.AddExternalFiles);
+	AllChangedExternalFiles.Append(InVersionDiff.ModifyExternalFiles);
+
 	// combine all cook commands
 	{
 		FString ProjectDir = UKismetSystemLibrary::GetProjectDirectory();
 		
 		// generated cook command form asset list
 		TArray<FString> OutPakCommand;
-		UFLibAssetManageHelperEx::GetCookCommandFromAssetDependencies(ProjectDir, InPlatformName, AllChangedAssetInfo, TArray<FString>{}, OutPakCommand);
+		UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(ProjectDir, InPlatformName, AllChangedAssetInfo, TArray<FString>{}, OutPakCommand);
 
 		// generated cook command form project ini/AssetRegistry.bin/GlobalShaderCache*.bin
 		// and all extern file
 		{
-			TArray<FString> AllExternCookCommand;
+			TArray<FString> AllExternPakCommand;
 
-			this->GetAllExternAssetCookCommands(ProjectDir, InPlatformName, AllExternCookCommand);
+			this->MakeAllExternAssetAsPakCommands(ProjectDir, InPlatformName, AllExternPakCommand);
 
-			if (!!AllExternCookCommand.Num())
+			if (!!AllExternPakCommand.Num())
 			{
-				OutPakCommand.Append(AllExternCookCommand);
+				OutPakCommand.Append(AllExternPakCommand);
 			}
 
 			// external not-asset files
@@ -166,7 +173,7 @@ TArray<FString> UExportPatchSettings::CombineAllCookCommandsInTheSetting(const F
 				TArray<FExternAssetFileInfo> ExFiles;
 				if (bDiffExFiles)
 				{
-					ExFiles = AllChangedExFiles;
+					ExFiles = AllChangedExternalFiles;
 				}
 				else
 				{
@@ -249,7 +256,7 @@ FString UExportPatchSettings::GetCurrentVersionSavePath() const
 	return CurrentVersionSavePath;
 }
 
-bool UExportPatchSettings::GetAllExternAssetCookCommands(const FString& InProjectDir, const FString& InPlatform, TArray<FString>& OutCookCommands)const
+bool UExportPatchSettings::MakeAllExternAssetAsPakCommands(const FString& InProjectDir, const FString& InPlatform, TArray<FString>& OutCookCommands)const
 {
 	OutCookCommands.Reset();
 	TArray<FString> SearchAssetList;
@@ -355,7 +362,7 @@ bool UExportPatchSettings::SerializePatchConfigToString(FString& OutSerializedSt
 
 
 
-TArray<FString> UExportPatchSettings::CombineAddExternFileToCookCommands()const
+TArray<FString> UExportPatchSettings::MakeAddExternFileToPakCommands()const
 {
 	TArray<FString> resault;
 	// FString ProjectName = UFlibPatchParserHelper::GetProjectName();

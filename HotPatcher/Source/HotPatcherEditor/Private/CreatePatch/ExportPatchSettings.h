@@ -3,6 +3,8 @@
 #pragma once
 
 // project header
+#include "FPatchVersionDiff.h"
+#include "FChunkInfo.h"
 #include "ETargetPlatform.h"
 #include "FExternAssetFileInfo.h"
 #include "FExternDirectoryInfo.h"
@@ -68,14 +70,19 @@ public:
 	TArray<FString> GetAssetIgnoreFilters()const;
 	FORCEINLINE TArray<FPatcherSpecifyAsset> GetIncludeSpecifyAssets()const { return IncludeSpecifyAssets; };
 
+	// pak command
+	TArray<FString> MakeAddExternFileToPakCommands()const;
+	// TArray<FString> GetAllExternalCookCommands()const;
+	TArray<FString> MakeAllExternDirectoryAsPakCommand()const;
+	TArray<FString> MakeAllPakCommandsByTheSetting(const FString& InPlatformName, const FPatchVersionDiff& InVersionDiff, bool bDiffExFiles = true)const;
+	bool MakeAllExternAssetAsPakCommands(const FString& InProjectDir, const FString& InPlatform, TArray<FString>& OutPakCommands)const;
+
 	FString GetSaveAbsPath()const;
-	TArray<FString> GetAllExternalCookCommands()const;
-	bool GetAllExternAssetCookCommands(const FString& InProjectDir, const FString& InPlatform, TArray<FString>& OutCookCommands)const;
 	bool SerializePatchConfigToJsonObject(TSharedPtr<FJsonObject>& OutJsonObject)const;
 	bool SerializePatchConfigToString(FString& OutSerializedStr)const;
 	void DeserializePatchConfig(const FString& InContent);
 
-	TArray<FString> CombineAddExternFileToCookCommands()const;
+	
 
 	FORCEINLINE FString GetVersionId()const { return VersionId; }
 	FORCEINLINE FString GetBaseVersion()const { return BaseVersion.FilePath; }
@@ -104,10 +111,8 @@ public:
 	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
 	static FPakVersion GetPakVersion(const FHotPatcherVersion& InHotPatcherVersion,const FString& InUtcTime);
 	static FString GetSavePakVersionPath(const FString& InSaveAbsPath,const FHotPatcherVersion& InVersion);
-	static FString GetSavePakCommandsPath(const FString& InSaveAbsPath, const FString& InPlatfornName, const FHotPatcherVersion& InVersion);
+	static FString GetPakCommandsSaveToPath(const FString& InSaveAbsPath, const FString& InPlatfornName, const FHotPatcherVersion& InVersion);
 
-	TArray<FString> CombineAllExternDirectoryCookCommand()const;
-	TArray<FString> CombineAllCookCommandsInTheSetting(const FString& InPlatformName, const FAssetDependenciesInfo& AllChangedAssetInfo, const TArray<FExternAssetFileInfo>& AllChangedExFiles,bool bDiffExFiles=true)const;
 	FHotPatcherVersion GetNewPatchVersionInfo()const;
 	bool GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion)const;
 	FString GetCurrentVersionSavePath()const;
@@ -151,6 +156,10 @@ public:
 		bool bIncludePakVersionFile;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))
 		FString PakVersionFileMountPoint;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options")
+	//	bool bEnableChunk;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options", meta = (EditCondition = "bEnableChunk"))
+	//	TArray<FChunkInfo> ChunkInfos;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<FString> UnrealPakOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
