@@ -1,6 +1,6 @@
 #pragma once
 // project header
-#include "FAssetDependenciesInfo.h"
+#include "Struct/AssetManager/FAssetDependenciesInfo.h"
 #include "FExternAssetFileInfo.h"
 
 // engine header
