@@ -9,7 +9,7 @@
 #include "Engine/EngineTypes.h"
 #include "FChunkInfo.generated.h"
 
-// ÒıÇæµÄÊı¾İºÍiniµÈÅäÖÃÎÄ¼ş
+// å¼•æ“çš„æ•°æ®å’Œiniç­‰é…ç½®æ–‡ä»¶
 USTRUCT(BlueprintType)
 struct FPakInternalInfo
 {
@@ -39,6 +39,8 @@ public:
 		FString ChunkName;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool bMonolithic;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		bool bSavePakCommands;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets")

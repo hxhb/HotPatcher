@@ -1118,9 +1118,217 @@ bool UFlibPatchParserHelper::SerializeSpecifyAssetInfoToJsonObject(const FPatche
 	{
 		OutJsonObject = MakeShareable(new FJsonObject);
 	}
-	OutJsonObject->SetStringField(TEXT("Asset"), InSpecifyAsset.Asset.GetLongPackageName());
-	OutJsonObject->SetBoolField(TEXT("bAnalysisAssetDependencies"), InSpecifyAsset.bAnalysisAssetDependencies);
-	bRunStatus = true;
+	bRunStatus = InSpecifyAsset.Asset.IsValid();
+
+	if (bRunStatus)
+	{
+		OutJsonObject->SetStringField(TEXT("Asset"), InSpecifyAsset.Asset.GetAssetPathName().ToString());
+		OutJsonObject->SetBoolField(TEXT("bAnalysisAssetDependencies"), InSpecifyAsset.bAnalysisAssetDependencies);
+	}
 	return bRunStatus;
 }
 
+bool UFlibPatchParserHelper::DeSerializeSpecifyAssetInfoToJsonObject(const TSharedPtr<FJsonObject>& InJsonObject, FPatcherSpecifyAsset& OutSpecifyAsset)
+{
+	bool bRunStatus = false;
+
+	if (InJsonObject.IsValid())
+	{
+		OutSpecifyAsset.Asset = InJsonObject->GetStringField(TEXT("Asset"));
+		OutSpecifyAsset.bAnalysisAssetDependencies = InJsonObject->GetBoolField(TEXT("bAnalysisAssetDependencies"));
+		bRunStatus = true;
+	}
+	return bRunStatus;
+}
+
+
+bool UFlibPatchParserHelper::SerializeFPakInternalInfoToJsonObject(const FPakInternalInfo& InFPakInternalInfo, TSharedPtr<FJsonObject>& OutJsonObject)
+{
+	bool bRunStatus = false;
+
+	if (!OutJsonObject.IsValid())
+	{
+		OutJsonObject = MakeShareable(new FJsonObject);
+	}
+	OutJsonObject->SetBoolField(TEXT("bIncludeAssetRegistry"), InFPakInternalInfo.bIncludeAssetRegistry);
+	OutJsonObject->SetBoolField(TEXT("bIncludeGlobalShaderCache"), InFPakInternalInfo.bIncludeGlobalShaderCache);
+	OutJsonObject->SetBoolField(TEXT("bIncludeShaderBytecode"), InFPakInternalInfo.bIncludeShaderBytecode);
+	OutJsonObject->SetBoolField(TEXT("bIncludeEngineIni"), InFPakInternalInfo.bIncludeEngineIni);
+	OutJsonObject->SetBoolField(TEXT("bIncludePluginIni"), InFPakInternalInfo.bIncludePluginIni);
+	OutJsonObject->SetBoolField(TEXT("bIncludeProjectIni"), InFPakInternalInfo.bIncludeProjectIni);
+	return bRunStatus;
+}
+
+bool UFlibPatchParserHelper::DeSerializeFPakInternalInfoFromJsonObject(const TSharedPtr<FJsonObject>& JsonObject, FPakInternalInfo& OutFPakInternalInfo)
+{
+	OutFPakInternalInfo.bIncludeAssetRegistry = JsonObject->GetBoolField(TEXT("bIncludeAssetRegistry"));
+	OutFPakInternalInfo.bIncludeGlobalShaderCache = JsonObject->GetBoolField(TEXT("bIncludeGlobalShaderCache"));
+	OutFPakInternalInfo.bIncludeShaderBytecode = JsonObject->GetBoolField(TEXT("bIncludeShaderBytecode"));
+	OutFPakInternalInfo.bIncludeEngineIni = JsonObject->GetBoolField(TEXT("bIncludeEngineIni"));
+	OutFPakInternalInfo.bIncludePluginIni = JsonObject->GetBoolField(TEXT("bIncludePluginIni"));
+	OutFPakInternalInfo.bIncludeProjectIni = JsonObject->GetBoolField(TEXT("bIncludeProjectIni"));
+	return true;
+}
+bool UFlibPatchParserHelper::SerializeFChunkInfoToJsonObject(const FChunkInfo& InChunkInfo, TSharedPtr<FJsonObject>& OutJsonObject)
+{
+	bool bRunStatus = false;
+
+	if (!OutJsonObject.IsValid())
+	{
+		OutJsonObject = MakeShareable(new FJsonObject);
+	}
+	OutJsonObject->SetStringField(TEXT("ChunkName"), InChunkInfo.ChunkName);
+	OutJsonObject->SetBoolField(TEXT("bMonolithic"), InChunkInfo.bMonolithic);
+	OutJsonObject->SetBoolField(TEXT("bSavePakCommands"), InChunkInfo.bSavePakCommands);
+	auto ConvDirPathsToStrings = [](const TArray<FDirectoryPath>& InDirPaths)->TArray<FString>
+	{
+		TArray<FString> Resault;
+		for (const auto& Dir : InDirPaths)
+		{
+			Resault.Add(Dir.Path);
+		}
+		return Resault;
+	};
+
+	auto SerializeArrayLambda = [&OutJsonObject](const TArray<FString>& InArray, const FString& InJsonArrayName)
+	{
+		TArray<TSharedPtr<FJsonValue>> ArrayJsonValueList;
+		for (const auto& ArrayItem : InArray)
+		{
+			ArrayJsonValueList.Add(MakeShareable(new FJsonValueString(ArrayItem)));
+		}
+		OutJsonObject->SetArrayField(InJsonArrayName, ArrayJsonValueList);
+	};
+	SerializeArrayLambda(ConvDirPathsToStrings(InChunkInfo.AssetIncludeFilters), TEXT("AssetIncludeFilters"));
+
+	// serialize specify asset
+	{
+		TArray<TSharedPtr<FJsonValue>> SpecifyAssetJsonValueObjectList;
+		for (const auto& SpecifyAsset : InChunkInfo.IncludeSpecifyAssets)
+		{
+			TSharedPtr<FJsonObject> CurrentAssetJsonObject;
+			UFlibPatchParserHelper::SerializeSpecifyAssetInfoToJsonObject(SpecifyAsset, CurrentAssetJsonObject);
+			SpecifyAssetJsonValueObjectList.Add(MakeShareable(new FJsonValueObject(CurrentAssetJsonObject)));
+		}
+		OutJsonObject->SetArrayField(TEXT("IncludeSpecifyAssets"), SpecifyAssetJsonValueObjectList);
+	}
+
+	// serialize all add extern file to pak
+	{
+		TArray<TSharedPtr<FJsonValue>> AddExFilesJsonObjectList;
+		for (const auto& ExFileInfo : InChunkInfo.AddExternFileToPak)
+		{
+			TSharedPtr<FJsonObject> CurrentFileJsonObject;
+			UFlibPatchParserHelper::SerializeExAssetFileInfoToJsonObject(ExFileInfo, CurrentFileJsonObject);
+			AddExFilesJsonObjectList.Add(MakeShareable(new FJsonValueObject(CurrentFileJsonObject)));
+		}
+		OutJsonObject->SetArrayField(TEXT("AddExternFileToPak"), AddExFilesJsonObjectList);
+	}
+
+	// serialize all add extern directory to pak
+	{
+		TArray<TSharedPtr<FJsonValue>> AddExDirectoryJsonObjectList;
+		for (const auto& ExDirectoryInfo : InChunkInfo.AddExternDirectoryToPak)
+		{
+			TSharedPtr<FJsonObject> CurrentDirJsonObject;
+			UFlibPatchParserHelper::SerializeExDirectoryInfoToJsonObject(ExDirectoryInfo, CurrentDirJsonObject);
+			AddExDirectoryJsonObjectList.Add(MakeShareable(new FJsonValueObject(CurrentDirJsonObject)));
+		}
+		OutJsonObject->SetArrayField(TEXT("AddExternDirectoryToPak"), AddExDirectoryJsonObjectList);
+	}
+
+	TSharedPtr<FJsonObject> OutInternalFilesJsonObject;
+	UFlibPatchParserHelper::SerializeFPakInternalInfoToJsonObject(InChunkInfo.InternalFiles, OutInternalFilesJsonObject);
+	OutJsonObject->SetObjectField(TEXT("InternalFiles"), OutInternalFilesJsonObject);
+	return bRunStatus;
+}
+
+
+bool UFlibPatchParserHelper::DeSerializeFChunkInfoFromJsonObject(const TSharedPtr<FJsonObject>& InJsonObject, FChunkInfo& OutChunkInfo)
+{
+	OutChunkInfo.ChunkName = InJsonObject->GetStringField(TEXT("ChunkName"));
+	OutChunkInfo.bMonolithic = InJsonObject->GetBoolField(TEXT("bMonolithic"));
+	OutChunkInfo.bSavePakCommands = InJsonObject->GetBoolField(TEXT("bSavePakCommands"));
+	auto ParserAssetFilter = [InJsonObject](const FString& InFilterName) -> TArray<FDirectoryPath>
+	{
+		TArray<TSharedPtr<FJsonValue>> FilterArray = InJsonObject->GetArrayField(InFilterName);
+
+		TArray<FDirectoryPath> FilterResult;
+		for (const auto& Filter : FilterArray)
+		{
+			FDirectoryPath CurrentFilterPath;
+			CurrentFilterPath.Path = Filter->AsString();
+			// UE_LOG(LogTemp, Log, TEXT("Filter: %s"), *CurrentFilterPath.Path);
+			FilterResult.Add(CurrentFilterPath);
+		}
+		return FilterResult;
+	};
+
+	OutChunkInfo.AssetIncludeFilters = ParserAssetFilter(TEXT("AssetIncludeFilters"));
+	
+	// PatcherSprcifyAsset
+	{
+		TArray<FPatcherSpecifyAsset> SpecifyAssets;
+		TArray<TSharedPtr<FJsonValue>> SpecifyAssetsJsonObj = InJsonObject->GetArrayField(TEXT("IncludeSpecifyAssets"));
+
+		for (const auto& InSpecifyAsset : SpecifyAssetsJsonObj)
+		{
+			FPatcherSpecifyAsset CurrentAsset;
+			TSharedPtr<FJsonObject> SpecifyJsonObj = InSpecifyAsset->AsObject();
+			CurrentAsset.Asset = SpecifyJsonObj->GetStringField(TEXT("Asset"));
+			CurrentAsset.bAnalysisAssetDependencies = SpecifyJsonObj->GetBoolField(TEXT("bAnalysisAssetDependencies"));
+			SpecifyAssets.Add(CurrentAsset);
+		}
+		OutChunkInfo.IncludeSpecifyAssets = SpecifyAssets;
+	}
+
+	// extern
+	{
+		// extern file 
+		{
+			TArray<FExternAssetFileInfo> AddExternFileToPak;
+
+			TArray<TSharedPtr<FJsonValue>> ExternalFileJsonValues;
+
+			ExternalFileJsonValues = InJsonObject->GetArrayField(TEXT("AddExternFileToPak"));
+
+			for (const auto& FileJsonValue : ExternalFileJsonValues)
+			{
+				FExternAssetFileInfo CurrentExFile;
+				TSharedPtr<FJsonObject> FileJsonObjectValue = FileJsonValue->AsObject();
+
+				CurrentExFile.FilePath.FilePath = FileJsonObjectValue->GetStringField(TEXT("FilePath"));
+				CurrentExFile.MountPath = FileJsonObjectValue->GetStringField(TEXT("MountPath"));
+
+				AddExternFileToPak.Add(CurrentExFile);
+			}
+			OutChunkInfo.AddExternFileToPak = AddExternFileToPak;
+		}
+		// extern directory
+		{
+			TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
+			TArray<TSharedPtr<FJsonValue>> ExternalDirJsonValues;
+
+			ExternalDirJsonValues = InJsonObject->GetArrayField(TEXT("AddExternDirectoryToPak"));
+
+			for (const auto& FileJsonValue : ExternalDirJsonValues)
+			{
+				FExternDirectoryInfo CurrentExDir;
+				TSharedPtr<FJsonObject> FileJsonObjectValue = FileJsonValue->AsObject();
+
+				CurrentExDir.DirectoryPath.Path = FileJsonObjectValue->GetStringField(TEXT("Directory"));
+				CurrentExDir.MountPoint = FileJsonObjectValue->GetStringField(TEXT("MountPoint"));
+
+				AddExternDirectoryToPak.Add(CurrentExDir);
+			}
+			OutChunkInfo.AddExternDirectoryToPak = AddExternDirectoryToPak;
+		}
+
+		// Internal Files
+
+		UFlibPatchParserHelper::DeSerializeFPakInternalInfoFromJsonObject(InJsonObject->GetObjectField(TEXT("InternalFiles")), OutChunkInfo.InternalFiles);
+
+	}
+
+	return true;
+}

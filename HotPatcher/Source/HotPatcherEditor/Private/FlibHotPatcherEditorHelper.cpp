@@ -254,9 +254,7 @@ UExportPatchSettings* UFlibHotPatcherEditorHelper::DeserializePatchConfig(UExpor
 				for (const auto& InSpecifyAsset : SpecifyAssetsJsonObj)
 				{
 					FPatcherSpecifyAsset CurrentAsset;
-					TSharedPtr<FJsonObject> SpecifyJsonObj = InSpecifyAsset->AsObject();
-					CurrentAsset.Asset = SpecifyJsonObj->GetStringField(TEXT("Asset"));
-					CurrentAsset.bAnalysisAssetDependencies = SpecifyJsonObj->GetBoolField(TEXT("bAnalysisAssetDependencies"));
+					UFlibPatchParserHelper::DeSerializeSpecifyAssetInfoToJsonObject(InSpecifyAsset->AsObject(), CurrentAsset);
 					SpecifyAssets.Add(CurrentAsset);
 				}
 				InNewSetting->IncludeSpecifyAssets = SpecifyAssets;
@@ -313,7 +311,24 @@ UExportPatchSettings* UFlibHotPatcherEditorHelper::DeserializePatchConfig(UExpor
 			}
 			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludePakVersionFile);
 			DESERIAL_STRING_BY_NAME(InNewSetting, JsonObject, PakVersionFileMountPoint);
+			
+			// chunk
+			{
+				DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bEnableChunk);
+				TArray<TSharedPtr<FJsonValue>> ChunkJsonValues;
 
+				ChunkJsonValues = JsonObject->GetArrayField(TEXT("ChunkInfos"));
+				InNewSetting->ChunkInfos.Empty();
+
+				for (const auto& ChunkJsonValue : ChunkJsonValues)
+				{
+					FChunkInfo CurrentChunk;
+
+					TSharedPtr<FJsonObject> ChunkJsonObjectValue = ChunkJsonValue->AsObject();
+					UFlibPatchParserHelper::DeSerializeFChunkInfoFromJsonObject(ChunkJsonObjectValue, CurrentChunk);
+					InNewSetting->ChunkInfos.Add(CurrentChunk);
+				}
+			}
 			// UnrealPakOptions
 			{
 				
@@ -454,6 +469,21 @@ bool UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(const UExport
 	{
 		OutJsonObject->SetBoolField(TEXT("bIncludePakVersionFile"), InPatchSetting->IsIncludePakVersion());
 		OutJsonObject->SetStringField(TEXT("PakVersionFileMountPoint"), InPatchSetting->GetPakVersionFileMountPoint());
+	}
+
+	// chunk
+	{
+		OutJsonObject->SetBoolField(TEXT("bEnableChunk"), InPatchSetting->IsEnableChunk());
+
+		TArray<TSharedPtr<FJsonValue>> ChunkInfosJsonValueList;
+
+		for (const auto& Chunk : InPatchSetting->GetChunkInfos())
+		{
+			TSharedPtr<FJsonObject> CurrentChunkJsonObject;
+			UFlibPatchParserHelper::SerializeFChunkInfoToJsonObject(Chunk, CurrentChunkJsonObject);
+			ChunkInfosJsonValueList.Add(MakeShareable(new FJsonValueObject(CurrentChunkJsonObject)));
+		}
+		OutJsonObject->SetArrayField(TEXT("ChunkInfos"), ChunkInfosJsonValueList);
 	}
 	// serialize UnrealPakOptions
 	SerializeArrayLambda(InPatchSetting->GetUnrealPakOptions(), TEXT("UnrealPakOptions"));

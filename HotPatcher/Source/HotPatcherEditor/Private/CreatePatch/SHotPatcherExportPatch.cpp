@@ -184,58 +184,16 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
 	);
 
-	FString CurrentVersionSavePath = FPaths::Combine(ExportPatchSetting->GetSaveAbsPath(), CurrentVersion.VersionId);
+	FPatchVersionDiff VersionDiffInfo = DiffPatchVersion(BaseVersion, CurrentVersion);
 
-	// parser version difference
+	bool bShowDeleteAsset = false;
 
-	FAssetDependenciesInfo BaseVersionAssetDependInfo = BaseVersion.AssetInfo;
-	FAssetDependenciesInfo CurrentVersionAssetDependInfo = CurrentVersion.AssetInfo;
-
-	FAssetDependenciesInfo AddAssetDependInfo;
-	FAssetDependenciesInfo ModifyAssetDependInfo;
-	FAssetDependenciesInfo DeleteAssetDependInfo;
-
-	UFlibPatchParserHelper::DiffVersionAssets(
-		CurrentVersionAssetDependInfo,
-		BaseVersionAssetDependInfo,
-		AddAssetDependInfo,
-		ModifyAssetDependInfo,
-		DeleteAssetDependInfo
-	);
-
-	TArray<FExternAssetFileInfo> AddExternalFiles;
-	TArray<FExternAssetFileInfo> ModifyExternalFiles;
-	TArray<FExternAssetFileInfo> DeleteExternalFiles;
-
-	UFlibPatchParserHelper::DiffVersionExFiles(CurrentVersion, BaseVersion, AddExternalFiles, ModifyExternalFiles, DeleteExternalFiles);
-
-	// debug
-	//{
-	//	auto VersionPrint = [](const FHotPatcherVersion& CurrentVersion)
-	//	{
-	//		TArray<FString> Keys;
-	//		CurrentVersion.ExternalFiles.GetKeys(Keys);
-
-	//		for (const auto& File : Keys)
-	//		{
-	//			FExternAssetFileInfo CurrentFile = *CurrentVersion.ExternalFiles.Find(File);
-	//			UE_LOG(LogTemp, Warning, TEXT("new External Files filepath %s"), *CurrentFile.FilePath.FilePath);
-	//			UE_LOG(LogTemp, Warning, TEXT("new External Files filehash %s"), *CurrentFile.FileHash);
-	//			UE_LOG(LogTemp, Warning, TEXT("new External Files mountpath %s"), *CurrentFile.MountPath);
-	//		}
-	//	};
-
-	//	UE_LOG(LogTemp, Warning, TEXT("---------------------"));
-	//	VersionPrint(CurrentVersion);
-	//	UE_LOG(LogTemp, Warning, TEXT("---------------------"));
-	//	VersionPrint(BaseVersion);
-	//	UE_LOG(LogTemp, Warning, TEXT("---------------------"));
-	//}
 	FString SerializeDiffInfo =
-		FString::Printf(TEXT("%s\n%s\n"),
-			*UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(AddAssetDependInfo, ModifyAssetDependInfo, DeleteAssetDependInfo),
+		FString::Printf(
+			TEXT("%s\n%s\n"),
+			*UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(VersionDiffInfo.AddAssetDependInfo, VersionDiffInfo.ModifyAssetDependInfo, bShowDeleteAsset ? VersionDiffInfo.DeleteAssetDependInfo : FAssetDependenciesInfo{}),
 			ExportPatchSetting->IsEnableExternFilesDiff()?
-			*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(AddExternalFiles, ModifyExternalFiles, DeleteExternalFiles):
+			*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(VersionDiffInfo.AddExternalFiles, VersionDiffInfo.ModifyExternalFiles, bShowDeleteAsset ? VersionDiffInfo.DeleteExternalFiles: TArray<FExternAssetFileInfo>{}):
 			*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(ExportPatchSetting->GetAllExternFiles(), TArray<FExternAssetFileInfo>{}, TArray<FExternAssetFileInfo>{})
 		);
 	SetInformationContent(SerializeDiffInfo);
@@ -681,16 +639,23 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 				}
 				return Result;
 			};
-			auto GetSpecifyAssets = [](const TArray<FPatcherSpecifyAsset>& SpecifyAssets)->TArray<FString>
+			FAssetDependenciesInfo SpecifyDependAssets;
+
+			auto GetSpecifyAssets = [&SpecifyDependAssets](const TArray<FPatcherSpecifyAsset>& SpecifyAssets)->TArray<FString>
 			{
 				TArray<FString> result;
 				for (const auto& Assset : SpecifyAssets)
 				{
-					result.Add(Assset.Asset.GetLongPackageName());
+					FString CurrentAssetLongPackageName = Assset.Asset.GetLongPackageName();
+					result.Add(CurrentAssetLongPackageName);
+					UFLibAssetManageHelperEx::GetAssetDependencies(CurrentAssetLongPackageName, SpecifyDependAssets);
 				}
 				return result;
 			};
+
 			TArray<FString> AssetFilterPaths = GetAssetFilterPaths(Chunk.AssetIncludeFilters);
+			AssetFilterPaths.Append(GetSpecifyAssets(Chunk.IncludeSpecifyAssets));
+			AssetFilterPaths.Append(UFLibAssetManageHelperEx::GetAssetLongPackageNameByAssetDependenciesInfo(SpecifyDependAssets));
 
 			const FAssetDependenciesInfo& AddAssetsRef = DiffInfo.AddAssetDependInfo;
 			const FAssetDependenciesInfo& ModifyAssetsRef = DiffInfo.ModifyAssetDependInfo;
@@ -842,6 +807,10 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 						CurrentPakInfo.PakVersion = CurrentPakVersion;
 						PakFilesInfoMap.Add(PlatformName, CurrentPakInfo);
 					}
+				}
+				if (!Chunk.bSavePakCommands)
+				{
+					IFileManager::Get().Delete(*ChunkPakCommandSavePath);
 				}
 			}
 		}

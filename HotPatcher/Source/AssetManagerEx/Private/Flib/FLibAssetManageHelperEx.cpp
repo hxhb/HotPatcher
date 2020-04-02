@@ -276,6 +276,23 @@ void UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(const FAss
 		}
 }
 
+TArray<FString> UFLibAssetManageHelperEx::GetAssetLongPackageNameByAssetDependenciesInfo(const FAssetDependenciesInfo& InAssetDependencies)
+{
+	TArray<FString> OutAssetLongPackageName;
+	TArray<FAssetDetail> OutAssetDetails;
+	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(InAssetDependencies, OutAssetDetails);
+
+	for (const auto& Asset : OutAssetDetails)
+	{
+		FString LongPackageName;
+		if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath, LongPackageName))
+		{
+			OutAssetLongPackageName.AddUnique(LongPackageName);
+		}
+	}
+	return OutAssetLongPackageName;
+}
+
 void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 	FAssetRegistryModule& InAssetRegistryModule,
 	const FString& InTargetLongPackageName,

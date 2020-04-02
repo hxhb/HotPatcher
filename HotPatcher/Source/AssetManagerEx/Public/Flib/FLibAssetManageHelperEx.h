@@ -84,6 +84,8 @@ public:
 	// 获取FAssetDependenciesInfo中所有的FAssetDetail
 	static void GetAssetDetailsByAssetDependenciesInfo(const FAssetDependenciesInfo& InAssetDependencies,TArray<FAssetDetail>& OutAssetDetails);
 
+	static TArray<FString> GetAssetLongPackageNameByAssetDependenciesInfo(const FAssetDependenciesInfo& InAssetDependencies);
+
 	// recursive scan assets
 	static void GatherAssetDependicesInfoRecursively(
 		FAssetRegistryModule& InAssetRegistryModule,
