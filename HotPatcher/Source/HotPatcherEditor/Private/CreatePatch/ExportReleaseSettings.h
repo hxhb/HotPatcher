@@ -54,7 +54,7 @@ public:
 	{
 		return VersionId;
 	}
-	FORCEINLINE TArray<FString> GetAssetIncludeFilters()const
+	FORCEINLINE TArray<FString> GetAssetIncludeFiltersPaths()const
 	{
 		TArray<FString> Result;
 		for (const auto& Filter : AssetIncludeFilters)
@@ -66,7 +66,7 @@ public:
 		}
 		return Result;
 	}
-	FORCEINLINE TArray<FString> GetAssetIgnoreFilters()const
+	FORCEINLINE TArray<FString> GetAssetIgnoreFiltersPaths()const
 	{
 		TArray<FString> Result;
 		for (const auto& Filter : AssetIgnoreFilters)

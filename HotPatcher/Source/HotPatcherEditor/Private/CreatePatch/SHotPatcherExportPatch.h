@@ -56,8 +56,6 @@ protected:
 	void SetInformationContent(const FString& InContent)const;
 	void SetInfomationContentVisibility(EVisibility InVisibility)const;
 
-
-
 protected:
 	bool CheckSelectedAssetsCookStatus(const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets,FString& OutMsg)const;
 
@@ -71,7 +69,7 @@ protected:
 
 
 	FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion)const;
-	FProcHandle DoUnrealPak(const FString& PakCommandPath,const FString& SavePakPath, TArray<FString> UnrealPakOptions);
+	FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions,bool block=false);
 private:
 
 	// TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;

@@ -22,6 +22,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "ExportPatchSettings.generated.h"
 
+
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
 UCLASS()
 class UExportPatchSettings : public UObject
@@ -66,16 +67,18 @@ public:
 		return AllExternFiles;
 	}
 	
-	TArray<FString> GetAssetIncludeFilters()const;
-	TArray<FString> GetAssetIgnoreFilters()const;
-	FORCEINLINE TArray<FPatcherSpecifyAsset> GetIncludeSpecifyAssets()const { return IncludeSpecifyAssets; };
+	TArray<FString> GetAssetIncludeFiltersPaths()const;
+	FORCEINLINE TArray<FDirectoryPath> GetAssetIncludeFilters()const { return AssetIncludeFilters; }
+	TArray<FString> GetAssetIgnoreFiltersPaths()const;
+	FORCEINLINE TArray<FDirectoryPath> GetAssetIgnoreFilters()const { return AssetIgnoreFilters; }
+	FORCEINLINE TArray<FPatcherSpecifyAsset> GetIncludeSpecifyAssets()const { return IncludeSpecifyAssets; }
 
 	// pak command
 	TArray<FString> MakeAddExternFileToPakCommands()const;
 	// TArray<FString> GetAllExternalCookCommands()const;
 	TArray<FString> MakeAllExternDirectoryAsPakCommand()const;
 	TArray<FString> MakeAllPakCommandsByTheSetting(const FString& InPlatformName, const FPatchVersionDiff& InVersionDiff, bool bDiffExFiles = true)const;
-	bool MakeAllExternAssetAsPakCommands(const FString& InProjectDir, const FString& InPlatform, TArray<FString>& OutPakCommands)const;
+	bool MakeAllExternAssetAsPakCommands(const FString& InProjectDir, const FString& InPlatform, const TArray<FString>& PakOptions, TArray<FString>& OutPakCommands)const;
 
 	FString GetSaveAbsPath()const;
 	bool SerializePatchConfigToJsonObject(TSharedPtr<FJsonObject>& OutJsonObject)const;
@@ -106,6 +109,11 @@ public:
 	FORCEINLINE bool IsEnableExternFilesDiff()const { return bEnableExternFilesDiff; }
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 	FORCEINLINE bool IsIncludePakVersion()const { return bIncludePakVersionFile; }
+	
+	// chunk infomation
+	FORCEINLINE bool IsEnableChunk()const { return bEnableChunk; }
+	FORCEINLINE TArray<FChunkInfo> GetChunkInfos()const { return ChunkInfos; }
+
 	FORCEINLINE FString GetPakVersionFileMountPoint()const { return PakVersionFileMountPoint; }
 	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
 	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
@@ -156,10 +164,11 @@ public:
 		bool bIncludePakVersionFile;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))
 		FString PakVersionFileMountPoint;
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options")
-	//	bool bEnableChunk;
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options", meta = (EditCondition = "bEnableChunk"))
-	//	TArray<FChunkInfo> ChunkInfos;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options")
+		bool bEnableChunk;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options", meta = (EditCondition = "bEnableChunk"))
+		TArray<FChunkInfo> ChunkInfos;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<FString> UnrealPakOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")

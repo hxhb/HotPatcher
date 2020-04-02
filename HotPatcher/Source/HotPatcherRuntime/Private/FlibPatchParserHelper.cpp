@@ -733,26 +733,22 @@ bool UFlibPatchParserHelper::GetCookedShaderBytecodeFiles(const FString& InProje
 	return bRunStatus;
 }
 
-TArray<FString> UFlibPatchParserHelper::GetProjectIniFiles(const FString& InProjectDir)
+TArray<FString> UFlibPatchParserHelper::GetProjectIniFiles(const FString& InProjectDir, const FString& InPlatformName)
 {
-	TArray<FString> Resault;
 	FString ConfigFolder = FPaths::Combine(InProjectDir, TEXT("Config"));
-	if (FPaths::DirectoryExists(InProjectDir) && FPaths::DirectoryExists(ConfigFolder))
-	{
-		TArray<FString> FoundAllIniFiles;
-		IFileManager::Get().FindFiles(FoundAllIniFiles, *ConfigFolder, TEXT("ini"));
-		
-		for (const auto& IniFile:FoundAllIniFiles)
-		{
-			if(!IniFile.StartsWith(TEXT("DefaultEditor")))
-				Resault.AddUnique(FPaths::Combine(ConfigFolder, IniFile));
-		}
-	}
-	return Resault;
+	return UFlibPatchParserHelper::GetIniConfigs(ConfigFolder,InPlatformName);
+	
 }
 
-bool UFlibPatchParserHelper::ConvIniFilesToCookCommands(const FString& InEngineAbsDir,const FString& InProjectAbsDir,const FString& InProjectName, const TArray<FString>& InIniFiles, TArray<FString>& OutCommands)
+bool UFlibPatchParserHelper::ConvIniFilesToPakCommands(const FString& InEngineAbsDir,const FString& InProjectAbsDir,const FString& InProjectName, const TArray<FString>& InPakOptions, const TArray<FString>& InIniFiles, TArray<FString>& OutCommands)
 {
+	FString PakOptionsStr;
+	{
+		for (const auto& PakOption : InPakOptions)
+		{
+			PakOptionsStr += PakOption + TEXT(" ");
+		}
+	}
 	OutCommands.Reset();
 	bool bRunStatus = false;
 	if (!FPaths::DirectoryExists(InProjectAbsDir) || !FPaths::DirectoryExists(InEngineAbsDir))
@@ -799,9 +795,10 @@ bool UFlibPatchParserHelper::ConvIniFilesToCookCommands(const FString& InEngineA
 			FString IniFileNameWithExten = FString::Printf(TEXT("%s.%s"),*IniFileName,*IniExtention);
 			FString CookedIniRelativePath = FPaths::Combine(RelativePath, IniFileNameWithExten);
 			FString CookCommand = FString::Printf(
-				TEXT("\"%s\" \"%s\""),
+				TEXT("\"%s\" \"%s\" %s"),
 					*IniFile,
-					*CookedIniRelativePath
+					*CookedIniRelativePath,
+					*PakOptionsStr
 			);
 			OutCommands.AddUnique(CookCommand);
 	
@@ -811,8 +808,16 @@ bool UFlibPatchParserHelper::ConvIniFilesToCookCommands(const FString& InEngineA
 	return bRunStatus;
 }
 
-bool UFlibPatchParserHelper::ConvNotAssetFileToCookCommand(const FString& InProjectDir, const FString& InPlatformName, const FString& InCookedFile, FString& OutCommand)
+bool UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(const FString& InProjectDir, const FString& InPlatformName,const TArray<FString>& InPakOptions, const FString& InCookedFile, FString& OutCommand)
 {
+	FString PakOptionsStr;
+	{
+		for (const auto& PakOption : InPakOptions)
+		{
+			PakOptionsStr += PakOption + TEXT(" ");
+		}
+	}
+
 	bool bRunStatus = false;
 	if (FPaths::FileExists(InCookedFile))
 	{
@@ -825,9 +830,10 @@ bool UFlibPatchParserHelper::ConvNotAssetFileToCookCommand(const FString& InProj
 		);
 
 		OutCommand = FString::Printf(
-			TEXT("\"%s\" \"%s\""),
+			TEXT("\"%s\" \"%s\" %s"),
 			*InCookedFile,
-			*AssetFileRelativeCookPath
+			*AssetFileRelativeCookPath,
+			*PakOptionsStr
 		);
 		bRunStatus = true;
 	}
@@ -842,16 +848,17 @@ FString UFlibPatchParserHelper::HashStringWithSHA1(const FString &InString)
 
 }
 
-TArray<FString> UFlibPatchParserHelper::GetEngineConfigs(const FString& InPlatformName)
+
+TArray<FString> UFlibPatchParserHelper::GetIniConfigs(const FString& InSearchDir, const FString& InPlatformName)
 {
 	TArray<FString> Result;
-	const FString EngineConfigAbsDir = FPaths::ConvertRelativePathToFull(FPaths::EngineConfigDir());
+	const FString SearchConfigAbsDir = FPaths::ConvertRelativePathToFull(InSearchDir);
 
-	if (FPaths::DirectoryExists(EngineConfigAbsDir))
+	if (FPaths::DirectoryExists(SearchConfigAbsDir))
 	{
 		FFillArrayDirectoryVisitor Visitor;
-		
-		IFileManager::Get().IterateDirectory(*EngineConfigAbsDir, Visitor);
+
+		IFileManager::Get().IterateDirectory(*SearchConfigAbsDir, Visitor);
 
 		for (const auto& IniFile : Visitor.Files)
 		{
@@ -860,7 +867,7 @@ TArray<FString> UFlibPatchParserHelper::GetEngineConfigs(const FString& InPlatfo
 				Result.Add(IniFile);
 			}
 		}
-		int32 PlatformNameBeginIndex= EngineConfigAbsDir.Len() + 1;
+		int32 PlatformNameBeginIndex = SearchConfigAbsDir.Len() + 1;
 		for (const auto& PlatformIniDirectory : Visitor.Directories)
 		{
 			FString DirectoryName = UKismetStringLibrary::GetSubstring(PlatformIniDirectory, PlatformNameBeginIndex, PlatformIniDirectory.Len() - PlatformNameBeginIndex);
@@ -869,7 +876,7 @@ TArray<FString> UFlibPatchParserHelper::GetEngineConfigs(const FString& InPlatfo
 				FFillArrayDirectoryVisitor PlatformVisitor;
 
 				IFileManager::Get().IterateDirectory(*PlatformIniDirectory, PlatformVisitor);
-				
+
 				for (const auto& PlatformIni : PlatformVisitor.Files)
 				{
 					Result.Add(PlatformIni);
@@ -878,6 +885,11 @@ TArray<FString> UFlibPatchParserHelper::GetEngineConfigs(const FString& InPlatfo
 		}
 	}
 	return Result;
+}
+
+TArray<FString> UFlibPatchParserHelper::GetEngineConfigs(const FString& InPlatformName)
+{
+	return UFlibPatchParserHelper::GetIniConfigs(FPaths::EngineConfigDir() , InPlatformName);
 }
 
 TArray<FString> UFlibPatchParserHelper::GetEnabledPluginConfigs(const FString& InPlatformName)
@@ -891,33 +903,7 @@ TArray<FString> UFlibPatchParserHelper::GetEnabledPluginConfigs(const FString& I
 		if (UFLibAssetManageHelperEx::GetPluginModuleAbsDir(Plugin->GetName(), PluginAbsPath))
 		{
 			FString PluginIniPath = FPaths::Combine(PluginAbsPath, TEXT("Config"));
-			
-			if (FPaths::DirectoryExists(PluginIniPath))
-			{
-				FFillArrayDirectoryVisitor PluginIniVisitor;
-				IFileManager::Get().IterateDirectory(*PluginIniPath, PluginIniVisitor);
-
-				for (const auto& IniFile : PluginIniVisitor.Files)
-				{
-					result.AddUnique(IniFile);
-				}
-
-				for (const auto& IniDir : PluginIniVisitor.Directories)
-				{
-					FString ChildFolderName  = UKismetStringLibrary::GetSubstring(IniDir, PluginIniPath.Len(), IniDir.Len() - PluginIniPath.Len());
-					
-					if (InPlatformName.Contains(ChildFolderName))
-					{
-						FFillArrayDirectoryVisitor PluginChildIniVisitor;
-						IFileManager::Get().IterateDirectoryRecursively(*IniDir, PluginChildIniVisitor);
-						
-						for (const auto& IniFile : PluginChildIniVisitor.Files)
-						{
-							result.AddUnique(IniFile);
-						}
-					}
-				}
-			}
+			result.Append(UFlibPatchParserHelper::GetIniConfigs(PluginIniPath, InPlatformName));
 			
 		}
 	}
@@ -982,6 +968,112 @@ TArray<FAssetDetail> UFlibPatchParserHelper::ParserExFilesInfoAsAssetDetailInfo(
 
 	return result;
 
+}
+
+
+TArray<FString> UFlibPatchParserHelper::GetIniFilesByPakInternalInfo(const FPakInternalInfo& InPakInternalInfo, const FString& PlatformName)
+{
+	TArray<FString> Inis;
+	if (InPakInternalInfo.bIncludeEngineIni)
+	{
+		Inis.Append(UFlibPatchParserHelper::GetEngineConfigs(PlatformName));
+	}
+	if (InPakInternalInfo.bIncludePluginIni)
+	{
+		Inis.Append(UFlibPatchParserHelper::GetEnabledPluginConfigs(PlatformName));
+	}
+	if (InPakInternalInfo.bIncludeProjectIni)
+	{
+		Inis.Append(UFlibPatchParserHelper::GetProjectIniFiles(FPaths::ProjectDir(), PlatformName));
+	}
+
+	return Inis;
+}
+
+
+TArray<FString> UFlibPatchParserHelper::GetCookedFilesByPakInternalInfo(const FPakInternalInfo& InPakInternalInfo, const FString& PlatformName)
+{
+	TArray<FString> SearchAssetList;
+
+	FString ProjectDir = FPaths::ProjectDir();
+	FString ProjectName = UFlibPatchParserHelper::GetProjectName();
+
+	if (InPakInternalInfo.bIncludeAssetRegistry)
+	{
+		FString AssetRegistryCookCommand;
+		if (UFlibPatchParserHelper::GetCookedAssetRegistryFiles(ProjectDir, UFlibPatchParserHelper::GetProjectName(), PlatformName, AssetRegistryCookCommand))
+		{
+			SearchAssetList.AddUnique(AssetRegistryCookCommand);
+		}
+	}
+
+	if (InPakInternalInfo.bIncludeGlobalShaderCache)
+	{
+		TArray<FString> GlobalShaderCacheList = UFlibPatchParserHelper::GetCookedGlobalShaderCacheFiles(ProjectDir, PlatformName);
+		if (!!GlobalShaderCacheList.Num())
+		{
+			SearchAssetList.Append(GlobalShaderCacheList);
+		}
+	}
+
+	if (InPakInternalInfo.bIncludeShaderBytecode)
+	{
+		TArray<FString> ShaderByteCodeFiles;
+
+		if (UFlibPatchParserHelper::GetCookedShaderBytecodeFiles(ProjectDir, ProjectName, PlatformName, true, true, ShaderByteCodeFiles) &&
+			!!ShaderByteCodeFiles.Num()
+			)
+		{
+			SearchAssetList.Append(ShaderByteCodeFiles);
+		}
+	}
+	return SearchAssetList;
+}
+
+
+TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(const FPakInternalInfo& InPakInternalInfo, const FString& PlatformName, const TArray<FString>& InPakOptions)
+{
+	TArray<FString> OutPakCommands;
+	TArray<FString> AllNeedPakInternalCookedFiles;
+
+	FString ProjectDir = FPaths::ProjectDir();
+	AllNeedPakInternalCookedFiles.Append(UFlibPatchParserHelper::GetCookedFilesByPakInternalInfo(InPakInternalInfo, PlatformName));
+
+	// combine as cook commands
+	for (const auto& AssetFile : AllNeedPakInternalCookedFiles)
+	{
+		FString CurrentCommand;
+		if (UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(ProjectDir, PlatformName,InPakOptions, AssetFile, CurrentCommand))
+		{
+			OutPakCommands.AddUnique(CurrentCommand);
+		}
+	}
+
+	FString EngineAbsDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
+
+	auto CombineInPakCommands = [&OutPakCommands, &ProjectDir, &EngineAbsDir, &PlatformName,&InPakOptions](const TArray<FString>& IniFiles)
+	{
+		TArray<FString> result;
+
+		TArray<FString> IniPakCommmands;
+		UFlibPatchParserHelper::ConvIniFilesToPakCommands(
+			EngineAbsDir,
+			ProjectDir,
+			UFlibPatchParserHelper::GetProjectName(),
+			InPakOptions,
+			IniFiles,
+			IniPakCommmands
+		);
+		if (!!IniPakCommmands.Num())
+		{
+			OutPakCommands.Append(IniPakCommmands);
+		}
+	};
+
+	TArray<FString> AllNeedPakIniFiles = UFlibPatchParserHelper::GetIniFilesByPakInternalInfo(InPakInternalInfo, PlatformName);
+	CombineInPakCommands(AllNeedPakIniFiles);
+
+	return OutPakCommands;
 }
 
 bool UFlibPatchParserHelper::SerializeExAssetFileInfoToJsonObject(const FExternAssetFileInfo& InExFileInfo, TSharedPtr<FJsonObject>& OutJsonObject)

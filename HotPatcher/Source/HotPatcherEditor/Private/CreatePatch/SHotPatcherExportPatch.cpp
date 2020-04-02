@@ -13,6 +13,7 @@
 #include "Widgets/Layout/SSeparator.h"
 #include "Widgets/Text/SMultiLineEditableText.h"
 
+#include "Kismet/KismetStringLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Misc/SecureHash.h"
 #include "Misc/ScopedSlowTask.h"
@@ -176,8 +177,8 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		ExportPatchSetting->GetVersionId(),
 		BaseVersion.VersionId,
 		FDateTime::UtcNow().ToString(),
-		ExportPatchSetting->GetAssetIncludeFilters(),
-		ExportPatchSetting->GetAssetIgnoreFilters(),
+		ExportPatchSetting->GetAssetIncludeFiltersPaths(),
+		ExportPatchSetting->GetAssetIgnoreFiltersPaths(),
 		ExportPatchSetting->GetIncludeSpecifyAssets(),
 		ExportPatchSetting->GetAllExternFiles(true),
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
@@ -249,7 +250,7 @@ bool SHotPatcherExportPatch::CanDiff()const
 	{
 		bool bHasBase = !ExportPatchSetting->GetBaseVersion().IsEmpty() && FPaths::FileExists(ExportPatchSetting->GetBaseVersion());
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
+		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFiltersPaths().Num();
 		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
 
 		bCanDiff = bHasBase && bHasVersionId && (bHasFilter || bHasSpecifyAssets);
@@ -310,7 +311,7 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 		else
 			bHasBase = true;
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
+		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFiltersPaths().Num();
 		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
 		bool bHasExternFiles = !!ExportPatchSetting->GetAddExternFiles().Num();
 		bool bHasExDirs = !!ExportPatchSetting->GetAddExternDirectory().Num();
@@ -476,16 +477,11 @@ bool SHotPatcherExportPatch::SavePatchDiffJson(const FHotPatcherVersion& InSaveV
 }
 
 
-FProcHandle SHotPatcherExportPatch::DoUnrealPak(const FString& PakCommandPath, const FString& SavePakPath, TArray<FString> UnrealPakOptions)
+FProcHandle SHotPatcherExportPatch::DoUnrealPak(TArray<FString> UnrealPakOptions, bool block)
 {
 	FString UnrealPakBinary = UFlibPatchParserHelper::GetUnrealPakBinary();
 
-	FString CommandLine = FString::Printf(
-		TEXT("%s -create=%s"),
-		*(TEXT("\"") + SavePakPath + TEXT("\"")),
-		*(TEXT("\"") + PakCommandPath + TEXT("\""))
-	);
-
+	FString CommandLine;
 	for (const auto& Option : UnrealPakOptions)
 	{
 		CommandLine.Append(FString::Printf(TEXT(" %s"), *Option));
@@ -494,7 +490,16 @@ FProcHandle SHotPatcherExportPatch::DoUnrealPak(const FString& PakCommandPath, c
 	// create UnrealPak process
 
 	uint32 *ProcessID = NULL;
-	return FPlatformProcess::CreateProc(*UnrealPakBinary, *CommandLine, true, false, false, ProcessID, 0, NULL, NULL, NULL);
+	FProcHandle ProcHandle = FPlatformProcess::CreateProc(*UnrealPakBinary, *CommandLine, true, false, false, ProcessID, 0, NULL, NULL, NULL);
+
+	if (ProcHandle.IsValid())
+	{
+		if (block)
+		{
+			FPlatformProcess::WaitForProc(ProcHandle);
+		}
+	}
+	return ProcHandle;
 }
 
 
@@ -609,7 +614,8 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		return FReply::Handled();
 	}
 
-	float AmountOfWorkProgress = 2.f * ExportPatchSetting->GetPakTargetPlatforms().Num() + 4.0f;
+	int32 ChunkNum = ExportPatchSetting->IsEnableChunk() ? ExportPatchSetting->GetChunkInfos().Num() : 1;
+	float AmountOfWorkProgress = 2.f * (ExportPatchSetting->GetPakTargetPlatforms().Num() * ChunkNum) + 4.0f;
 	FScopedSlowTask UnrealPakSlowTask(AmountOfWorkProgress);
 	UnrealPakSlowTask.MakeDialog();
 
@@ -619,53 +625,225 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 
 	// package all selected platform
 	TMap<FString,FPakFileInfo> PakFilesInfoMap;
-	for(const auto& PlatformName :ExportPatchSetting->GetPakTargetPlatformNames())
+
+	bool bEnableChunk = ExportPatchSetting->IsEnableChunk();
+
+	TArray<FChunkInfo> PakChunks;
+	if (bEnableChunk)
 	{
-		// Update Progress Dialog
+		PakChunks = ExportPatchSetting->GetChunkInfos();
+	}
+	else
+	{
+		FChunkInfo SingleChunk;
+		SingleChunk.ChunkName = TEXT("Single");
+		SingleChunk.bMonolithic = false;
+		SingleChunk.AssetIncludeFilters = ExportPatchSetting->GetAssetIncludeFilters();
+		SingleChunk.IncludeSpecifyAssets = ExportPatchSetting->GetIncludeSpecifyAssets();
+		SingleChunk.AddExternDirectoryToPak = ExportPatchSetting->GetAddExternDirectory();
+		SingleChunk.AddExternFileToPak = ExportPatchSetting->GetAddExternFiles();
+		SingleChunk.InternalFiles.bIncludeAssetRegistry = ExportPatchSetting->IsIncludeAssetRegistry();
+		SingleChunk.InternalFiles.bIncludeGlobalShaderCache = ExportPatchSetting->IsIncludeGlobalShaderCache();
+		SingleChunk.InternalFiles.bIncludeShaderBytecode = ExportPatchSetting->IsIncludeGlobalShaderCache();
+		SingleChunk.InternalFiles.bIncludeEngineIni = ExportPatchSetting->IsIncludeEngineIni();
+		SingleChunk.InternalFiles.bIncludePluginIni = ExportPatchSetting->IsIncludePluginIni();
+		SingleChunk.InternalFiles.bIncludeProjectIni = ExportPatchSetting->IsIncludeProjectIni();
+		PakChunks.Add(SingleChunk);
+	}
+
+	auto CollectPakCommandsByChunk = [](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName,const TArray<FString>& PakOptions)->TArray<FString>
+	{
+		FString PakOptionsStr;
 		{
-			FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPakCommands", "Generating UnrealPak Commands of {0} Platform."), FText::FromString(PlatformName));
-			UnrealPakSlowTask.EnterProgressFrame(1.0, Dialog);
-		}
-
-		FString SavePakCommandPath = UExportPatchSettings::GetPakCommandsSaveToPath(CurrentVersionSavePath, PlatformName, CurrentVersion);
-
-		SavePakCommands(PlatformName, VersionDiffInfo, SavePakCommandPath);
-		
-		// Update SlowTask Progress
-		{
-			FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Pak list of {0} Platform."), FText::FromString(PlatformName));
-			UnrealPakSlowTask.EnterProgressFrame(1.0, Dialog);
-		}
-
-		// create UnrealPak.exe create .pak file
-		{
-			FString SavePakFilePath = FPaths::Combine(
-				CurrentVersionSavePath,
-				PlatformName,
-				FString::Printf(TEXT("%s_%s_001_P.pak"), *CurrentVersion.VersionId, *PlatformName)
-			);
-
-			FProcHandle ProcessHandle = DoUnrealPak(SavePakCommandPath, SavePakFilePath, ExportPatchSetting->GetUnrealPakOptions());
-			FPlatformProcess::WaitForProc(ProcessHandle);
-
-			if (FPaths::FileExists(SavePakFilePath))
+			for (const auto& Param : PakOptions)
 			{
-				FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
-				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SavePakFilePath);
-				
-				FPakFileInfo CurrentPakInfo;
-				if (UFlibPatchParserHelper::GetPakFileInfo(SavePakFilePath, CurrentPakInfo))
-				{
-					CurrentPakInfo.PakVersion = CurrentPakVersion;
-					PakFilesInfoMap.Add(PlatformName,CurrentPakInfo);
-				}
+				PakOptionsStr += TEXT(" ") + Param;
 			}
 		}
 
-		// is save PakList?
-		if (!ExportPatchSetting->IsSavePakList() && FPaths::FileExists(SavePakCommandPath))
+		FString ProjectDir = FPaths::ProjectDir();
+
+		TArray<FString> PakCommands;
+		PakCommands.Append(UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(Chunk.InternalFiles, PlatformName,PakOptions));
+		
+		// Collect Chunk Assets
 		{
-			IFileManager::Get().Delete(*SavePakCommandPath);
+			FAssetDependenciesInfo ChunkAssets;
+			auto GetAssetFilterPaths = [](const TArray<FDirectoryPath>& InFilters)->TArray<FString>
+			{
+				TArray<FString> Result;
+				for (const auto& Filter : InFilters)
+				{
+					if (!Filter.Path.IsEmpty())
+					{
+						Result.AddUnique(Filter.Path);
+					}
+				}
+				return Result;
+			};
+			auto GetSpecifyAssets = [](const TArray<FPatcherSpecifyAsset>& SpecifyAssets)->TArray<FString>
+			{
+				TArray<FString> result;
+				for (const auto& Assset : SpecifyAssets)
+				{
+					result.Add(Assset.Asset.GetLongPackageName());
+				}
+				return result;
+			};
+			TArray<FString> AssetFilterPaths = GetAssetFilterPaths(Chunk.AssetIncludeFilters);
+
+			const FAssetDependenciesInfo& AddAssetsRef = DiffInfo.AddAssetDependInfo;
+			const FAssetDependenciesInfo& ModifyAssetsRef = DiffInfo.ModifyAssetDependInfo;
+
+			auto CollectChunkAssets = [](const FAssetDependenciesInfo& SearchBase, const TArray<FString>& SearchFilters)
+			{
+				FAssetDependenciesInfo ResultAssetDependInfos;
+				for (const auto& SearchItem : SearchFilters)
+				{
+					if(SearchItem.IsEmpty())
+						continue;
+
+					FString SearchModuleName;
+					int32 findedPos = SearchItem.Find(TEXT("/"), ESearchCase::IgnoreCase, ESearchDir::FromStart, 1);
+					if (findedPos != INDEX_NONE)
+					{
+						SearchModuleName = UKismetStringLibrary::GetSubstring(SearchItem, 1, findedPos - 1);
+					}
+					else
+					{
+						SearchModuleName = UKismetStringLibrary::GetSubstring(SearchItem, 1, SearchItem.Len() - 1);
+					}
+
+					if (!SearchModuleName.IsEmpty() && (SearchBase.mDependencies.Contains(SearchModuleName)))
+					{
+						ResultAssetDependInfos.mDependencies.Add(SearchModuleName, FAssetDependenciesDetail{});
+
+						FAssetDependenciesDetail& ResultAssetDetails = *ResultAssetDependInfos.mDependencies.Find(SearchModuleName);
+
+						const FAssetDependenciesDetail& SearchBaseModule = *SearchBase.mDependencies.Find(SearchModuleName);
+
+						TArray<FString> AllAssetKeys;
+						SearchBaseModule.mDependAssetDetails.GetKeys(AllAssetKeys);
+
+						for (const auto& KeyItem : AllAssetKeys)
+						{
+							if (KeyItem.StartsWith(SearchItem))
+							{
+								const FAssetDetail& FindedAsset = *SearchBaseModule.mDependAssetDetails.Find(KeyItem);
+								ResultAssetDetails.mDependAssetDetails.Add(KeyItem,FindedAsset);
+							}
+						}
+					}
+				}
+				return ResultAssetDependInfos;
+			};
+			ChunkAssets = UFLibAssetManageHelperEx::CombineAssetDependencies(CollectChunkAssets(AddAssetsRef, AssetFilterPaths), CollectChunkAssets(ModifyAssetsRef, AssetFilterPaths));
+		
+			TArray<FString> AssetsPakCommands;
+			UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(ProjectDir, PlatformName, ChunkAssets, PakOptions, AssetsPakCommands);
+
+			PakCommands.Append(AssetsPakCommands);
+		}
+
+		// Collect Extern Files
+		{
+			TArray<FExternAssetFileInfo> AllFiles;
+
+			TSet<FString> AllSearchFileFilter;
+			{
+				for (const auto& Directory : Chunk.AddExternDirectoryToPak)
+				{
+					if(!Directory.DirectoryPath.Path.IsEmpty())
+					AllSearchFileFilter.Add(Directory.DirectoryPath.Path);
+				}
+
+				for (const auto& File : Chunk.AddExternFileToPak)
+				{
+					AllSearchFileFilter.Add(File.FilePath.FilePath);
+				}
+			}
+
+			TArray<FExternAssetFileInfo> AddFilesRef = DiffInfo.AddExternalFiles;
+			TArray<FExternAssetFileInfo> ModifyFilesRef = DiffInfo.ModifyExternalFiles;
+
+			auto CollectExtenFilesLambda = [&AllFiles](const TArray<FExternAssetFileInfo>& SearchBase,const TSet<FString>& Filters)
+			{
+				for (const auto& Filter : Filters)
+				{
+					for (const auto& SearchItem : SearchBase)
+					{
+						if (SearchItem.FilePath.FilePath.StartsWith(Filter))
+						{
+							AllFiles.Add(SearchItem);
+						}
+					}
+				}
+			};
+			CollectExtenFilesLambda(AddFilesRef, AllSearchFileFilter);
+			CollectExtenFilesLambda(ModifyFilesRef, AllSearchFileFilter);
+
+			for (const auto& CollectFile : AllFiles)
+			{
+				PakCommands.AddUnique(
+					FString::Printf(TEXT("\"%s\" \"%s\""), *CollectFile.FilePath.FilePath, *CollectFile.MountPath)
+				);
+			}
+		}
+		return PakCommands;
+	};
+
+	TArray<FString> PakOptions;
+	for(const auto& PlatformName :ExportPatchSetting->GetPakTargetPlatformNames())
+	{
+
+		// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
+		for (const auto& Chunk : PakChunks)
+		{
+			// Update Progress Dialog
+			{
+				FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPakCommands", "Generating UnrealPak Commands of {0} Platform Chunk {1}."), FText::FromString(PlatformName),FText::FromString(Chunk.ChunkName));
+				UnrealPakSlowTask.EnterProgressFrame(1.0, Dialog);
+			}
+			TArray<FString> ChunkPakCommands = CollectPakCommandsByChunk(VersionDiffInfo, Chunk, PlatformName, PakOptions);
+			FString ChunkSaveBasePath = FPaths::Combine(ExportPatchSetting->SavePath.Path, CurrentVersion.VersionId,PlatformName);
+
+			FString ChunkPakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, FString::Printf(TEXT("%s_%s_%s.txt"), *CurrentVersion.VersionId, *PlatformName, *Chunk.ChunkName));
+			FString ChunkPakSavePath = FPaths::Combine(ChunkSaveBasePath, FString::Printf(TEXT("%s_%s_%s.pak"), *CurrentVersion.VersionId, *PlatformName, *Chunk.ChunkName));
+
+			bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(ChunkPakCommands, *ChunkPakCommandSavePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+
+			if(PakCommandSaveStatus)
+			{
+				TArray<FString> UnrealPakOptions = ExportPatchSetting->GetUnrealPakOptions();
+				UnrealPakOptions.Add(
+					FString::Printf(
+						TEXT("%s -create=%s"),
+						*(TEXT("\"") + ChunkPakSavePath + TEXT("\"")),
+						*(TEXT("\"") + ChunkPakCommandSavePath + TEXT("\""))
+					)
+				);
+				// Update SlowTask Progress
+				{
+					FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Pak list of {0} Platform Chunk {1}."), FText::FromString(PlatformName),FText::FromString(Chunk.ChunkName));
+					UnrealPakSlowTask.EnterProgressFrame(1.0, Dialog);
+				}
+
+				FProcHandle ProcessHandle = DoUnrealPak(UnrealPakOptions, true);
+				// FPlatformProcess::WaitForProc(ProcessHandle);
+
+				if (FPaths::FileExists(ChunkPakSavePath))
+				{
+					FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
+					UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, ChunkPakSavePath);
+
+					FPakFileInfo CurrentPakInfo;
+					if (UFlibPatchParserHelper::GetPakFileInfo(ChunkPakSavePath, CurrentPakInfo))
+					{
+						CurrentPakInfo.PakVersion = CurrentPakVersion;
+						PakFilesInfoMap.Add(PlatformName, CurrentPakInfo);
+					}
+				}
+			}
 		}
 	}
 

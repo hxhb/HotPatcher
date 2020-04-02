@@ -133,7 +133,7 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 	if (ExportReleaseSettings)
 	{
 		bool bHasVersion = !ExportReleaseSettings->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFilters().Num();
+		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFiltersPaths().Num();
 		bool bHasSpecifyAssets = !!ExportReleaseSettings->GetSpecifyAssets().Num();
 		bool bHasSavePath = !(ExportReleaseSettings->GetSavePath().IsEmpty());
 
@@ -148,8 +148,8 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 			ExportReleaseSettings->GetVersionId(),
 			TEXT(""),
 			FDateTime::UtcNow().ToString(),
-			ExportReleaseSettings->GetAssetIncludeFilters(),
-			ExportReleaseSettings->GetAssetIgnoreFilters(),
+			ExportReleaseSettings->GetAssetIncludeFiltersPaths(),
+			ExportReleaseSettings->GetAssetIgnoreFiltersPaths(),
 			ExportReleaseSettings->GetSpecifyAssets(),
 			ExportReleaseSettings->GetAllExternFiles(true),
 			ExportReleaseSettings->IsIncludeHasRefAssetsOnly()

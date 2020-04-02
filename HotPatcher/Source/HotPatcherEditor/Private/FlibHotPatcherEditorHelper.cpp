@@ -32,11 +32,11 @@ void UFlibHotPatcherEditorHelper::CreateSaveFileNotify(const FText& InMsg, const
 	const FString HyperLinkText = InSavedFile;
 	Info.Hyperlink = FSimpleDelegate::CreateStatic(
 		[](FString SourceFilePath)
-	{
-		FPlatformProcess::ExploreFolder(*SourceFilePath);
-	},
+		{
+			FPlatformProcess::ExploreFolder(*SourceFilePath);
+		},
 		HyperLinkText
-		);
+	);
 	Info.HyperlinkText = FText::FromString(HyperLinkText);
 
 	FSlateNotificationManager::Get().AddNotification(Info)->SetCompletionState(SNotificationItem::CS_Success);

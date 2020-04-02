@@ -2,6 +2,7 @@
 
 #pragma once
 //project header
+#include "FChunkInfo.h"
 #include "FPakFileInfo.h"
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "FHotPatcherVersion.h"
@@ -104,16 +105,18 @@ public:
 		static bool GetCookedShaderBytecodeFiles(const FString& InProjectAbsDir, const FString& InProjectName, const FString& InPlatformName,bool InGalobalBytecode,bool InProjectBytecode, TArray<FString>& OutFiles);
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool ConvIniFilesToCookCommands(const FString& InEngineAbsDir, const FString& InProjectAbsDir, const FString& InProjectName, const TArray<FString>& InIniFiles, TArray<FString>& OutCommands);
+		static bool ConvIniFilesToPakCommands(const FString& InEngineAbsDir, const FString& InProjectAbsDir, const FString& InProjectName, const TArray<FString>& InPakOptions, const TArray<FString>& InIniFiles, TArray<FString>& OutCommands);
 		UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool ConvNotAssetFileToCookCommand(const FString& InProjectDir,const FString& InPlatformName,const FString& InCookedFile,FString& OutCommand);
+		static bool ConvNotAssetFileToPakCommand(const FString& InProjectDir,const FString& InPlatformName, const TArray<FString>& InPakOptions,const FString& InCookedFile,FString& OutCommand);
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 	static FString HashStringWithSHA1(const FString &InString);
 
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static TArray<FString> GetIniConfigs(const FString& InSearchDir, const FString& InPlatformName);
 	// return abslute path
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-	static TArray<FString> GetProjectIniFiles(const FString& InProjectDir);
+	static TArray<FString> GetProjectIniFiles(const FString& InProjectDir,const FString& InPlatformName);
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 	static TArray<FString> GetEngineConfigs(const FString& InPlatformName);
@@ -128,4 +131,11 @@ public:
 
 	static TArray<FExternAssetFileInfo> ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys);
 	static TArray<FAssetDetail> ParserExFilesInfoAsAssetDetailInfo(const TArray<FExternAssetFileInfo>& InExFiles);
+
+	// get Engine / Project / Plugin ini files
+	static TArray<FString> GetIniFilesByPakInternalInfo(const FPakInternalInfo& InPakInternalInfo,const FString& PlatformName);
+	// get AssetRegistry.bin / GlobalShaderCache / ShaderBytecode
+	static TArray<FString> GetCookedFilesByPakInternalInfo(const FPakInternalInfo& InPakInternalInfo, const FString& PlatformName);
+
+	static TArray<FString> GetPakCommandsFromInternalInfo(const FPakInternalInfo& InPakInternalInfo, const FString& PlatformName,const TArray<FString>& InPakOptions);
 };

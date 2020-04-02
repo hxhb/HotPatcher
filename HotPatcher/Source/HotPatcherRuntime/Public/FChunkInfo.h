@@ -9,21 +9,12 @@
 #include "Engine/EngineTypes.h"
 #include "FChunkInfo.generated.h"
 
+// 引擎的数据和ini等配置文件
 USTRUCT(BlueprintType)
-struct FChunkInfo
+struct FPakInternalInfo
 {
 	GENERATED_USTRUCT_BODY()
 public:
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-		FString ChunkName;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))
-		TArray<FDirectoryPath> AssetIncludeFilters;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets")
-		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern")
-		TArray<FExternAssetFileInfo> AddExternFileToPak;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern")
-		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked")
 		bool bIncludeAssetRegistry;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked")
@@ -37,4 +28,36 @@ public:
 		bool bIncludePluginIni;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini")
 		bool bIncludeProjectIni;
+};
+
+USTRUCT(BlueprintType)
+struct FChunkInfo
+{
+	GENERATED_USTRUCT_BODY()
+public:
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+		FString ChunkName;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		bool bMonolithic;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))
+		TArray<FDirectoryPath> AssetIncludeFilters;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets")
+		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern")
+		TArray<FExternAssetFileInfo> AddExternFileToPak;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern")
+		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Internal")
+		FPakInternalInfo InternalFiles;
+};
+
+USTRUCT(BlueprintType)
+struct FChunkPakCommand
+{
+	GENERATED_USTRUCT_BODY()
+public:
+	TArray<FString> AsssetPakCommands;
+	TArray<FString> ExternFilePakCommands;
+	TArray<FString> InternalPakCommands;
 };

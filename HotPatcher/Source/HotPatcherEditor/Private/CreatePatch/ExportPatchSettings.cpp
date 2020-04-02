@@ -9,7 +9,6 @@
 UExportPatchSettings::UExportPatchSettings()
 	: bEnableExternFilesDiff(true),UnrealPakOptions{ TEXT("-compress") }
 {
-	
 	PakVersionFileMountPoint = FPaths::Combine(
 		TEXT("../../../"),
 		UFlibPatchParserHelper::GetProjectName(),
@@ -17,7 +16,7 @@ UExportPatchSettings::UExportPatchSettings()
 	);
 }
 
-TArray<FString> UExportPatchSettings::GetAssetIncludeFilters()const
+TArray<FString> UExportPatchSettings::GetAssetIncludeFiltersPaths()const
 {
 	TArray<FString> Result;
 	for (const auto& Filter : AssetIncludeFilters)
@@ -30,7 +29,7 @@ TArray<FString> UExportPatchSettings::GetAssetIncludeFilters()const
 	return Result;
 }
 
-TArray<FString> UExportPatchSettings::GetAssetIgnoreFilters()const
+TArray<FString> UExportPatchSettings::GetAssetIgnoreFiltersPaths()const
 {
 	TArray<FString> Result;
 	for (const auto& Filter : AssetIgnoreFilters)
@@ -160,8 +159,8 @@ TArray<FString> UExportPatchSettings::MakeAllPakCommandsByTheSetting(const FStri
 		// and all extern file
 		{
 			TArray<FString> AllExternPakCommand;
-
-			this->MakeAllExternAssetAsPakCommands(ProjectDir, InPlatformName, AllExternPakCommand);
+			TArray<FString> PakOptions;
+			this->MakeAllExternAssetAsPakCommands(ProjectDir, InPlatformName, AllExternPakCommand,PakOptions);
 
 			if (!!AllExternPakCommand.Num())
 			{
@@ -223,8 +222,8 @@ FHotPatcherVersion UExportPatchSettings::GetNewPatchVersionInfo() const
 		this->GetVersionId(),
 		BaseVersionInfo.VersionId,
 		FDateTime::UtcNow().ToString(),
-		this->GetAssetIncludeFilters(),
-		this->GetAssetIgnoreFilters(),
+		this->GetAssetIncludeFiltersPaths(),
+		this->GetAssetIgnoreFiltersPaths(),
 		this->GetIncludeSpecifyAssets(),
 		this->GetAllExternFiles(true),
 		this->IsIncludeHasRefAssetsOnly()
@@ -256,95 +255,23 @@ FString UExportPatchSettings::GetCurrentVersionSavePath() const
 	return CurrentVersionSavePath;
 }
 
-bool UExportPatchSettings::MakeAllExternAssetAsPakCommands(const FString& InProjectDir, const FString& InPlatform, TArray<FString>& OutCookCommands)const
+bool UExportPatchSettings::MakeAllExternAssetAsPakCommands(const FString& InProjectDir, const FString& InPlatform, const TArray<FString>& PakOptions, TArray<FString>& OutCookCommands)const
 {
 	OutCookCommands.Reset();
-	TArray<FString> SearchAssetList;
 
-	FString ProjectName = UFlibPatchParserHelper::GetProjectName();
+	FPakInternalInfo InternalAssets;
+	InternalAssets.bIncludeAssetRegistry = IsIncludeAssetRegistry();
+	InternalAssets.bIncludeGlobalShaderCache = IsIncludeGlobalShaderCache();
+	InternalAssets.bIncludeShaderBytecode = IsIncludeShaderBytecode();
 
-	if (IsIncludeAssetRegistry())
-	{
-		FString AssetRegistryCookCommand;
-		if (UFlibPatchParserHelper::GetCookedAssetRegistryFiles(InProjectDir, UFlibPatchParserHelper::GetProjectName(), InPlatform, AssetRegistryCookCommand))
-		{
-		SearchAssetList.AddUnique(AssetRegistryCookCommand);
-		}
-	}
+	InternalAssets.bIncludeEngineIni = IsIncludeEngineIni();
+	InternalAssets.bIncludePluginIni = IsIncludePluginIni();
+	InternalAssets.bIncludeProjectIni = IsIncludeProjectIni();
 
-	if (IsIncludeGlobalShaderCache())
-	{
-		TArray<FString> GlobalShaderCacheList = UFlibPatchParserHelper::GetCookedGlobalShaderCacheFiles(InProjectDir, InPlatform);
-		if (!!GlobalShaderCacheList.Num())
-		{
-		SearchAssetList.Append(GlobalShaderCacheList);
-		}
-	}
-
-	if (IsIncludeShaderBytecode())
-	{
-		TArray<FString> ShaderByteCodeFiles;
-		
-		if (UFlibPatchParserHelper::GetCookedShaderBytecodeFiles(InProjectDir, ProjectName, InPlatform, true, true, ShaderByteCodeFiles) &&
-			!!ShaderByteCodeFiles.Num()
-		)
-		{
-			SearchAssetList.Append(ShaderByteCodeFiles);
-		}
-	}
-
-	// combine as cook commands
-	{
-		for (const auto& AssetFile:SearchAssetList)
-		{
-		FString CurrentCommand;
-		if (UFlibPatchParserHelper::ConvNotAssetFileToCookCommand(InProjectDir, InPlatform, AssetFile, CurrentCommand))
-		{
-			OutCookCommands.AddUnique(CurrentCommand);
-		}
-		}
-	}
-
-	FString EngineAbsDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
-
-	auto CombineIniCookCommands = [&OutCookCommands,&InProjectDir,&EngineAbsDir,&InPlatform](const TArray<FString>& IniFiles)
-	{
-		TArray<FString> result;
-
-		TArray<FString> IniCookCommmands;
-		UFlibPatchParserHelper::ConvIniFilesToCookCommands(
-			EngineAbsDir,
-			InProjectDir,
-			UFlibPatchParserHelper::GetProjectName(),
-			IniFiles,
-			IniCookCommmands
-		);
-		if (!!IniCookCommmands.Num())
-		{
-			OutCookCommands.Append(IniCookCommmands);
-		}
-		
-	};
-
-	if (IsIncludeProjectIni())
-	{
-		TArray<FString> ProjectIniFiles = UFlibPatchParserHelper::GetProjectIniFiles(InProjectDir);
-		CombineIniCookCommands(ProjectIniFiles);
-
-	}
-	if (IsIncludeEngineIni())
-	{
-		TArray<FString> EngineIniFiles = UFlibPatchParserHelper::GetEngineConfigs(InPlatform);
-		CombineIniCookCommands(EngineIniFiles);
-	}
-	if (IsIncludePluginIni())
-	{
-		TArray<FString> PluginIniFiles = UFlibPatchParserHelper::GetEnabledPluginConfigs(InPlatform);
-		CombineIniCookCommands(PluginIniFiles);
-	}
+	OutCookCommands = UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(InternalAssets, InPlatform, PakOptions);
 
 	return true;
-	}
+}
 
 bool UExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObject>& OutJsonObject)const
 {
