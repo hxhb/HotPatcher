@@ -567,7 +567,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 
 	FHotPatcherVersion CurrentVersion = UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
 		ExportPatchSetting->GetVersionId(),
-		BaseVersion.BaseVersionId,
+		BaseVersion.VersionId,
 		FDateTime::UtcNow().ToString(),
 		UFlibPatchParserHelper::GetDirectoryPaths(NewVersionChunk.AssetIncludeFilters),
 		UFlibPatchParserHelper::GetDirectoryPaths(NewVersionChunk.AssetIgnoreFilters),
