@@ -567,10 +567,10 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 
 	FHotPatcherVersion CurrentVersion = UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
 		ExportPatchSetting->GetVersionId(),
-		ExportPatchSetting->VersionId,
+		BaseVersion.BaseVersionId,
 		FDateTime::UtcNow().ToString(),
 		UFlibPatchParserHelper::GetDirectoryPaths(NewVersionChunk.AssetIncludeFilters),
-		UFlibPatchParserHelper::GetDirectoryPaths(ExportPatchSetting->GetAssetIgnoreFilters()),
+		UFlibPatchParserHelper::GetDirectoryPaths(NewVersionChunk.AssetIgnoreFilters),
 		NewVersionChunk.IncludeSpecifyAssets,
 		UFlibPatchParserHelper::GetExternFilesFromChunk(NewVersionChunk,true),
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
@@ -611,6 +611,8 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 
 	auto CollectPakCommandsByChunk = [](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName,const TArray<FString>& PakOptions)->TArray<FString>
 	{
+		FChunkAssets ChunkAssets;
+
 		FString PakOptionsStr;
 		{
 			for (const auto& Param : PakOptions)
@@ -624,6 +626,18 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		TArray<FString> PakCommands;
 		PakCommands.Append(UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(Chunk.InternalFiles, PlatformName,PakOptions));
 		
+		// external files
+		{
+			TArray<FString> AllInternalFiles = UFlibPatchParserHelper::GetCookedFilesByPakInternalInfo(Chunk.InternalFiles, PlatformName);
+
+			for (const auto& FilePath : AllInternalFiles)
+			{
+				FExternAssetFileInfo CurrentFile;
+				if (UFlibPatchParserHelper::ConvNotAssetFileToExFile(FPaths::ProjectDir(), PlatformName, FilePath, CurrentFile))
+					ChunkAssets.AllExFiles.Add(CurrentFile);
+			}
+		}
+
 		// Collect Chunk Assets
 		{
 			
@@ -707,9 +721,10 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 				return ResultAssetDependInfos;
 			};
 			
-			FAssetDependenciesInfo ChunkAssets = UFLibAssetManageHelperEx::CombineAssetDependencies(CollectChunkAssets(AddAssetsRef, AssetFilterPaths), CollectChunkAssets(ModifyAssetsRef, AssetFilterPaths));
+			ChunkAssets.Asssets = UFLibAssetManageHelperEx::CombineAssetDependencies(CollectChunkAssets(AddAssetsRef, AssetFilterPaths), CollectChunkAssets(ModifyAssetsRef, AssetFilterPaths));
+			
 			TArray<FString> AssetsPakCommands;
-			UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(ProjectDir, PlatformName, ChunkAssets, PakOptions, AssetsPakCommands);
+			UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(ProjectDir, PlatformName, ChunkAssets.Asssets, PakOptions, AssetsPakCommands);
 
 			PakCommands.Append(AssetsPakCommands);
 		}
@@ -751,6 +766,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			CollectExtenFilesLambda(AddFilesRef, AllSearchFileFilter);
 			CollectExtenFilesLambda(ModifyFilesRef, AllSearchFileFilter);
 
+			ChunkAssets.AllExFiles.Append(AllFiles);
 			for (const auto& CollectFile : AllFiles)
 			{
 				PakCommands.AddUnique(
@@ -760,6 +776,107 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		}
 		return PakCommands;
 	};
+
+	// Check Chunk
+	if(ExportPatchSetting->IsEnableChunk())
+	{
+		FString TotalMsg;
+		FChunkInfo TotalChunk = UFlibPatchParserHelper::CombineChunkInfos(ExportPatchSetting->GetChunkInfos());
+
+		FHotPatcherVersion TotalChunkVersion = UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
+			CurrentVersion.VersionId,
+			CurrentVersion.BaseVersionId,
+			CurrentVersion.Date,
+			UFlibPatchParserHelper::GetDirectoryPaths(TotalChunk.AssetIncludeFilters),
+			UFlibPatchParserHelper::GetDirectoryPaths(TotalChunk.AssetIgnoreFilters),
+			TotalChunk.IncludeSpecifyAssets,
+			UFlibPatchParserHelper::GetExternFilesFromChunk(TotalChunk, true),
+			ExportPatchSetting->IsIncludeHasRefAssetsOnly()
+		);
+
+		FPatchVersionDiff ChunkDiffInfo = DiffPatchVersion(TotalChunkVersion, CurrentVersion);
+
+		TArray<FString> AllUnselectedAssets;
+
+		auto CollectUnselectedChunkAsset = [&AllUnselectedAssets](const FPatchVersionDiff& InDiff)
+		{
+			auto CollectUnselectedByAssetDep=[&AllUnselectedAssets](const FAssetDependenciesInfo& InAssetDep)
+			{
+				TArray<FAssetDetail> OutAssetDetails;
+				UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(InAssetDep, OutAssetDetails);
+
+				for (const auto& AssetDetail : OutAssetDetails)
+				{
+					AllUnselectedAssets.AddUnique(AssetDetail.mPackagePath);
+				}
+			};
+
+			CollectUnselectedByAssetDep(InDiff.AddAssetDependInfo);
+			CollectUnselectedByAssetDep(InDiff.ModifyAssetDependInfo);
+		};
+
+		CollectUnselectedChunkAsset(ChunkDiffInfo);
+
+		TArray<FString> AllUnselectedExFiles;
+
+		auto CollectUnselectedExFiles = [&AllUnselectedExFiles](const TArray<FExternAssetFileInfo>& InFiles)
+		{
+			for (const auto& File : InFiles)
+			{
+				AllUnselectedExFiles.AddUnique(File.FilePath.FilePath);
+			}
+		};
+
+		CollectUnselectedExFiles(ChunkDiffInfo.AddExternalFiles);
+		CollectUnselectedExFiles(ChunkDiffInfo.ModifyExternalFiles);
+
+		TArray<FString> UnSelectedInternalFiles;
+		// collect internal files
+		{
+//#define CHECK_PROPERTY(Chunk1,Chunk2,PropertyName,Result)\
+//			if (Chunk1.InternalFiles.PropertyName != Chunk2.InternalFiles.PropertyName)\ 
+//			{\
+//				Result.Add(TEXT(#PropertyName)); \
+//			}
+//
+//
+//			CHECK_PROPERTY(NewVersionChunk, TotalChunk, bIncludeAssetRegistry, UnSelectedExFiles);
+//			CHECK_PROPERTY(NewVersionChunk, TotalChunk, bIncludeGlobalShaderCache, UnSelectedExFiles);
+//			CHECK_PROPERTY(NewVersionChunk, TotalChunk, bIncludeShaderBytecode, UnSelectedExFiles);
+//			CHECK_PROPERTY(NewVersionChunk, TotalChunk, bIncludeEngineIni, UnSelectedExFiles);
+//			CHECK_PROPERTY(NewVersionChunk, TotalChunk, bIncludePluginIni, UnSelectedExFiles);
+//			CHECK_PROPERTY(NewVersionChunk, TotalChunk, bIncludeProjectIni, UnSelectedExFiles);
+
+			if (NewVersionChunk.InternalFiles.bIncludeAssetRegistry != TotalChunk.InternalFiles.bIncludeAssetRegistry) { UnSelectedInternalFiles.Add(TEXT("bIncludeAssetRegistry")); };
+			if (NewVersionChunk.InternalFiles.bIncludeGlobalShaderCache != TotalChunk.InternalFiles.bIncludeGlobalShaderCache) { UnSelectedInternalFiles.Add(TEXT("bIncludeGlobalShaderCache")); };
+			if (NewVersionChunk.InternalFiles.bIncludeShaderBytecode != TotalChunk.InternalFiles.bIncludeShaderBytecode) { UnSelectedInternalFiles.Add(TEXT("bIncludeShaderBytecode")); };
+			if (NewVersionChunk.InternalFiles.bIncludeEngineIni != TotalChunk.InternalFiles.bIncludeEngineIni) { UnSelectedInternalFiles.Add(TEXT("bIncludeEngineIni")); };
+			if (NewVersionChunk.InternalFiles.bIncludePluginIni != TotalChunk.InternalFiles.bIncludePluginIni) { UnSelectedInternalFiles.Add(TEXT("bIncludePluginIni")); };
+			if (NewVersionChunk.InternalFiles.bIncludeProjectIni != TotalChunk.InternalFiles.bIncludeProjectIni) { UnSelectedInternalFiles.Add(TEXT("bIncludeProjectIni")); };
+		}
+
+		auto ChunkCheckerMsg = [&TotalMsg](const FString& Category,const TArray<FString>& InAssetList)
+		{
+			if (!!InAssetList.Num())
+			{
+				TotalMsg.Append(FString::Printf(TEXT("\n%s:\n"),*Category));
+				for (const auto& Asset : InAssetList)
+				{
+					TotalMsg.Append(FString::Printf(TEXT("%s\n"), *Asset));
+				}
+			}
+		};
+		ChunkCheckerMsg(TEXT("Unreal Asset"), AllUnselectedAssets);
+		ChunkCheckerMsg(TEXT("External Files"), AllUnselectedExFiles);
+		ChunkCheckerMsg(TEXT("Internal Files"), UnSelectedInternalFiles);
+
+
+		if (!TotalMsg.IsEmpty())
+		{
+			ShowMsg(FString::Printf(TEXT("Unselect in Chunk:\n%s"), *TotalMsg));
+			return FReply::Handled();
+		}
+	}
 
 	TArray<FString> PakOptions;
 	for(const auto& PlatformName :ExportPatchSetting->GetPakTargetPlatformNames())

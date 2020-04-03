@@ -3,6 +3,7 @@
 #include "FExternAssetFileInfo.h"
 #include "FExternDirectoryInfo.h"
 #include "FPatcherSpecifyAsset.h"
+#include "Struct/AssetManager/FAssetDependenciesInfo.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -16,18 +17,18 @@ struct FPakInternalInfo
 	GENERATED_USTRUCT_BODY()
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked")
-		bool bIncludeAssetRegistry;
+		bool bIncludeAssetRegistry = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked")
-		bool bIncludeGlobalShaderCache;
+		bool bIncludeGlobalShaderCache = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked")
-		bool bIncludeShaderBytecode;
+		bool bIncludeShaderBytecode = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini")
-		bool bIncludeEngineIni;
+		bool bIncludeEngineIni = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini")
-		bool bIncludePluginIni;
+		bool bIncludePluginIni = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini")
-		bool bIncludeProjectIni;
+		bool bIncludeProjectIni = false;
 };
 
 USTRUCT(BlueprintType)
@@ -38,11 +39,13 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 		FString ChunkName;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		bool bMonolithic;
+		bool bMonolithic = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		bool bSavePakCommands;
+		bool bSavePakCommands = false;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))
+		TArray<FDirectoryPath> AssetIgnoreFilters;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern")
@@ -62,4 +65,14 @@ public:
 	TArray<FString> AsssetPakCommands;
 	TArray<FString> ExternFilePakCommands;
 	TArray<FString> InternalPakCommands;
+};
+
+
+USTRUCT(BlueprintType)
+struct FChunkAssets
+{
+	GENERATED_USTRUCT_BODY()
+public:
+	FAssetDependenciesInfo Asssets;
+	TArray<FExternAssetFileInfo> AllExFiles;
 };

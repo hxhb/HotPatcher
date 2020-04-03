@@ -106,9 +106,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool ConvIniFilesToPakCommands(const FString& InEngineAbsDir, const FString& InProjectAbsDir, const FString& InProjectName, const TArray<FString>& InPakOptions, const TArray<FString>& InIniFiles, TArray<FString>& OutCommands);
-		UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool ConvNotAssetFileToPakCommand(const FString& InProjectDir,const FString& InPlatformName, const TArray<FString>& InPakOptions,const FString& InCookedFile,FString& OutCommand);
-
+	static bool ConvNotAssetFileToExFile(const FString& InProjectDir, const FString& InPlatformName, const FString& InCookedFile, FExternAssetFileInfo& OutExFile);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 	static FString HashStringWithSHA1(const FString &InString);
 
@@ -143,11 +143,11 @@ public:
 	// get AssetRegistry.bin / GlobalShaderCache / ShaderBytecode
 	static TArray<FString> GetCookedFilesByPakInternalInfo(const FPakInternalInfo& InPakInternalInfo, const FString& PlatformName);
 
+	static TArray<FExternAssetFileInfo> GetInternalFilesAsExFiles(const FPakInternalInfo& InPakInternalInfo, const FString& InPlatformName);
 	static TArray<FString> GetPakCommandsFromInternalInfo(const FPakInternalInfo& InPakInternalInfo, const FString& PlatformName,const TArray<FString>& InPakOptions);
 	
 	static FChunkInfo CombineChunkInfo(const FChunkInfo& R, const FChunkInfo& L);
 	static FChunkInfo CombineChunkInfos(const TArray<FChunkInfo>& Chunks);
-
 
 	static TArray<FString> GetDirectoryPaths(const TArray<FDirectoryPath>& InDirectoryPath);
 	

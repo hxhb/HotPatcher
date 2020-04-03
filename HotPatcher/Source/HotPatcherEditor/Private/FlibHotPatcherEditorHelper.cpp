@@ -702,6 +702,7 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(const UExport
 	Chunk.ChunkName = InPatchSetting->VersionId;
 	Chunk.bMonolithic = false;
 	Chunk.AssetIncludeFilters = InPatchSetting->GetAssetIncludeFilters();
+	Chunk.AssetIgnoreFilters = InPatchSetting->GetAssetIgnoreFilters();
 	Chunk.IncludeSpecifyAssets = InPatchSetting->GetIncludeSpecifyAssets();
 	Chunk.AddExternDirectoryToPak = InPatchSetting->GetAddExternDirectory();
 	Chunk.AddExternFileToPak = InPatchSetting->GetAddExternFiles();

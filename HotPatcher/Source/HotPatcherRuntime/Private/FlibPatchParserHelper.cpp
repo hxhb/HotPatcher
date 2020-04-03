@@ -840,6 +840,27 @@ bool UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(const FString& InProje
 	return bRunStatus;
 }
 
+bool UFlibPatchParserHelper::ConvNotAssetFileToExFile(const FString& InProjectDir, const FString& InPlatformName, const FString& InCookedFile, FExternAssetFileInfo& OutExFile)
+{
+	bool bRunStatus = false;
+	if (FPaths::FileExists(InCookedFile))
+	{
+		FString CookPlatformAbsPath = FPaths::Combine(InProjectDir, TEXT("Saved/Cooked"), InPlatformName);
+
+		FString RelativePath = UKismetStringLibrary::GetSubstring(InCookedFile, CookPlatformAbsPath.Len() + 1, InCookedFile.Len() - CookPlatformAbsPath.Len());
+		FString AssetFileRelativeCookPath = FString::Printf(
+			TEXT("../../../%s"),
+			*RelativePath
+		);
+
+		OutExFile.FilePath.FilePath = InCookedFile;
+		OutExFile.MountPath = AssetFileRelativeCookPath;
+		OutExFile.GetFileHash();
+		bRunStatus = true;
+	}
+	return bRunStatus;
+}
+
 FString UFlibPatchParserHelper::HashStringWithSHA1(const FString &InString)
 {
 	FSHAHash StringHash;
@@ -1031,6 +1052,25 @@ TArray<FString> UFlibPatchParserHelper::GetCookedFilesByPakInternalInfo(const FP
 }
 
 
+TArray<FExternAssetFileInfo> UFlibPatchParserHelper::GetInternalFilesAsExFiles(const FPakInternalInfo& InPakInternalInfo, const FString& InPlatformName)
+{
+	TArray<FExternAssetFileInfo> resultFiles;
+
+	TArray<FString> AllNeedPakInternalCookedFiles;
+
+	FString ProjectDir = FPaths::ProjectDir();
+	AllNeedPakInternalCookedFiles.Append(UFlibPatchParserHelper::GetCookedFilesByPakInternalInfo(InPakInternalInfo, InPlatformName));
+
+	for (const auto& File : AllNeedPakInternalCookedFiles)
+	{
+		FExternAssetFileInfo CurrentFile;
+		UFlibPatchParserHelper::ConvNotAssetFileToExFile(FPaths::ProjectDir(),InPlatformName, File, CurrentFile);
+		resultFiles.Add(CurrentFile);
+	}
+
+	return resultFiles;
+}
+
 TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(const FPakInternalInfo& InPakInternalInfo, const FString& PlatformName, const TArray<FString>& InPakOptions)
 {
 	TArray<FString> OutPakCommands;
@@ -1083,6 +1123,7 @@ FChunkInfo UFlibPatchParserHelper::CombineChunkInfo(const FChunkInfo& R, const F
 
 	result.ChunkName = FString::Printf(TEXT("%s_%s"), *R.ChunkName, *L.ChunkName);
 	result.AssetIncludeFilters.Append(L.AssetIncludeFilters);
+	result.AssetIgnoreFilters.Append(L.AssetIgnoreFilters);
 	result.IncludeSpecifyAssets.Append(L.IncludeSpecifyAssets);
 	result.AddExternDirectoryToPak.Append(L.AddExternDirectoryToPak);
 	result.AddExternFileToPak.Append(L.AddExternFileToPak);
