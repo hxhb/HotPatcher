@@ -686,5 +686,32 @@ class UExportReleaseSettings* UFlibHotPatcherEditorHelper::DeserializeReleaseCon
 #undef DESERIAL_BOOL_BY_NAME
 #undef DESERIAL_STRING_BY_NAME
 	return InNewSetting;
+
+}
+
+#include "Kismet/KismetSystemLibrary.h"
+
+FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(const UExportPatchSettings* InPatchSetting)
+{
+	FChunkInfo Chunk;
+	if (!(InPatchSetting && UKismetSystemLibrary::IsValid(InPatchSetting)))
+	{
+		return Chunk;
+	}
+	
+	Chunk.ChunkName = InPatchSetting->VersionId;
+	Chunk.bMonolithic = false;
+	Chunk.AssetIncludeFilters = InPatchSetting->GetAssetIncludeFilters();
+	Chunk.IncludeSpecifyAssets = InPatchSetting->GetIncludeSpecifyAssets();
+	Chunk.AddExternDirectoryToPak = InPatchSetting->GetAddExternDirectory();
+	Chunk.AddExternFileToPak = InPatchSetting->GetAddExternFiles();
+	Chunk.InternalFiles.bIncludeAssetRegistry = InPatchSetting->IsIncludeAssetRegistry();
+	Chunk.InternalFiles.bIncludeGlobalShaderCache = InPatchSetting->IsIncludeGlobalShaderCache();
+	Chunk.InternalFiles.bIncludeShaderBytecode = InPatchSetting->IsIncludeGlobalShaderCache();
+	Chunk.InternalFiles.bIncludeEngineIni = InPatchSetting->IsIncludeEngineIni();
+	Chunk.InternalFiles.bIncludePluginIni = InPatchSetting->IsIncludePluginIni();
+	Chunk.InternalFiles.bIncludeProjectIni = InPatchSetting->IsIncludeProjectIni();
+
+	return Chunk;
 }
 

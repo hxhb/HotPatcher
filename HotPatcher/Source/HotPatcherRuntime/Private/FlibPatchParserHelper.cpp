@@ -1076,6 +1076,75 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(const FPa
 	return OutPakCommands;
 }
 
+
+FChunkInfo UFlibPatchParserHelper::CombineChunkInfo(const FChunkInfo& R, const FChunkInfo& L)
+{
+	FChunkInfo result = R;
+
+	result.ChunkName = FString::Printf(TEXT("%s_%s"), *R.ChunkName, *L.ChunkName);
+	result.AssetIncludeFilters.Append(L.AssetIncludeFilters);
+	result.IncludeSpecifyAssets.Append(L.IncludeSpecifyAssets);
+	result.AddExternDirectoryToPak.Append(L.AddExternDirectoryToPak);
+	result.AddExternFileToPak.Append(L.AddExternFileToPak);
+
+#define COMBINE_INTERNAL_FILES(InResult,Left,Right,PropertyName)\
+	InResult.InternalFiles.PropertyName = Left.InternalFiles.PropertyName || Right.InternalFiles.PropertyName;
+
+	COMBINE_INTERNAL_FILES(result, L, R, bIncludeAssetRegistry);
+	COMBINE_INTERNAL_FILES(result, L, R, bIncludeGlobalShaderCache);
+	COMBINE_INTERNAL_FILES(result, L, R, bIncludeShaderBytecode);
+	COMBINE_INTERNAL_FILES(result, L, R, bIncludeEngineIni);
+	COMBINE_INTERNAL_FILES(result, L, R, bIncludePluginIni);
+	COMBINE_INTERNAL_FILES(result, L, R, bIncludeProjectIni);
+
+	return result;
+}
+
+FChunkInfo UFlibPatchParserHelper::CombineChunkInfos(const TArray<FChunkInfo>& Chunks)
+{
+	FChunkInfo result;
+	
+	for (const auto& Chunk : Chunks)
+	{
+		result = UFlibPatchParserHelper::CombineChunkInfo(result, Chunk);
+	}
+	return result;
+}
+
+TArray<FString> UFlibPatchParserHelper::GetDirectoryPaths(const TArray<FDirectoryPath>& InDirectoryPath)
+{
+	TArray<FString> Result;
+	for (const auto& Filter : InDirectoryPath)
+	{
+		if (!Filter.Path.IsEmpty())
+		{
+			Result.AddUnique(Filter.Path);
+		}
+	}
+	return Result;
+}
+
+TArray<FExternAssetFileInfo> UFlibPatchParserHelper::GetExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash)
+{
+	TArray<FExternAssetFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(InChunk.AddExternDirectoryToPak);
+
+	for (auto& ExFile : InChunk.AddExternFileToPak)
+	{
+		if (!AllExternFiles.Contains(ExFile))
+		{
+			AllExternFiles.Add(ExFile);
+		}
+	}
+	if (bCalcHash)
+	{
+		for (auto& ExFile : AllExternFiles)
+		{
+			ExFile.GenerateFileHash();
+		}
+	}
+	return AllExternFiles;
+}
+
 bool UFlibPatchParserHelper::SerializeExAssetFileInfoToJsonObject(const FExternAssetFileInfo& InExFileInfo, TSharedPtr<FJsonObject>& OutJsonObject)
 {
 	bool bRunStatus = false;

@@ -563,7 +563,20 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	}
 
 	UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(true);
-	FHotPatcherVersion CurrentVersion = ExportPatchSetting->GetNewPatchVersionInfo();
+	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting);
+
+	FHotPatcherVersion CurrentVersion = UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
+		ExportPatchSetting->GetVersionId(),
+		ExportPatchSetting->VersionId,
+		FDateTime::UtcNow().ToString(),
+		UFlibPatchParserHelper::GetDirectoryPaths(NewVersionChunk.AssetIncludeFilters),
+		UFlibPatchParserHelper::GetDirectoryPaths(ExportPatchSetting->GetAssetIgnoreFilters()),
+		NewVersionChunk.IncludeSpecifyAssets,
+		UFlibPatchParserHelper::GetExternFilesFromChunk(NewVersionChunk,true),
+		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
+	);
+
+	// FHotPatcherVersion CurrentVersion = ExportPatchSetting->GetNewPatchVersionInfo();
 	FString CurrentVersionSavePath = ExportPatchSetting->GetCurrentVersionSavePath();
 	FPatchVersionDiff VersionDiffInfo = DiffPatchVersion(BaseVersion, CurrentVersion);
 
@@ -593,20 +606,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	}
 	else
 	{
-		FChunkInfo SingleChunk;
-		SingleChunk.ChunkName = TEXT("Single");
-		SingleChunk.bMonolithic = false;
-		SingleChunk.AssetIncludeFilters = ExportPatchSetting->GetAssetIncludeFilters();
-		SingleChunk.IncludeSpecifyAssets = ExportPatchSetting->GetIncludeSpecifyAssets();
-		SingleChunk.AddExternDirectoryToPak = ExportPatchSetting->GetAddExternDirectory();
-		SingleChunk.AddExternFileToPak = ExportPatchSetting->GetAddExternFiles();
-		SingleChunk.InternalFiles.bIncludeAssetRegistry = ExportPatchSetting->IsIncludeAssetRegistry();
-		SingleChunk.InternalFiles.bIncludeGlobalShaderCache = ExportPatchSetting->IsIncludeGlobalShaderCache();
-		SingleChunk.InternalFiles.bIncludeShaderBytecode = ExportPatchSetting->IsIncludeGlobalShaderCache();
-		SingleChunk.InternalFiles.bIncludeEngineIni = ExportPatchSetting->IsIncludeEngineIni();
-		SingleChunk.InternalFiles.bIncludePluginIni = ExportPatchSetting->IsIncludePluginIni();
-		SingleChunk.InternalFiles.bIncludeProjectIni = ExportPatchSetting->IsIncludeProjectIni();
-		PakChunks.Add(SingleChunk);
+		PakChunks.Add(NewVersionChunk);
 	}
 
 	auto CollectPakCommandsByChunk = [](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName,const TArray<FString>& PakOptions)->TArray<FString>
@@ -626,7 +626,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		
 		// Collect Chunk Assets
 		{
-			FAssetDependenciesInfo ChunkAssets;
+			
 			auto GetAssetFilterPaths = [](const TArray<FDirectoryPath>& InFilters)->TArray<FString>
 			{
 				TArray<FString> Result;
@@ -660,9 +660,11 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			const FAssetDependenciesInfo& AddAssetsRef = DiffInfo.AddAssetDependInfo;
 			const FAssetDependenciesInfo& ModifyAssetsRef = DiffInfo.ModifyAssetDependInfo;
 
-			auto CollectChunkAssets = [](const FAssetDependenciesInfo& SearchBase, const TArray<FString>& SearchFilters)
+
+			auto CollectChunkAssets = [](const FAssetDependenciesInfo& SearchBase, const TArray<FString>& SearchFilters)->FAssetDependenciesInfo
 			{
 				FAssetDependenciesInfo ResultAssetDependInfos;
+				
 				for (const auto& SearchItem : SearchFilters)
 				{
 					if(SearchItem.IsEmpty())
@@ -681,9 +683,8 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 
 					if (!SearchModuleName.IsEmpty() && (SearchBase.mDependencies.Contains(SearchModuleName)))
 					{
-						ResultAssetDependInfos.mDependencies.Add(SearchModuleName, FAssetDependenciesDetail{});
-
-						FAssetDependenciesDetail& ResultAssetDetails = *ResultAssetDependInfos.mDependencies.Find(SearchModuleName);
+						if(!ResultAssetDependInfos.mDependencies.Contains(SearchModuleName))
+							ResultAssetDependInfos.mDependencies.Add(SearchModuleName, FAssetDependenciesDetail(SearchModuleName, TMap<FString, FAssetDetail>{}));
 
 						const FAssetDependenciesDetail& SearchBaseModule = *SearchBase.mDependencies.Find(SearchModuleName);
 
@@ -694,16 +695,19 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 						{
 							if (KeyItem.StartsWith(SearchItem))
 							{
-								const FAssetDetail& FindedAsset = *SearchBaseModule.mDependAssetDetails.Find(KeyItem);
-								ResultAssetDetails.mDependAssetDetails.Add(KeyItem,FindedAsset);
+								FAssetDetail FindedAsset = *SearchBaseModule.mDependAssetDetails.Find(KeyItem);
+								if (!ResultAssetDependInfos.mDependencies.Find(SearchModuleName)->mDependAssetDetails.Contains(KeyItem))
+								{
+									ResultAssetDependInfos.mDependencies.Find(SearchModuleName)->mDependAssetDetails.Add(KeyItem, FindedAsset);
+								}
 							}
 						}
 					}
 				}
 				return ResultAssetDependInfos;
 			};
-			ChunkAssets = UFLibAssetManageHelperEx::CombineAssetDependencies(CollectChunkAssets(AddAssetsRef, AssetFilterPaths), CollectChunkAssets(ModifyAssetsRef, AssetFilterPaths));
-		
+			
+			FAssetDependenciesInfo ChunkAssets = UFLibAssetManageHelperEx::CombineAssetDependencies(CollectChunkAssets(AddAssetsRef, AssetFilterPaths), CollectChunkAssets(ModifyAssetsRef, AssetFilterPaths));
 			TArray<FString> AssetsPakCommands;
 			UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(ProjectDir, PlatformName, ChunkAssets, PakOptions, AssetsPakCommands);
 
@@ -760,7 +764,6 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	TArray<FString> PakOptions;
 	for(const auto& PlatformName :ExportPatchSetting->GetPakTargetPlatformNames())
 	{
-
 		// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
 		for (const auto& Chunk : PakChunks)
 		{

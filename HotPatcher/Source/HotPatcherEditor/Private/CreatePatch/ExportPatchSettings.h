@@ -85,8 +85,6 @@ public:
 	bool SerializePatchConfigToString(FString& OutSerializedStr)const;
 	void DeserializePatchConfig(const FString& InContent);
 
-	
-
 	FORCEINLINE FString GetVersionId()const { return VersionId; }
 	FORCEINLINE FString GetBaseVersion()const { return BaseVersion.FilePath; }
 	FORCEINLINE TArray<FString> GetUnrealPakOptions()const { return UnrealPakOptions; }

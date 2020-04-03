@@ -144,4 +144,12 @@ public:
 	static TArray<FString> GetCookedFilesByPakInternalInfo(const FPakInternalInfo& InPakInternalInfo, const FString& PlatformName);
 
 	static TArray<FString> GetPakCommandsFromInternalInfo(const FPakInternalInfo& InPakInternalInfo, const FString& PlatformName,const TArray<FString>& InPakOptions);
+	
+	static FChunkInfo CombineChunkInfo(const FChunkInfo& R, const FChunkInfo& L);
+	static FChunkInfo CombineChunkInfos(const TArray<FChunkInfo>& Chunks);
+
+
+	static TArray<FString> GetDirectoryPaths(const TArray<FDirectoryPath>& InDirectoryPath);
+	
+	static TArray<FExternAssetFileInfo> GetExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash = false);
 };

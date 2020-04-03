@@ -50,5 +50,6 @@ public:
 	static bool SerializeReleaseConfigToJsonObject(const class UExportReleaseSettings*const InReleaseSetting, TSharedPtr<FJsonObject>& OutJsonObject);
 	static class UExportReleaseSettings* DeserializeReleaseConfig(class UExportReleaseSettings* InNewSetting, const FString& InContent);
 
+	static FChunkInfo MakeChunkFromPatchSettings(const UExportPatchSettings* InPatchSetting);
 
 };
