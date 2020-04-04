@@ -1186,6 +1186,395 @@ TArray<FExternAssetFileInfo> UFlibPatchParserHelper::GetExternFilesFromChunk(con
 	return AllExternFiles;
 }
 
+FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk)
+{
+	FChunkAssetDescribe ChunkAssetDescribe;
+	// Collect Chunk Assets
+	{
+
+		auto GetAssetFilterPaths = [](const TArray<FDirectoryPath>& InFilters)->TArray<FString>
+		{
+			TArray<FString> Result;
+			for (const auto& Filter : InFilters)
+			{
+				if (!Filter.Path.IsEmpty())
+				{
+					Result.AddUnique(Filter.Path);
+				}
+			}
+			return Result;
+		};
+		FAssetDependenciesInfo SpecifyDependAssets;
+
+		auto GetSpecifyAssets = [&SpecifyDependAssets](const TArray<FPatcherSpecifyAsset>& SpecifyAssets)->TArray<FString>
+		{
+			TArray<FString> result;
+			for (const auto& Assset : SpecifyAssets)
+			{
+				FString CurrentAssetLongPackageName = Assset.Asset.GetLongPackageName();
+				result.Add(CurrentAssetLongPackageName);
+				if (Assset.bAnalysisAssetDependencies)
+				{
+					UFLibAssetManageHelperEx::GetAssetDependencies(CurrentAssetLongPackageName, SpecifyDependAssets);
+				}
+			}
+			return result;
+		};
+
+		TArray<FString> AssetFilterPaths = GetAssetFilterPaths(Chunk.AssetIncludeFilters);
+		AssetFilterPaths.Append(GetSpecifyAssets(Chunk.IncludeSpecifyAssets));
+		AssetFilterPaths.Append(UFLibAssetManageHelperEx::GetAssetLongPackageNameByAssetDependenciesInfo(SpecifyDependAssets));
+
+		const FAssetDependenciesInfo& AddAssetsRef = DiffInfo.AddAssetDependInfo;
+		const FAssetDependenciesInfo& ModifyAssetsRef = DiffInfo.ModifyAssetDependInfo;
+
+
+		auto CollectChunkAssets = [](const FAssetDependenciesInfo& SearchBase, const TArray<FString>& SearchFilters)->FAssetDependenciesInfo
+		{
+			FAssetDependenciesInfo ResultAssetDependInfos;
+
+			for (const auto& SearchItem : SearchFilters)
+			{
+				if (SearchItem.IsEmpty())
+					continue;
+
+				FString SearchModuleName;
+				int32 findedPos = SearchItem.Find(TEXT("/"), ESearchCase::IgnoreCase, ESearchDir::FromStart, 1);
+				if (findedPos != INDEX_NONE)
+				{
+					SearchModuleName = UKismetStringLibrary::GetSubstring(SearchItem, 1, findedPos - 1);
+				}
+				else
+				{
+					SearchModuleName = UKismetStringLibrary::GetSubstring(SearchItem, 1, SearchItem.Len() - 1);
+				}
+
+				if (!SearchModuleName.IsEmpty() && (SearchBase.mDependencies.Contains(SearchModuleName)))
+				{
+					if (!ResultAssetDependInfos.mDependencies.Contains(SearchModuleName))
+						ResultAssetDependInfos.mDependencies.Add(SearchModuleName, FAssetDependenciesDetail(SearchModuleName, TMap<FString, FAssetDetail>{}));
+
+					const FAssetDependenciesDetail& SearchBaseModule = *SearchBase.mDependencies.Find(SearchModuleName);
+
+					TArray<FString> AllAssetKeys;
+					SearchBaseModule.mDependAssetDetails.GetKeys(AllAssetKeys);
+
+					for (const auto& KeyItem : AllAssetKeys)
+					{
+						if (KeyItem.StartsWith(SearchItem))
+						{
+							FAssetDetail FindedAsset = *SearchBaseModule.mDependAssetDetails.Find(KeyItem);
+							if (!ResultAssetDependInfos.mDependencies.Find(SearchModuleName)->mDependAssetDetails.Contains(KeyItem))
+							{
+								ResultAssetDependInfos.mDependencies.Find(SearchModuleName)->mDependAssetDetails.Add(KeyItem, FindedAsset);
+							}
+						}
+					}
+				}
+			}
+			return ResultAssetDependInfos;
+		};
+
+		ChunkAssetDescribe.Assets = UFLibAssetManageHelperEx::CombineAssetDependencies(CollectChunkAssets(AddAssetsRef, AssetFilterPaths), CollectChunkAssets(ModifyAssetsRef, AssetFilterPaths));
+	}
+
+	// Collect Extern Files
+	{
+		TArray<FExternAssetFileInfo> AllFiles;
+
+		TSet<FString> AllSearchFileFilter;
+		{
+			for (const auto& Directory : Chunk.AddExternDirectoryToPak)
+			{
+				if (!Directory.DirectoryPath.Path.IsEmpty())
+					AllSearchFileFilter.Add(Directory.DirectoryPath.Path);
+			}
+
+			for (const auto& File : Chunk.AddExternFileToPak)
+			{
+				AllSearchFileFilter.Add(File.FilePath.FilePath);
+			}
+		}
+
+		TArray<FExternAssetFileInfo> AddFilesRef = DiffInfo.AddExternalFiles;
+		TArray<FExternAssetFileInfo> ModifyFilesRef = DiffInfo.ModifyExternalFiles;
+
+		auto CollectExtenFilesLambda = [&AllFiles](const TArray<FExternAssetFileInfo>& SearchBase, const TSet<FString>& Filters)
+		{
+			for (const auto& Filter : Filters)
+			{
+				for (const auto& SearchItem : SearchBase)
+				{
+					if (SearchItem.FilePath.FilePath.StartsWith(Filter))
+					{
+						AllFiles.Add(SearchItem);
+					}
+				}
+			}
+		};
+		CollectExtenFilesLambda(AddFilesRef, AllSearchFileFilter);
+		CollectExtenFilesLambda(ModifyFilesRef, AllSearchFileFilter);
+
+		ChunkAssetDescribe.AllExFiles.Append(AllFiles);
+	}
+
+	ChunkAssetDescribe.InternalFiles = Chunk.InternalFiles;
+
+	return ChunkAssetDescribe;
+}
+
+
+TArray<FString> UFlibPatchParserHelper::CollectPakCommandsByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)
+{
+	auto CollectPakCommandsByChunkLambda = [](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)->TArray<FString>
+	{
+		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(DiffInfo,Chunk);
+
+		FString PakOptionsStr;
+		{
+			for (const auto& Param : PakOptions)
+			{
+				PakOptionsStr += TEXT(" ") + Param;
+			}
+		}
+
+		TArray<FString> PakCommands;
+
+		// Collect Chunk Assets
+		{
+			FString ProjectDir = FPaths::ProjectDir();
+			TArray<FString> AssetsPakCommands;
+			UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(ProjectDir, PlatformName, ChunkAssetsDescrible.Assets, PakOptions, AssetsPakCommands);
+
+			PakCommands.Append(AssetsPakCommands);
+		}
+
+		// Collect Extern Files
+		{
+			
+			for (const auto& CollectFile : ChunkAssetsDescrible.AllExFiles)
+			{
+				PakCommands.AddUnique(
+					FString::Printf(TEXT("\"%s\" \"%s\""), *CollectFile.FilePath.FilePath, *CollectFile.MountPath)
+				);
+			}
+		}
+		// internal files
+		PakCommands.Append(UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(ChunkAssetsDescrible.InternalFiles, PlatformName, PakOptions));
+		return PakCommands;
+	};
+
+	return CollectPakCommandsByChunkLambda(DiffInfo, Chunk, PlatformName, PakOptions);
+}
+
+FPatchVersionDiff UFlibPatchParserHelper::DiffPatchVersion(const FHotPatcherVersion& Base, const FHotPatcherVersion& New)
+{
+	FPatchVersionDiff VersionDiffInfo;
+	FAssetDependenciesInfo BaseVersionAssetDependInfo = Base.AssetInfo;
+	FAssetDependenciesInfo CurrentVersionAssetDependInfo = New.AssetInfo;
+
+	UFlibPatchParserHelper::DiffVersionAssets(
+		CurrentVersionAssetDependInfo,
+		BaseVersionAssetDependInfo,
+		VersionDiffInfo.AddAssetDependInfo,
+		VersionDiffInfo.ModifyAssetDependInfo,
+		VersionDiffInfo.DeleteAssetDependInfo
+	);
+
+	UFlibPatchParserHelper::DiffVersionExFiles(
+		New,
+		Base,
+		VersionDiffInfo.AddExternalFiles,
+		VersionDiffInfo.ModifyExternalFiles,
+		VersionDiffInfo.DeleteExternalFiles
+	);
+
+	return VersionDiffInfo;
+}
+
+FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
+	const FString& InVersionId,
+	const FString& InBaseVersion,
+	const FString& InDate,
+	const TArray<FString>& InIncludeFilter,
+	const TArray<FString>& InIgnoreFilter,
+	const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
+	const TArray<FExternAssetFileInfo>& InAllExternFiles,
+	bool InIncludeHasRefAssetsOnly
+)
+{
+	FHotPatcherVersion ExportVersion;
+	{
+		ExportVersion.VersionId = InVersionId;
+		ExportVersion.Date = InDate;
+		ExportVersion.BaseVersionId = InBaseVersion;
+	}
+
+
+	// add Include Filter
+	{
+		TArray<FString> AllIncludeFilter;
+		for (const auto& Filter : InIncludeFilter)
+		{
+			AllIncludeFilter.AddUnique(Filter);
+			ExportVersion.IncludeFilter.AddUnique(Filter);
+		}
+	}
+	// add Ignore Filter
+	{
+		TArray<FString> AllIgnoreFilter;
+		for (const auto& Filter : InIgnoreFilter)
+		{
+			AllIgnoreFilter.AddUnique(Filter);
+			ExportVersion.IgnoreFilter.AddUnique(Filter);
+		}
+	}
+	ExportVersion.bIncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
+	ExportVersion.IncludeSpecifyAssets = InIncludeSpecifyAsset;
+
+	TArray<FAssetDetail> FilterAssetList;
+	{
+		TArray<FAssetDetail> AllNeedPakRefAssets;
+		{
+			TArray<FAssetDetail> AllAssets;
+			UFLibAssetManageHelperEx::GetAssetsList(ExportVersion.IncludeFilter, AllAssets);
+			if (InIncludeHasRefAssetsOnly)
+			{
+				TArray<FAssetDetail> AllDontHasRefAssets;
+				UFLibAssetManageHelperEx::FilterNoRefAssetsWithIgnoreFilter(AllAssets, ExportVersion.IgnoreFilter, AllNeedPakRefAssets, AllDontHasRefAssets);
+			}
+			else
+			{
+				AllNeedPakRefAssets = AllAssets;
+			}
+		}
+		// 剔除ignore filter中指定的资源
+		if (ExportVersion.IgnoreFilter.Num() > 0)
+		{
+			for (const auto& AssetDetail : AllNeedPakRefAssets)
+			{
+				bool bIsIgnore = false;
+				for (const auto& IgnoreFilter : ExportVersion.IgnoreFilter)
+				{
+					if (AssetDetail.mPackagePath.StartsWith(IgnoreFilter))
+					{
+						bIsIgnore = true;
+						break;
+					}
+				}
+				if (!bIsIgnore)
+				{
+					FilterAssetList.Add(AssetDetail);
+				}
+			}
+		}
+		else
+		{
+			FilterAssetList = AllNeedPakRefAssets;
+		}
+
+	}
+
+	auto AnalysisAssetDependency = [](const TArray<FAssetDetail>& InAssetDetail, bool bInAnalysisDepend)->FAssetDependenciesInfo
+	{
+		FAssetDependenciesInfo RetAssetDepend;
+		if (InAssetDetail.Num())
+		{
+			UFLibAssetManageHelperEx::CombineAssetsDetailAsFAssetDepenInfo(InAssetDetail, RetAssetDepend);
+
+			if (bInAnalysisDepend)
+			{
+				FAssetDependenciesInfo AssetDependencies;
+				UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(InAssetDetail, AssetDependencies);
+
+				RetAssetDepend = UFLibAssetManageHelperEx::CombineAssetDependencies(RetAssetDepend, AssetDependencies);
+			}
+		}
+		return RetAssetDepend;
+	};
+
+	// 分析过滤器中指定的资源依赖
+	FAssetDependenciesInfo FilterAssetDependencies = AnalysisAssetDependency(FilterAssetList, true);
+
+	// Specify Assets
+	FAssetDependenciesInfo SpecifyAssetDependencies;
+	{
+		for (const auto& SpecifyAsset : InIncludeSpecifyAsset)
+		{
+			FString AssetLongPackageName = SpecifyAsset.Asset.GetLongPackageName();
+			FAssetDetail AssetDetail;
+			if (UFLibAssetManageHelperEx::GetSpecifyAssetDetail(AssetLongPackageName, AssetDetail))
+			{
+				FAssetDependenciesInfo CurrentAssetDependencies = AnalysisAssetDependency(TArray<FAssetDetail>{AssetDetail}, SpecifyAsset.bAnalysisAssetDependencies);
+				SpecifyAssetDependencies = UFLibAssetManageHelperEx::CombineAssetDependencies(SpecifyAssetDependencies, CurrentAssetDependencies);
+			}
+		}
+	}
+
+	ExportVersion.AssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(FilterAssetDependencies, SpecifyAssetDependencies);
+
+	for (const auto& File : InAllExternFiles)
+	{
+		if (!ExportVersion.ExternalFiles.Contains(File.FilePath.FilePath))
+		{
+			ExportVersion.ExternalFiles.Add(File.MountPath, File);
+		}
+	}
+	return ExportVersion;
+}
+
+
+FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(const FString& InVersionId, const FString& InBaseVersion, const FString& InDate, const FChunkInfo& InChunkInfo, bool InIncludeHasRefAssetsOnly /*= false */)
+{
+	return UFlibPatchParserHelper::ExportReleaseVersionInfo(
+		InVersionId,
+		InBaseVersion,
+		InDate,
+		UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIncludeFilters),
+		UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIgnoreFilters),
+		InChunkInfo.IncludeSpecifyAssets,
+		UFlibPatchParserHelper::GetExternFilesFromChunk(InChunkInfo, true),
+		InIncludeHasRefAssetsOnly
+	);
+}
+
+
+FChunkAssetDescribe UFlibPatchParserHelper::DiffChunk(const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, bool InIncludeHasRefAssetsOnly)
+{
+	FChunkAssetDescribe result;
+
+	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
+		TEXT(""),
+		TEXT(""),
+		TEXT(""),
+		CurrentVersionChunk,
+		InIncludeHasRefAssetsOnly
+	);
+
+	FHotPatcherVersion TotalChunkVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
+		TEXT(""),
+		TEXT(""),
+		TEXT(""),
+		TotalChunk,
+		InIncludeHasRefAssetsOnly
+	);
+	FPatchVersionDiff ChunkDiffInfo = DiffPatchVersion(TotalChunkVersion, CurrentVersion);
+
+	result.Assets = UFLibAssetManageHelperEx::CombineAssetDependencies(ChunkDiffInfo.AddAssetDependInfo, ChunkDiffInfo.ModifyAssetDependInfo);
+
+	result.AllExFiles.Append(ChunkDiffInfo.AddExternalFiles);
+	result.AllExFiles.Append(ChunkDiffInfo.ModifyExternalFiles);
+
+	result.InternalFiles.bIncludeAssetRegistry = CurrentVersionChunk.InternalFiles.bIncludeAssetRegistry != TotalChunk.InternalFiles.bIncludeAssetRegistry;
+	result.InternalFiles.bIncludeGlobalShaderCache = CurrentVersionChunk.InternalFiles.bIncludeGlobalShaderCache != TotalChunk.InternalFiles.bIncludeGlobalShaderCache;
+	result.InternalFiles.bIncludeShaderBytecode = CurrentVersionChunk.InternalFiles.bIncludeShaderBytecode != TotalChunk.InternalFiles.bIncludeShaderBytecode;
+	result.InternalFiles.bIncludeEngineIni = CurrentVersionChunk.InternalFiles.bIncludeEngineIni != TotalChunk.InternalFiles.bIncludeEngineIni;
+	result.InternalFiles.bIncludePluginIni = CurrentVersionChunk.InternalFiles.bIncludePluginIni != TotalChunk.InternalFiles.bIncludePluginIni;
+	result.InternalFiles.bIncludeProjectIni = CurrentVersionChunk.InternalFiles.bIncludeProjectIni != TotalChunk.InternalFiles.bIncludeProjectIni;
+
+	return result;
+}
+
 bool UFlibPatchParserHelper::SerializeExAssetFileInfoToJsonObject(const FExternAssetFileInfo& InExFileInfo, TSharedPtr<FJsonObject>& OutJsonObject)
 {
 	bool bRunStatus = false;

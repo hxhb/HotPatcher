@@ -6,6 +6,7 @@
 #include "FPakFileInfo.h"
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "FHotPatcherVersion.h"
+#include "FPatchVersionDiff.h"
 #include "FlibPakHelper.h"
 #include "FExternDirectoryInfo.h"
 #include "FExternDirectoryInfo.h"
@@ -41,6 +42,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool DeserializeHotPatcherVersionFromString(const FString& InStringContent, FHotPatcherVersion& OutVersion);
 	static bool DeSerializeHotPatcherVersionFromJsonObject(const TSharedPtr<FJsonObject>& InJsonObject, FHotPatcherVersion& OutVersion);
+
+	static FHotPatcherVersion ExportReleaseVersionInfo(
+		const FString& InVersionId,
+		const FString& InBaseVersion,
+		const FString& InDate,
+		const TArray<FString>& InIncludeFilter,
+		const TArray<FString>& InIgnoreFilter,
+		const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
+		const TArray<FExternAssetFileInfo>& InAllExternFiles,
+		bool InIncludeHasRefAssetsOnly = false
+	);
+	static FHotPatcherVersion ExportReleaseVersionInfoByChunk(
+		const FString& InVersionId,
+		const FString& InBaseVersion,
+		const FString& InDate,
+		const FChunkInfo& InChunkInfo,
+		bool InIncludeHasRefAssetsOnly = false
+	);
 
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
@@ -152,4 +171,10 @@ public:
 	static TArray<FString> GetDirectoryPaths(const TArray<FDirectoryPath>& InDirectoryPath);
 	
 	static TArray<FExternAssetFileInfo> GetExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash = false);
+	static FPatchVersionDiff DiffPatchVersion(const FHotPatcherVersion& Base, const FHotPatcherVersion& New);
+
+	static FChunkAssetDescribe CollectFChunkAssetsDescribeByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk);
+
+	static TArray<FString> CollectPakCommandsByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions);
+	static FChunkAssetDescribe DiffChunk(const FChunkInfo& CurrentVersionChunk,const FChunkInfo& TotalChunk, bool InIncludeHasRefAssetsOnly);
 };

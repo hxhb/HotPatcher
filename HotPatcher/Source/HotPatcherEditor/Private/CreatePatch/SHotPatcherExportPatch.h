@@ -47,6 +47,9 @@ protected:
 	bool CanExportPatch()const;
 	FReply DoExportPatch();
 
+	bool CanPreviewPatch()const;
+	FReply DoPreviewPatch();
+
 	FReply DoDiff()const;
 	bool CanDiff()const;
 	FReply DoClearDiff()const;
@@ -58,8 +61,6 @@ protected:
 
 protected:
 	bool CheckSelectedAssetsCookStatus(const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets,FString& OutMsg)const;
-
-	FPatchVersionDiff DiffPatchVersion(const FHotPatcherVersion& Base, const FHotPatcherVersion& New)const;
 
 	bool CheckPatchRequire(const FPatchVersionDiff& InDiff)const;
 	bool ShowMsg(const FString& InMsg)const;

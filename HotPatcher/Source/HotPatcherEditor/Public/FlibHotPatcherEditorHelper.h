@@ -30,17 +30,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HotPatch|Editor|Flib")
 		static TArray<FString> GetAllCookOption();
 
-	static FHotPatcherVersion ExportReleaseVersionInfo(
-		const FString& InVersionId,
-		const FString& InBaseVersion,
-		const FString& InDate,
-		const TArray<FString>& InIncludeFilter,
-		const TArray<FString>& InIgnoreFilter,
-		const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
-		const TArray<FExternAssetFileInfo>& InAllExternFiles,
-		bool InIncludeHasRefAssetsOnly = false
-	);
-
 	static void CreateSaveFileNotify(const FText& InMsg,const FString& InSavedFile);
 
 	static void CheckInvalidCookFilesByAssetDependenciesInfo(const FString& InProjectAbsDir, const FString& InPlatformName, const FAssetDependenciesInfo& InAssetDependencies,TArray<FAssetDetail>& OutValidAssets,TArray<FAssetDetail>& OutInvalidAssets);
