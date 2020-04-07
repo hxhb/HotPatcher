@@ -144,7 +144,7 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 
 FReply SHotPatcherExportRelease::DoExportRelease()
 {
-	FHotPatcherVersion ExportVersion= UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
+	FHotPatcherVersion ExportVersion= UFlibPatchParserHelper::ExportReleaseVersionInfo(
 			ExportReleaseSettings->GetVersionId(),
 			TEXT(""),
 			FDateTime::UtcNow().ToString(),

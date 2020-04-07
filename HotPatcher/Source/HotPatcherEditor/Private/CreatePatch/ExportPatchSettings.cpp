@@ -218,7 +218,7 @@ FHotPatcherVersion UExportPatchSettings::GetNewPatchVersionInfo() const
 	FHotPatcherVersion BaseVersionInfo;
 	this->GetBaseVersionInfo(BaseVersionInfo);
 
-	FHotPatcherVersion CurrentVersion = UFlibHotPatcherEditorHelper::ExportReleaseVersionInfo(
+	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
 		this->GetVersionId(),
 		BaseVersionInfo.VersionId,
 		FDateTime::UtcNow().ToString(),

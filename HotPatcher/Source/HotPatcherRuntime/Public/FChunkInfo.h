@@ -4,6 +4,7 @@
 #include "FExternDirectoryInfo.h"
 #include "FPatcherSpecifyAsset.h"
 #include "Struct/AssetManager/FAssetDependenciesInfo.h"
+#include "Flib/FLibAssetManageHelperEx.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -46,6 +47,8 @@ public:
 		TArray<FDirectoryPath> AssetIncludeFilters;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIgnoreFilters;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		bool bAnalysisFilterDependencies = false;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern")
@@ -67,12 +70,68 @@ public:
 	TArray<FString> InternalPakCommands;
 };
 
-
 USTRUCT(BlueprintType)
-struct FChunkAssets
+struct FChunkAssetDescribe
 {
 	GENERATED_USTRUCT_BODY()
 public:
-	FAssetDependenciesInfo Asssets;
+	FAssetDependenciesInfo Assets;
 	TArray<FExternAssetFileInfo> AllExFiles;
+	FPakInternalInfo InternalFiles; // general platform
+
+	FORCEINLINE TArray<FString> GetAssetsStrings()const
+	{
+		auto CollectStringByAssetDep = [](const FAssetDependenciesInfo& InAssetDep)
+		{
+			TArray<FString> AllUnselectedAssets;
+			TArray<FAssetDetail> OutAssetDetails;
+			UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(InAssetDep, OutAssetDetails);
+
+			for (const auto& AssetDetail : OutAssetDetails)
+			{
+				AllUnselectedAssets.AddUnique(AssetDetail.mPackagePath);
+			}
+
+			return AllUnselectedAssets;
+		};
+
+		return CollectStringByAssetDep(Assets);
+	}
+
+	FORCEINLINE TArray<FString> GetExFileStrings()const
+	{
+		auto CollectExFilesStrings = [](const TArray<FExternAssetFileInfo>& InFiles)->TArray<FString>
+		{
+			TArray<FString> result;
+			for (const auto& File : InFiles)
+			{
+				result.AddUnique(File.FilePath.FilePath);
+			}
+			return result;
+		};
+		return CollectExFilesStrings(AllExFiles);
+	}
+	FORCEINLINE TArray<FString> GetInternalFileStrings()const
+	{
+		TArray<FString> result;
+		{
+			if (InternalFiles.bIncludeAssetRegistry) { result.Add(TEXT("bIncludeAssetRegistry")); };
+			if (InternalFiles.bIncludeGlobalShaderCache) { result.Add(TEXT("bIncludeGlobalShaderCache")); };
+			if (InternalFiles.bIncludeShaderBytecode) { result.Add(TEXT("bIncludeShaderBytecode")); };
+			if (InternalFiles.bIncludeEngineIni) { result.Add(TEXT("bIncludeEngineIni")); };
+			if (InternalFiles.bIncludePluginIni) { result.Add(TEXT("bIncludePluginIni")); };
+			if (InternalFiles.bIncludeProjectIni) { result.Add(TEXT("bIncludeProjectIni")); };
+		}
+		return result;
+	}
 };
+
+//USTRUCT(BlueprintType)
+//struct FChunkAssets
+//{
+//	GENERATED_USTRUCT_BODY()
+//public:
+//	FAssetDependenciesInfo Assets;
+//	TArray<FExternAssetFileInfo> AllExFiles;
+//	TArray<FExternAssetFileInfo> AllInternalFiles;
+//};
