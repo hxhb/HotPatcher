@@ -682,47 +682,88 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 				FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPakCommands", "Generating UnrealPak Commands of {0} Platform Chunk {1}."), FText::FromString(PlatformName),FText::FromString(Chunk.ChunkName));
 				UnrealPakSlowTask.EnterProgressFrame(1.0, Dialog);
 			}
-			TArray<FString> ChunkPakCommands = UFlibPatchParserHelper::CollectPakCommandsByChunk(VersionDiffInfo, Chunk, PlatformName, PakOptions);
-			FString ChunkSaveBasePath = FPaths::Combine(ExportPatchSetting->SavePath.Path, CurrentVersion.VersionId,PlatformName);
+			
+			
+			FString ChunkSaveBasePath = FPaths::Combine(ExportPatchSetting->SavePath.Path, CurrentVersion.VersionId, PlatformName);
+			TArray<FPakFileProxy> PakFileProxys;
 
-			FString ChunkPakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, FString::Printf(TEXT("%s_%s_%s.txt"), *CurrentVersion.VersionId, *PlatformName, *Chunk.ChunkName));
-			FString ChunkPakSavePath = FPaths::Combine(ChunkSaveBasePath, FString::Printf(TEXT("%s_%s_%s.pak"), *CurrentVersion.VersionId, *PlatformName, *Chunk.ChunkName));
-
-			bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(ChunkPakCommands, *ChunkPakCommandSavePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
-
-			if(PakCommandSaveStatus)
+			TArray<FPakCommand> ChunkPakCommands = UFlibPatchParserHelper::CollectPakCommandByChunk(VersionDiffInfo, Chunk, PlatformName, PakOptions);
+			if(!Chunk.bMonolithic)
 			{
-				TArray<FString> UnrealPakOptions = ExportPatchSetting->GetUnrealPakOptions();
-				UnrealPakOptions.Add(
-					FString::Printf(
-						TEXT("%s -create=%s"),
-						*(TEXT("\"") + ChunkPakSavePath + TEXT("\"")),
-						*(TEXT("\"") + ChunkPakCommandSavePath + TEXT("\""))
-					)
-				);
-				// Update SlowTask Progress
+				FPakFileProxy SinglePakForChunk;
+				SinglePakForChunk.PakCommands = ChunkPakCommands;
+				SinglePakForChunk.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s_%s_%s.txt"), *CurrentVersion.VersionId, *PlatformName, *Chunk.ChunkName));
+				SinglePakForChunk.PakSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s_%s_%s.pak"), *CurrentVersion.VersionId, *PlatformName, *Chunk.ChunkName));
+				PakFileProxys.Add(SinglePakForChunk);
+			}
+			else
+			{
+				for (const auto& PakCommand : ChunkPakCommands)
 				{
-					FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Pak list of {0} Platform Chunk {1}."), FText::FromString(PlatformName),FText::FromString(Chunk.ChunkName));
-					UnrealPakSlowTask.EnterProgressFrame(1.0, Dialog);
-				}
-
-				FProcHandle ProcessHandle = DoUnrealPak(UnrealPakOptions, true);
-
-				if (FPaths::FileExists(ChunkPakSavePath))
-				{
-					FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
-					UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, ChunkPakSavePath);
-
-					FPakFileInfo CurrentPakInfo;
-					if (UFlibPatchParserHelper::GetPakFileInfo(ChunkPakSavePath, CurrentPakInfo))
+					FPakFileProxy CurrentPak;
+					CurrentPak.PakCommands.Add(PakCommand);
+					FString Path;
+					FString filename;
 					{
-						CurrentPakInfo.PakVersion = CurrentPakVersion;
-						PakFilesInfoMap.Add(PlatformName, CurrentPakInfo);
+						FString RelativePath;
+#define RELATIVE_STR_LENGTH 9
+						if (PakCommand.GetMountPath().StartsWith("../../../"))
+						{
+							RelativePath = UKismetStringLibrary::GetSubstring(PakCommand.GetMountPath(), RELATIVE_STR_LENGTH, PakCommand.GetMountPath().Len() - RELATIVE_STR_LENGTH);
+						}
+						FString extersion;
+						FPaths::Split(RelativePath, Path, filename, extersion);
 					}
+					CurrentPak.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s_PakCommand.txt"), *Path, *filename));
+					CurrentPak.PakSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s.pak"), *Path, *filename));
+					PakFileProxys.Add(CurrentPak);
 				}
-				if (!Chunk.bSavePakCommands)
+			}
+			
+			// Update SlowTask Progress
+			{
+				FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Pak list of {0} Platform Chunk {1}."), FText::FromString(PlatformName), FText::FromString(Chunk.ChunkName));
+				UnrealPakSlowTask.EnterProgressFrame(1.0, Dialog);
+			}
+
+			// 创建chunk的pak文件
+			for (const auto& PakFileProxy : PakFileProxys)
+			{
+
+				bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(
+					UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands), 
+					*PakFileProxy.PakCommandSavePath, 
+					FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+
+				if (PakCommandSaveStatus)
 				{
-					IFileManager::Get().Delete(*ChunkPakCommandSavePath);
+					TArray<FString> UnrealPakOptions = ExportPatchSetting->GetUnrealPakOptions();
+					UnrealPakOptions.Add(
+						FString::Printf(
+							TEXT("%s -create=%s"),
+							*(TEXT("\"") + PakFileProxy.PakSavePath + TEXT("\"")),
+							*(TEXT("\"") + PakFileProxy.PakCommandSavePath + TEXT("\""))
+						)
+					);
+
+					FProcHandle ProcessHandle = DoUnrealPak(UnrealPakOptions, true);
+
+					if (FPaths::FileExists(PakFileProxy.PakSavePath))
+					{
+						FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
+						UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, PakFileProxy.PakSavePath);
+
+						FPakFileInfo CurrentPakInfo;
+						if (UFlibPatchParserHelper::GetPakFileInfo(PakFileProxy.PakSavePath, CurrentPakInfo))
+						{
+							CurrentPakInfo.PakVersion = CurrentPakVersion;
+							PakFilesInfoMap.Add(PlatformName, CurrentPakInfo);
+						}
+					}
+					if (!Chunk.bSavePakCommands)
+					{
+						IFileManager::Get().Delete(*PakFileProxy.PakCommandSavePath);
+					}
 				}
 			}
 		}

@@ -125,10 +125,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool GetCookedShaderBytecodeFiles(const FString& InProjectAbsDir, const FString& InProjectName, const FString& InPlatformName,bool InGalobalBytecode,bool InProjectBytecode, TArray<FString>& OutFiles);
 
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool ConvIniFilesToPakCommands(const FString& InEngineAbsDir, const FString& InProjectAbsDir, const FString& InProjectName, const TArray<FString>& InPakOptions, const TArray<FString>& InIniFiles, TArray<FString>& OutCommands);
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool ConvNotAssetFileToPakCommand(const FString& InProjectDir,const FString& InPlatformName, const TArray<FString>& InPakOptions,const FString& InCookedFile,FString& OutCommand);
+	// UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static bool ConvIniFilesToPakCommands(
+			const FString& InEngineAbsDir, 
+			const FString& InProjectAbsDir, 
+			const FString& InProjectName, 
+			const TArray<FString>& InPakOptions, 
+			const TArray<FString>& InIniFiles, 
+			TArray<FString>& OutCommands, 
+			TFunction<void(const TArray<FString>&, const FString&)> InReceiveCommand = [](const TArray<FString>&, const FString&) {});
+
+	// UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
+		static bool ConvNotAssetFileToPakCommand(
+			const FString& InProjectDir,
+			const FString& InPlatformName, 
+			const TArray<FString>& InPakOptions,
+			const FString& InCookedFile,
+			FString& OutCommand,
+			TFunction<void(const TArray<FString>&, const FString&)> InReceiveCommand = [](const TArray<FString>&, const FString&) {});
 	static bool ConvNotAssetFileToExFile(const FString& InProjectDir, const FString& InPlatformName, const FString& InCookedFile, FExternAssetFileInfo& OutExFile);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 	static FString HashStringWithSHA1(const FString &InString);
@@ -162,10 +176,16 @@ public:
 	// get Engine / Project / Plugin ini files
 	static TArray<FString> GetIniFilesByPakInternalInfo(const FPakInternalInfo& InPakInternalInfo,const FString& PlatformName);
 	// get AssetRegistry.bin / GlobalShaderCache / ShaderBytecode
-	static TArray<FString> GetCookedFilesByPakInternalInfo(const FPakInternalInfo& InPakInternalInfo, const FString& PlatformName);
+	static TArray<FString> GetCookedFilesByPakInternalInfo(
+		const FPakInternalInfo& InPakInternalInfo, 
+		const FString& PlatformName);
 
 	static TArray<FExternAssetFileInfo> GetInternalFilesAsExFiles(const FPakInternalInfo& InPakInternalInfo, const FString& InPlatformName);
-	static TArray<FString> GetPakCommandsFromInternalInfo(const FPakInternalInfo& InPakInternalInfo, const FString& PlatformName,const TArray<FString>& InPakOptions);
+	static TArray<FString> GetPakCommandsFromInternalInfo(
+		const FPakInternalInfo& InPakInternalInfo, 
+		const FString& PlatformName, 
+		const TArray<FString>& InPakOptions, 
+		TFunction<void(const TArray<FString>&,const FString&)> InReceiveCommand=[](const TArray<FString>&,const FString&) {});
 	
 	static FChunkInfo CombineChunkInfo(const FChunkInfo& R, const FChunkInfo& L);
 	static FChunkInfo CombineChunkInfos(const TArray<FChunkInfo>& Chunks);
@@ -177,7 +197,11 @@ public:
 
 	static FChunkAssetDescribe CollectFChunkAssetsDescribeByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk);
 
-	static TArray<FString> CollectPakCommandsByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions);
+	static TArray<FString> CollectPakCommandsStringsByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions);
+
+	static TArray<FPakCommand> CollectPakCommandByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions);
 	// CurrenrVersionChunk中的过滤器会进行依赖分析，TotalChunk的不会，目的是让用户可以自己控制某个文件夹打包到哪个Pak里，而不会对该文件夹下的资源进行依赖分析
 	static FChunkAssetDescribe DiffChunk(const FChunkInfo& CurrentVersionChunk,const FChunkInfo& TotalChunk, bool InIncludeHasRefAssetsOnly);
+
+	static TArray<FString> GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands);
 };

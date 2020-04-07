@@ -135,3 +135,36 @@ public:
 //	TArray<FExternAssetFileInfo> AllExFiles;
 //	TArray<FExternAssetFileInfo> AllInternalFiles;
 //};
+
+
+
+struct FPakCommand
+{
+public:
+	FPakCommand() = default;
+	FPakCommand(const FString& InMountPath, const TArray<FString>& InCommands)
+		:MountPath(InMountPath),PakCommands(InCommands){}
+
+	const FString& GetMountPath()const
+	{
+		return MountPath;
+	}
+
+	const TArray<FString>& GetPakCommands()const
+	{
+		return PakCommands;
+	}
+
+protected:
+	FString MountPath;
+	TArray<FString> PakCommands;
+};
+
+
+struct FPakFileProxy
+{
+public:
+	FString PakCommandSavePath;
+	FString PakSavePath;
+ 	TArray<FPakCommand> PakCommands;
+};

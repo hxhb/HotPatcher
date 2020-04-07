@@ -742,7 +742,15 @@ TArray<FString> UFlibPatchParserHelper::GetProjectIniFiles(const FString& InProj
 	
 }
 
-bool UFlibPatchParserHelper::ConvIniFilesToPakCommands(const FString& InEngineAbsDir,const FString& InProjectAbsDir,const FString& InProjectName, const TArray<FString>& InPakOptions, const TArray<FString>& InIniFiles, TArray<FString>& OutCommands)
+bool UFlibPatchParserHelper::ConvIniFilesToPakCommands(
+	const FString& InEngineAbsDir,
+	const FString& InProjectAbsDir,
+	const FString& InProjectName, 
+	const TArray<FString>& InPakOptions, 
+	const TArray<FString>& InIniFiles, 
+	TArray<FString>& OutCommands,
+	TFunction<void(const TArray<FString>&, const FString&)> InReceiveCommand
+)
 {
 	FString PakOptionsStr;
 	{
@@ -802,6 +810,7 @@ bool UFlibPatchParserHelper::ConvIniFilesToPakCommands(const FString& InEngineAb
 					*CookedIniRelativePath,
 					*PakOptionsStr
 			);
+			InReceiveCommand(TArray<FString>{CookCommand}, CookedIniRelativePath);
 			OutCommands.AddUnique(CookCommand);
 	
 			bRunStatus = true;
@@ -810,7 +819,14 @@ bool UFlibPatchParserHelper::ConvIniFilesToPakCommands(const FString& InEngineAb
 	return bRunStatus;
 }
 
-bool UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(const FString& InProjectDir, const FString& InPlatformName,const TArray<FString>& InPakOptions, const FString& InCookedFile, FString& OutCommand)
+bool UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(
+	const FString& InProjectDir, 
+	const FString& InPlatformName,
+	const TArray<FString>& InPakOptions, 
+	const FString& InCookedFile, 
+	FString& OutCommand,
+	TFunction<void(const TArray<FString>&, const FString&)> InReceiveCommand
+)
 {
 	FString PakOptionsStr;
 	{
@@ -837,6 +853,7 @@ bool UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(const FString& InProje
 			*AssetFileRelativeCookPath,
 			*PakOptionsStr
 		);
+		InReceiveCommand(TArray<FString>{OutCommand}, AssetFileRelativeCookPath);
 		bRunStatus = true;
 	}
 	return bRunStatus;
@@ -1070,7 +1087,12 @@ TArray<FExternAssetFileInfo> UFlibPatchParserHelper::GetInternalFilesAsExFiles(c
 	return resultFiles;
 }
 
-TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(const FPakInternalInfo& InPakInternalInfo, const FString& PlatformName, const TArray<FString>& InPakOptions)
+TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(
+	const FPakInternalInfo& InPakInternalInfo, 
+	const FString& PlatformName, 
+	const TArray<FString>& InPakOptions, 
+	TFunction<void(const TArray<FString>&, const FString&)> InReceiveCommand
+)
 {
 	TArray<FString> OutPakCommands;
 	TArray<FString> AllNeedPakInternalCookedFiles;
@@ -1082,7 +1104,7 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(const FPa
 	for (const auto& AssetFile : AllNeedPakInternalCookedFiles)
 	{
 		FString CurrentCommand;
-		if (UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(ProjectDir, PlatformName,InPakOptions, AssetFile, CurrentCommand))
+		if (UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(ProjectDir, PlatformName,InPakOptions, AssetFile, CurrentCommand, InReceiveCommand))
 		{
 			OutPakCommands.AddUnique(CurrentCommand);
 		}
@@ -1090,7 +1112,7 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(const FPa
 
 	FString EngineAbsDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
 
-	auto CombineInPakCommands = [&OutPakCommands, &ProjectDir, &EngineAbsDir, &PlatformName,&InPakOptions](const TArray<FString>& IniFiles)
+	auto CombineInPakCommands = [&OutPakCommands, &ProjectDir, &EngineAbsDir, &PlatformName,&InPakOptions,&InReceiveCommand](const TArray<FString>& IniFiles)
 	{
 		TArray<FString> result;
 
@@ -1101,7 +1123,8 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(const FPa
 			UFlibPatchParserHelper::GetProjectName(),
 			InPakOptions,
 			IniFiles,
-			IniPakCommmands
+			IniPakCommmands,
+			InReceiveCommand
 		);
 		if (!!IniPakCommmands.Num())
 		{
@@ -1323,11 +1346,25 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 }
 
 
-TArray<FString> UFlibPatchParserHelper::CollectPakCommandsByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)
+TArray<FString> UFlibPatchParserHelper::CollectPakCommandsStringsByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)
 {
-	auto CollectPakCommandsByChunkLambda = [](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)->TArray<FString>
+	TArray<FString> ChunkPakCommands;
 	{
-		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(DiffInfo,Chunk);
+		TArray<FPakCommand> ChunkPakCommands_r = UFlibPatchParserHelper::CollectPakCommandByChunk(DiffInfo, Chunk, PlatformName, PakOptions);
+		for (const auto PakCommand : ChunkPakCommands_r)
+		{
+			ChunkPakCommands.Append(PakCommand.GetPakCommands());
+		}
+	}
+
+	return ChunkPakCommands;
+}
+
+TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)
+{
+	auto CollectPakCommandsByChunkLambda = [](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)->TArray<FPakCommand>
+	{
+		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(DiffInfo, Chunk);
 
 		FString PakOptionsStr;
 		{
@@ -1337,29 +1374,32 @@ TArray<FString> UFlibPatchParserHelper::CollectPakCommandsByChunk(const FPatchVe
 			}
 		}
 
-		TArray<FString> PakCommands;
+		TArray<FPakCommand> PakCommands;
 
+		auto ReceivePakCommandLambda = [&PakCommands](const TArray<FString>& InCommand, const FString& InMountPath)
+		{
+			PakCommands.Emplace(InMountPath, InCommand);
+		};
 		// Collect Chunk Assets
 		{
 			FString ProjectDir = FPaths::ProjectDir();
 			TArray<FString> AssetsPakCommands;
-			UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(ProjectDir, PlatformName, ChunkAssetsDescrible.Assets, PakOptions, AssetsPakCommands);
-
-			PakCommands.Append(AssetsPakCommands);
+			UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(ProjectDir, PlatformName, ChunkAssetsDescrible.Assets, PakOptions, AssetsPakCommands, ReceivePakCommandLambda);
+			
 		}
 
 		// Collect Extern Files
 		{
-			
+
 			for (const auto& CollectFile : ChunkAssetsDescrible.AllExFiles)
 			{
-				PakCommands.AddUnique(
-					FString::Printf(TEXT("\"%s\" \"%s\""), *CollectFile.FilePath.FilePath, *CollectFile.MountPath)
+				PakCommands.Emplace(
+					CollectFile.MountPath, TArray<FString>{FString::Printf(TEXT("\"%s\" \"%s\""), *CollectFile.FilePath.FilePath, *CollectFile.MountPath)}
 				);
 			}
 		}
 		// internal files
-		PakCommands.Append(UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(ChunkAssetsDescrible.InternalFiles, PlatformName, PakOptions));
+		UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(ChunkAssetsDescrible.InternalFiles, PlatformName, PakOptions, ReceivePakCommandLambda);
 		return PakCommands;
 	};
 
@@ -1576,6 +1616,18 @@ FChunkAssetDescribe UFlibPatchParserHelper::DiffChunk(const FChunkInfo& CurrentV
 	result.InternalFiles.bIncludeProjectIni = CurrentVersionChunk.InternalFiles.bIncludeProjectIni != TotalChunk.InternalFiles.bIncludeProjectIni;
 
 	return result;
+}
+
+TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands)
+{
+	TArray<FString> ResultPakCommands;
+	{
+		for (const auto PakCommand : PakCommands)
+		{
+			ResultPakCommands.Append(PakCommand.GetPakCommands());
+		}
+	}
+	return ResultPakCommands;
 }
 
 bool UFlibPatchParserHelper::SerializeExAssetFileInfoToJsonObject(const FExternAssetFileInfo& InExFileInfo, TSharedPtr<FJsonObject>& OutJsonObject)
