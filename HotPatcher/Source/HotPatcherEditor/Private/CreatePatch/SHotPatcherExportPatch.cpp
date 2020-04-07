@@ -603,7 +603,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		};
 		ChunkCheckerMsg(TEXT("Unreal Asset"), AllUnselectedAssets);
 		ChunkCheckerMsg(TEXT("External Files"), AllUnselectedExFiles);
-		ChunkCheckerMsg(TEXT("Internal Files"), UnSelectedInternalFiles);
+		ChunkCheckerMsg(TEXT("Internal Files(Patch & Chunk setting not match)"), UnSelectedInternalFiles);
 
 		if (!TotalMsg.IsEmpty())
 		{
@@ -855,48 +855,7 @@ FReply SHotPatcherExportPatch::DoPreviewPatch()
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
 	);
 
-	
-	
 	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersion(BaseVersion, CurrentVersion);
-
-	// 分析所选过滤器中的资源所依赖的模块添加到Chunk中
-	//{
-	//	TArray<FString> DependenciesFilters;
-	//	
-	//	auto GetKeysLambda = [&DependenciesFilters](const FAssetDependenciesInfo& Assets)
-	//	{
-	//		TArray<FAssetDetail> AllAssets;
-	//		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(Assets, AllAssets);
-	//		for (const auto& Asset : AllAssets)
-	//		{
-	//			FString Path;
-	//			FString Filename;
-	//			FString Extension;
-	//			FPaths::Split(Asset.mPackagePath, Path, Filename, Extension);
-	//			DependenciesFilters.AddUnique(Path);
-	//		}
-	//	};
-	//	GetKeysLambda(VersionDiffInfo.AddAssetDependInfo);
-	//	GetKeysLambda(VersionDiffInfo.ModifyAssetDependInfo);
-	//	
-	//	TArray<FDirectoryPath> DepOtherModule;
-	//	for (const auto& includeFilter : NewVersionChunk.AssetIncludeFilters)
-	//	{
-	//		
-	//		for (const auto& DependenciesFilter : DependenciesFilters)
-	//		{
-	//			if (!includeFilter.Path.StartsWith(DependenciesFilter))
-	//			{
-	//				FDirectoryPath FilterPath;
-	//				FilterPath.Path = DependenciesFilter;
-	//				DepOtherModule.Add(FilterPath);
-	//			}
-	//		}
-	//	}
-	//	NewVersionChunk.AssetIncludeFilters.Append(DepOtherModule);
-	//}
-
-	//FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(VersionDiffInfo, NewVersionChunk);
 
 	FChunkInfo EmptyChunk;
 	FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::DiffChunk(NewVersionChunk, EmptyChunk, ExportPatchSetting->IsIncludeHasRefAssetsOnly());
