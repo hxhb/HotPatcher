@@ -643,10 +643,10 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			GetKeysLambda(VersionDiffInfo.ModifyAssetDependInfo);
 
 			TArray<FDirectoryPath> DepOtherModule;
-			for (const auto& includeFilter : NewVersionChunk.AssetIncludeFilters)
-			{
 
-				for (const auto& DependenciesFilter : DependenciesFilters)
+			for (const auto& DependenciesFilter : DependenciesFilters)
+			{
+				for (const auto& includeFilter : NewVersionChunk.AssetIncludeFilters)
 				{
 					if (!includeFilter.Path.StartsWith(DependenciesFilter))
 					{
@@ -655,6 +655,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 						DepOtherModule.Add(FilterPath);
 					}
 				}
+				
 			}
 			NewVersionChunk.AssetIncludeFilters.Append(DepOtherModule);
 		}

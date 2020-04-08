@@ -92,8 +92,7 @@ public:
 		FAssetRegistryModule& InAssetRegistryModule,
 		const FString& InTargetLongPackageName,
 		FAssetDependenciesInfo& OutDependencies,
-		bool bRecursively=true,
-		bool bReTargetRedirector = true
+		bool bRecursively=true
 	);
 
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager",meta=(AutoCreateRefTerm="InExFilterPackagePaths",AdvancedDisplay="InExFilterPackagePaths"))

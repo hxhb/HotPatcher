@@ -315,8 +315,7 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 	FAssetRegistryModule& InAssetRegistryModule,
 	const FString& InTargetLongPackageName,
 	FAssetDependenciesInfo& OutDependencies,
-	bool bRecursively,
-	bool bReTargetRedirector
+	bool bRecursively
 )
 {
 	TArray<FName> local_Dependencies;
@@ -329,47 +328,34 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 			FString BelongModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(LongDependentPackageName);
 
 			// add a new asset to module category
-			auto AddNewAssetItemLambda = [bRecursively, bReTargetRedirector,&InAssetRegistryModule, &OutDependencies](
+			auto AddNewAssetItemLambda = [bRecursively,&InAssetRegistryModule, &OutDependencies](
 				FAssetDependenciesDetail& InModuleAssetDependDetail,
 				const FString& InAssetPackageName
 				)
 			{
-				FString local_AssetPackageName = InAssetPackageName;
-				if (!InModuleAssetDependDetail.mDependAssetDetails.Contains(local_AssetPackageName))
+				if (!InModuleAssetDependDetail.mDependAssetDetails.Contains(InAssetPackageName))
 				{
 				 	// FAssetData* AssetPackageData = InAssetRegistryModule.Get().GetAssetPackageData(*InAssetPackageName);
 					UAssetManager& AssetManager = UAssetManager::Get();
 					if (AssetManager.IsValid())
 					{
 						FString PackagePath;
-						UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(local_AssetPackageName,PackagePath);
+						UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InAssetPackageName,PackagePath);
 						FAssetData OutAssetData;
 						if (AssetManager.GetAssetDataForPath(FSoftObjectPath{ PackagePath }, OutAssetData) && OutAssetData.IsValid())
 						{
 							FAssetDetail AssetDetail;
-							if (bReTargetRedirector && OutAssetData.IsRedirector())
-							{
-								TArray<FAssetDetail> RedirectorRefAssetDetails;
-								UFLibAssetManageHelperEx::GetAssetReference(local_AssetPackageName, RedirectorRefAssetDetails, false);
-								if (!!RedirectorRefAssetDetails.Num())
-								{
-									AssetDetail = RedirectorRefAssetDetails[0];
-									// 修改递归包含的重定向器所指向的真正资源
-									UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(AssetDetail.mPackagePath, local_AssetPackageName);
-								}
-							}
-							else
-							{
-								AssetDetail.mPackagePath = PackagePath;
-								AssetDetail.mAssetType = OutAssetData.AssetClass.ToString();
-								UFLibAssetManageHelperEx::GetAssetPackageGUID(PackagePath, AssetDetail.mGuid);
-							}
-							InModuleAssetDependDetail.mDependAssetDetails.Add(local_AssetPackageName,AssetDetail);
+							AssetDetail.mPackagePath = OutAssetData.ObjectPath.ToString();
+							AssetDetail.mAssetType = OutAssetData.AssetClass.ToString();
+							UFLibAssetManageHelperEx::GetAssetPackageGUID(PackagePath, AssetDetail.mGuid);
+							FString CurrentLongPackageName;
+							UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(AssetDetail.mPackagePath, CurrentLongPackageName);
+							InModuleAssetDependDetail.mDependAssetDetails.Add(CurrentLongPackageName,AssetDetail);
 						}
 					}
 					if (bRecursively)
 					{
-						UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(InAssetRegistryModule, InAssetPackageName, OutDependencies,bRecursively,bReTargetRedirector);
+						UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(InAssetRegistryModule, InAssetPackageName, OutDependencies, bRecursively);
 					}
 						
 				}
@@ -835,9 +821,12 @@ bool UFLibAssetManageHelperEx::MakePakCommandFromLongPackageName(
 	{
 		if (UFLibAssetManageHelperEx::CombineCookedAssetCommand(CookedAssetAbsPath, CookedAssetRelativePath, InCookParams, FinalCookedCommand))
 		{
-			InReceivePakCommand(FinalCookedCommand,CookedAssetRelativePath[0]);
-			OutCookCommand.Append(FinalCookedCommand);
-			bStatus = true;
+			if (!!CookedAssetRelativePath.Num() && !!FinalCookedCommand.Num())
+			{
+				InReceivePakCommand(FinalCookedCommand, CookedAssetRelativePath[0]);
+				OutCookCommand.Append(FinalCookedCommand);
+				bStatus = true;
+			}
 		}
 	}
 	return bStatus;
@@ -845,6 +834,11 @@ bool UFLibAssetManageHelperEx::MakePakCommandFromLongPackageName(
 
 bool UFLibAssetManageHelperEx::CombineCookedAssetCommand(const TArray<FString> &InAbsPath, const TArray<FString>& InRelativePath, const TArray<FString>& InParams, TArray<FString>& OutCommand)
 {
+	if (!(!!InAbsPath.Num() && !!InRelativePath.Num()))
+	{
+		return false;
+	}
+
 	OutCommand.Empty();
 	if (InAbsPath.Num() != InRelativePath.Num())
 		return false;
