@@ -29,7 +29,7 @@ public class HotPatcherRuntime : ModuleRules
                 "Projects",
                 "Json",
                 "PakFile",
-                "AssetManagerEx",
+                "AssetManagerEx"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

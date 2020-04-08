@@ -1630,6 +1630,31 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<
 	return ResultPakCommands;
 }
 
+FProcHandle UFlibPatchParserHelper::DoUnrealPak(TArray<FString> UnrealPakOptions, bool block)
+{
+	FString UnrealPakBinary = UFlibPatchParserHelper::GetUnrealPakBinary();
+
+	FString CommandLine;
+	for (const auto& Option : UnrealPakOptions)
+	{
+		CommandLine.Append(FString::Printf(TEXT(" %s"), *Option));
+	}
+
+	// create UnrealPak process
+
+	uint32 *ProcessID = NULL;
+	FProcHandle ProcHandle = FPlatformProcess::CreateProc(*UnrealPakBinary, *CommandLine, true, false, false, ProcessID, 0, NULL, NULL, NULL);
+
+	if (ProcHandle.IsValid())
+	{
+		if (block)
+		{
+			FPlatformProcess::WaitForProc(ProcHandle);
+		}
+	}
+	return ProcHandle;
+}
+
 bool UFlibPatchParserHelper::SerializeExAssetFileInfoToJsonObject(const FExternAssetFileInfo& InExFileInfo, TSharedPtr<FJsonObject>& OutJsonObject)
 {
 	bool bRunStatus = false;

@@ -7,6 +7,8 @@
 #include "FHotPatcherVersion.h"
 #include "FLibAssetManageHelperEx.h"
 #include "FPakFileInfo.h"
+#include "ThreadUtils/FThreadUtils.hpp"
+
 // engine header
 #include "Misc/FileHelper.h"
 #include "Widgets/Input/SHyperlink.h"
@@ -18,6 +20,8 @@
 #include "Misc/SecureHash.h"
 #include "Misc/ScopedSlowTask.h"
 #include "HAL/FileManager.h"
+
+#include "PakFileUtilities.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCreatePatch"
 
@@ -726,45 +730,56 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 				UnrealPakSlowTask.EnterProgressFrame(1.0, Dialog);
 			}
 
+			TArray<FString> UnrealPakOptions = ExportPatchSetting->GetUnrealPakOptions();
 			// 创建chunk的pak文件
 			for (const auto& PakFileProxy : PakFileProxys)
 			{
+				
+				FThread CurrentPakThread(*PakFileProxy.PakSavePath, [CurrentPakVersion,PlatformName,UnrealPakOptions,PakFileProxy,&Chunk,&PakFilesInfoMap]() {
+				
+					bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(
+						UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands),
+						*PakFileProxy.PakCommandSavePath,
+						FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 
-				bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(
-					UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands), 
-					*PakFileProxy.PakCommandSavePath, 
-					FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
-
-				if (PakCommandSaveStatus)
-				{
-					TArray<FString> UnrealPakOptions = ExportPatchSetting->GetUnrealPakOptions();
-					UnrealPakOptions.Add(
-						FString::Printf(
-							TEXT("%s -create=%s"),
-							*(TEXT("\"") + PakFileProxy.PakSavePath + TEXT("\"")),
-							*(TEXT("\"") + PakFileProxy.PakCommandSavePath + TEXT("\""))
-						)
-					);
-
-					FProcHandle ProcessHandle = DoUnrealPak(UnrealPakOptions, true);
-
-					if (FPaths::FileExists(PakFileProxy.PakSavePath))
+					if (PakCommandSaveStatus)
 					{
-						FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
-						UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, PakFileProxy.PakSavePath);
-
-						FPakFileInfo CurrentPakInfo;
-						if (UFlibPatchParserHelper::GetPakFileInfo(PakFileProxy.PakSavePath, CurrentPakInfo))
+						TArray<FString> UnrealPakOptionsSinglePak = UnrealPakOptions;
+						UnrealPakOptionsSinglePak.Add(
+							FString::Printf(
+								TEXT("%s -create=%s"),
+								*(TEXT("\"") + PakFileProxy.PakSavePath + TEXT("\"")),
+								*(TEXT("\"") + PakFileProxy.PakCommandSavePath + TEXT("\""))
+							)
+						);
+						FString CommandLine;
+						for (const auto& Option : UnrealPakOptionsSinglePak)
 						{
-							CurrentPakInfo.PakVersion = CurrentPakVersion;
-							PakFilesInfoMap.Add(PlatformName, CurrentPakInfo);
+							CommandLine.Append(FString::Printf(TEXT(" %s"), *Option));
+						}
+						ExecuteUnrealPak(*CommandLine);
+						// FProcHandle ProcessHandle = UFlibPatchParserHelper::DoUnrealPak(UnrealPakOptionsSinglePak, true);
+
+						if (FPaths::FileExists(PakFileProxy.PakSavePath))
+						{
+							FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
+							UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, PakFileProxy.PakSavePath);
+
+							FPakFileInfo CurrentPakInfo;
+							if (UFlibPatchParserHelper::GetPakFileInfo(PakFileProxy.PakSavePath, CurrentPakInfo))
+							{
+								CurrentPakInfo.PakVersion = CurrentPakVersion;
+								PakFilesInfoMap.Add(PlatformName, CurrentPakInfo);
+							}
+						}
+						if (!Chunk.bSavePakCommands)
+						{
+							IFileManager::Get().Delete(*PakFileProxy.PakCommandSavePath);
 						}
 					}
-					if (!Chunk.bSavePakCommands)
-					{
-						IFileManager::Get().Delete(*PakFileProxy.PakCommandSavePath);
-					}
-				}
+				
+				});
+				CurrentPakThread.Run();
 			}
 		}
 	}

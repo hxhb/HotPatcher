@@ -204,4 +204,6 @@ public:
 	static FChunkAssetDescribe DiffChunk(const FChunkInfo& CurrentVersionChunk,const FChunkInfo& TotalChunk, bool InIncludeHasRefAssetsOnly);
 
 	static TArray<FString> GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands);
+
+	static FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions, bool block);
 };
