@@ -315,7 +315,8 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 	FAssetRegistryModule& InAssetRegistryModule,
 	const FString& InTargetLongPackageName,
 	FAssetDependenciesInfo& OutDependencies,
-	bool bRecursively
+	bool bRecursively,
+	bool bReTargetRedirector
 )
 {
 	TArray<FName> local_Dependencies;
@@ -328,7 +329,7 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 			FString BelongModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(LongDependentPackageName);
 
 			// add a new asset to module category
-			auto AddNewAssetItemLambda = [bRecursively,&InAssetRegistryModule, &OutDependencies](
+			auto AddNewAssetItemLambda = [bRecursively, bReTargetRedirector,&InAssetRegistryModule, &OutDependencies](
 				FAssetDependenciesDetail& InModuleAssetDependDetail,
 				const FString& InAssetPackageName
 				)
@@ -346,7 +347,7 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 						if (AssetManager.GetAssetDataForPath(FSoftObjectPath{ PackagePath }, OutAssetData) && OutAssetData.IsValid())
 						{
 							FAssetDetail AssetDetail;
-							if (OutAssetData.IsRedirector())
+							if (bReTargetRedirector && OutAssetData.IsRedirector())
 							{
 								TArray<FAssetDetail> RedirectorRefAssetDetails;
 								UFLibAssetManageHelperEx::GetAssetReference(local_AssetPackageName, RedirectorRefAssetDetails, false);
@@ -368,7 +369,7 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 					}
 					if (bRecursively)
 					{
-						UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(InAssetRegistryModule, InAssetPackageName, OutDependencies);
+						UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(InAssetRegistryModule, InAssetPackageName, OutDependencies,bRecursively,bReTargetRedirector);
 					}
 						
 				}
@@ -411,7 +412,7 @@ bool UFLibAssetManageHelperEx::GetModuleAssetsList(const FString& InModuleName, 
 	return UFLibAssetManageHelperEx::GetAssetsList(AllFilterPackageNames, OutAssetList);
 }
 
-bool UFLibAssetManageHelperEx::GetAssetsList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutAssetList)
+bool UFLibAssetManageHelperEx::GetAssetsList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutAssetList,bool bReTargetRedirector)
 {
 	TArray<FAssetData> AllAssetData;
 	if (UFLibAssetManageHelperEx::GetAssetsData(InFilterPackagePaths, AllAssetData))
@@ -420,18 +421,26 @@ bool UFLibAssetManageHelperEx::GetAssetsList(const TArray<FString>& InFilterPack
 		{
 			if (!AssetDataIndex.IsValid())
 				continue;
-			if (AssetDataIndex.IsRedirector())
+			FAssetDetail AssetDetail;
+			if (bReTargetRedirector && AssetDataIndex.IsRedirector())
 			{
 				TArray<FAssetDetail> TargetAssets;
 				FString RedirectorLongPackageName;
 				UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(AssetDataIndex.PackageName.ToString(), RedirectorLongPackageName);
 				UFLibAssetManageHelperEx::GetAssetReference(RedirectorLongPackageName, TargetAssets, false);
-				OutAssetList.Append(TargetAssets);
-				continue;
+				if (!!TargetAssets.Num())
+				{
+					AssetDetail = TargetAssets[0];
+				}
 			}
-			FAssetDetail AssetDetail;
-			UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(AssetDataIndex, AssetDetail);
-			OutAssetList.Add(AssetDetail);
+			else
+			{
+				UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(AssetDataIndex, AssetDetail);
+			}
+			if (!AssetDetail.mPackagePath.IsEmpty())
+			{
+				OutAssetList.Add(AssetDetail);
+			}
 		}
 		return true;
 	}

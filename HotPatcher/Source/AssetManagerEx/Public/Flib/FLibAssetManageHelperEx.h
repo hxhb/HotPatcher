@@ -92,7 +92,8 @@ public:
 		FAssetRegistryModule& InAssetRegistryModule,
 		const FString& InTargetLongPackageName,
 		FAssetDependenciesInfo& OutDependencies,
-		bool bRecursively=true
+		bool bRecursively=true,
+		bool bReTargetRedirector = true
 	);
 
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager",meta=(AutoCreateRefTerm="InExFilterPackagePaths",AdvancedDisplay="InExFilterPackagePaths"))
@@ -102,7 +103,7 @@ public:
 	 * FilterPackageName format is /Game or /Game/TEST
 	 */
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool GetAssetsList(const TArray<FString>& InFilterPackagePaths,TArray<FAssetDetail>& OutAssetList);
+		static bool GetAssetsList(const TArray<FString>& InFilterPackagePaths,TArray<FAssetDetail>& OutAssetList, bool bReTargetRedirector=true);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetRedirectorList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutRedirector);
 		static bool GetSpecifyAssetData(const FString& InLongPackageName, TArray<FAssetData>& OutAssetData,bool InIncludeOnlyOnDiskAssets);
