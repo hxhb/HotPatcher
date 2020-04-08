@@ -646,16 +646,25 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 
 			for (const auto& DependenciesFilter : DependenciesFilters)
 			{
-				for (const auto& includeFilter : NewVersionChunk.AssetIncludeFilters)
+				if (!!NewVersionChunk.AssetIncludeFilters.Num())
 				{
-					if (!includeFilter.Path.StartsWith(DependenciesFilter))
+					for (const auto& includeFilter : NewVersionChunk.AssetIncludeFilters)
 					{
-						FDirectoryPath FilterPath;
-						FilterPath.Path = DependenciesFilter;
-						DepOtherModule.Add(FilterPath);
+						if (!includeFilter.Path.StartsWith(DependenciesFilter))
+						{
+							FDirectoryPath FilterPath;
+							FilterPath.Path = DependenciesFilter;
+							DepOtherModule.Add(FilterPath);
+						}
 					}
 				}
-				
+				else
+				{
+					FDirectoryPath FilterPath;
+					FilterPath.Path = DependenciesFilter;
+					DepOtherModule.Add(FilterPath);
+
+				}
 			}
 			NewVersionChunk.AssetIncludeFilters.Append(DepOtherModule);
 		}
