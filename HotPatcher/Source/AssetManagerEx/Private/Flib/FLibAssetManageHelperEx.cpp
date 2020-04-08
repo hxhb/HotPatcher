@@ -236,12 +236,30 @@ void UFLibAssetManageHelperEx::GetAssetListDependencies(const TArray<FString>& I
 	OutDependices = result;
 }
 
+
+bool UFLibAssetManageHelperEx::GetAssetReference(const FString& InLongPackageName, TArray<FAssetDetail>& OutRefAsset,bool bRecursively)
+{
+	bool bStatus = false;
+	if (FPackageName::DoesPackageExist(InLongPackageName))
+	{
+		OutRefAsset.Empty();
+		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+
+		FAssetDependenciesInfo AssetDep;
+		UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(AssetRegistryModule, InLongPackageName, AssetDep, bRecursively);
+
+		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(AssetDep, OutRefAsset);
+		bStatus = true;
+	}
+	return bStatus;
+}
+
 void UFLibAssetManageHelperEx::GetAssetDependenciesForAssetDetail(const FAssetDetail& InAssetDetail, FAssetDependenciesInfo& OutDependices)
 {
 	FString AssetPackagePath = InAssetDetail.mPackagePath;
 	FSoftObjectPath AssetObjectSoftRef{ AssetPackagePath };
 
-	GetAssetDependencies(AssetObjectSoftRef.GetLongPackageName(), OutDependices);
+	UFLibAssetManageHelperEx::GetAssetDependencies(AssetObjectSoftRef.GetLongPackageName(), OutDependices);
 }
 
 void UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(const TArray<FAssetDetail>& InAssetsDetailList, FAssetDependenciesInfo& OutDependices)
@@ -296,7 +314,8 @@ TArray<FString> UFLibAssetManageHelperEx::GetAssetLongPackageNameByAssetDependen
 void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 	FAssetRegistryModule& InAssetRegistryModule,
 	const FString& InTargetLongPackageName,
-	FAssetDependenciesInfo& OutDependencies
+	FAssetDependenciesInfo& OutDependencies,
+	bool bRecursively
 )
 {
 	TArray<FName> local_Dependencies;
@@ -309,31 +328,49 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 			FString BelongModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(LongDependentPackageName);
 
 			// add a new asset to module category
-			auto AddNewAssetItemLambda = [&InAssetRegistryModule, &OutDependencies](
+			auto AddNewAssetItemLambda = [bRecursively,&InAssetRegistryModule, &OutDependencies](
 				FAssetDependenciesDetail& InModuleAssetDependDetail,
 				const FString& InAssetPackageName
 				)
 			{
-				if (!InModuleAssetDependDetail.mDependAssetDetails.Contains(InAssetPackageName))
+				FString local_AssetPackageName = InAssetPackageName;
+				if (!InModuleAssetDependDetail.mDependAssetDetails.Contains(local_AssetPackageName))
 				{
 				 	// FAssetData* AssetPackageData = InAssetRegistryModule.Get().GetAssetPackageData(*InAssetPackageName);
 					UAssetManager& AssetManager = UAssetManager::Get();
 					if (AssetManager.IsValid())
 					{
 						FString PackagePath;
-						UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InAssetPackageName,PackagePath);
+						UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(local_AssetPackageName,PackagePath);
 						FAssetData OutAssetData;
 						if (AssetManager.GetAssetDataForPath(FSoftObjectPath{ PackagePath }, OutAssetData) && OutAssetData.IsValid())
 						{
 							FAssetDetail AssetDetail;
-							AssetDetail.mPackagePath = PackagePath;
-							AssetDetail.mAssetType = OutAssetData.AssetClass.ToString();
-							UFLibAssetManageHelperEx::GetAssetPackageGUID(PackagePath, AssetDetail.mGuid);
-							InModuleAssetDependDetail.mDependAssetDetails.Add(InAssetPackageName,AssetDetail);
+							if (OutAssetData.IsRedirector())
+							{
+								TArray<FAssetDetail> RedirectorRefAssetDetails;
+								UFLibAssetManageHelperEx::GetAssetReference(local_AssetPackageName, RedirectorRefAssetDetails, false);
+								if (!!RedirectorRefAssetDetails.Num())
+								{
+									AssetDetail = RedirectorRefAssetDetails[0];
+									// 修改递归包含的重定向器所指向的真正资源
+									UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(AssetDetail.mPackagePath, local_AssetPackageName);
+								}
+							}
+							else
+							{
+								AssetDetail.mPackagePath = PackagePath;
+								AssetDetail.mAssetType = OutAssetData.AssetClass.ToString();
+								UFLibAssetManageHelperEx::GetAssetPackageGUID(PackagePath, AssetDetail.mGuid);
+							}
+							InModuleAssetDependDetail.mDependAssetDetails.Add(local_AssetPackageName,AssetDetail);
 						}
 					}
-					
-					GatherAssetDependicesInfoRecursively(InAssetRegistryModule, InAssetPackageName, OutDependencies);
+					if (bRecursively)
+					{
+						UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(InAssetRegistryModule, InAssetPackageName, OutDependencies);
+					}
+						
 				}
 			};
 
@@ -381,8 +418,17 @@ bool UFLibAssetManageHelperEx::GetAssetsList(const TArray<FString>& InFilterPack
 	{
 		for (const auto& AssetDataIndex : AllAssetData)
 		{
-			if (!AssetDataIndex.IsValid() || AssetDataIndex.IsRedirector())
+			if (!AssetDataIndex.IsValid())
 				continue;
+			if (AssetDataIndex.IsRedirector())
+			{
+				TArray<FAssetDetail> TargetAssets;
+				FString RedirectorLongPackageName;
+				UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(AssetDataIndex.PackageName.ToString(), RedirectorLongPackageName);
+				UFLibAssetManageHelperEx::GetAssetReference(RedirectorLongPackageName, TargetAssets, false);
+				OutAssetList.Append(TargetAssets);
+				continue;
+			}
 			FAssetDetail AssetDetail;
 			UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(AssetDataIndex, AssetDetail);
 			OutAssetList.Add(AssetDetail);
