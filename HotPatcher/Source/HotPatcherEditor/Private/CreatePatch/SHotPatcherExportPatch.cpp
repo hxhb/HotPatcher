@@ -893,28 +893,18 @@ bool SHotPatcherExportPatch::CanPreviewPatch() const
 
 FReply SHotPatcherExportPatch::DoPreviewPatch()
 {
+	FChunkInfo DefaultChunk;
 	FHotPatcherVersion BaseVersion;
 
 	if (ExportPatchSetting->IsByBaseVersion())
 	{
 		ExportPatchSetting->GetBaseVersionInfo(BaseVersion);
+		DefaultChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchVerison(BaseVersion);
 	}
 
-	UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(true);
 	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting);
-
-	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
-		ExportPatchSetting->GetVersionId(),
-		BaseVersion.VersionId,
-		FDateTime::UtcNow().ToString(),
-		NewVersionChunk,
-		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
-	);
-
-	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersion(BaseVersion, CurrentVersion);
-
-	FChunkInfo EmptyChunk;
-	FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::DiffChunk(NewVersionChunk, EmptyChunk, ExportPatchSetting->IsIncludeHasRefAssetsOnly());
+	
+	FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::DiffChunk(NewVersionChunk, DefaultChunk, ExportPatchSetting->IsIncludeHasRefAssetsOnly());
 
 	TArray<FString> AllUnselectedAssets = ChunkAssetsDescrible.GetAssetsStrings();
 	TArray<FString> AllUnselectedExFiles = ChunkAssetsDescrible.GetExFileStrings();

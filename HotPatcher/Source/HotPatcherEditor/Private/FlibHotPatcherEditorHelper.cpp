@@ -587,3 +587,50 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(const UExport
 	return Chunk;
 }
 
+FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchVerison(const FHotPatcherVersion& InPatchVersion)
+{
+	FChunkInfo Chunk;
+	Chunk.ChunkName = InPatchVersion.VersionId;
+	Chunk.bMonolithic = false;
+	Chunk.bSavePakCommands = false;
+	auto ConvPathStrToDirPaths = [](const TArray<FString>& InPathsStr)->TArray<FDirectoryPath>
+	{
+		TArray<FDirectoryPath> result;
+		for (const auto& Dir : InPathsStr)
+		{
+			FDirectoryPath Path;
+			Path.Path = Dir;
+			result.Add(Path);
+		}
+		return result;
+	};
+
+	//Chunk.AssetIncludeFilters = ConvPathStrToDirPaths(InPatchVersion.IgnoreFilter);
+	// Chunk.AssetIgnoreFilters = ConvPathStrToDirPaths(InPatchVersion.IgnoreFilter);
+	Chunk.bAnalysisFilterDependencies = false;
+	TArray<FAssetDetail> AllVersionAssets;
+	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(InPatchVersion.AssetInfo, AllVersionAssets);
+
+	for (const auto& Asset : AllVersionAssets)
+	{
+		FPatcherSpecifyAsset CurrentAsset;
+		CurrentAsset.Asset = FSoftObjectPath(Asset.mPackagePath);
+		CurrentAsset.bAnalysisAssetDependencies = false;
+		Chunk.IncludeSpecifyAssets.Add(CurrentAsset);
+	}
+	// Chunk.AddExternDirectoryToPak = InPatchSetting->GetAddExternDirectory();
+	for (const auto& File : InPatchVersion.ExternalFiles)
+	{
+		Chunk.AddExternFileToPak.Add(File.Value);
+	}
+	
+	Chunk.InternalFiles.bIncludeAssetRegistry = false;
+	Chunk.InternalFiles.bIncludeGlobalShaderCache = false;
+	Chunk.InternalFiles.bIncludeShaderBytecode = false;
+	Chunk.InternalFiles.bIncludeEngineIni = false;
+	Chunk.InternalFiles.bIncludePluginIni = false;
+	Chunk.InternalFiles.bIncludeProjectIni = false;
+
+	return Chunk;
+}
+

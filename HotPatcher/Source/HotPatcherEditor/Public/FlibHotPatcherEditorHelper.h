@@ -40,5 +40,5 @@ public:
 	static class UExportReleaseSettings* DeserializeReleaseConfig(class UExportReleaseSettings* InNewSetting, const FString& InContent);
 
 	static FChunkInfo MakeChunkFromPatchSettings(const UExportPatchSettings* InPatchSetting);
-
+	static FChunkInfo MakeChunkFromPatchVerison(const FHotPatcherVersion& InPatchVersion);
 };
