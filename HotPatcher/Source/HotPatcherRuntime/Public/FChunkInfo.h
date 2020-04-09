@@ -158,6 +158,7 @@ public:
 protected:
 	FString MountPath;
 	TArray<FString> PakCommands;
+	FString LongPackagePath;
 };
 
 

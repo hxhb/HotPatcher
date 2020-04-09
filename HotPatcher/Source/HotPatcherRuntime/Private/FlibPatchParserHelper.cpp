@@ -1032,13 +1032,13 @@ TArray<FString> UFlibPatchParserHelper::GetCookedFilesByPakInternalInfo(const FP
 {
 	TArray<FString> SearchAssetList;
 
-	FString ProjectDir = FPaths::ProjectDir();
+	FString ProjectAbsDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 	FString ProjectName = UFlibPatchParserHelper::GetProjectName();
 
 	if (InPakInternalInfo.bIncludeAssetRegistry)
 	{
 		FString AssetRegistryCookCommand;
-		if (UFlibPatchParserHelper::GetCookedAssetRegistryFiles(ProjectDir, UFlibPatchParserHelper::GetProjectName(), PlatformName, AssetRegistryCookCommand))
+		if (UFlibPatchParserHelper::GetCookedAssetRegistryFiles(ProjectAbsDir, UFlibPatchParserHelper::GetProjectName(), PlatformName, AssetRegistryCookCommand))
 		{
 			SearchAssetList.AddUnique(AssetRegistryCookCommand);
 		}
@@ -1046,7 +1046,7 @@ TArray<FString> UFlibPatchParserHelper::GetCookedFilesByPakInternalInfo(const FP
 
 	if (InPakInternalInfo.bIncludeGlobalShaderCache)
 	{
-		TArray<FString> GlobalShaderCacheList = UFlibPatchParserHelper::GetCookedGlobalShaderCacheFiles(ProjectDir, PlatformName);
+		TArray<FString> GlobalShaderCacheList = UFlibPatchParserHelper::GetCookedGlobalShaderCacheFiles(ProjectAbsDir, PlatformName);
 		if (!!GlobalShaderCacheList.Num())
 		{
 			SearchAssetList.Append(GlobalShaderCacheList);
@@ -1057,7 +1057,7 @@ TArray<FString> UFlibPatchParserHelper::GetCookedFilesByPakInternalInfo(const FP
 	{
 		TArray<FString> ShaderByteCodeFiles;
 
-		if (UFlibPatchParserHelper::GetCookedShaderBytecodeFiles(ProjectDir, ProjectName, PlatformName, true, true, ShaderByteCodeFiles) &&
+		if (UFlibPatchParserHelper::GetCookedShaderBytecodeFiles(ProjectAbsDir, ProjectName, PlatformName, true, true, ShaderByteCodeFiles) &&
 			!!ShaderByteCodeFiles.Num()
 			)
 		{
@@ -1074,13 +1074,13 @@ TArray<FExternAssetFileInfo> UFlibPatchParserHelper::GetInternalFilesAsExFiles(c
 
 	TArray<FString> AllNeedPakInternalCookedFiles;
 
-	FString ProjectDir = FPaths::ProjectDir();
+	FString ProjectAbsDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 	AllNeedPakInternalCookedFiles.Append(UFlibPatchParserHelper::GetCookedFilesByPakInternalInfo(InPakInternalInfo, InPlatformName));
 
 	for (const auto& File : AllNeedPakInternalCookedFiles)
 	{
 		FExternAssetFileInfo CurrentFile;
-		UFlibPatchParserHelper::ConvNotAssetFileToExFile(FPaths::ProjectDir(),InPlatformName, File, CurrentFile);
+		UFlibPatchParserHelper::ConvNotAssetFileToExFile(ProjectAbsDir,InPlatformName, File, CurrentFile);
 		resultFiles.Add(CurrentFile);
 	}
 
@@ -1097,14 +1097,14 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(
 	TArray<FString> OutPakCommands;
 	TArray<FString> AllNeedPakInternalCookedFiles;
 
-	FString ProjectDir = FPaths::ProjectDir();
+	FString ProjectAbsDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 	AllNeedPakInternalCookedFiles.Append(UFlibPatchParserHelper::GetCookedFilesByPakInternalInfo(InPakInternalInfo, PlatformName));
 
 	// combine as cook commands
 	for (const auto& AssetFile : AllNeedPakInternalCookedFiles)
 	{
 		FString CurrentCommand;
-		if (UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(ProjectDir, PlatformName,InPakOptions, AssetFile, CurrentCommand, InReceiveCommand))
+		if (UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(ProjectAbsDir, PlatformName,InPakOptions, AssetFile, CurrentCommand, InReceiveCommand))
 		{
 			OutPakCommands.AddUnique(CurrentCommand);
 		}
@@ -1112,14 +1112,14 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(
 
 	FString EngineAbsDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
 
-	auto CombineInPakCommands = [&OutPakCommands, &ProjectDir, &EngineAbsDir, &PlatformName,&InPakOptions,&InReceiveCommand](const TArray<FString>& IniFiles)
+	auto CombineInPakCommands = [&OutPakCommands, &ProjectAbsDir, &EngineAbsDir, &PlatformName,&InPakOptions,&InReceiveCommand](const TArray<FString>& IniFiles)
 	{
 		TArray<FString> result;
 
 		TArray<FString> IniPakCommmands;
 		UFlibPatchParserHelper::ConvIniFilesToPakCommands(
 			EngineAbsDir,
-			ProjectDir,
+			ProjectAbsDir,
 			UFlibPatchParserHelper::GetProjectName(),
 			InPakOptions,
 			IniFiles,
@@ -1382,7 +1382,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(const FPatc
 		};
 		// Collect Chunk Assets
 		{
-			FString ProjectDir = FPaths::ProjectDir();
+			FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 			TArray<FString> AssetsPakCommands;
 			UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(ProjectDir, PlatformName, ChunkAssetsDescrible.Assets, PakOptions, AssetsPakCommands, ReceivePakCommandLambda);
 			
