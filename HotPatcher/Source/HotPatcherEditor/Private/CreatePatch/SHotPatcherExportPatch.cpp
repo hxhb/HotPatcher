@@ -707,8 +707,8 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			{
 				FPakFileProxy SinglePakForChunk;
 				SinglePakForChunk.PakCommands = ChunkPakCommands;
-				SinglePakForChunk.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s_%s_%s.txt"), *CurrentVersion.VersionId, *PlatformName, *Chunk.ChunkName));
-				SinglePakForChunk.PakSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s_%s_%s.pak"), *CurrentVersion.VersionId, *PlatformName, *Chunk.ChunkName));
+				SinglePakForChunk.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, FString::Printf(TEXT("%s_%s_PakCommands.txt"), *CurrentVersion.VersionId, *PlatformName));
+				SinglePakForChunk.PakSavePath = FPaths::Combine(ChunkSaveBasePath, FString::Printf(TEXT("%s_%s.pak"), *CurrentVersion.VersionId, *PlatformName));
 				PakFileProxys.Add(SinglePakForChunk);
 			}
 			else
@@ -729,7 +729,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 					FString extersion;
 					FPaths::Split(RelativePath, Path, filename, extersion);
 				}
-				CurrentPak.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s_PakCommand.txt"), *Path, *filename));
+				CurrentPak.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s_PakCommands.txt"), *Path, *filename));
 				CurrentPak.PakSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s.pak"), *Path, *filename));
 				PakFileProxys.Add(CurrentPak);
 			}
