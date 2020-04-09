@@ -577,8 +577,8 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	
 
 	// save pakversion.json
-	FPakVersion CurrentPakVersion;
-	SavePatchVersionJson(CurrentVersion, CurrentVersionSavePath, CurrentPakVersion);
+	//FPakVersion CurrentPakVersion;
+	//SavePatchVersionJson(CurrentVersion, CurrentVersionSavePath, CurrentPakVersion);
 
 	// package all selected platform
 	TMap<FString,TArray<FPakFileInfo>> PakFilesInfoMap;
@@ -746,7 +746,8 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			for (const auto& PakFileProxy : PakFileProxys)
 			{
 
-				FThread CurrentPakThread(*PakFileProxy.PakSavePath, [CurrentPakVersion, PlatformName, UnrealPakOptions, PakFileProxy, &Chunk, &PakFilesInfoMap]() {
+				FThread CurrentPakThread(*PakFileProxy.PakSavePath, [/*CurrentPakVersion, */PlatformName, UnrealPakOptions, PakFileProxy, &Chunk, &PakFilesInfoMap]() 
+				{
 
 					bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(
 						UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands),
@@ -779,7 +780,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 							FPakFileInfo CurrentPakInfo;
 							if (UFlibPatchParserHelper::GetPakFileInfo(PakFileProxy.PakSavePath, CurrentPakInfo))
 							{
-								CurrentPakInfo.PakVersion = CurrentPakVersion;
+								// CurrentPakInfo.PakVersion = CurrentPakVersion;
 								if (!PakFilesInfoMap.Contains(PlatformName))
 								{
 									PakFilesInfoMap.Add(PlatformName, TArray<FPakFileInfo>{CurrentPakInfo});
