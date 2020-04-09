@@ -107,7 +107,8 @@ public:
 	FORCEINLINE bool IsEnableExternFilesDiff()const { return bEnableExternFilesDiff; }
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 	FORCEINLINE bool IsIncludePakVersion()const { return bIncludePakVersionFile; }
-	
+	FORCEINLINE bool IsSaveAssetDependency()const { return bSaveAssetDependency; }
+
 	// chunk infomation
 	FORCEINLINE bool IsEnableChunk()const { return bEnableChunk; }
 	FORCEINLINE TArray<FChunkInfo> GetChunkInfos()const { return ChunkInfos; }
@@ -176,6 +177,8 @@ public:
 		bool bSavePakList = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bByBaseVersion"))
 		bool bSaveDiffAnalysis = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+		bool bSaveAssetDependency;
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo", meta = (EditCondition = "bIncludePakVersion"))
 	//	bool bSavePakVersion;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")

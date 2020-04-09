@@ -10,6 +10,7 @@
 #include "FlibPakHelper.h"
 #include "FExternDirectoryInfo.h"
 #include "FExternDirectoryInfo.h"
+#include "FAssetDependency.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -206,4 +207,13 @@ public:
 	static TArray<FString> GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands);
 
 	static FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions, bool block);
+
+	static FAssetDependency GetAssetDependency(const FAssetDetail& InAsset);
+	static TArray<FAssetDependency> GetAssetsDependency(const TArray<FAssetDetail>& InAssets);
+	static TArray<FAssetDependency> GetAssetsDependencyByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies);
+
+	static bool SerializeAssetDependencyAsJsonObject(const FAssetDependency& InAssetDependency, TSharedPtr<FJsonObject>& OutJsonObject);
+	static bool SerializeAssetsDependencyAsJsonObject(const TArray<FAssetDependency>& InAssetsDependency, TSharedPtr<FJsonObject>& OutJsonObject);
+
+	static bool SerializeAssetsDependencyAsString(const TArray<FAssetDependency>& InAssetsDependency,FString& OutString);
 };

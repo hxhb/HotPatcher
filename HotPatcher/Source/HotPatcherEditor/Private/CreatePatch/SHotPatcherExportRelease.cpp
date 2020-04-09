@@ -12,6 +12,7 @@
 #include "Widgets/Layout/SSeparator.h"
 #include "HAL/FileManager.h"
 #include "Misc/FileHelper.h"
+#include "Misc/ScopedSlowTask.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherExportRelease"
 
@@ -144,7 +145,15 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 
 FReply SHotPatcherExportRelease::DoExportRelease()
 {
-	FHotPatcherVersion ExportVersion= UFlibPatchParserHelper::ExportReleaseVersionInfo(
+	float AmountOfWorkProgress = 4.0f;
+	FScopedSlowTask UnrealPakSlowTask(AmountOfWorkProgress);
+	UnrealPakSlowTask.MakeDialog();
+
+	FHotPatcherVersion ExportVersion;
+	{
+		FText DiaLogMsg = FText::Format(NSLOCTEXT("AnalysisRelease", "AnalysisReleaseVersionInfo", "Analysis Release {0} Assets info."), FText::FromString(ExportReleaseSettings->GetVersionId()));
+		UnrealPakSlowTask.EnterProgressFrame(1.0, DiaLogMsg);
+		ExportVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
 			ExportReleaseSettings->GetVersionId(),
 			TEXT(""),
 			FDateTime::UtcNow().ToString(),
@@ -154,40 +163,73 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 			ExportReleaseSettings->GetAllExternFiles(true),
 			ExportReleaseSettings->IsIncludeHasRefAssetsOnly()
 		);
-	
+	}
 	FString SaveVersionDir = FPaths::Combine(ExportReleaseSettings->GetSavePath(), ExportReleaseSettings->GetVersionId());
 
-	FString SaveToJson;
-	if (UFlibPatchParserHelper::SerializeHotPatcherVersionToString(ExportVersion, SaveToJson))
+	// save release asset info
 	{
-		
-		FString SaveToFile = FPaths::Combine(
-			SaveVersionDir,
-			FString::Printf(TEXT("%s_Release.json"), *ExportReleaseSettings->GetVersionId())
-		);
-		bool runState = UFLibAssetManageHelperEx::SaveStringToFile(SaveToFile,SaveToJson);
-		if (runState)
+		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportReleaseJson", "ExportReleaseVersionInfoJson", "Export Release {0} Assets info to file."), FText::FromString(ExportReleaseSettings->GetVersionId()));
+		UnrealPakSlowTask.EnterProgressFrame(1.0, DiaLogMsg);
+		FString SaveToJson;
+		if (UFlibPatchParserHelper::SerializeHotPatcherVersionToString(ExportVersion, SaveToJson))
 		{
-			auto Message = LOCTEXT("ExportReleaseSuccessNotification", "Succeed to export HotPatcher Release Version.");
-			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Message, SaveToFile);
+
+			FString SaveToFile = FPaths::Combine(
+				SaveVersionDir,
+				FString::Printf(TEXT("%s_Release.json"), *ExportReleaseSettings->GetVersionId())
+			);
+			bool runState = UFLibAssetManageHelperEx::SaveStringToFile(SaveToFile, SaveToJson);
+			if (runState)
+			{
+				auto Message = LOCTEXT("ExportReleaseSuccessNotification", "Succeed to export HotPatcher Release Version.");
+				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Message, SaveToFile);
+			}
+			UE_LOG(LogTemp, Log, TEXT("HotPatcher Export RELEASE is %s."), runState ? TEXT("Success") : TEXT("FAILD"));
 		}
-		UE_LOG(LogTemp, Log, TEXT("HotPatcher Export RELEASE is %s."), runState ? TEXT("Success") : TEXT("FAILD"));
 	}
-	FString ConfigJson;
-	if (ExportReleaseSettings->SerializeReleaseConfigToString(ConfigJson))
+
 	{
-		FString SaveToFile = FPaths::Combine(
-			SaveVersionDir,
-			FString::Printf(TEXT("%s_ReleaseConfig.json"), *ExportReleaseSettings->GetVersionId())
-		);
-		bool runState = UFLibAssetManageHelperEx::SaveStringToFile(SaveToFile, ConfigJson);
-		if (runState)
+		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportReleaseConfig", "ExportReleaseConfigJson", "Export Release {0} Configuration to file."), FText::FromString(ExportReleaseSettings->GetVersionId()));
+		UnrealPakSlowTask.EnterProgressFrame(1.0, DiaLogMsg);
+		FString ConfigJson;
+		if (ExportReleaseSettings->SerializeReleaseConfigToString(ConfigJson))
 		{
-			auto Message = LOCTEXT("ExportReleaseConfigSuccessNotification", "Succeed to export HotPatcher Release Config.");
-			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Message, SaveToFile);
+			FString SaveToFile = FPaths::Combine(
+				SaveVersionDir,
+				FString::Printf(TEXT("%s_ReleaseConfig.json"), *ExportReleaseSettings->GetVersionId())
+			);
+			bool runState = UFLibAssetManageHelperEx::SaveStringToFile(SaveToFile, ConfigJson);
+			if (runState)
+			{
+				auto Message = LOCTEXT("ExportReleaseConfigSuccessNotification", "Succeed to export HotPatcher Release Config.");
+				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Message, SaveToFile);
+			}
+			UE_LOG(LogTemp, Log, TEXT("HotPatcher Export RELEASE CONFIG is %s."), runState ? TEXT("Success") : TEXT("FAILD"));
 		}
-		UE_LOG(LogTemp, Log, TEXT("HotPatcher Export RELEASE CONFIG is %s."), runState ? TEXT("Success") : TEXT("FAILD"));
 	}
+
+	// save asset dependency
+	{
+		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportReleaseAssetDependency", "ExportReleaseAssetDependencyJson", "Export Release {0} Asset Dependency to file."), FText::FromString(ExportReleaseSettings->GetVersionId()));
+		UnrealPakSlowTask.EnterProgressFrame(1.0, DiaLogMsg);
+		if (ExportReleaseSettings->IsSaveAssetDependency())
+		{
+			TArray<FAssetDependency> AssetsDependency = UFlibPatchParserHelper::GetAssetsDependencyByFAssetDependencies(ExportVersion.AssetInfo);
+
+			FString AssetsDependencyString;
+			UFlibPatchParserHelper::SerializeAssetsDependencyAsString(AssetsDependency, AssetsDependencyString);
+			FString SaveAssetDependencyToFile = FPaths::Combine(
+				SaveVersionDir,
+				FString::Printf(TEXT("%s_AssetDependency.json"), *ExportVersion.VersionId)
+			);
+			if (UFLibAssetManageHelperEx::SaveStringToFile(SaveAssetDependencyToFile, AssetsDependencyString))
+			{
+				auto Msg = LOCTEXT("SaveAssetDependencyInfo", "Succeed to export Asset Dependency info.");
+				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveAssetDependencyToFile);
+			}
+		}
+	}
+
 	return FReply::Handled();
 }
 

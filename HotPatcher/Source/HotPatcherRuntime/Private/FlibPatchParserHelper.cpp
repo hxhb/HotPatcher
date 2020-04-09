@@ -1838,8 +1838,8 @@ bool UFlibPatchParserHelper::SerializeFChunkInfoToJsonObject(const FChunkInfo& I
 
 	TSharedPtr<FJsonObject> OutInternalFilesJsonObject;
 	UFlibPatchParserHelper::SerializeFPakInternalInfoToJsonObject(InChunkInfo.InternalFiles, OutInternalFilesJsonObject);
-	OutJsonObject->SetObjectField(TEXT("InternalFiles"), OutInternalFilesJsonObject);
-	return bRunStatus;
+OutJsonObject->SetObjectField(TEXT("InternalFiles"), OutInternalFilesJsonObject);
+return bRunStatus;
 }
 
 
@@ -1864,7 +1864,7 @@ bool UFlibPatchParserHelper::DeSerializeFChunkInfoFromJsonObject(const TSharedPt
 	};
 
 	OutChunkInfo.AssetIncludeFilters = ParserAssetFilter(TEXT("AssetIncludeFilters"));
-	
+
 	// PatcherSprcifyAsset
 	{
 		TArray<FPatcherSpecifyAsset> SpecifyAssets;
@@ -1930,4 +1930,88 @@ bool UFlibPatchParserHelper::DeSerializeFChunkInfoFromJsonObject(const TSharedPt
 	}
 
 	return true;
+}
+
+FAssetDependency UFlibPatchParserHelper::GetAssetDependency(const FAssetDetail& InAsset)
+{
+	FAssetDependency Dependency;
+	Dependency.Asset = InAsset;
+	FString LongPackageName;
+	if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.mPackagePath, LongPackageName))
+	{
+		UFLibAssetManageHelperEx::GetAssetReference(LongPackageName, Dependency.AssetDependency, false);
+	}
+
+	return Dependency;
+}
+
+TArray<FAssetDependency> UFlibPatchParserHelper::GetAssetsDependency(const TArray<FAssetDetail>& InAssets)
+{
+	TArray<FAssetDependency> AssetsDependency;
+
+	for (const auto& Asset : InAssets)
+	{
+		AssetsDependency.Add(UFlibPatchParserHelper::GetAssetDependency(Asset));
+	}
+	return AssetsDependency;
+}
+
+TArray<FAssetDependency> UFlibPatchParserHelper::GetAssetsDependencyByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies)
+{
+	TArray<FAssetDetail> AssetsDetail;
+	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(InAssetsDependencies, AssetsDetail);
+	return UFlibPatchParserHelper::GetAssetsDependency(AssetsDetail);
+}
+
+bool UFlibPatchParserHelper::SerializeAssetDependencyAsJsonObject(const FAssetDependency& InAssetDependency, TSharedPtr<FJsonObject>& OutJsonObject)
+{
+	bool RunStatus = false;
+
+	if (!OutJsonObject.IsValid())
+		OutJsonObject = MakeShareable(new FJsonObject);
+
+	FString LongPackageName;
+	UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAssetDependency.Asset.mPackagePath, LongPackageName);
+	OutJsonObject->SetStringField(TEXT("Asset"), LongPackageName);
+
+	TArray<TSharedPtr<FJsonValue>> RefAssetsObjectList;
+
+	for (const auto& RefAsset : InAssetDependency.AssetDependency)
+	{
+		TSharedPtr<FJsonObject> CurrentRefAssetJsonObject = UFLibAssetManageHelperEx::SerilizeAssetDetial(RefAsset);
+		RefAssetsObjectList.Add(MakeShareable(new FJsonValueObject(CurrentRefAssetJsonObject)));
+	}
+	OutJsonObject->SetArrayField(TEXT("Reference"), RefAssetsObjectList);
+	return true;
+}
+
+bool UFlibPatchParserHelper::SerializeAssetsDependencyAsJsonObject(const TArray<FAssetDependency>& InAssetsDependency, TSharedPtr<FJsonObject>& OutJsonObject)
+{
+	bool RunStatus = false;
+
+	if (!OutJsonObject.IsValid())
+		OutJsonObject = MakeShareable(new FJsonObject);
+
+	TArray<TSharedPtr<FJsonValue>> RefAssetsObjectList;
+	for (const auto& AssetDependency: InAssetsDependency)
+	{
+		TSharedPtr<FJsonObject> CurrentAssetDependencyJsonObject;
+		if(UFlibPatchParserHelper::SerializeAssetDependencyAsJsonObject(AssetDependency,CurrentAssetDependencyJsonObject))
+		RefAssetsObjectList.Add(MakeShareable(new FJsonValueObject(CurrentAssetDependencyJsonObject)));
+	}
+	OutJsonObject->SetArrayField(TEXT("AssetsDependency"),RefAssetsObjectList);
+	return true;
+}
+
+bool UFlibPatchParserHelper::SerializeAssetsDependencyAsString(const TArray<FAssetDependency>& InAssetsDependency, FString& OutString)
+{
+	bool bRunStatus = false;
+	TSharedPtr<FJsonObject> RootJsonObj = MakeShareable(new FJsonObject);
+
+	bRunStatus = UFlibPatchParserHelper::SerializeAssetsDependencyAsJsonObject(InAssetsDependency, RootJsonObj);
+
+	auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&OutString);
+	FJsonSerializer::Serialize(RootJsonObj.ToSharedRef(), JsonWriter);
+
+	return bRunStatus;
 }

@@ -573,7 +573,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	}
 
 	int32 ChunkNum = ExportPatchSetting->IsEnableChunk() ? ExportPatchSetting->GetChunkInfos().Num() : 1;
-	float AmountOfWorkProgress = 2.f * (ExportPatchSetting->GetPakTargetPlatforms().Num() * ChunkNum) + 4.0f;
+	
 
 	// save pakversion.json
 	FPakVersion CurrentPakVersion;
@@ -682,6 +682,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		PakChunks.Add(NewVersionChunk);
 	}
 
+	float AmountOfWorkProgress = 2.f * (ExportPatchSetting->GetPakTargetPlatforms().Num() * ChunkNum) + 4.0f;
 	FScopedSlowTask UnrealPakSlowTask(AmountOfWorkProgress);
 	UnrealPakSlowTask.MakeDialog();
 
@@ -712,41 +713,41 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			}
 			else
 			{
-				for (const auto& PakCommand : ChunkPakCommands)
+			for (const auto& PakCommand : ChunkPakCommands)
+			{
+				FPakFileProxy CurrentPak;
+				CurrentPak.PakCommands.Add(PakCommand);
+				FString Path;
+				FString filename;
 				{
-					FPakFileProxy CurrentPak;
-					CurrentPak.PakCommands.Add(PakCommand);
-					FString Path;
-					FString filename;
-					{
-						FString RelativePath;
+					FString RelativePath;
 #define RELATIVE_STR_LENGTH 9
-						if (PakCommand.GetMountPath().StartsWith("../../../"))
-						{
-							RelativePath = UKismetStringLibrary::GetSubstring(PakCommand.GetMountPath(), RELATIVE_STR_LENGTH, PakCommand.GetMountPath().Len() - RELATIVE_STR_LENGTH);
-						}
-						FString extersion;
-						FPaths::Split(RelativePath, Path, filename, extersion);
+					if (PakCommand.GetMountPath().StartsWith("../../../"))
+					{
+						RelativePath = UKismetStringLibrary::GetSubstring(PakCommand.GetMountPath(), RELATIVE_STR_LENGTH, PakCommand.GetMountPath().Len() - RELATIVE_STR_LENGTH);
 					}
-					CurrentPak.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s_PakCommand.txt"), *Path, *filename));
-					CurrentPak.PakSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s.pak"), *Path, *filename));
-					PakFileProxys.Add(CurrentPak);
+					FString extersion;
+					FPaths::Split(RelativePath, Path, filename, extersion);
 				}
+				CurrentPak.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s_PakCommand.txt"), *Path, *filename));
+				CurrentPak.PakSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s.pak"), *Path, *filename));
+				PakFileProxys.Add(CurrentPak);
 			}
-			
+			}
+
 			// Update SlowTask Progress
 			{
-				FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Pak list of {0} Platform Chunk {1}."), FText::FromString(PlatformName), FText::FromString(Chunk.ChunkName));
-				UnrealPakSlowTask.EnterProgressFrame(1.0, Dialog);
+			FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Pak list of {0} Platform Chunk {1}."), FText::FromString(PlatformName), FText::FromString(Chunk.ChunkName));
+			UnrealPakSlowTask.EnterProgressFrame(1.0, Dialog);
 			}
 
 			TArray<FString> UnrealPakOptions = ExportPatchSetting->GetUnrealPakOptions();
 			// 创建chunk的pak文件
 			for (const auto& PakFileProxy : PakFileProxys)
 			{
-				
-				FThread CurrentPakThread(*PakFileProxy.PakSavePath, [CurrentPakVersion,PlatformName,UnrealPakOptions,PakFileProxy,&Chunk,&PakFilesInfoMap]() {
-				
+
+				FThread CurrentPakThread(*PakFileProxy.PakSavePath, [CurrentPakVersion, PlatformName, UnrealPakOptions, PakFileProxy, &Chunk, &PakFilesInfoMap]() {
+
 					bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(
 						UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands),
 						*PakFileProxy.PakCommandSavePath,
@@ -794,7 +795,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 							IFileManager::Get().Delete(*PakFileProxy.PakCommandSavePath);
 						}
 					}
-				
+
 				});
 				CurrentPakThread.Run();
 			}
@@ -809,12 +810,35 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	//		IFileManager::Get().Delete(*PakVersionSavedPath);
 	//	}
 	//}
-	
+
+
+
+	// save asset dependency
+	{
+		if (ExportPatchSetting->IsSaveAssetDependency())
+		{
+			TArray<FAssetDependency> AssetsDependency = UFlibPatchParserHelper::GetAssetsDependencyByFAssetDependencies(
+				UFLibAssetManageHelperEx::CombineAssetDependencies(VersionDiffInfo.AddAssetDependInfo, VersionDiffInfo.ModifyAssetDependInfo)
+			);
+
+			FString AssetsDependencyString;
+			UFlibPatchParserHelper::SerializeAssetsDependencyAsString(AssetsDependency, AssetsDependencyString);
+			FString SaveAssetDependencyToFile = FPaths::Combine(
+				CurrentVersionSavePath,
+				FString::Printf(TEXT("%s_AssetDependency.json"), *CurrentVersion.VersionId)
+			);
+			if (UFLibAssetManageHelperEx::SaveStringToFile(SaveAssetDependencyToFile, AssetsDependencyString))
+			{
+				auto Msg = LOCTEXT("SaveAssetDependencyInfo", "Succeed to export Asset Dependency info.");
+				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveAssetDependencyToFile);
+			}
+		}
+	}
+
 	// save difference to file
 	{
-		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportPatch","ExportPatchDiffFile","Generating Diff info of version {0}"),FText::FromString(CurrentVersion.VersionId));
+		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportPatch", "ExportPatchDiffFile", "Generating Diff info of version {0}"), FText::FromString(CurrentVersion.VersionId));
 		UnrealPakSlowTask.EnterProgressFrame(1.0, DiaLogMsg);
-
 		SavePatchDiffJson(CurrentVersion, VersionDiffInfo);
 	}
 
