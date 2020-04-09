@@ -483,11 +483,11 @@ bool UFlibPatchParserHelper::SerializePakFileInfoToJsonObject(const FPakFileInfo
 	OutJsonObject->SetStringField(TEXT("HASH"),InFileInfo.Hash);
 	OutJsonObject->SetNumberField(TEXT("Size"), InFileInfo.FileSize);
 
-	TSharedPtr<FJsonObject> PakVersionJsonObject = MakeShareable(new FJsonObject);
-	if (UFlibPakHelper::SerializePakVersionToJsonObject(InFileInfo.PakVersion, PakVersionJsonObject))
-	{
-		OutJsonObject->SetObjectField(TEXT("PakVersion"),PakVersionJsonObject);
-	}
+	//TSharedPtr<FJsonObject> PakVersionJsonObject = MakeShareable(new FJsonObject);
+	//if (UFlibPakHelper::SerializePakVersionToJsonObject(InFileInfo.PakVersion, PakVersionJsonObject))
+	//{
+	//	OutJsonObject->SetObjectField(TEXT("PakVersion"),PakVersionJsonObject);
+	//}
 	RunStatus = true;
 	return RunStatus;
 }
@@ -510,7 +510,7 @@ bool UFlibPatchParserHelper::SerializePakFileInfoListToJsonObject(const TArray<F
 	return bRunStatus;
 }
 
-bool UFlibPatchParserHelper::SerializePlatformPakInfoToString(const TMap<FString, FPakFileInfo>& InPakFilesMap, FString& OutString)
+bool UFlibPatchParserHelper::SerializePlatformPakInfoToString(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, FString& OutString)
 {
 	bool bRunStatus = false;
 	TSharedPtr<FJsonObject> RootJsonObj = MakeShareable(new FJsonObject);
@@ -523,7 +523,7 @@ bool UFlibPatchParserHelper::SerializePlatformPakInfoToString(const TMap<FString
 	return bRunStatus;
 }
 
-bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FString, FPakFileInfo>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject)
+bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject)
 {
 	bool bRunStatus = false;
 	if (!OutJsonObject.IsValid())
@@ -539,10 +539,17 @@ bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FSt
 		for (const auto& PakPlatformKey : PakPlatformKeys)
 		{
 			TSharedPtr<FJsonObject> CurrentPlatformPakJsonObj;
-			if (UFlibPatchParserHelper::SerializePakFileInfoToJsonObject(*InPakFilesMap.Find(PakPlatformKey), CurrentPlatformPakJsonObj))
+			TArray<TSharedPtr<FJsonValue>> CurrentPlatformPaksObjectList;
+			for (const auto& Pak : *InPakFilesMap.Find(PakPlatformKey))
 			{
-				OutJsonObject->SetObjectField(PakPlatformKey, CurrentPlatformPakJsonObj);
+				TSharedPtr<FJsonObject> CurrentPakJsonObj;
+				if (UFlibPatchParserHelper::SerializePakFileInfoToJsonObject(Pak, CurrentPakJsonObj))
+				{
+					CurrentPlatformPaksObjectList.Add(MakeShareable(new FJsonValueObject(CurrentPakJsonObj)));
+				}
 			}
+			
+			OutJsonObject->SetArrayField(PakPlatformKey, CurrentPlatformPaksObjectList);
 		}
 		bRunStatus = true;
 	}
@@ -749,7 +756,7 @@ bool UFlibPatchParserHelper::ConvIniFilesToPakCommands(
 	const TArray<FString>& InPakOptions, 
 	const TArray<FString>& InIniFiles, 
 	TArray<FString>& OutCommands,
-	TFunction<void(const TArray<FString>&, const FString&)> InReceiveCommand
+	TFunction<void(const FPakCommand&)> InReceiveCommand
 )
 {
 	FString PakOptionsStr;
@@ -810,7 +817,10 @@ bool UFlibPatchParserHelper::ConvIniFilesToPakCommands(
 					*CookedIniRelativePath,
 					*PakOptionsStr
 			);
-			InReceiveCommand(TArray<FString>{CookCommand}, CookedIniRelativePath);
+			FPakCommand CurrentPakCommand;
+			CurrentPakCommand.PakCommands = TArray<FString>{ CookCommand };
+			CurrentPakCommand.MountPath = CookedIniRelativePath;
+			InReceiveCommand(CurrentPakCommand);
 			OutCommands.AddUnique(CookCommand);
 	
 			bRunStatus = true;
@@ -825,7 +835,7 @@ bool UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(
 	const TArray<FString>& InPakOptions, 
 	const FString& InCookedFile, 
 	FString& OutCommand,
-	TFunction<void(const TArray<FString>&, const FString&)> InReceiveCommand
+	TFunction<void(const FPakCommand&)> InReceiveCommand
 )
 {
 	FString PakOptionsStr;
@@ -853,7 +863,10 @@ bool UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(
 			*AssetFileRelativeCookPath,
 			*PakOptionsStr
 		);
-		InReceiveCommand(TArray<FString>{OutCommand}, AssetFileRelativeCookPath);
+		FPakCommand CurrentPakCommand;
+		CurrentPakCommand.PakCommands = TArray<FString>{ OutCommand };
+		CurrentPakCommand.MountPath = AssetFileRelativeCookPath;
+		InReceiveCommand(CurrentPakCommand);
 		bRunStatus = true;
 	}
 	return bRunStatus;
@@ -1091,7 +1104,7 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(
 	const FPakInternalInfo& InPakInternalInfo, 
 	const FString& PlatformName, 
 	const TArray<FString>& InPakOptions, 
-	TFunction<void(const TArray<FString>&, const FString&)> InReceiveCommand
+	TFunction<void(const FPakCommand&)> InReceiveCommand
 )
 {
 	TArray<FString> OutPakCommands;
@@ -1376,21 +1389,28 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(const FPatc
 
 		TArray<FPakCommand> PakCommands;
 
-		auto ReceivePakCommandLambda = [&PakCommands](const TArray<FString>& InCommand, const FString& InMountPath)
+		auto ReceivePakCommandAssetLambda = [&PakCommands](const TArray<FString>& InCommand, const FString& InMountPath,const FString& InLongPackageName)
 		{
-			PakCommands.Emplace(InMountPath, InCommand);
+			FPakCommand CurrentPakCommand;
+			CurrentPakCommand.PakCommands = InCommand;
+			CurrentPakCommand.MountPath = InMountPath;
+			PakCommands.Add(CurrentPakCommand);
 		};
 		// Collect Chunk Assets
 		{
 			FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 			TArray<FString> AssetsPakCommands;
-			UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(ProjectDir, PlatformName, ChunkAssetsDescrible.Assets, PakOptions, AssetsPakCommands, ReceivePakCommandLambda);
+			UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(ProjectDir, PlatformName, ChunkAssetsDescrible.Assets, PakOptions, AssetsPakCommands, ReceivePakCommandAssetLambda);
 			
 		}
 
+		auto ReceivePakCommandExFilesLambda = [&PakCommands](const FPakCommand& InCommand)
+		{
+			PakCommands.Emplace(InCommand);
+		};
+
 		// Collect Extern Files
 		{
-
 			for (const auto& CollectFile : ChunkAssetsDescrible.AllExFiles)
 			{
 				PakCommands.Emplace(
@@ -1399,7 +1419,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(const FPatc
 			}
 		}
 		// internal files
-		UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(ChunkAssetsDescrible.InternalFiles, PlatformName, PakOptions, ReceivePakCommandLambda);
+		UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(ChunkAssetsDescrible.InternalFiles, PlatformName, PakOptions, ReceivePakCommandExFilesLambda);
 		return PakCommands;
 	};
 

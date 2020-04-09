@@ -155,10 +155,10 @@ public:
 		return PakCommands;
 	}
 
-protected:
+public:
+	FString ChunkName;
 	FString MountPath;
 	TArray<FString> PakCommands;
-	FString LongPackagePath;
 };
 
 

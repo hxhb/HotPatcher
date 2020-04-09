@@ -87,8 +87,8 @@ public:
 
 		static bool SerializePakFileInfoListToJsonObject(const TArray<FPakFileInfo>& InFileInfoList, TSharedPtr<FJsonObject>& OutJsonObject);
 		
-		static bool SerializePlatformPakInfoToString(const TMap<FString, FPakFileInfo>& InPakFilesMap, FString& OutString);
-		static bool SerializePlatformPakInfoToJsonObject(const TMap<FString, FPakFileInfo>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject);
+		static bool SerializePlatformPakInfoToString(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, FString& OutString);
+		static bool SerializePlatformPakInfoToJsonObject(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject);
 
 		static bool SerializeDiffAssetsInfomationToJsonObject(const FAssetDependenciesInfo& InAddAsset,
 				const FAssetDependenciesInfo& InModifyAsset,
@@ -133,7 +133,7 @@ public:
 			const TArray<FString>& InPakOptions, 
 			const TArray<FString>& InIniFiles, 
 			TArray<FString>& OutCommands, 
-			TFunction<void(const TArray<FString>&, const FString&)> InReceiveCommand = [](const TArray<FString>&, const FString&) {});
+			TFunction<void(const FPakCommand&)> InReceiveCommand = [](const FPakCommand&) {});
 
 	// UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool ConvNotAssetFileToPakCommand(
@@ -142,7 +142,7 @@ public:
 			const TArray<FString>& InPakOptions,
 			const FString& InCookedFile,
 			FString& OutCommand,
-			TFunction<void(const TArray<FString>&, const FString&)> InReceiveCommand = [](const TArray<FString>&, const FString&) {});
+			TFunction<void(const FPakCommand&)> InReceiveCommand = [](const FPakCommand&) {});
 	static bool ConvNotAssetFileToExFile(const FString& InProjectDir, const FString& InPlatformName, const FString& InCookedFile, FExternAssetFileInfo& OutExFile);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 	static FString HashStringWithSHA1(const FString &InString);
@@ -185,7 +185,7 @@ public:
 		const FPakInternalInfo& InPakInternalInfo, 
 		const FString& PlatformName, 
 		const TArray<FString>& InPakOptions, 
-		TFunction<void(const TArray<FString>&,const FString&)> InReceiveCommand=[](const TArray<FString>&,const FString&) {});
+		TFunction<void(const FPakCommand&)> InReceiveCommand=[](const FPakCommand&) {});
 	
 	static FChunkInfo CombineChunkInfo(const FChunkInfo& R, const FChunkInfo& L);
 	static FChunkInfo CombineChunkInfos(const TArray<FChunkInfo>& Chunks);

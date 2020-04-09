@@ -580,7 +580,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	SavePatchVersionJson(CurrentVersion, CurrentVersionSavePath, CurrentPakVersion);
 
 	// package all selected platform
-	TMap<FString,FPakFileInfo> PakFilesInfoMap;
+	TMap<FString,TArray<FPakFileInfo>> PakFilesInfoMap;
 
 	// Check Chunk
 	if(ExportPatchSetting->IsEnableChunk())
@@ -779,7 +779,14 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 							if (UFlibPatchParserHelper::GetPakFileInfo(PakFileProxy.PakSavePath, CurrentPakInfo))
 							{
 								CurrentPakInfo.PakVersion = CurrentPakVersion;
-								PakFilesInfoMap.Add(PlatformName, CurrentPakInfo);
+								if (!PakFilesInfoMap.Contains(PlatformName))
+								{
+									PakFilesInfoMap.Add(PlatformName, TArray<FPakFileInfo>{CurrentPakInfo});
+								}
+								else
+								{
+									PakFilesInfoMap.Find(PlatformName)->Add(CurrentPakInfo);
+								}
 							}
 						}
 						if (!Chunk.bSavePakCommands)
@@ -795,13 +802,13 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	}
 
 	// delete pakversion.json
-	{
-		FString PakVersionSavedPath = UExportPatchSettings::GetSavePakVersionPath(CurrentVersionSavePath,CurrentVersion);
-		if (ExportPatchSetting->IsIncludePakVersion() && FPaths::FileExists(PakVersionSavedPath))
-		{
-			IFileManager::Get().Delete(*PakVersionSavedPath);
-		}
-	}
+	//{
+	//	FString PakVersionSavedPath = UExportPatchSettings::GetSavePakVersionPath(CurrentVersionSavePath,CurrentVersion);
+	//	if (ExportPatchSetting->IsIncludePakVersion() && FPaths::FileExists(PakVersionSavedPath))
+	//	{
+	//		IFileManager::Get().Delete(*PakVersionSavedPath);
+	//	}
+	//}
 	
 	// save difference to file
 	{

@@ -775,7 +775,7 @@ bool UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(
 	const FAssetDependenciesInfo& InAssetDependencies, 
 	const TArray<FString> &InCookParams, 
 	TArray<FString>& OutCookCommand, 
-	TFunction<void(const TArray<FString>&, const FString&)> InReceivePakCommand)
+	TFunction<void(const TArray<FString>&, const FString&, const FString&)> InReceivePakCommand)
 {
 	if (!FPaths::DirectoryExists(InProjectDir) || !UFLibAssetManageHelperEx::IsValidPlatform(InPlatformName))
 		return false;
@@ -809,7 +809,7 @@ bool UFLibAssetManageHelperEx::MakePakCommandFromLongPackageName(
 	const FString& InAssetLongPackageName, 
 	const TArray<FString> &InCookParams, 
 	TArray<FString>& OutCookCommand,
-	TFunction<void(const TArray<FString>&, const FString&)> InReceivePakCommand
+	TFunction<void(const TArray<FString>&, const FString&, const FString&)> InReceivePakCommand
 )
 {
 	OutCookCommand.Empty();
@@ -823,7 +823,7 @@ bool UFLibAssetManageHelperEx::MakePakCommandFromLongPackageName(
 		{
 			if (!!CookedAssetRelativePath.Num() && !!FinalCookedCommand.Num())
 			{
-				InReceivePakCommand(FinalCookedCommand, CookedAssetRelativePath[0]);
+				InReceivePakCommand(FinalCookedCommand, CookedAssetRelativePath[0],InAssetLongPackageName);
 				OutCookCommand.Append(FinalCookedCommand);
 				bStatus = true;
 			}
