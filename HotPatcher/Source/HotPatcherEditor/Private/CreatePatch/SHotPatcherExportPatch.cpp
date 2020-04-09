@@ -155,7 +155,7 @@ void SHotPatcherExportPatch::ExportConfig()const
 void SHotPatcherExportPatch::ResetConfig()
 {
 	UE_LOG(LogTemp, Log, TEXT("Patch Clear Config"));
-	TSharedPtr<UExportPatchSettings> DefaultSetting = MakeShareable(NewObject<UExportPatchSettings>());
+	UExportPatchSettings* DefaultSetting = NewObject<UExportPatchSettings>();
 	FString DefaultSettingJson;
 	DefaultSetting->SerializePatchConfigToString(DefaultSettingJson);
 	UFlibHotPatcherEditorHelper::DeserializePatchConfig(ExportPatchSetting, DefaultSettingJson);
@@ -347,6 +347,7 @@ bool SHotPatcherExportPatch::CheckPatchRequire(const FPatchVersionDiff& InDiff)c
 		}
 		else
 		{
+			ShowMsg(TEXT(""));
 			Status = true;
 		}
 	}
@@ -686,7 +687,6 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	FScopedSlowTask UnrealPakSlowTask(AmountOfWorkProgress);
 	UnrealPakSlowTask.MakeDialog();
 
-	TArray<FString> PakOptions;
 	for(const auto& PlatformName :ExportPatchSetting->GetPakTargetPlatformNames())
 	{
 		// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
@@ -702,7 +702,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			FString ChunkSaveBasePath = FPaths::Combine(ExportPatchSetting->SavePath.Path, CurrentVersion.VersionId, PlatformName);
 			TArray<FPakFileProxy> PakFileProxys;
 
-			TArray<FPakCommand> ChunkPakCommands = UFlibPatchParserHelper::CollectPakCommandByChunk(VersionDiffInfo, Chunk, PlatformName, PakOptions);
+			TArray<FPakCommand> ChunkPakCommands = UFlibPatchParserHelper::CollectPakCommandByChunk(VersionDiffInfo, Chunk, PlatformName, ExportPatchSetting->GetPakCommandOptions());
 			if(!Chunk.bMonolithic)
 			{
 				FPakFileProxy SinglePakForChunk;

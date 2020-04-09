@@ -1413,9 +1413,11 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(const FPatc
 		{
 			for (const auto& CollectFile : ChunkAssetsDescrible.AllExFiles)
 			{
-				PakCommands.Emplace(
-					CollectFile.MountPath, TArray<FString>{FString::Printf(TEXT("\"%s\" \"%s\""), *CollectFile.FilePath.FilePath, *CollectFile.MountPath)}
-				);
+				FPakCommand CurrentPakCommand;
+				CurrentPakCommand.MountPath = CollectFile.MountPath;
+				CurrentPakCommand.PakCommands = TArray<FString>{ FString::Printf(TEXT("\"%s\" \"%s\"%s"), *CollectFile.FilePath.FilePath, *CollectFile.MountPath,*PakOptionsStr) };
+
+				PakCommands.Add(CurrentPakCommand);
 			}
 		}
 		// internal files
