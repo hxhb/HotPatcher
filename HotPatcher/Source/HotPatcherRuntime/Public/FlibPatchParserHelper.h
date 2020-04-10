@@ -4,6 +4,7 @@
 //project header
 #include "FChunkInfo.h"
 #include "FPakFileInfo.h"
+#include "FReplaceText.h"
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "FHotPatcherVersion.h"
 #include "FPatchVersionDiff.h"
@@ -204,7 +205,7 @@ public:
 	// CurrenrVersionChunk中的过滤器会进行依赖分析，TotalChunk的不会，目的是让用户可以自己控制某个文件夹打包到哪个Pak里，而不会对该文件夹下的资源进行依赖分析
 	static FChunkAssetDescribe DiffChunk(const FChunkInfo& CurrentVersionChunk,const FChunkInfo& TotalChunk, bool InIncludeHasRefAssetsOnly);
 
-	static TArray<FString> GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands);
+	static TArray<FString> GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands, const TArray<FReplaceText>& InReplaceTexts = TArray<FReplaceText>{});
 
 	static FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions, bool block);
 
@@ -216,4 +217,9 @@ public:
 	static bool SerializeAssetsDependencyAsJsonObject(const TArray<FAssetDependency>& InAssetsDependency, TSharedPtr<FJsonObject>& OutJsonObject);
 
 	static bool SerializeAssetsDependencyAsString(const TArray<FAssetDependency>& InAssetsDependency,FString& OutString);
+
+	static TArray<TSharedPtr<FJsonValue>> SerializeFReplaceTextsAsJsonValues(const TArray<FReplaceText>& InReplaceTexts);
+	static TSharedPtr<FJsonObject> SerializeFReplaceTextAsJsonObject(const FReplaceText& InReplaceText);
+	static FReplaceText DeSerializeFReplaceText(const TSharedPtr<FJsonObject>& InReplaceTextJsonObject);
+
 };

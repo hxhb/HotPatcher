@@ -5,6 +5,7 @@
 // project header
 #include "FPatchVersionDiff.h"
 #include "FChunkInfo.h"
+#include "FReplaceText.h"
 #include "ETargetPlatform.h"
 #include "FExternAssetFileInfo.h"
 #include "FExternDirectoryInfo.h"
@@ -88,6 +89,7 @@ public:
 	FORCEINLINE FString GetVersionId()const { return VersionId; }
 	FORCEINLINE FString GetBaseVersion()const { return BaseVersion.FilePath; }
 	FORCEINLINE TArray<FString> GetPakCommandOptions()const { return PakCommandOptions; }
+	FORCEINLINE TArray<FReplaceText> GetReplacePakCommandTexts()const { return ReplacePakCommandTexts; }
 	FORCEINLINE TArray<FString> GetUnrealPakOptions()const { return UnrealPakOptions; }
 	FORCEINLINE TArray<ETargetPlatform> GetPakTargetPlatforms()const { return PakTargetPlatforms; }
 	TArray<FString> GetPakTargetPlatformNames()const;
@@ -171,6 +173,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<FString> PakCommandOptions;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+		TArray<FReplaceText> ReplacePakCommandTexts;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<FString> UnrealPakOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")

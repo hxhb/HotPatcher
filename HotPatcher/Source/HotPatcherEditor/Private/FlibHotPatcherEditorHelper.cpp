@@ -198,22 +198,36 @@ UExportPatchSettings* UFlibHotPatcherEditorHelper::DeserializePatchConfig(UExpor
 					InNewSetting->ChunkInfos.Add(CurrentChunk);
 				}
 			}
-			// UnrealPakOptions
+
+			auto DeSerializeStringArrayLambda = [](const TSharedPtr<FJsonObject>& InJsonObject, const FString& InJsonArrayName)->TArray<FString>
 			{
-				
-				TArray<TSharedPtr<FJsonValue>> UnrealPakOptionsJsonValues;
-				UnrealPakOptionsJsonValues = JsonObject->GetArrayField(TEXT("UnrealPakOptions"));
+				TArray<TSharedPtr<FJsonValue>> JsonStringValues;
+				JsonStringValues = InJsonObject->GetArrayField(*InJsonArrayName);
+				TArray<FString> result;
 
-				TArray<FString> FinalOptions;
-
-				for (const auto& Option : UnrealPakOptionsJsonValues)
+				for (const auto& Value : JsonStringValues)
 				{
-					FinalOptions.Add(Option->AsString());
+					result.Add(Value->AsString());
 				}
+				return result;
+			};
 
-				InNewSetting->UnrealPakOptions = FinalOptions;
-			}
+			// UnrealPakOptions
+			InNewSetting->UnrealPakOptions = DeSerializeStringArrayLambda(JsonObject, TEXT("UnrealPakOptions"));
+			InNewSetting->PakCommandOptions = DeSerializeStringArrayLambda(JsonObject, TEXT("PakCommandOptions"));
 			
+			// ReplacePakCommandTexts
+			{
+				TArray<TSharedPtr<FJsonValue>> ReplacePakCommandTextsJsonList;
+				ReplacePakCommandTextsJsonList = JsonObject->GetArrayField(TEXT("ReplacePakCommandTexts"));
+				TArray<FReplaceText> result;
+
+				for (const auto& ReplaceJsonValueItem : ReplacePakCommandTextsJsonList)
+				{
+					result.Add(UFlibPatchParserHelper::DeSerializeFReplaceText(ReplaceJsonValueItem->AsObject()));
+				}
+				InNewSetting->ReplacePakCommandTexts = result;
+			}
 			// TargetPlatform
 			{
 
@@ -357,6 +371,12 @@ bool UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(const UExport
 	}
 	// serialize UnrealPakOptions
 	SerializeArrayLambda(InPatchSetting->GetUnrealPakOptions(), TEXT("UnrealPakOptions"));
+
+	// serialize Replace Pak command Texts
+	{
+		TArray<TSharedPtr<FJsonValue>> ReplacePakCommandsJsonValueList = UFlibPatchParserHelper::SerializeFReplaceTextsAsJsonValues(InPatchSetting->GetReplacePakCommandTexts());
+		OutJsonObject->SetArrayField(TEXT("ReplacePakCommandTexts"), ReplacePakCommandsJsonValueList);
+	}
 
 	// serialize platform list
 	{

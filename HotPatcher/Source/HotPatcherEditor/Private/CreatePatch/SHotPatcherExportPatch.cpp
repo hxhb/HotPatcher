@@ -713,26 +713,26 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			}
 			else
 			{
-			for (const auto& PakCommand : ChunkPakCommands)
-			{
-				FPakFileProxy CurrentPak;
-				CurrentPak.PakCommands.Add(PakCommand);
-				FString Path;
-				FString filename;
+				for (const auto& PakCommand : ChunkPakCommands)
 				{
-					FString RelativePath;
-#define RELATIVE_STR_LENGTH 9
-					if (PakCommand.GetMountPath().StartsWith("../../../"))
+					FPakFileProxy CurrentPak;
+					CurrentPak.PakCommands.Add(PakCommand);
+					FString Path;
+					FString filename;
 					{
-						RelativePath = UKismetStringLibrary::GetSubstring(PakCommand.GetMountPath(), RELATIVE_STR_LENGTH, PakCommand.GetMountPath().Len() - RELATIVE_STR_LENGTH);
+						FString RelativePath;
+	#define RELATIVE_STR_LENGTH 9
+						if (PakCommand.GetMountPath().StartsWith("../../../"))
+						{
+							RelativePath = UKismetStringLibrary::GetSubstring(PakCommand.GetMountPath(), RELATIVE_STR_LENGTH, PakCommand.GetMountPath().Len() - RELATIVE_STR_LENGTH);
+						}
+						FString extersion;
+						FPaths::Split(RelativePath, Path, filename, extersion);
 					}
-					FString extersion;
-					FPaths::Split(RelativePath, Path, filename, extersion);
+					CurrentPak.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s_PakCommands.txt"), *Path, *filename));
+					CurrentPak.PakSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s.pak"), *Path, *filename));
+					PakFileProxys.Add(CurrentPak);
 				}
-				CurrentPak.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s_PakCommands.txt"), *Path, *filename));
-				CurrentPak.PakSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s.pak"), *Path, *filename));
-				PakFileProxys.Add(CurrentPak);
-			}
 			}
 
 			// Update SlowTask Progress
@@ -742,15 +742,16 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			}
 
 			TArray<FString> UnrealPakOptions = ExportPatchSetting->GetUnrealPakOptions();
+			TArray<FReplaceText> ReplacePakCommandTexts = ExportPatchSetting->GetReplacePakCommandTexts();
 			// 创建chunk的pak文件
 			for (const auto& PakFileProxy : PakFileProxys)
 			{
 
-				FThread CurrentPakThread(*PakFileProxy.PakSavePath, [/*CurrentPakVersion, */PlatformName, UnrealPakOptions, PakFileProxy, &Chunk, &PakFilesInfoMap]() 
+				FThread CurrentPakThread(*PakFileProxy.PakSavePath, [/*CurrentPakVersion, */PlatformName, UnrealPakOptions, ReplacePakCommandTexts, PakFileProxy, &Chunk, &PakFilesInfoMap]()
 				{
 
 					bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(
-						UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands),
+						UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands, ReplacePakCommandTexts),
 						*PakFileProxy.PakCommandSavePath,
 						FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 

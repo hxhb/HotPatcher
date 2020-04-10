@@ -1640,13 +1640,30 @@ FChunkAssetDescribe UFlibPatchParserHelper::DiffChunk(const FChunkInfo& CurrentV
 	return result;
 }
 
-TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands)
+TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands,const TArray<FReplaceText>& InReplaceTexts)
 {
 	TArray<FString> ResultPakCommands;
 	{
 		for (const auto PakCommand : PakCommands)
 		{
-			ResultPakCommands.Append(PakCommand.GetPakCommands());
+			const TArray<FString>& PakCommandOriginTexts = PakCommand.GetPakCommands();
+			if (!!InReplaceTexts.Num())
+			{
+				for (const auto& PakCommandOriginText : PakCommandOriginTexts)
+				{
+					FString PakCommandTargetText = PakCommandOriginText;
+					for (const auto& ReplaceText : InReplaceTexts)
+					{
+						ESearchCase::Type SearchCaseMode = ReplaceText.SearchCase == ESearchCaseMode::CaseSensitive ? ESearchCase::CaseSensitive : ESearchCase::IgnoreCase;
+						PakCommandTargetText = PakCommandTargetText.Replace(*ReplaceText.From, *ReplaceText.To, SearchCaseMode);
+					}
+					ResultPakCommands.Add(PakCommandTargetText);
+				}
+			}
+			else
+			{
+				ResultPakCommands.Append(PakCommandOriginTexts);
+			}
 		}
 	}
 	return ResultPakCommands;
@@ -2016,4 +2033,62 @@ bool UFlibPatchParserHelper::SerializeAssetsDependencyAsString(const TArray<FAss
 	FJsonSerializer::Serialize(RootJsonObj.ToSharedRef(), JsonWriter);
 
 	return bRunStatus;
+}
+
+TArray<TSharedPtr<FJsonValue>> UFlibPatchParserHelper::SerializeFReplaceTextsAsJsonValues(const TArray<FReplaceText>& InReplaceTexts)
+{
+	TArray<TSharedPtr<FJsonValue>> ReplaceTextJsonValueList;
+
+	for (const auto& ReplaceText : InReplaceTexts)
+	{
+		ReplaceTextJsonValueList.Add(MakeShareable(new FJsonValueObject(UFlibPatchParserHelper::SerializeFReplaceTextAsJsonObject(ReplaceText))));
+	}
+	return ReplaceTextJsonValueList;
+}
+
+TSharedPtr<FJsonObject> UFlibPatchParserHelper::SerializeFReplaceTextAsJsonObject(const FReplaceText& InReplaceText)
+{
+	TSharedPtr<FJsonObject> resultJsonObject = MakeShareable(new FJsonObject);
+	resultJsonObject->SetStringField(TEXT("From"), InReplaceText.From);
+	resultJsonObject->SetStringField(TEXT("To"), InReplaceText.To);
+	FString SearchCaseModeStr;
+	{
+		FString EnumName;
+		UEnum* ETargetPlatformEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("ESearchCaseMode"), true);
+		ETargetPlatformEnum->GetNameByValue((int64)InReplaceText.SearchCase).ToString().Split(TEXT("::"), &EnumName, &SearchCaseModeStr, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+	}
+	resultJsonObject->SetStringField(TEXT("SearchCaseMode"), SearchCaseModeStr);
+	return resultJsonObject;
+}
+
+FReplaceText UFlibPatchParserHelper::DeSerializeFReplaceText(const TSharedPtr<FJsonObject>& InReplaceTextJsonObject)
+{
+	FReplaceText result;
+	if (InReplaceTextJsonObject.IsValid())
+	{
+		result.From = InReplaceTextJsonObject->GetStringField(TEXT("From"));
+		result.To = InReplaceTextJsonObject->GetStringField(TEXT("To"));
+
+		{
+			FString SearchCaseModeStr = InReplaceTextJsonObject->GetStringField(TEXT("SearchCaseMode"));
+			ESearchCaseMode FinalSearchCaseMode = ESearchCaseMode::CaseSensitive;
+
+			FString EnumName = TEXT("ESearchCaseMode::");
+			EnumName.Append(SearchCaseModeStr);
+
+			UEnum* EnumObject = FindObject<UEnum>(ANY_PACKAGE, TEXT("ESearchCaseMode"), true);
+
+			int32 EnumIndex = EnumObject->GetIndexByName(FName(*EnumName));
+			if (EnumIndex != INDEX_NONE)
+			{
+				// UE_LOG(LogTemp, Log, TEXT("FOUND ENUM INDEX SUCCESS:%s"),*EnumName);
+				int32 EnumValue = EnumObject->GetValueByIndex(EnumIndex);
+				ESearchCaseMode CurrentEnum = (ESearchCaseMode)EnumValue;
+				FinalSearchCaseMode = CurrentEnum;
+			}
+			result.SearchCase = FinalSearchCaseMode;
+		}
+
+	}
+	return result;
 }
