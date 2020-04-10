@@ -553,7 +553,15 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		UE_LOG(LogTemp, Error, TEXT("Deserialize Base Version Faild!"));
 		return FReply::Handled();
 	}
-
+	else
+	{
+		// 在不进行外部文件diff的情况下清理掉基础版本的外部文件
+		if (!ExportPatchSetting->IsEnableExternFilesDiff())
+		{
+			BaseVersion.ExternalFiles.Empty();
+		}
+	}
+	
 	UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(true);
 	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting);
 
@@ -589,7 +597,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		FString TotalMsg;
 		FChunkInfo TotalChunk = UFlibPatchParserHelper::CombineChunkInfos(ExportPatchSetting->GetChunkInfos());
 
-		FChunkAssetDescribe ChunkDiffInfo= UFlibPatchParserHelper::DiffChunk(NewVersionChunk, TotalChunk, ExportPatchSetting->IsIncludeHasRefAssetsOnly());
+		FChunkAssetDescribe ChunkDiffInfo = UFlibPatchParserHelper::DiffChunk(NewVersionChunk, TotalChunk, ExportPatchSetting->IsIncludeHasRefAssetsOnly());
 
 		TArray<FString> AllUnselectedAssets = ChunkDiffInfo.GetAssetsStrings();
 		TArray<FString> AllUnselectedExFiles = ChunkDiffInfo.GetExFileStrings();
@@ -707,8 +715,10 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			{
 				FPakFileProxy SinglePakForChunk;
 				SinglePakForChunk.PakCommands = ChunkPakCommands;
-				SinglePakForChunk.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, FString::Printf(TEXT("%s_%s_PakCommands.txt"), *CurrentVersion.VersionId, *PlatformName));
-				SinglePakForChunk.PakSavePath = FPaths::Combine(ChunkSaveBasePath, FString::Printf(TEXT("%s_%s.pak"), *CurrentVersion.VersionId, *PlatformName));
+
+				FString ChunkSaveName = ExportPatchSetting->IsEnableChunk() ? FString::Printf(TEXT("%s_%s"), *CurrentVersion.VersionId, *Chunk.ChunkName) : FString::Printf(TEXT("%s"), *CurrentVersion.VersionId);
+				SinglePakForChunk.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, FString::Printf(TEXT("%s_%s_PakCommands.txt"), *ChunkSaveName, *PlatformName));
+				SinglePakForChunk.PakSavePath = FPaths::Combine(ChunkSaveBasePath, FString::Printf(TEXT("%s_%s.pak"), *ChunkSaveName, *PlatformName));
 				PakFileProxys.Add(SinglePakForChunk);
 			}
 			else
@@ -943,11 +953,17 @@ FReply SHotPatcherExportPatch::DoPreviewPatch()
 	{
 		ExportPatchSetting->GetBaseVersionInfo(BaseVersion);
 		DefaultChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchVerison(BaseVersion);
+		if (!ExportPatchSetting->IsEnableExternFilesDiff())
+		{
+			BaseVersion.ExternalFiles.Empty();
+			DefaultChunk.AddExternDirectoryToPak.Empty();
+			DefaultChunk.AddExternFileToPak.Empty();
+		}
 	}
 
 	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting);
 	
-	FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::DiffChunk(NewVersionChunk, DefaultChunk, ExportPatchSetting->IsIncludeHasRefAssetsOnly());
+	FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::DiffChunkByBaseVersion(NewVersionChunk,DefaultChunk, BaseVersion, ExportPatchSetting->IsIncludeHasRefAssetsOnly());
 
 	TArray<FString> AllUnselectedAssets = ChunkAssetsDescrible.GetAssetsStrings();
 	TArray<FString> AllUnselectedExFiles = ChunkAssetsDescrible.GetExFileStrings();

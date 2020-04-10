@@ -1604,17 +1604,6 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(const
 
 FChunkAssetDescribe UFlibPatchParserHelper::DiffChunk(const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, bool InIncludeHasRefAssetsOnly)
 {
-	FChunkAssetDescribe result;
-
-	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
-		TEXT(""),
-		TEXT(""),
-		TEXT(""),
-		CurrentVersionChunk,
-		InIncludeHasRefAssetsOnly,
-		CurrentVersionChunk.bAnalysisFilterDependencies
-	);
-
 	FHotPatcherVersion TotalChunkVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 		TEXT(""),
 		TEXT(""),
@@ -1623,7 +1612,22 @@ FChunkAssetDescribe UFlibPatchParserHelper::DiffChunk(const FChunkInfo& CurrentV
 		InIncludeHasRefAssetsOnly,
 		TotalChunk.bAnalysisFilterDependencies
 	);
-	FPatchVersionDiff ChunkDiffInfo = DiffPatchVersion(TotalChunkVersion, CurrentVersion);
+
+	return UFlibPatchParserHelper::DiffChunkByBaseVersion(CurrentVersionChunk, TotalChunk ,TotalChunkVersion, InIncludeHasRefAssetsOnly);
+}
+
+FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkByBaseVersion(const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, const FHotPatcherVersion& BaseVersion, bool InIncludeHasRefAssetsOnly)
+{
+	FChunkAssetDescribe result;
+	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
+		TEXT(""),
+		TEXT(""),
+		TEXT(""),
+		CurrentVersionChunk,
+		InIncludeHasRefAssetsOnly,
+		CurrentVersionChunk.bAnalysisFilterDependencies
+	);
+	FPatchVersionDiff ChunkDiffInfo = DiffPatchVersion(BaseVersion, CurrentVersion);
 
 	result.Assets = UFLibAssetManageHelperEx::CombineAssetDependencies(ChunkDiffInfo.AddAssetDependInfo, ChunkDiffInfo.ModifyAssetDependInfo);
 
