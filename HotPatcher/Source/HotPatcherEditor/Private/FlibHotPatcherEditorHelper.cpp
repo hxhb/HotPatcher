@@ -371,7 +371,7 @@ bool UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(const UExport
 	}
 	// serialize UnrealPakOptions
 	SerializeArrayLambda(InPatchSetting->GetUnrealPakOptions(), TEXT("UnrealPakOptions"));
-
+	SerializeArrayLambda(InPatchSetting->GetPakCommandOptions(), TEXT("PakCommandOptions"));
 	// serialize Replace Pak command Texts
 	{
 		TArray<TSharedPtr<FJsonValue>> ReplacePakCommandsJsonValueList = UFlibPatchParserHelper::SerializeFReplaceTextsAsJsonValues(InPatchSetting->GetReplacePakCommandTexts());
