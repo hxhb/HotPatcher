@@ -711,6 +711,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			TArray<FPakFileProxy> PakFileProxys;
 
 			TArray<FPakCommand> ChunkPakCommands = UFlibPatchParserHelper::CollectPakCommandByChunk(VersionDiffInfo, Chunk, PlatformName, ExportPatchSetting->GetPakCommandOptions());
+			FString PakPostfix = TEXT("_001_P");
 			if(!Chunk.bMonolithic)
 			{
 				FPakFileProxy SinglePakForChunk;
@@ -718,7 +719,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 
 				FString ChunkSaveName = ExportPatchSetting->IsEnableChunk() ? FString::Printf(TEXT("%s_%s"), *CurrentVersion.VersionId, *Chunk.ChunkName) : FString::Printf(TEXT("%s"), *CurrentVersion.VersionId);
 				SinglePakForChunk.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, FString::Printf(TEXT("%s_%s_PakCommands.txt"), *ChunkSaveName, *PlatformName));
-				SinglePakForChunk.PakSavePath = FPaths::Combine(ChunkSaveBasePath, FString::Printf(TEXT("%s_%s.pak"), *ChunkSaveName, *PlatformName));
+				SinglePakForChunk.PakSavePath = FPaths::Combine(ChunkSaveBasePath, FString::Printf(TEXT("%s_%s%s.pak"), *ChunkSaveName, *PlatformName,*PakPostfix));
 				PakFileProxys.Add(SinglePakForChunk);
 			}
 			else
@@ -740,7 +741,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 						FPaths::Split(RelativePath, Path, filename, extersion);
 					}
 					CurrentPak.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s_PakCommands.txt"), *Path, *filename));
-					CurrentPak.PakSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s.pak"), *Path, *filename));
+					CurrentPak.PakSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s%s.pak"), *Path, *filename,*PakPostfix));
 					PakFileProxys.Add(CurrentPak);
 				}
 			}
