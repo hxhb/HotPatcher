@@ -442,7 +442,7 @@ bool UFlibPatchParserHelper::DiffVersionExFiles(
 			}
 			else
 			{
-				UE_LOG(LogTemp, Log, TEXT("base version not contains %s."), *NewVersionFile);
+				// UE_LOG(LogTemp, Log, TEXT("base version not contains %s."), *NewVersionFile);
 			}
 		}
 	}
