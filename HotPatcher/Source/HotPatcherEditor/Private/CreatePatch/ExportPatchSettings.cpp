@@ -7,7 +7,7 @@
 #include "Kismet/KismetStringLibrary.h"
 
 UExportPatchSettings::UExportPatchSettings()
-	: bEnableExternFilesDiff(true),UnrealPakOptions{ TEXT("-compress") }
+	: bEnableExternFilesDiff(true),UnrealPakOptions{ TEXT("-compress"),TEXT("-compressionformats=Zlib") }
 {
 	PakVersionFileMountPoint = FPaths::Combine(
 		TEXT("../../../"),
