@@ -263,7 +263,7 @@ bool UFLibAssetManageHelperEx::GetAssetDependencyByDetail(const FAssetDetail& In
 	return UFLibAssetManageHelperEx::GetAssetDependency(LongPackageName, OutRefAsset, bRecursively);
 }
 
-bool UFLibAssetManageHelperEx::GetAssetReference(const FAssetDetail& InAsset, TArray<FAssetDetail>& OutRefAsset)
+bool UFLibAssetManageHelperEx::GetAssetReference(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyType::Type>& SearchAssetDepTypes, TArray<FAssetDetail>& OutRefAsset)
 {
 	bool bStatus = false;
 	FString LongPackageName;
@@ -279,7 +279,19 @@ bool UFLibAssetManageHelperEx::GetAssetReference(const FAssetDetail& InAsset, TA
 		TArray<FAssetIdentifier> ReferenceNames;
 		for (const FAssetIdentifier& AssetId : AssetIdentifier)
 		{
-			AssetRegistryModule.Get().GetReferencers(AssetId, ReferenceNames, EAssetRegistryDependencyType::Hard);
+			for (const auto& AssetDepType : SearchAssetDepTypes)
+			{
+				TArray<FAssetIdentifier> CurrentTypeReferenceNames;
+				AssetRegistryModule.Get().GetReferencers(AssetId, CurrentTypeReferenceNames, AssetDepType);
+				for (const auto& Name : CurrentTypeReferenceNames)
+				{
+					if (!(Name.PackageName.ToString() == LongPackageName))
+					{
+						ReferenceNames.AddUnique(Name);
+					}
+				}
+			}
+			
 		}
 
 		for (const auto& RefAssetId : ReferenceNames)
@@ -293,6 +305,18 @@ bool UFLibAssetManageHelperEx::GetAssetReference(const FAssetDetail& InAsset, TA
 		bStatus = true;
 	}
 	return bStatus;
+}
+
+bool UFLibAssetManageHelperEx::GetAssetReferenceEx(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& SearchAssetDepTypes, TArray<FAssetDetail>& OutRefAsset)
+{
+	TArray<EAssetRegistryDependencyType::Type> local_SearchAssetDepTypes;
+	for (const auto& type : SearchAssetDepTypes)
+	{
+		EAssetRegistryDependencyType::Type resultType = static_cast<EAssetRegistryDependencyType::Type>((uint8)(type));
+		local_SearchAssetDepTypes.AddUnique(resultType);
+	}
+
+	return UFLibAssetManageHelperEx::GetAssetReference(InAsset, local_SearchAssetDepTypes, OutRefAsset);
 }
 
 void UFLibAssetManageHelperEx::GetAssetDependenciesForAssetDetail(const FAssetDetail& InAssetDetail, FAssetDependenciesInfo& OutDependices)

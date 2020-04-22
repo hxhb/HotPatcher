@@ -1962,8 +1962,9 @@ FAssetRelatedInfo UFlibPatchParserHelper::GetAssetRelatedInfo(const FAssetDetail
 	FString LongPackageName;
 	if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.mPackagePath, LongPackageName))
 	{
+		TArray<EAssetRegistryDependencyType::Type> SearchAssetDepTypes{EAssetRegistryDependencyType::Hard};
 		UFLibAssetManageHelperEx::GetAssetDependency(LongPackageName, Dependency.AssetDependency, false);
-		UFLibAssetManageHelperEx::GetAssetReference(InAsset, Dependency.AssetReference);
+		UFLibAssetManageHelperEx::GetAssetReference(InAsset, SearchAssetDepTypes, Dependency.AssetReference);
 
 	}
 
