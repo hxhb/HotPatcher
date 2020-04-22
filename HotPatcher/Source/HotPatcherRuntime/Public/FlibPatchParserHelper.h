@@ -11,7 +11,7 @@
 #include "FlibPakHelper.h"
 #include "FExternDirectoryInfo.h"
 #include "FExternDirectoryInfo.h"
-#include "FAssetDependency.h"
+#include "FAssetRelatedInfo.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -209,14 +209,14 @@ public:
 
 	static FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions, bool block);
 
-	static FAssetDependency GetAssetDependency(const FAssetDetail& InAsset);
-	static TArray<FAssetDependency> GetAssetsDependency(const TArray<FAssetDetail>& InAssets);
-	static TArray<FAssetDependency> GetAssetsDependencyByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies);
+	static FAssetRelatedInfo GetAssetRelatedInfo(const FAssetDetail& InAsset);
+	static TArray<FAssetRelatedInfo> GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets);
+	static TArray<FAssetRelatedInfo> GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies);
 
-	static bool SerializeAssetDependencyAsJsonObject(const FAssetDependency& InAssetDependency, TSharedPtr<FJsonObject>& OutJsonObject);
-	static bool SerializeAssetsDependencyAsJsonObject(const TArray<FAssetDependency>& InAssetsDependency, TSharedPtr<FJsonObject>& OutJsonObject);
+	static bool SerializeAssetRelatedInfoAsJsonObject(const FAssetRelatedInfo& InAssetDependency, TSharedPtr<FJsonObject>& OutJsonObject);
+	static bool SerializeAssetsRelatedInfoAsJsonObject(const TArray<FAssetRelatedInfo>& InAssetsDependency, TSharedPtr<FJsonObject>& OutJsonObject);
 
-	static bool SerializeAssetsDependencyAsString(const TArray<FAssetDependency>& InAssetsDependency,FString& OutString);
+	static bool SerializeAssetsRelatedInfoAsString(const TArray<FAssetRelatedInfo>& InAssetsDependency,FString& OutString);
 
 	static TArray<TSharedPtr<FJsonValue>> SerializeFReplaceTextsAsJsonValues(const TArray<FReplaceText>& InReplaceTexts);
 	static TSharedPtr<FJsonObject> SerializeFReplaceTextAsJsonObject(const FReplaceText& InReplaceText);

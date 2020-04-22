@@ -76,7 +76,12 @@ public:
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static void GetAssetListDependencies(const TArray<FString>& InLongPackageNameList, FAssetDependenciesInfo& OutDependices);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool GetAssetReference(const FString& InLongPackageName, TArray<FAssetDetail>& OutRefAsset, bool bRecursively = true);
+		static bool GetAssetDependency(const FString& InLongPackageName, TArray<FAssetDetail>& OutRefAsset, bool bRecursively = true);
+	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool GetAssetDependencyByDetail(const FAssetDetail& InAsset, TArray<FAssetDetail>& OutRefAsset, bool bRecursively = true);
+	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool GetAssetReference(const FAssetDetail& InAsset, TArray<FAssetDetail>& OutRefAsset);
+
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static void GetAssetDependenciesForAssetDetail(const FAssetDetail& InAssetDetail , FAssetDependenciesInfo& OutDependices);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")

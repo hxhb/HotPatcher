@@ -260,7 +260,7 @@ UExportPatchSettings* UFlibHotPatcherEditorHelper::DeserializePatchConfig(UExpor
 			}
 			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bSavePakList);
 			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bSaveDiffAnalysis);
-			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bSaveAssetDependency);
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bSaveAssetRelatedInfo);
 			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bSavePatchConfig);
 
 			InNewSetting->SavePath.Path = JsonObject->GetStringField(TEXT("SavePath"));
@@ -397,7 +397,7 @@ bool UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(const UExport
 
 	OutJsonObject->SetBoolField(TEXT("bSavePakList"), InPatchSetting->IsSavePakList());
 	OutJsonObject->SetBoolField(TEXT("bSaveDiffAnalysis"), InPatchSetting->IsSaveDiffAnalysis());
-	OutJsonObject->SetBoolField(TEXT("bSaveAssetDependency"), InPatchSetting->IsSaveAssetDependency());
+	OutJsonObject->SetBoolField(TEXT("bSaveAssetRelatedInfo"), InPatchSetting->IsSaveAssetRelatedInfo());
 	OutJsonObject->SetBoolField(TEXT("bSavePatchConfig"), InPatchSetting->IsSavePatchConfig());
 	OutJsonObject->SetStringField(TEXT("SavePath"), InPatchSetting->GetSaveAbsPath());
 
@@ -472,7 +472,7 @@ bool UFlibHotPatcherEditorHelper::SerializeReleaseConfigToJsonObject(const UExpo
 	}
 
 	OutJsonObject->SetBoolField(TEXT("bSaveReleaseConfig"), InReleaseSetting->IsSaveConfig());
-	OutJsonObject->SetBoolField(TEXT("bSaveAssetDependency"), InReleaseSetting->IsSaveAssetDependency());
+	OutJsonObject->SetBoolField(TEXT("bSaveAssetRelatedInfo"), InReleaseSetting->IsSaveAssetRelatedInfo());
 	OutJsonObject->SetStringField(TEXT("SavePath"), InReleaseSetting->GetSavePath());
 
 	return true;
@@ -571,7 +571,7 @@ class UExportReleaseSettings* UFlibHotPatcherEditorHelper::DeserializeReleaseCon
 			}
 
 			InNewSetting->bSaveReleaseConfig = JsonObject->GetBoolField(TEXT("bSaveReleaseConfig")); 
-			InNewSetting->bSaveAssetDependency = JsonObject->GetBoolField(TEXT("bSaveAssetDependency"));
+			InNewSetting->bSaveAssetRelatedInfo = JsonObject->GetBoolField(TEXT("bSaveAssetRelatedInfo"));
 			InNewSetting->SavePath.Path = JsonObject->GetStringField(TEXT("SavePath"));
 		}
 	}

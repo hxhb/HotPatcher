@@ -828,22 +828,22 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 
 	// save asset dependency
 	{
-		if (ExportPatchSetting->IsSaveAssetDependency())
+		if (ExportPatchSetting->IsSaveAssetRelatedInfo())
 		{
-			TArray<FAssetDependency> AssetsDependency = UFlibPatchParserHelper::GetAssetsDependencyByFAssetDependencies(
+			TArray<FAssetRelatedInfo> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(
 				UFLibAssetManageHelperEx::CombineAssetDependencies(VersionDiffInfo.AddAssetDependInfo, VersionDiffInfo.ModifyAssetDependInfo)
 			);
 
 			FString AssetsDependencyString;
-			UFlibPatchParserHelper::SerializeAssetsDependencyAsString(AssetsDependency, AssetsDependencyString);
-			FString SaveAssetDependencyToFile = FPaths::Combine(
+			UFlibPatchParserHelper::SerializeAssetsRelatedInfoAsString(AssetsDependency, AssetsDependencyString);
+			FString SaveAssetRelatedInfoToFile = FPaths::Combine(
 				CurrentVersionSavePath,
-				FString::Printf(TEXT("%s_AssetDependency.json"), *CurrentVersion.VersionId)
+				FString::Printf(TEXT("%s_AssetRelatedInfos.json"), *CurrentVersion.VersionId)
 			);
-			if (UFLibAssetManageHelperEx::SaveStringToFile(SaveAssetDependencyToFile, AssetsDependencyString))
+			if (UFLibAssetManageHelperEx::SaveStringToFile(SaveAssetRelatedInfoToFile, AssetsDependencyString))
 			{
-				auto Msg = LOCTEXT("SaveAssetDependencyInfo", "Succeed to export Asset Dependency info.");
-				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveAssetDependencyToFile);
+				auto Msg = LOCTEXT("SaveAssetRelatedInfo", "Succeed to export Asset Related infos.");
+				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveAssetRelatedInfoToFile);
 			}
 		}
 	}

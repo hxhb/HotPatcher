@@ -103,7 +103,7 @@ public:
 	FORCEINLINE FString GetSavePath()const{return SavePath.Path;}
 
 	FORCEINLINE bool IsSaveConfig()const {return bSaveReleaseConfig;}
-	FORCEINLINE bool IsSaveAssetDependency()const { return bSaveAssetDependency; }
+	FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bSaveAssetRelatedInfo; }
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 
 	FORCEINLINE TArray<FPatcherSpecifyAsset> GetSpecifyAssets()const { return IncludeSpecifyAssets; }
@@ -129,7 +129,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Extern Files")
 		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bSaveAssetDependency;
+		bool bSaveAssetRelatedInfo;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSaveReleaseConfig;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")

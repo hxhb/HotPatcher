@@ -212,20 +212,20 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 	{
 		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportReleaseAssetDependency", "ExportReleaseAssetDependencyJson", "Export Release {0} Asset Dependency to file."), FText::FromString(ExportReleaseSettings->GetVersionId()));
 		UnrealPakSlowTask.EnterProgressFrame(1.0, DiaLogMsg);
-		if (ExportReleaseSettings->IsSaveAssetDependency())
+		if (ExportReleaseSettings->IsSaveAssetRelatedInfo())
 		{
-			TArray<FAssetDependency> AssetsDependency = UFlibPatchParserHelper::GetAssetsDependencyByFAssetDependencies(ExportVersion.AssetInfo);
+			TArray<FAssetRelatedInfo> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(ExportVersion.AssetInfo);
 
 			FString AssetsDependencyString;
-			UFlibPatchParserHelper::SerializeAssetsDependencyAsString(AssetsDependency, AssetsDependencyString);
-			FString SaveAssetDependencyToFile = FPaths::Combine(
+			UFlibPatchParserHelper::SerializeAssetsRelatedInfoAsString(AssetsDependency, AssetsDependencyString);
+			FString SaveAssetRelatedInfoToFile = FPaths::Combine(
 				SaveVersionDir,
 				FString::Printf(TEXT("%s_AssetDependency.json"), *ExportVersion.VersionId)
 			);
-			if (UFLibAssetManageHelperEx::SaveStringToFile(SaveAssetDependencyToFile, AssetsDependencyString))
+			if (UFLibAssetManageHelperEx::SaveStringToFile(SaveAssetRelatedInfoToFile, AssetsDependencyString))
 			{
-				auto Msg = LOCTEXT("SaveAssetDependencyInfo", "Succeed to export Asset Dependency info.");
-				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveAssetDependencyToFile);
+				auto Msg = LOCTEXT("SaveAssetRelatedInfoInfo", "Succeed to export Asset Dependency info.");
+				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveAssetRelatedInfoToFile);
 			}
 		}
 	}
