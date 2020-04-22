@@ -195,7 +195,7 @@ FAssetDependenciesInfo UFLibAssetManageHelperEx::CombineAssetDependencies(const 
 	return resault;
 }
 
-void UFLibAssetManageHelperEx::GetAssetDependencies(const FString& InLongPackageName, FAssetDependenciesInfo& OutDependices)
+void UFLibAssetManageHelperEx::GetAssetDependencies(const FString& InLongPackageName, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, FAssetDependenciesInfo& OutDependices)
 {
 	if (InLongPackageName.IsEmpty())
 		return;
@@ -220,25 +220,25 @@ void UFLibAssetManageHelperEx::GetAssetDependencies(const FString& InLongPackage
 				UE_LOG(LogTemp, Warning, TEXT("Got mulitple AssetData of %s,please check."), *InLongPackageName);
 			}
 		}
-		UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(AssetRegistryModule, InLongPackageName, OutDependices);
+		UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(AssetRegistryModule, InLongPackageName, AssetRegistryDependencyTypes, OutDependices);
 	}
 }
 
-void UFLibAssetManageHelperEx::GetAssetListDependencies(const TArray<FString>& InLongPackageNameList, FAssetDependenciesInfo& OutDependices)
+void UFLibAssetManageHelperEx::GetAssetListDependencies(const TArray<FString>& InLongPackageNameList, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, FAssetDependenciesInfo& OutDependices)
 {
 	FAssetDependenciesInfo result;
 
 	for (const auto& LongPackageItem : InLongPackageNameList)
 	{
 		FAssetDependenciesInfo CurrentDependency;
-		UFLibAssetManageHelperEx::GetAssetDependencies(LongPackageItem, CurrentDependency);
+		UFLibAssetManageHelperEx::GetAssetDependencies(LongPackageItem, AssetRegistryDependencyTypes, CurrentDependency);
 		result = UFLibAssetManageHelperEx::CombineAssetDependencies(result, CurrentDependency);
 	}
 	OutDependices = result;
 }
 
 
-bool UFLibAssetManageHelperEx::GetAssetDependency(const FString& InLongPackageName, TArray<FAssetDetail>& OutRefAsset,bool bRecursively)
+bool UFLibAssetManageHelperEx::GetAssetDependency(const FString& InLongPackageName, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, TArray<FAssetDetail>& OutRefAsset,bool bRecursively)
 {
 	bool bStatus = false;
 	if (FPackageName::DoesPackageExist(InLongPackageName))
@@ -247,7 +247,7 @@ bool UFLibAssetManageHelperEx::GetAssetDependency(const FString& InLongPackageNa
 		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 
 		FAssetDependenciesInfo AssetDep;
-		UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(AssetRegistryModule, InLongPackageName, AssetDep, bRecursively);
+		UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(AssetRegistryModule, InLongPackageName, AssetRegistryDependencyTypes, AssetDep, bRecursively);
 
 		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(AssetDep, OutRefAsset);
 		bStatus = true;
@@ -255,12 +255,12 @@ bool UFLibAssetManageHelperEx::GetAssetDependency(const FString& InLongPackageNa
 	return bStatus;
 }
 
-bool UFLibAssetManageHelperEx::GetAssetDependencyByDetail(const FAssetDetail& InAsset, TArray<FAssetDetail>& OutRefAsset, bool bRecursively /*= true*/)
+bool UFLibAssetManageHelperEx::GetAssetDependencyByDetail(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, TArray<FAssetDetail>& OutRefAsset, bool bRecursively /*= true*/)
 {
 	FString LongPackageName;
 	UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.mPackagePath, LongPackageName);
 	
-	return UFLibAssetManageHelperEx::GetAssetDependency(LongPackageName, OutRefAsset, bRecursively);
+	return UFLibAssetManageHelperEx::GetAssetDependency(LongPackageName, AssetRegistryDependencyTypes, OutRefAsset, bRecursively);
 }
 
 bool UFLibAssetManageHelperEx::GetAssetReference(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyType::Type>& SearchAssetDepTypes, TArray<FAssetDetail>& OutRefAsset)
@@ -312,28 +312,27 @@ bool UFLibAssetManageHelperEx::GetAssetReferenceEx(const FAssetDetail& InAsset, 
 	TArray<EAssetRegistryDependencyType::Type> local_SearchAssetDepTypes;
 	for (const auto& type : SearchAssetDepTypes)
 	{
-		EAssetRegistryDependencyType::Type resultType = static_cast<EAssetRegistryDependencyType::Type>((uint8)(type));
-		local_SearchAssetDepTypes.AddUnique(resultType);
+		local_SearchAssetDepTypes.AddUnique(UFLibAssetManageHelperEx::ConvAssetRegistryDependencyToInternal(type));
 	}
 
 	return UFLibAssetManageHelperEx::GetAssetReference(InAsset, local_SearchAssetDepTypes, OutRefAsset);
 }
 
-void UFLibAssetManageHelperEx::GetAssetDependenciesForAssetDetail(const FAssetDetail& InAssetDetail, FAssetDependenciesInfo& OutDependices)
+void UFLibAssetManageHelperEx::GetAssetDependenciesForAssetDetail(const FAssetDetail& InAssetDetail, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, FAssetDependenciesInfo& OutDependices)
 {
 	FString AssetPackagePath = InAssetDetail.mPackagePath;
 	FSoftObjectPath AssetObjectSoftRef{ AssetPackagePath };
 
-	UFLibAssetManageHelperEx::GetAssetDependencies(AssetObjectSoftRef.GetLongPackageName(), OutDependices);
+	UFLibAssetManageHelperEx::GetAssetDependencies(AssetObjectSoftRef.GetLongPackageName(), AssetRegistryDependencyTypes, OutDependices);
 }
 
-void UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(const TArray<FAssetDetail>& InAssetsDetailList, FAssetDependenciesInfo& OutDependices)
+void UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(const TArray<FAssetDetail>& InAssetsDetailList, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, FAssetDependenciesInfo& OutDependices)
 {
 	FAssetDependenciesInfo result;
 	for (const auto& AssetDetail : InAssetsDetailList)
 	{
 		FAssetDependenciesInfo CurrentAsserInfo;
-		UFLibAssetManageHelperEx::GetAssetDependenciesForAssetDetail(AssetDetail, CurrentAsserInfo);
+		UFLibAssetManageHelperEx::GetAssetDependenciesForAssetDetail(AssetDetail, AssetRegistryDependencyTypes,CurrentAsserInfo);
 		result = UFLibAssetManageHelperEx::CombineAssetDependencies(result, CurrentAsserInfo);
 	}
 	OutDependices = result;
@@ -379,12 +378,25 @@ TArray<FString> UFLibAssetManageHelperEx::GetAssetLongPackageNameByAssetDependen
 void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 	FAssetRegistryModule& InAssetRegistryModule,
 	const FString& InTargetLongPackageName,
+	const TArray<EAssetRegistryDependencyTypeEx>& InAssetDependencyTypes,
 	FAssetDependenciesInfo& OutDependencies,
 	bool bRecursively
 )
 {
 	TArray<FName> local_Dependencies;
-	bool bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(FName(*InTargetLongPackageName), local_Dependencies, EAssetRegistryDependencyType::Packages);
+	// TArray<EAssetRegistryDependencyType::Type> AssetTypes;
+	
+	bool bGetDependenciesSuccess = false;
+	EAssetRegistryDependencyType::Type TotalType = EAssetRegistryDependencyType::None;
+
+	for (const auto& DepType : InAssetDependencyTypes)
+	{
+		TotalType = (EAssetRegistryDependencyType::Type)((uint8)TotalType | (uint8)UFLibAssetManageHelperEx::ConvAssetRegistryDependencyToInternal(DepType));
+	}
+
+	// AssetTypes.AddUnique(UFLibAssetManageHelperEx::ConvAssetRegistryDependencyToInternal(DepType));
+	bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(FName(*InTargetLongPackageName), local_Dependencies, TotalType);
+
 	if (bGetDependenciesSuccess)
 	{
 		for (auto &DependItem : local_Dependencies)
@@ -393,7 +405,7 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 			FString BelongModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(LongDependentPackageName);
 
 			// add a new asset to module category
-			auto AddNewAssetItemLambda = [bRecursively,&InAssetRegistryModule, &OutDependencies](
+			auto AddNewAssetItemLambda = [bRecursively,&InAssetRegistryModule, &OutDependencies,&InAssetDependencyTypes](
 				FAssetDependenciesDetail& InModuleAssetDependDetail,
 				const FString& InAssetPackageName
 				)
@@ -423,7 +435,7 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 					}
 					if (bRecursively)
 					{
-						UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(InAssetRegistryModule, InAssetPackageName, OutDependencies, bRecursively);
+						UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(InAssetRegistryModule, InAssetPackageName, InAssetDependencyTypes,OutDependencies, bRecursively);
 					}
 						
 				}
@@ -447,7 +459,7 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 }
 
 
-bool UFLibAssetManageHelperEx::GetModuleAssetsList(const FString& InModuleName, const TArray<FString>& InExFilterPackagePaths, TArray<FAssetDetail>& OutAssetList)
+bool UFLibAssetManageHelperEx::GetModuleAssetsList(const FString& InModuleName, const TArray<FString>& InExFilterPackagePaths, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, TArray<FAssetDetail>& OutAssetList)
 {
 	TMap<FString, FString> AllEnableModules;
 	TArray<FString> AllEnableModuleNames;
@@ -463,10 +475,10 @@ bool UFLibAssetManageHelperEx::GetModuleAssetsList(const FString& InModuleName, 
 	{
 		AllFilterPackageNames.AddUnique(ExFilterPackageName);
 	}
-	return UFLibAssetManageHelperEx::GetAssetsList(AllFilterPackageNames, OutAssetList);
+	return UFLibAssetManageHelperEx::GetAssetsList(AllFilterPackageNames, AssetRegistryDependencyTypes, OutAssetList);
 }
 
-bool UFLibAssetManageHelperEx::GetAssetsList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutAssetList,bool bReTargetRedirector)
+bool UFLibAssetManageHelperEx::GetAssetsList(const TArray<FString>& InFilterPackagePaths, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, TArray<FAssetDetail>& OutAssetList,bool bReTargetRedirector)
 {
 	TArray<FAssetData> AllAssetData;
 	if (UFLibAssetManageHelperEx::GetAssetsData(InFilterPackagePaths, AllAssetData))
@@ -481,7 +493,7 @@ bool UFLibAssetManageHelperEx::GetAssetsList(const TArray<FString>& InFilterPack
 				TArray<FAssetDetail> TargetAssets;
 				FString RedirectorLongPackageName;
 				UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(AssetDataIndex.PackageName.ToString(), RedirectorLongPackageName);
-				UFLibAssetManageHelperEx::GetAssetDependency(RedirectorLongPackageName, TargetAssets, false);
+				UFLibAssetManageHelperEx::GetAssetDependency(RedirectorLongPackageName, AssetRegistryDependencyTypes, TargetAssets, false);
 				if (!!TargetAssets.Num())
 				{
 					AssetDetail = TargetAssets[0];
@@ -1376,4 +1388,54 @@ FString UFLibAssetManageHelperEx::ConvPath_BackSlash2Slash(const FString& InPath
 		}
 	}
 	return ResaultPath;
+}
+
+
+EAssetRegistryDependencyType::Type UFLibAssetManageHelperEx::ConvAssetRegistryDependencyToInternal(const EAssetRegistryDependencyTypeEx& InType)
+{
+	return static_cast<EAssetRegistryDependencyType::Type>((uint8)(InType));
+}
+
+bool UFLibAssetManageHelperEx::SerializeAssetRegistryDependencyTypes(const EAssetRegistryDependencyTypeEx& InType, TSharedPtr<FJsonValue>& OutJsonValue)
+{
+
+	TSharedPtr<FJsonValue> SerializeTypeJsonValue;
+
+	// save UnrealPak.exe command file
+	FString TypeName;
+	{
+		FString EnumName;
+		UEnum* EAssetRegistryDependencyTypeExEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("EAssetRegistryDependencyTypeEx"), true);
+		EAssetRegistryDependencyTypeExEnum->GetNameByValue((int64)InType).ToString().Split(TEXT("::"), &EnumName, &TypeName, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+	}
+	OutJsonValue = MakeShareable(new FJsonValueString(TypeName));
+
+	return OutJsonValue.IsValid();
+}
+
+bool UFLibAssetManageHelperEx::DeSerializeAssetRegistryDependencyTypes(const TSharedPtr<FJsonValue>& InJsonValue, EAssetRegistryDependencyTypeEx& OutType)
+{
+	bool bStatus = false;
+	if (InJsonValue.IsValid())
+	{
+		FString EnumName = TEXT("EAssetRegistryDependencyTypeEx::");
+		EnumName.Append(InJsonValue->AsString());
+		UEnum* EAssetDependencyTypeExEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("EAssetRegistryDependencyTypeEx"), true);
+
+		int32 EnumIndex = EAssetDependencyTypeExEnum->GetIndexByName(FName(*EnumName));
+		if (EnumIndex != INDEX_NONE)
+		{
+			// UE_LOG(LogTemp, Log, TEXT("FOUND ENUM INDEX SUCCESS:%s"),*EnumName);
+			int32 EnumValue = EAssetDependencyTypeExEnum->GetValueByIndex(EnumIndex);
+			EAssetRegistryDependencyTypeEx CurrentEnum = (EAssetRegistryDependencyTypeEx)EnumValue;
+			OutType = CurrentEnum;
+			bStatus = true;
+		}
+		else
+		{
+			// UE_LOG(LogTemp, Log, TEXT("FOUND ENUM INDEX FAILD:%s"), *EnumName);
+		}
+	}
+
+	return bStatus;
 }

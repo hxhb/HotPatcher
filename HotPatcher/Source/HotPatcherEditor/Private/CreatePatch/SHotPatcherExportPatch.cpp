@@ -478,6 +478,7 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		FDateTime::UtcNow().ToString(),
 		ExportPatchSetting->GetAssetIncludeFiltersPaths(),
 		ExportPatchSetting->GetAssetIgnoreFiltersPaths(),
+		ExportPatchSetting->GetAssetRegistryDependencyTypes(),
 		ExportPatchSetting->GetIncludeSpecifyAssets(),
 		ExportPatchSetting->GetAllExternFiles(true),
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
@@ -919,8 +920,12 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	{
 		if (ExportPatchSetting->IsSaveAssetRelatedInfo())
 		{
+			TArray<EAssetRegistryDependencyTypeEx> AssetDependencyTypes;
+			AssetDependencyTypes.Add(EAssetRegistryDependencyTypeEx::Packages);
+
 			TArray<FAssetRelatedInfo> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(
-				UFLibAssetManageHelperEx::CombineAssetDependencies(VersionDiffInfo.AddAssetDependInfo, VersionDiffInfo.ModifyAssetDependInfo)
+				UFLibAssetManageHelperEx::CombineAssetDependencies(VersionDiffInfo.AddAssetDependInfo, VersionDiffInfo.ModifyAssetDependInfo),
+				AssetDependencyTypes
 			);
 
 			FString AssetsDependencyString;

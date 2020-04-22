@@ -5,6 +5,7 @@
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "AssetManager/FAssetDetail.h"
 
+#include "Dom/JsonValue.h"
 #include "Templates/SharedPointer.h"
 #include "AssetRegistryModule.h"
 #include "CoreMinimal.h"
@@ -30,8 +31,9 @@ public:
 };
 
 UENUM(BlueprintType)
-enum class EAssetRegistryDependencyTypeEx:uint8
+enum class EAssetRegistryDependencyTypeEx :uint8
 {
+	None = 0x00,
 	// Dependencies which don't need to be loaded for the object to be used (i.e. soft object paths)
 	Soft = 0x01,
 
@@ -46,6 +48,12 @@ enum class EAssetRegistryDependencyTypeEx:uint8
 
 	// Reference that says one object directly manages another object, set when Primary Assets manage things explicitly
 	HardManage = 0x10,
+
+	Packages = Soft | Hard,
+
+	Manage = SoftManage | HardManage,
+
+	All = Soft | Hard | SearchableName | SoftManage | HardManage
 };
 
 UCLASS()
@@ -91,13 +99,13 @@ public:
 	 @Param OutDependices: Output Asset Dependencies
 	*/
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static void GetAssetDependencies(const FString& InLongPackageName, FAssetDependenciesInfo& OutDependices);
+		static void GetAssetDependencies(const FString& InLongPackageName, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, FAssetDependenciesInfo& OutDependices);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static void GetAssetListDependencies(const TArray<FString>& InLongPackageNameList, FAssetDependenciesInfo& OutDependices);
+		static void GetAssetListDependencies(const TArray<FString>& InLongPackageNameList, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, FAssetDependenciesInfo& OutDependices);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool GetAssetDependency(const FString& InLongPackageName, TArray<FAssetDetail>& OutRefAsset, bool bRecursively = true);
+		static bool GetAssetDependency(const FString& InLongPackageName, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, TArray<FAssetDetail>& OutRefAsset, bool bRecursively = true);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool GetAssetDependencyByDetail(const FAssetDetail& InAsset, TArray<FAssetDetail>& OutRefAsset, bool bRecursively = true);
+		static bool GetAssetDependencyByDetail(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, TArray<FAssetDetail>& OutRefAsset, bool bRecursively = true);
 	// UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetAssetReference(const FAssetDetail& InAsset,const TArray<EAssetRegistryDependencyType::Type>& SearchAssetDepTypes, TArray<FAssetDetail>& OutRefAsset);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
@@ -105,9 +113,9 @@ public:
 
 
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static void GetAssetDependenciesForAssetDetail(const FAssetDetail& InAssetDetail , FAssetDependenciesInfo& OutDependices);
+		static void GetAssetDependenciesForAssetDetail(const FAssetDetail& InAssetDetail, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, FAssetDependenciesInfo& OutDependices);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static void GetAssetListDependenciesForAssetDetail(const TArray<FAssetDetail>& InAssetsDetailList, FAssetDependenciesInfo& OutDependices);
+		static void GetAssetListDependenciesForAssetDetail(const TArray<FAssetDetail>& InAssetsDetailList, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, FAssetDependenciesInfo& OutDependices);
 
 	// 获取FAssetDependenciesInfo中所有的FAssetDetail
 	static void GetAssetDetailsByAssetDependenciesInfo(const FAssetDependenciesInfo& InAssetDependencies,TArray<FAssetDetail>& OutAssetDetails);
@@ -118,18 +126,19 @@ public:
 	static void GatherAssetDependicesInfoRecursively(
 		FAssetRegistryModule& InAssetRegistryModule,
 		const FString& InTargetLongPackageName,
+		const TArray<EAssetRegistryDependencyTypeEx>& InAssetDependencyTypes,
 		FAssetDependenciesInfo& OutDependencies,
 		bool bRecursively=true
 	);
 
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager",meta=(AutoCreateRefTerm="InExFilterPackagePaths",AdvancedDisplay="InExFilterPackagePaths"))
-		static bool GetModuleAssetsList(const FString& InModuleName,const TArray<FString>& InExFilterPackagePaths, TArray<FAssetDetail>& OutAssetList);
+		static bool GetModuleAssetsList(const FString& InModuleName,const TArray<FString>& InExFilterPackagePaths, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, TArray<FAssetDetail>& OutAssetList);
 
 	/*
 	 * FilterPackageName format is /Game or /Game/TEST
 	 */
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool GetAssetsList(const TArray<FString>& InFilterPackagePaths,TArray<FAssetDetail>& OutAssetList, bool bReTargetRedirector=true);
+		static bool GetAssetsList(const TArray<FString>& InFilterPackagePaths, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, TArray<FAssetDetail>& OutAssetList, bool bReTargetRedirector=true);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetRedirectorList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutRedirector);
 		static bool GetSpecifyAssetData(const FString& InLongPackageName, TArray<FAssetData>& OutAssetData,bool InIncludeOnlyOnDiskAssets);
@@ -216,4 +225,11 @@ public:
 	static FString ConvPath_Slash2BackSlash(const FString& InPath);
 	// conversion back slash to slash
 	static FString ConvPath_BackSlash2Slash(const FString& InPath);
+
+
+	static EAssetRegistryDependencyType::Type ConvAssetRegistryDependencyToInternal(const EAssetRegistryDependencyTypeEx& InType);
+
+	static bool SerializeAssetRegistryDependencyTypes(const EAssetRegistryDependencyTypeEx& InType, TSharedPtr<FJsonValue>& OutJsonValue);
+	static bool DeSerializeAssetRegistryDependencyTypes(const TSharedPtr<FJsonValue>& InJsonValue, EAssetRegistryDependencyTypeEx& OutType);
+
 };

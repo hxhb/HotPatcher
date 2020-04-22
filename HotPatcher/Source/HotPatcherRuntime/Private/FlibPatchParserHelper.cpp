@@ -1250,7 +1250,7 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 				result.Add(CurrentAssetLongPackageName);
 				if (Assset.bAnalysisAssetDependencies)
 				{
-					UFLibAssetManageHelperEx::GetAssetDependencies(CurrentAssetLongPackageName, SpecifyDependAssets);
+					UFLibAssetManageHelperEx::GetAssetDependencies(CurrentAssetLongPackageName,Assset.AssetRegistryDependencyTypes, SpecifyDependAssets);
 				}
 			}
 			return result;
@@ -1459,6 +1459,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	const FString& InDate,
 	const TArray<FString>& InIncludeFilter,
 	const TArray<FString>& InIgnoreFilter,
+	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
 	const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
 	const TArray<FExternAssetFileInfo>& InAllExternFiles,
 	bool InIncludeHasRefAssetsOnly,
@@ -1499,7 +1500,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 		TArray<FAssetDetail> AllNeedPakRefAssets;
 		{
 			TArray<FAssetDetail> AllAssets;
-			UFLibAssetManageHelperEx::GetAssetsList(ExportVersion.IncludeFilter, AllAssets);
+			UFLibAssetManageHelperEx::GetAssetsList(ExportVersion.IncludeFilter, AssetRegistryDependencyTypes, AllAssets);
 			if (InIncludeHasRefAssetsOnly)
 			{
 				TArray<FAssetDetail> AllDontHasRefAssets;
@@ -1537,7 +1538,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 
 	}
 
-	auto AnalysisAssetDependency = [](const TArray<FAssetDetail>& InAssetDetail, bool bInAnalysisDepend)->FAssetDependenciesInfo
+	auto AnalysisAssetDependency = [](const TArray<FAssetDetail>& InAssetDetail, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, bool bInAnalysisDepend)->FAssetDependenciesInfo
 	{
 		FAssetDependenciesInfo RetAssetDepend;
 		if (InAssetDetail.Num())
@@ -1547,7 +1548,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 			if (bInAnalysisDepend)
 			{
 				FAssetDependenciesInfo AssetDependencies;
-				UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(InAssetDetail, AssetDependencies);
+				UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(InAssetDetail,AssetRegistryDependencyTypes, AssetDependencies);
 
 				RetAssetDepend = UFLibAssetManageHelperEx::CombineAssetDependencies(RetAssetDepend, AssetDependencies);
 			}
@@ -1556,7 +1557,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	};
 
 	// 分析过滤器中指定的资源依赖
-	FAssetDependenciesInfo FilterAssetDependencies = AnalysisAssetDependency(FilterAssetList, bInAnalysisFilterDepend);
+	FAssetDependenciesInfo FilterAssetDependencies = AnalysisAssetDependency(FilterAssetList, AssetRegistryDependencyTypes, bInAnalysisFilterDepend);
 
 	// Specify Assets
 	FAssetDependenciesInfo SpecifyAssetDependencies;
@@ -1567,7 +1568,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 			FAssetDetail AssetDetail;
 			if (UFLibAssetManageHelperEx::GetSpecifyAssetDetail(AssetLongPackageName, AssetDetail))
 			{
-				FAssetDependenciesInfo CurrentAssetDependencies = AnalysisAssetDependency(TArray<FAssetDetail>{AssetDetail}, SpecifyAsset.bAnalysisAssetDependencies);
+				FAssetDependenciesInfo CurrentAssetDependencies = AnalysisAssetDependency(TArray<FAssetDetail>{AssetDetail}, SpecifyAsset.AssetRegistryDependencyTypes, SpecifyAsset.bAnalysisAssetDependencies);
 				SpecifyAssetDependencies = UFLibAssetManageHelperEx::CombineAssetDependencies(SpecifyAssetDependencies, CurrentAssetDependencies);
 			}
 		}
@@ -1594,6 +1595,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(const
 		InDate,
 		UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIncludeFilters),
 		UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIgnoreFilters),
+		InChunkInfo.AssetRegistryDependencyTypes,
 		InChunkInfo.IncludeSpecifyAssets,
 		UFlibPatchParserHelper::GetExternFilesFromChunk(InChunkInfo, true),
 		InIncludeHasRefAssetsOnly,
@@ -1746,6 +1748,22 @@ bool UFlibPatchParserHelper::SerializeSpecifyAssetInfoToJsonObject(const FPatche
 	{
 		OutJsonObject->SetStringField(TEXT("Asset"), InSpecifyAsset.Asset.GetAssetPathName().ToString());
 		OutJsonObject->SetBoolField(TEXT("bAnalysisAssetDependencies"), InSpecifyAsset.bAnalysisAssetDependencies);
+
+		auto SerializeAssetDependencyTypes = [&OutJsonObject](const FString& InName, const TArray<EAssetRegistryDependencyTypeEx>& InTypes)
+		{
+			TArray<TSharedPtr<FJsonValue>> TypesJsonValues;
+			for (const auto& Type : InTypes)
+			{
+				TSharedPtr<FJsonValue> CurrentJsonValue;
+				if (UFLibAssetManageHelperEx::SerializeAssetRegistryDependencyTypes(Type, CurrentJsonValue))
+				{
+					TypesJsonValues.Add(CurrentJsonValue);
+				}
+			}
+			OutJsonObject->SetArrayField(InName, TypesJsonValues);
+		};
+
+		SerializeAssetDependencyTypes(TEXT("AssetRegistryDependencyTypes"), InSpecifyAsset.AssetRegistryDependencyTypes);
 	}
 	return bRunStatus;
 }
@@ -1758,6 +1776,21 @@ bool UFlibPatchParserHelper::DeSerializeSpecifyAssetInfoToJsonObject(const TShar
 	{
 		OutSpecifyAsset.Asset = InJsonObject->GetStringField(TEXT("Asset"));
 		OutSpecifyAsset.bAnalysisAssetDependencies = InJsonObject->GetBoolField(TEXT("bAnalysisAssetDependencies"));
+		// serialize AssetRegistryDependencyTypes
+		{
+			TArray<EAssetRegistryDependencyTypeEx> result;
+			TArray<TSharedPtr<FJsonValue>> AssetRegistryDependencyTypes = InJsonObject->GetArrayField(TEXT("AssetRegistryDependencyTypes"));
+			for (const auto& TypeJsonValue : AssetRegistryDependencyTypes)
+			{
+				EAssetRegistryDependencyTypeEx CurrentType;
+				if (UFLibAssetManageHelperEx::DeSerializeAssetRegistryDependencyTypes(TypeJsonValue, CurrentType))
+				{
+					result.AddUnique(CurrentType);
+				}
+			}
+			OutSpecifyAsset.AssetRegistryDependencyTypes = result;
+		}
+
 		bRunStatus = true;
 	}
 	return bRunStatus;
@@ -1822,6 +1855,22 @@ bool UFlibPatchParserHelper::SerializeFChunkInfoToJsonObject(const FChunkInfo& I
 		OutJsonObject->SetArrayField(InJsonArrayName, ArrayJsonValueList);
 	};
 	SerializeArrayLambda(ConvDirPathsToStrings(InChunkInfo.AssetIncludeFilters), TEXT("AssetIncludeFilters"));
+
+	auto SerializeAssetDependencyTypes = [&OutJsonObject](const FString& InName, const TArray<EAssetRegistryDependencyTypeEx>& InTypes)
+	{
+		TArray<TSharedPtr<FJsonValue>> TypesJsonValues;
+		for (const auto& Type : InTypes)
+		{
+			TSharedPtr<FJsonValue> CurrentJsonValue;
+			if (UFLibAssetManageHelperEx::SerializeAssetRegistryDependencyTypes(Type, CurrentJsonValue))
+			{
+				TypesJsonValues.Add(CurrentJsonValue);
+			}
+		}
+		OutJsonObject->SetArrayField(InName, TypesJsonValues);
+	};
+
+	SerializeAssetDependencyTypes(TEXT("AssetRegistryDependencyTypes"), InChunkInfo.AssetRegistryDependencyTypes);
 
 	// serialize specify asset
 	{
@@ -1888,6 +1937,21 @@ bool UFlibPatchParserHelper::DeSerializeFChunkInfoFromJsonObject(const TSharedPt
 
 	OutChunkInfo.AssetIncludeFilters = ParserAssetFilter(TEXT("AssetIncludeFilters"));
 
+	// deserialize AssetRegistryDependencyTypes
+	{
+		TArray<EAssetRegistryDependencyTypeEx> result;
+		TArray<TSharedPtr<FJsonValue>> AssetRegistryDependencyTypes = InJsonObject->GetArrayField(TEXT("AssetRegistryDependencyTypes"));
+		for (const auto& TypeJsonValue : AssetRegistryDependencyTypes)
+		{
+			EAssetRegistryDependencyTypeEx CurrentType;
+			if (UFLibAssetManageHelperEx::DeSerializeAssetRegistryDependencyTypes(TypeJsonValue, CurrentType))
+			{
+				result.AddUnique(CurrentType);
+			}
+		}
+		OutChunkInfo.AssetRegistryDependencyTypes = result;
+	}
+
 	// PatcherSprcifyAsset
 	{
 		TArray<FPatcherSpecifyAsset> SpecifyAssets;
@@ -1897,9 +1961,11 @@ bool UFlibPatchParserHelper::DeSerializeFChunkInfoFromJsonObject(const TSharedPt
 		{
 			FPatcherSpecifyAsset CurrentAsset;
 			TSharedPtr<FJsonObject> SpecifyJsonObj = InSpecifyAsset->AsObject();
-			CurrentAsset.Asset = SpecifyJsonObj->GetStringField(TEXT("Asset"));
-			CurrentAsset.bAnalysisAssetDependencies = SpecifyJsonObj->GetBoolField(TEXT("bAnalysisAssetDependencies"));
-			SpecifyAssets.Add(CurrentAsset);
+			if (UFlibPatchParserHelper::DeSerializeSpecifyAssetInfoToJsonObject(SpecifyJsonObj, CurrentAsset))
+			{
+				SpecifyAssets.Add(CurrentAsset);
+			}
+			
 		}
 		OutChunkInfo.IncludeSpecifyAssets = SpecifyAssets;
 	}
@@ -1955,15 +2021,20 @@ bool UFlibPatchParserHelper::DeSerializeFChunkInfoFromJsonObject(const TSharedPt
 	return true;
 }
 
-FAssetRelatedInfo UFlibPatchParserHelper::GetAssetRelatedInfo(const FAssetDetail& InAsset)
+FAssetRelatedInfo UFlibPatchParserHelper::GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
 {
 	FAssetRelatedInfo Dependency;
 	Dependency.Asset = InAsset;
 	FString LongPackageName;
 	if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.mPackagePath, LongPackageName))
 	{
-		TArray<EAssetRegistryDependencyType::Type> SearchAssetDepTypes{EAssetRegistryDependencyType::Hard};
-		UFLibAssetManageHelperEx::GetAssetDependency(LongPackageName, Dependency.AssetDependency, false);
+		TArray<EAssetRegistryDependencyType::Type> SearchAssetDepTypes;
+		for (const auto& Type : AssetRegistryDependencyTypes)
+		{
+			SearchAssetDepTypes.AddUnique(UFLibAssetManageHelperEx::ConvAssetRegistryDependencyToInternal(Type));
+		}
+
+		UFLibAssetManageHelperEx::GetAssetDependency(LongPackageName, AssetRegistryDependencyTypes,Dependency.AssetDependency, false);
 		UFLibAssetManageHelperEx::GetAssetReference(InAsset, SearchAssetDepTypes, Dependency.AssetReference);
 
 	}
@@ -1971,22 +2042,22 @@ FAssetRelatedInfo UFlibPatchParserHelper::GetAssetRelatedInfo(const FAssetDetail
 	return Dependency;
 }
 
-TArray<FAssetRelatedInfo> UFlibPatchParserHelper::GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets)
+TArray<FAssetRelatedInfo> UFlibPatchParserHelper::GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
 {
 	TArray<FAssetRelatedInfo> AssetsDependency;
 
 	for (const auto& Asset : InAssets)
 	{
-		AssetsDependency.Add(UFlibPatchParserHelper::GetAssetRelatedInfo(Asset));
+		AssetsDependency.Add(UFlibPatchParserHelper::GetAssetRelatedInfo(Asset, AssetRegistryDependencyTypes));
 	}
 	return AssetsDependency;
 }
 
-TArray<FAssetRelatedInfo> UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies)
+TArray<FAssetRelatedInfo> UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
 {
 	TArray<FAssetDetail> AssetsDetail;
 	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(InAssetsDependencies, AssetsDetail);
-	return UFlibPatchParserHelper::GetAssetsRelatedInfo(AssetsDetail);
+	return UFlibPatchParserHelper::GetAssetsRelatedInfo(AssetsDetail, AssetRegistryDependencyTypes);
 }
 
 bool UFlibPatchParserHelper::SerializeAssetRelatedInfoAsJsonObject(const FAssetRelatedInfo& InAssetDependency, TSharedPtr<FJsonObject>& OutJsonObject)

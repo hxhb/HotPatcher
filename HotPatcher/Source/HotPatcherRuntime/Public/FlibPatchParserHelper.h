@@ -51,6 +51,7 @@ public:
 		const FString& InDate,
 		const TArray<FString>& InIncludeFilter,
 		const TArray<FString>& InIgnoreFilter,
+		const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
 		const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
 		const TArray<FExternAssetFileInfo>& InAllExternFiles,
 		bool InIncludeHasRefAssetsOnly = false,
@@ -209,9 +210,9 @@ public:
 
 	static FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions, bool block);
 
-	static FAssetRelatedInfo GetAssetRelatedInfo(const FAssetDetail& InAsset);
-	static TArray<FAssetRelatedInfo> GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets);
-	static TArray<FAssetRelatedInfo> GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies);
+	static FAssetRelatedInfo GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
+	static TArray<FAssetRelatedInfo> GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
+	static TArray<FAssetRelatedInfo> GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
 
 	static bool SerializeAssetRelatedInfoAsJsonObject(const FAssetRelatedInfo& InAssetDependency, TSharedPtr<FJsonObject>& OutJsonObject);
 	static bool SerializeAssetsRelatedInfoAsJsonObject(const TArray<FAssetRelatedInfo>& InAssetsDependency, TSharedPtr<FJsonObject>& OutJsonObject);
@@ -221,5 +222,8 @@ public:
 	static TArray<TSharedPtr<FJsonValue>> SerializeFReplaceTextsAsJsonValues(const TArray<FReplaceText>& InReplaceTexts);
 	static TSharedPtr<FJsonObject> SerializeFReplaceTextAsJsonObject(const FReplaceText& InReplaceText);
 	static FReplaceText DeSerializeFReplaceText(const TSharedPtr<FJsonObject>& InReplaceTextJsonObject);
+
+
+
 
 };

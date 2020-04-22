@@ -159,6 +159,7 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 			FDateTime::UtcNow().ToString(),
 			ExportReleaseSettings->GetAssetIncludeFiltersPaths(),
 			ExportReleaseSettings->GetAssetIgnoreFiltersPaths(),
+			ExportReleaseSettings->GetAssetRegistryDependencyTypes(),
 			ExportReleaseSettings->GetSpecifyAssets(),
 			ExportReleaseSettings->GetAllExternFiles(true),
 			ExportReleaseSettings->IsIncludeHasRefAssetsOnly()
@@ -214,7 +215,7 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 		UnrealPakSlowTask.EnterProgressFrame(1.0, DiaLogMsg);
 		if (ExportReleaseSettings->IsSaveAssetRelatedInfo())
 		{
-			TArray<FAssetRelatedInfo> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(ExportVersion.AssetInfo);
+			TArray<FAssetRelatedInfo> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(ExportVersion.AssetInfo,ExportReleaseSettings->GetAssetRegistryDependencyTypes());
 
 			FString AssetsDependencyString;
 			UFlibPatchParserHelper::SerializeAssetsRelatedInfoAsString(AssetsDependency, AssetsDependencyString);

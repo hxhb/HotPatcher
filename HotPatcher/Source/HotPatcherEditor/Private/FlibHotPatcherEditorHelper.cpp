@@ -113,6 +113,21 @@ UExportPatchSettings* UFlibHotPatcherEditorHelper::DeserializePatchConfig(UExpor
 			InNewSetting->AssetIncludeFilters = ParserAssetFilter(TEXT("AssetIncludeFilters"));
 			InNewSetting->AssetIgnoreFilters = ParserAssetFilter(TEXT("AssetIgnoreFilters"));
 
+			// deserialize AssetRegistryDependencyTypes
+			{
+				TArray<EAssetRegistryDependencyTypeEx> result;
+				TArray<TSharedPtr<FJsonValue>> AssetRegistryDependencyTypes = JsonObject->GetArrayField(TEXT("AssetRegistryDependencyTypes"));
+				for (const auto& TypeJsonValue : AssetRegistryDependencyTypes)
+				{
+					EAssetRegistryDependencyTypeEx CurrentType;
+					if (UFLibAssetManageHelperEx::DeSerializeAssetRegistryDependencyTypes(TypeJsonValue, CurrentType))
+					{
+						result.AddUnique(CurrentType);
+					}
+				}
+				InNewSetting->AssetRegistryDependencyTypes = result;
+			}
+
 			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludeHasRefAssetsOnly);
 
 			// PatcherSprcifyAsset
@@ -305,6 +320,22 @@ bool UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(const UExport
 
 	SerializeArrayLambda(ConvDirPathsToStrings(InPatchSetting->AssetIncludeFilters), TEXT("AssetIncludeFilters"));
 	SerializeArrayLambda(ConvDirPathsToStrings(InPatchSetting->AssetIgnoreFilters), TEXT("AssetIgnoreFilters"));
+
+	auto SerializeAssetDependencyTypes = [&OutJsonObject](const FString& InName,const TArray<EAssetRegistryDependencyTypeEx>& InTypes)
+	{
+		TArray<TSharedPtr<FJsonValue>> TypesJsonValues;
+		for (const auto& Type : InTypes)
+		{
+			TSharedPtr<FJsonValue> CurrentJsonValue;
+			if (UFLibAssetManageHelperEx::SerializeAssetRegistryDependencyTypes(Type, CurrentJsonValue))
+			{
+				TypesJsonValues.Add(CurrentJsonValue);
+			}
+		}
+		OutJsonObject->SetArrayField(InName, TypesJsonValues);
+	};
+
+	SerializeAssetDependencyTypes(TEXT("AssetRegistryDependencyTypes"), InPatchSetting->GetAssetRegistryDependencyTypes());
 	OutJsonObject->SetBoolField(TEXT("bIncludeHasRefAssetsOnly"), InPatchSetting->IsIncludeHasRefAssetsOnly());
 
 	// serialize specify asset
@@ -404,6 +435,7 @@ bool UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(const UExport
 	return true;
 }
 
+
 bool UFlibHotPatcherEditorHelper::SerializeReleaseConfigToJsonObject(const UExportReleaseSettings*const InReleaseSetting, TSharedPtr<FJsonObject>& OutJsonObject)
 {
 	if (!OutJsonObject.IsValid())
@@ -434,6 +466,21 @@ bool UFlibHotPatcherEditorHelper::SerializeReleaseConfigToJsonObject(const UExpo
 	SerializeArrayLambda(ConvDirPathsToStrings(InReleaseSetting->AssetIncludeFilters), TEXT("AssetIncludeFilters"));
 	SerializeArrayLambda(ConvDirPathsToStrings(InReleaseSetting->AssetIgnoreFilters), TEXT("AssetIgnoreFilters"));
 
+	auto SerializeAssetDependencyTypes = [&OutJsonObject](const FString& InName, const TArray<EAssetRegistryDependencyTypeEx>& InTypes)
+	{
+		TArray<TSharedPtr<FJsonValue>> TypesJsonValues;
+		for (const auto& Type : InTypes)
+		{
+			TSharedPtr<FJsonValue> CurrentJsonValue;
+			if (UFLibAssetManageHelperEx::SerializeAssetRegistryDependencyTypes(Type, CurrentJsonValue))
+			{
+				TypesJsonValues.Add(CurrentJsonValue);
+			}
+		}
+		OutJsonObject->SetArrayField(InName, TypesJsonValues);
+	};
+
+	SerializeAssetDependencyTypes(TEXT("AssetRegistryDependencyTypes"), InReleaseSetting->GetAssetRegistryDependencyTypes());
 	OutJsonObject->SetBoolField(TEXT("bIncludeHasRefAssetsOnly"), InReleaseSetting->IsIncludeHasRefAssetsOnly());
 
 	// serialize specify asset
@@ -511,6 +558,21 @@ class UExportReleaseSettings* UFlibHotPatcherEditorHelper::DeserializeReleaseCon
 
 			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludeHasRefAssetsOnly);
 
+			// deserialize AssetRegistryDependencyTypes
+			{
+				TArray<EAssetRegistryDependencyTypeEx> result;
+				TArray<TSharedPtr<FJsonValue>> AssetRegistryDependencyTypes = JsonObject->GetArrayField(TEXT("AssetRegistryDependencyTypes"));
+				for (const auto& TypeJsonValue : AssetRegistryDependencyTypes)
+				{
+					EAssetRegistryDependencyTypeEx CurrentType;
+					if (UFLibAssetManageHelperEx::DeSerializeAssetRegistryDependencyTypes(TypeJsonValue, CurrentType))
+					{
+						result.AddUnique(CurrentType);
+					}
+				}
+				InNewSetting->AssetRegistryDependencyTypes = result;
+			}
+
 			// PatcherSprcifyAsset
 			{
 				TArray<FPatcherSpecifyAsset> SpecifyAssets;
@@ -582,6 +644,7 @@ class UExportReleaseSettings* UFlibHotPatcherEditorHelper::DeserializeReleaseCon
 
 }
 
+
 #include "Kismet/KismetSystemLibrary.h"
 
 FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(const UExportPatchSettings* InPatchSetting)
@@ -601,6 +664,7 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(const UExport
 	Chunk.IncludeSpecifyAssets = InPatchSetting->GetIncludeSpecifyAssets();
 	Chunk.AddExternDirectoryToPak = InPatchSetting->GetAddExternDirectory();
 	Chunk.AddExternFileToPak = InPatchSetting->GetAddExternFiles();
+	Chunk.AssetRegistryDependencyTypes = InPatchSetting->GetAssetRegistryDependencyTypes();
 	Chunk.InternalFiles.bIncludeAssetRegistry = InPatchSetting->IsIncludeAssetRegistry();
 	Chunk.InternalFiles.bIncludeGlobalShaderCache = InPatchSetting->IsIncludeGlobalShaderCache();
 	Chunk.InternalFiles.bIncludeShaderBytecode = InPatchSetting->IsIncludeGlobalShaderCache();

@@ -34,7 +34,8 @@ public class AssetManagerEx : ModuleRules
                 "CoreUObject",
                 "Engine",
                 "Slate",
-                "SlateCore"
+                "SlateCore",
+                "Json"
                 // "TargetPlatform",
 				// ... add other public dependencies that you statically link with here ...
 			}

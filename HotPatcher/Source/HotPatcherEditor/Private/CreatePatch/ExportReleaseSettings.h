@@ -20,6 +20,7 @@ class UExportReleaseSettings : public UObject
 public:
 	UExportReleaseSettings()
 	{
+		AssetRegistryDependencyTypes.Add(EAssetRegistryDependencyTypeEx::Packages);
 	}
 
 	FORCEINLINE static UExportReleaseSettings* Get()
@@ -99,9 +100,8 @@ public:
 		}
 		return AllExternFiles;
 	}
-
+	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
 	FORCEINLINE FString GetSavePath()const{return SavePath.Path;}
-
 	FORCEINLINE bool IsSaveConfig()const {return bSaveReleaseConfig;}
 	FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bSaveAssetRelatedInfo; }
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
@@ -122,6 +122,9 @@ public:
 		TArray<FDirectoryPath> AssetIgnoreFilters;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters")
 		bool bIncludeHasRefAssetsOnly;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters")
+		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Specify Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Extern Files")

@@ -14,6 +14,7 @@ UExportPatchSettings::UExportPatchSettings()
 		UFlibPatchParserHelper::GetProjectName(),
 		TEXT("Extention/Versions")
 	);
+	AssetRegistryDependencyTypes.Add(EAssetRegistryDependencyTypeEx::Packages);
 }
 
 TArray<FString> UExportPatchSettings::GetAssetIncludeFiltersPaths()const
@@ -224,6 +225,7 @@ FHotPatcherVersion UExportPatchSettings::GetNewPatchVersionInfo() const
 		FDateTime::UtcNow().ToString(),
 		this->GetAssetIncludeFiltersPaths(),
 		this->GetAssetIgnoreFiltersPaths(),
+		this->GetAssetRegistryDependencyTypes(),
 		this->GetIncludeSpecifyAssets(),
 		this->GetAllExternFiles(true),
 		this->IsIncludeHasRefAssetsOnly()

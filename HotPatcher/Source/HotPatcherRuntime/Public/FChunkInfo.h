@@ -49,6 +49,8 @@ public:
 		TArray<FDirectoryPath> AssetIgnoreFilters;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool bAnalysisFilterDependencies = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern")
