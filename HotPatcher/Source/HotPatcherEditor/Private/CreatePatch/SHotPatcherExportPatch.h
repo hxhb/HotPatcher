@@ -55,6 +55,10 @@ protected:
 	FReply DoClearDiff()const;
 	EVisibility VisibilityDiffButtons()const;
 
+	FReply DoPreviewChunk()const;
+	bool CanPreviewChunk()const;
+	EVisibility VisibilityPreviewChunkButtons()const;
+
 	bool InformationContentIsVisibility()const;
 	void SetInformationContent(const FString& InContent)const;
 	void SetInfomationContentVisibility(EVisibility InVisibility)const;
