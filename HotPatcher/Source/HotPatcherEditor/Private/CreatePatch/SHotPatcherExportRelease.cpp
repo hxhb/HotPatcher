@@ -162,7 +162,8 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 			ExportReleaseSettings->GetAssetRegistryDependencyTypes(),
 			ExportReleaseSettings->GetSpecifyAssets(),
 			ExportReleaseSettings->GetAllExternFiles(true),
-			ExportReleaseSettings->IsIncludeHasRefAssetsOnly()
+			ExportReleaseSettings->IsIncludeHasRefAssetsOnly(),
+			ExportReleaseSettings->IsAnalysisFilterDependencies()
 		);
 	}
 	FString SaveVersionDir = FPaths::Combine(ExportReleaseSettings->GetSavePath(), ExportReleaseSettings->GetVersionId());
@@ -221,11 +222,11 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 			UFlibPatchParserHelper::SerializeAssetsRelatedInfoAsString(AssetsDependency, AssetsDependencyString);
 			FString SaveAssetRelatedInfoToFile = FPaths::Combine(
 				SaveVersionDir,
-				FString::Printf(TEXT("%s_AssetDependency.json"), *ExportVersion.VersionId)
+				FString::Printf(TEXT("%s_AssetRelatedInfos.json"), *ExportVersion.VersionId)
 			);
 			if (UFLibAssetManageHelperEx::SaveStringToFile(SaveAssetRelatedInfoToFile, AssetsDependencyString))
 			{
-				auto Msg = LOCTEXT("SaveAssetRelatedInfoInfo", "Succeed to export Asset Dependency info.");
+				auto Msg = LOCTEXT("SaveAssetRelatedInfoInfo", "Succeed to export Asset Related info.");
 				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveAssetRelatedInfoToFile);
 			}
 		}

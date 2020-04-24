@@ -72,6 +72,7 @@ public:
 	FORCEINLINE TArray<FDirectoryPath> GetAssetIncludeFilters()const { return AssetIncludeFilters; }
 	TArray<FString> GetAssetIgnoreFiltersPaths()const;
 	FORCEINLINE TArray<FDirectoryPath> GetAssetIgnoreFilters()const { return AssetIgnoreFilters; }
+	FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
 	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
 	FORCEINLINE TArray<FPatcherSpecifyAsset> GetIncludeSpecifyAssets()const { return IncludeSpecifyAssets; }
 
@@ -142,6 +143,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Asset Filter")
 		bool bIncludeHasRefAssetsOnly;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Asset Filter")
+		bool bAnalysisFilterDependencies=true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Asset Filter",meta = (EditCondition="bAnalysisFilterDependencies"))
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Specify Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;

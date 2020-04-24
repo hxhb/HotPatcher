@@ -1159,6 +1159,7 @@ FChunkInfo UFlibPatchParserHelper::CombineChunkInfo(const FChunkInfo& R, const F
 	result.ChunkName = FString::Printf(TEXT("%s_%s"), *R.ChunkName, *L.ChunkName);
 	result.AssetIncludeFilters.Append(L.AssetIncludeFilters);
 	result.AssetIgnoreFilters.Append(L.AssetIgnoreFilters);
+	result.bAnalysisFilterDependencies = L.bAnalysisFilterDependencies || R.bAnalysisFilterDependencies;
 	result.IncludeSpecifyAssets.Append(L.IncludeSpecifyAssets);
 	result.AddExternDirectoryToPak.Append(L.AddExternDirectoryToPak);
 	result.AddExternFileToPak.Append(L.AddExternFileToPak);
@@ -1845,6 +1846,7 @@ bool UFlibPatchParserHelper::SerializeFChunkInfoToJsonObject(const FChunkInfo& I
 		return Resault;
 	};
 
+	
 	auto SerializeArrayLambda = [&OutJsonObject](const TArray<FString>& InArray, const FString& InJsonArrayName)
 	{
 		TArray<TSharedPtr<FJsonValue>> ArrayJsonValueList;
@@ -1869,7 +1871,7 @@ bool UFlibPatchParserHelper::SerializeFChunkInfoToJsonObject(const FChunkInfo& I
 		}
 		OutJsonObject->SetArrayField(InName, TypesJsonValues);
 	};
-
+	OutJsonObject->SetBoolField(TEXT("bAnalysisFilterDependencies"), InChunkInfo.bAnalysisFilterDependencies);
 	SerializeAssetDependencyTypes(TEXT("AssetRegistryDependencyTypes"), InChunkInfo.AssetRegistryDependencyTypes);
 
 	// serialize specify asset
@@ -1937,6 +1939,7 @@ bool UFlibPatchParserHelper::DeSerializeFChunkInfoFromJsonObject(const TSharedPt
 
 	OutChunkInfo.AssetIncludeFilters = ParserAssetFilter(TEXT("AssetIncludeFilters"));
 
+	OutChunkInfo.bAnalysisFilterDependencies = InJsonObject->GetBoolField(TEXT("bAnalysisFilterDependencies"));
 	// deserialize AssetRegistryDependencyTypes
 	{
 		TArray<EAssetRegistryDependencyTypeEx> result;

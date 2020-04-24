@@ -47,9 +47,9 @@ public:
 		TArray<FDirectoryPath> AssetIncludeFilters;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIgnoreFilters;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		bool bAnalysisFilterDependencies = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		bool bAnalysisFilterDependencies = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bAnalysisFilterDependencies"))
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;

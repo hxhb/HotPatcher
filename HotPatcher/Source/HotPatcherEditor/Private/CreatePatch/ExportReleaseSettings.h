@@ -100,12 +100,13 @@ public:
 		}
 		return AllExternFiles;
 	}
-	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
+	
 	FORCEINLINE FString GetSavePath()const{return SavePath.Path;}
 	FORCEINLINE bool IsSaveConfig()const {return bSaveReleaseConfig;}
 	FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bSaveAssetRelatedInfo; }
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
-
+	FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
+	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
 	FORCEINLINE TArray<FPatcherSpecifyAsset> GetSpecifyAssets()const { return IncludeSpecifyAssets; }
 
 	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
@@ -121,10 +122,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIgnoreFilters;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters")
-		bool bIncludeHasRefAssetsOnly;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters")
+		bool bAnalysisFilterDependencies=true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters",meta=(EditCondition="bAnalysisFilterDependencies"))
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters")
+		bool bIncludeHasRefAssetsOnly;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Specify Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Extern Files")

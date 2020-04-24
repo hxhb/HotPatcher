@@ -113,6 +113,7 @@ UExportPatchSettings* UFlibHotPatcherEditorHelper::DeserializePatchConfig(UExpor
 			InNewSetting->AssetIncludeFilters = ParserAssetFilter(TEXT("AssetIncludeFilters"));
 			InNewSetting->AssetIgnoreFilters = ParserAssetFilter(TEXT("AssetIgnoreFilters"));
 
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bAnalysisFilterDependencies);
 			// deserialize AssetRegistryDependencyTypes
 			{
 				TArray<EAssetRegistryDependencyTypeEx> result;
@@ -334,7 +335,7 @@ bool UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(const UExport
 		}
 		OutJsonObject->SetArrayField(InName, TypesJsonValues);
 	};
-
+	OutJsonObject->SetBoolField(TEXT("bAnalysisFilterDependencies"), InPatchSetting->IsAnalysisFilterDependencies());
 	SerializeAssetDependencyTypes(TEXT("AssetRegistryDependencyTypes"), InPatchSetting->GetAssetRegistryDependencyTypes());
 	OutJsonObject->SetBoolField(TEXT("bIncludeHasRefAssetsOnly"), InPatchSetting->IsIncludeHasRefAssetsOnly());
 
@@ -466,6 +467,8 @@ bool UFlibHotPatcherEditorHelper::SerializeReleaseConfigToJsonObject(const UExpo
 	SerializeArrayLambda(ConvDirPathsToStrings(InReleaseSetting->AssetIncludeFilters), TEXT("AssetIncludeFilters"));
 	SerializeArrayLambda(ConvDirPathsToStrings(InReleaseSetting->AssetIgnoreFilters), TEXT("AssetIgnoreFilters"));
 
+	OutJsonObject->SetBoolField(TEXT("bAnalysisFilterDependencies"), InReleaseSetting->IsAnalysisFilterDependencies());
+
 	auto SerializeAssetDependencyTypes = [&OutJsonObject](const FString& InName, const TArray<EAssetRegistryDependencyTypeEx>& InTypes)
 	{
 		TArray<TSharedPtr<FJsonValue>> TypesJsonValues;
@@ -556,8 +559,7 @@ class UExportReleaseSettings* UFlibHotPatcherEditorHelper::DeserializeReleaseCon
 			InNewSetting->AssetIncludeFilters = ParserAssetFilter(TEXT("AssetIncludeFilters"));
 			InNewSetting->AssetIgnoreFilters = ParserAssetFilter(TEXT("AssetIgnoreFilters"));
 
-			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludeHasRefAssetsOnly);
-
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bAnalysisFilterDependencies);
 			// deserialize AssetRegistryDependencyTypes
 			{
 				TArray<EAssetRegistryDependencyTypeEx> result;
@@ -572,7 +574,7 @@ class UExportReleaseSettings* UFlibHotPatcherEditorHelper::DeserializeReleaseCon
 				}
 				InNewSetting->AssetRegistryDependencyTypes = result;
 			}
-
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bIncludeHasRefAssetsOnly);
 			// PatcherSprcifyAsset
 			{
 				TArray<FPatcherSpecifyAsset> SpecifyAssets;
@@ -660,7 +662,7 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(const UExport
 	Chunk.bSavePakCommands = true;
 	Chunk.AssetIncludeFilters = InPatchSetting->GetAssetIncludeFilters();
 	Chunk.AssetIgnoreFilters = InPatchSetting->GetAssetIgnoreFilters();
-	Chunk.bAnalysisFilterDependencies = true;
+	Chunk.bAnalysisFilterDependencies = InPatchSetting->IsAnalysisFilterDependencies();
 	Chunk.IncludeSpecifyAssets = InPatchSetting->GetIncludeSpecifyAssets();
 	Chunk.AddExternDirectoryToPak = InPatchSetting->GetAddExternDirectory();
 	Chunk.AddExternFileToPak = InPatchSetting->GetAddExternFiles();

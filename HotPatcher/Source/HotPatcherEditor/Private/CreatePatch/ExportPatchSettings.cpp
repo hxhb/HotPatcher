@@ -7,7 +7,7 @@
 #include "Kismet/KismetStringLibrary.h"
 
 UExportPatchSettings::UExportPatchSettings()
-	: bEnableExternFilesDiff(true),UnrealPakOptions{ TEXT("-compress") ,TEXT("-compressionformats=Zlib")}
+	: bEnableExternFilesDiff(true),bAnalysisFilterDependencies(true),UnrealPakOptions{ TEXT("-compress") ,TEXT("-compressionformats=Zlib")}
 {
 	PakVersionFileMountPoint = FPaths::Combine(
 		TEXT("../../../"),
@@ -284,7 +284,6 @@ bool UExportPatchSettings::SerializePatchConfigToString(FString& OutSerializedSt
 {
 	TSharedPtr<FJsonObject> PatchConfigJsonObject = MakeShareable(new FJsonObject);
 	SerializePatchConfigToJsonObject(PatchConfigJsonObject);
-
 	auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&OutSerializedStr);
 	return FJsonSerializer::Serialize(PatchConfigJsonObject.ToSharedRef(), JsonWriter);
 }
