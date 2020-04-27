@@ -229,7 +229,4 @@ public:
 
 	static EAssetRegistryDependencyType::Type ConvAssetRegistryDependencyToInternal(const EAssetRegistryDependencyTypeEx& InType);
 
-	static bool SerializeAssetRegistryDependencyTypes(const EAssetRegistryDependencyTypeEx& InType, TSharedPtr<FJsonValue>& OutJsonValue);
-	static bool DeSerializeAssetRegistryDependencyTypes(const TSharedPtr<FJsonValue>& InJsonValue, EAssetRegistryDependencyTypeEx& OutType);
-
 };

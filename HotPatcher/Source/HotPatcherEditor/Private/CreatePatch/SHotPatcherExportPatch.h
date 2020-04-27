@@ -15,6 +15,8 @@
 #include "IDetailsView.h"
 #include "PropertyEditorModule.h"
 #include "Widgets/Text/SMultiLineEditableText.h"
+
+
 /**
  * Implements the cooked platforms panel.
  */

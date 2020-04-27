@@ -7,14 +7,16 @@
 #include "Kismet/KismetStringLibrary.h"
 
 UExportPatchSettings::UExportPatchSettings()
-	: bEnableExternFilesDiff(true),bAnalysisFilterDependencies(true),UnrealPakOptions{ TEXT("-compress") ,TEXT("-compressionformats=Zlib")}
+	: bAnalysisFilterDependencies(true),
+	AssetRegistryDependencyTypes(TArray<EAssetRegistryDependencyTypeEx>{EAssetRegistryDependencyTypeEx::Packages}),
+	bEnableExternFilesDiff(true), 
+	UnrealPakOptions{ TEXT("-compress") ,TEXT("-compressionformats=Zlib")}
 {
 	PakVersionFileMountPoint = FPaths::Combine(
 		TEXT("../../../"),
 		UFlibPatchParserHelper::GetProjectName(),
 		TEXT("Extention/Versions")
 	);
-	AssetRegistryDependencyTypes.Add(EAssetRegistryDependencyTypeEx::Packages);
 }
 
 TArray<FString> UExportPatchSettings::GetAssetIncludeFiltersPaths()const
@@ -109,26 +111,6 @@ TArray<FString> UExportPatchSettings::MakeAllExternDirectoryAsPakCommand() const
 	if (!GetAddExternDirectory().Num())
 		return CookCommandResault;
 
-	//for (const auto& DirectoryItem : GetAddExternDirectory())
-	//{
-	//	FString DirAbsPath = FPaths::ConvertRelativePathToFull(DirectoryItem.DirectoryPath.Path);
-	//	FPaths::MakeStandardFilename(DirAbsPath);
-	//	if (!DirAbsPath.IsEmpty() && FPaths::DirectoryExists(DirAbsPath))
-	//	{
-	//		TArray<FString> DirectoryAllFiles;
-	//		if (UFLibAssetManageHelperEx::FindFilesRecursive(DirAbsPath, DirectoryAllFiles, true))
-	//		{
-	//			int32 ParentDirectoryIndex = DirAbsPath.Len();
-	//			for (const auto& File : DirectoryAllFiles)
-	//			{
-	//				FString RelativeParentPath = UKismetStringLibrary::GetSubstring(File, ParentDirectoryIndex, File.Len() - ParentDirectoryIndex);
-	//				FString RelativeMountPointPath = FPaths::Combine(DirectoryItem.MountPoint, RelativeParentPath);
-	//				FPaths::MakeStandardFilename(RelativeMountPointPath);
-	//				
-	//			}
-	//		}
-	//	}
-	//}
 
 	TArray<FExternAssetFileInfo>&& ExFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
 
@@ -320,14 +302,7 @@ TArray<FString> UExportPatchSettings::GetPakTargetPlatformNames() const
 	TArray<FString> Resault;
 	for (const auto &Platform : this->GetPakTargetPlatforms())
 	{
-		// save UnrealPak.exe command file
-		FString PlatformName;
-		{
-			FString EnumName;
-			const UEnum* ETargetPlatformEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("ETargetPlatform"), true);
-			ETargetPlatformEnum->GetNameByValue((int64)Platform).ToString().Split(TEXT("::"), &EnumName, &PlatformName, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
-		}
-		Resault.Add(PlatformName);
+		Resault.Add(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
 	}
 	return Resault;
 }

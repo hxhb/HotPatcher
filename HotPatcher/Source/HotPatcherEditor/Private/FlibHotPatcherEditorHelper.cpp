@@ -121,7 +121,7 @@ UExportPatchSettings* UFlibHotPatcherEditorHelper::DeserializePatchConfig(UExpor
 				for (const auto& TypeJsonValue : AssetRegistryDependencyTypes)
 				{
 					EAssetRegistryDependencyTypeEx CurrentType;
-					if (UFLibAssetManageHelperEx::DeSerializeAssetRegistryDependencyTypes(TypeJsonValue, CurrentType))
+					if (UFlibPatchParserHelper::GetEnumValueByName(TypeJsonValue->AsString(),CurrentType))
 					{
 						result.AddUnique(CurrentType);
 					}
@@ -254,22 +254,10 @@ UExportPatchSettings* UFlibHotPatcherEditorHelper::DeserializePatchConfig(UExpor
 				
 				for(const auto& Platform:TargetPlatforms)
 				{
-					FString EnumName = TEXT("ETargetPlatform::");
-					EnumName.Append(Platform->AsString());
-
-					UEnum* ETargetPlatformEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("ETargetPlatform"), true);
-					
-					int32 EnumIndex = ETargetPlatformEnum->GetIndexByName(FName(*EnumName));
-					if (EnumIndex != INDEX_NONE)
+					ETargetPlatform CurrentEnum;
+					if (UFlibPatchParserHelper::GetEnumValueByName(Platform->AsString(), CurrentEnum))
 					{
-						// UE_LOG(LogTemp, Log, TEXT("FOUND ENUM INDEX SUCCESS:%s"),*EnumName);
-						int32 EnumValue = ETargetPlatformEnum->GetValueByIndex(EnumIndex);
-						ETargetPlatform CurrentEnum = (ETargetPlatform)EnumValue;
 						FinalTargetPlatforms.Add(CurrentEnum);
-					}
-					else
-					{
-						// UE_LOG(LogTemp, Log, TEXT("FOUND ENUM INDEX FAILD:%s"), *EnumName);
 					}
 				}
 				InNewSetting->PakTargetPlatforms = FinalTargetPlatforms;
@@ -327,11 +315,8 @@ bool UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(const UExport
 		TArray<TSharedPtr<FJsonValue>> TypesJsonValues;
 		for (const auto& Type : InTypes)
 		{
-			TSharedPtr<FJsonValue> CurrentJsonValue;
-			if (UFLibAssetManageHelperEx::SerializeAssetRegistryDependencyTypes(Type, CurrentJsonValue))
-			{
-				TypesJsonValues.Add(CurrentJsonValue);
-			}
+			TSharedPtr<FJsonValue> CurrentJsonValue = MakeShareable(new FJsonValueString(UFlibPatchParserHelper::GetEnumNameByValue(Type)));
+			TypesJsonValues.Add(CurrentJsonValue);
 		}
 		OutJsonObject->SetArrayField(InName, TypesJsonValues);
 	};
@@ -415,14 +400,7 @@ bool UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(const UExport
 		TArray<FString> AllPlatforms;
 		for (const auto &Platform : InPatchSetting->GetPakTargetPlatforms())
 		{
-			// save UnrealPak.exe command file
-			FString PlatformName;
-			{
-				FString EnumName;
-				UEnum* ETargetPlatformEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("ETargetPlatform"), true);
-				ETargetPlatformEnum->GetNameByValue((int64)Platform).ToString().Split(TEXT("::"), &EnumName, &PlatformName, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
-			}
-			AllPlatforms.AddUnique(PlatformName);
+			AllPlatforms.AddUnique(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
 		}
 		SerializeArrayLambda(AllPlatforms, TEXT("PakTargetPlatforms"));
 	}
@@ -474,11 +452,8 @@ bool UFlibHotPatcherEditorHelper::SerializeReleaseConfigToJsonObject(const UExpo
 		TArray<TSharedPtr<FJsonValue>> TypesJsonValues;
 		for (const auto& Type : InTypes)
 		{
-			TSharedPtr<FJsonValue> CurrentJsonValue;
-			if (UFLibAssetManageHelperEx::SerializeAssetRegistryDependencyTypes(Type, CurrentJsonValue))
-			{
-				TypesJsonValues.Add(CurrentJsonValue);
-			}
+			TSharedPtr<FJsonValue> CurrentJsonValue = MakeShareable(new FJsonValueString(UFlibPatchParserHelper::GetEnumNameByValue(Type)));
+			TypesJsonValues.Add(CurrentJsonValue);
 		}
 		OutJsonObject->SetArrayField(InName, TypesJsonValues);
 	};
@@ -567,7 +542,7 @@ class UExportReleaseSettings* UFlibHotPatcherEditorHelper::DeserializeReleaseCon
 				for (const auto& TypeJsonValue : AssetRegistryDependencyTypes)
 				{
 					EAssetRegistryDependencyTypeEx CurrentType;
-					if (UFLibAssetManageHelperEx::DeSerializeAssetRegistryDependencyTypes(TypeJsonValue, CurrentType))
+					if (UFlibPatchParserHelper::GetEnumValueByName(TypeJsonValue->AsString(),CurrentType))
 					{
 						result.AddUnique(CurrentType);
 					}
@@ -659,6 +634,7 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(const UExport
 	
 	Chunk.ChunkName = InPatchSetting->VersionId;
 	Chunk.bMonolithic = false;
+	Chunk.MonolithicPathMode = EMonolithicPathMode::MountPath;
 	Chunk.bSavePakCommands = true;
 	Chunk.AssetIncludeFilters = InPatchSetting->GetAssetIncludeFilters();
 	Chunk.AssetIgnoreFilters = InPatchSetting->GetAssetIgnoreFilters();

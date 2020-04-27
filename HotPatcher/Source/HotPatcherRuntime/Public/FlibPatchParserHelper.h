@@ -13,6 +13,9 @@
 #include "FExternDirectoryInfo.h"
 #include "FAssetRelatedInfo.h"
 
+// cpp standard
+#include <typeinfo>
+
 // engine header
 #include "CoreMinimal.h"
 #include "Containers/UnrealString.h"
@@ -224,6 +227,63 @@ public:
 	static FReplaceText DeSerializeFReplaceText(const TSharedPtr<FJsonObject>& InReplaceTextJsonObject);
 
 
+	//static bool SerializeMonolithicPathMode(const EMonolithicPathMode& InMode, TSharedPtr<FJsonValue>& OutJsonValue);
+	//static bool DeSerializeMonolithicPathMode(const TSharedPtr<FJsonValue>& InJsonValue, EMonolithicPathMode& OutMode);
+
+	template<typename ENUM_TYPE>
+	static FString GetEnumNameByValue(ENUM_TYPE InEnumValue, bool bFullName = false)
+	{
+		FString result;
+		{
+			FString TypeName;
+			FString ValueName;
+
+			FString EnumTypeName = ANSI_TO_TCHAR(typeid(ENUM_TYPE).name());
+			{
+				FString Tmp;
+				EnumTypeName.Split(TEXT(" "), &Tmp, &EnumTypeName);
+			}
+
+			UEnum* FoundEnum = FindObject<UEnum>(ANY_PACKAGE,*EnumTypeName, true);
+			if (FoundEnum)
+			{
+				result = FoundEnum->GetNameByValue((int64)InEnumValue).ToString();
+				result.Split(TEXT("::"), &TypeName, &ValueName, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+				if (!bFullName)
+				{
+					result = ValueName;
+				}
+			}				
+		}
+		return result;
+	}
+
+	template<typename ENUM_TYPE>
+	static bool GetEnumValueByName(const FString& InEnumValueName, ENUM_TYPE& OutEnumValue)
+	{
+		bool bStatus = false;
+		FString EnumTypeName = ANSI_TO_TCHAR(typeid(ENUM_TYPE).name());
+		{
+			FString Tmp;
+			EnumTypeName.Split(TEXT(" "), &Tmp, &EnumTypeName);
+		}
+		UEnum* FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true);
+		
+		if (FoundEnum)
+		{
+			FString EnumValueFullName = EnumTypeName + TEXT("::") + InEnumValueName;
+			int32 EnumIndex = FoundEnum->GetIndexByName(FName(*EnumValueFullName));
+			if (EnumIndex != INDEX_NONE)
+			{
+				int32 EnumValue = FoundEnum->GetValueByIndex(EnumIndex);
+				ENUM_TYPE ResultEnumValue = (ENUM_TYPE)EnumValue;
+				OutEnumValue = ResultEnumValue;
+				bStatus = true;
+			}
+		}
+		return bStatus;	
+	}
+	static FString MountPathToRelativePath(const FString& InMountPath);
 
 
 };

@@ -820,6 +820,7 @@ bool UFlibPatchParserHelper::ConvIniFilesToPakCommands(
 			FPakCommand CurrentPakCommand;
 			CurrentPakCommand.PakCommands = TArray<FString>{ CookCommand };
 			CurrentPakCommand.MountPath = CookedIniRelativePath;
+			CurrentPakCommand.AssetPackage = UFlibPatchParserHelper::MountPathToRelativePath(CurrentPakCommand.MountPath);
 			InReceiveCommand(CurrentPakCommand);
 			OutCommands.AddUnique(CookCommand);
 	
@@ -866,6 +867,7 @@ bool UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(
 		FPakCommand CurrentPakCommand;
 		CurrentPakCommand.PakCommands = TArray<FString>{ OutCommand };
 		CurrentPakCommand.MountPath = AssetFileRelativeCookPath;
+		CurrentPakCommand.AssetPackage = UFlibPatchParserHelper::MountPathToRelativePath(CurrentPakCommand.MountPath);
 		InReceiveCommand(CurrentPakCommand);
 		bRunStatus = true;
 	}
@@ -1395,6 +1397,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(const FPatc
 			FPakCommand CurrentPakCommand;
 			CurrentPakCommand.PakCommands = InCommand;
 			CurrentPakCommand.MountPath = InMountPath;
+			CurrentPakCommand.AssetPackage = InLongPackageName;
 			PakCommands.Add(CurrentPakCommand);
 		};
 		// Collect Chunk Assets
@@ -1416,6 +1419,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(const FPatc
 			{
 				FPakCommand CurrentPakCommand;
 				CurrentPakCommand.MountPath = CollectFile.MountPath;
+				CurrentPakCommand.AssetPackage = UFlibPatchParserHelper::MountPathToRelativePath(CurrentPakCommand.MountPath);
 				CurrentPakCommand.PakCommands = TArray<FString>{ FString::Printf(TEXT("\"%s\" \"%s\"%s"), *CollectFile.FilePath.FilePath, *CollectFile.MountPath,*PakOptionsStr) };
 
 				PakCommands.Add(CurrentPakCommand);
@@ -1755,11 +1759,8 @@ bool UFlibPatchParserHelper::SerializeSpecifyAssetInfoToJsonObject(const FPatche
 			TArray<TSharedPtr<FJsonValue>> TypesJsonValues;
 			for (const auto& Type : InTypes)
 			{
-				TSharedPtr<FJsonValue> CurrentJsonValue;
-				if (UFLibAssetManageHelperEx::SerializeAssetRegistryDependencyTypes(Type, CurrentJsonValue))
-				{
-					TypesJsonValues.Add(CurrentJsonValue);
-				}
+				TSharedPtr<FJsonValue> CurrentJsonValue = MakeShareable(new FJsonValueString(UFlibPatchParserHelper::GetEnumNameByValue(Type)));
+				TypesJsonValues.Add(CurrentJsonValue);
 			}
 			OutJsonObject->SetArrayField(InName, TypesJsonValues);
 		};
@@ -1784,7 +1785,7 @@ bool UFlibPatchParserHelper::DeSerializeSpecifyAssetInfoToJsonObject(const TShar
 			for (const auto& TypeJsonValue : AssetRegistryDependencyTypes)
 			{
 				EAssetRegistryDependencyTypeEx CurrentType;
-				if (UFLibAssetManageHelperEx::DeSerializeAssetRegistryDependencyTypes(TypeJsonValue, CurrentType))
+				if (UFlibPatchParserHelper::GetEnumValueByName(TypeJsonValue->AsString(),CurrentType))
 				{
 					result.AddUnique(CurrentType);
 				}
@@ -1835,6 +1836,7 @@ bool UFlibPatchParserHelper::SerializeFChunkInfoToJsonObject(const FChunkInfo& I
 	}
 	OutJsonObject->SetStringField(TEXT("ChunkName"), InChunkInfo.ChunkName);
 	OutJsonObject->SetBoolField(TEXT("bMonolithic"), InChunkInfo.bMonolithic);
+	OutJsonObject->SetStringField(TEXT("MonolithicPathMode"), UFlibPatchParserHelper::GetEnumNameByValue(InChunkInfo.MonolithicPathMode));
 	OutJsonObject->SetBoolField(TEXT("bSavePakCommands"), InChunkInfo.bSavePakCommands);
 	auto ConvDirPathsToStrings = [](const TArray<FDirectoryPath>& InDirPaths)->TArray<FString>
 	{
@@ -1863,11 +1865,8 @@ bool UFlibPatchParserHelper::SerializeFChunkInfoToJsonObject(const FChunkInfo& I
 		TArray<TSharedPtr<FJsonValue>> TypesJsonValues;
 		for (const auto& Type : InTypes)
 		{
-			TSharedPtr<FJsonValue> CurrentJsonValue;
-			if (UFLibAssetManageHelperEx::SerializeAssetRegistryDependencyTypes(Type, CurrentJsonValue))
-			{
-				TypesJsonValues.Add(CurrentJsonValue);
-			}
+			TSharedPtr<FJsonValue> CurrentJsonValue = MakeShareable(new FJsonValueString(UFlibPatchParserHelper::GetEnumNameByValue(Type)));
+			TypesJsonValues.Add(CurrentJsonValue);
 		}
 		OutJsonObject->SetArrayField(InName, TypesJsonValues);
 	};
@@ -1921,6 +1920,7 @@ bool UFlibPatchParserHelper::DeSerializeFChunkInfoFromJsonObject(const TSharedPt
 {
 	OutChunkInfo.ChunkName = InJsonObject->GetStringField(TEXT("ChunkName"));
 	OutChunkInfo.bMonolithic = InJsonObject->GetBoolField(TEXT("bMonolithic"));
+	UFlibPatchParserHelper::GetEnumValueByName(InJsonObject->GetStringField(TEXT("MonolithicPathMode")),OutChunkInfo.MonolithicPathMode);
 	OutChunkInfo.bSavePakCommands = InJsonObject->GetBoolField(TEXT("bSavePakCommands"));
 	auto ParserAssetFilter = [InJsonObject](const FString& InFilterName) -> TArray<FDirectoryPath>
 	{
@@ -1947,7 +1947,7 @@ bool UFlibPatchParserHelper::DeSerializeFChunkInfoFromJsonObject(const TSharedPt
 		for (const auto& TypeJsonValue : AssetRegistryDependencyTypes)
 		{
 			EAssetRegistryDependencyTypeEx CurrentType;
-			if (UFLibAssetManageHelperEx::DeSerializeAssetRegistryDependencyTypes(TypeJsonValue, CurrentType))
+			if (UFlibPatchParserHelper::GetEnumValueByName(TypeJsonValue->AsString(),CurrentType))
 			{
 				result.AddUnique(CurrentType);
 			}
@@ -2140,13 +2140,7 @@ TSharedPtr<FJsonObject> UFlibPatchParserHelper::SerializeFReplaceTextAsJsonObjec
 	TSharedPtr<FJsonObject> resultJsonObject = MakeShareable(new FJsonObject);
 	resultJsonObject->SetStringField(TEXT("From"), InReplaceText.From);
 	resultJsonObject->SetStringField(TEXT("To"), InReplaceText.To);
-	FString SearchCaseModeStr;
-	{
-		FString EnumName;
-		UEnum* ETargetPlatformEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("ESearchCaseMode"), true);
-		ETargetPlatformEnum->GetNameByValue((int64)InReplaceText.SearchCase).ToString().Split(TEXT("::"), &EnumName, &SearchCaseModeStr, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
-	}
-	resultJsonObject->SetStringField(TEXT("SearchCaseMode"), SearchCaseModeStr);
+	resultJsonObject->SetStringField(TEXT("SearchCaseMode"), UFlibPatchParserHelper::GetEnumNameByValue(InReplaceText.SearchCase));
 	return resultJsonObject;
 }
 
@@ -2158,26 +2152,24 @@ FReplaceText UFlibPatchParserHelper::DeSerializeFReplaceText(const TSharedPtr<FJ
 		result.From = InReplaceTextJsonObject->GetStringField(TEXT("From"));
 		result.To = InReplaceTextJsonObject->GetStringField(TEXT("To"));
 
-		{
-			FString SearchCaseModeStr = InReplaceTextJsonObject->GetStringField(TEXT("SearchCaseMode"));
-			ESearchCaseMode FinalSearchCaseMode = ESearchCaseMode::CaseSensitive;
-
-			FString EnumName = TEXT("ESearchCaseMode::");
-			EnumName.Append(SearchCaseModeStr);
-
-			UEnum* EnumObject = FindObject<UEnum>(ANY_PACKAGE, TEXT("ESearchCaseMode"), true);
-
-			int32 EnumIndex = EnumObject->GetIndexByName(FName(*EnumName));
-			if (EnumIndex != INDEX_NONE)
-			{
-				// UE_LOG(LogTemp, Log, TEXT("FOUND ENUM INDEX SUCCESS:%s"),*EnumName);
-				int32 EnumValue = EnumObject->GetValueByIndex(EnumIndex);
-				ESearchCaseMode CurrentEnum = (ESearchCaseMode)EnumValue;
-				FinalSearchCaseMode = CurrentEnum;
-			}
-			result.SearchCase = FinalSearchCaseMode;
-		}
+		FString SearchCaseModeStr = InReplaceTextJsonObject->GetStringField(TEXT("SearchCaseMode"));
+		UFlibPatchParserHelper::GetEnumValueByName(SearchCaseModeStr, result.SearchCase);
 
 	}
 	return result;
+}
+
+FString UFlibPatchParserHelper::MountPathToRelativePath(const FString& InMountPath)
+{
+	FString Path;
+	FString filename;
+	FString RelativePath;
+#define RELATIVE_STR_LENGTH 9
+	if (InMountPath.StartsWith("../../../"))
+	{
+		RelativePath = UKismetStringLibrary::GetSubstring(InMountPath, RELATIVE_STR_LENGTH, InMountPath.Len() - RELATIVE_STR_LENGTH);
+	}
+	FString extersion;
+	FPaths::Split(RelativePath, Path, filename, extersion);
+	return Path/filename;
 }

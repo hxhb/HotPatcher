@@ -11,6 +11,15 @@
 #include "Engine/EngineTypes.h"
 #include "FChunkInfo.generated.h"
 
+
+UENUM(BlueprintType)
+enum class EMonolithicPathMode :uint8
+{
+	MountPath,
+	PackagePath
+};
+
+
 // 引擎的数据和ini等配置文件
 USTRUCT(BlueprintType)
 struct FPakInternalInfo
@@ -37,10 +46,16 @@ struct FChunkInfo
 {
 	GENERATED_USTRUCT_BODY()
 public:
+	FChunkInfo()
+	{
+		AssetRegistryDependencyTypes = TArray<EAssetRegistryDependencyTypeEx>{ EAssetRegistryDependencyTypeEx::Packages };
+	}
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 		FString ChunkName;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool bMonolithic = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bMonolithic"))
+		EMonolithicPathMode MonolithicPathMode;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool bSavePakCommands = false;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))
@@ -53,12 +68,12 @@ public:
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern", meta = (EditCondition = "!bMonolithic"))
 		TArray<FExternAssetFileInfo> AddExternFileToPak;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern", meta = (EditCondition = "!bMonolithic"))
 		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Internal")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Internal", meta = (EditCondition = "!bMonolithic"))
 		FPakInternalInfo InternalFiles;
 };
 
@@ -160,6 +175,7 @@ public:
 public:
 	FString ChunkName;
 	FString MountPath;
+	FString AssetPackage;
 	TArray<FString> PakCommands;
 };
 

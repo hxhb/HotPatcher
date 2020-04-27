@@ -819,19 +819,23 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 					FPakFileProxy CurrentPak;
 					CurrentPak.PakCommands.Add(PakCommand);
 					FString Path;
-					FString filename;
+					switch (Chunk.MonolithicPathMode)
 					{
-						FString RelativePath;
-	#define RELATIVE_STR_LENGTH 9
-						if (PakCommand.GetMountPath().StartsWith("../../../"))
+						case EMonolithicPathMode::MountPath:
 						{
-							RelativePath = UKismetStringLibrary::GetSubstring(PakCommand.GetMountPath(), RELATIVE_STR_LENGTH, PakCommand.GetMountPath().Len() - RELATIVE_STR_LENGTH);
+							Path = UFlibPatchParserHelper::MountPathToRelativePath(PakCommand.GetMountPath());
+							break;
+
+						};
+						case  EMonolithicPathMode::PackagePath:
+						{
+							Path = PakCommand.AssetPackage;
+							break;
 						}
-						FString extersion;
-						FPaths::Split(RelativePath, Path, filename, extersion);
 					}
-					CurrentPak.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s_PakCommands.txt"), *Path, *filename));
-					CurrentPak.PakSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s/%s%s.pak"), *Path, *filename,*PakPostfix));
+					
+					CurrentPak.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s_PakCommands.txt"), *Path));
+					CurrentPak.PakSavePath = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName, FString::Printf(TEXT("%s.pak"), *Path));
 					PakFileProxys.Add(CurrentPak);
 				}
 			}
