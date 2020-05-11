@@ -230,6 +230,7 @@ public:
 	//static bool SerializeMonolithicPathMode(const EMonolithicPathMode& InMode, TSharedPtr<FJsonValue>& OutJsonValue);
 	//static bool DeSerializeMonolithicPathMode(const TSharedPtr<FJsonValue>& InJsonValue, EMonolithicPathMode& OutMode);
 
+
 	template<typename ENUM_TYPE>
 	static FString GetEnumNameByValue(ENUM_TYPE InEnumValue, bool bFullName = false)
 	{
@@ -238,13 +239,7 @@ public:
 			FString TypeName;
 			FString ValueName;
 
-			FString EnumTypeName = ANSI_TO_TCHAR(typeid(ENUM_TYPE).name());
-			{
-				FString Tmp;
-				EnumTypeName.Split(TEXT(" "), &Tmp, &EnumTypeName);
-			}
-
-			UEnum* FoundEnum = FindObject<UEnum>(ANY_PACKAGE,*EnumTypeName, true);
+			UEnum* FoundEnum = StaticEnum<ENUM_TYPE>();
 			if (FoundEnum)
 			{
 				result = FoundEnum->GetNameByValue((int64)InEnumValue).ToString();
@@ -253,7 +248,7 @@ public:
 				{
 					result = ValueName;
 				}
-			}				
+			}
 		}
 		return result;
 	}
@@ -262,13 +257,10 @@ public:
 	static bool GetEnumValueByName(const FString& InEnumValueName, ENUM_TYPE& OutEnumValue)
 	{
 		bool bStatus = false;
-		FString EnumTypeName = ANSI_TO_TCHAR(typeid(ENUM_TYPE).name());
-		{
-			FString Tmp;
-			EnumTypeName.Split(TEXT(" "), &Tmp, &EnumTypeName);
-		}
-		UEnum* FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true);
-		
+
+		UEnum* FoundEnum = StaticEnum<ENUM_TYPE>();
+
+		FString EnumTypeName = FoundEnum->CppType;
 		if (FoundEnum)
 		{
 			FString EnumValueFullName = EnumTypeName + TEXT("::") + InEnumValueName;
@@ -278,11 +270,12 @@ public:
 				int32 EnumValue = FoundEnum->GetValueByIndex(EnumIndex);
 				ENUM_TYPE ResultEnumValue = (ENUM_TYPE)EnumValue;
 				OutEnumValue = ResultEnumValue;
-				bStatus = true;
+				bStatus = false;
 			}
 		}
-		return bStatus;	
+		return bStatus;
 	}
+
 	static FString MountPathToRelativePath(const FString& InMountPath);
 
 
