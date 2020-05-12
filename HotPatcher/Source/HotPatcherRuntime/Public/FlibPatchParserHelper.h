@@ -206,7 +206,7 @@ public:
 	static TArray<FString> CollectPakCommandsStringsByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions);
 
 	static TArray<FPakCommand> CollectPakCommandByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions);
-	// CurrenrVersionChunk中的过滤器会进行依赖分析，TotalChunk的不会，目的是让用户可以自己控制某个文件夹打包到哪个Pak里，而不会对该文件夹下的资源进行依赖分析
+	// CurrenrVersionChunk涓殑杩囨护鍣ㄤ細杩涜渚濊禆鍒嗘瀽锛孴otalChunk鐨勪笉浼氾紝鐩殑鏄鐢ㄦ埛鍙互鑷繁鎺у埗鏌愪釜鏂囦欢澶规墦鍖呭埌鍝釜Pak閲岋紝鑰屼笉浼氬璇ユ枃浠跺す涓嬬殑璧勬簮杩涜渚濊禆鍒嗘瀽
 	static FChunkAssetDescribe DiffChunk(const FChunkInfo& CurrentVersionChunk,const FChunkInfo& TotalChunk, bool InIncludeHasRefAssetsOnly);
 	static FChunkAssetDescribe DiffChunkByBaseVersion(const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, const FHotPatcherVersion& BaseVersion, bool InIncludeHasRefAssetsOnly);
 	static TArray<FString> GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands, const TArray<FReplaceText>& InReplaceTexts = TArray<FReplaceText>{});
@@ -270,7 +270,7 @@ public:
 				int32 EnumValue = FoundEnum->GetValueByIndex(EnumIndex);
 				ENUM_TYPE ResultEnumValue = (ENUM_TYPE)EnumValue;
 				OutEnumValue = ResultEnumValue;
-				bStatus = false;
+				bStatus = true;
 			}
 		}
 		return bStatus;
