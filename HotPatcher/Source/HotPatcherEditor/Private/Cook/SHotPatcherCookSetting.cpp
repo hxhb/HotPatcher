@@ -83,7 +83,16 @@ TSharedPtr<FJsonObject> SHotPatcherCookSetting::SerializeAsJson() const
 	}
 	
 	JsonObject->SetArrayField(TEXT("CookSettings"), CookSettingJsonList);
-	JsonObject->SetStringField(TEXT("Options"), ExternSettingTextBox->GetText().ToString());
+	FString FinalOptions = ExternSettingTextBox->GetText().ToString();
+
+	for (const auto& DefaultCookParam : GetDefaultCookParams())
+	{
+		if (!FinalOptions.Contains(DefaultCookParam))
+		{
+			FinalOptions.Append(TEXT(" ") + DefaultCookParam);
+		}
+	}
+	JsonObject->SetStringField(TEXT("Options"), FinalOptions);
 	return JsonObject;
 }
 

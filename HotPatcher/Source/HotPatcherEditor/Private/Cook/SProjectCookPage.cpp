@@ -297,13 +297,6 @@ FReply SProjectCookPage::RunCook()const
 			UE_LOG(LogCookPage, Error, TEXT("The Cook Mission faild, %s"),*ErrorMsg);
 			return FReply::Handled();
 		}
-		for (const auto& DefaultCookParam : GetDefaultCookParams())
-		{
-			if (!FinalCookCommand.Contains(DefaultCookParam))
-			{
-				FinalCookCommand.Append(TEXT(" ") + DefaultCookParam);
-			}
-		}
 		UE_LOG(LogCookPage, Log, TEXT("The Cook Mission is Staring..."));
 		UE_LOG(LogCookPage, Log, TEXT("CookCommand:%s %s"),*EngineBin,*FinalCookCommand);
 		RunCookProc(EngineBin, FinalCookCommand);
@@ -312,11 +305,6 @@ FReply SProjectCookPage::RunCook()const
 	return FReply::Handled();
 }
 
-
-TArray<FString> SProjectCookPage::GetDefaultCookParams() const
-{
-	return TArray<FString>{"-NoLogTimes", "-UTF8Output"};
-}
 
 void SProjectCookPage::ReceiveOutputMsg(const FString& InMsg)
 {
@@ -432,6 +420,18 @@ TSharedPtr<FJsonObject> SProjectCookPage::SerializeAsJson() const
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 	
+	FString ProjectFilePath;
+	{
+		FString ProjectPath = UKismetSystemLibrary::GetProjectDirectory();
+		FString ProjectName = FString(FApp::GetProjectName()).Append(TEXT(".uproject"));
+		ProjectFilePath = TEXT("\"")+FPaths::Combine(ProjectPath, ProjectName)+ TEXT("\"");
+	}
+	FString EngineBin = UFlibPatchParserHelper::GetUE4CmdBinary();
+
+	JsonObject->SetStringField(TEXT("EngineBin"), EngineBin);
+	JsonObject->SetStringField(TEXT("ProjectFilePath"), ProjectFilePath);
+	JsonObject->SetStringField(TEXT("EngineParams"), TEXT("-run=cook"));
+
 	for (const auto& SerializableItem : GetSerializableItems())
 	{
 		JsonObject->SetObjectField(SerializableItem->GetSerializeName(), SerializableItem->SerializeAsJson());
