@@ -5,11 +5,15 @@
 #include "Interfaces/ITargetPlatform.h"
 #include "Model/FHotPatcherCookModel.h"
 #include "Templates/SharedPointer.h"
+
+// project header
+#include "ICookerItemInterface.h"
+
 /**
  * Implements the cooked platforms panel.
  */
 class SHotPatcherCookSetting
-	: public SCompoundWidget
+	: public SCompoundWidget,public ICookerItemInterface
 {
 public:
 
@@ -24,7 +28,9 @@ public:
 	 * @param InArgs The Slate argument list.
 	 */
 	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCookModel> InCookModel);
-
+public:
+	virtual TSharedPtr<FJsonObject> SerializeAsJson()const override;
+	virtual void DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)override;
 protected:
 	TSharedRef<ITableRow> HandleCookSettingListViewGenerateRow(TSharedPtr<FString> InItem, const TSharedRef<STableViewBase>& OwnerTable);
 	void RefreshSettingsList();

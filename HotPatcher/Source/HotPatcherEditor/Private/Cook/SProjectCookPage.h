@@ -32,6 +32,9 @@ public:
 	
 
 protected:
+	FReply DoImportConfig()const;
+	FReply DoExportConfig()const;
+
 	bool CanExecuteCook()const;
 	void RunCookProc(const FString& InBinPath, const FString& InCommand)const;
 	FReply RunCook()const;
@@ -44,10 +47,16 @@ protected:
 	void SpawnCookSuccessedNotification();
 	void SpawnCookFaildNotification();
 	void CancelCookMission();
+
 private:
 	bool InCooking=false;
 	/** The pending progress message */
 	TWeakPtr<SNotificationItem> PendingProgressPtr;
 	TSharedPtr<FHotPatcherCookModel> mCookModel;
 	mutable TSharedPtr<FProcWorkerThread> mCookProcWorkingThread;
+	TSharedPtr<SHotPatcherCookedPlatforms> Platforms;
+	TSharedPtr<SHotPatcherCookMaps> CookMaps;
+	TSharedPtr<SHotPatcherCookSpecifyCookFilter> CookFilters;
+	TSharedPtr<SHotPatcherCookSetting> CookSettings;
+
 };

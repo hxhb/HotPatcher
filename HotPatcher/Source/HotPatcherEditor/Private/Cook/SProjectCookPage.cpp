@@ -43,6 +43,22 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 				SNew(STextBlock)
 				.Text(LOCTEXT("WhichProjectToUseText", "How would you like to cook the content?"))
 			]
+			+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(8.0, 0.0, 0.0, 0.0)
+				[
+					SNew(SButton)
+					.Text(LOCTEXT("ImportConfig", "Import"))
+				.OnClicked(this, &SProjectCookPage::DoImportConfig)
+				]
+			+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(5.0, 0.0, 0.0, 0.0)
+				[
+					SNew(SButton)
+					.Text(LOCTEXT("ExportConfig", "Export"))
+				.OnClicked(this, &SProjectCookPage::DoExportConfig)
+				]
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
@@ -58,7 +74,7 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 				+ SVerticalBox::Slot()
 				.AutoHeight()
 				[
-					SNew(SHotPatcherCookedPlatforms,mCookModel)
+					SAssignNew(Platforms,SHotPatcherCookedPlatforms,mCookModel)
 				]
 			]
 			
@@ -77,7 +93,7 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					[
-						SNew(SHotPatcherCookMaps, mCookModel)
+						SAssignNew(CookMaps,SHotPatcherCookMaps, mCookModel)
 					]
 				]
 
@@ -96,7 +112,7 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					[
-						SNew(SHotPatcherCookSpecifyCookFilter, mCookModel)
+						SAssignNew(CookFilters,SHotPatcherCookSpecifyCookFilter, mCookModel)
 					]
 				]
 
@@ -115,7 +131,7 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					[
-						SNew(SHotPatcherCookSetting, mCookModel)
+						SAssignNew(CookSettings,SHotPatcherCookSetting, mCookModel)
 					]
 				]
 
@@ -135,6 +151,18 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 				.IsEnabled(this,&SProjectCookPage::CanExecuteCook)
 			]
 	];
+}
+
+FReply SProjectCookPage::DoImportConfig() const
+{
+
+	return FReply::Handled();
+}
+
+FReply SProjectCookPage::DoExportConfig() const
+{
+
+	return FReply::Handled();
 }
 
 bool SProjectCookPage::CanExecuteCook()const

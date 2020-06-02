@@ -38,6 +38,18 @@ void SHotPatcherCookSpecifyCookFilter::Construct(const FArguments& InArgs, TShar
 
 
 
+TSharedPtr<FJsonObject> SHotPatcherCookSpecifyCookFilter::SerializeAsJson() const
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	return JsonObject;
+}
+
+void SHotPatcherCookSpecifyCookFilter::DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)
+{
+
+}
+
 USpecifyCookFilterSetting* SHotPatcherCookSpecifyCookFilter::GetSpecifyCookFilterSetting() const
 {
 	return SpecifyCookFilterSetting;

@@ -69,6 +69,18 @@ void SHotPatcherCookSetting::Construct(const FArguments& InArgs, TSharedPtr<FHot
 	RefreshSettingsList();
 }
 
+TSharedPtr<FJsonObject> SHotPatcherCookSetting::SerializeAsJson() const
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	return JsonObject;
+}
+
+void SHotPatcherCookSetting::DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)
+{
+
+}
+
 TSharedRef<ITableRow> SHotPatcherCookSetting::HandleCookSettingListViewGenerateRow(TSharedPtr<FString> InItem, const TSharedRef<STableViewBase>& OwnerTable)
 {
 	return SNew(SProjectCookSettingsListRow, mCookModel.ToSharedRef())

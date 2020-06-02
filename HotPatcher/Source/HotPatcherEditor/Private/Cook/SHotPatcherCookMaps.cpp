@@ -85,6 +85,19 @@ void SHotPatcherCookMaps::Construct(const FArguments& InArgs, TSharedPtr<FHotPat
 	RefreshMapList();
 }
 
+TSharedPtr<FJsonObject> SHotPatcherCookMaps::SerializeAsJson() const
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+
+	return JsonObject;
+}
+
+void SHotPatcherCookMaps::DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)
+{
+
+}
+
 void SHotPatcherCookMaps::RefreshMapList()
 {
 	MapList.Reset();
