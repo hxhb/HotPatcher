@@ -5,6 +5,7 @@
 #include "SProjectCookSettingsListRow.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
+#include "Kismet/KismetTextLibrary.h"
 
 #include "FlibHotPatcherEditorHelper.h"
 
@@ -73,13 +74,45 @@ TSharedPtr<FJsonObject> SHotPatcherCookSetting::SerializeAsJson() const
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
+	TArray<FString> SelectedCookSettingList = mCookModel->GetAllSelectedSettings();
+
+	TArray<TSharedPtr<FJsonValue>> CookSettingJsonList;
+	for (const auto& Platform : SelectedCookSettingList)
+	{
+		CookSettingJsonList.Add(MakeShareable(new FJsonValueString(Platform)));
+	}
+	
+	JsonObject->SetArrayField(TEXT("CookSettings"), CookSettingJsonList);
+	JsonObject->SetStringField(TEXT("Options"), ExternSettingTextBox->GetText().ToString());
 	return JsonObject;
 }
 
 void SHotPatcherCookSetting::DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)
 {
+	TArray<TSharedPtr<FJsonValue>> CookSettingJsonList = InJsonObject->GetArrayField(TEXT("CookSettings"));
 
+	TArray<TSharedPtr<FString>> SelectedCookSettingList;
+	for (const auto& SettingItem : CookSettingJsonList)
+	{
+		FString Setting = SettingItem->AsString();
+		SelectedCookSettingList.Add(MakeShareable(new FString(Setting)));
+		mCookModel->AddSelectedSetting(Setting);
+	}
+	ExternSettingTextBox->SetText(UKismetTextLibrary::Conv_StringToText(InJsonObject->GetStringField("Options")));
 }
+
+
+FString SHotPatcherCookSetting::GetSerializeName()const
+{
+	return TEXT("Settings");
+}
+
+void SHotPatcherCookSetting::Reset()
+{
+	mCookModel->ClearAllSettings();
+	ExternSettingTextBox->SetText(UKismetTextLibrary::Conv_StringToText(TEXT("")));
+}
+
 
 TSharedRef<ITableRow> SHotPatcherCookSetting::HandleCookSettingListViewGenerateRow(TSharedPtr<FString> InItem, const TSharedRef<STableViewBase>& OwnerTable)
 {

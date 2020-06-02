@@ -78,6 +78,12 @@ public:
 			mOptionSettings.Remove(InSetting);
 		}
 	}
+
+	void ClearAllSettings()
+	{
+		if (mOptionSettings.Num() > 0)
+			mOptionSettings.Reset();
+	}
 	const TArray<FString>& GetAllSelectedSettings()
 	{
 		return mOptionSettings;

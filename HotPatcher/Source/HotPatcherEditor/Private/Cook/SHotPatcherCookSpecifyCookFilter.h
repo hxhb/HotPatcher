@@ -37,6 +37,8 @@ public:
 public:
 	virtual TSharedPtr<FJsonObject> SerializeAsJson()const override;
 	virtual void DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)override;
+	virtual FString GetSerializeName()const override;
+	virtual void Reset() override;
 
 public:
 	USpecifyCookFilterSetting* GetSpecifyCookFilterSetting()const;

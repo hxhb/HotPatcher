@@ -8,13 +8,17 @@
 #include "Model/FHotPatcherCookModel.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
 
+#include "ICookerItemInterface.h"
+#include "SHotPatcherCookSpecifyCookFilter.h"
+
+
 DECLARE_LOG_CATEGORY_EXTERN(LogCookPage, Log, All);
 
 /**
  * Implements the profile page for the session launcher wizard.
  */
 class SProjectCookPage
-	: public SCompoundWidget
+	: public SCompoundWidget,public ICookerItemInterface
 {
 public:
 
@@ -30,10 +34,15 @@ public:
 	 */
 	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCookModel> InCookModel);
 	
-
+public:
+	virtual TSharedPtr<FJsonObject> SerializeAsJson()const override;
+	virtual void DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)override;
+	virtual FString GetSerializeName()const override;
+	virtual void Reset() override;
 protected:
-	FReply DoImportConfig()const;
+	FReply DoImportConfig();
 	FReply DoExportConfig()const;
+	FReply DoResetConfig();
 
 	bool CanExecuteCook()const;
 	void RunCookProc(const FString& InBinPath, const FString& InCommand)const;
@@ -47,6 +56,19 @@ protected:
 	void SpawnCookSuccessedNotification();
 	void SpawnCookFaildNotification();
 	void CancelCookMission();
+
+
+	TArray<ICookerItemInterface*> GetSerializableItems()const
+	{
+		TArray<ICookerItemInterface*> List;
+		List.Add(Platforms.Get());
+		List.Add(CookMaps.Get());
+		List.Add(CookFilters.Get());
+		List.Add(CookSettings.Get());
+		return List;
+	}
+
+	FString SerializeAsString()const;
 
 private:
 	bool InCooking=false;

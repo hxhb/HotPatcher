@@ -89,14 +89,41 @@ TSharedPtr<FJsonObject> SHotPatcherCookMaps::SerializeAsJson() const
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
+	TArray<FString> SelectedPlatformList = mCookModel->GetAllSelectedCookMap();
+
+	TArray<TSharedPtr<FJsonValue>> SelectedMapsJsonList;
+	for (const auto& Platform : SelectedPlatformList)
+	{
+		SelectedMapsJsonList.Add(MakeShareable(new FJsonValueString(Platform)));
+	}
+	JsonObject->SetArrayField(TEXT("CookMaps"), SelectedMapsJsonList);
 
 	return JsonObject;
 }
 
 void SHotPatcherCookMaps::DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)
 {
+	TArray<TSharedPtr<FJsonValue>> SelectedMapsJsonList = InJsonObject->GetArrayField(TEXT("CookMaps"));
 
+	TArray<TSharedPtr<FString>> SelectedMaps;
+	for (const auto& PlatformJson : SelectedMapsJsonList)
+	{
+		FString Map = PlatformJson->AsString();
+		SelectedMaps.Add(MakeShareable(new FString(Map)));
+		mCookModel->AddSelectedCookMap(Map);
+	}
 }
+
+FString SHotPatcherCookMaps::GetSerializeName()const
+{
+	return TEXT("Maps");
+}
+
+void SHotPatcherCookMaps::Reset()
+{
+	mCookModel->ClearAllMap();
+}
+
 
 void SHotPatcherCookMaps::RefreshMapList()
 {
