@@ -55,7 +55,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool bMonolithic = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bMonolithic"))
-		EMonolithicPathMode MonolithicPathMode;
+		EMonolithicPathMode MonolithicPathMode = EMonolithicPathMode::MountPath;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool bSavePakCommands = false;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))

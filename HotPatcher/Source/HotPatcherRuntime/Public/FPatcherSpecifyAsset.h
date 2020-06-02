@@ -18,7 +18,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		FSoftObjectPath Asset;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-		bool bAnalysisAssetDependencies;
+		bool bAnalysisAssetDependencies = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bAnalysisAssetDependencies"))
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 };
