@@ -6,6 +6,9 @@
 #include "HAL/PlatformFilemanager.h"
 #include "Kismet/KismetStringLibrary.h"
 
+
+
+
 UExportPatchSettings::UExportPatchSettings()
 	: bAnalysisFilterDependencies(true),
 	AssetRegistryDependencyTypes(TArray<EAssetRegistryDependencyTypeEx>{EAssetRegistryDependencyTypeEx::Packages}),

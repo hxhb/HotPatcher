@@ -1,4 +1,4 @@
-#include "HotPatcherCookerCommandlet.h"
+#include "HotCookerCommandlet.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
 #include "FCookerConfig.h"
 #include "FlibPatchParserHelper.h"
@@ -11,7 +11,7 @@
 
 #define COOKER_CONFIG_PARAM_NAME TEXT("-config=")
 
-DEFINE_LOG_CATEGORY(LogHotPatcherCooker);
+DEFINE_LOG_CATEGORY(LogHotCookerCommandlet);
 
 TSharedPtr<FProcWorkerThread> CookerProc;
 
@@ -21,32 +21,32 @@ void ReceiveOutputMsg(const FString& InMsg)
 	int32 Index= InMsg.Len() - InMsg.Find(FindItem)- FindItem.Len();
 	if (InMsg.Contains(TEXT("Error:")))
 	{
-		UE_LOG(LogHotPatcherCooker, Error, TEXT("%s"), *InMsg);
+		UE_LOG(LogHotCookerCommandlet, Error, TEXT("%s"), *InMsg);
 	}
 	else if (InMsg.Contains(TEXT("Warning:")))
 	{
-		UE_LOG(LogHotPatcherCooker, Warning, TEXT("%s"), *InMsg);
+		UE_LOG(LogHotCookerCommandlet, Warning, TEXT("%s"), *InMsg);
 	}
 	else
 	{
-		UE_LOG(LogHotPatcherCooker, Display, TEXT("%s"), *InMsg.Right(Index));
+		UE_LOG(LogHotCookerCommandlet, Display, TEXT("%s"), *InMsg.Right(Index));
 	}
 }
 
-int32 UHotPatcherCookerCommandlet::Main(const FString& Params)
+int32 UHotCookerCommandlet::Main(const FString& Params)
 {
-	UE_LOG(LogHotPatcherCooker, Display, TEXT("UHotPatcherCookerCommandlet::Main"));
+	UE_LOG(LogHotCookerCommandlet, Display, TEXT("UHotCookerCommandlet::Main"));
 	FString config_path;
 	bool bStatus = FParse::Value(*Params, *FString(COOKER_CONFIG_PARAM_NAME).ToLower(), config_path);
 	if (!bStatus)
 	{
-		UE_LOG(LogHotPatcherCooker, Error, TEXT("UHotPatcherCookerCommandlet error: not -config=xxxx.json params."));
+		UE_LOG(LogHotCookerCommandlet, Error, TEXT("UHotCookerCommandlet error: not -config=xxxx.json params."));
 		return -1;
 	}
 
 	if (!FPaths::FileExists(config_path))
 	{
-		UE_LOG(LogHotPatcherCooker, Error, TEXT("UHotPatcherCookerCommandlet error: cofnig file %s not exists."), *config_path);
+		UE_LOG(LogHotCookerCommandlet, Error, TEXT("UHotCookerCommandlet error: cofnig file %s not exists."), *config_path);
 		return -1;
 	}
 
@@ -58,7 +58,7 @@ int32 UHotPatcherCookerCommandlet::Main(const FString& Params)
 		FString CookCommand;
 		UFlibPatchParserHelper::GetCookProcCommandParams(CookConfig, CookCommand);
 
-		UE_LOG(LogHotPatcherCooker, Display, TEXT("CookCommand:%s %s"), *CookConfig.EngineBin,*CookCommand);
+		UE_LOG(LogHotCookerCommandlet, Display, TEXT("CookCommand:%s %s"), *CookConfig.EngineBin,*CookCommand);
 
 		if (FPaths::FileExists(CookConfig.EngineBin) && FPaths::FileExists(CookConfig.ProjectPath))
 		{
