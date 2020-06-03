@@ -3,6 +3,7 @@
 #include "Commandlets/Commandlet.h"
 #include "HotPatcherCookerCommandlet.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogHotPatcherCooker, Log, All);
 
 UCLASS()
 class UHotPatcherCookerCommandlet :public UCommandlet

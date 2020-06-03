@@ -52,7 +52,7 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 				[
 					SNew(SButton)
 					.Text(LOCTEXT("ImportConfig", "Import"))
-				.OnClicked(this, &SProjectCookPage::DoImportConfig)
+					.OnClicked(this, &SProjectCookPage::DoImportConfig)
 				]
 			+ SHorizontalBox::Slot()
 				.AutoWidth()
@@ -68,7 +68,7 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 				[
 					SNew(SButton)
 					.Text(LOCTEXT("ResetConfig", "Reset"))
-				.OnClicked(this, &SProjectCookPage::DoResetConfig)
+					.OnClicked(this, &SProjectCookPage::DoResetConfig)
 				]
 		]
 		+ SVerticalBox::Slot()
@@ -272,35 +272,15 @@ bool SProjectCookPage::CanExecuteCook()const
 
 FReply SProjectCookPage::RunCook()const
 {
-	FString ProjectFilePath;
-	FString FinalCookCommand;
-	{
-		FString ProjectPath = UKismetSystemLibrary::GetProjectDirectory();
-		FString ProjectName = FString(FApp::GetProjectName()).Append(TEXT(".uproject"));
-		ProjectFilePath = FPaths::Combine(ProjectPath, ProjectName);
-	}
-	FString EngineBin = UFlibPatchParserHelper::GetUE4CmdBinary();
-	
-	if (FPaths::FileExists(ProjectFilePath))
-	{
-		FinalCookCommand = TEXT("\"") + ProjectFilePath + TEXT("\"");
-		FinalCookCommand.Append(TEXT(" -run=cook "));
+	FCookerConfig CookConfig = mCookModel->GetCookConfig();
 
-		FString CookParams;
-		FString ErrorMsg;
-		if (mCookModel->CombineAllCookParams(CookParams, ErrorMsg))
-		{
-			FinalCookCommand.Append(CookParams);
-		}
-		else
-		{
-			UE_LOG(LogCookPage, Error, TEXT("The Cook Mission faild, %s"),*ErrorMsg);
-			return FReply::Handled();
-		}
+	if (FPaths::FileExists(CookConfig.EngineBin) && FPaths::FileExists(CookConfig.ProjectPath))
+	{
+		FString CookCommand;
+		UFlibPatchParserHelper::GetCookProcCommandParams(CookConfig, CookCommand);
 		UE_LOG(LogCookPage, Log, TEXT("The Cook Mission is Staring..."));
-		UE_LOG(LogCookPage, Log, TEXT("CookCommand:%s %s"),*EngineBin,*FinalCookCommand);
-		RunCookProc(EngineBin, FinalCookCommand);
-		
+		UE_LOG(LogCookPage, Log, TEXT("CookCommand:%s %s"),*CookConfig.EngineBin,*CookCommand);
+		RunCookProc(CookConfig.EngineBin, CookCommand);	
 	}
 	return FReply::Handled();
 }
@@ -308,13 +288,16 @@ FReply SProjectCookPage::RunCook()const
 
 void SProjectCookPage::ReceiveOutputMsg(const FString& InMsg)
 {
+	FString FindItem(TEXT("Display:"));
+	int32 Index = InMsg.Len() - InMsg.Find(FindItem) - FindItem.Len();
+
 	if (InMsg.Contains(TEXT("Error:")))
 	{
 		UE_LOG(LogCookPage, Error, TEXT("%s"), *InMsg);
 	}
 	else if (InMsg.Contains(TEXT("Warning:")))
 	{
-		UE_LOG(LogCookPage, Warning, TEXT("%s"), *InMsg);
+		UE_LOG(LogCookPage, Warning, TEXT("%s"), *InMsg.Right(Index));
 	}
 	else
 	{
@@ -418,33 +401,16 @@ void SProjectCookPage::RunCookProc(const FString& InBinPath, const FString& InCo
 
 TSharedPtr<FJsonObject> SProjectCookPage::SerializeAsJson() const
 {
-	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-	
-	FString ProjectFilePath;
-	{
-		FString ProjectPath = UKismetSystemLibrary::GetProjectDirectory();
-		FString ProjectName = FString(FApp::GetProjectName()).Append(TEXT(".uproject"));
-		ProjectFilePath = TEXT("\"")+FPaths::Combine(ProjectPath, ProjectName)+ TEXT("\"");
-	}
-	FString EngineBin = UFlibPatchParserHelper::GetUE4CmdBinary();
-
-	JsonObject->SetStringField(TEXT("EngineBin"), EngineBin);
-	JsonObject->SetStringField(TEXT("ProjectFilePath"), ProjectFilePath);
-	JsonObject->SetStringField(TEXT("EngineParams"), TEXT("-run=cook"));
-
-	for (const auto& SerializableItem : GetSerializableItems())
-	{
-		JsonObject->SetObjectField(SerializableItem->GetSerializeName(), SerializableItem->SerializeAsJson());
-	}
-	return JsonObject;
+	FCookerConfig CookConfig = mCookModel->GetCookConfig();
+	return UFlibPatchParserHelper::SerializeCookerConfigAsJsonObject(CookConfig);
 }
 
 void SProjectCookPage::DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)
 {
 	for (const auto& SerializableItem : GetSerializableItems())
 	{
-		TSharedPtr<FJsonObject> ItemJsonObject = InJsonObject->GetObjectField(SerializableItem->GetSerializeName());
-		SerializableItem->DeSerializeFromJsonObj(ItemJsonObject);
+		// TSharedPtr<FJsonObject> ItemJsonObject = InJsonObject->GetObjectField(SerializableItem->GetSerializeName());
+		SerializableItem->DeSerializeFromJsonObj(InJsonObject);
 	}
 }
 
@@ -452,8 +418,6 @@ FString SProjectCookPage::GetSerializeName()const
 {
 	return TEXT("CookPage");
 }
-
-
 
 FString SProjectCookPage::SerializeAsString()const
 {

@@ -12,6 +12,7 @@
 #include "FExternDirectoryInfo.h"
 #include "FExternDirectoryInfo.h"
 #include "FAssetRelatedInfo.h"
+#include "FCookerConfig.h"
 
 // cpp standard
 #include <typeinfo>
@@ -226,7 +227,12 @@ public:
 	static TSharedPtr<FJsonObject> SerializeFReplaceTextAsJsonObject(const FReplaceText& InReplaceText);
 	static FReplaceText DeSerializeFReplaceText(const TSharedPtr<FJsonObject>& InReplaceTextJsonObject);
 
+	static TSharedPtr<FJsonObject> SerializeCookerConfigAsJsonObject(const FCookerConfig& InConfig);
+	static FString SerializeCookerConfigAsString(const TSharedPtr<FJsonObject>& InConfigJson);
+	static FCookerConfig DeSerializeCookerConfig(const FString& InJsonContent);
 
+
+	static bool GetCookProcCommandParams(const FCookerConfig& InConfig,FString& OutParams);
 	//static bool SerializeMonolithicPathMode(const EMonolithicPathMode& InMode, TSharedPtr<FJsonValue>& OutJsonValue);
 	//static bool DeSerializeMonolithicPathMode(const TSharedPtr<FJsonValue>& InJsonValue, EMonolithicPathMode& OutMode);
 
