@@ -1,4 +1,5 @@
 #include "HotPatcherPatcherCommandlet.h"
+#include "CreatePatch/ExportPatchSettings.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -27,5 +28,12 @@ int32 UHotPatcherPatcherCommandlet::Main(const FString& Params)
 		return -1;
 	}
 
+	FString JsonContent;
+	if (FFileHelper::LoadFileToString(JsonContent, *config_path))
+	{
+		UExportPatchSettings* ExportPatchSetting = NewObject<UExportPatchSettings>();
+		UFlibHotPatcherEditorHelper::DeserializePatchConfig(ExportPatchSetting, JsonContent);
+
+	}
 	return 0;
 }
