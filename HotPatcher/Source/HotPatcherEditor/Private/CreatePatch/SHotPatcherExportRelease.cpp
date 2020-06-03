@@ -1,7 +1,7 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
 // #include "HotPatcherPrivatePCH.h"
-#include "SHotPatcherExportRelease.h"
+#include "CreatePatch/SHotPatcherExportRelease.h"
 #include "FlibHotPatcherEditorHelper.h"
 #include "FLibAssetManageHelperEx.h"
 #include "AssetManager/FAssetDependenciesInfo.h"
