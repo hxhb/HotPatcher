@@ -100,7 +100,7 @@ void SHotPatcherExportRelease::ResetConfig()
 {
 	UE_LOG(LogTemp, Log, TEXT("Release Clear Config"));
 
-	TSharedPtr<UExportReleaseSettings> DefaultSetting = MakeShareable(NewObject<UExportReleaseSettings>());
+	UExportReleaseSettings* DefaultSetting = NewObject<UExportReleaseSettings>();
 
 	FString DefaultSettingJson;
 	DefaultSetting->SerializeReleaseConfigToString(DefaultSettingJson);

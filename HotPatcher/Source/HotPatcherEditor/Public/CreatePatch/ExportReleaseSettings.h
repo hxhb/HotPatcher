@@ -45,8 +45,71 @@ public:
 				auto ParseUassetLambda = [](const FString& InAsset)->FPatcherSpecifyAsset
 				{
 					FPatcherSpecifyAsset result;
-					int32 breakPoint = InAsset.Find(TEXT("\" \""));
-					UE_LOG(LogTemp, Log, TEXT("UEAsset: BreakPoint:%d,left:%s,Right:%s"), breakPoint, *InAsset.Left(breakPoint), *InAsset.Right(InAsset.Len() - breakPoint - 3));
+					result.bAnalysisAssetDependencies = false;
+		
+					FString LongPackagePath;
+					{
+						int32 breakPoint = InAsset.Find(TEXT("\" \""));
+						FString AssetAbsPath = InAsset.Left(breakPoint);
+						AssetAbsPath.RemoveAt(0);
+						FPaths::MakeStandardFilename(AssetAbsPath);
+
+						FString LongPackageName = InAsset.Right(InAsset.Len() - breakPoint - 3);
+						LongPackageName.RemoveFromStart(TEXT("../../.."));
+						LongPackageName.RemoveFromEnd(TEXT(".uasset\""));
+						LongPackageName.Replace(TEXT("/Content"), TEXT(""));
+						
+						FString ModuleName = LongPackageName;
+						{
+							ModuleName.RemoveAt(0);
+							int32 Index;
+							if (ModuleName.FindChar('/', Index))
+							{
+								ModuleName = ModuleName.Left(Index);
+							}
+						}
+
+						if (ModuleName.Equals(FApp::GetProjectName()))
+						{
+							LongPackageName.RemoveFromStart(TEXT("/") + ModuleName);
+							LongPackageName = TEXT("/Game") + LongPackageName;
+						}
+
+						if (LongPackageName.Contains(TEXT("/Plugins/")))
+						{
+							TMap<FString, FString> ReceiveModuleMap;
+							UFLibAssetManageHelperEx::GetAllEnabledModuleName(ReceiveModuleMap);
+							TArray<FString> ModuleKeys;
+							ReceiveModuleMap.GetKeys(ModuleKeys);
+
+							TArray<FString> IgnoreModules = { TEXT("Game"),TEXT("Engine") };
+
+							for (const auto& IgnoreModule : IgnoreModules)
+							{
+								ModuleKeys.Remove(IgnoreModule);
+							}
+
+							for (const auto& Module : ModuleKeys)
+							{
+								FString FindStr = TEXT("/") + Module + TEXT("/");
+								if (LongPackageName.Contains(FindStr))
+								{
+									int32 PluginModuleIndex = LongPackageName.Find(FindStr,ESearchCase::CaseSensitive,ESearchDir::FromEnd);
+
+									LongPackageName = LongPackageName.Right(LongPackageName.Len()- PluginModuleIndex-FindStr.Len());
+									LongPackageName = TEXT("/") + Module + TEXT("/") + LongPackageName;
+									break;
+								}
+							}
+						}
+
+						int32 ContentPoint = LongPackageName.Find(TEXT("/Content"));
+						LongPackageName = FPaths::Combine(LongPackageName.Left(ContentPoint), LongPackageName.Right(LongPackageName.Len() - ContentPoint - 8));
+						UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(LongPackageName, LongPackagePath);
+					}
+
+					UE_LOG(LogTemp, Log, TEXT("UEAsset: Str: %s LongPackagePath %s"),*InAsset,*LongPackagePath);
+					result.Asset = LongPackagePath;
 					return result;
 				};
 				auto ParseNoAssetFileLambda = [](const FString& InAsset)->FExternAssetFileInfo
@@ -54,7 +117,17 @@ public:
 					FExternAssetFileInfo result;
 					int32 breakPoint = InAsset.Find(TEXT("\" \""));
 
-					UE_LOG(LogTemp, Log, TEXT("NoAsset: BreakPoint:%d,left:%s,Right:%s"), breakPoint, *InAsset.Left(breakPoint), *InAsset.Right(InAsset.Len() - breakPoint - 3));
+					auto RemoveDoubleQuoteLambda = [](const FString& InStr)->FString
+					{
+						FString result = InStr;
+						result.RemoveAt(0);
+						result.RemoveAt(result.Len() - 1);
+						return result;
+					};
+					result.FilePath.FilePath = RemoveDoubleQuoteLambda(InAsset.Left(breakPoint+1));
+					result.MountPath = RemoveDoubleQuoteLambda(InAsset.Right(InAsset.Len() - breakPoint - 2));
+					result.GenerateFileHash();
+					UE_LOG(LogTemp, Log, TEXT("NoAsset: BreakPoint:%d,left:%s,Right:%s"), breakPoint, *result.FilePath.FilePath, *result.MountPath);
 					return result;
 				};
 				TArray<FString> UAssetFormats = { TEXT(".uasset"),TEXT(".ubulk"),TEXT(".uexp"),TEXT(".umap") };
