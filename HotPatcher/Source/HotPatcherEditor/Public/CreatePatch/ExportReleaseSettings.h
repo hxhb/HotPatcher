@@ -26,9 +26,9 @@ public:
 
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 	{
-		if (PropertyChangedEvent.Property && PropertyChangedEvent.MemberProperty->GetName() == TEXT("PakList"))
+		if (PropertyChangedEvent.Property && PropertyChangedEvent.MemberProperty->GetName() == TEXT("PakListFile"))
 		{
-			FString PakListAbsPath = FPaths::ConvertRelativePathToFull(PakList.FilePath);
+			FString PakListAbsPath = FPaths::ConvertRelativePathToFull(PakListFile.FilePath);
 			ParseByPaklist(this, PakListAbsPath);
 			
 		}
@@ -262,13 +262,16 @@ public:
 	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
 	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
 
+	FORCEINLINE bool IsByPakList()const { return ByPakList; }
+	FORCEINLINE FFilePath GetPakListFile()const { return PakListFile; }
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Version")
 		FString VersionId;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version")
 		bool ByPakList;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version", meta = (RelativeToGameContentDir, EditCondition = "ByPakList"))
-		FFilePath PakList;
+		FFilePath PakListFile;
 	/** You can use copied asset string reference here, e.g. World'/Game/NewMap.NewMap'*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "ReleaseSetting|Asset Filters",meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
@@ -276,8 +279,6 @@ public:
 		TArray<FDirectoryPath> AssetIgnoreFilters;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters")
 		bool bAnalysisFilterDependencies=true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters")
-		bool bIncldueStartupPackages = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters",meta=(EditCondition="bAnalysisFilterDependencies"))
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters")
