@@ -6,6 +6,7 @@
 #include "FPatcherSpecifyAsset.h"
 
 // engine header
+#include "Misc/FileHelper.h"
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
@@ -23,6 +24,77 @@ public:
 		AssetRegistryDependencyTypes.Add(EAssetRegistryDependencyTypeEx::Packages);
 	}
 
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+	{
+		if (PropertyChangedEvent.Property && PropertyChangedEvent.MemberProperty->GetName() == TEXT("PakList"))
+		{
+			FString PakListAbsPath = FPaths::ConvertRelativePathToFull(PakList.FilePath);
+			ParseByPaklist(this, PakListAbsPath);
+			
+		}
+		Super::PostEditChangeProperty(PropertyChangedEvent);
+	}
+
+	virtual bool ParseByPaklist(UExportReleaseSettings* InReleaseSetting,const FString& InPaklistFile)
+	{
+		if (FPaths::FileExists(InPaklistFile))
+		{
+			TArray<FString> PakListContent;
+			if (FFileHelper::LoadFileToStringArray(PakListContent, *InPaklistFile))
+			{
+				auto ParseUassetLambda = [](const FString& InAsset)->FPatcherSpecifyAsset
+				{
+					FPatcherSpecifyAsset result;
+					int32 breakPoint = InAsset.Find(TEXT("\" \""));
+					UE_LOG(LogTemp, Log, TEXT("UEAsset: BreakPoint:%d,left:%s,Right:%s"), breakPoint, *InAsset.Left(breakPoint), *InAsset.Right(InAsset.Len() - breakPoint - 3));
+					return result;
+				};
+				auto ParseNoAssetFileLambda = [](const FString& InAsset)->FExternAssetFileInfo
+				{
+					FExternAssetFileInfo result;
+					int32 breakPoint = InAsset.Find(TEXT("\" \""));
+
+					UE_LOG(LogTemp, Log, TEXT("NoAsset: BreakPoint:%d,left:%s,Right:%s"), breakPoint, *InAsset.Left(breakPoint), *InAsset.Right(InAsset.Len() - breakPoint - 3));
+					return result;
+				};
+				TArray<FString> UAssetFormats = { TEXT(".uasset"),TEXT(".ubulk"),TEXT(".uexp"),TEXT(".umap") };
+				auto IsUAssetLambda = [&UAssetFormats](const FString& InStr)->bool
+				{
+					bool bResult = false;
+					for (const auto& Format:UAssetFormats)
+					{
+						if (InStr.Contains(Format))
+						{
+							bResult = true;
+							break;
+						}
+					}
+					return bResult;
+				};
+
+				for (const auto& FileItem : PakListContent)
+				{
+					if (IsUAssetLambda(FileItem))
+					{
+						if (FileItem.Contains(TEXT(".uasset")))
+						{
+							FPatcherSpecifyAsset Asset = ParseUassetLambda(FileItem);
+							InReleaseSetting->AddSpecifyAsset(Asset);
+						}
+						continue;
+					}
+					else
+					{
+						FExternAssetFileInfo ExFile = ParseNoAssetFileLambda(FileItem);
+						InReleaseSetting->AddExternFileToPak.Add(ExFile);
+					}
+					
+				}
+			}
+
+		}
+		return true;
+	}
 	FORCEINLINE static UExportReleaseSettings* Get()
 	{
 		static bool bInitialized = false;
@@ -120,7 +192,10 @@ public:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Version")
 		FString VersionId;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version")
+		bool ByPakList;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version", meta = (RelativeToGameContentDir, EditCondition = "ByPakList"))
+		FFilePath PakList;
 	/** You can use copied asset string reference here, e.g. World'/Game/NewMap.NewMap'*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "ReleaseSetting|Asset Filters",meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
