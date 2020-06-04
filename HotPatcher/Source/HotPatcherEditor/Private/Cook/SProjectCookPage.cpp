@@ -7,6 +7,7 @@
 #include "SProjectCookPage.h"
 #include "FlibPatchParserHelper.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
+#include "FlibHotPatcherEditorHelper.h"
 
 // Engine Header
 #include "Serialization/JsonWriter.h"
@@ -246,7 +247,11 @@ FReply SProjectCookPage::DoExportConfig() const
 	{
 		FString SaveToFile = SaveFiles[0].EndsWith(TEXT(".json")) ? SaveFiles[0] : SaveFiles[0].Append(TEXT(".json"));
 
-		FFileHelper::SaveStringToFile(SerializeAsString(), *SaveToFile);
+		if (FFileHelper::SaveStringToFile(SerializeAsString(), *SaveToFile))
+		{
+			FText Msg = LOCTEXT("SavedCookerConfig", "Successd to Export the Cooker Config.");
+			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveToFile);
+		}
 	}
 
 	return FReply::Handled();
