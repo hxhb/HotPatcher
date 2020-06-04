@@ -34,12 +34,13 @@ public:
 	virtual void DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)override;
 	virtual FString GetSerializeName()const override;
 	virtual void Reset() override;
+	bool IsCookAllMap()const { return MapList.Num() == mCookModel->GetAllSelectedCookMap().Num(); }
 protected:
 
+	
 	// Callback for clicking the 'Select All Maps' button.
 	void HandleAllMapHyperlinkNavigate(bool AllMap)
 	{
-
 		if (mCookModel.IsValid())
 		{
 			if (AllMap)

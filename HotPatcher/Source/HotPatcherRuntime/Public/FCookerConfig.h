@@ -13,6 +13,7 @@ public:
 	FString ProjectPath;
 	FString EngineParams;
 	TArray<FString> CookPlatforms;
+	bool bCookAllMap;
 	TArray<FString> CookMaps;
 	TArray<FString> CookFilter;
 	TArray<FString> CookSettings;

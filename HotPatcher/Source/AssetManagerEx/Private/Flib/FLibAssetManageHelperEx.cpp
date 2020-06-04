@@ -1249,8 +1249,9 @@ bool UFLibAssetManageHelperEx::ConvRelativeDirToAbsDir(const FString& InRelative
 				return false;
 
 			FString RelativeToModule = InRelativePath.Replace(*BelongModuleName, TEXT("Content"));
-		
+			RelativeToModule = RelativeToModule.StartsWith(TEXT("/")) ? RelativeToModule.Right(RelativeToModule.Len() - 1) : RelativeToModule;
 			FString FinalFilterPath = FPaths::Combine(ModuleAbsPath, RelativeToModule);
+			FPaths::MakeStandardFilename(FinalFilterPath);
 			if (FPaths::DirectoryExists(FinalFilterPath))
 			{
 				OutAbsPath = FinalFilterPath;

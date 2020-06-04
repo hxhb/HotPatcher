@@ -97,20 +97,28 @@ TSharedPtr<FJsonObject> SHotPatcherCookMaps::SerializeAsJson() const
 		SelectedMapsJsonList.Add(MakeShareable(new FJsonValueString(Platform)));
 	}
 	JsonObject->SetArrayField(TEXT("CookMaps"), SelectedMapsJsonList);
-
+	JsonObject->SetBoolField(TEXT("bCookAllMap"), IsCookAllMap());
 	return JsonObject;
 }
 
 void SHotPatcherCookMaps::DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)
 {
 	TArray<TSharedPtr<FJsonValue>> SelectedMapsJsonList = InJsonObject->GetArrayField(TEXT("CookMaps"));
+	bool IsCookAllMap = InJsonObject->GetBoolField(TEXT("bCookAllMap"));
 
-	TArray<TSharedPtr<FString>> SelectedMaps;
-	for (const auto& PlatformJson : SelectedMapsJsonList)
+	if (!IsCookAllMap)
 	{
-		FString Map = PlatformJson->AsString();
-		SelectedMaps.Add(MakeShareable(new FString(Map)));
-		mCookModel->AddSelectedCookMap(Map);
+		TArray<TSharedPtr<FString>> SelectedMaps;
+		for (const auto& PlatformJson : SelectedMapsJsonList)
+		{
+			FString Map = PlatformJson->AsString();
+			SelectedMaps.Add(MakeShareable(new FString(Map)));
+			mCookModel->AddSelectedCookMap(Map);
+		}
+	}
+	else
+	{
+		HandleAllMapHyperlinkNavigate(IsCookAllMap);
 	}
 }
 
@@ -128,7 +136,6 @@ void SHotPatcherCookMaps::Reset()
 void SHotPatcherCookMaps::RefreshMapList()
 {
 	MapList.Reset();
-
 
 	TArray<FString> AvailableMaps = UFlibPatchParserHelper::GetAvailableMaps(UKismetSystemLibrary::GetProjectDirectory(), false, false, true);
 	for (int32 AvailableMapIndex = 0; AvailableMapIndex < AvailableMaps.Num(); ++AvailableMapIndex)

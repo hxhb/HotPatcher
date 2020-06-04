@@ -1,5 +1,5 @@
 #include "HotPatcherCommandlet.h"
-#include "CreatePatch/ExportPatchSettings.h"
+// #include "CreatePatch/ExportPatchSettings.h"
 #include "CreatePatch/PatcherProxy.h"
 
 // engine header
@@ -38,7 +38,7 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 	FString JsonContent;
 	if (FFileHelper::LoadFileToString(JsonContent, *config_path))
 	{
-		UExportPatchSettings* ExportPatchSetting = NewObject<UExportPatchSettings>();
+		class UExportPatchSettings* ExportPatchSetting = NewObject<class UExportPatchSettings>();
 		UFlibHotPatcherEditorHelper::DeserializePatchConfig(ExportPatchSetting, JsonContent);
 		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
 		PatcherProxy->SetExportPatchSetting(ExportPatchSetting);

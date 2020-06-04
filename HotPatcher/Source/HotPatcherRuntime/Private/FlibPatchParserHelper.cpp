@@ -2179,6 +2179,7 @@ TSharedPtr<FJsonObject> UFlibPatchParserHelper::SerializeCookerConfigAsJsonObjec
 	};
 	SerializeArrayLambda(TEXT("CookPlatforms"), InConfig.CookPlatforms);
 	SerializeArrayLambda(TEXT("CookMaps"), InConfig.CookMaps);
+	JsonObject->SetBoolField(TEXT("bCookAllMap"),InConfig.bCookAllMap);
 	SerializeArrayLambda(TEXT("CookFilter"), InConfig.CookFilter);
 	SerializeArrayLambda(TEXT("CookSettings"), InConfig.CookSettings);
 	JsonObject->SetStringField(TEXT("Options"), InConfig.Options);
@@ -2222,7 +2223,7 @@ FCookerConfig UFlibPatchParserHelper::DeSerializeCookerConfig(const FString& InJ
 	result.CookFilter = DeserializeArray(TEXT("CookFilter"));
 	result.CookSettings = DeserializeArray(TEXT("CookSettings"));
 	result.Options = JsonObject->GetStringField(TEXT("Options"));
-
+	result.bCookAllMap = JsonObject->GetBoolField(TEXT("bCookAllMap"));
 	return result;
 }
 

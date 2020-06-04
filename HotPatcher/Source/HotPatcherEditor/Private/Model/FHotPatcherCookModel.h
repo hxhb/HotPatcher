@@ -201,7 +201,8 @@ public:
 
 		result.CookPlatforms = mSelectedPlatform;
 		result.CookMaps = mSelectedCookMaps;
-		
+		TArray<FString> AllGameMap = UFlibPatchParserHelper::GetAvailableMaps(UKismetSystemLibrary::GetProjectDirectory(), false, false, true);
+		result.bCookAllMap = result.CookMaps.Num() == AllGameMap.Num();
 		for (const auto& Filter : GetAlwayCookFilters())
 		{
 			result.CookFilter.AddUnique(Filter.Path);

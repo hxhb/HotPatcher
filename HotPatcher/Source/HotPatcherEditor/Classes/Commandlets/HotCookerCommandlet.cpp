@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "Misc/FileHelper.h"
 #include "Misc/CommandLine.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Misc/Paths.h"
 
 #define COOKER_CONFIG_PARAM_NAME TEXT("-config=")
@@ -54,7 +55,10 @@ int32 UHotCookerCommandlet::Main(const FString& Params)
 	if (FFileHelper::LoadFileToString(JsonContent, *config_path))
 	{
 		FCookerConfig CookConfig = UFlibPatchParserHelper::DeSerializeCookerConfig(JsonContent);
-
+		if (CookConfig.bCookAllMap)
+		{
+			CookConfig.CookMaps = UFlibPatchParserHelper::GetAvailableMaps(UKismetSystemLibrary::GetProjectDirectory(), false, false, true);
+		}
 		FString CookCommand;
 		UFlibPatchParserHelper::GetCookProcCommandParams(CookConfig, CookCommand);
 
