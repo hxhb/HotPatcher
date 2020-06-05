@@ -26,9 +26,9 @@ public:
 
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 	{
-		if (PropertyChangedEvent.Property && PropertyChangedEvent.MemberProperty->GetName() == TEXT("PakList"))
+		if (PropertyChangedEvent.Property && PropertyChangedEvent.MemberProperty->GetName() == TEXT("PakListFile"))
 		{
-			FString PakListAbsPath = FPaths::ConvertRelativePathToFull(PakList.FilePath);
+			FString PakListAbsPath = FPaths::ConvertRelativePathToFull(PakListFile.FilePath);
 			ParseByPaklist(this, PakListAbsPath);
 			
 		}
@@ -45,8 +45,71 @@ public:
 				auto ParseUassetLambda = [](const FString& InAsset)->FPatcherSpecifyAsset
 				{
 					FPatcherSpecifyAsset result;
-					int32 breakPoint = InAsset.Find(TEXT("\" \""));
-					UE_LOG(LogTemp, Log, TEXT("UEAsset: BreakPoint:%d,left:%s,Right:%s"), breakPoint, *InAsset.Left(breakPoint), *InAsset.Right(InAsset.Len() - breakPoint - 3));
+					result.bAnalysisAssetDependencies = false;
+		
+					FString LongPackagePath;
+					{
+						int32 breakPoint = InAsset.Find(TEXT("\" \""));
+						FString AssetAbsPath = InAsset.Left(breakPoint);
+						AssetAbsPath.RemoveAt(0);
+						FPaths::MakeStandardFilename(AssetAbsPath);
+
+						FString LongPackageName = InAsset.Right(InAsset.Len() - breakPoint - 3);
+						LongPackageName.RemoveFromStart(TEXT("../../.."));
+						LongPackageName.RemoveFromEnd(TEXT(".uasset\""));
+						LongPackageName.Replace(TEXT("/Content"), TEXT(""));
+						
+						FString ModuleName = LongPackageName;
+						{
+							ModuleName.RemoveAt(0);
+							int32 Index;
+							if (ModuleName.FindChar('/', Index))
+							{
+								ModuleName = ModuleName.Left(Index);
+							}
+						}
+
+						if (ModuleName.Equals(FApp::GetProjectName()))
+						{
+							LongPackageName.RemoveFromStart(TEXT("/") + ModuleName);
+							LongPackageName = TEXT("/Game") + LongPackageName;
+						}
+
+						if (LongPackageName.Contains(TEXT("/Plugins/")))
+						{
+							TMap<FString, FString> ReceiveModuleMap;
+							UFLibAssetManageHelperEx::GetAllEnabledModuleName(ReceiveModuleMap);
+							TArray<FString> ModuleKeys;
+							ReceiveModuleMap.GetKeys(ModuleKeys);
+
+							TArray<FString> IgnoreModules = { TEXT("Game"),TEXT("Engine") };
+
+							for (const auto& IgnoreModule : IgnoreModules)
+							{
+								ModuleKeys.Remove(IgnoreModule);
+							}
+
+							for (const auto& Module : ModuleKeys)
+							{
+								FString FindStr = TEXT("/") + Module + TEXT("/");
+								if (LongPackageName.Contains(FindStr))
+								{
+									int32 PluginModuleIndex = LongPackageName.Find(FindStr,ESearchCase::CaseSensitive,ESearchDir::FromEnd);
+
+									LongPackageName = LongPackageName.Right(LongPackageName.Len()- PluginModuleIndex-FindStr.Len());
+									LongPackageName = TEXT("/") + Module + TEXT("/") + LongPackageName;
+									break;
+								}
+							}
+						}
+
+						int32 ContentPoint = LongPackageName.Find(TEXT("/Content"));
+						LongPackageName = FPaths::Combine(LongPackageName.Left(ContentPoint), LongPackageName.Right(LongPackageName.Len() - ContentPoint - 8));
+						UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(LongPackageName, LongPackagePath);
+					}
+
+					UE_LOG(LogTemp, Log, TEXT("UEAsset: Str: %s LongPackagePath %s"),*InAsset,*LongPackagePath);
+					result.Asset = LongPackagePath;
 					return result;
 				};
 				auto ParseNoAssetFileLambda = [](const FString& InAsset)->FExternAssetFileInfo
@@ -54,7 +117,17 @@ public:
 					FExternAssetFileInfo result;
 					int32 breakPoint = InAsset.Find(TEXT("\" \""));
 
-					UE_LOG(LogTemp, Log, TEXT("NoAsset: BreakPoint:%d,left:%s,Right:%s"), breakPoint, *InAsset.Left(breakPoint), *InAsset.Right(InAsset.Len() - breakPoint - 3));
+					auto RemoveDoubleQuoteLambda = [](const FString& InStr)->FString
+					{
+						FString result = InStr;
+						result.RemoveAt(0);
+						result.RemoveAt(result.Len() - 1);
+						return result;
+					};
+					result.FilePath.FilePath = RemoveDoubleQuoteLambda(InAsset.Left(breakPoint+1));
+					result.MountPath = RemoveDoubleQuoteLambda(InAsset.Right(InAsset.Len() - breakPoint - 2));
+					result.GenerateFileHash();
+					UE_LOG(LogTemp, Log, TEXT("NoAsset: BreakPoint:%d,left:%s,Right:%s"), breakPoint, *result.FilePath.FilePath, *result.MountPath);
 					return result;
 				};
 				TArray<FString> UAssetFormats = { TEXT(".uasset"),TEXT(".ubulk"),TEXT(".uexp"),TEXT(".umap") };
@@ -178,7 +251,6 @@ public:
 	FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bSaveAssetRelatedInfo; }
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 	FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
-	FORCEINLINE bool IsIncludeStartupPackages()const { return bIncldueStartupPackages; };
 	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
 	FORCEINLINE TArray<FPatcherSpecifyAsset> GetSpecifyAssets()const { return IncludeSpecifyAssets; }
 	FORCEINLINE bool AddSpecifyAsset(FPatcherSpecifyAsset const& InAsset)
@@ -189,13 +261,16 @@ public:
 	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
 	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
 
+	FORCEINLINE bool IsByPakList()const { return ByPakList; }
+	FORCEINLINE FFilePath GetPakListFile()const { return PakListFile; }
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Version")
 		FString VersionId;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version")
 		bool ByPakList;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version", meta = (RelativeToGameContentDir, EditCondition = "ByPakList"))
-		FFilePath PakList;
+		FFilePath PakListFile;
 	/** You can use copied asset string reference here, e.g. World'/Game/NewMap.NewMap'*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "ReleaseSetting|Asset Filters",meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
@@ -203,8 +278,6 @@ public:
 		TArray<FDirectoryPath> AssetIgnoreFilters;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters")
 		bool bAnalysisFilterDependencies=true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters")
-		bool bIncldueStartupPackages = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters",meta=(EditCondition="bAnalysisFilterDependencies"))
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters")

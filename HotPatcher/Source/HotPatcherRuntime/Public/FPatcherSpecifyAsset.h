@@ -15,6 +15,14 @@ public:
 	{
 		AssetRegistryDependencyTypes.Add(EAssetRegistryDependencyTypeEx::Packages);
 	}
+	bool operator==(const FPatcherSpecifyAsset& InAsset)const
+	{
+		bool SameAsset = (Asset == InAsset.Asset);
+		bool SamebAnalysisAssetDependencies = (bAnalysisAssetDependencies == InAsset.bAnalysisAssetDependencies);
+		bool SameAssetRegistryDependencyTypes = (AssetRegistryDependencyTypes == InAsset.AssetRegistryDependencyTypes);
+
+		return SameAsset && SameAssetRegistryDependencyTypes && SameAssetRegistryDependencyTypes;
+	}
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		FSoftObjectPath Asset;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
