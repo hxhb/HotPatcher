@@ -2289,3 +2289,12 @@ FString UFlibPatchParserHelper::MountPathToRelativePath(const FString& InMountPa
 	FPaths::Split(RelativePath, Path, filename, extersion);
 	return Path/filename;
 }
+
+
+#include "ShaderCodeLibrary.h"
+
+void UFlibPatchParserHelper::ReloadShaderbytecode()
+{
+	FShaderCodeLibrary::OpenLibrary("Global", FPaths::ProjectContentDir());
+	FShaderCodeLibrary::OpenLibrary(FApp::GetProjectName(), FPaths::ProjectContentDir());
+}
