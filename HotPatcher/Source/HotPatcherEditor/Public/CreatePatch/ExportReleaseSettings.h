@@ -255,7 +255,8 @@ public:
 	FORCEINLINE TArray<FPatcherSpecifyAsset> GetSpecifyAssets()const { return IncludeSpecifyAssets; }
 	FORCEINLINE bool AddSpecifyAsset(FPatcherSpecifyAsset const& InAsset)
 	{
-		IncludeSpecifyAssets.Add(InAsset);
+		IncludeSpecifyAssets.AddUnique(InAsset);
+		return true;
 	}
 
 	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }

@@ -2236,7 +2236,7 @@ bool UFlibPatchParserHelper::GetCookProcCommandParams(const FCookerConfig& InCon
 
 	auto CombineParamsLambda = [&FinalParams,&InConfig](const FString& InName, const TArray<FString>& InArray)
 	{
-		FinalParams.Append(TEXT("-targetplatform="));
+		FinalParams.Append(InName);
 
 		for (int32 Index = 0; Index < InArray.Num(); ++Index)
 		{
