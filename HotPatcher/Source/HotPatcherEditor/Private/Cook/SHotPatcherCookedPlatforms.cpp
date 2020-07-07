@@ -82,6 +82,45 @@ void SHotPatcherCookedPlatforms::Construct(const FArguments& InArgs, TSharedPtr<
 		];
 }
 
+TSharedPtr<FJsonObject> SHotPatcherCookedPlatforms::SerializeAsJson() const
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+	TArray<FString> SelectedPlatformList = mCookModel->GetAllSelectedPlatform();
+
+	TArray<TSharedPtr<FJsonValue>> PlatformJsonList;
+	for (const auto& Platform : SelectedPlatformList)
+	{
+		PlatformJsonList.Add(MakeShareable(new FJsonValueString(Platform)));
+	}
+	JsonObject->SetArrayField(TEXT("CookPlatforms"), PlatformJsonList);
+	return JsonObject;
+}
+
+
+void SHotPatcherCookedPlatforms::DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)
+{
+	TArray<TSharedPtr<FJsonValue>> PlatformJsonList = InJsonObject->GetArrayField(TEXT("CookPlatforms"));
+
+	TArray<TSharedPtr<FString>> SelectedPlatform;
+	for (const auto& PlatformJson : PlatformJsonList)
+	{
+		FString Platform = PlatformJson->AsString();
+		SelectedPlatform.Add(MakeShareable(new FString(Platform)));
+		mCookModel->AddSelectedCookPlatform(Platform);
+	}
+}
+
+
+FString SHotPatcherCookedPlatforms::GetSerializeName()const
+{
+	return TEXT("Platforms");
+}
+
+void SHotPatcherCookedPlatforms::Reset()
+{
+	mCookModel->ClearAllPlatform();
+}
 TSharedRef<ITableRow> SHotPatcherCookedPlatforms::HandlePlatformListViewGenerateRow(TSharedPtr<FString> InItem, const TSharedRef<STableViewBase>& OwnerTable)
 {
 	return SNew(SHotPatcherPlatformListRow,mCookModel)

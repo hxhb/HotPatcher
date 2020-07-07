@@ -11,11 +11,15 @@
 #include "Templates/SharedPointer.h"
 #include "PropertyEditorModule.h"
 #include "Kismet/KismetSystemLibrary.h"
+
+// project header
+#include "ICookerItemInterface.h"
+
 /**
  * Implements the cooked Maps panel.
  */
 class SHotPatcherCookSpecifyCookFilter
-	: public SCompoundWidget
+	: public SCompoundWidget,public ICookerItemInterface
 {
 public:
 
@@ -30,6 +34,11 @@ public:
 	 * @param InArgs The Slate argument list.
 	 */
 	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCookModel> InCookModel);
+public:
+	virtual TSharedPtr<FJsonObject> SerializeAsJson()const override;
+	virtual void DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)override;
+	virtual FString GetSerializeName()const override;
+	virtual void Reset() override;
 
 public:
 	USpecifyCookFilterSetting* GetSpecifyCookFilterSetting()const;

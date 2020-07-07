@@ -1,7 +1,7 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
 // #include "HotPatcherPrivatePCH.h"
-#include "SHotPatcherPatchableBase.h"
+#include "CreatePatch/SHotPatcherPatchableBase.h"
 #include "FlibHotPatcherEditorHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "FHotPatcherVersion.h"

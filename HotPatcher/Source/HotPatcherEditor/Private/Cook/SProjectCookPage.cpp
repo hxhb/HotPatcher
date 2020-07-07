@@ -4,11 +4,15 @@
 #include "SHotPatcherCookedPlatforms.h"
 #include "SHotPatcherCookSetting.h"
 #include "SHotPatcherCookMaps.h"
-#include "SHotPatcherCookSpecifyCookFilter.h"
+#include "SProjectCookPage.h"
 #include "FlibPatchParserHelper.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
+#include "FlibHotPatcherEditorHelper.h"
 
 // Engine Header
+#include "Serialization/JsonWriter.h"
+#include "Serialization/JsonReader.h"
+
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SExpandableArea.h"
@@ -43,43 +47,67 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 				SNew(STextBlock)
 				.Text(LOCTEXT("WhichProjectToUseText", "How would you like to cook the content?"))
 			]
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(0.0, 8.0, 0.0, 0.0)
-		[
-			SNew(SExpandableArea)
-			.AreaTitle(LOCTEXT("CookPlatforms", "Platforms"))
-			.InitiallyCollapsed(true)
-			.Padding(8.0)
-			.BodyContent()
-			[
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot()
-				.AutoHeight()
+			+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(8.0, 0.0, 0.0, 0.0)
 				[
-					SNew(SHotPatcherCookedPlatforms,mCookModel)
+					SNew(SButton)
+					.Text(LOCTEXT("ImportConfig", "Import"))
+					.OnClicked(this, &SProjectCookPage::DoImportConfig)
 				]
-			]
-			
+			+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(5.0, 0.0, 0.0, 0.0)
+				[
+					SNew(SButton)
+					.Text(LOCTEXT("ExportConfig", "Export"))
+					.OnClicked(this, &SProjectCookPage::DoExportConfig)
+				]
+			+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(5.0, 0.0, 0.0, 0.0)
+				[
+					SNew(SButton)
+					.Text(LOCTEXT("ResetConfig", "Reset"))
+					.OnClicked(this, &SProjectCookPage::DoResetConfig)
+				]
 		]
 		+ SVerticalBox::Slot()
 			.AutoHeight()
 			.Padding(0.0, 8.0, 0.0, 0.0)
 			[
 				SNew(SExpandableArea)
+				.AreaTitle(LOCTEXT("CookPlatforms", "Platforms"))
+			.InitiallyCollapsed(true)
+			.Padding(8.0)
+			.BodyContent()
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SAssignNew(Platforms, SHotPatcherCookedPlatforms, mCookModel)
+			]
+			]
+
+			]
+		+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.0, 8.0, 0.0, 0.0)
+			[
+				SNew(SExpandableArea)
 				.AreaTitle(LOCTEXT("CookMaps", "Map(s)"))
-				.InitiallyCollapsed(true)
-				.Padding(8.0)
-				.BodyContent()
-				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					[
-						SNew(SHotPatcherCookMaps, mCookModel)
-					]
-				]
+			.InitiallyCollapsed(true)
+			.Padding(8.0)
+			.BodyContent()
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SAssignNew(CookMaps, SHotPatcherCookMaps, mCookModel)
+			]
+			]
 
 			]
 		+ SVerticalBox::Slot()
@@ -96,9 +124,9 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 					+ SVerticalBox::Slot()
 					.AutoHeight()
 					[
-						SNew(SHotPatcherCookSpecifyCookFilter, mCookModel)
+						SAssignNew(CookFilters, SHotPatcherCookSpecifyCookFilter, mCookModel)
 					]
-				]
+			]
 
 			]
 		+ SVerticalBox::Slot()
@@ -107,36 +135,133 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 			[
 				SNew(SExpandableArea)
 				.AreaTitle(LOCTEXT("CookSetting", "Settings"))
-				.InitiallyCollapsed(true)
-				.Padding(8.0)
-				.BodyContent()
-				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					[
-						SNew(SHotPatcherCookSetting, mCookModel)
-					]
-				]
+			.InitiallyCollapsed(true)
+			.Padding(8.0)
+			.BodyContent()
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SAssignNew(CookSettings, SHotPatcherCookSetting, mCookModel)
+			]
+			]
 
 			]
 		+ SVerticalBox::Slot()
 			.AutoHeight()
 			.Padding(0.0, 8.0, 0.0, 0.0)
 
-		+ SVerticalBox::Slot()
+			+ SVerticalBox::Slot()
 			.AutoHeight()
 			.HAlign(HAlign_Right)
 			.Padding(4, 4, 10, 4)
 			[
 				SNew(SButton)
 				.Text(LOCTEXT("RunCook", "Cook Content"))
-				.OnClicked(this,&SProjectCookPage::RunCook)
-				.IsEnabled(this,&SProjectCookPage::CanExecuteCook)
+			.OnClicked(this, &SProjectCookPage::RunCook)
+			.IsEnabled(this, &SProjectCookPage::CanExecuteCook)
 			]
 	];
 }
+#include "DesktopPlatformModule.h"
 
+namespace FPlatformUtils
+{
+	TArray<FString> OpenFileDialog()
+	{
+		IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
+		TArray<FString> SelectedFiles;
+
+		if (DesktopPlatform)
+		{
+			const bool bOpened = DesktopPlatform->OpenFileDialog(
+				nullptr,
+				LOCTEXT("OpenCookConfigDialog", "Open .json").ToString(),
+				FString(TEXT("")),
+				TEXT(""),
+				TEXT("CookConfig json (*.json)|*.json"),
+				EFileDialogFlags::None,
+				SelectedFiles
+			);
+		}
+		return SelectedFiles;
+	}
+
+	TArray<FString> SaveFileDialog()
+	{
+		IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
+
+		TArray<FString> SaveFilenames;
+		if (DesktopPlatform)
+		{
+
+			const bool bOpened = DesktopPlatform->SaveFileDialog(
+				nullptr,
+				LOCTEXT("SvedCookConfig", "Save .json").ToString(),
+				FString(TEXT("")),
+				TEXT(""),
+				TEXT("CookConfig json (*.json)|*.json"),
+				EFileDialogFlags::None,
+				SaveFilenames
+			);
+		}
+		return SaveFilenames;
+	}
+
+	TSharedPtr<FJsonObject> DeserializeAsJsonObject(const FString& InContent)
+	{
+		TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(InContent);
+		TSharedPtr<FJsonObject> JsonObject;
+		FJsonSerializer::Deserialize(JsonReader, JsonObject);
+		return JsonObject;
+	}
+}
+
+#include "Misc/FileHelper.h"
+
+FReply SProjectCookPage::DoImportConfig()
+{
+	TArray<FString> SelectedFiles = FPlatformUtils::OpenFileDialog();
+
+	if (!!SelectedFiles.Num())
+	{
+		FString LoadFile = SelectedFiles[0];
+		if (FPaths::FileExists(LoadFile))
+		{
+			FString ReadContent;
+			if (FFileHelper::LoadFileToString(ReadContent, *LoadFile))
+			{
+				DeSerializeFromJsonObj(FPlatformUtils::DeserializeAsJsonObject(ReadContent));
+			}
+		}
+		
+	}
+	return FReply::Handled();
+}
+
+FReply SProjectCookPage::DoExportConfig() const
+{
+	TArray<FString> SaveFiles = FPlatformUtils::SaveFileDialog();
+	if (!!SaveFiles.Num())
+	{
+		FString SaveToFile = SaveFiles[0].EndsWith(TEXT(".json")) ? SaveFiles[0] : SaveFiles[0].Append(TEXT(".json"));
+
+		if (FFileHelper::SaveStringToFile(SerializeAsString(), *SaveToFile))
+		{
+			FText Msg = LOCTEXT("SavedCookerConfig", "Successd to Export the Cooker Config.");
+			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveToFile);
+		}
+	}
+
+	return FReply::Handled();
+}
+
+FReply SProjectCookPage::DoResetConfig()
+{
+	Reset();
+	return FReply::Handled();
+}
 bool SProjectCookPage::CanExecuteCook()const
 {
 
@@ -152,61 +277,32 @@ bool SProjectCookPage::CanExecuteCook()const
 
 FReply SProjectCookPage::RunCook()const
 {
-	FString ProjectFilePath;
-	FString FinalCookCommand;
-	{
-		FString ProjectPath = UKismetSystemLibrary::GetProjectDirectory();
-		FString ProjectName = FString(FApp::GetProjectName()).Append(TEXT(".uproject"));
-		ProjectFilePath = FPaths::Combine(ProjectPath, ProjectName);
-	}
-	FString EngineBin = UFlibPatchParserHelper::GetUE4CmdBinary();
-	
-	if (FPaths::FileExists(ProjectFilePath))
-	{
-		FinalCookCommand = TEXT("\"") + ProjectFilePath + TEXT("\"");
-		FinalCookCommand.Append(TEXT(" -run=cook "));
+	FCookerConfig CookConfig = mCookModel->GetCookConfig();
 
-		FString CookParams;
-		FString ErrorMsg;
-		if (mCookModel->CombineAllCookParams(CookParams, ErrorMsg))
-		{
-			FinalCookCommand.Append(CookParams);
-		}
-		else
-		{
-			UE_LOG(LogCookPage, Error, TEXT("The Cook Mission faild, %s"),*ErrorMsg);
-			return FReply::Handled();
-		}
-		for (const auto& DefaultCookParam : GetDefaultCookParams())
-		{
-			if (!FinalCookCommand.Contains(DefaultCookParam))
-			{
-				FinalCookCommand.Append(TEXT(" ") + DefaultCookParam);
-			}
-		}
+	if (FPaths::FileExists(CookConfig.EngineBin) && FPaths::FileExists(CookConfig.ProjectPath))
+	{
+		FString CookCommand;
+		UFlibPatchParserHelper::GetCookProcCommandParams(CookConfig, CookCommand);
 		UE_LOG(LogCookPage, Log, TEXT("The Cook Mission is Staring..."));
-		UE_LOG(LogCookPage, Log, TEXT("CookCommand:%s %s"),*EngineBin,*FinalCookCommand);
-		RunCookProc(EngineBin, FinalCookCommand);
-		
+		UE_LOG(LogCookPage, Log, TEXT("CookCommand:%s %s"),*CookConfig.EngineBin,*CookCommand);
+		RunCookProc(CookConfig.EngineBin, CookCommand);	
 	}
 	return FReply::Handled();
 }
 
 
-TArray<FString> SProjectCookPage::GetDefaultCookParams() const
-{
-	return TArray<FString>{"-NoLogTimes", "-UTF8Output"};
-}
-
 void SProjectCookPage::ReceiveOutputMsg(const FString& InMsg)
 {
+	FString FindItem(TEXT("Display:"));
+	int32 Index = InMsg.Len() - InMsg.Find(FindItem) - FindItem.Len();
+
 	if (InMsg.Contains(TEXT("Error:")))
 	{
 		UE_LOG(LogCookPage, Error, TEXT("%s"), *InMsg);
 	}
 	else if (InMsg.Contains(TEXT("Warning:")))
 	{
-		UE_LOG(LogCookPage, Warning, TEXT("%s"), *InMsg);
+		UE_LOG(LogCookPage, Warning, TEXT("%s"), *InMsg.Right(Index));
 	}
 	else
 	{
@@ -303,6 +399,44 @@ void SProjectCookPage::RunCookProc(const FString& InBinPath, const FString& InCo
 		mCookProcWorkingThread->ProcSuccessedDelegate.AddRaw(this, &SProjectCookPage::SpawnCookSuccessedNotification);
 		mCookProcWorkingThread->ProcFaildDelegate.AddRaw(this, &SProjectCookPage::SpawnCookFaildNotification);
 		mCookProcWorkingThread->Execute();
+	}
+}
+
+
+
+TSharedPtr<FJsonObject> SProjectCookPage::SerializeAsJson() const
+{
+	FCookerConfig CookConfig = mCookModel->GetCookConfig();
+	return UFlibPatchParserHelper::SerializeCookerConfigAsJsonObject(CookConfig);
+}
+
+void SProjectCookPage::DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)
+{
+	for (const auto& SerializableItem : GetSerializableItems())
+	{
+		// TSharedPtr<FJsonObject> ItemJsonObject = InJsonObject->GetObjectField(SerializableItem->GetSerializeName());
+		SerializableItem->DeSerializeFromJsonObj(InJsonObject);
+	}
+}
+
+FString SProjectCookPage::GetSerializeName()const
+{
+	return TEXT("CookPage");
+}
+
+FString SProjectCookPage::SerializeAsString()const
+{
+	FString result;
+	auto JsonWriter = TJsonWriterFactory<>::Create(&result);
+	FJsonSerializer::Serialize(SerializeAsJson().ToSharedRef(), JsonWriter);
+	return result;
+}
+
+void SProjectCookPage::Reset()
+{
+	for (const auto& SerializableItem : GetSerializableItems())
+	{
+		SerializableItem->Reset();
 	}
 }
 #undef LOCTEXT_NAMESPACE

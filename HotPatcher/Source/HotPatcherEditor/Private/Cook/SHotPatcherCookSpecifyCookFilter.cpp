@@ -38,6 +38,44 @@ void SHotPatcherCookSpecifyCookFilter::Construct(const FArguments& InArgs, TShar
 
 
 
+TSharedPtr<FJsonObject> SHotPatcherCookSpecifyCookFilter::SerializeAsJson() const
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	TArray<TSharedPtr<FJsonValue>> CookFiltersJsonValueList;
+
+	for (const auto& Filter : GetSpecifyCookFilterSetting()->GetAlwayCookFilters())
+	{
+		FString FilterPath = Filter.Path;
+		CookFiltersJsonValueList.Add(MakeShareable(new FJsonValueString(FilterPath)));
+	}
+	JsonObject->SetArrayField(TEXT("CookFilter"), CookFiltersJsonValueList);
+	return JsonObject;
+}
+
+void SHotPatcherCookSpecifyCookFilter::DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)
+{
+	TArray<TSharedPtr<FJsonValue>> CookFiltersJsonValueList = InJsonObject->GetArrayField(TEXT("CookFilter"));
+
+	for (const auto& FilterJsonValue : CookFiltersJsonValueList)
+	{
+		FDirectoryPath FilterDirPath;
+		FilterDirPath.Path = FilterJsonValue->AsString();
+		GetSpecifyCookFilterSetting()->GetAlwayCookFilters().Add(FilterDirPath);
+	}
+
+}
+
+FString SHotPatcherCookSpecifyCookFilter::GetSerializeName()const
+{
+	return TEXT("Filters");
+}
+
+
+void SHotPatcherCookSpecifyCookFilter::Reset()
+{
+	GetSpecifyCookFilterSetting()->GetAlwayCookFilters().Reset();
+}
+
 USpecifyCookFilterSetting* SHotPatcherCookSpecifyCookFilter::GetSpecifyCookFilterSetting() const
 {
 	return SpecifyCookFilterSetting;

@@ -4,14 +4,16 @@
 #include "Model/FHotPatcherCookModel.h"
 #include "Templates/SharedPointer.h"
 #include "FlibPatchParserHelper.h"
-
-
 #include "Kismet/KismetSystemLibrary.h"
+
+// project header
+#include "ICookerItemInterface.h"
+
 /**
  * Implements the cooked Maps panel.
  */
 class SHotPatcherCookMaps
-	: public SCompoundWidget
+	: public SCompoundWidget,public ICookerItemInterface
 {
 public:
 
@@ -27,12 +29,18 @@ public:
 	 */
 	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCookModel> InCookModel);
 
+public:
+	virtual TSharedPtr<FJsonObject> SerializeAsJson()const override;
+	virtual void DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)override;
+	virtual FString GetSerializeName()const override;
+	virtual void Reset() override;
+	bool IsCookAllMap()const { return MapList.Num() == mCookModel->GetAllSelectedCookMap().Num(); }
 protected:
 
+	
 	// Callback for clicking the 'Select All Maps' button.
 	void HandleAllMapHyperlinkNavigate(bool AllMap)
 	{
-
 		if (mCookModel.IsValid())
 		{
 			if (AllMap)

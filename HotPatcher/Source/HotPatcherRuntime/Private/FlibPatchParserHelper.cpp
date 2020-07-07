@@ -2159,6 +2159,122 @@ FReplaceText UFlibPatchParserHelper::DeSerializeFReplaceText(const TSharedPtr<FJ
 	return result;
 }
 
+
+TSharedPtr<FJsonObject> UFlibPatchParserHelper::SerializeCookerConfigAsJsonObject(const FCookerConfig& InConfig)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	JsonObject->SetStringField(TEXT("EngineBin"),InConfig.EngineBin);
+	JsonObject->SetStringField(TEXT("ProjectPath"), InConfig.ProjectPath);
+	JsonObject->SetStringField(TEXT("EngineParams"), InConfig.EngineParams);
+
+	auto SerializeArrayLambda = [&JsonObject](const FString& InName, const TArray<FString>& InArray)
+	{
+		TArray<TSharedPtr<FJsonValue>> JsonValueList;
+
+		for (const auto& Item : InArray)
+		{
+			JsonValueList.Add(MakeShareable(new FJsonValueString(Item)));
+		}
+		JsonObject->SetArrayField(InName, JsonValueList);
+	};
+	SerializeArrayLambda(TEXT("CookPlatforms"), InConfig.CookPlatforms);
+	SerializeArrayLambda(TEXT("CookMaps"), InConfig.CookMaps);
+	JsonObject->SetBoolField(TEXT("bCookAllMap"),InConfig.bCookAllMap);
+	SerializeArrayLambda(TEXT("CookFilter"), InConfig.CookFilter);
+	SerializeArrayLambda(TEXT("CookSettings"), InConfig.CookSettings);
+	JsonObject->SetStringField(TEXT("Options"), InConfig.Options);
+
+	return JsonObject;
+}
+
+FString UFlibPatchParserHelper::SerializeCookerConfigAsString(const TSharedPtr<FJsonObject>& InConfigJson)
+{
+	FString result;
+	auto JsonWriter = TJsonWriterFactory<>::Create(&result);
+	FJsonSerializer::Serialize(InConfigJson.ToSharedRef(), JsonWriter);
+	return result;
+}
+
+FCookerConfig UFlibPatchParserHelper::DeSerializeCookerConfig(const FString& InJsonContent)
+{
+	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(InJsonContent);
+	TSharedPtr<FJsonObject> JsonObject;
+	FJsonSerializer::Deserialize(JsonReader, JsonObject);
+
+	FCookerConfig result;
+	result.EngineBin = JsonObject->GetStringField(TEXT("EngineBin"));
+	result.ProjectPath = JsonObject->GetStringField(TEXT("ProjectPath"));
+	result.EngineParams = JsonObject->GetStringField(TEXT("EngineParams"));
+
+	auto DeserializeArray = [&JsonObject](const FString& InName)->TArray<FString>
+	{
+		TArray<FString> result;
+		TArray<TSharedPtr<FJsonValue>> JsonValueList = JsonObject->GetArrayField(InName);
+
+		for (const auto& Item : JsonValueList)
+		{
+			result.AddUnique(Item->AsString());
+		}
+		return result;
+	};
+
+	result.CookPlatforms = DeserializeArray(TEXT("CookPlatforms"));
+	result.CookMaps = DeserializeArray(TEXT("CookMaps"));
+	result.CookFilter = DeserializeArray(TEXT("CookFilter"));
+	result.CookSettings = DeserializeArray(TEXT("CookSettings"));
+	result.Options = JsonObject->GetStringField(TEXT("Options"));
+	result.bCookAllMap = JsonObject->GetBoolField(TEXT("bCookAllMap"));
+	return result;
+}
+
+
+bool UFlibPatchParserHelper::GetCookProcCommandParams(const FCookerConfig& InConfig, FString& OutParams)
+{
+	FString FinalParams;
+	FinalParams.Append(FString::Printf(TEXT("\"%s\" "), *InConfig.ProjectPath));
+	FinalParams.Append(FString::Printf(TEXT("%s "), *InConfig.EngineParams));
+
+	auto CombineParamsLambda = [&FinalParams,&InConfig](const FString& InName, const TArray<FString>& InArray)
+	{
+		FinalParams.Append(InName);
+
+		for (int32 Index = 0; Index < InArray.Num(); ++Index)
+		{
+			FinalParams.Append(InArray[Index]);
+			if (!(Index == InArray.Num() - 1))
+			{
+				FinalParams.Append(TEXT("+"));
+			}
+		}
+		FinalParams.Append(TEXT(" "));
+	};
+	CombineParamsLambda(TEXT("-targetplatform="), InConfig.CookPlatforms);
+	CombineParamsLambda(TEXT("-Map="), InConfig.CookMaps);
+	
+	for (const auto& CookFilter : InConfig.CookFilter)
+	{
+		FString FilterFullPath;
+		if (UFLibAssetManageHelperEx::ConvRelativeDirToAbsDir(CookFilter, FilterFullPath))
+		{
+			if (FPaths::DirectoryExists(FilterFullPath))
+			{
+				FinalParams.Append(FString::Printf(TEXT("-COOKDIR=\"%s\" "), *FilterFullPath));
+			}
+		}
+	}
+
+	for (const auto& Option : InConfig.CookSettings)
+	{
+		FinalParams.Append(TEXT("-") + Option + TEXT(" "));
+	}
+
+	FinalParams.Append(InConfig.Options);
+
+	OutParams = FinalParams;
+
+	return true;
+}
+
 FString UFlibPatchParserHelper::MountPathToRelativePath(const FString& InMountPath)
 {
 	FString Path;
@@ -2172,4 +2288,13 @@ FString UFlibPatchParserHelper::MountPathToRelativePath(const FString& InMountPa
 	FString extersion;
 	FPaths::Split(RelativePath, Path, filename, extersion);
 	return Path/filename;
+}
+
+
+#include "ShaderCodeLibrary.h"
+
+void UFlibPatchParserHelper::ReloadShaderbytecode()
+{
+	FShaderCodeLibrary::OpenLibrary("Global", FPaths::ProjectContentDir());
+	FShaderCodeLibrary::OpenLibrary(FApp::GetProjectName(), FPaths::ProjectContentDir());
 }

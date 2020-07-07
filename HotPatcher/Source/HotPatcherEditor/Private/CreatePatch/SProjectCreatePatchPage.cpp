@@ -1,8 +1,8 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
-#include "SProjectCreatePatchPage.h"
-#include "SHotPatcherExportPatch.h"
-#include "SHotPatcherExportRelease.h"
+#include "CreatePatch/SProjectCreatePatchPage.h"
+#include "CreatePatch/SHotPatcherExportPatch.h"
+#include "CreatePatch/SHotPatcherExportRelease.h"
 
 // engine header
 #include "Framework/Commands/UIAction.h"

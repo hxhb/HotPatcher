@@ -5,11 +5,16 @@
 #include "Interfaces/ITargetPlatform.h"
 #include "Model/FHotPatcherCookModel.h"
 #include "Templates/SharedPointer.h"
+#include "Dom/JsonObject.h"
+
+// project header
+#include "ICookerItemInterface.h"
+
 /**
  * Implements the cooked platforms panel.
  */
 class SHotPatcherCookedPlatforms
-	: public SCompoundWidget
+	: public SCompoundWidget,public ICookerItemInterface
 {
 public:
 
@@ -25,6 +30,11 @@ public:
 	 */
 	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCookModel> InCookModel);
 
+public:
+	virtual TSharedPtr<FJsonObject> SerializeAsJson()const override;
+	virtual void DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)override;
+	virtual FString GetSerializeName()const override;
+	virtual void Reset() override;
 protected:
 
 	/**

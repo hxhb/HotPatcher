@@ -42,6 +42,7 @@ public class HotPatcherRuntime : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+                "RenderCore"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

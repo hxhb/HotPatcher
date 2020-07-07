@@ -140,7 +140,7 @@ UExportPatchSettings* UFlibHotPatcherEditorHelper::DeserializePatchConfig(UExpor
 				{
 					FPatcherSpecifyAsset CurrentAsset;
 					UFlibPatchParserHelper::DeSerializeSpecifyAssetInfoToJsonObject(InSpecifyAsset->AsObject(), CurrentAsset);
-					SpecifyAssets.Add(CurrentAsset);
+					SpecifyAssets.AddUnique(CurrentAsset);
 				}
 				InNewSetting->IncludeSpecifyAssets = SpecifyAssets;
 			}
@@ -170,7 +170,7 @@ UExportPatchSettings* UFlibHotPatcherEditorHelper::DeserializePatchConfig(UExpor
 						CurrentExFile.FilePath.FilePath = FileJsonObjectValue->GetStringField(TEXT("FilePath"));
 						CurrentExFile.MountPath = FileJsonObjectValue->GetStringField(TEXT("MountPath"));
 
-						AddExternFileToPak.Add(CurrentExFile);
+						AddExternFileToPak.AddUnique(CurrentExFile);
 					}
 					InNewSetting->AddExternFileToPak = AddExternFileToPak;
 				}
@@ -189,7 +189,7 @@ UExportPatchSettings* UFlibHotPatcherEditorHelper::DeserializePatchConfig(UExpor
 						CurrentExDir.DirectoryPath.Path = FileJsonObjectValue->GetStringField(TEXT("Directory"));
 						CurrentExDir.MountPoint = FileJsonObjectValue->GetStringField(TEXT("MountPoint"));
 
-						AddExternDirectoryToPak.Add(CurrentExDir);
+						AddExternDirectoryToPak.AddUnique(CurrentExDir);
 					}
 					InNewSetting->AddExternDirectoryToPak = AddExternDirectoryToPak;
 				}
@@ -422,6 +422,8 @@ bool UFlibHotPatcherEditorHelper::SerializeReleaseConfigToJsonObject(const UExpo
 		OutJsonObject = MakeShareable(new FJsonObject);
 	}
 	OutJsonObject->SetStringField(TEXT("VersionId"), InReleaseSetting->GetVersionId());
+	OutJsonObject->SetBoolField(TEXT("ByPakList"), InReleaseSetting->IsByPakList());
+	OutJsonObject->SetStringField(TEXT("PakListFile"), InReleaseSetting->GetPakListFile().FilePath);
 
 	auto SerializeArrayLambda = [&OutJsonObject](const TArray<FString>& InArray, const FString& InJsonArrayName)
 	{
@@ -514,7 +516,8 @@ class UExportReleaseSettings* UFlibHotPatcherEditorHelper::DeserializeReleaseCon
 		// 
 		{
 			DESERIAL_STRING_BY_NAME(InNewSetting, JsonObject, VersionId);
-
+			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, ByPakList);
+			InNewSetting->PakListFile.FilePath = JsonObject->GetStringField(TEXT("PakListFile"));
 
 			auto ParserAssetFilter = [JsonObject](const FString& InFilterName) -> TArray<FDirectoryPath>
 			{
@@ -561,7 +564,7 @@ class UExportReleaseSettings* UFlibHotPatcherEditorHelper::DeserializeReleaseCon
 					TSharedPtr<FJsonObject> SpecifyJsonObj = InSpecifyAsset->AsObject();
 					CurrentAsset.Asset = SpecifyJsonObj->GetStringField(TEXT("Asset"));
 					CurrentAsset.bAnalysisAssetDependencies = SpecifyJsonObj->GetBoolField(TEXT("bAnalysisAssetDependencies"));
-					SpecifyAssets.Add(CurrentAsset);
+					SpecifyAssets.AddUnique(CurrentAsset);
 				}
 				InNewSetting->IncludeSpecifyAssets = SpecifyAssets;
 			}
@@ -584,7 +587,7 @@ class UExportReleaseSettings* UFlibHotPatcherEditorHelper::DeserializeReleaseCon
 						CurrentExFile.FilePath.FilePath = FileJsonObjectValue->GetStringField(TEXT("FilePath"));
 						CurrentExFile.MountPath = FileJsonObjectValue->GetStringField(TEXT("MountPath"));
 
-						AddExternFileToPak.Add(CurrentExFile);
+						AddExternFileToPak.AddUnique(CurrentExFile);
 					}
 					InNewSetting->AddExternFileToPak = AddExternFileToPak;
 				}
@@ -603,7 +606,7 @@ class UExportReleaseSettings* UFlibHotPatcherEditorHelper::DeserializeReleaseCon
 						CurrentExDir.DirectoryPath.Path = FileJsonObjectValue->GetStringField(TEXT("Directory"));
 						CurrentExDir.MountPoint = FileJsonObjectValue->GetStringField(TEXT("MountPoint"));
 
-						AddExternDirectoryToPak.Add(CurrentExDir);
+						AddExternDirectoryToPak.AddUnique(CurrentExDir);
 					}
 					InNewSetting->AddExternDirectoryToPak = AddExternDirectoryToPak;
 				}
@@ -682,12 +685,12 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchVerison(const FHotPatc
 		FPatcherSpecifyAsset CurrentAsset;
 		CurrentAsset.Asset = FSoftObjectPath(Asset.mPackagePath);
 		CurrentAsset.bAnalysisAssetDependencies = false;
-		Chunk.IncludeSpecifyAssets.Add(CurrentAsset);
+		Chunk.IncludeSpecifyAssets.AddUnique(CurrentAsset);
 	}
 	// Chunk.AddExternDirectoryToPak = InPatchSetting->GetAddExternDirectory();
 	for (const auto& File : InPatchVersion.ExternalFiles)
 	{
-		Chunk.AddExternFileToPak.Add(File.Value);
+		Chunk.AddExternFileToPak.AddUnique(File.Value);
 	}
 	
 	Chunk.InternalFiles.bIncludeAssetRegistry = false;

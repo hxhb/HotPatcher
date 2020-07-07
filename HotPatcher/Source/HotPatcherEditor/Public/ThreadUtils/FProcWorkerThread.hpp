@@ -24,7 +24,8 @@ public:
 			mProcessHandle = FPlatformProcess::CreateProc(*mProgramPath, *mPragramParams, false, true, true, &mProcessID, 0, NULL, mWritePipe,mReadPipe);
 			if (mProcessHandle.IsValid() && FPlatformProcess::IsApplicationRunning(mProcessID))
 			{
-				ProcBeginDelegate.Broadcast();
+				if (ProcBeginDelegate.IsBound())
+					ProcBeginDelegate.Broadcast();
 			}
 
 			FString Line;
@@ -44,7 +45,8 @@ public:
 						for (int32 Index = 0; Index < count - 1; ++Index)
 						{
 							StringArray[Index].TrimEndInline();
-							ProcOutputMsgDelegate.Broadcast(StringArray[Index]);
+							if (ProcOutputMsgDelegate.IsBound())
+								ProcOutputMsgDelegate.Broadcast(StringArray[Index]);
 						}
 						Line = StringArray[count - 1];
 						if (NewLine.EndsWith(TEXT("\n")))
@@ -60,16 +62,19 @@ public:
 			{
 				if (ProcReturnCode == 0)
 				{
-					ProcSuccessedDelegate.Broadcast();
+					if(ProcOutputMsgDelegate.IsBound())
+						ProcSuccessedDelegate.Broadcast();
 				}
 				else
 				{
-					ProcFaildDelegate.Broadcast();
+					if (ProcFaildDelegate.IsBound())
+						ProcFaildDelegate.Broadcast();
 				}
 			}
 			else
 			{
-				ProcFaildDelegate.Broadcast();
+				if (ProcFaildDelegate.IsBound())
+					ProcFaildDelegate.Broadcast();
 
 			}
 			
@@ -85,7 +90,8 @@ public:
 	{
 		if (GetThreadStatus() != EThreadStatus::Busy)
 		{
-			CancelDelegate.Broadcast();
+			if (CancelDelegate.IsBound())
+				CancelDelegate.Broadcast();
 			return;
 		}
 			
@@ -93,12 +99,15 @@ public:
 		if (mProcessHandle.IsValid() && FPlatformProcess::IsApplicationRunning(mProcessID))
 		{
 			FPlatformProcess::TerminateProc(mProcessHandle, true);
-			ProcFaildDelegate.Broadcast();
+
+			if (ProcFaildDelegate.IsBound())
+				ProcFaildDelegate.Broadcast();
 			mProcessHandle.Reset();
 			mProcessID = 0;
 		}
 		mThreadStatus = EThreadStatus::Canceled;
-		CancelDelegate.Broadcast();
+		if (CancelDelegate.IsBound())
+			CancelDelegate.Broadcast();
 	}
 
 	virtual uint32 GetProcesId()const { return mProcessID; }

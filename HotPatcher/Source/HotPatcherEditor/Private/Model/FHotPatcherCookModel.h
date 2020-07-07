@@ -1,10 +1,14 @@
 #pragma once
 
 #include "FLibAssetManageHelperEx.h"
+#include "FCookerConfig.h"
+#include "FlibPatchParserHelper.h"
 
 // engine header
+#include "Misc/App.h"
 #include "CoreMinimal.h"
 #include "Engine/Engine.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Delegates/DelegateCombinations.h"
 
 DECLARE_DELEGATE_OneParam(FRequestExSettingsDlg, TArray<FString>&);
@@ -78,6 +82,12 @@ public:
 			mOptionSettings.Remove(InSetting);
 		}
 	}
+
+	void ClearAllSettings()
+	{
+		if (mOptionSettings.Num() > 0)
+			mOptionSettings.Reset();
+	}
 	const TArray<FString>& GetAllSelectedSettings()
 	{
 		return mOptionSettings;
@@ -88,6 +98,24 @@ public:
 		TArray<FDirectoryPath> CookFilters;
 		OnRequestSpecifyCookFilter.ExecuteIfBound(CookFilters);
 		return CookFilters;
+	}
+
+	TArray<FString> GetAlwayCookFiltersFullPath()
+	{
+		TArray<FString> result;
+		for (const auto& CookFilter : GetAlwayCookFilters())
+		{
+			FString FilterFullPath;
+			if (UFLibAssetManageHelperEx::ConvRelativeDirToAbsDir(CookFilter.Path, FilterFullPath))
+			{
+				if (FPaths::DirectoryExists(FilterFullPath))
+				{
+					result.AddUnique(FilterFullPath);
+				}
+			}
+		}
+		return result;
+
 	}
 
 	bool CombineAllCookParams(FString& OutCommand,FString& OutFaildReson)
@@ -134,35 +162,55 @@ public:
 		}
 
 		// request cook directory
+		for (const auto& CookFilterFullPath : GetAlwayCookFiltersFullPath())
 		{
-			for (const auto& CookFilter : GetAlwayCookFilters())
-			{
-				FString FilterFullPath;
-				if (UFLibAssetManageHelperEx::ConvRelativeDirToAbsDir(CookFilter.Path, FilterFullPath))
-				{
-					if (FPaths::DirectoryExists(FilterFullPath))
-					{
-						result.Append(FString::Printf(TEXT("-COOKDIR=\"%s\" "), *FilterFullPath));
-					}
-				}
-			}
+			result.Append(FString::Printf(TEXT("-COOKDIR=\"%s\" "), *CookFilterFullPath));
 		}
 
 		// Request Ex Options
+		for (const auto& ExOption : GetCookExSetting())
 		{
-			TArray<FString> ExOptions;
-			OnRequestExSettings.ExecuteIfBound(ExOptions);
-			for (const auto& ExOption : ExOptions)
-			{
-				result.Append(ExOption);
-			}
-
+			result.Append(ExOption);
 		}
-
-
 
 		OutCommand = result;
 		return true;
+	}
+
+	TArray<FString> GetCookExSetting()
+	{
+		TArray<FString> ExOptions;
+		OnRequestExSettings.ExecuteIfBound(ExOptions);
+		return ExOptions;
+	}
+
+	FCookerConfig GetCookConfig()
+	{
+		FCookerConfig result;
+		FString ProjectFilePath;
+		{
+			FString ProjectPath = UKismetSystemLibrary::GetProjectDirectory();
+			FString ProjectName = FString(FApp::GetProjectName()).Append(TEXT(".uproject"));
+			ProjectFilePath =  FPaths::Combine(ProjectPath, ProjectName);
+		}
+		FString EngineBin = UFlibPatchParserHelper::GetUE4CmdBinary();
+
+		result.EngineBin = EngineBin;
+		result.ProjectPath = ProjectFilePath;
+		result.EngineParams = TEXT("-run=cook");
+
+		result.CookPlatforms = mSelectedPlatform;
+		result.CookMaps = mSelectedCookMaps;
+		TArray<FString> AllGameMap = UFlibPatchParserHelper::GetAvailableMaps(UKismetSystemLibrary::GetProjectDirectory(), false, false, true);
+		result.bCookAllMap = result.CookMaps.Num() == AllGameMap.Num();
+		for (const auto& Filter : GetAlwayCookFilters())
+		{
+			result.CookFilter.AddUnique(Filter.Path);
+		}
+		result.CookSettings = mOptionSettings;
+		result.Options = GetCookExSetting()[0];
+
+		return result;
 	}
 public:
 	FRequestExSettingsDlg OnRequestExSettings;

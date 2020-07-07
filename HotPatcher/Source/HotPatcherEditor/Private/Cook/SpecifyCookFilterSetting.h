@@ -31,7 +31,7 @@ public:
 		return DefaultSettings;
 	}
 
-	FORCEINLINE TArray<FDirectoryPath> GetAlwayCookFilters() const
+	FORCEINLINE TArray<FDirectoryPath>& GetAlwayCookFilters()
 	{
 		return AlwayCookFilters;
 	}
