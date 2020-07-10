@@ -284,5 +284,7 @@ public:
 
 	static FString MountPathToRelativePath(const FString& InMountPath);
 
-
+	// reload Global&Project shaderbytecode
+	UFUNCTION(BlueprintCallable)
+		static void ReloadShaderbytecode();
 };

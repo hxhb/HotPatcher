@@ -24,6 +24,8 @@
 
 DEFINE_LOG_CATEGORY(LogCookPage);
 
+#pragma warning(disable:4996)
+
 /* SProjectCookPage interface
  *****************************************************************************/
 
@@ -376,6 +378,7 @@ void SProjectCookPage::SpawnCookFaildNotification()
 		UE_LOG(LogCookPage, Error, TEXT("The Cook Mission is faild."))
 	});
 }
+
 
 void SProjectCookPage::CancelCookMission()
 {
