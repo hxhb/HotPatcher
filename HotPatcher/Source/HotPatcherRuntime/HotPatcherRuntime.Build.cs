@@ -30,7 +30,8 @@ public class HotPatcherRuntime : ModuleRules
                 "Json",
                 "PakFile",
                 "AssetManagerEx",
-                "AssetRegistry"
+                "AssetRegistry",
+                "CoreUObject"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -39,7 +40,6 @@ public class HotPatcherRuntime : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"CoreUObject",
 				"Engine",
 				"Slate",
 				"SlateCore",

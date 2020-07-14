@@ -27,3 +27,14 @@ FString UFlibAssetLoadHelper::GetObjectResource(UObject* Obj)
 	FSoftObjectPath SoftRef(Obj);
 	return SoftRef.ToString();
 }
+
+bool UFlibAssetLoadHelper::K2_ReloadPackage(const FString& InLongPackageName)
+{
+	return !!UFlibAssetLoadHelper::ReloadPackageByName(NULL, InLongPackageName, ELoadFlags::LOAD_Async);
+}
+
+UPackage* UFlibAssetLoadHelper::ReloadPackageByName(UObject* InOuter, const FString& InLongPackageName, uint32 InReloadFlag)
+{
+	UPackage* AssetPackage = FindPackage(InOuter, *InLongPackageName);
+	return ReloadPackage(AssetPackage, InReloadFlag);
+}
