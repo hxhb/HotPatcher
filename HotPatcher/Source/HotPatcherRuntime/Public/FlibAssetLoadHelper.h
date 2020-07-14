@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "UObject/PackageReload.h"
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FlibAssetLoadHelper.generated.h"
@@ -20,4 +21,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 		static FString GetObjectResource(UObject* Obj);
 
+
+	UFUNCTION(BlueprintCallable, meta = (DisplayName="ReloadPackage"))
+		static bool K2_ReloadPackage(const FString& InLongPackageName);
+
+	static UPackage* ReloadPackageByName(UObject* InOuter, const FString& InLongPackageName, uint32 InReloadFlag);
 };
