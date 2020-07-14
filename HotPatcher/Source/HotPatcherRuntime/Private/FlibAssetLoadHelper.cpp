@@ -3,7 +3,6 @@
 
 #include "FlibAssetLoadHelper.h"
 #include "AssetRegistryModule.h"
-#include "ConstructorHelpers.h"
 
 UObject* UFlibAssetLoadHelper::LoadAssetByPackageName(const FString& InPackageName, FString& OutAssetType)
 {
