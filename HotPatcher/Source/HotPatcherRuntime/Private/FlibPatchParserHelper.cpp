@@ -106,7 +106,15 @@ FString UFlibPatchParserHelper::GetUE4CmdBinary()
 #else
 		TEXT("Win32"),
 #endif
+#if UE_BUILD_DEBUG
+#if PLATFORM_64BITS
+		TEXT("UE4Editor-Win64-Debug-Cmd.exe")
+#else
+		TEXT("UE4Editor-Win32-Debug-Cmd.exe")
+#endif
+#else
 		TEXT("UE4Editor-Cmd.exe")
+#endif
 	);
 #endif
 #if PLATFORM_MAC
