@@ -729,7 +729,14 @@ bool UFlibPatchParserHelper::GetCookedShaderBytecodeFiles(const FString& InProje
 		if (FPaths::DirectoryExists(CookedContentDir))
 		{
 			TArray<FString> ShaderbytecodeFiles;
+#if PLATFORM_IOS || PLATFORM_MAC
+			IFileManager::Get().FindFiles(ShaderbytecodeFiles, *CookedContentDir, TEXT("metalmap"));
+			
+			IFileManager::Get().FindFiles(ShaderbytecodeFiles, *CookedContentDir, TEXT("metallib"));
+#else
 			IFileManager::Get().FindFiles(ShaderbytecodeFiles, *CookedContentDir, TEXT("ushaderbytecode"));
+#endif
+			
 
 			for (const auto& ShaderByteCodeFile : ShaderbytecodeFiles)
 			{
@@ -890,6 +897,16 @@ bool UFlibPatchParserHelper::ConvNotAssetFileToExFile(const FString& InProjectDi
 		FString CookPlatformAbsPath = FPaths::Combine(InProjectDir, TEXT("Saved/Cooked"), InPlatformName);
 
 		FString RelativePath = UKismetStringLibrary::GetSubstring(InCookedFile, CookPlatformAbsPath.Len() + 1, InCookedFile.Len() - CookPlatformAbsPath.Len());
+
+#if PLATFORM_IOS || PLATFORM_MAC
+		if (UKismetStringLibrary::EndsWith(RelativePath,TEXT(".metalmap")) || UKismetStringLibrary::EndsWith(
+			RelativePath,TEXT(".metallib")))
+		{
+			RelativePath = UKismetStringLibrary::Replace(RelativePath,TEXT("Content"),
+			                                             FPaths::Combine("Content", "Metal"));
+		}
+#endif
+		
 		FString AssetFileRelativeCookPath = FString::Printf(
 			TEXT("../../../%s"),
 			*RelativePath
