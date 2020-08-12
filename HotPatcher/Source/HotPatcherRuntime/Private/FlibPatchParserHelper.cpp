@@ -2,7 +2,7 @@
 
 // project header
 #include "FlibPatchParserHelper.h"
-#include "FlibAssetManageHelperEx.h"
+#include "FLibAssetManageHelperEx.h"
 #include "Struct/AssetManager/FFileArrayDirectoryVisitor.hpp"
 #include "FLibAssetManageHelperEx.h"
 #include "Flib/FLibAssetManageHelperEx.h"
