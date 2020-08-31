@@ -12,9 +12,17 @@ DEFINE_LOG_CATEGORY(LogHotPatcherCommandlet);
 
 #define PATCHER_CONFIG_PARAM_NAME TEXT("-config=")
 
-void ReceiveMsg(const FString& InMsgType,const FString& InMsg)
+namespace NSPatch
 {
-	UE_LOG(LogHotPatcherCommandlet,Display,TEXT("%s:%s"),*InMsgType,*InMsg);
+	void ReceiveMsg(const FString& InMsgType,const FString& InMsg)
+	{
+		UE_LOG(LogHotPatcherCommandlet,Display,TEXT("%s:%s"),*InMsgType,*InMsg);
+	}
+
+	void ReceiveShowMsg(const FString& InMsg)
+	{
+		UE_LOG(LogHotPatcherCommandlet,Error,TEXT("%s"),*InMsg);
+	}
 }
 
 int32 UHotPatcherCommandlet::Main(const FString& Params)
@@ -36,15 +44,19 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 	}
 
 	FString JsonContent;
+	bool bExportStatus = false;
 	if (FFileHelper::LoadFileToString(JsonContent, *config_path))
 	{
 		class UExportPatchSettings* ExportPatchSetting = NewObject<class UExportPatchSettings>();
 		UFlibHotPatcherEditorHelper::DeserializePatchConfig(ExportPatchSetting, JsonContent);
 		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-		PatcherProxy->SetExportPatchSetting(ExportPatchSetting);
-		PatcherProxy->OnPaking.AddStatic(&::ReceiveMsg);
-		PatcherProxy->DoExportPatch();
+		PatcherProxy->SetProxySettings(ExportPatchSetting);
+		PatcherProxy->OnPaking.AddStatic(&::NSPatch::ReceiveMsg);
+		PatcherProxy->OnShowMsg.AddStatic(&::NSPatch::ReceiveShowMsg);
+		bExportStatus = PatcherProxy->DoExport();
+		
+		UE_LOG(LogHotPatcherCommandlet,Log,TEXT("Export Patch Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));
 	}
 	system("pause");
-	return 0;
+	return (int32)!bExportStatus;
 }

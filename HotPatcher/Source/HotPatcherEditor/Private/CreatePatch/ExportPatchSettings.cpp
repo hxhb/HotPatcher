@@ -1,6 +1,6 @@
 #include "CreatePatch/ExportPatchSettings.h"
 #include "FLibAssetManageHelperEx.h"
-
+#include "HotPatcherLog.h"
 // engine header
 #include "Dom/JsonValue.h"
 #include "HAL/PlatformFilemanager.h"
@@ -167,7 +167,7 @@ TArray<FString> UExportPatchSettings::MakeAllPakCommandsByTheSetting(const FStri
 				}
 				for (const auto& File : ExFiles)
 				{
-					// UE_LOG(LogTemp, Warning, TEXT("CookCommand %s"), *FString::Printf(TEXT("\"%s\" \"%s\""), *File.FilePath.FilePath, *File.MountPath));
+					// UE_LOG(LogHotPatcher, Warning, TEXT("CookCommand %s"), *FString::Printf(TEXT("\"%s\" \"%s\""), *File.FilePath.FilePath, *File.MountPath));
 					OutPakCommand.Add(FString::Printf(TEXT("\"%s\" \"%s\""), *File.FilePath.FilePath, *File.MountPath));
 				}
 			}
@@ -294,7 +294,7 @@ TArray<FString> UExportPatchSettings::MakeAddExternFileToPakCommands()const
 		}
 		else
 		{
-			UE_LOG(LogTemp,Warning,TEXT("File mount point is invalid,is %s"), *ExternFile.MountPath)
+			UE_LOG(LogHotPatcher,Warning,TEXT("File mount point is invalid,is %s"), *ExternFile.MountPath)
 		}
 	}
 	return resault;

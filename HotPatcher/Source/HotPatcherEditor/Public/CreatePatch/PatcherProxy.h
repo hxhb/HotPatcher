@@ -9,6 +9,7 @@
 #include "FPatchVersionDiff.h"
 
 // engine header
+#include "HotPatcherProxyBase.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Templates/SharedPointer.h"
 #include "IDetailsView.h"
@@ -17,13 +18,10 @@
 
 #include "PatcherProxy.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_TwoParams(FExportPakProcess,const FString&,const FString&);
-
-
 UCLASS()
-class UPatcherProxy:public UObject
+class HOTPATCHEREDITOR_API UPatcherProxy:public UHotPatcherProxyBase
 {
-    GENERATED_BODY()
+    GENERATED_UCLASS_BODY()
 public:
 
     bool CheckSelectedAssetsCookStatus(const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets, FString& OutMsg) const;
@@ -34,14 +32,19 @@ public:
     bool SavePakCommands(const FString& InPlatformName, const FPatchVersionDiff& InDiffInfo, const FString& InSavePath);
     FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion) const;
     bool CanExportPatch() const;
-    bool DoExportPatch();
+    virtual bool DoExport()override;
+    FString MakePakShortName(const FHotPatcherVersion& InCurrentVersion,const FChunkInfo& InChunkInfo,const FString& InPlatform);
+    
+    FORCEINLINE bool IsRunningCommandlet()const{return bCommandlet;}
+    FORCEINLINE uint32 GetPakCounter()const{return PakCounter;}
 
-	FORCEINLINE void SetExportPatchSetting(UExportPatchSettings* InExportPatchSetting)
+    virtual UExportPatchSettings* GetSettingObject()override
 	{
-		ExportPatchSetting = InExportPatchSetting;
+	    return Cast<UExportPatchSettings>(Setting);
 	}
-public:
-    FExportPakProcess OnPaking;
+
 private:
-    UExportPatchSettings* ExportPatchSetting;
+    // UExportPatchSettings* ExportPatchSetting;
+    bool bCommandlet = false;
+    uint32 PakCounter = 0;
 };

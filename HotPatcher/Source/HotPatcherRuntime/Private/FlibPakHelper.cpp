@@ -5,6 +5,7 @@
 #include "IPlatformFilePak.h"
 #include "HAL/PlatformFilemanager.h"
 #include "AssetManager/FFileArrayDirectoryVisitor.hpp"
+#include "HotPatcherLog.h"
 
 // Engine Header
 #include "Misc/ScopeExit.h"
@@ -24,7 +25,7 @@ bool UFlibPakHelper::MountPak(const FString& PakPath, int32 PakOrder, const FStr
 	FPakPlatformFile* PakFileMgr = (FPakPlatformFile*)FPlatformFileManager::Get().GetPlatformFile(FPakPlatformFile::GetTypeName());
 	if (!PakFileMgr)
 	{
-		UE_LOG(LogTemp, Log, TEXT("GetPlatformFile(TEXT(\"PakFile\") is NULL"));
+		UE_LOG(LogHotPatcher, Log, TEXT("GetPlatformFile(TEXT(\"PakFile\") is NULL"));
 		return false;
 	}
 
@@ -39,11 +40,11 @@ bool UFlibPakHelper::MountPak(const FString& PakPath, int32 PakOrder, const FStr
 		
 		if (PakFileMgr->Mount(*PakPath, PakOrder, MountPoint))
 		{
-			UE_LOG(LogTemp, Log, TEXT("Mounted = %s, Order = %d, MountPoint = %s"), *PakPath, PakOrder, !MountPoint ? TEXT("(NULL)") : MountPoint);
+			UE_LOG(LogHotPatcher, Log, TEXT("Mounted = %s, Order = %d, MountPoint = %s"), *PakPath, PakOrder, !MountPoint ? TEXT("(NULL)") : MountPoint);
 			bMounted = true;
 		}
 		else {
-			UE_LOG(LogTemp, Error, TEXT("Faild to mount pak = %s"), *PakPath);
+			UE_LOG(LogHotPatcher, Error, TEXT("Faild to mount pak = %s"), *PakPath);
 			bMounted = false;
 		}
 
@@ -60,7 +61,7 @@ bool UFlibPakHelper::UnMountPak(const FString& PakPath)
 	FPakPlatformFile* PakFileMgr = (FPakPlatformFile*)FPlatformFileManager::Get().GetPlatformFile(FPakPlatformFile::GetTypeName());
 	if (!PakFileMgr)
 	{
-		UE_LOG(LogTemp, Log, TEXT("GetPlatformFile(TEXT(\"PakFile\") is NULL"));
+		UE_LOG(LogHotPatcher, Log, TEXT("GetPlatformFile(TEXT(\"PakFile\") is NULL"));
 		return false;
 	}
 
@@ -73,8 +74,8 @@ bool UFlibPakHelper::CreateFileByBytes(const FString& InFile, const TArray<uint8
 {
 	if (InFile.IsEmpty()/* && FPaths::FileExists(InFile)*/)
 	{
-		UE_LOG(LogTemp, Log, TEXT("CreateFileByBytes InFile is Empty!"));
-		// UE_LOG(LogTemp, Log, TEXT("CreateFileByBytes file %s existing!"), *InFile);
+		UE_LOG(LogHotPatcher, Log, TEXT("CreateFileByBytes InFile is Empty!"));
+		// UE_LOG(LogHotPatcher, Log, TEXT("CreateFileByBytes file %s existing!"), *InFile);
 		return false;
 	}
 	FArchive* SaveToFile = NULL;
@@ -122,7 +123,7 @@ bool UFlibPakHelper::ScanPlatformDirectory(const FString& InRelativePath, bool b
 	}
 	else 
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Directory %s is not found."), *InRelativePath);
+		UE_LOG(LogHotPatcher, Warning, TEXT("Directory %s is not found."), *InRelativePath);
 	}
 
 	return bRunStatus;
@@ -203,7 +204,7 @@ bool UFlibPakHelper::ScanExtenFilesInDirectory(const FString& InRelativePath, co
 	TArray<FString> ReceiveScanResult;
 	if (!UFlibPakHelper::ScanPlatformDirectory(InRelativePath, true, false, InRecursively, ReceiveScanResult))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UFlibPakHelper::ScanPlatformDirectory return false."));
+		UE_LOG(LogHotPatcher, Warning, TEXT("UFlibPakHelper::ScanPlatformDirectory return false."));
 		return false;
 	}
 	TArray<FString> FinalResult;
@@ -252,12 +253,12 @@ bool UFlibPakHelper::LoadPakDoSomething(const FString& InPakFile, TFunction<bool
 	if (PakPlatform->FileExists(*StandardFileName))
 	{
 		FString MountPoint = PakFile->GetMountPoint();
-		UE_LOG(LogTemp, Log, TEXT("Pak Mount Point %s"),*MountPoint);
+		UE_LOG(LogHotPatcher, Log, TEXT("Pak Mount Point %s"),*MountPoint);
 
 		if (UFlibPakHelper::MountPak(*StandardFileName,10, MountPoint))
 		{
 			TArray<FString> MountedPakList = UFlibPakHelper::GetAllMountedPaks();
-			UE_LOG(LogTemp, Log, TEXT("Mounted Paks:"), *MountPoint);
+			UE_LOG(LogHotPatcher, Log, TEXT("Mounted Paks:"), *MountPoint);
 			
 			if (PakFile)
 			{
@@ -267,12 +268,12 @@ bool UFlibPakHelper::LoadPakDoSomething(const FString& InPakFile, TFunction<bool
 		}
 		else 
 		{
-			UE_LOG(LogTemp, Log, TEXT("Mount Faild."));
+			UE_LOG(LogHotPatcher, Log, TEXT("Mount Faild."));
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("file %s is not found."),*StandardFileName);
+		UE_LOG(LogHotPatcher, Log, TEXT("file %s is not found."),*StandardFileName);
 	}
 
 	if (bMounted)
@@ -312,28 +313,28 @@ bool UFlibPakHelper::LoadVersionInfoByPak(const FString& InPakFile, FPakVersion&
 		bool bLambdaRunStatus = false;
 		if (InPakFile)
 		{
-			// UE_LOG(LogTemp, Log, TEXT("Scan All Files Lambda: InPakFile is not null."));
+			// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: InPakFile is not null."));
 			TArray<FString> AllVersionDescribleFiles;
 			FString PakMountPoint = InPakFile->GetMountPoint();
 
 			InPakFile->FindFilesAtPath(AllVersionDescribleFiles, *InPakFile->GetMountPoint(), true, false, true);
 
-			// UE_LOG(LogTemp, Log, TEXT("Scan All Files Lambda:  FindFilesAtPath num is %d."),AllVersionDescribleFiles.Num());
+			// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda:  FindFilesAtPath num is %d."),AllVersionDescribleFiles.Num());
 
 			
 			for (const auto& VersionDescribleFile : AllVersionDescribleFiles)
 			{
-				// UE_LOG(LogTemp, Log, TEXT("Scan All Files Lambda: VersionDescrible File %s."), *VersionDescribleFile);
+				// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: VersionDescrible File %s."), *VersionDescribleFile);
 				if (!VersionDescribleFile.EndsWith(".json"))
 					continue;
 				FString CurrentVersionStr;
 				if (FFileHelper::LoadFileToString(CurrentVersionStr,*VersionDescribleFile))
 				{
-					// UE_LOG(LogTemp, Log, TEXT("Scan All Files Lambda: Load File Success."));
+					// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: Load File Success."));
 					FPakVersion CurrentPakVersionInfo;
 					if (UFlibPakHelper::DeserializeStringToPakVersion(CurrentVersionStr, CurrentPakVersionInfo))
 					{
-						// UE_LOG(LogTemp, Log, TEXT("Scan All Files Lambda: Deserialize File Success."));
+						// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: Deserialize File Success."));
 						AllVersionInfo.Add(CurrentPakVersionInfo);
 						bLambdaRunStatus = true;
 					}
@@ -360,7 +361,7 @@ TArray<FString> UFlibPakHelper::GetAllMountedPaks()
 	if(PakPlatformFile)
 		PakPlatformFile->GetMountedPakFilenames(Resault);
 	else
-		UE_LOG(LogTemp,Warning,TEXT("PakPlatformFile is invalid!"));
+		UE_LOG(LogHotPatcher,Warning,TEXT("PakPlatformFile is invalid!"));
 	return Resault;
 }
 

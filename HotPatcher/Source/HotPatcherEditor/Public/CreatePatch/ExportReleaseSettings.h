@@ -4,6 +4,8 @@
 
 // project header
 #include "FPatcherSpecifyAsset.h"
+#include "HotPatcherLog.h"
+#include "HotPatcherSettingBase.h"
 
 // engine header
 #include "Misc/FileHelper.h"
@@ -15,7 +17,7 @@
 
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
 UCLASS()
-class UExportReleaseSettings : public UObject
+class UExportReleaseSettings : public UHotPatcherSettingBase
 {
 	GENERATED_BODY()
 public:
@@ -108,7 +110,7 @@ public:
 						UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(LongPackageName, LongPackagePath);
 					}
 
-					UE_LOG(LogTemp, Log, TEXT("UEAsset: Str: %s LongPackagePath %s"),*InAsset,*LongPackagePath);
+					UE_LOG(LogHotPatcher, Log, TEXT("UEAsset: Str: %s LongPackagePath %s"),*InAsset,*LongPackagePath);
 					result.Asset = LongPackagePath;
 					return result;
 				};
@@ -127,7 +129,7 @@ public:
 					result.FilePath.FilePath = RemoveDoubleQuoteLambda(InAsset.Left(breakPoint+1));
 					result.MountPath = RemoveDoubleQuoteLambda(InAsset.Right(InAsset.Len() - breakPoint - 2));
 					result.GenerateFileHash();
-					UE_LOG(LogTemp, Log, TEXT("NoAsset: BreakPoint:%d,left:%s,Right:%s"), breakPoint, *result.FilePath.FilePath, *result.MountPath);
+					UE_LOG(LogHotPatcher, Log, TEXT("NoAsset: BreakPoint:%d,left:%s,Right:%s"), breakPoint, *result.FilePath.FilePath, *result.MountPath);
 					return result;
 				};
 				TArray<FString> UAssetFormats = { TEXT(".uasset"),TEXT(".ubulk"),TEXT(".uexp"),TEXT(".umap") };

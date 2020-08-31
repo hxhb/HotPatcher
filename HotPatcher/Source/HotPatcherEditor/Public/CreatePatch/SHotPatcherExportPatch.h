@@ -66,17 +66,9 @@ protected:
 	void SetInfomationContentVisibility(EVisibility InVisibility)const;
 
 protected:
-	bool CheckSelectedAssetsCookStatus(const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets,FString& OutMsg)const;
 
-	bool CheckPatchRequire(const FPatchVersionDiff& InDiff)const;
-	bool ShowMsg(const FString& InMsg)const;
-	bool SavePatchVersionJson(const FHotPatcherVersion& InSaveVersion,const FString& InSavePath,FPakVersion& OutPakVersion);
-	bool SavePatchDiffJson(const FHotPatcherVersion& InSaveVersion, const FPatchVersionDiff& InDiff);
-	bool SavePakCommands(const FString& InPlatformName, const FPatchVersionDiff& InDiffInfo, const FString& InSavePath);
+	void ShowMsg(const FString& InMsg)const;
 
-
-	FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion)const;
-	FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions,bool block=false);
 private:
 
 	// TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;

@@ -5,6 +5,7 @@
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "AssetManager/FAssetDependenciesDetail.h"
 #include "AssetManager/FFileArrayDirectoryVisitor.hpp"
+#include "AssetManagerExLog.h"
 
 #include "AssetRegistryModule.h"
 #include "ARFilter.h"
@@ -212,12 +213,12 @@ void UFLibAssetManageHelperEx::GetAssetDependencies(const FString& InLongPackage
 			bool bResault = AssetRegistryModule.Get().GetAssetsByPackageName(FName(*InLongPackageName), AssetDataList);
 			if (!bResault || !AssetDataList.Num())
 			{
-				UE_LOG(LogTemp, Error, TEXT("Faild to Parser AssetData of %s, please check."), *InLongPackageName);
+				UE_LOG(LogAssetManagerEx, Error, TEXT("Faild to Parser AssetData of %s, please check."), *InLongPackageName);
 				return;
 			}
 			if (AssetDataList.Num() > 1)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Got mulitple AssetData of %s,please check."), *InLongPackageName);
+				UE_LOG(LogAssetManagerEx, Warning, TEXT("Got mulitple AssetData of %s,please check."), *InLongPackageName);
 			}
 		}
 		UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(AssetRegistryModule, InLongPackageName, AssetRegistryDependencyTypes, OutDependices);
@@ -443,13 +444,13 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 
 			if (OutDependencies.mDependencies.Contains(BelongModuleName))
 			{
-				// UE_LOG(LogTemp, Log, TEXT("Belong Module is %s,Asset is %s"), *BelongModuleName, *LongDependentPackageName);
+				// UE_LOG(LogAssetManagerEx, Log, TEXT("Belong Module is %s,Asset is %s"), *BelongModuleName, *LongDependentPackageName);
 				FAssetDependenciesDetail* ModuleCategory = OutDependencies.mDependencies.Find(BelongModuleName);
 				AddNewAssetItemLambda(*ModuleCategory, LongDependentPackageName);
 			}
 			else
 			{
-				// UE_LOG(LogTemp, Log, TEXT("New Belong Module is %s,Asset is %s"), *BelongModuleName,*LongDependentPackageName);
+				// UE_LOG(LogAssetManagerEx, Log, TEXT("New Belong Module is %s,Asset is %s"), *BelongModuleName,*LongDependentPackageName);
 				FAssetDependenciesDetail& NewModuleCategory = OutDependencies.mDependencies.Add(BelongModuleName, FAssetDependenciesDetail{});
 				NewModuleCategory.mModuleCategory = BelongModuleName;
 				AddNewAssetItemLambda(NewModuleCategory, LongDependentPackageName);
@@ -748,7 +749,7 @@ void UFLibAssetManageHelperEx::GetAllInValidAssetInProject(FAssetDependenciesInf
 			FString AssetPackagePath;
 			if(!UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(AssetLongPackageName,AssetPackagePath))
 				continue;
-			// UE_LOG(LogTemp, Log, TEXT("Asset %s"), *AssetPackagePath);
+			// UE_LOG(LogAssetManagerEx, Log, TEXT("Asset %s"), *AssetPackagePath);
 			FString AssetAbsPath = UFLibAssetManageHelperEx::ConvVirtualToAbsPath(AssetPackagePath);
 			if (!FPaths::FileExists(AssetAbsPath))
 			{

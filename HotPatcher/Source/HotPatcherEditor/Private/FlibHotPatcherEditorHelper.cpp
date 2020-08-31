@@ -4,6 +4,7 @@
 #include "FlibHotPatcherEditorHelper.h"
 #include "CreatePatch/ExportPatchSettings.h"
 #include "CreatePatch/ExportReleaseSettings.h"
+#include "HotPatcherLog.h"
 
 // engine header
 #include "Misc/SecureHash.h"
@@ -104,7 +105,7 @@ UExportPatchSettings* UFlibHotPatcherEditorHelper::DeserializePatchConfig(UExpor
 				{
 					FDirectoryPath CurrentFilterPath;
 					CurrentFilterPath.Path = Filter->AsString();
-					// UE_LOG(LogTemp, Log, TEXT("Filter: %s"), *CurrentFilterPath.Path);
+					// UE_LOG(LogHotPatcher, Log, TEXT("Filter: %s"), *CurrentFilterPath.Path);
 					FilterResult.Add(CurrentFilterPath);
 				}
 				return FilterResult;
@@ -262,6 +263,11 @@ UExportPatchSettings* UFlibHotPatcherEditorHelper::DeserializePatchConfig(UExpor
 				}
 				InNewSetting->PakTargetPlatforms = FinalTargetPlatforms;
 			}
+			// Pak options Advanced
+			{
+				DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bCustomPakNameRegular);
+				DESERIAL_STRING_BY_NAME(InNewSetting, JsonObject, PakNameRegular);
+			}
 			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bSavePakList);
 			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bSaveDiffAnalysis);
 			DESERIAL_BOOL_BY_NAME(InNewSetting, JsonObject, bSaveAssetRelatedInfo);
@@ -404,7 +410,10 @@ bool UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(const UExport
 		}
 		SerializeArrayLambda(AllPlatforms, TEXT("PakTargetPlatforms"));
 	}
-
+	// serialize pak options advanced
+	OutJsonObject->SetBoolField(TEXT("bCustomPakNameRegular"), InPatchSetting->IsCustomPakNameRegular());
+	OutJsonObject->SetStringField(TEXT("PakNameRegular"), InPatchSetting->GetPakNameRegular());
+	
 	OutJsonObject->SetBoolField(TEXT("bSavePakList"), InPatchSetting->IsSavePakList());
 	OutJsonObject->SetBoolField(TEXT("bSaveDiffAnalysis"), InPatchSetting->IsSaveDiffAnalysis());
 	OutJsonObject->SetBoolField(TEXT("bSaveAssetRelatedInfo"), InPatchSetting->IsSaveAssetRelatedInfo());
@@ -528,7 +537,7 @@ class UExportReleaseSettings* UFlibHotPatcherEditorHelper::DeserializeReleaseCon
 				{
 					FDirectoryPath CurrentFilterPath;
 					CurrentFilterPath.Path = Filter->AsString();
-					// UE_LOG(LogTemp, Log, TEXT("Filter: %s"), *CurrentFilterPath.Path);
+					// UE_LOG(LogHotPatcher, Log, TEXT("Filter: %s"), *CurrentFilterPath.Path);
 					FilterResult.Add(CurrentFilterPath);
 				}
 				return FilterResult;

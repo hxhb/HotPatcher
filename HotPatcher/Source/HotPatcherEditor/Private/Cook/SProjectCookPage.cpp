@@ -395,9 +395,9 @@ void SProjectCookPage::RunCookProc(const FString& InBinPath, const FString& InCo
 	{
 		mCookProcWorkingThread = MakeShareable(new FProcWorkerThread(TEXT("CookThread"), InBinPath, InCommand));
 		mCookProcWorkingThread->ProcOutputMsgDelegate.AddStatic(&SProjectCookPage::ReceiveOutputMsg);
-		mCookProcWorkingThread->ProcBeginDelegate.AddRaw(this, &SProjectCookPage::SpawnRuningCookNotification);
-		mCookProcWorkingThread->ProcSuccessedDelegate.AddRaw(this, &SProjectCookPage::SpawnCookSuccessedNotification);
-		mCookProcWorkingThread->ProcFaildDelegate.AddRaw(this, &SProjectCookPage::SpawnCookFaildNotification);
+		mCookProcWorkingThread->ProcBeginDelegate.AddRaw(const_cast<SProjectCookPage*>(this), &SProjectCookPage::SpawnRuningCookNotification);
+		mCookProcWorkingThread->ProcSuccessedDelegate.AddRaw(const_cast<SProjectCookPage*>(this), &SProjectCookPage::SpawnCookSuccessedNotification);
+		mCookProcWorkingThread->ProcFaildDelegate.AddRaw(const_cast<SProjectCookPage*>(this), &SProjectCookPage::SpawnCookFaildNotification);
 		mCookProcWorkingThread->Execute();
 	}
 }

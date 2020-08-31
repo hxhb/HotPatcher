@@ -12,6 +12,7 @@
 #include "FPatcherSpecifyAsset.h"
 #include "FlibPatchParserHelper.h"
 #include "FlibHotPatcherEditorHelper.h"
+#include "HotPatcherSettingBase.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -26,7 +27,7 @@
 
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
 UCLASS()
-class UExportPatchSettings : public UObject
+class UExportPatchSettings : public UHotPatcherSettingBase
 {
 	GENERATED_BODY()
 public:
@@ -128,6 +129,10 @@ public:
 	FHotPatcherVersion GetNewPatchVersionInfo()const;
 	bool GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion)const;
 	FString GetCurrentVersionSavePath()const;
+
+	FORCEINLINE bool IsCustomPakNameRegular()const {return bCustomPakNameRegular;}
+	FORCEINLINE FString GetPakNameRegular()const { return PakNameRegular;}
+	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = true;
@@ -185,7 +190,12 @@ public:
 		TArray<FString> UnrealPakOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<ETargetPlatform> PakTargetPlatforms;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options|Advanced")
+		bool bCustomPakNameRegular;
+	// Can use value: {VERSION} {BASEVERSION} {CHUNKNAME} {PLATFORM} 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options|Advanced",meta=(EditCondition = "bCustomPakNameRegular"))
+		FString PakNameRegular = TEXT("{VERSION}_{CHUNKNAME}_{PLATFORM}_001_P");
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSavePakList = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bByBaseVersion"))

@@ -6,6 +6,7 @@
 #include "Struct/AssetManager/FFileArrayDirectoryVisitor.hpp"
 #include "FLibAssetManageHelperEx.h"
 #include "Flib/FLibAssetManageHelperEx.h"
+#include "HotPatcherLog.h"
 
 // engine header
 #include "Misc/SecureHash.h"
@@ -271,7 +272,7 @@ bool UFlibPatchParserHelper::DeSerializeHotPatcherVersionFromJsonObject(const TS
 		{
 			TArray<TSharedPtr<FJsonValue>> AllExternalFilesJsonObj;
 			AllExternalFilesJsonObj = InJsonObject->GetArrayField(TEXT("ExternalFiles"));
-			// UE_LOG(LogTemp, Warning, TEXT("External Files num %d"), AllExternalFilesJsonObj.Num());
+			// UE_LOG(LogHotPatcher, Warning, TEXT("External Files num %d"), AllExternalFilesJsonObj.Num());
 
 			for (const auto& FileJsonObj : AllExternalFilesJsonObj)
 			{
@@ -280,9 +281,9 @@ bool UFlibPatchParserHelper::DeSerializeHotPatcherVersionFromJsonObject(const TS
 				CurrentFile.MountPath = FileJsonObj->AsObject()->GetStringField(TEXT("MountPath"));
 				CurrentFile.FileHash = FileJsonObj->AsObject()->GetStringField(TEXT("MD5Hash"));
 
-				//UE_LOG(LogTemp, Warning, TEXT("External Files filepath %s"), *CurrentFile.FilePath.FilePath);
-				//UE_LOG(LogTemp, Warning, TEXT("External Files filehash %s"), *CurrentFile.FileHash);
-				//UE_LOG(LogTemp, Warning, TEXT("External Files mountpath %s"), *CurrentFile.MountPath);
+				//UE_LOG(LogHotPatcher, Warning, TEXT("External Files filepath %s"), *CurrentFile.FilePath.FilePath);
+				//UE_LOG(LogHotPatcher, Warning, TEXT("External Files filehash %s"), *CurrentFile.FileHash);
+				//UE_LOG(LogHotPatcher, Warning, TEXT("External Files mountpath %s"), *CurrentFile.MountPath);
 
 				OutVersion.ExternalFiles.Add(CurrentFile.MountPath,CurrentFile);
 			}
@@ -436,7 +437,7 @@ bool UFlibPatchParserHelper::DiffVersionExFiles(
 
 		for (const auto& NewVersionFile : NewVersionFilesKeys)
 		{
-			// UE_LOG(LogTemp, Log, TEXT("check file %s."), *NewVersionFile);
+			// UE_LOG(LogHotPatcher, Log, TEXT("check file %s."), *NewVersionFile);
 			if (InBaseVersion.ExternalFiles.Contains(NewVersionFile))
 			{
 				const FExternAssetFileInfo& NewFile = *InBaseVersion.ExternalFiles.Find(NewVersionFile);
@@ -444,13 +445,13 @@ bool UFlibPatchParserHelper::DiffVersionExFiles(
 				bool bIsSame = NewFile == BaseFile;
 				if (!bIsSame)
 				{
-					// UE_LOG(LogTemp, Log, TEXT("%s is not same."), *NewFile.MountPath);
+					// UE_LOG(LogHotPatcher, Log, TEXT("%s is not same."), *NewFile.MountPath);
 					OutModifyFiles.Add(*InNewVersion.ExternalFiles.Find(NewVersionFile));
 				}
 			}
 			else
 			{
-				// UE_LOG(LogTemp, Log, TEXT("base version not contains %s."), *NewVersionFile);
+				// UE_LOG(LogHotPatcher, Log, TEXT("base version not contains %s."), *NewVersionFile);
 			}
 		}
 	}
@@ -1939,7 +1940,7 @@ bool UFlibPatchParserHelper::DeSerializeFChunkInfoFromJsonObject(const TSharedPt
 		{
 			FDirectoryPath CurrentFilterPath;
 			CurrentFilterPath.Path = Filter->AsString();
-			// UE_LOG(LogTemp, Log, TEXT("Filter: %s"), *CurrentFilterPath.Path);
+			// UE_LOG(LogHotPatcher, Log, TEXT("Filter: %s"), *CurrentFilterPath.Path);
 			FilterResult.Add(CurrentFilterPath);
 		}
 		return FilterResult;
