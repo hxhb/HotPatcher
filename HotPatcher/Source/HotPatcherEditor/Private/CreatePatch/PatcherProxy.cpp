@@ -4,6 +4,7 @@
 #include "HAL/PlatformFilemanager.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "PakFileUtilities.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 #define LOCTEXT_NAMESPACE "HotPatcherProxy"
 

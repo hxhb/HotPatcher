@@ -785,6 +785,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	FScopedSlowTask UnrealPakSlowTask(AmountOfWorkProgress);
 	UnrealPakSlowTask.MakeDialog();
 
+	int32 PakCounter = 0;
 	for(const auto& PlatformName :ExportPatchSetting->GetPakTargetPlatformNames())
 	{
 		// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
@@ -801,6 +802,11 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			TArray<FPakFileProxy> PakFileProxys;
 
 			TArray<FPakCommand> ChunkPakCommands = UFlibPatchParserHelper::CollectPakCommandByChunk(VersionDiffInfo, Chunk, PlatformName, ExportPatchSetting->GetPakCommandOptions());
+			if (!ChunkPakCommands.Num())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Chunk:%s not contain any file!!!"), *Chunk.ChunkName);
+				continue;
+			}
 			FString PakPostfix = TEXT("_001_P");
 			if(!Chunk.bMonolithic)
 			{
@@ -851,7 +857,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 			// 创建chunk的pak文件
 			for (const auto& PakFileProxy : PakFileProxys)
 			{
-
+				++PakCounter;
 				FThread CurrentPakThread(*PakFileProxy.PakSavePath, [/*CurrentPakVersion, */PlatformName, UnrealPakOptions, ReplacePakCommandTexts, PakFileProxy, &Chunk, &PakFilesInfoMap]()
 				{
 
@@ -922,7 +928,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 
 	// save asset dependency
 	{
-		if (ExportPatchSetting->IsSaveAssetRelatedInfo())
+		if (ExportPatchSetting->IsSaveAssetRelatedInfo() && PakCounter)
 		{
 			TArray<EAssetRegistryDependencyTypeEx> AssetDependencyTypes;
 			AssetDependencyTypes.Add(EAssetRegistryDependencyTypeEx::Packages);
@@ -947,6 +953,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	}
 
 	// save difference to file
+	if(PakCounter)
 	{
 		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportPatch", "ExportPatchDiffFile", "Generating Diff info of version {0}"), FText::FromString(CurrentVersion.VersionId));
 		UnrealPakSlowTask.EnterProgressFrame(1.0, DiaLogMsg);
@@ -954,6 +961,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	}
 
 	// save Patch Tracked asset info to file
+	if(PakCounter)
 	{
 		{
 			FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportPatch", "ExportPatchAssetInfo", "Generating Patch Tacked Asset info of version {0}"), FText::FromString(CurrentVersion.VersionId));
@@ -975,6 +983,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	}
 
 	// serialize all pak file info
+	if(PakCounter)
 	{
 		{
 			FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportPatch", "ExportPatchPakFileInfo", "Generating All Platform Pak info of version {0}"), FText::FromString(CurrentVersion.VersionId));
@@ -998,6 +1007,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	}
 
 	// serialize patch config
+	if (PakCounter)
 	{
 		{
 			FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportPatch", "ExportPatchConfig", "Generating Current Patch Config of version {0}"), FText::FromString(CurrentVersion.VersionId));
@@ -1022,6 +1032,11 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		}
 	}
 
+	if (!PakCounter)
+	{
+		UE_LOG(LogTemp, Error, TEXT("The Patch not contain any invalie file!"));
+		ShowMsg(TEXT("The Patch not contain any invalie file!"));
+	}
 	return FReply::Handled();
 }
 

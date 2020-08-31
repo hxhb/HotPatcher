@@ -357,8 +357,10 @@ TArray<FString> UFlibPakHelper::GetAllMountedPaks()
 	FPakPlatformFile* PakPlatformFile = (FPakPlatformFile*)&FPlatformFileManager::Get().GetPlatformFile();
 
 	TArray<FString> Resault;
-	PakPlatformFile->GetMountedPakFilenames(Resault);
-
+	if(PakPlatformFile)
+		PakPlatformFile->GetMountedPakFilenames(Resault);
+	else
+		UE_LOG(LogTemp,Warning,TEXT("PakPlatformFile is invalid!"));
 	return Resault;
 }
 
