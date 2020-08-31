@@ -355,7 +355,7 @@ bool UFlibPakHelper::LoadVersionInfoByPak(const FString& InPakFile, FPakVersion&
 
 TArray<FString> UFlibPakHelper::GetAllMountedPaks()
 {
-	FPakPlatformFile* PakPlatformFile = (FPakPlatformFile*)&FPlatformFileManager::Get().GetPlatformFile();
+	FPakPlatformFile* PakPlatformFile = (FPakPlatformFile*)(FPlatformFileManager::Get().FindPlatformFile(FPakPlatformFile::GetTypeName()));
 
 	TArray<FString> Resault;
 	if(PakPlatformFile)

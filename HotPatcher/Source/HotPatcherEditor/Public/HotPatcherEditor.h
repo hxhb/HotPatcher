@@ -28,4 +28,5 @@ private:
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& InSpawnTabArgs);
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
+	TSharedPtr<SDockTab> DockTab;
 };

@@ -58,16 +58,20 @@ void FHotPatcherEditorModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
-	FHotPatcherStyle::Shutdown();
-
+	
+	if(DockTab.IsValid())
+	{
+		DockTab->RequestCloseTab();
+	}
+	
 	FHotPatcherCommands::Unregister();
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(HotPatcherTabName);
+	FHotPatcherStyle::Shutdown();
 }
 
 void FHotPatcherEditorModule::PluginButtonClicked()
 {
 	FGlobalTabmanager::Get()->InvokeTab(HotPatcherTabName);
-	// PrintUsageMsg();
 }
 
 void FHotPatcherEditorModule::PrintUsageMsg()
@@ -82,13 +86,12 @@ void FHotPatcherEditorModule::PrintUsageMsg()
 
 TSharedRef<class SDockTab> FHotPatcherEditorModule::OnSpawnPluginTab(const class FSpawnTabArgs& InSpawnTabArgs)
 {
-	return SNew(SDockTab)
+	return SAssignNew(DockTab,SDockTab)
 		.TabRole(ETabRole::NomadTab)
 		.Label(LOCTEXT("HotPatcherTab", "Hot Patcher"))
-		.ToolTipText(LOCTEXT("WidgetGalleryTabTextToolTip", "Switch to the widget gallery."))
+		.ToolTipText(LOCTEXT("HotPatcherTabTextToolTip", "Hot Patcher"))
 		.Clipping(EWidgetClipping::ClipToBounds)
 		[
-			// MakeWidgetGallery()
 			SNew(SHotPatcher)
 		];
 }
