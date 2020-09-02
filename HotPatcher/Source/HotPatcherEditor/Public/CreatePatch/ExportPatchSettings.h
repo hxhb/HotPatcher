@@ -9,6 +9,7 @@
 #include "ETargetPlatform.h"
 #include "FExternAssetFileInfo.h"
 #include "FExternDirectoryInfo.h"
+#include "FPlatformNonAssets.h"
 #include "FPatcherSpecifyAsset.h"
 #include "FlibPatchParserHelper.h"
 #include "FlibHotPatcherEditorHelper.h"
@@ -16,6 +17,7 @@
 
 // engine header
 #include "CoreMinimal.h"
+#include "FPlatformNonAssets.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
 #include "Engine/EngineTypes.h"
@@ -173,6 +175,8 @@ public:
 		TArray<FExternAssetFileInfo> AddExternFileToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files")
 		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files")
+		TArray<FPlatformNonAssets> AddNoAssetsToTargetPlatform;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files")
 		bool bIncludePakVersionFile = false;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))

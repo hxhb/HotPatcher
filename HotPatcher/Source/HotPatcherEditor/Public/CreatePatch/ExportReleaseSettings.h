@@ -4,8 +4,13 @@
 
 // project header
 #include "FPatcherSpecifyAsset.h"
+#include "FExternAssetFileInfo.h"
+#include "FExternDirectoryInfo.h"
+#include "FPlatformNonAssets.h"
 #include "HotPatcherLog.h"
 #include "HotPatcherSettingBase.h"
+#include "FlibHotPatcherEditorHelper.h"
+#include "FlibPatchParserHelper.h"
 
 // engine header
 #include "Misc/FileHelper.h"
@@ -13,6 +18,9 @@
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
 #include "Engine/EngineTypes.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
+
 #include "ExportReleaseSettings.generated.h"
 
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
@@ -291,6 +299,8 @@ public:
 		TArray<FExternAssetFileInfo> AddExternFileToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Extern Files")
 		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Extern Files")
+	TArray<FPlatformNonAssets> AddNoAssetsToTargetPlatform;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSaveAssetRelatedInfo;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")

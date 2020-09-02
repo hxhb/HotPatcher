@@ -18,7 +18,9 @@
 #include <typeinfo>
 
 // engine header
+#include "JsonObjectConverter.h"
 #include "CoreMinimal.h"
+#include "FPlatformNonAssets.h"
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -287,4 +289,67 @@ public:
 	// reload Global&Project shaderbytecode
 	UFUNCTION(BlueprintCallable)
 		static void ReloadShaderbytecode();
+
+
+	template<typename TStructType>
+	static bool TSerializeStructAsJsonObject(const TStructType& InStruct,TSharedPtr<FJsonObject>& OutJsonObject)
+	{
+		if(!OutJsonObject.IsValid())
+		{
+			OutJsonObject = MakeShareable(new FJsonObject);
+		}
+		bool bStatus = FJsonObjectConverter::UStructToJsonObject(TStructType::StaticStruct(),&InStruct,OutJsonObject.ToSharedRef(),0,0);
+		return bStatus;
+	}
+
+	template<typename TStructType>
+    static bool TDeserializeJsonObjectAsStruct(const TSharedPtr<FJsonObject>& OutJsonObject,TStructType& InStruct)
+	{
+		bool bStatus = false;
+		if(OutJsonObject.IsValid())
+		{
+			bStatus = FJsonObjectConverter::JsonObjectToUStruct(OutJsonObject.ToSharedRef(),TStructType::StaticStruct(),&InStruct,0,0);
+		}
+		return bStatus;
+	}
+
+	template<typename TStructType>
+    static bool TSerializeStructAsJsonString(const TStructType& InStruct,FString& OutJsonString)
+	{
+		bool bRunStatus = false;
+
+		{
+			TSharedPtr<FJsonObject> JsonObject;
+			if (UFlibPatchParserHelper::TSerializeStructAsJsonObject<TStructType>(InStruct,JsonObject) && JsonObject.IsValid())
+			{
+				auto JsonWriter = TJsonWriterFactory<>::Create(&OutJsonString);
+				FJsonSerializer::Serialize(JsonObject.ToSharedRef(), JsonWriter);
+				bRunStatus = true;
+			}
+		}
+		return bRunStatus;
+	}
+
+	template<typename TStructType>
+    static bool TDeserializeJsonStringAsStruct(const FString& InJsonString,TStructType& OutStruct)
+	{
+		bool bRunStatus = false;
+		TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(InJsonString);
+		TSharedPtr<FJsonObject> DeserializeJsonObject;
+		if (FJsonSerializer::Deserialize(JsonReader, DeserializeJsonObject))
+		{
+			bRunStatus = UFlibPatchParserHelper::TDeserializeJsonObjectAsStruct<TStructType>(DeserializeJsonObject,OutStruct);
+		}
+		return bRunStatus;
+	}
+	
+	UFUNCTION(BlueprintCallable)
+	static bool SerializeFPlatformNonAssetAsString(const FPlatformNonAssets& InPlatformNonAsset,FString& OutString);
+	UFUNCTION(BlueprintCallable)
+    static bool DeSerializeStringAsFPlatformNonAsset(const FString& InString,FPlatformNonAssets& OutPlatformNonAsset);
+	
+	static bool SerializeFPlatformNonAssetAsJsonObject(const FPlatformNonAssets& InPlatformNonAsset,TSharedPtr<FJsonObject>& OutJson);
+	static bool DeSerializeStringAsFPlatformNonAsset(const TSharedPtr<FJsonObject>& InJsonObject,FPlatformNonAssets& Out);
+
+	
 };

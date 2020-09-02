@@ -7,6 +7,7 @@
 UENUM(BlueprintType)
 enum class ETargetPlatform : uint8
 {
+	AllPlatform,
 	AllDesktop,
 	MacClient,
 	MacNoEditor,

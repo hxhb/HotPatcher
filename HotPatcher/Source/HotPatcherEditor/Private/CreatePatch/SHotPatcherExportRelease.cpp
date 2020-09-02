@@ -71,6 +71,7 @@ void SHotPatcherExportRelease::ImportConfig()
 	if (UFLibAssetManageHelperEx::LoadFileToString(LoadFile, JsonContent))
 	{
 		UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
+		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,ExportReleaseSettings);
 		SettingsView->ForceRefresh();
 	}
 }
@@ -87,8 +88,8 @@ void SHotPatcherExportRelease::ExportConfig()const
 	{
 
 		FString SerializedJsonStr;
-		ExportReleaseSettings->SerializeReleaseConfigToString(SerializedJsonStr);
-
+		// ExportReleaseSettings->SerializeReleaseConfigToString(SerializedJsonStr);
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(ExportReleaseSettings,SerializedJsonStr);
 		if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile))
 		{
 			FText Msg = LOCTEXT("SavedPatchConfigMas", "Successd to Export the Patch Config.");

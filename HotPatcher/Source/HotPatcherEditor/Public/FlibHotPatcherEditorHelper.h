@@ -8,7 +8,7 @@
 
 // RUNTIME
 #include "FHotPatcherVersion.h"
-
+#include "FChunkInfo.h"
 // engine header
 #include "Templates/SharedPointer.h"
 #include "Dom/JsonObject.h"

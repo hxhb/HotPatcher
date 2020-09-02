@@ -16,6 +16,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "HAL/FileManager.h"
 #include "Engine/EngineTypes.h"
+#include "JsonObjectConverter.h"
 #include "Misc/Paths.h"
 #include "Kismet/KismetStringLibrary.h"
 
@@ -2306,4 +2307,29 @@ void UFlibPatchParserHelper::ReloadShaderbytecode()
 {
 	FShaderCodeLibrary::OpenLibrary("Global", FPaths::ProjectContentDir());
 	FShaderCodeLibrary::OpenLibrary(FApp::GetProjectName(), FPaths::ProjectContentDir());
+}
+
+bool UFlibPatchParserHelper::SerializeFPlatformNonAssetAsString(const FPlatformNonAssets& InPlatformNonAsset,
+	FString& OutString)
+{
+	return TSerializeStructAsJsonString(InPlatformNonAsset,OutString);
+}
+
+bool UFlibPatchParserHelper::DeSerializeStringAsFPlatformNonAsset(const FString& InString,
+	FPlatformNonAssets& OutPlatformNonAsset)
+{
+	return TDeserializeJsonStringAsStruct(InString,OutPlatformNonAsset);
+}
+
+
+bool UFlibPatchParserHelper::SerializeFPlatformNonAssetAsJsonObject(const FPlatformNonAssets& InPlatformNonAsset,
+                                                                    TSharedPtr<FJsonObject>& OutJson)
+{
+	return TSerializeStructAsJsonObject<FPlatformNonAssets>(InPlatformNonAsset,OutJson);
+}
+
+bool UFlibPatchParserHelper::DeSerializeStringAsFPlatformNonAsset(const TSharedPtr<FJsonObject>& InJsonObject,
+	FPlatformNonAssets& Out)
+{
+	return false;
 }
