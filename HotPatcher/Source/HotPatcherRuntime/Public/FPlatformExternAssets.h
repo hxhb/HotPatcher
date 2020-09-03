@@ -7,11 +7,11 @@
 // engine heacer
 #include "CoreMinimal.h"
 #include "Engine/EngineTypes.h"
-#include "FPlatformNonAssets.generated.h"
+#include "FPlatformExternAssets.generated.h"
 
 
 USTRUCT(BlueprintType)
-struct FPlatformNonAssets
+struct FPlatformExternAssets
 {
     GENERATED_USTRUCT_BODY()
 

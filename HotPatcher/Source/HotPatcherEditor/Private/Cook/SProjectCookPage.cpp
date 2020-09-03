@@ -407,7 +407,9 @@ void SProjectCookPage::RunCookProc(const FString& InBinPath, const FString& InCo
 TSharedPtr<FJsonObject> SProjectCookPage::SerializeAsJson() const
 {
 	FCookerConfig CookConfig = mCookModel->GetCookConfig();
-	return UFlibPatchParserHelper::SerializeCookerConfigAsJsonObject(CookConfig);
+	TSharedPtr<FJsonObject> CookConfigJsonObj;
+	UFlibPatchParserHelper::TSerializeStructAsJsonObject(CookConfig,CookConfigJsonObj);
+	return CookConfigJsonObj;
 }
 
 void SProjectCookPage::DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)

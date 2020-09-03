@@ -2,6 +2,10 @@
 
 // #include "HotPatcherPrivatePCH.h"
 #include "CreatePatch/SHotPatcherExportPatch.h"
+#include "CreatePatch/FExportPatchSettings.h"
+#include "CreatePatch/PatcherProxy.h"
+#include "CreatePatch/ScopedSlowTaskContext.h"
+
 #include "FlibHotPatcherEditorHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "FHotPatcherVersion.h"
@@ -9,29 +13,24 @@
 #include "FPakFileInfo.h"
 #include "ThreadUtils/FThreadUtils.hpp"
 #include "HotPatcherLog.h"
-#include "CreatePatch/ScopedSlowTaskContext.h"
 
 // engine header
 #include "Misc/FileHelper.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
 #include "Widgets/Text/SMultiLineEditableText.h"
-
 #include "Kismet/KismetStringLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Misc/SecureHash.h"
-// #include "Misc/ScopedSlowTask.h"
 #include "HAL/FileManager.h"
-
 #include "PakFileUtilities.h"
-#include "CreatePatch/PatcherProxy.h"
-#include "CreatePatch/ScopedSlowTaskContext.h"
+
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCreatePatch"
 
 void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCreatePatchModel> InCreatePatchModel)
 {
-
+	ExportPatchSetting = MakeShareable(new FExportPatchSettings);
 	CreateExportFilterListView();
 	mCreatePatchModel = InCreatePatchModel;
 
@@ -46,7 +45,7 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 				+ SHorizontalBox::Slot()
 				.VAlign(VAlign_Center)
 				[
-					SettingsView->AsShared()
+					SettingsView->GetWidget()->AsShared()
 				]
 			]
 			+ SVerticalBox::Slot()
@@ -120,10 +119,6 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 			]
 
 		];
-
-	ExportPatchSetting = UExportPatchSettings::Get();
-	SettingsView->SetObject(ExportPatchSetting);
-
 }
 
 void SHotPatcherExportPatch::ImportConfig()
@@ -137,9 +132,8 @@ void SHotPatcherExportPatch::ImportConfig()
 	FString JsonContent;
 	if (UFLibAssetManageHelperEx::LoadFileToString(LoadFile, JsonContent))
 	{
-		// UFlibHotPatcherEditorHelper::DeserializePatchConfig(ExportPatchSetting,JsonContent);
-		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,ExportPatchSetting);
-		SettingsView->ForceRefresh();
+		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportPatchSetting);
+		SettingsView->GetDetailsView()->ForceRefresh();
 	}
 	
 }
@@ -157,8 +151,7 @@ void SHotPatcherExportPatch::ExportConfig()const
 		if (ExportPatchSetting->IsSavePatchConfig())
 		{
 			FString SerializedJsonStr;
-			// ExportPatchSetting->SerializePatchConfigToString(SerializedJsonStr);
-			UFlibPatchParserHelper::TSerializeStructAsJsonString(ExportPatchSetting,SerializedJsonStr);
+			UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportPatchSetting,SerializedJsonStr);
 			if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile))
 			{
 				FText Msg = LOCTEXT("SavedPatchConfigMas", "Successd to Export the Patch Config.");
@@ -171,11 +164,10 @@ void SHotPatcherExportPatch::ExportConfig()const
 void SHotPatcherExportPatch::ResetConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Patch Clear Config"));
-	UExportPatchSettings* DefaultSetting = NewObject<UExportPatchSettings>();
 	FString DefaultSettingJson;
-	DefaultSetting->SerializePatchConfigToString(DefaultSettingJson);
-	UFlibHotPatcherEditorHelper::DeserializePatchConfig(ExportPatchSetting, DefaultSettingJson);
-	SettingsView->ForceRefresh();
+	UFlibPatchParserHelper::TSerializeStructAsJsonString(*FExportPatchSettings::Get(),DefaultSettingJson);
+	UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*ExportPatchSetting);
+	SettingsView->GetDetailsView()->ForceRefresh();
 
 }
 void SHotPatcherExportPatch::DoGenerate()
@@ -251,7 +243,7 @@ FReply SHotPatcherExportPatch::DoDiff()const
 	{
 		if (UFLibAssetManageHelperEx::LoadFileToString(ExportPatchSetting->GetBaseVersion(), BaseVersionContent))
 		{
-			bDeserializeStatus = UFlibPatchParserHelper::DeserializeHotPatcherVersionFromString(BaseVersionContent, BaseVersion);
+			bDeserializeStatus = UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(BaseVersionContent, BaseVersion);
 		}
 		if (!bDeserializeStatus)
 		{
@@ -275,15 +267,8 @@ FReply SHotPatcherExportPatch::DoDiff()const
 	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersion(BaseVersion, CurrentVersion);
 
 	bool bShowDeleteAsset = false;
-
-	FString SerializeDiffInfo =
-		FString::Printf(
-			TEXT("%s\n%s\n"),
-			*UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(VersionDiffInfo.AddAssetDependInfo, VersionDiffInfo.ModifyAssetDependInfo, bShowDeleteAsset ? VersionDiffInfo.DeleteAssetDependInfo : FAssetDependenciesInfo{}),
-			ExportPatchSetting->IsEnableExternFilesDiff() ?
-			*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(VersionDiffInfo.AddExternalFiles, VersionDiffInfo.ModifyExternalFiles, bShowDeleteAsset ? VersionDiffInfo.DeleteExternalFiles : TArray<FExternAssetFileInfo>{}) :
-			*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(ExportPatchSetting->GetAllExternFiles(), TArray<FExternAssetFileInfo>{}, TArray<FExternAssetFileInfo>{})
-		);
+	FString SerializeDiffInfo;
+	UFlibPatchParserHelper::TSerializeStructAsJsonString(VersionDiffInfo,SerializeDiffInfo);
 	SetInformationContent(SerializeDiffInfo);
 	SetInfomationContentVisibility(EVisibility::Visible);
 
@@ -337,7 +322,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 	}
 
 	UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(true);
-	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting);
+	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
 
 	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 		ExportPatchSetting->GetVersionId(),
@@ -425,7 +410,7 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 FReply SHotPatcherExportPatch::DoExportPatch()
 {
 	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-	PatcherProxy->SetProxySettings(ExportPatchSetting);
+	PatcherProxy->SetProxySettings(ExportPatchSetting.Get());
 	PatcherProxy->OnShowMsg.AddRaw(this,&SHotPatcherExportPatch::ShowMsg);
 	PatcherProxy->DoExport();
 
@@ -466,7 +451,7 @@ FReply SHotPatcherExportPatch::DoPreviewPatch()
 		}
 	}
 
-	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting);
+	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
 	
 	FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::DiffChunkByBaseVersion(NewVersionChunk,DefaultChunk, BaseVersion, ExportPatchSetting->IsIncludeHasRefAssetsOnly());
 
@@ -505,14 +490,30 @@ void SHotPatcherExportPatch::CreateExportFilterListView()
 	FPropertyEditorModule& EditModule = FModuleManager::Get().GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
 
 	FDetailsViewArgs DetailsViewArgs;
-	DetailsViewArgs.bUpdatesFromSelection = true;
-	DetailsViewArgs.bLockable = true;
-	DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::ComponentsAndActorsUseNameArea;
-	DetailsViewArgs.bCustomNameAreaLocation = false;
-	DetailsViewArgs.bCustomFilterAreaLocation = true;
-	DetailsViewArgs.DefaultsOnlyVisibility = EEditDefaultsOnlyNodeVisibility::Hide;
+	{
+		DetailsViewArgs.bAllowSearch = true;
+		DetailsViewArgs.bHideSelectionTip = true;
+		DetailsViewArgs.bLockable = false;
+		DetailsViewArgs.bSearchInitialKeyFocus = true;
+		DetailsViewArgs.bUpdatesFromSelection = false;
+		DetailsViewArgs.NotifyHook = nullptr;
+		DetailsViewArgs.bShowOptions = true;
+		DetailsViewArgs.bShowModifiedPropertiesOption = false;
+		DetailsViewArgs.bShowScrollBar = false;
+		DetailsViewArgs.bShowOptions = true;
+	}
 
-	SettingsView = EditModule.CreateDetailView(DetailsViewArgs);
+	FStructureDetailsViewArgs StructureViewArgs;
+	{
+		StructureViewArgs.bShowObjects = true;
+		StructureViewArgs.bShowAssets = true;
+		StructureViewArgs.bShowClasses = true;
+		StructureViewArgs.bShowInterfaces = true;
+	}
+
+	SettingsView = EditModule.CreateStructureDetailView(DetailsViewArgs, StructureViewArgs, nullptr);
+	FStructOnScope* Struct = new FStructOnScope(FExportPatchSettings::StaticStruct(), (uint8*)ExportPatchSetting.Get());
+	SettingsView->SetStructureData(MakeShareable(Struct));
 }
 
 

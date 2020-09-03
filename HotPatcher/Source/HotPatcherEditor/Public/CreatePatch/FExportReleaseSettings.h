@@ -6,7 +6,7 @@
 #include "FPatcherSpecifyAsset.h"
 #include "FExternAssetFileInfo.h"
 #include "FExternDirectoryInfo.h"
-#include "FPlatformNonAssets.h"
+#include "FPlatformExternAssets.h"
 #include "HotPatcherLog.h"
 #include "HotPatcherSettingBase.h"
 #include "FlibHotPatcherEditorHelper.h"
@@ -21,19 +21,19 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 
-#include "ExportReleaseSettings.generated.h"
+#include "FExportReleaseSettings.generated.h"
 
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
-UCLASS()
-class UExportReleaseSettings : public UHotPatcherSettingBase
+USTRUCT(BlueprintType)
+struct FExportReleaseSettings:public FHotPatcherSettingBase
 {
-	GENERATED_BODY()
+	GENERATED_USTRUCT_BODY()
 public:
-	UExportReleaseSettings()
+	FExportReleaseSettings()
 	{
 		AssetRegistryDependencyTypes.Add(EAssetRegistryDependencyTypeEx::Packages);
 	}
-
+	virtual ~FExportReleaseSettings(){};
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 	{
 		if (PropertyChangedEvent.Property && PropertyChangedEvent.MemberProperty->GetName() == TEXT("PakListFile"))
@@ -42,10 +42,10 @@ public:
 			ParseByPaklist(this, PakListAbsPath);
 			
 		}
-		Super::PostEditChangeProperty(PropertyChangedEvent);
+		// Super::PostEditChangeProperty(PropertyChangedEvent);
 	}
 
-	virtual bool ParseByPaklist(UExportReleaseSettings* InReleaseSetting,const FString& InPaklistFile)
+	virtual bool ParseByPaklist(FExportReleaseSettings* InReleaseSetting,const FString& InPaklistFile)
 	{
 		if (FPaths::FileExists(InPaklistFile))
 		{
@@ -178,32 +178,10 @@ public:
 		}
 		return true;
 	}
-	FORCEINLINE static UExportReleaseSettings* Get()
+	FORCEINLINE static FExportReleaseSettings* Get()
 	{
-		static bool bInitialized = false;
-		// This is a singleton, use default object
-		UExportReleaseSettings* DefaultSettings = GetMutableDefault<UExportReleaseSettings>();
-		DefaultSettings->AddToRoot();
-		if (!bInitialized)
-		{
-			bInitialized = true;
-		}
-
-		return DefaultSettings;
-	}
-
-	FORCEINLINE bool SerializeReleaseConfigToString(FString& OutJsonString)
-	{
-		TSharedPtr<FJsonObject> ReleaseConfigJsonObject = MakeShareable(new FJsonObject);
-		SerializeReleaseConfigToJsonObject(ReleaseConfigJsonObject);
-
-		auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&OutJsonString);
-		return FJsonSerializer::Serialize(ReleaseConfigJsonObject.ToSharedRef(), JsonWriter);
-	}
-
-	FORCEINLINE bool SerializeReleaseConfigToJsonObject(TSharedPtr<FJsonObject>& OutJsonObject)
-	{
-		return UFlibHotPatcherEditorHelper::SerializeReleaseConfigToJsonObject(this, OutJsonObject);
+		static FExportReleaseSettings StaticIns;
+		return &StaticIns;
 	}
 
 	FORCEINLINE FString GetVersionId()const
@@ -235,11 +213,11 @@ public:
 		return Result;
 	}
 
-	FORCEINLINE TArray<FExternAssetFileInfo> GetAllExternFiles(bool InGeneratedHash = false)const
+	FORCEINLINE TArray<FExternAssetFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false)const
 	{
-		TArray<FExternAssetFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
+		TArray<FExternAssetFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectoryByPlatform(InTargetPlatform));
 
-		for (auto& ExFile : GetAddExternFiles())
+		for (auto& ExFile : GetAddExternFilesByPlatform(InTargetPlatform))
 		{
 			if (!AllExternFiles.Contains(ExFile))
 			{
@@ -254,6 +232,17 @@ public:
 			}
 		}
 		return AllExternFiles;
+	}
+
+	FORCEINLINE TMap<ETargetPlatform,TArray<FExternAssetFileInfo>> GetAllPlatfotmExternFiles(bool InGeneratedHash = false)const
+	{
+		TMap<ETargetPlatform,TArray<FExternAssetFileInfo>> result;
+
+		for(const auto& Platform:GetAddExternAssetsToPlatform())
+		{
+			result.Add(Platform.TargetPlatform,GetAllExternFilesByPlatform(Platform.TargetPlatform,InGeneratedHash));
+		}
+		return result;
 	}
 	
 	FORCEINLINE FString GetSavePath()const{return SavePath.Path;}
@@ -272,9 +261,38 @@ public:
 	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
 	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
 
+	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)const
+	{
+		for(const auto& Platform:GetAddExternAssetsToPlatform())
+		{
+			if (Platform.TargetPlatform == InTargetPlatform)
+			{
+				return Platform.AddExternFileToPak;
+			}
+		}
+
+		return TArray<FExternAssetFileInfo>{};
+	}
+	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform)const
+	{
+		for(const auto& Platform:GetAddExternAssetsToPlatform())
+		{
+			if (Platform.TargetPlatform == InTargetPlatform)
+			{
+				return Platform.AddExternDirectoryToPak;
+			}
+		}
+
+		return TArray<FExternDirectoryInfo>{};
+	}
+	
+	
+
 	FORCEINLINE bool IsByPakList()const { return ByPakList; }
 	FORCEINLINE FFilePath GetPakListFile()const { return PakListFile; }
 
+	FORCEINLINE TArray<FPlatformExternAssets> GetAddExternAssetsToPlatform()const{return AddExternAssetsToPlatform;}
+	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Version")
 		FString VersionId;
@@ -283,24 +301,24 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version", meta = (RelativeToGameContentDir, EditCondition = "ByPakList"))
 		FFilePath PakListFile;
 	/** You can use copied asset string reference here, e.g. World'/Game/NewMap.NewMap'*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "ReleaseSetting|Asset Filters",meta = (RelativeToGameContentDir, LongPackageName))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "AssetFilters",meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters", meta = (RelativeToGameContentDir, LongPackageName))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetFilters", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIgnoreFilters;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetFilters")
 		bool bAnalysisFilterDependencies=true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters",meta=(EditCondition="bAnalysisFilterDependencies"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetFilters",meta=(EditCondition="bAnalysisFilterDependencies"))
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Asset Filters")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetFilters")
 		bool bIncludeHasRefAssetsOnly;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Specify Assets")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpecifyAssets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Extern Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ExternFiles")
 		TArray<FExternAssetFileInfo> AddExternFileToPak;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Extern Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ExternFiles")
 		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReleaseSetting|Extern Files")
-	TArray<FPlatformNonAssets> AddNoAssetsToTargetPlatform;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ExternFiles")
+		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSaveAssetRelatedInfo;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")

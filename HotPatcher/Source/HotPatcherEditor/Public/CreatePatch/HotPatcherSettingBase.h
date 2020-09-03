@@ -1,11 +1,10 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/ObjectMacros.h"
 #include "HotPatcherSettingBase.generated.h"
 
-UCLASS()
-class HOTPATCHEREDITOR_API UHotPatcherSettingBase : public UObject
+USTRUCT()
+struct HOTPATCHEREDITOR_API FHotPatcherSettingBase
 {
-    GENERATED_BODY()
+    GENERATED_USTRUCT_BODY()
 };

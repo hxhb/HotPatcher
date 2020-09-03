@@ -1,5 +1,5 @@
 #include "HotReleaseCommandlet.h"
-#include "CreatePatch/ExportReleaseSettings.h"
+#include "CreatePatch/FExportReleaseSettings.h"
 #include "CreatePatch/PatcherProxy.h"
 
 // engine header
@@ -48,10 +48,10 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 	bool bExportStatus = false;
 	if (FFileHelper::LoadFileToString(JsonContent, *config_path))
 	{
-		class UExportReleaseSettings* ExportReleaseSetting = NewObject<class UExportReleaseSettings>();
-		UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSetting, JsonContent);
+		TSharedPtr<FExportReleaseSettings> ExportReleaseSetting = MakeShareable(new FExportReleaseSettings);
+		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportReleaseSetting);
 		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-		PatcherProxy->SetProxySettings(ExportReleaseSetting);
+		PatcherProxy->SetProxySettings(ExportReleaseSetting.Get());
 		PatcherProxy->OnPaking.AddStatic(&::NSRelease::ReceiveMsg);
 		PatcherProxy->OnShowMsg.AddStatic(&::NSRelease::ReceiveShowMsg);
 		bExportStatus = PatcherProxy->DoExport();

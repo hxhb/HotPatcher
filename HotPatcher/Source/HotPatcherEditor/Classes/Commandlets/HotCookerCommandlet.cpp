@@ -54,7 +54,8 @@ int32 UHotCookerCommandlet::Main(const FString& Params)
 	FString JsonContent;
 	if (FFileHelper::LoadFileToString(JsonContent, *config_path))
 	{
-		FCookerConfig CookConfig = UFlibPatchParserHelper::DeSerializeCookerConfig(JsonContent);
+		FCookerConfig CookConfig;
+		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,CookConfig);
 		if (CookConfig.bCookAllMap)
 		{
 			CookConfig.CookMaps = UFlibPatchParserHelper::GetAvailableMaps(UKismetSystemLibrary::GetProjectDirectory(), false, false, true);

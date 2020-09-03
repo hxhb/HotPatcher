@@ -9,6 +9,9 @@
 #include "ThreadUtils/FProcWorkerThread.hpp"
 
 #include "ICookerItemInterface.h"
+#include "SHotPatcherCookedPlatforms.h"
+#include "SHotPatcherCookMaps.h"
+#include "SHotPatcherCookSetting.h"
 #include "SHotPatcherCookSpecifyCookFilter.h"
 
 

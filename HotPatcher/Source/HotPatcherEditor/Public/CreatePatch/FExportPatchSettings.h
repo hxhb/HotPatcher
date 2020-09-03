@@ -9,45 +9,37 @@
 #include "ETargetPlatform.h"
 #include "FExternAssetFileInfo.h"
 #include "FExternDirectoryInfo.h"
-#include "FPlatformNonAssets.h"
+#include "FPlatformExternAssets.h"
 #include "FPatcherSpecifyAsset.h"
 #include "FlibPatchParserHelper.h"
-#include "FlibHotPatcherEditorHelper.h"
 #include "HotPatcherSettingBase.h"
 
 // engine header
 #include "CoreMinimal.h"
-#include "FPlatformNonAssets.h"
+#include "FPlatformExternAssets.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
 #include "Engine/EngineTypes.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonSerializer.h"
-#include "ExportPatchSettings.generated.h"
+#include "FExportPatchSettings.generated.h"
 
 
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
-UCLASS()
-class UExportPatchSettings : public UHotPatcherSettingBase
+USTRUCT(BlueprintType)
+struct FExportPatchSettings:public FHotPatcherSettingBase
 {
-	GENERATED_BODY()
+	GENERATED_USTRUCT_BODY()
 public:
 
-	UExportPatchSettings();
+	FExportPatchSettings();
 
-	FORCEINLINE static UExportPatchSettings* Get()
+	FORCEINLINE static FExportPatchSettings* Get()
 	{
-		static bool bInitialized = false;
-		// This is a singleton, use default object
-		UExportPatchSettings* DefaultSettings = GetMutableDefault<UExportPatchSettings>();
-		DefaultSettings->AddToRoot();
-		if (!bInitialized)
-		{
-			bInitialized = true;
-		}
+		static FExportPatchSettings StaticIns;
 
-		return DefaultSettings;
+		return &StaticIns;
 	}
 
 	FORCEINLINE TArray<FExternAssetFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const
@@ -134,52 +126,54 @@ public:
 
 	FORCEINLINE bool IsCustomPakNameRegular()const {return bCustomPakNameRegular;}
 	FORCEINLINE FString GetPakNameRegular()const { return PakNameRegular;}
+
+	FORCEINLINE TArray<FPlatformExternAssets> GetAddExternAssetsToPlatform()const{return AddExternAssetsToPlatform;}
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "BaseVersion",meta = (RelativeToGameContentDir, EditCondition="bByBaseVersion"))
 		FFilePath BaseVersion;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchSettings")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchBaseSettings")
 		FString VersionId;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchSettings|Asset Filter",meta = (RelativeToGameContentDir, LongPackageName))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Asset Filter",meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Asset Filter", meta = (RelativeToGameContentDir, LongPackageName))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIgnoreFilters;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Asset Filter")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
 		bool bIncludeHasRefAssetsOnly;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Asset Filter")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
 		bool bAnalysisFilterDependencies=true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Asset Filter",meta = (EditCondition="bAnalysisFilterDependencies"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter",meta = (EditCondition="bAnalysisFilterDependencies"))
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Specify Assets")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Specify Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Cooked Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
 		bool bIncludeAssetRegistry;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Cooked Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
 		bool bIncludeGlobalShaderCache;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Cooked Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
 		bool bIncludeShaderBytecode;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Ini Config Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini Config Files")
 		bool bIncludeEngineIni;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Ini Config Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini Config Files")
 		bool bIncludePluginIni;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Ini Config Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini Config Files")
 		bool bIncludeProjectIni;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		bool bEnableExternFilesDiff;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		TArray<FExternAssetFileInfo> AddExternFileToPak;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files")
-		TArray<FPlatformNonAssets> AddNoAssetsToTargetPlatform;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
+		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		bool bIncludePakVersionFile = false;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PatchSettings|Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))
 		FString PakVersionFileMountPoint;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options")
 		bool bEnableChunk;
@@ -194,10 +188,10 @@ public:
 		TArray<FString> UnrealPakOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<ETargetPlatform> PakTargetPlatforms;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options|Advanced")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		bool bCustomPakNameRegular;
 	// Can use value: {VERSION} {BASEVERSION} {CHUNKNAME} {PLATFORM} 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options|Advanced",meta=(EditCondition = "bCustomPakNameRegular"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options",meta=(EditCondition = "bCustomPakNameRegular"))
 		FString PakNameRegular = TEXT("{VERSION}_{CHUNKNAME}_{PLATFORM}_001_P");
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")

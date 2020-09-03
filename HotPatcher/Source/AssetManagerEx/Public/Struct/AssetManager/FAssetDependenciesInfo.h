@@ -12,5 +12,5 @@ struct ASSETMANAGEREX_API FAssetDependenciesInfo
 		//UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		//FString mAssetRef;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		TMap<FString,FAssetDependenciesDetail> mDependencies;
+		TMap<FString,FAssetDependenciesDetail> AssetsDependenciesMap;
 };

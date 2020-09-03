@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "ExportReleaseSettings.h"
+#include "FExportReleaseSettings.h"
 #include "HotPatcherProxyBase.h"
 // ENGINE HEADER
 #include "CoreMinimal.h"
@@ -15,10 +15,10 @@ public:
 
     bool DoExport();
     FORCEINLINE bool IsRunningCommandlet()const{return ::IsRunningCommandlet();}
-    FORCEINLINE virtual UExportReleaseSettings* GetSettingObject()override
+    FORCEINLINE virtual FExportReleaseSettings* GetSettingObject()override
     {
-        return Cast<UExportReleaseSettings>(Setting);
+        return (FExportReleaseSettings*)Setting;
     }
 private:
-    UExportReleaseSettings* ExportReleaseSettings;
+    FExportReleaseSettings* ExportReleaseSettings;
 };

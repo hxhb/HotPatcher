@@ -8,6 +8,8 @@
 #include "Widgets/Layout/SGridPanel.h"
 #include "Widgets/Layout/SHeader.h"
 #include "Internationalization/Internationalization.h"
+#include "Widgets/Layout/SExpandableArea.h"
+
 void SHotPatcherInformations::Construct(const FArguments& InArgs)
 {
 	ChildSlot

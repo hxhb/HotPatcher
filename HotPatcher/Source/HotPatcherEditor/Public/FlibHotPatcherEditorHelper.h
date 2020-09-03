@@ -9,6 +9,8 @@
 // RUNTIME
 #include "FHotPatcherVersion.h"
 #include "FChunkInfo.h"
+#include "CreatePatch/FExportPatchSettings.h"
+
 // engine header
 #include "Templates/SharedPointer.h"
 #include "Dom/JsonObject.h"
@@ -18,6 +20,7 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FlibHotPatcherEditorHelper.generated.h"
 
+struct FExportPatchSettings;
 /**
  * 
  */
@@ -34,12 +37,6 @@ public:
 
 	static void CheckInvalidCookFilesByAssetDependenciesInfo(const FString& InProjectAbsDir, const FString& InPlatformName, const FAssetDependenciesInfo& InAssetDependencies,TArray<FAssetDetail>& OutValidAssets,TArray<FAssetDetail>& OutInvalidAssets);
 
-	static bool SerializePatchConfigToJsonObject(const class UExportPatchSettings*const InPatchSetting, TSharedPtr<FJsonObject>& OutJsonObject);
-	static class UExportPatchSettings* DeserializePatchConfig(class UExportPatchSettings* InNewSetting,const FString& InContent);
-	static bool SerializeReleaseConfigToJsonObject(const class UExportReleaseSettings*const InReleaseSetting, TSharedPtr<FJsonObject>& OutJsonObject);
-	static class UExportReleaseSettings* DeserializeReleaseConfig(class UExportReleaseSettings* InNewSetting, const FString& InContent);
-
-
-	static FChunkInfo MakeChunkFromPatchSettings(const UExportPatchSettings* InPatchSetting);
+	static FChunkInfo MakeChunkFromPatchSettings(struct FExportPatchSettings const* InPatchSetting);
 	static FChunkInfo MakeChunkFromPatchVerison(const FHotPatcherVersion& InPatchVersion);
 };

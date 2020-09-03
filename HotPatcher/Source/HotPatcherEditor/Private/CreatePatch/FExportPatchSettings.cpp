@@ -1,15 +1,15 @@
-#include "CreatePatch/ExportPatchSettings.h"
+#include "CreatePatch/FExportPatchSettings.h"
 #include "FLibAssetManageHelperEx.h"
 #include "HotPatcherLog.h"
+
 // engine header
 #include "Dom/JsonValue.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Kismet/KismetStringLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 
-
-
-UExportPatchSettings::UExportPatchSettings()
+FExportPatchSettings::FExportPatchSettings()
 	: bAnalysisFilterDependencies(true),
 	AssetRegistryDependencyTypes(TArray<EAssetRegistryDependencyTypeEx>{EAssetRegistryDependencyTypeEx::Packages}),
 	bEnableExternFilesDiff(true), 
@@ -22,7 +22,7 @@ UExportPatchSettings::UExportPatchSettings()
 	);
 }
 
-TArray<FString> UExportPatchSettings::GetAssetIncludeFiltersPaths()const
+TArray<FString> FExportPatchSettings::GetAssetIncludeFiltersPaths()const
 {
 	TArray<FString> Result;
 	for (const auto& Filter : AssetIncludeFilters)
@@ -35,7 +35,7 @@ TArray<FString> UExportPatchSettings::GetAssetIncludeFiltersPaths()const
 	return Result;
 }
 
-TArray<FString> UExportPatchSettings::GetAssetIgnoreFiltersPaths()const
+TArray<FString> FExportPatchSettings::GetAssetIgnoreFiltersPaths()const
 {
 	TArray<FString> Result;
 	for (const auto& Filter : AssetIgnoreFilters)
@@ -48,7 +48,7 @@ TArray<FString> UExportPatchSettings::GetAssetIgnoreFiltersPaths()const
 	return Result;
 }
 
-FString UExportPatchSettings::GetSaveAbsPath()const
+FString FExportPatchSettings::GetSaveAbsPath()const
 {
 	if (!SavePath.Path.IsEmpty())
 	{
@@ -58,7 +58,7 @@ FString UExportPatchSettings::GetSaveAbsPath()const
 }
 
 
-FPakVersion UExportPatchSettings::GetPakVersion(const FHotPatcherVersion& InHotPatcherVersion, const FString& InUtcTime)
+FPakVersion FExportPatchSettings::GetPakVersion(const FHotPatcherVersion& InHotPatcherVersion, const FString& InUtcTime)
 {
 	FPakVersion PakVersion;
 	PakVersion.BaseVersionId = InHotPatcherVersion.BaseVersionId;
@@ -78,7 +78,7 @@ FPakVersion UExportPatchSettings::GetPakVersion(const FHotPatcherVersion& InHotP
 	return PakVersion;
 }
 
-FString UExportPatchSettings::GetSavePakVersionPath(const FString& InSaveAbsPath, const FHotPatcherVersion& InVersion)
+FString FExportPatchSettings::GetSavePakVersionPath(const FString& InSaveAbsPath, const FHotPatcherVersion& InVersion)
 {
 	FString PatchSavePath(InSaveAbsPath);
 	FPaths::MakeStandardFilename(PatchSavePath);
@@ -93,7 +93,7 @@ FString UExportPatchSettings::GetSavePakVersionPath(const FString& InSaveAbsPath
 	return SavePakVersionFilePath;
 }
 
-FString UExportPatchSettings::GetPakCommandsSaveToPath(const FString& InSaveAbsPath,const FString& InPlatfornName, const FHotPatcherVersion& InVersion)
+FString FExportPatchSettings::GetPakCommandsSaveToPath(const FString& InSaveAbsPath,const FString& InPlatfornName, const FHotPatcherVersion& InVersion)
 {
 	FString SavePakCommandPath = FPaths::Combine(
 		InSaveAbsPath,
@@ -107,7 +107,7 @@ FString UExportPatchSettings::GetPakCommandsSaveToPath(const FString& InSaveAbsP
 }
 
 
-TArray<FString> UExportPatchSettings::MakeAllExternDirectoryAsPakCommand() const
+TArray<FString> FExportPatchSettings::MakeAllExternDirectoryAsPakCommand() const
 {
 	
 	TArray<FString> CookCommandResault;
@@ -124,14 +124,14 @@ TArray<FString> UExportPatchSettings::MakeAllExternDirectoryAsPakCommand() const
 	return CookCommandResault;
 }
 
-TArray<FString> UExportPatchSettings::MakeAllPakCommandsByTheSetting(const FString& InPlatformName, const FPatchVersionDiff& InVersionDiff, bool bDiffExFiles) const
+TArray<FString> FExportPatchSettings::MakeAllPakCommandsByTheSetting(const FString& InPlatformName, const FPatchVersionDiff& InVersionDiff, bool bDiffExFiles) const
 {
 
-	FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(InVersionDiff.AddAssetDependInfo, InVersionDiff.ModifyAssetDependInfo);
+	FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(InVersionDiff.AssetDiffInfo.AddAssetDependInfo, InVersionDiff.AssetDiffInfo.ModifyAssetDependInfo);
 
 	TArray<FExternAssetFileInfo> AllChangedExternalFiles;
-	AllChangedExternalFiles.Append(InVersionDiff.AddExternalFiles);
-	AllChangedExternalFiles.Append(InVersionDiff.ModifyExternalFiles);
+	AllChangedExternalFiles.Append(InVersionDiff.ExternDiffInfo.AddExternalFiles);
+	AllChangedExternalFiles.Append(InVersionDiff.ExternDiffInfo.ModifyExternalFiles);
 
 	// combine all cook commands
 	{
@@ -179,7 +179,7 @@ TArray<FString> UExportPatchSettings::MakeAllPakCommandsByTheSetting(const FStri
 			FHotPatcherVersion CurrentNewPatchVersion = GetNewPatchVersionInfo();
 			FString CurrentVersionSavePath = FPaths::Combine(this->GetSaveAbsPath(), CurrentNewPatchVersion.VersionId);
 
-			FString SavedPakVersionFilePath = UExportPatchSettings::GetSavePakVersionPath(CurrentVersionSavePath, CurrentNewPatchVersion);
+			FString SavedPakVersionFilePath = FExportPatchSettings::GetSavePakVersionPath(CurrentVersionSavePath, CurrentNewPatchVersion);
 
 			if (this->IsIncludePakVersion() && FPaths::FileExists(SavedPakVersionFilePath))
 			{
@@ -199,7 +199,7 @@ TArray<FString> UExportPatchSettings::MakeAllPakCommandsByTheSetting(const FStri
 	}
 }
 
-FHotPatcherVersion UExportPatchSettings::GetNewPatchVersionInfo() const
+FHotPatcherVersion FExportPatchSettings::GetNewPatchVersionInfo() const
 {
 	FHotPatcherVersion BaseVersionInfo;
 	this->GetBaseVersionInfo(BaseVersionInfo);
@@ -219,7 +219,7 @@ FHotPatcherVersion UExportPatchSettings::GetNewPatchVersionInfo() const
 	return CurrentVersion;
 }
 
-bool UExportPatchSettings::GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion) const
+bool FExportPatchSettings::GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion) const
 {
 	FString BaseVersionContent;
 
@@ -228,7 +228,7 @@ bool UExportPatchSettings::GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion
 	{
 		if (UFLibAssetManageHelperEx::LoadFileToString(this->GetBaseVersion(), BaseVersionContent))
 		{
-			bDeserializeStatus = UFlibPatchParserHelper::DeserializeHotPatcherVersionFromString(BaseVersionContent, OutBaseVersion);
+			bDeserializeStatus = UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(BaseVersionContent, OutBaseVersion);
 		}
 	}
 
@@ -236,13 +236,13 @@ bool UExportPatchSettings::GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion
 }
 
 
-FString UExportPatchSettings::GetCurrentVersionSavePath() const
+FString FExportPatchSettings::GetCurrentVersionSavePath() const
 {
 	FString CurrentVersionSavePath = FPaths::Combine(this->GetSaveAbsPath(), GetNewPatchVersionInfo().VersionId);
 	return CurrentVersionSavePath;
 }
 
-bool UExportPatchSettings::MakeAllExternAssetAsPakCommands(const FString& InProjectDir, const FString& InPlatform, const TArray<FString>& PakOptions, TArray<FString>& OutCookCommands)const
+bool FExportPatchSettings::MakeAllExternAssetAsPakCommands(const FString& InProjectDir, const FString& InPlatform, const TArray<FString>& PakOptions, TArray<FString>& OutCookCommands)const
 {
 	OutCookCommands.Reset();
 
@@ -260,12 +260,13 @@ bool UExportPatchSettings::MakeAllExternAssetAsPakCommands(const FString& InProj
 	return true;
 }
 
-bool UExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObject>& OutJsonObject)const
+bool FExportPatchSettings::SerializePatchConfigToJsonObject(TSharedPtr<FJsonObject>& OutJsonObject)const
 {
-	return UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(this, OutJsonObject);
+	return false;
+	// return UFlibHotPatcherEditorHelper::SerializePatchConfigToJsonObject(this, OutJsonObject);
 }
 
-bool UExportPatchSettings::SerializePatchConfigToString(FString& OutSerializedStr)const
+bool FExportPatchSettings::SerializePatchConfigToString(FString& OutSerializedStr)const
 {
 	TSharedPtr<FJsonObject> PatchConfigJsonObject = MakeShareable(new FJsonObject);
 	SerializePatchConfigToJsonObject(PatchConfigJsonObject);
@@ -275,7 +276,7 @@ bool UExportPatchSettings::SerializePatchConfigToString(FString& OutSerializedSt
 
 
 
-TArray<FString> UExportPatchSettings::MakeAddExternFileToPakCommands()const
+TArray<FString> FExportPatchSettings::MakeAddExternFileToPakCommands()const
 {
 	TArray<FString> resault;
 	// FString ProjectName = UFlibPatchParserHelper::GetProjectName();
@@ -300,7 +301,7 @@ TArray<FString> UExportPatchSettings::MakeAddExternFileToPakCommands()const
 	return resault;
 }
 
-TArray<FString> UExportPatchSettings::GetPakTargetPlatformNames() const
+TArray<FString> FExportPatchSettings::GetPakTargetPlatformNames() const
 {
 	TArray<FString> Resault;
 	for (const auto &Platform : this->GetPakTargetPlatforms())

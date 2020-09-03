@@ -1,16 +1,19 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
-#include "Interfaces/ITargetPlatformManagerModule.h"
+
 #include "Model/FHotPatcherCreatePatchModel.h"
-#include "ExportReleaseSettings.h"
 #include "SHotPatcherPatchableBase.h"
+#include "FExportPatchSettings.h"
+#include "FExportReleaseSettings.h"
 
 // engine header
+#include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Templates/SharedPointer.h"
 #include "IDetailsView.h"
 #include "PropertyEditorModule.h"
+#include "IStructureDetailsView.h"
 
 /**
  * Implements the cooked platforms panel.
@@ -48,8 +51,7 @@ private:
 	// TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
 
 	/** Settings view ui element ptr */
-	TSharedPtr<IDetailsView> SettingsView;
-
-	UExportReleaseSettings* ExportReleaseSettings;
+	TSharedPtr<IStructureDetailsView> SettingsView;
+	TSharedPtr<FExportReleaseSettings> ExportReleaseSettings;
 };
 

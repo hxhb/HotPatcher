@@ -159,22 +159,22 @@ FAssetDependenciesInfo UFLibAssetManageHelperEx::CombineAssetDependencies(const 
 	auto CombineLambda = [&resault](const FAssetDependenciesInfo& InDependencies)
 	{
 		TArray<FString> Keys;
-		InDependencies.mDependencies.GetKeys(Keys);
+		InDependencies.AssetsDependenciesMap.GetKeys(Keys);
 		for (const auto& Key : Keys)
 		{
-			if (!resault.mDependencies.Contains(Key))
+			if (!resault.AssetsDependenciesMap.Contains(Key))
 			{
-				resault.mDependencies.Add(Key, *InDependencies.mDependencies.Find(Key));
+				resault.AssetsDependenciesMap.Add(Key, *InDependencies.AssetsDependenciesMap.Find(Key));
 			}
 			else
 			{
 
 				{
-					TMap<FString,FAssetDetail>& ExistingAssetDetails = resault.mDependencies.Find(Key)->mDependAssetDetails;
+					TMap<FString,FAssetDetail>& ExistingAssetDetails = resault.AssetsDependenciesMap.Find(Key)->AssetDependencyDetails;
 					TArray<FString> ExistingAssetList;
 					ExistingAssetDetails.GetKeys(ExistingAssetList);
 
-					const TMap<FString,FAssetDetail>& PaddingAssetDetails = InDependencies.mDependencies.Find(Key)->mDependAssetDetails;
+					const TMap<FString,FAssetDetail>& PaddingAssetDetails = InDependencies.AssetsDependenciesMap.Find(Key)->AssetDependencyDetails;
 					TArray<FString> PaddingAssetList;
 					PaddingAssetDetails.GetKeys(PaddingAssetList);
 
@@ -343,11 +343,11 @@ void UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(const FAss
 {
 		OutAssetDetails.Empty();
 		TArray<FString> Keys;
-		InAssetDependencies.mDependencies.GetKeys(Keys);
+		InAssetDependencies.AssetsDependenciesMap.GetKeys(Keys);
 
 		for (const auto& Key : Keys)
 		{
-			TMap<FString, FAssetDetail> ModuleAssetDetails = InAssetDependencies.mDependencies.Find(Key)->mDependAssetDetails;
+			TMap<FString, FAssetDetail> ModuleAssetDetails = InAssetDependencies.AssetsDependenciesMap.Find(Key)->AssetDependencyDetails;
 
 			TArray<FString> ModuleAssetKeys;
 			ModuleAssetDetails.GetKeys(ModuleAssetKeys);
@@ -411,7 +411,7 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 				const FString& InAssetPackageName
 				)
 			{
-				if (!InModuleAssetDependDetail.mDependAssetDetails.Contains(InAssetPackageName))
+				if (!InModuleAssetDependDetail.AssetDependencyDetails.Contains(InAssetPackageName))
 				{
 				 	// FAssetData* AssetPackageData = InAssetRegistryModule.Get().GetAssetPackageData(*InAssetPackageName);
 					UAssetManager& AssetManager = UAssetManager::Get();
@@ -429,7 +429,7 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 								UFLibAssetManageHelperEx::GetAssetPackageGUID(PackagePath, AssetDetail.mGuid);
 								FString CurrentLongPackageName;
 								UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(AssetDetail.mPackagePath, CurrentLongPackageName);
-								InModuleAssetDependDetail.mDependAssetDetails.Add(CurrentLongPackageName, AssetDetail);
+								InModuleAssetDependDetail.AssetDependencyDetails.Add(CurrentLongPackageName, AssetDetail);
 							}
 						}
 
@@ -442,17 +442,17 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 				}
 			};
 
-			if (OutDependencies.mDependencies.Contains(BelongModuleName))
+			if (OutDependencies.AssetsDependenciesMap.Contains(BelongModuleName))
 			{
 				// UE_LOG(LogAssetManagerEx, Log, TEXT("Belong Module is %s,Asset is %s"), *BelongModuleName, *LongDependentPackageName);
-				FAssetDependenciesDetail* ModuleCategory = OutDependencies.mDependencies.Find(BelongModuleName);
+				FAssetDependenciesDetail* ModuleCategory = OutDependencies.AssetsDependenciesMap.Find(BelongModuleName);
 				AddNewAssetItemLambda(*ModuleCategory, LongDependentPackageName);
 			}
 			else
 			{
 				// UE_LOG(LogAssetManagerEx, Log, TEXT("New Belong Module is %s,Asset is %s"), *BelongModuleName,*LongDependentPackageName);
-				FAssetDependenciesDetail& NewModuleCategory = OutDependencies.mDependencies.Add(BelongModuleName, FAssetDependenciesDetail{});
-				NewModuleCategory.mModuleCategory = BelongModuleName;
+				FAssetDependenciesDetail& NewModuleCategory = OutDependencies.AssetsDependenciesMap.Add(BelongModuleName, FAssetDependenciesDetail{});
+				NewModuleCategory.ModuleCategory = BelongModuleName;
 				AddNewAssetItemLambda(NewModuleCategory, LongDependentPackageName);
 			}
 		}
@@ -709,18 +709,18 @@ bool UFLibAssetManageHelperEx::CombineAssetsDetailAsFAssetDepenInfo(const TArray
 		FString CurrAssetModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(AssetDetail.mPackagePath);
 		FSoftObjectPath CurrAssetObjectPath(AssetDetail.mPackagePath);
 		FString CurrAssetLongPackageName = CurrAssetObjectPath.GetLongPackageName();
-		if (!result.mDependencies.Contains(CurrAssetModuleName))
+		if (!result.AssetsDependenciesMap.Contains(CurrAssetModuleName))
 		{
 			FAssetDependenciesDetail AssetDependenciesDetail{ CurrAssetModuleName,TMap<FString,FAssetDetail>{ {CurrAssetLongPackageName,AssetDetail} } };
-			result.mDependencies.Add(CurrAssetModuleName, AssetDependenciesDetail);
+			result.AssetsDependenciesMap.Add(CurrAssetModuleName, AssetDependenciesDetail);
 		}
 		else
 		{
-			FAssetDependenciesDetail& CurrentCategory = *result.mDependencies.Find(CurrAssetModuleName);
+			FAssetDependenciesDetail& CurrentCategory = *result.AssetsDependenciesMap.Find(CurrAssetModuleName);
 			
-			if (!result.mDependencies.Contains(CurrAssetLongPackageName))
+			if (!result.AssetsDependenciesMap.Contains(CurrAssetLongPackageName))
 			{
-				CurrentCategory.mDependAssetDetails.Add(CurrAssetLongPackageName,AssetDetail);
+				CurrentCategory.AssetDependencyDetails.Add(CurrAssetLongPackageName,AssetDetail);
 			}
 		}
 	
@@ -733,17 +733,17 @@ bool UFLibAssetManageHelperEx::CombineAssetsDetailAsFAssetDepenInfo(const TArray
 void UFLibAssetManageHelperEx::GetAllInValidAssetInProject(FAssetDependenciesInfo InAllDependencies, TArray<FString> &OutInValidAsset,TArray<FString> InIgnoreModules)
 {
 	TArray<FString> Keys;
-	InAllDependencies.mDependencies.GetKeys(Keys);
+	InAllDependencies.AssetsDependenciesMap.GetKeys(Keys);
 
 	for (const auto& ModuleItem : Keys)
 	{
 		// ignore search /Script Asset
 		if (InIgnoreModules.Contains(ModuleItem))
 			continue;
-		FAssetDependenciesDetail ModuleDependencies = InAllDependencies.mDependencies[ModuleItem];
+		FAssetDependenciesDetail ModuleDependencies = InAllDependencies.AssetsDependenciesMap[ModuleItem];
 
 		TArray<FString> ModuleAssetList;
-		ModuleDependencies.mDependAssetDetails.GetKeys(ModuleAssetList);
+		ModuleDependencies.AssetDependencyDetails.GetKeys(ModuleAssetList);
 		for (const auto& AssetLongPackageName : ModuleAssetList)
 		{
 			FString AssetPackagePath;
@@ -863,14 +863,14 @@ bool UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(
 	OutCookCommand.Empty();
 	// TArray<FString> resault;
 	TArray<FString> Keys;
-	InAssetDependencies.mDependencies.GetKeys(Keys);
+	InAssetDependencies.AssetsDependenciesMap.GetKeys(Keys);
 
 	for (const auto& Key : Keys)
 	{
 		if (Key.Equals(TEXT("Script")))
 			continue;
 		TArray<FString> AssetList;
-		InAssetDependencies.mDependencies.Find(Key)->mDependAssetDetails.GetKeys(AssetList);
+		InAssetDependencies.AssetsDependenciesMap.Find(Key)->AssetDependencyDetails.GetKeys(AssetList);
 		for (const auto& AssetLongPackageName : AssetList)
 		{
 			TArray<FString> FinalCookedCommand;
@@ -971,7 +971,7 @@ bool UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(const FAss
 	{
 		// collect all module name
 		TArray<FString> AssetCategoryList;
-		InAssetDependencies.mDependencies.GetKeys(AssetCategoryList);		
+		InAssetDependencies.AssetsDependenciesMap.GetKeys(AssetCategoryList);		
 		{
 			TArray<TSharedPtr<FJsonValue>> JsonCategoryList;
 			for (const auto& AssetCategoryItem : AssetCategoryList)
@@ -990,10 +990,10 @@ bool UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(const FAss
 			// TSharedPtr<FJsonObject> CategoryJsonObject = MakeShareable(new FJsonObject);
 
 			TArray<TSharedPtr<FJsonValue>> CategoryAssetListJsonEntity;
-			const FAssetDependenciesDetail& CategortItem = InAssetDependencies.mDependencies[AssetCategoryItem];
+			const FAssetDependenciesDetail& CategortItem = InAssetDependencies.AssetsDependenciesMap[AssetCategoryItem];
 			TArray<TSharedPtr<FJsonValue>> AssetDetialsJsonObject;
 			TArray<FString> CategoryAssetList;
-			CategortItem.mDependAssetDetails.GetKeys(CategoryAssetList);
+			CategortItem.AssetDependencyDetails.GetKeys(CategoryAssetList);
 
 			for (const auto& AssetItem : CategoryAssetList)
 			{
@@ -1027,12 +1027,12 @@ bool UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(const FAss
 		for (const auto& AssetCategoryItem : AssetCategoryList)
 		{
 			TSharedPtr<FJsonObject> CurrentCategoryJsonObject = MakeShareable(new FJsonObject);
-			const FAssetDependenciesDetail& CategortItem = InAssetDependencies.mDependencies[AssetCategoryItem];
+			const FAssetDependenciesDetail& CategortItem = InAssetDependencies.AssetsDependenciesMap[AssetCategoryItem];
 			TArray<FString> AssetList;
-			CategortItem.mDependAssetDetails.GetKeys(AssetList);
+			CategortItem.AssetDependencyDetails.GetKeys(AssetList);
 			for (const auto& AssetLongPackageName : AssetList)
 			{
-				const FAssetDetail& CurrentAssetDetail = *CategortItem.mDependAssetDetails.Find(AssetLongPackageName);
+				const FAssetDetail& CurrentAssetDetail = *CategortItem.AssetDependencyDetails.Find(AssetLongPackageName);
 
 				FString CurrentPackageName = FSoftObjectPath(CurrentAssetDetail.mPackagePath).GetLongPackageName();
 				TSharedPtr<FJsonObject> CurrentJsonObject = UFLibAssetManageHelperEx::SerilizeAssetDetial(CurrentAssetDetail);
@@ -1101,7 +1101,7 @@ bool UFLibAssetManageHelperEx::DeserializeAssetDependenciesForJsonObject(const T
 				}
 
 			}
-			OutAssetDependencies.mDependencies.Add(ModuleName, FAssetDependenciesDetail(ModuleName, ModuleAssetDetail));
+			OutAssetDependencies.AssetsDependenciesMap.Add(ModuleName, FAssetDependenciesDetail(ModuleName, ModuleAssetDetail));
 		}
 
 		bRunStatus = true;

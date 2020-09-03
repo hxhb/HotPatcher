@@ -39,7 +39,7 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 		FString MountPath = TEXT("../../../");
 	UPROPERTY()
-	FString FileHash;
+		FString FileHash;
 
 	bool operator==(const FExternAssetFileInfo& Right)const
 	{

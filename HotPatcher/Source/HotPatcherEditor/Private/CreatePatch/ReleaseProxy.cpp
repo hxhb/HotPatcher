@@ -36,7 +36,7 @@ bool UReleaseProxy::DoExport()
 			GetSettingObject()->GetAssetIgnoreFiltersPaths(),
 			GetSettingObject()->GetAssetRegistryDependencyTypes(),
 			GetSettingObject()->GetSpecifyAssets(),
-			GetSettingObject()->GetAllExternFiles(true),
+			GetSettingObject()->GetAllPlatfotmExternFiles(),
 			GetSettingObject()->IsIncludeHasRefAssetsOnly(),
 			GetSettingObject()->IsAnalysisFilterDependencies()
 		);
@@ -48,7 +48,7 @@ bool UReleaseProxy::DoExport()
 		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportReleaseJson", "ExportReleaseVersionInfoJson", "Export Release {0} Assets info to file."), FText::FromString(GetSettingObject()->GetVersionId()));
 		UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
 		FString SaveToJson;
-		if (UFlibPatchParserHelper::SerializeHotPatcherVersionToString(ExportVersion, SaveToJson))
+		if (UFlibPatchParserHelper::TSerializeStructAsJsonString(ExportVersion, SaveToJson))
 		{
 
 			FString SaveToFile = FPaths::Combine(
@@ -77,7 +77,7 @@ bool UReleaseProxy::DoExport()
 		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportReleaseConfig", "ExportReleaseConfigJson", "Export Release {0} Configuration to file."), FText::FromString(GetSettingObject()->GetVersionId()));
 		UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
 		FString ConfigJson;
-		if (GetSettingObject()->SerializeReleaseConfigToString(ConfigJson))
+		if (UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetSettingObject(),ConfigJson))
 		{
 			FString SaveToFile = FPaths::Combine(
 				SaveVersionDir,
@@ -108,8 +108,8 @@ bool UReleaseProxy::DoExport()
 		{
 			TArray<FAssetRelatedInfo> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(ExportVersion.AssetInfo,GetSettingObject()->GetAssetRegistryDependencyTypes());
 
-			FString AssetsDependencyString;
-			UFlibPatchParserHelper::SerializeAssetsRelatedInfoAsString(AssetsDependency, AssetsDependencyString);
+			FString AssetsDependencyString = UFlibPatchParserHelper::SerializeAssetsDependencyAsJsonString(AssetsDependency);
+			
 			FString SaveAssetRelatedInfoToFile = FPaths::Combine(
 				SaveVersionDir,
 				FString::Printf(TEXT("%s_AssetRelatedInfos.json"), *ExportVersion.VersionId)

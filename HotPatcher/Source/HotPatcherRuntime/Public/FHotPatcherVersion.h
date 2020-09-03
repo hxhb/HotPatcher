@@ -3,10 +3,28 @@
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "FPatcherSpecifyAsset.h"
 #include "FExternAssetFileInfo.h"
+#include "TargetPlatform.h"
 
 // engine header
 #include "CoreMinimal.h"
+
+#include "BackgroundHTTP/Public/Android/AndroidPlatformBackgroundHttp.h"
+
 #include "FHotPatcherVersion.generated.h"
+
+USTRUCT(BlueprintType)
+struct FHotPatcherPlatformFiles
+{
+	GENERATED_USTRUCT_BODY()
+	FHotPatcherPlatformFiles()=default;
+	FHotPatcherPlatformFiles(ETargetPlatform InPlatform,const TArray<FExternAssetFileInfo>& InFiles):
+		Platform(InPlatform),ExternFiles(InFiles){}
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	ETargetPlatform Platform;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	TArray<FExternAssetFileInfo> ExternFiles;
+};
 
 USTRUCT(BlueprintType)
 struct FHotPatcherVersion
@@ -34,5 +52,5 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FAssetDependenciesInfo AssetInfo;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TMap<FString, FExternAssetFileInfo> ExternalFiles;
+	TMap<ETargetPlatform,FHotPatcherPlatformFiles> ExternalFiles;
 };

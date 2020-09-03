@@ -8,6 +8,7 @@
 #include "FHotPatcherVersion.h"
 #include "HotPatcherLog.h"
 // engine header
+#include "CreatePatch/FExportReleaseSettings.h"
 #include "CreatePatch/ReleaseProxy.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
@@ -19,6 +20,7 @@
 
 void SHotPatcherExportRelease::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCreatePatchModel> InCreatePatchModel)
 {
+	ExportReleaseSettings = MakeShareable(new FExportReleaseSettings);
 	CreateExportFilterListView();
 
 	mCreatePatchModel = InCreatePatchModel;
@@ -35,7 +37,7 @@ void SHotPatcherExportRelease::Construct(const FArguments& InArgs, TSharedPtr<FH
 				+ SHorizontalBox::Slot()
 				.VAlign(VAlign_Center)
 				[
-					SettingsView->AsShared()
+					SettingsView->GetWidget()->AsShared()
 				]
 			]
 
@@ -53,9 +55,6 @@ void SHotPatcherExportRelease::Construct(const FArguments& InArgs, TSharedPtr<FH
 				.IsEnabled(this,&SHotPatcherExportRelease::CanExportRelease)
 			]
 		];
-
-	ExportReleaseSettings = UExportReleaseSettings::Get();
-	SettingsView->SetObject(ExportReleaseSettings);
 	
 }
 
@@ -70,9 +69,9 @@ void SHotPatcherExportRelease::ImportConfig()
 	FString JsonContent;
 	if (UFLibAssetManageHelperEx::LoadFileToString(LoadFile, JsonContent))
 	{
-		UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
-		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,ExportReleaseSettings);
-		SettingsView->ForceRefresh();
+		// UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
+		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportReleaseSettings);
+		SettingsView->GetDetailsView()->ForceRefresh();
 	}
 }
 void SHotPatcherExportRelease::ExportConfig()const
@@ -88,8 +87,7 @@ void SHotPatcherExportRelease::ExportConfig()const
 	{
 
 		FString SerializedJsonStr;
-		// ExportReleaseSettings->SerializeReleaseConfigToString(SerializedJsonStr);
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(ExportReleaseSettings,SerializedJsonStr);
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportReleaseSettings,SerializedJsonStr);
 		if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile))
 		{
 			FText Msg = LOCTEXT("SavedPatchConfigMas", "Successd to Export the Patch Config.");
@@ -101,13 +99,10 @@ void SHotPatcherExportRelease::ExportConfig()const
 void SHotPatcherExportRelease::ResetConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Release Clear Config"));
-
-	UExportReleaseSettings* DefaultSetting = NewObject<UExportReleaseSettings>();
-
 	FString DefaultSettingJson;
-	DefaultSetting->SerializeReleaseConfigToString(DefaultSettingJson);
-	UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, DefaultSettingJson);
-	SettingsView->ForceRefresh();
+	UFlibPatchParserHelper::TSerializeStructAsJsonString(*FExportReleaseSettings::Get(),DefaultSettingJson);
+	UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*ExportReleaseSettings);
+	SettingsView->GetDetailsView()->ForceRefresh();
 }
 void SHotPatcherExportRelease::DoGenerate()
 {
@@ -120,14 +115,31 @@ void SHotPatcherExportRelease::CreateExportFilterListView()
 	FPropertyEditorModule& EditModule = FModuleManager::Get().GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
 
 	FDetailsViewArgs DetailsViewArgs;
-	DetailsViewArgs.bUpdatesFromSelection = true;
-	DetailsViewArgs.bLockable = true;
-	DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::ComponentsAndActorsUseNameArea;
-	DetailsViewArgs.bCustomNameAreaLocation = false;
-	DetailsViewArgs.bCustomFilterAreaLocation = true;
-	DetailsViewArgs.DefaultsOnlyVisibility = EEditDefaultsOnlyNodeVisibility::Hide;
+	{
+		DetailsViewArgs.bAllowSearch = true;
+		DetailsViewArgs.bHideSelectionTip = true;
+		DetailsViewArgs.bLockable = false;
+		DetailsViewArgs.bSearchInitialKeyFocus = true;
+		DetailsViewArgs.bUpdatesFromSelection = false;
+		DetailsViewArgs.NotifyHook = nullptr;
+		DetailsViewArgs.bShowOptions = true;
+		DetailsViewArgs.bShowModifiedPropertiesOption = false;
+		DetailsViewArgs.bShowScrollBar = false;
+		DetailsViewArgs.bShowOptions = true;
+		DetailsViewArgs.bUpdatesFromSelection= true;
+	}
 
-	SettingsView = EditModule.CreateDetailView(DetailsViewArgs);
+	FStructureDetailsViewArgs StructureViewArgs;
+	{
+		StructureViewArgs.bShowObjects = true;
+		StructureViewArgs.bShowAssets = true;
+		StructureViewArgs.bShowClasses = true;
+		StructureViewArgs.bShowInterfaces = true;
+	}
+
+	SettingsView = EditModule.CreateStructureDetailView(DetailsViewArgs, StructureViewArgs, nullptr);
+	FStructOnScope* Struct = new FStructOnScope(FExportReleaseSettings::StaticStruct(), (uint8*)ExportReleaseSettings.Get());
+	SettingsView->SetStructureData(MakeShareable(Struct));
 }
 
 bool SHotPatcherExportRelease::CanExportRelease()const
@@ -148,7 +160,7 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 FReply SHotPatcherExportRelease::DoExportRelease()
 {
 	UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
-	ReleaseProxy->SetProxySettings(ExportReleaseSettings);
+	ReleaseProxy->SetProxySettings(ExportReleaseSettings.Get());
 	ReleaseProxy->DoExport();
 	
 	return FReply::Handled();

@@ -3,6 +3,7 @@
 #include "FExternAssetFileInfo.h"
 #include "FExternDirectoryInfo.h"
 #include "FPatcherSpecifyAsset.h"
+#include "FPlatformExternAssets.h"
 #include "Struct/AssetManager/FAssetDependenciesInfo.h"
 #include "Flib/FLibAssetManageHelperEx.h"
 
@@ -72,7 +73,8 @@ public:
 		TArray<FExternAssetFileInfo> AddExternFileToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern", meta = (EditCondition = "!bMonolithic"))
 		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
-	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern")
+		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Internal", meta = (EditCondition = "!bMonolithic"))
 		FPakInternalInfo InternalFiles;
 };

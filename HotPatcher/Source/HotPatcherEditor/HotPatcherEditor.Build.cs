@@ -27,10 +27,12 @@ public class HotPatcherEditor : ModuleRules
 			{
 				"Core",
                 "Json",
+                "JsonUtilities",
                 "TargetPlatform",
                 "PropertyEditor",
                 "AssetManagerEx",
-                "PakFileUtilities"
+                "PakFileUtilities",
+                "HotPatcherRuntime"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -50,7 +52,6 @@ public class HotPatcherEditor : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"HotPatcherRuntime"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

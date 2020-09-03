@@ -1,15 +1,16 @@
 #pragma once
 
-#include "Interfaces/ITargetPlatformManagerModule.h"
-#include "Interfaces/ITargetPlatform.h"
+
 #include "Model/FHotPatcherCreatePatchModel.h"
-#include "ExportPatchSettings.h"
+#include "FExportPatchSettings.h"
 #include "SHotPatcherInformations.h"
 #include "SHotPatcherPatchableBase.h"
 #include "FPatchVersionDiff.h"
+#include "HotPatcherProxyBase.h"
 
 // engine header
-#include "HotPatcherProxyBase.h"
+#include "Interfaces/ITargetPlatformManagerModule.h"
+#include "Interfaces/ITargetPlatform.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Templates/SharedPointer.h"
 #include "IDetailsView.h"
@@ -38,13 +39,13 @@ public:
     FORCEINLINE bool IsRunningCommandlet()const{return bCommandlet;}
     FORCEINLINE uint32 GetPakCounter()const{return PakCounter;}
 
-    virtual UExportPatchSettings* GetSettingObject()override
+    virtual FExportPatchSettings* GetSettingObject()override
 	{
-	    return Cast<UExportPatchSettings>(Setting);
+	    return (FExportPatchSettings*)Setting;
 	}
 
 private:
-    // UExportPatchSettings* ExportPatchSetting;
+    // FExportPatchSettingsEx* ExportPatchSetting;
     bool bCommandlet = false;
     uint32 PakCounter = 0;
 };

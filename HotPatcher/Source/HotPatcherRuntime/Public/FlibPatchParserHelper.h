@@ -20,7 +20,7 @@
 // engine header
 #include "JsonObjectConverter.h"
 #include "CoreMinimal.h"
-#include "FPlatformNonAssets.h"
+#include "FPlatformExternAssets.h"
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -44,13 +44,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static FString GetUE4CmdBinary();
 
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool SerializeHotPatcherVersionToString(const FHotPatcherVersion& InVersion, FString& OutResault);
-	static bool SerializeHotPatcherVersionToJsonObject(const FHotPatcherVersion& InVersion, TSharedPtr<FJsonObject>& OutJsonObject);
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool DeserializeHotPatcherVersionFromString(const FString& InStringContent, FHotPatcherVersion& OutVersion);
-	static bool DeSerializeHotPatcherVersionFromJsonObject(const TSharedPtr<FJsonObject>& InJsonObject, FHotPatcherVersion& OutVersion);
-
 	static FHotPatcherVersion ExportReleaseVersionInfo(
 		const FString& InVersionId,
 		const FString& InBaseVersion,
@@ -59,7 +52,7 @@ public:
 		const TArray<FString>& InIgnoreFilter,
 		const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
 		const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
-		const TArray<FExternAssetFileInfo>& InAllExternFiles,
+		const TMap<ETargetPlatform,TArray<FExternAssetFileInfo>>& InAllPlatformExternFiles,
 		bool InIncludeHasRefAssetsOnly = false,
 		bool bInAnalysisFilterDepend = true
 	);
@@ -88,38 +81,6 @@ public:
 			TArray<FExternAssetFileInfo>& OutDeleteFiles
 		);
 
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool SerializePakFileInfoToJsonString(const FPakFileInfo& InFileInfo, FString& OutJson);
-
-		static bool SerializePakFileInfoFromJsonObjectToString(const TSharedPtr<FJsonObject>& InFileInfoJsonObject, FString& OutJson);
-		static bool SerializePakFileInfoToJsonObject(const FPakFileInfo& InFileInfo, TSharedPtr<FJsonObject>& OutJsonObject);
-
-		static bool SerializePakFileInfoListToJsonObject(const TArray<FPakFileInfo>& InFileInfoList, TSharedPtr<FJsonObject>& OutJsonObject);
-		
-		static bool SerializePlatformPakInfoToString(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, FString& OutString);
-		static bool SerializePlatformPakInfoToJsonObject(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject);
-
-		static bool SerializeDiffAssetsInfomationToJsonObject(const FAssetDependenciesInfo& InAddAsset,
-				const FAssetDependenciesInfo& InModifyAsset,
-				const FAssetDependenciesInfo& InDeleteAsset,
-				TSharedPtr<FJsonObject>& OutJsonObject);
-
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static FString SerializeDiffAssetsInfomationToString(const FAssetDependenciesInfo& InAddAsset,
-		 									 const FAssetDependenciesInfo& InModifyAsset,
-											 const FAssetDependenciesInfo& InDeleteAsset);
-
-		static bool SerializeDiffExternalFilesInfomationToJsonObject(
-			const TArray<FExternAssetFileInfo>& InAddFiles,
-			const TArray<FExternAssetFileInfo>& InModifyFiles,
-			const TArray<FExternAssetFileInfo>& InDeleteFiles,
-			TSharedPtr<FJsonObject>& OutJsonObject);
-
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static FString SerializeDiffExternalFilesInfomationToString(
-			const TArray<FExternAssetFileInfo>& InAddFiles,
-			const TArray<FExternAssetFileInfo>& InModifyFiles,
-			const TArray<FExternAssetFileInfo>& InDeleteFiles);
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool GetPakFileInfo(const FString& InFile,FPakFileInfo& OutFileInfo);
@@ -169,16 +130,6 @@ public:
 	static TArray<FString> GetEnabledPluginConfigs(const FString& InPlatformName);
 
 
-	static bool SerializeExAssetFileInfoToJsonObject(const FExternAssetFileInfo& InExFileInfo, TSharedPtr<FJsonObject>& OutJsonObject);
-	static bool SerializeExDirectoryInfoToJsonObject(const FExternDirectoryInfo& InExDirectoryInfo, TSharedPtr<FJsonObject>& OutJsonObject);
-	static bool SerializeSpecifyAssetInfoToJsonObject(const FPatcherSpecifyAsset& InSpecifyAsset, TSharedPtr<FJsonObject>& OutJsonObject);
-	static bool DeSerializeSpecifyAssetInfoToJsonObject(const TSharedPtr<FJsonObject>& InJsonObject, FPatcherSpecifyAsset& OutSpecifyAsset);
-	// serialize chunk
-	static bool SerializeFPakInternalInfoToJsonObject(const FPakInternalInfo& InFPakInternalInfo, TSharedPtr<FJsonObject>& OutJsonObject);
-	static bool DeSerializeFPakInternalInfoFromJsonObject(const TSharedPtr<FJsonObject>& JsonObject, FPakInternalInfo& OutFPakInternalInfo);
-	static bool SerializeFChunkInfoToJsonObject(const FChunkInfo& InChunkInfo, TSharedPtr<FJsonObject>& OutJsonObject);
-	static bool DeSerializeFChunkInfoFromJsonObject(const TSharedPtr<FJsonObject>& InJsonObject, FChunkInfo& OutChunkInfo);
-
 	static TArray<FExternAssetFileInfo> ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys);
 	static TArray<FAssetDetail> ParserExFilesInfoAsAssetDetailInfo(const TArray<FExternAssetFileInfo>& InExFiles);
 
@@ -219,20 +170,6 @@ public:
 	static FAssetRelatedInfo GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
 	static TArray<FAssetRelatedInfo> GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
 	static TArray<FAssetRelatedInfo> GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
-
-	static bool SerializeAssetRelatedInfoAsJsonObject(const FAssetRelatedInfo& InAssetDependency, TSharedPtr<FJsonObject>& OutJsonObject);
-	static bool SerializeAssetsRelatedInfoAsJsonObject(const TArray<FAssetRelatedInfo>& InAssetsDependency, TSharedPtr<FJsonObject>& OutJsonObject);
-
-	static bool SerializeAssetsRelatedInfoAsString(const TArray<FAssetRelatedInfo>& InAssetsDependency,FString& OutString);
-
-	static TArray<TSharedPtr<FJsonValue>> SerializeFReplaceTextsAsJsonValues(const TArray<FReplaceText>& InReplaceTexts);
-	static TSharedPtr<FJsonObject> SerializeFReplaceTextAsJsonObject(const FReplaceText& InReplaceText);
-	static FReplaceText DeSerializeFReplaceText(const TSharedPtr<FJsonObject>& InReplaceTextJsonObject);
-
-	static TSharedPtr<FJsonObject> SerializeCookerConfigAsJsonObject(const FCookerConfig& InConfig);
-	static FString SerializeCookerConfigAsString(const TSharedPtr<FJsonObject>& InConfigJson);
-	static FCookerConfig DeSerializeCookerConfig(const FString& InJsonContent);
-
 
 	static bool GetCookProcCommandParams(const FCookerConfig& InConfig,FString& OutParams);
 	//static bool SerializeMonolithicPathMode(const EMonolithicPathMode& InMode, TSharedPtr<FJsonValue>& OutJsonValue);
@@ -291,6 +228,9 @@ public:
 		static void ReloadShaderbytecode();
 
 
+	static FString SerializeAssetsDependencyAsJsonString(const TArray<FAssetRelatedInfo>& InAssetsDependency);
+	static bool SerializePlatformPakInfoToString(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, FString& OutString);
+	static bool SerializePlatformPakInfoToJsonObject(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject);
 	template<typename TStructType>
 	static bool TSerializeStructAsJsonObject(const TStructType& InStruct,TSharedPtr<FJsonObject>& OutJsonObject)
 	{
@@ -342,14 +282,6 @@ public:
 		}
 		return bRunStatus;
 	}
-	
-	UFUNCTION(BlueprintCallable)
-	static bool SerializeFPlatformNonAssetAsString(const FPlatformNonAssets& InPlatformNonAsset,FString& OutString);
-	UFUNCTION(BlueprintCallable)
-    static bool DeSerializeStringAsFPlatformNonAsset(const FString& InString,FPlatformNonAssets& OutPlatformNonAsset);
-	
-	static bool SerializeFPlatformNonAssetAsJsonObject(const FPlatformNonAssets& InPlatformNonAsset,TSharedPtr<FJsonObject>& OutJson);
-	static bool DeSerializeStringAsFPlatformNonAsset(const TSharedPtr<FJsonObject>& InJsonObject,FPlatformNonAssets& Out);
 
 	
 };

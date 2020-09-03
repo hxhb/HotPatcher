@@ -1,8 +1,10 @@
 #include "CreatePatch/PatcherProxy.h"
 #include "HotPatcherLog.h"
+#include "ThreadUtils/FThreadUtils.hpp"
 
 // engine header
 #include "CoreGlobals.h"
+#include "FlibHotPatcherEditorHelper.h"
 #include "Dom/JsonValue.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Kismet/KismetStringLibrary.h"
@@ -10,7 +12,7 @@
 #include "CreatePatch/ScopedSlowTaskContext.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Misc/FileHelper.h"
-
+#include <Templates/Function.h>
 #define LOCTEXT_NAMESPACE "HotPatcherProxy"
 
 UPatcherProxy::UPatcherProxy(const FObjectInitializer& ObjectInitializer):Super(ObjectInitializer)
@@ -53,7 +55,7 @@ bool UPatcherProxy::CheckPatchRequire(const FPatchVersionDiff& InDiff,FString& O
 	// 错误处理
 	{
 		FString GenErrorMsg;
-		FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(InDiff.AddAssetDependInfo, InDiff.ModifyAssetDependInfo);
+		FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(InDiff.AssetDiffInfo.AddAssetDependInfo, InDiff.AssetDiffInfo.ModifyAssetDependInfo);
 		bool bSelectedCookStatus = CheckSelectedAssetsCookStatus(const_cast<UPatcherProxy*>(this)->GetSettingObject()->GetPakTargetPlatformNames(), AllChangedAssetInfo, GenErrorMsg);
 
 		// 如果有错误信息 则输出后退出
@@ -74,11 +76,11 @@ bool UPatcherProxy::CheckPatchRequire(const FPatchVersionDiff& InDiff,FString& O
 bool UPatcherProxy::SavePatchVersionJson(const FHotPatcherVersion& InSaveVersion, const FString& InSavePath, FPakVersion& OutPakVersion)
 {
 	bool bStatus = false;
-	OutPakVersion = UExportPatchSettings::GetPakVersion(InSaveVersion, FDateTime::UtcNow().ToString());
+	OutPakVersion = FExportPatchSettings::GetPakVersion(InSaveVersion, FDateTime::UtcNow().ToString());
 	{
 		if (GetSettingObject()->IsIncludePakVersion())
 		{
-			FString SavePakVersionFilePath = UExportPatchSettings::GetSavePakVersionPath(InSavePath, InSaveVersion);
+			FString SavePakVersionFilePath = FExportPatchSettings::GetSavePakVersionPath(InSavePath, InSaveVersion);
 
 			FString OutString;
 			if (UFlibPakHelper::SerializePakVersionToString(OutPakVersion, OutString))
@@ -95,12 +97,18 @@ bool UPatcherProxy::SavePatchDiffJson(const FHotPatcherVersion& InSaveVersion, c
 	bool bStatus = false;
 	if (GetSettingObject()->IsSaveDiffAnalysis())
 	{
-		FString SerializeDiffInfo =
-			FString::Printf(TEXT("%s\n%s\n"),
-				*UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(InDiff.AddAssetDependInfo, InDiff.ModifyAssetDependInfo, InDiff.DeleteAssetDependInfo),
-				GetSettingObject()->IsEnableExternFilesDiff() ?
-				*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(InDiff.AddExternalFiles, InDiff.ModifyExternalFiles, InDiff.DeleteExternalFiles) :
-				*UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(GetSettingObject()->GetAllExternFiles(), TArray<FExternAssetFileInfo>{}, TArray<FExternAssetFileInfo>{})
+		
+
+		auto SerializeChangedAssetInfo = [](const FPatchVersionDiff& InAssetInfo)->FString
+		{
+			FString AddAssets;
+			UFlibPatchParserHelper::TSerializeStructAsJsonString(InAssetInfo,AddAssets);
+			return AddAssets;
+		};
+		
+		FString SerializeDiffInfo = SerializeChangedAssetInfo(InDiff);
+		
+			FString::Printf(TEXT("%s"),*SerializeDiffInfo
 			);
 
 
@@ -188,27 +196,27 @@ FHotPatcherVersion UPatcherProxy::MakeNewRelease(const FHotPatcherVersion& InBas
 	// Modify Asset
 	auto DeleteOldAssetLambda = [&BaseAssetInfoRef](const FAssetDependenciesInfo& InAssetDependenciesInfo)
 	{
-		for (const auto& AssetsModulePair : InAssetDependenciesInfo.mDependencies)
+		for (const auto& AssetsModulePair : InAssetDependenciesInfo.AssetsDependenciesMap)
 		{
-			FAssetDependenciesDetail* NewReleaseModuleAssets = BaseAssetInfoRef.mDependencies.Find(AssetsModulePair.Key);
+			FAssetDependenciesDetail* NewReleaseModuleAssets = BaseAssetInfoRef.AssetsDependenciesMap.Find(AssetsModulePair.Key);
 
-			for (const auto& NeedDeleteAsset : AssetsModulePair.Value.mDependAssetDetails)
+			for (const auto& NeedDeleteAsset : AssetsModulePair.Value.AssetDependencyDetails)
 			{
-				if (NewReleaseModuleAssets->mDependAssetDetails.Contains(NeedDeleteAsset.Key))
+				if (NewReleaseModuleAssets->AssetDependencyDetails.Contains(NeedDeleteAsset.Key))
 				{
-					NewReleaseModuleAssets->mDependAssetDetails.Remove(NeedDeleteAsset.Key);
+					NewReleaseModuleAssets->AssetDependencyDetails.Remove(NeedDeleteAsset.Key);
 				}
 			}
 		}
 	};
 	
-	DeleteOldAssetLambda(DiffInfo.ModifyAssetDependInfo);
+	DeleteOldAssetLambda(DiffInfo.AssetDiffInfo.ModifyAssetDependInfo);
 	// DeleteOldAssetLambda(DiffInfo.DeleteAssetDependInfo);
 
 	// Add Asset
-	BaseAssetInfoRef = UFLibAssetManageHelperEx::CombineAssetDependencies(BaseAssetInfoRef, DiffInfo.AddAssetDependInfo);
+	BaseAssetInfoRef = UFLibAssetManageHelperEx::CombineAssetDependencies(BaseAssetInfoRef, DiffInfo.AssetDiffInfo.AddAssetDependInfo);
 	// modify Asset
-	BaseAssetInfoRef = UFLibAssetManageHelperEx::CombineAssetDependencies(BaseAssetInfoRef, DiffInfo.ModifyAssetDependInfo);
+	BaseAssetInfoRef = UFLibAssetManageHelperEx::CombineAssetDependencies(BaseAssetInfoRef, DiffInfo.AssetDiffInfo.ModifyAssetDependInfo);
 	NewRelease.AssetInfo = BaseAssetInfoRef;
 
 	// external files
@@ -222,7 +230,7 @@ FHotPatcherVersion UPatcherProxy::MakeNewRelease(const FHotPatcherVersion& InBas
 			}
 		}
 	};
-	DeleteOldExternalFilesLambda(DiffInfo.ModifyExternalFiles);
+	DeleteOldExternalFilesLambda(DiffInfo.ExternDiffInfo.ModifyExternalFiles);
 	// DeleteOldExternalFilesLambda(DiffInfo.DeleteExternalFiles);
 
 	auto AddExternalFilesLambda = [&BaseExternalFilesRef](const TArray<FExternAssetFileInfo>& InFiles)
@@ -235,8 +243,8 @@ FHotPatcherVersion UPatcherProxy::MakeNewRelease(const FHotPatcherVersion& InBas
 			}
 		}
 	};
-	AddExternalFilesLambda(DiffInfo.AddExternalFiles);
-	AddExternalFilesLambda(DiffInfo.ModifyExternalFiles);
+	AddExternalFilesLambda(DiffInfo.ExternDiffInfo.AddExternalFiles);
+	AddExternalFilesLambda(DiffInfo.ExternDiffInfo.ModifyExternalFiles);
 	NewRelease.ExternalFiles = BaseExternalFilesRef;
 
 	return NewRelease;
@@ -245,7 +253,7 @@ FHotPatcherVersion UPatcherProxy::MakeNewRelease(const FHotPatcherVersion& InBas
 bool UPatcherProxy::CanExportPatch()const
 {
 	bool bCanExport = false;
-	UExportPatchSettings* NoConstSettingObject = const_cast<UPatcherProxy*>(this)->GetSettingObject();
+	FExportPatchSettings* NoConstSettingObject = const_cast<UPatcherProxy*>(this)->GetSettingObject();
 	if (NoConstSettingObject)
 	{
 		bool bHasBase = false;
@@ -378,8 +386,8 @@ bool UPatcherProxy::DoExport()
 					DependenciesFilters.AddUnique(Path);
 				}
 			};
-			GetKeysLambda(VersionDiffInfo.AddAssetDependInfo);
-			GetKeysLambda(VersionDiffInfo.ModifyAssetDependInfo);
+			GetKeysLambda(VersionDiffInfo.AssetDiffInfo.AddAssetDependInfo);
+			GetKeysLambda(VersionDiffInfo.AssetDiffInfo.ModifyAssetDependInfo);
 
 			TArray<FDirectoryPath> DepOtherModule;
 
@@ -569,7 +577,7 @@ bool UPatcherProxy::DoExport()
 
 	// delete pakversion.json
 	//{
-	//	FString PakVersionSavedPath = UExportPatchSettings::GetSavePakVersionPath(CurrentVersionSavePath,CurrentVersion);
+	//	FString PakVersionSavedPath = FExportPatchSettingsEx::GetSavePakVersionPath(CurrentVersionSavePath,CurrentVersion);
 	//	if (GetSettingObject()->IsIncludePakVersion() && FPaths::FileExists(PakVersionSavedPath))
 	//	{
 	//		IFileManager::Get().Delete(*PakVersionSavedPath);
@@ -586,12 +594,12 @@ bool UPatcherProxy::DoExport()
 			AssetDependencyTypes.Add(EAssetRegistryDependencyTypeEx::Packages);
 
 			TArray<FAssetRelatedInfo> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(
-				UFLibAssetManageHelperEx::CombineAssetDependencies(VersionDiffInfo.AddAssetDependInfo, VersionDiffInfo.ModifyAssetDependInfo),
+				UFLibAssetManageHelperEx::CombineAssetDependencies(VersionDiffInfo.AssetDiffInfo.AddAssetDependInfo, VersionDiffInfo.AssetDiffInfo.ModifyAssetDependInfo),
 				AssetDependencyTypes
 			);
 
-			FString AssetsDependencyString;
-			UFlibPatchParserHelper::SerializeAssetsRelatedInfoAsString(AssetsDependency, AssetsDependencyString);
+			FString AssetsDependencyString = UFlibPatchParserHelper::SerializeAssetsDependencyAsJsonString(AssetsDependency);
+			
 			FString SaveAssetRelatedInfoToFile = FPaths::Combine(
 				CurrentVersionSavePath,
 				FString::Printf(TEXT("%s_AssetRelatedInfos.json"), *CurrentVersion.VersionId)
@@ -643,7 +651,7 @@ bool UPatcherProxy::DoExport()
 		
 		FString SerializeReleaseVersionInfo;
 		FHotPatcherVersion NewReleaseVersion = MakeNewRelease(BaseVersion, CurrentVersion);
-		UFlibPatchParserHelper::SerializeHotPatcherVersionToString(NewReleaseVersion, SerializeReleaseVersionInfo);
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(NewReleaseVersion, SerializeReleaseVersionInfo);
 
 		FString SaveCurrentVersionToFile = FPaths::Combine(
 			CurrentVersionSavePath,
@@ -745,7 +753,7 @@ bool UPatcherProxy::DoExport()
 	UnrealPakSlowTask->Final();
 	return true;
 }
-#include <Templates/Function.h>
+
 FString UPatcherProxy::MakePakShortName(const FHotPatcherVersion& InCurrentVersion, const FChunkInfo& InChunkInfo, const FString& InPlatform)
 {
 	struct FResularOperator

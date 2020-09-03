@@ -132,167 +132,6 @@ FString UFlibPatchParserHelper::GetUE4CmdBinary()
 
 
 
-bool UFlibPatchParserHelper::SerializeHotPatcherVersionToString(const FHotPatcherVersion& InVersion, FString& OutResault)
-{
-	bool bRunStatus = false;
-
-	{
-		TSharedPtr<FJsonObject> JsonObject;
-		if (UFlibPatchParserHelper::SerializeHotPatcherVersionToJsonObject(InVersion, JsonObject) && JsonObject.IsValid())
-		{
-			auto JsonWriter = TJsonWriterFactory<>::Create(&OutResault);
-			FJsonSerializer::Serialize(JsonObject.ToSharedRef(), JsonWriter);
-			bRunStatus = true;
-		}
-	}
-	return bRunStatus;
-}
-
-bool UFlibPatchParserHelper::SerializeHotPatcherVersionToJsonObject(const FHotPatcherVersion& InVersion, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool bRunStatus = false;
-	TSharedPtr<FJsonObject> RootJsonObject = MakeShareable(new FJsonObject);
-	{
-		RootJsonObject->SetStringField(TEXT("VersionId"), InVersion.VersionId);
-		RootJsonObject->SetStringField(TEXT("BaseVersionId"), InVersion.BaseVersionId);
-		RootJsonObject->SetStringField(TEXT("Date"), InVersion.Date);
-
-		// serialize asset include filter
-		{
-			TArray<TSharedPtr<FJsonValue>> AllIncludeFilterJsonObj;
-			for (const auto& Filter : InVersion.IncludeFilter)
-			{
-				AllIncludeFilterJsonObj.Add(MakeShareable(new FJsonValueString(Filter)));
-			}
-			RootJsonObject->SetArrayField(TEXT("IncludeFilter"), AllIncludeFilterJsonObj);
-
-		}
-		// serialize asset Ignore filter
-		{
-			TArray<TSharedPtr<FJsonValue>> AllIgnoreFilterJsonObj;
-			for (const auto& Filter : InVersion.IgnoreFilter)
-			{
-				AllIgnoreFilterJsonObj.Add(MakeShareable(new FJsonValueString(Filter)));
-			}
-			RootJsonObject->SetArrayField(TEXT("IgnoreFilter"), AllIgnoreFilterJsonObj);
-
-		}
-		RootJsonObject->SetBoolField(TEXT("bIncludeHasRefAssetsOnly"), InVersion.bIncludeHasRefAssetsOnly);
-
-		// serialize specify assets
-		{
-			TArray<TSharedPtr<FJsonValue>> AllSpecifyJsonObj;
-			for(const auto& SpeficyAsset: InVersion.IncludeSpecifyAssets)
-			{
-				TSharedPtr<FJsonObject> SpecifyJsonObj = MakeShareable(new FJsonObject);
-				FString LongPackageName;
-				bool bConvStatus = UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(SpeficyAsset.Asset.ToString(), LongPackageName);
-				SpecifyJsonObj->SetStringField(TEXT("Asset"), bConvStatus?LongPackageName:SpeficyAsset.Asset.ToString());
-				SpecifyJsonObj->SetBoolField(TEXT("bAnalysisAssetDependencies"), SpeficyAsset.bAnalysisAssetDependencies);
-				AllSpecifyJsonObj.Add(MakeShareable(new FJsonValueObject(SpecifyJsonObj)));
-			}
-			RootJsonObject->SetArrayField(TEXT("IncludeSpecifyAssets"), AllSpecifyJsonObj);
-		}
-
-		TSharedPtr<FJsonObject> AssetInfoJsonObject = MakeShareable(new FJsonObject);
-		bool bSerializeAssetInfoStatus = UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(InVersion.AssetInfo, AssetInfoJsonObject, TArray<FString>{TEXT("Script")});
-
-		RootJsonObject->SetObjectField(TEXT("AssetInfo"), AssetInfoJsonObject);
-
-		// serialize all extern file
-		{
-			TArray<TSharedPtr<FJsonValue>> ExternalFilesJsonObJList;
-
-			TArray<FString> ExternalFilesKeys;
-			InVersion.ExternalFiles.GetKeys(ExternalFilesKeys);
-			for (auto& ExFile : ExternalFilesKeys)
-			{
-				TSharedPtr<FJsonObject> CurrentFile;
-				if (UFlibPatchParserHelper::SerializeExAssetFileInfoToJsonObject(*InVersion.ExternalFiles.Find(ExFile), CurrentFile))
-				{
-					ExternalFilesJsonObJList.Add(MakeShareable(new FJsonValueObject(CurrentFile)));
-				}
-			}
-			RootJsonObject->SetArrayField(TEXT("ExternalFiles"), ExternalFilesJsonObJList);
-		}
-		bRunStatus = true;
-	}
-	OutJsonObject = RootJsonObject;
-	return bRunStatus;
-}
-
-bool UFlibPatchParserHelper::DeserializeHotPatcherVersionFromString(const FString& InStringContent, FHotPatcherVersion& OutVersion)
-{
-	bool bRunStatus = false;
-	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(InStringContent);
-	TSharedPtr<FJsonObject> DeserializeJsonObject;
-	if (FJsonSerializer::Deserialize(JsonReader, DeserializeJsonObject))
-	{
-		bRunStatus = UFlibPatchParserHelper::DeSerializeHotPatcherVersionFromJsonObject(DeserializeJsonObject, OutVersion);
-	}
-	return bRunStatus;
-}
-
-bool UFlibPatchParserHelper::DeSerializeHotPatcherVersionFromJsonObject(const TSharedPtr<FJsonObject>& InJsonObject, FHotPatcherVersion& OutVersion)
-{
-	bool bRunStatus = false;
-	if (InJsonObject.IsValid())
-	{
-
-		OutVersion.VersionId = InJsonObject->GetStringField(TEXT("VersionId"));
-		OutVersion.BaseVersionId = InJsonObject->GetStringField(TEXT("BaseVersionId"));
-		OutVersion.Date = InJsonObject->GetStringField(TEXT("Date"));
-
-
-		// deserialize asset include filter
-		{
-			TArray<TSharedPtr<FJsonValue>> AllIncludeFilterJsonObj;
-			AllIncludeFilterJsonObj = InJsonObject->GetArrayField(TEXT("IncludeFilter"));
-			for (const auto& Filter : AllIncludeFilterJsonObj)
-			{
-				OutVersion.IncludeFilter.AddUnique(Filter->AsString());
-			}
-		}
-		// deserialize asset Ignore filter
-		{
-			TArray<TSharedPtr<FJsonValue>> AllIgnoreFilterJsonObj;
-			AllIgnoreFilterJsonObj = InJsonObject->GetArrayField(TEXT("IncludeFilter"));
-			for (const auto& Filter : AllIgnoreFilterJsonObj)
-			{
-				OutVersion.IgnoreFilter.AddUnique(Filter->AsString());
-			}
-		}
-
-		FAssetDependenciesInfo DeserialAssetInfo;
-		if (UFLibAssetManageHelperEx::DeserializeAssetDependenciesForJsonObject(InJsonObject->GetObjectField(TEXT("AssetInfo")),DeserialAssetInfo))
-		{
-			OutVersion.AssetInfo = DeserialAssetInfo;
-		}
-
-		// deserialize extern files
-		{
-			TArray<TSharedPtr<FJsonValue>> AllExternalFilesJsonObj;
-			AllExternalFilesJsonObj = InJsonObject->GetArrayField(TEXT("ExternalFiles"));
-			// UE_LOG(LogHotPatcher, Warning, TEXT("External Files num %d"), AllExternalFilesJsonObj.Num());
-
-			for (const auto& FileJsonObj : AllExternalFilesJsonObj)
-			{
-				FExternAssetFileInfo CurrentFile;
-				CurrentFile.FilePath.FilePath = FileJsonObj->AsObject()->GetStringField(TEXT("FilePath"));
-				CurrentFile.MountPath = FileJsonObj->AsObject()->GetStringField(TEXT("MountPath"));
-				CurrentFile.FileHash = FileJsonObj->AsObject()->GetStringField(TEXT("MD5Hash"));
-
-				//UE_LOG(LogHotPatcher, Warning, TEXT("External Files filepath %s"), *CurrentFile.FilePath.FilePath);
-				//UE_LOG(LogHotPatcher, Warning, TEXT("External Files filehash %s"), *CurrentFile.FileHash);
-				//UE_LOG(LogHotPatcher, Warning, TEXT("External Files mountpath %s"), *CurrentFile.MountPath);
-
-				OutVersion.ExternalFiles.Add(CurrentFile.MountPath,CurrentFile);
-			}
-		}
-		bRunStatus = true;
-	}
-	return bRunStatus;
-}
 
 bool UFlibPatchParserHelper::DiffVersionAssets(
 	const FAssetDependenciesInfo& InNewVersion,
@@ -309,10 +148,10 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 
 	{
 		TArray<FString> InNewAssetModuleKeyList;
-		InNewVersion.mDependencies.GetKeys(InNewAssetModuleKeyList);
+		InNewVersion.AssetsDependenciesMap.GetKeys(InNewAssetModuleKeyList);
 
 		TArray<FString> InBaseAssetModuleKeysList;
-		InBaseVersion.mDependencies.GetKeys(InBaseAssetModuleKeysList);
+		InBaseVersion.AssetsDependenciesMap.GetKeys(InBaseAssetModuleKeysList);
 
 		// Parser Add new asset
 		for (const auto& NewVersionAssetModule : InNewAssetModuleKeyList)
@@ -320,17 +159,17 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 			// is a new mdoule?
 			if (!InBaseAssetModuleKeysList.Contains(NewVersionAssetModule))
 			{
-				OutAddAsset.mDependencies.Add(NewVersionAssetModule, *InNewVersion.mDependencies.Find(NewVersionAssetModule));
+				OutAddAsset.AssetsDependenciesMap.Add(NewVersionAssetModule, *InNewVersion.AssetsDependenciesMap.Find(NewVersionAssetModule));
 				continue;
 			}
 			{
 				TArray<FString> NewVersionDependAssetsList;
-				InNewVersion.mDependencies.Find(NewVersionAssetModule)->mDependAssetDetails.GetKeys(NewVersionDependAssetsList);
+				InNewVersion.AssetsDependenciesMap.Find(NewVersionAssetModule)->AssetDependencyDetails.GetKeys(NewVersionDependAssetsList);
 
 				TArray<FString> BaseVersionDependAssetsList;
-				InBaseVersion.mDependencies.Find(NewVersionAssetModule)->mDependAssetDetails.GetKeys(BaseVersionDependAssetsList);
+				InBaseVersion.AssetsDependenciesMap.Find(NewVersionAssetModule)->AssetDependencyDetails.GetKeys(BaseVersionDependAssetsList);
 
-				const TMap<FString,FAssetDetail>& NewVersionAssetModuleDetail = InNewVersion.mDependencies.Find(NewVersionAssetModule)->mDependAssetDetails;
+				const TMap<FString,FAssetDetail>& NewVersionAssetModuleDetail = InNewVersion.AssetsDependenciesMap.Find(NewVersionAssetModule)->AssetDependencyDetails;
 				TArray<FString> CurrentModuleAssetList;
 				NewVersionAssetModuleDetail.GetKeys(CurrentModuleAssetList);
 
@@ -340,11 +179,11 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 					if (!BaseVersionDependAssetsList.Contains(NewAssetItem))
 					{
 						FString BelongModuneName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(NewAssetItem);
-						if (!OutAddAsset.mDependencies.Contains(BelongModuneName))
+						if (!OutAddAsset.AssetsDependenciesMap.Contains(BelongModuneName))
 						{
-							OutAddAsset.mDependencies.Add(BelongModuneName, FAssetDependenciesDetail{ BelongModuneName,TMap<FString,FAssetDetail>{} });
+							OutAddAsset.AssetsDependenciesMap.Add(BelongModuneName, FAssetDependenciesDetail{ BelongModuneName,TMap<FString,FAssetDetail>{} });
 						}
-						TMap<FString, FAssetDetail>& CurrentModuleAssetDetails = OutAddAsset.mDependencies.Find(BelongModuneName)->mDependAssetDetails;
+						TMap<FString, FAssetDetail>& CurrentModuleAssetDetails = OutAddAsset.AssetsDependenciesMap.Find(BelongModuneName)->AssetDependencyDetails;
 						CurrentModuleAssetDetails.Add(NewAssetItem, *NewVersionAssetModuleDetail.Find(NewAssetItem));
 					}
 				}
@@ -354,36 +193,36 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 		// Parser Modify Asset
 		for (const auto& BaseVersionAssetModule : InBaseAssetModuleKeysList)
 		{
-			const FAssetDependenciesDetail& BaseVersionModuleAssetsDetail = *InBaseVersion.mDependencies.Find(BaseVersionAssetModule);
-			const FAssetDependenciesDetail& NewVersionModuleAssetsDetail = *InNewVersion.mDependencies.Find(BaseVersionAssetModule);
+			const FAssetDependenciesDetail& BaseVersionModuleAssetsDetail = *InBaseVersion.AssetsDependenciesMap.Find(BaseVersionAssetModule);
+			const FAssetDependenciesDetail& NewVersionModuleAssetsDetail = *InNewVersion.AssetsDependenciesMap.Find(BaseVersionAssetModule);
 
 
-			if (InNewVersion.mDependencies.Contains(BaseVersionAssetModule))
+			if (InNewVersion.AssetsDependenciesMap.Contains(BaseVersionAssetModule))
 			{
 				TArray<FString> BeseVersionCurrentModuleAssetListKeys;
-				BaseVersionModuleAssetsDetail.mDependAssetDetails.GetKeys(BeseVersionCurrentModuleAssetListKeys);
+				BaseVersionModuleAssetsDetail.AssetDependencyDetails.GetKeys(BeseVersionCurrentModuleAssetListKeys);
 
 				for (const auto& AssetItem : BeseVersionCurrentModuleAssetListKeys)
 				{
-					const FAssetDetail* BaseVersionAssetDetail = BaseVersionModuleAssetsDetail.mDependAssetDetails.Find(AssetItem);
-					const FAssetDetail* NewVersionAssetDetail = NewVersionModuleAssetsDetail.mDependAssetDetails.Find(AssetItem);
+					const FAssetDetail* BaseVersionAssetDetail = BaseVersionModuleAssetsDetail.AssetDependencyDetails.Find(AssetItem);
+					const FAssetDetail* NewVersionAssetDetail = NewVersionModuleAssetsDetail.AssetDependencyDetails.Find(AssetItem);
 					if (!NewVersionAssetDetail)
 					{
-						if (!OutDeleteAsset.mDependencies.Contains(BaseVersionAssetModule))
+						if (!OutDeleteAsset.AssetsDependenciesMap.Contains(BaseVersionAssetModule))
 						{
-							OutDeleteAsset.mDependencies.Add(BaseVersionAssetModule, FAssetDependenciesDetail{ BaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
+							OutDeleteAsset.AssetsDependenciesMap.Add(BaseVersionAssetModule, FAssetDependenciesDetail{ BaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
 						}
-						OutDeleteAsset.mDependencies.Find(BaseVersionAssetModule)->mDependAssetDetails.Add(AssetItem, *BaseVersionAssetDetail);
+						OutDeleteAsset.AssetsDependenciesMap.Find(BaseVersionAssetModule)->AssetDependencyDetails.Add(AssetItem, *BaseVersionAssetDetail);
 						continue;
 					}
 
 					if (!(*NewVersionAssetDetail == *BaseVersionAssetDetail))
 					{
-						if (!OutModifyAsset.mDependencies.Contains(BaseVersionAssetModule))
+						if (!OutModifyAsset.AssetsDependenciesMap.Contains(BaseVersionAssetModule))
 						{
-							OutModifyAsset.mDependencies.Add(BaseVersionAssetModule, FAssetDependenciesDetail{ BaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
+							OutModifyAsset.AssetsDependenciesMap.Add(BaseVersionAssetModule, FAssetDependenciesDetail{ BaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
 						}
-						OutModifyAsset.mDependencies.Find(BaseVersionAssetModule)->mDependAssetDetails.Add(AssetItem, *NewVersionAssetDetail);
+						OutModifyAsset.AssetsDependenciesMap.Find(BaseVersionAssetModule)->AssetDependencyDetails.Add(AssetItem, *NewVersionAssetDetail);
 					}
 				}
 			}
@@ -458,209 +297,6 @@ bool UFlibPatchParserHelper::DiffVersionExFiles(
 	}
 
 	return true;
-}
-bool UFlibPatchParserHelper::SerializePakFileInfoToJsonString(const FPakFileInfo& InFileInfo, FString& OutJson)
-{
-	bool bRunStatus = false;
-	TSharedPtr<FJsonObject> JsonObject;
-	if (UFlibPatchParserHelper::SerializePakFileInfoToJsonObject(InFileInfo, JsonObject))
-	{
-		bRunStatus = UFlibPatchParserHelper::SerializePakFileInfoFromJsonObjectToString(JsonObject, OutJson);
-	}
-	return bRunStatus;
-}
-
-bool UFlibPatchParserHelper::SerializePakFileInfoFromJsonObjectToString(const TSharedPtr<FJsonObject>& InFileInfoJsonObject, FString& OutJson)
-{
-	bool bRunStatus = false;
-	if (InFileInfoJsonObject.IsValid())
-	{
-		auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&OutJson);
-		FJsonSerializer::Serialize(InFileInfoJsonObject.ToSharedRef(), JsonWriter);
-		bRunStatus = true;
-	}
-	return bRunStatus;
-}
-
-bool UFlibPatchParserHelper::SerializePakFileInfoToJsonObject(const FPakFileInfo& InFileInfo, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool RunStatus = false;
-	
-	if (!OutJsonObject.IsValid())
-		OutJsonObject = MakeShareable(new FJsonObject);
-	
-	OutJsonObject->SetStringField(TEXT("File"), InFileInfo.FileName);
-	OutJsonObject->SetStringField(TEXT("HASH"),InFileInfo.Hash);
-	OutJsonObject->SetNumberField(TEXT("Size"), InFileInfo.FileSize);
-
-	//TSharedPtr<FJsonObject> PakVersionJsonObject = MakeShareable(new FJsonObject);
-	//if (UFlibPakHelper::SerializePakVersionToJsonObject(InFileInfo.PakVersion, PakVersionJsonObject))
-	//{
-	//	OutJsonObject->SetObjectField(TEXT("PakVersion"),PakVersionJsonObject);
-	//}
-	RunStatus = true;
-	return RunStatus;
-}
-
-bool UFlibPatchParserHelper::SerializePakFileInfoListToJsonObject(const TArray<FPakFileInfo>& InFileInfoList, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool bRunStatus = false;
-
-	TSharedPtr<FJsonObject> RootJsonObj = MakeShareable(new FJsonObject);
-	for (const auto& FileInfoItem : InFileInfoList)
-	{
-		TSharedPtr<FJsonObject> CurrentFileJsonObj = MakeShareable(new FJsonObject);
-		if (UFlibPatchParserHelper::SerializePakFileInfoToJsonObject(FileInfoItem, CurrentFileJsonObj))
-		{
-			RootJsonObj->SetObjectField(*FileInfoItem.FileName, CurrentFileJsonObj);
-		}
-	}
-	bRunStatus = true;
-	OutJsonObject = RootJsonObj;
-	return bRunStatus;
-}
-
-bool UFlibPatchParserHelper::SerializePlatformPakInfoToString(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, FString& OutString)
-{
-	bool bRunStatus = false;
-	TSharedPtr<FJsonObject> RootJsonObj = MakeShareable(new FJsonObject);
-
-	bRunStatus = UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(InPakFilesMap, RootJsonObj);
-
-	auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&OutString);
-	FJsonSerializer::Serialize(RootJsonObj.ToSharedRef(), JsonWriter);
-
-	return bRunStatus;
-}
-
-bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool bRunStatus = false;
-	if (!OutJsonObject.IsValid())
-	{
-		OutJsonObject = MakeShareable(new FJsonObject);
-	}
-
-	// serialize
-	{
-		TArray<FString> PakPlatformKeys;
-		InPakFilesMap.GetKeys(PakPlatformKeys);
-
-		for (const auto& PakPlatformKey : PakPlatformKeys)
-		{
-			TSharedPtr<FJsonObject> CurrentPlatformPakJsonObj;
-			TArray<TSharedPtr<FJsonValue>> CurrentPlatformPaksObjectList;
-			for (const auto& Pak : *InPakFilesMap.Find(PakPlatformKey))
-			{
-				TSharedPtr<FJsonObject> CurrentPakJsonObj;
-				if (UFlibPatchParserHelper::SerializePakFileInfoToJsonObject(Pak, CurrentPakJsonObj))
-				{
-					CurrentPlatformPaksObjectList.Add(MakeShareable(new FJsonValueObject(CurrentPakJsonObj)));
-				}
-			}
-			
-			OutJsonObject->SetArrayField(PakPlatformKey, CurrentPlatformPaksObjectList);
-		}
-		bRunStatus = true;
-	}
-	return bRunStatus;
-}
-
-bool UFlibPatchParserHelper::SerializeDiffAssetsInfomationToJsonObject(const FAssetDependenciesInfo& InAddAsset,
-	const FAssetDependenciesInfo& InModifyAsset,
-	const FAssetDependenciesInfo& InDeleteAsset,
-	 TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	if(!OutJsonObject.IsValid())
-		OutJsonObject = MakeShareable(new FJsonObject);
-
-	{
-		// is empty Info
-		auto IsEmptyInfo = [](const FAssetDependenciesInfo& InAssetInfo)->bool
-		{
-			TArray<FString> Keys;
-			InAssetInfo.mDependencies.GetKeys(Keys);
-
-			return Keys.Num() == 0;
-		};
-
-		auto SerializeAssetInfoToJson = [&OutJsonObject, &IsEmptyInfo](const FAssetDependenciesInfo& InAssetInfo, const FString& InDescrible)->bool
-		{
-			bool bRunStatus = false;
-			if (!IsEmptyInfo(InAssetInfo))
-			{
-				TSharedPtr<FJsonObject> AssetsJsonObject = MakeShareable(new FJsonObject);
-				bRunStatus = UFLibAssetManageHelperEx::SerializeAssetDependenciesToJsonObject(InAssetInfo, AssetsJsonObject, TArray<FString>{"Script"});
-				if (bRunStatus)
-				{
-					OutJsonObject->SetObjectField(InDescrible, AssetsJsonObject);
-				}
-			}
-			return bRunStatus;
-		};
-
-		SerializeAssetInfoToJson(InAddAsset, TEXT("AddedAssets"));
-		SerializeAssetInfoToJson(InModifyAsset, TEXT("ModifiedAssets"));
-		SerializeAssetInfoToJson(InDeleteAsset, TEXT("DeletedAssets"));
-	}
-
-	return !!InAddAsset.mDependencies.Num() || !!InModifyAsset.mDependencies.Num() || !!InDeleteAsset.mDependencies.Num();
-}
-
-FString UFlibPatchParserHelper::SerializeDiffAssetsInfomationToString(const FAssetDependenciesInfo& InAddAsset,
-	const FAssetDependenciesInfo& InModifyAsset,
-	const FAssetDependenciesInfo& InDeleteAsset)
-{
-	FString SerializeDiffInfo;
-	TSharedPtr<FJsonObject> RootJsonObject;
-	if (UFlibPatchParserHelper::SerializeDiffAssetsInfomationToJsonObject(InAddAsset, InModifyAsset, InDeleteAsset, RootJsonObject))
-	{
-		auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&SerializeDiffInfo);
-		FJsonSerializer::Serialize(RootJsonObject.ToSharedRef(), JsonWriter);
-	}
-	
-	return SerializeDiffInfo;
-}
-
-bool UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToJsonObject(
-	const TArray<FExternAssetFileInfo>& InAddFiles,
-	const TArray<FExternAssetFileInfo>& InModifyFiles,
-	const TArray<FExternAssetFileInfo>& InDeleteFiles,
-	TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	if(!OutJsonObject.IsValid())
-		OutJsonObject = MakeShareable(new FJsonObject);
-	auto ParserFilesWithDescribleLambda = [&OutJsonObject](const TArray<FExternAssetFileInfo>& InFiles, const FString& InDescrible)
-	{
-		TArray<TSharedPtr<FJsonValue>> FileJsonValueList;
-		for (const auto& File : InFiles)
-		{
-			FileJsonValueList.Add(MakeShareable(new FJsonValueString(File.MountPath)));
-		}
-		OutJsonObject->SetArrayField(InDescrible, FileJsonValueList);
-	};
-
-	ParserFilesWithDescribleLambda(InAddFiles, TEXT("AddFiles"));
-	ParserFilesWithDescribleLambda(InModifyFiles, TEXT("ModifyFiles"));
-	ParserFilesWithDescribleLambda(InDeleteFiles, TEXT("DeleteFiles"));
-
-	return !!InAddFiles.Num() || !!InModifyFiles.Num() || !!InDeleteFiles.Num();
-}
-
-FString UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToString(
-	const TArray<FExternAssetFileInfo>& InAddFiles,
-	const TArray<FExternAssetFileInfo>& InModifyFiles,
-	const TArray<FExternAssetFileInfo>& InDeleteFiles)
-{
-	FString SerializeDiffInfo;
-	TSharedPtr<FJsonObject> RootJsonObject;
-	if (UFlibPatchParserHelper::SerializeDiffExternalFilesInfomationToJsonObject(InAddFiles, InModifyFiles, InDeleteFiles,RootJsonObject))
-	{
-		auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&SerializeDiffInfo);
-		FJsonSerializer::Serialize(RootJsonObject.ToSharedRef(), JsonWriter);
-	}
-
-	return SerializeDiffInfo;
 }
 bool UFlibPatchParserHelper::GetPakFileInfo(const FString& InFile, FPakFileInfo& OutFileInfo)
 {
@@ -1273,8 +909,8 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 		AssetFilterPaths.Append(GetSpecifyAssets(Chunk.IncludeSpecifyAssets));
 		AssetFilterPaths.Append(UFLibAssetManageHelperEx::GetAssetLongPackageNameByAssetDependenciesInfo(SpecifyDependAssets));
 
-		const FAssetDependenciesInfo& AddAssetsRef = DiffInfo.AddAssetDependInfo;
-		const FAssetDependenciesInfo& ModifyAssetsRef = DiffInfo.ModifyAssetDependInfo;
+		const FAssetDependenciesInfo& AddAssetsRef = DiffInfo.AssetDiffInfo.AddAssetDependInfo;
+		const FAssetDependenciesInfo& ModifyAssetsRef = DiffInfo.AssetDiffInfo.ModifyAssetDependInfo;
 
 
 		auto CollectChunkAssets = [](const FAssetDependenciesInfo& SearchBase, const TArray<FString>& SearchFilters)->FAssetDependenciesInfo
@@ -1297,24 +933,24 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 					SearchModuleName = UKismetStringLibrary::GetSubstring(SearchItem, 1, SearchItem.Len() - 1);
 				}
 
-				if (!SearchModuleName.IsEmpty() && (SearchBase.mDependencies.Contains(SearchModuleName)))
+				if (!SearchModuleName.IsEmpty() && (SearchBase.AssetsDependenciesMap.Contains(SearchModuleName)))
 				{
-					if (!ResultAssetDependInfos.mDependencies.Contains(SearchModuleName))
-						ResultAssetDependInfos.mDependencies.Add(SearchModuleName, FAssetDependenciesDetail(SearchModuleName, TMap<FString, FAssetDetail>{}));
+					if (!ResultAssetDependInfos.AssetsDependenciesMap.Contains(SearchModuleName))
+						ResultAssetDependInfos.AssetsDependenciesMap.Add(SearchModuleName, FAssetDependenciesDetail(SearchModuleName, TMap<FString, FAssetDetail>{}));
 
-					const FAssetDependenciesDetail& SearchBaseModule = *SearchBase.mDependencies.Find(SearchModuleName);
+					const FAssetDependenciesDetail& SearchBaseModule = *SearchBase.AssetsDependenciesMap.Find(SearchModuleName);
 
 					TArray<FString> AllAssetKeys;
-					SearchBaseModule.mDependAssetDetails.GetKeys(AllAssetKeys);
+					SearchBaseModule.AssetDependencyDetails.GetKeys(AllAssetKeys);
 
 					for (const auto& KeyItem : AllAssetKeys)
 					{
 						if (KeyItem.StartsWith(SearchItem))
 						{
-							FAssetDetail FindedAsset = *SearchBaseModule.mDependAssetDetails.Find(KeyItem);
-							if (!ResultAssetDependInfos.mDependencies.Find(SearchModuleName)->mDependAssetDetails.Contains(KeyItem))
+							FAssetDetail FindedAsset = *SearchBaseModule.AssetDependencyDetails.Find(KeyItem);
+							if (!ResultAssetDependInfos.AssetsDependenciesMap.Find(SearchModuleName)->AssetDependencyDetails.Contains(KeyItem))
 							{
-								ResultAssetDependInfos.mDependencies.Find(SearchModuleName)->mDependAssetDetails.Add(KeyItem, FindedAsset);
+								ResultAssetDependInfos.AssetsDependenciesMap.Find(SearchModuleName)->AssetDependencyDetails.Add(KeyItem, FindedAsset);
 							}
 						}
 					}
@@ -1344,8 +980,8 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 			}
 		}
 
-		TArray<FExternAssetFileInfo> AddFilesRef = DiffInfo.AddExternalFiles;
-		TArray<FExternAssetFileInfo> ModifyFilesRef = DiffInfo.ModifyExternalFiles;
+		TArray<FExternAssetFileInfo> AddFilesRef = DiffInfo.ExternDiffInfo.AddExternalFiles;
+		TArray<FExternAssetFileInfo> ModifyFilesRef = DiffInfo.ExternDiffInfo.ModifyExternalFiles;
 
 		auto CollectExtenFilesLambda = [&AllFiles](const TArray<FExternAssetFileInfo>& SearchBase, const TSet<FString>& Filters)
 		{
@@ -1452,17 +1088,17 @@ FPatchVersionDiff UFlibPatchParserHelper::DiffPatchVersion(const FHotPatcherVers
 	UFlibPatchParserHelper::DiffVersionAssets(
 		CurrentVersionAssetDependInfo,
 		BaseVersionAssetDependInfo,
-		VersionDiffInfo.AddAssetDependInfo,
-		VersionDiffInfo.ModifyAssetDependInfo,
-		VersionDiffInfo.DeleteAssetDependInfo
+		VersionDiffInfo.AssetDiffInfo.AddAssetDependInfo,
+		VersionDiffInfo.AssetDiffInfo.ModifyAssetDependInfo,
+		VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo
 	);
 
 	UFlibPatchParserHelper::DiffVersionExFiles(
 		New,
 		Base,
-		VersionDiffInfo.AddExternalFiles,
-		VersionDiffInfo.ModifyExternalFiles,
-		VersionDiffInfo.DeleteExternalFiles
+		VersionDiffInfo.ExternDiffInfo.AddExternalFiles,
+		VersionDiffInfo.ExternDiffInfo.ModifyExternalFiles,
+		VersionDiffInfo.ExternDiffInfo.DeleteExternalFiles
 	);
 
 	return VersionDiffInfo;
@@ -1476,7 +1112,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	const TArray<FString>& InIgnoreFilter,
 	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
 	const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
-	const TArray<FExternAssetFileInfo>& InAllExternFiles,
+	const TMap<ETargetPlatform,TArray<FExternAssetFileInfo>>& InAllPlatformExternFiles,
 	bool InIncludeHasRefAssetsOnly,
 	bool bInAnalysisFilterDepend
 )
@@ -1591,12 +1227,26 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 
 	ExportVersion.AssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(FilterAssetDependencies, SpecifyAssetDependencies);
 
-	for (const auto& File : InAllExternFiles)
+	TArray<ETargetPlatform> TargetPlatforms;
+	InAllPlatformExternFiles.GetKeys(TargetPlatforms);
+	
+	for (auto& Platform:TargetPlatforms)
 	{
-		if (!ExportVersion.ExternalFiles.Contains(File.FilePath.FilePath))
+		if(!ExportVersion.ExternalFiles.Contains(Platform))
 		{
-			ExportVersion.ExternalFiles.Add(File.MountPath, File);
+			ExportVersion.ExternalFiles.Add(Platform,FHotPatcherPlatformFiles(Platform,*InAllPlatformExternFiles.Find(Platform)));
 		}
+		else
+		{
+			for (const auto& File : *InAllPlatformExternFiles.Find(Platform))
+			{
+				if (!(ExportVersion.ExternalFiles.Find(Platform)->ExternFiles.Contains(File)))
+				{
+					ExportVersion.ExternalFiles.Find(Platform)->ExternFiles.Add(File);
+				}
+			}
+		}
+		
 	}
 	return ExportVersion;
 }
@@ -1646,10 +1296,10 @@ FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkByBaseVersion(const FChunkI
 	);
 	FPatchVersionDiff ChunkDiffInfo = DiffPatchVersion(BaseVersion, CurrentVersion);
 
-	result.Assets = UFLibAssetManageHelperEx::CombineAssetDependencies(ChunkDiffInfo.AddAssetDependInfo, ChunkDiffInfo.ModifyAssetDependInfo);
+	result.Assets = UFLibAssetManageHelperEx::CombineAssetDependencies(ChunkDiffInfo.AssetDiffInfo.AddAssetDependInfo, ChunkDiffInfo.AssetDiffInfo.ModifyAssetDependInfo);
 
-	result.AllExFiles.Append(ChunkDiffInfo.AddExternalFiles);
-	result.AllExFiles.Append(ChunkDiffInfo.ModifyExternalFiles);
+	result.AllExFiles.Append(ChunkDiffInfo.ExternDiffInfo.AddExternalFiles);
+	result.AllExFiles.Append(ChunkDiffInfo.ExternDiffInfo.ModifyExternalFiles);
 
 	result.InternalFiles.bIncludeAssetRegistry = CurrentVersionChunk.InternalFiles.bIncludeAssetRegistry != TotalChunk.InternalFiles.bIncludeAssetRegistry;
 	result.InternalFiles.bIncludeGlobalShaderCache = CurrentVersionChunk.InternalFiles.bIncludeGlobalShaderCache != TotalChunk.InternalFiles.bIncludeGlobalShaderCache;
@@ -1715,324 +1365,6 @@ FProcHandle UFlibPatchParserHelper::DoUnrealPak(TArray<FString> UnrealPakOptions
 	return ProcHandle;
 }
 
-bool UFlibPatchParserHelper::SerializeExAssetFileInfoToJsonObject(const FExternAssetFileInfo& InExFileInfo, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool bRunStatus = false;
-
-	if (!OutJsonObject.IsValid())
-	{
-		OutJsonObject = MakeShareable(new FJsonObject);
-	}
-	FString FileAbsPath = FPaths::ConvertRelativePathToFull(InExFileInfo.FilePath.FilePath);
-	OutJsonObject->SetStringField(TEXT("FilePath"), FileAbsPath);
-	OutJsonObject->SetStringField(TEXT("MD5Hash"), InExFileInfo.FileHash.IsEmpty()?InExFileInfo.GetFileHash(): InExFileInfo.FileHash);
-	OutJsonObject->SetStringField(TEXT("MountPath"), InExFileInfo.MountPath);
-
-	bRunStatus = true;
-
-	return bRunStatus;
-}
-
-bool UFlibPatchParserHelper::SerializeExDirectoryInfoToJsonObject(const FExternDirectoryInfo& InExDirectoryInfo, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool bRunStatus = false;
-
-	if (!OutJsonObject.IsValid())
-	{
-		OutJsonObject = MakeShareable(new FJsonObject);
-	}
-	FString DirectoryAbsPath = FPaths::ConvertRelativePathToFull(InExDirectoryInfo.DirectoryPath.Path);
-	OutJsonObject->SetStringField(TEXT("Directory"), DirectoryAbsPath);
-	OutJsonObject->SetStringField(TEXT("MountPoint"), InExDirectoryInfo.MountPoint);
-	bRunStatus = true;
-
-	return bRunStatus;
-}
-
-bool UFlibPatchParserHelper::SerializeSpecifyAssetInfoToJsonObject(const FPatcherSpecifyAsset& InSpecifyAsset, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool bRunStatus = false;
-
-	if (!OutJsonObject.IsValid())
-	{
-		OutJsonObject = MakeShareable(new FJsonObject);
-	}
-	bRunStatus = InSpecifyAsset.Asset.IsValid();
-
-	if (bRunStatus)
-	{
-		OutJsonObject->SetStringField(TEXT("Asset"), InSpecifyAsset.Asset.GetAssetPathName().ToString());
-		OutJsonObject->SetBoolField(TEXT("bAnalysisAssetDependencies"), InSpecifyAsset.bAnalysisAssetDependencies);
-
-		auto SerializeAssetDependencyTypes = [&OutJsonObject](const FString& InName, const TArray<EAssetRegistryDependencyTypeEx>& InTypes)
-		{
-			TArray<TSharedPtr<FJsonValue>> TypesJsonValues;
-			for (const auto& Type : InTypes)
-			{
-				TSharedPtr<FJsonValue> CurrentJsonValue = MakeShareable(new FJsonValueString(UFlibPatchParserHelper::GetEnumNameByValue(Type)));
-				TypesJsonValues.Add(CurrentJsonValue);
-			}
-			OutJsonObject->SetArrayField(InName, TypesJsonValues);
-		};
-
-		SerializeAssetDependencyTypes(TEXT("AssetRegistryDependencyTypes"), InSpecifyAsset.AssetRegistryDependencyTypes);
-	}
-	return bRunStatus;
-}
-
-bool UFlibPatchParserHelper::DeSerializeSpecifyAssetInfoToJsonObject(const TSharedPtr<FJsonObject>& InJsonObject, FPatcherSpecifyAsset& OutSpecifyAsset)
-{
-	bool bRunStatus = false;
-
-	if (InJsonObject.IsValid())
-	{
-		OutSpecifyAsset.Asset = InJsonObject->GetStringField(TEXT("Asset"));
-		OutSpecifyAsset.bAnalysisAssetDependencies = InJsonObject->GetBoolField(TEXT("bAnalysisAssetDependencies"));
-		// serialize AssetRegistryDependencyTypes
-		{
-			TArray<EAssetRegistryDependencyTypeEx> result;
-			TArray<TSharedPtr<FJsonValue>> AssetRegistryDependencyTypes = InJsonObject->GetArrayField(TEXT("AssetRegistryDependencyTypes"));
-			for (const auto& TypeJsonValue : AssetRegistryDependencyTypes)
-			{
-				EAssetRegistryDependencyTypeEx CurrentType;
-				if (UFlibPatchParserHelper::GetEnumValueByName(TypeJsonValue->AsString(),CurrentType))
-				{
-					result.AddUnique(CurrentType);
-				}
-			}
-			OutSpecifyAsset.AssetRegistryDependencyTypes = result;
-		}
-
-		bRunStatus = true;
-	}
-	return bRunStatus;
-}
-
-
-bool UFlibPatchParserHelper::SerializeFPakInternalInfoToJsonObject(const FPakInternalInfo& InFPakInternalInfo, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool bRunStatus = false;
-
-	if (!OutJsonObject.IsValid())
-	{
-		OutJsonObject = MakeShareable(new FJsonObject);
-	}
-	OutJsonObject->SetBoolField(TEXT("bIncludeAssetRegistry"), InFPakInternalInfo.bIncludeAssetRegistry);
-	OutJsonObject->SetBoolField(TEXT("bIncludeGlobalShaderCache"), InFPakInternalInfo.bIncludeGlobalShaderCache);
-	OutJsonObject->SetBoolField(TEXT("bIncludeShaderBytecode"), InFPakInternalInfo.bIncludeShaderBytecode);
-	OutJsonObject->SetBoolField(TEXT("bIncludeEngineIni"), InFPakInternalInfo.bIncludeEngineIni);
-	OutJsonObject->SetBoolField(TEXT("bIncludePluginIni"), InFPakInternalInfo.bIncludePluginIni);
-	OutJsonObject->SetBoolField(TEXT("bIncludeProjectIni"), InFPakInternalInfo.bIncludeProjectIni);
-	return bRunStatus;
-}
-
-bool UFlibPatchParserHelper::DeSerializeFPakInternalInfoFromJsonObject(const TSharedPtr<FJsonObject>& JsonObject, FPakInternalInfo& OutFPakInternalInfo)
-{
-	OutFPakInternalInfo.bIncludeAssetRegistry = JsonObject->GetBoolField(TEXT("bIncludeAssetRegistry"));
-	OutFPakInternalInfo.bIncludeGlobalShaderCache = JsonObject->GetBoolField(TEXT("bIncludeGlobalShaderCache"));
-	OutFPakInternalInfo.bIncludeShaderBytecode = JsonObject->GetBoolField(TEXT("bIncludeShaderBytecode"));
-	OutFPakInternalInfo.bIncludeEngineIni = JsonObject->GetBoolField(TEXT("bIncludeEngineIni"));
-	OutFPakInternalInfo.bIncludePluginIni = JsonObject->GetBoolField(TEXT("bIncludePluginIni"));
-	OutFPakInternalInfo.bIncludeProjectIni = JsonObject->GetBoolField(TEXT("bIncludeProjectIni"));
-	return true;
-}
-bool UFlibPatchParserHelper::SerializeFChunkInfoToJsonObject(const FChunkInfo& InChunkInfo, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool bRunStatus = false;
-
-	if (!OutJsonObject.IsValid())
-	{
-		OutJsonObject = MakeShareable(new FJsonObject);
-	}
-	OutJsonObject->SetStringField(TEXT("ChunkName"), InChunkInfo.ChunkName);
-	OutJsonObject->SetBoolField(TEXT("bMonolithic"), InChunkInfo.bMonolithic);
-	OutJsonObject->SetStringField(TEXT("MonolithicPathMode"), UFlibPatchParserHelper::GetEnumNameByValue(InChunkInfo.MonolithicPathMode));
-	OutJsonObject->SetBoolField(TEXT("bSavePakCommands"), InChunkInfo.bSavePakCommands);
-	auto ConvDirPathsToStrings = [](const TArray<FDirectoryPath>& InDirPaths)->TArray<FString>
-	{
-		TArray<FString> Resault;
-		for (const auto& Dir : InDirPaths)
-		{
-			Resault.Add(Dir.Path);
-		}
-		return Resault;
-	};
-
-	
-	auto SerializeArrayLambda = [&OutJsonObject](const TArray<FString>& InArray, const FString& InJsonArrayName)
-	{
-		TArray<TSharedPtr<FJsonValue>> ArrayJsonValueList;
-		for (const auto& ArrayItem : InArray)
-		{
-			ArrayJsonValueList.Add(MakeShareable(new FJsonValueString(ArrayItem)));
-		}
-		OutJsonObject->SetArrayField(InJsonArrayName, ArrayJsonValueList);
-	};
-	SerializeArrayLambda(ConvDirPathsToStrings(InChunkInfo.AssetIncludeFilters), TEXT("AssetIncludeFilters"));
-
-	auto SerializeAssetDependencyTypes = [&OutJsonObject](const FString& InName, const TArray<EAssetRegistryDependencyTypeEx>& InTypes)
-	{
-		TArray<TSharedPtr<FJsonValue>> TypesJsonValues;
-		for (const auto& Type : InTypes)
-		{
-			TSharedPtr<FJsonValue> CurrentJsonValue = MakeShareable(new FJsonValueString(UFlibPatchParserHelper::GetEnumNameByValue(Type)));
-			TypesJsonValues.Add(CurrentJsonValue);
-		}
-		OutJsonObject->SetArrayField(InName, TypesJsonValues);
-	};
-	OutJsonObject->SetBoolField(TEXT("bAnalysisFilterDependencies"), InChunkInfo.bAnalysisFilterDependencies);
-	SerializeAssetDependencyTypes(TEXT("AssetRegistryDependencyTypes"), InChunkInfo.AssetRegistryDependencyTypes);
-
-	// serialize specify asset
-	{
-		TArray<TSharedPtr<FJsonValue>> SpecifyAssetJsonValueObjectList;
-		for (const auto& SpecifyAsset : InChunkInfo.IncludeSpecifyAssets)
-		{
-			TSharedPtr<FJsonObject> CurrentAssetJsonObject;
-			UFlibPatchParserHelper::SerializeSpecifyAssetInfoToJsonObject(SpecifyAsset, CurrentAssetJsonObject);
-			SpecifyAssetJsonValueObjectList.Add(MakeShareable(new FJsonValueObject(CurrentAssetJsonObject)));
-		}
-		OutJsonObject->SetArrayField(TEXT("IncludeSpecifyAssets"), SpecifyAssetJsonValueObjectList);
-	}
-
-	// serialize all add extern file to pak
-	{
-		TArray<TSharedPtr<FJsonValue>> AddExFilesJsonObjectList;
-		for (const auto& ExFileInfo : InChunkInfo.AddExternFileToPak)
-		{
-			TSharedPtr<FJsonObject> CurrentFileJsonObject;
-			UFlibPatchParserHelper::SerializeExAssetFileInfoToJsonObject(ExFileInfo, CurrentFileJsonObject);
-			AddExFilesJsonObjectList.Add(MakeShareable(new FJsonValueObject(CurrentFileJsonObject)));
-		}
-		OutJsonObject->SetArrayField(TEXT("AddExternFileToPak"), AddExFilesJsonObjectList);
-	}
-
-	// serialize all add extern directory to pak
-	{
-		TArray<TSharedPtr<FJsonValue>> AddExDirectoryJsonObjectList;
-		for (const auto& ExDirectoryInfo : InChunkInfo.AddExternDirectoryToPak)
-		{
-			TSharedPtr<FJsonObject> CurrentDirJsonObject;
-			UFlibPatchParserHelper::SerializeExDirectoryInfoToJsonObject(ExDirectoryInfo, CurrentDirJsonObject);
-			AddExDirectoryJsonObjectList.Add(MakeShareable(new FJsonValueObject(CurrentDirJsonObject)));
-		}
-		OutJsonObject->SetArrayField(TEXT("AddExternDirectoryToPak"), AddExDirectoryJsonObjectList);
-	}
-
-	TSharedPtr<FJsonObject> OutInternalFilesJsonObject;
-	UFlibPatchParserHelper::SerializeFPakInternalInfoToJsonObject(InChunkInfo.InternalFiles, OutInternalFilesJsonObject);
-OutJsonObject->SetObjectField(TEXT("InternalFiles"), OutInternalFilesJsonObject);
-return bRunStatus;
-}
-
-
-bool UFlibPatchParserHelper::DeSerializeFChunkInfoFromJsonObject(const TSharedPtr<FJsonObject>& InJsonObject, FChunkInfo& OutChunkInfo)
-{
-	OutChunkInfo.ChunkName = InJsonObject->GetStringField(TEXT("ChunkName"));
-	OutChunkInfo.bMonolithic = InJsonObject->GetBoolField(TEXT("bMonolithic"));
-	UFlibPatchParserHelper::GetEnumValueByName(InJsonObject->GetStringField(TEXT("MonolithicPathMode")),OutChunkInfo.MonolithicPathMode);
-	OutChunkInfo.bSavePakCommands = InJsonObject->GetBoolField(TEXT("bSavePakCommands"));
-	auto ParserAssetFilter = [InJsonObject](const FString& InFilterName) -> TArray<FDirectoryPath>
-	{
-		TArray<TSharedPtr<FJsonValue>> FilterArray = InJsonObject->GetArrayField(InFilterName);
-
-		TArray<FDirectoryPath> FilterResult;
-		for (const auto& Filter : FilterArray)
-		{
-			FDirectoryPath CurrentFilterPath;
-			CurrentFilterPath.Path = Filter->AsString();
-			// UE_LOG(LogHotPatcher, Log, TEXT("Filter: %s"), *CurrentFilterPath.Path);
-			FilterResult.Add(CurrentFilterPath);
-		}
-		return FilterResult;
-	};
-
-	OutChunkInfo.AssetIncludeFilters = ParserAssetFilter(TEXT("AssetIncludeFilters"));
-
-	OutChunkInfo.bAnalysisFilterDependencies = InJsonObject->GetBoolField(TEXT("bAnalysisFilterDependencies"));
-	// deserialize AssetRegistryDependencyTypes
-	{
-		TArray<EAssetRegistryDependencyTypeEx> result;
-		TArray<TSharedPtr<FJsonValue>> AssetRegistryDependencyTypes = InJsonObject->GetArrayField(TEXT("AssetRegistryDependencyTypes"));
-		for (const auto& TypeJsonValue : AssetRegistryDependencyTypes)
-		{
-			EAssetRegistryDependencyTypeEx CurrentType;
-			if (UFlibPatchParserHelper::GetEnumValueByName(TypeJsonValue->AsString(),CurrentType))
-			{
-				result.AddUnique(CurrentType);
-			}
-		}
-		OutChunkInfo.AssetRegistryDependencyTypes = result;
-	}
-
-	// PatcherSprcifyAsset
-	{
-		TArray<FPatcherSpecifyAsset> SpecifyAssets;
-		TArray<TSharedPtr<FJsonValue>> SpecifyAssetsJsonObj = InJsonObject->GetArrayField(TEXT("IncludeSpecifyAssets"));
-
-		for (const auto& InSpecifyAsset : SpecifyAssetsJsonObj)
-		{
-			FPatcherSpecifyAsset CurrentAsset;
-			TSharedPtr<FJsonObject> SpecifyJsonObj = InSpecifyAsset->AsObject();
-			if (UFlibPatchParserHelper::DeSerializeSpecifyAssetInfoToJsonObject(SpecifyJsonObj, CurrentAsset))
-			{
-				SpecifyAssets.Add(CurrentAsset);
-			}
-			
-		}
-		OutChunkInfo.IncludeSpecifyAssets = SpecifyAssets;
-	}
-
-	// extern
-	{
-		// extern file 
-		{
-			TArray<FExternAssetFileInfo> AddExternFileToPak;
-
-			TArray<TSharedPtr<FJsonValue>> ExternalFileJsonValues;
-
-			ExternalFileJsonValues = InJsonObject->GetArrayField(TEXT("AddExternFileToPak"));
-
-			for (const auto& FileJsonValue : ExternalFileJsonValues)
-			{
-				FExternAssetFileInfo CurrentExFile;
-				TSharedPtr<FJsonObject> FileJsonObjectValue = FileJsonValue->AsObject();
-
-				CurrentExFile.FilePath.FilePath = FileJsonObjectValue->GetStringField(TEXT("FilePath"));
-				CurrentExFile.MountPath = FileJsonObjectValue->GetStringField(TEXT("MountPath"));
-
-				AddExternFileToPak.Add(CurrentExFile);
-			}
-			OutChunkInfo.AddExternFileToPak = AddExternFileToPak;
-		}
-		// extern directory
-		{
-			TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
-			TArray<TSharedPtr<FJsonValue>> ExternalDirJsonValues;
-
-			ExternalDirJsonValues = InJsonObject->GetArrayField(TEXT("AddExternDirectoryToPak"));
-
-			for (const auto& FileJsonValue : ExternalDirJsonValues)
-			{
-				FExternDirectoryInfo CurrentExDir;
-				TSharedPtr<FJsonObject> FileJsonObjectValue = FileJsonValue->AsObject();
-
-				CurrentExDir.DirectoryPath.Path = FileJsonObjectValue->GetStringField(TEXT("Directory"));
-				CurrentExDir.MountPoint = FileJsonObjectValue->GetStringField(TEXT("MountPoint"));
-
-				AddExternDirectoryToPak.Add(CurrentExDir);
-			}
-			OutChunkInfo.AddExternDirectoryToPak = AddExternDirectoryToPak;
-		}
-
-		// Internal Files
-
-		UFlibPatchParserHelper::DeSerializeFPakInternalInfoFromJsonObject(InJsonObject->GetObjectField(TEXT("InternalFiles")), OutChunkInfo.InternalFiles);
-
-	}
-
-	return true;
-}
 
 FAssetRelatedInfo UFlibPatchParserHelper::GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
 {
@@ -2073,169 +1405,6 @@ TArray<FAssetRelatedInfo> UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDe
 	return UFlibPatchParserHelper::GetAssetsRelatedInfo(AssetsDetail, AssetRegistryDependencyTypes);
 }
 
-bool UFlibPatchParserHelper::SerializeAssetRelatedInfoAsJsonObject(const FAssetRelatedInfo& InAssetDependency, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool RunStatus = false;
-
-	if (!OutJsonObject.IsValid())
-		OutJsonObject = MakeShareable(new FJsonObject);
-
-	FString LongPackageName;
-	UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAssetDependency.Asset.mPackagePath, LongPackageName);
-	OutJsonObject->SetStringField(TEXT("Asset"), LongPackageName);
-
-	
-
-	auto SerializeAssets = [&OutJsonObject](const FString& InCategory, const TArray<FAssetDetail>& InAssets)
-	{
-		TArray<TSharedPtr<FJsonValue>> RefAssetsObjectList;
-		for (const auto& RefAsset : InAssets)
-		{
-			TSharedPtr<FJsonObject> CurrentRefAssetJsonObject = UFLibAssetManageHelperEx::SerilizeAssetDetial(RefAsset);
-			RefAssetsObjectList.Add(MakeShareable(new FJsonValueObject(CurrentRefAssetJsonObject)));
-		}
-		OutJsonObject->SetArrayField(InCategory, RefAssetsObjectList);
-	};
-	
-	SerializeAssets(TEXT("Dependency"), InAssetDependency.AssetDependency);
-	SerializeAssets(TEXT("Reference"), InAssetDependency.AssetReference);
-	return true;
-}
-
-bool UFlibPatchParserHelper::SerializeAssetsRelatedInfoAsJsonObject(const TArray<FAssetRelatedInfo>& InAssetsDependency, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool RunStatus = false;
-
-	if (!OutJsonObject.IsValid())
-		OutJsonObject = MakeShareable(new FJsonObject);
-
-	TArray<TSharedPtr<FJsonValue>> RefAssetsObjectList;
-	for (const auto& AssetDependency: InAssetsDependency)
-	{
-		TSharedPtr<FJsonObject> CurrentAssetDependencyJsonObject;
-		if(UFlibPatchParserHelper::SerializeAssetRelatedInfoAsJsonObject(AssetDependency,CurrentAssetDependencyJsonObject))
-		RefAssetsObjectList.Add(MakeShareable(new FJsonValueObject(CurrentAssetDependencyJsonObject)));
-	}
-	OutJsonObject->SetArrayField(TEXT("AssetsRelatedInfos"),RefAssetsObjectList);
-	return true;
-
-}
-
-bool UFlibPatchParserHelper::SerializeAssetsRelatedInfoAsString(const TArray<FAssetRelatedInfo>& InAssetsDependency, FString& OutString)
-{
-	bool bRunStatus = false;
-	TSharedPtr<FJsonObject> RootJsonObj = MakeShareable(new FJsonObject);
-
-	bRunStatus = UFlibPatchParserHelper::SerializeAssetsRelatedInfoAsJsonObject(InAssetsDependency, RootJsonObj);
-
-	auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&OutString);
-	FJsonSerializer::Serialize(RootJsonObj.ToSharedRef(), JsonWriter);
-
-	return bRunStatus;
-}
-
-TArray<TSharedPtr<FJsonValue>> UFlibPatchParserHelper::SerializeFReplaceTextsAsJsonValues(const TArray<FReplaceText>& InReplaceTexts)
-{
-	TArray<TSharedPtr<FJsonValue>> ReplaceTextJsonValueList;
-
-	for (const auto& ReplaceText : InReplaceTexts)
-	{
-		ReplaceTextJsonValueList.Add(MakeShareable(new FJsonValueObject(UFlibPatchParserHelper::SerializeFReplaceTextAsJsonObject(ReplaceText))));
-	}
-	return ReplaceTextJsonValueList;
-}
-
-TSharedPtr<FJsonObject> UFlibPatchParserHelper::SerializeFReplaceTextAsJsonObject(const FReplaceText& InReplaceText)
-{
-	TSharedPtr<FJsonObject> resultJsonObject = MakeShareable(new FJsonObject);
-	resultJsonObject->SetStringField(TEXT("From"), InReplaceText.From);
-	resultJsonObject->SetStringField(TEXT("To"), InReplaceText.To);
-	resultJsonObject->SetStringField(TEXT("SearchCaseMode"), UFlibPatchParserHelper::GetEnumNameByValue(InReplaceText.SearchCase));
-	return resultJsonObject;
-}
-
-FReplaceText UFlibPatchParserHelper::DeSerializeFReplaceText(const TSharedPtr<FJsonObject>& InReplaceTextJsonObject)
-{
-	FReplaceText result;
-	if (InReplaceTextJsonObject.IsValid())
-	{
-		result.From = InReplaceTextJsonObject->GetStringField(TEXT("From"));
-		result.To = InReplaceTextJsonObject->GetStringField(TEXT("To"));
-
-		FString SearchCaseModeStr = InReplaceTextJsonObject->GetStringField(TEXT("SearchCaseMode"));
-		UFlibPatchParserHelper::GetEnumValueByName(SearchCaseModeStr, result.SearchCase);
-
-	}
-	return result;
-}
-
-
-TSharedPtr<FJsonObject> UFlibPatchParserHelper::SerializeCookerConfigAsJsonObject(const FCookerConfig& InConfig)
-{
-	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-	JsonObject->SetStringField(TEXT("EngineBin"),InConfig.EngineBin);
-	JsonObject->SetStringField(TEXT("ProjectPath"), InConfig.ProjectPath);
-	JsonObject->SetStringField(TEXT("EngineParams"), InConfig.EngineParams);
-
-	auto SerializeArrayLambda = [&JsonObject](const FString& InName, const TArray<FString>& InArray)
-	{
-		TArray<TSharedPtr<FJsonValue>> JsonValueList;
-
-		for (const auto& Item : InArray)
-		{
-			JsonValueList.Add(MakeShareable(new FJsonValueString(Item)));
-		}
-		JsonObject->SetArrayField(InName, JsonValueList);
-	};
-	SerializeArrayLambda(TEXT("CookPlatforms"), InConfig.CookPlatforms);
-	SerializeArrayLambda(TEXT("CookMaps"), InConfig.CookMaps);
-	JsonObject->SetBoolField(TEXT("bCookAllMap"),InConfig.bCookAllMap);
-	SerializeArrayLambda(TEXT("CookFilter"), InConfig.CookFilter);
-	SerializeArrayLambda(TEXT("CookSettings"), InConfig.CookSettings);
-	JsonObject->SetStringField(TEXT("Options"), InConfig.Options);
-
-	return JsonObject;
-}
-
-FString UFlibPatchParserHelper::SerializeCookerConfigAsString(const TSharedPtr<FJsonObject>& InConfigJson)
-{
-	FString result;
-	auto JsonWriter = TJsonWriterFactory<>::Create(&result);
-	FJsonSerializer::Serialize(InConfigJson.ToSharedRef(), JsonWriter);
-	return result;
-}
-
-FCookerConfig UFlibPatchParserHelper::DeSerializeCookerConfig(const FString& InJsonContent)
-{
-	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(InJsonContent);
-	TSharedPtr<FJsonObject> JsonObject;
-	FJsonSerializer::Deserialize(JsonReader, JsonObject);
-
-	FCookerConfig result;
-	result.EngineBin = JsonObject->GetStringField(TEXT("EngineBin"));
-	result.ProjectPath = JsonObject->GetStringField(TEXT("ProjectPath"));
-	result.EngineParams = JsonObject->GetStringField(TEXT("EngineParams"));
-
-	auto DeserializeArray = [&JsonObject](const FString& InName)->TArray<FString>
-	{
-		TArray<FString> result;
-		TArray<TSharedPtr<FJsonValue>> JsonValueList = JsonObject->GetArrayField(InName);
-
-		for (const auto& Item : JsonValueList)
-		{
-			result.AddUnique(Item->AsString());
-		}
-		return result;
-	};
-
-	result.CookPlatforms = DeserializeArray(TEXT("CookPlatforms"));
-	result.CookMaps = DeserializeArray(TEXT("CookMaps"));
-	result.CookFilter = DeserializeArray(TEXT("CookFilter"));
-	result.CookSettings = DeserializeArray(TEXT("CookSettings"));
-	result.Options = JsonObject->GetStringField(TEXT("Options"));
-	result.bCookAllMap = JsonObject->GetBoolField(TEXT("bCookAllMap"));
-	return result;
-}
 
 
 bool UFlibPatchParserHelper::GetCookProcCommandParams(const FCookerConfig& InConfig, FString& OutParams)
@@ -2309,27 +1478,76 @@ void UFlibPatchParserHelper::ReloadShaderbytecode()
 	FShaderCodeLibrary::OpenLibrary(FApp::GetProjectName(), FPaths::ProjectContentDir());
 }
 
-bool UFlibPatchParserHelper::SerializeFPlatformNonAssetAsString(const FPlatformNonAssets& InPlatformNonAsset,
-	FString& OutString)
+FString UFlibPatchParserHelper::SerializeAssetsDependencyAsJsonString(
+	const TArray<FAssetRelatedInfo>& InAssetsDependency)
 {
-	return TSerializeStructAsJsonString(InPlatformNonAsset,OutString);
+	FString AssetsDependencyString;
+	auto SerializeAssetsDependencyLambda = [](const TArray<FAssetRelatedInfo>& InAssetsDependency, TSharedPtr<FJsonObject>& OutJsonObject)->bool
+	{
+		if (!OutJsonObject.IsValid())
+			OutJsonObject = MakeShareable(new FJsonObject);
+
+		TArray<TSharedPtr<FJsonValue>> RefAssetsObjectList;
+		for (const auto& AssetDependency: InAssetsDependency)
+		{
+			TSharedPtr<FJsonObject> CurrentAssetDependencyJsonObject;
+			if(UFlibPatchParserHelper::TSerializeStructAsJsonObject(AssetDependency,CurrentAssetDependencyJsonObject))
+				RefAssetsObjectList.Add(MakeShareable(new FJsonValueObject(CurrentAssetDependencyJsonObject)));
+		}
+		OutJsonObject->SetArrayField(TEXT("AssetsRelatedInfos"),RefAssetsObjectList);
+		return true;
+	};
+	TSharedPtr<FJsonObject> SerializeObject;
+	SerializeAssetsDependencyLambda(InAssetsDependency,SerializeObject);
+				
+	auto JsonWriter = TJsonWriterFactory<>::Create(&AssetsDependencyString);
+	FJsonSerializer::Serialize(SerializeObject.ToSharedRef(), JsonWriter);
+	return AssetsDependencyString;
 }
 
-bool UFlibPatchParserHelper::DeSerializeStringAsFPlatformNonAsset(const FString& InString,
-	FPlatformNonAssets& OutPlatformNonAsset)
+bool UFlibPatchParserHelper::SerializePlatformPakInfoToString(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, FString& OutString)
 {
-	return TDeserializeJsonStringAsStruct(InString,OutPlatformNonAsset);
+	bool bRunStatus = false;
+	TSharedPtr<FJsonObject> RootJsonObj = MakeShareable(new FJsonObject);
+
+	bRunStatus = UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(InPakFilesMap, RootJsonObj);
+
+	auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&OutString);
+	FJsonSerializer::Serialize(RootJsonObj.ToSharedRef(), JsonWriter);
+
+	return bRunStatus;
 }
 
-
-bool UFlibPatchParserHelper::SerializeFPlatformNonAssetAsJsonObject(const FPlatformNonAssets& InPlatformNonAsset,
-                                                                    TSharedPtr<FJsonObject>& OutJson)
+bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject)
 {
-	return TSerializeStructAsJsonObject<FPlatformNonAssets>(InPlatformNonAsset,OutJson);
+	bool bRunStatus = false;
+	if (!OutJsonObject.IsValid())
+	{
+		OutJsonObject = MakeShareable(new FJsonObject);
+	}
+
+	// serialize
+	{
+		TArray<FString> PakPlatformKeys;
+		InPakFilesMap.GetKeys(PakPlatformKeys);
+
+		for (const auto& PakPlatformKey : PakPlatformKeys)
+		{
+			TSharedPtr<FJsonObject> CurrentPlatformPakJsonObj;
+			TArray<TSharedPtr<FJsonValue>> CurrentPlatformPaksObjectList;
+			for (const auto& Pak : *InPakFilesMap.Find(PakPlatformKey))
+			{
+				TSharedPtr<FJsonObject> CurrentPakJsonObj;
+				if (UFlibPatchParserHelper::TSerializeStructAsJsonObject(Pak, CurrentPakJsonObj))
+				{
+					CurrentPlatformPaksObjectList.Add(MakeShareable(new FJsonValueObject(CurrentPakJsonObj)));
+				}
+			}
+			
+			OutJsonObject->SetArrayField(PakPlatformKey, CurrentPlatformPaksObjectList);
+		}
+		bRunStatus = true;
+	}
+	return bRunStatus;
 }
 
-bool UFlibPatchParserHelper::DeSerializeStringAsFPlatformNonAsset(const TSharedPtr<FJsonObject>& InJsonObject,
-	FPlatformNonAssets& Out)
-{
-	return false;
-}
