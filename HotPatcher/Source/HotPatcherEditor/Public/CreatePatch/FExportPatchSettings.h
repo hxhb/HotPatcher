@@ -62,8 +62,7 @@ public:
 		}
 		return AllExternFiles;
 	}
-	
-	TArray<FString> GetAssetIncludeFiltersPaths()const;
+
 	FORCEINLINE TArray<FDirectoryPath> GetAssetIncludeFilters()const { return AssetIncludeFilters; }
 	TArray<FString> GetAssetIgnoreFiltersPaths()const;
 	FORCEINLINE TArray<FDirectoryPath> GetAssetIgnoreFilters()const { return AssetIgnoreFilters; }
@@ -127,7 +126,79 @@ public:
 	FORCEINLINE bool IsCustomPakNameRegular()const {return bCustomPakNameRegular;}
 	FORCEINLINE FString GetPakNameRegular()const { return PakNameRegular;}
 
+	FORCEINLINE TArray<FString> GetAssetIncludeFiltersPaths()const
+	{
+		TArray<FString> Result;
+		for (const auto& Filter : AssetIncludeFilters)
+		{
+			if (!Filter.Path.IsEmpty())
+			{
+				Result.AddUnique(Filter.Path);
+			}
+		}
+		return Result;
+	}
+	
+	FORCEINLINE TArray<FExternAssetFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false)const
+	{
+		TArray<FExternAssetFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectoryByPlatform(InTargetPlatform));
+	
+		for (auto& ExFile : GetAddExternFilesByPlatform(InTargetPlatform))
+		{
+			if (!AllExternFiles.Contains(ExFile))
+			{
+				AllExternFiles.Add(ExFile);
+			}
+		}
+		if (InGeneratedHash)
+		{
+			for (auto& ExFile : AllExternFiles)
+			{
+				ExFile.GenerateFileHash();
+			}
+		}
+		return AllExternFiles;
+	}
+	
+	FORCEINLINE TMap<ETargetPlatform,FHotPatcherPlatformFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false)const
+	{
+		TMap<ETargetPlatform,FHotPatcherPlatformFiles> result;
+	
+		for(const auto& Platform:GetAddExternAssetsToPlatform())
+		{
+			FHotPatcherPlatformFiles PlatformIns{Platform.TargetPlatform,GetAllExternFilesByPlatform(Platform.TargetPlatform,InGeneratedHash)};
+			result.Add(Platform.TargetPlatform,PlatformIns);
+		}
+		return result;
+	}
+
 	FORCEINLINE TArray<FPlatformExternAssets> GetAddExternAssetsToPlatform()const{return AddExternAssetsToPlatform;}
+	
+	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)const
+	{
+		for(const auto& Platform:GetAddExternAssetsToPlatform())
+		{
+			if (Platform.TargetPlatform == InTargetPlatform)
+			{
+				return Platform.AddExternFileToPak;
+			}
+		}
+
+		return TArray<FExternAssetFileInfo>{};
+	}
+	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform)const
+	{
+		for(const auto& Platform:GetAddExternAssetsToPlatform())
+		{
+			if (Platform.TargetPlatform == InTargetPlatform)
+			{
+				return Platform.AddExternDirectoryToPak;
+			}
+		}
+
+		return TArray<FExternDirectoryInfo>{};
+	}
+
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")

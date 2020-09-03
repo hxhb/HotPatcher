@@ -213,10 +213,31 @@ public:
 		return Result;
 	}
 
+	FORCEINLINE TArray<FExternAssetFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const
+	{
+		TArray<FExternAssetFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
+
+		for (auto& ExFile : GetAddExternFiles())
+		{
+			if (!AllExternFiles.Contains(ExFile))
+			{
+				AllExternFiles.Add(ExFile);
+			}
+		}
+		if (InGeneratedHash)
+		{
+			for (auto& ExFile : AllExternFiles)
+			{
+				ExFile.GenerateFileHash();
+			}
+		}
+		return AllExternFiles;
+	}
+	
 	FORCEINLINE TArray<FExternAssetFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false)const
 	{
 		TArray<FExternAssetFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectoryByPlatform(InTargetPlatform));
-
+	
 		for (auto& ExFile : GetAddExternFilesByPlatform(InTargetPlatform))
 		{
 			if (!AllExternFiles.Contains(ExFile))
@@ -233,34 +254,21 @@ public:
 		}
 		return AllExternFiles;
 	}
-
-	FORCEINLINE TMap<ETargetPlatform,TArray<FExternAssetFileInfo>> GetAllPlatfotmExternFiles(bool InGeneratedHash = false)const
+	
+	FORCEINLINE TMap<ETargetPlatform,FHotPatcherPlatformFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false)const
 	{
-		TMap<ETargetPlatform,TArray<FExternAssetFileInfo>> result;
-
+		TMap<ETargetPlatform,FHotPatcherPlatformFiles> result;
+	
 		for(const auto& Platform:GetAddExternAssetsToPlatform())
 		{
-			result.Add(Platform.TargetPlatform,GetAllExternFilesByPlatform(Platform.TargetPlatform,InGeneratedHash));
+			FHotPatcherPlatformFiles PlatformIns(Platform.TargetPlatform,GetAllExternFilesByPlatform(Platform.TargetPlatform,InGeneratedHash));
+			result.Add(Platform.TargetPlatform,PlatformIns);
 		}
 		return result;
 	}
+
+	FORCEINLINE TArray<FPlatformExternAssets> GetAddExternAssetsToPlatform()const{return AddExternAssetsToPlatform;}
 	
-	FORCEINLINE FString GetSavePath()const{return SavePath.Path;}
-	FORCEINLINE bool IsSaveConfig()const {return bSaveReleaseConfig;}
-	FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bSaveAssetRelatedInfo; }
-	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
-	FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
-	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
-	FORCEINLINE TArray<FPatcherSpecifyAsset> GetSpecifyAssets()const { return IncludeSpecifyAssets; }
-	FORCEINLINE bool AddSpecifyAsset(FPatcherSpecifyAsset const& InAsset)
-	{
-		IncludeSpecifyAssets.AddUnique(InAsset);
-		return true;
-	}
-
-	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
-	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
-
 	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)const
 	{
 		for(const auto& Platform:GetAddExternAssetsToPlatform())
@@ -286,12 +294,28 @@ public:
 		return TArray<FExternDirectoryInfo>{};
 	}
 	
+
 	
+	FORCEINLINE FString GetSavePath()const{return SavePath.Path;}
+	FORCEINLINE bool IsSaveConfig()const {return bSaveReleaseConfig;}
+	FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bSaveAssetRelatedInfo; }
+	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
+	FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
+	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
+	FORCEINLINE TArray<FPatcherSpecifyAsset> GetSpecifyAssets()const { return IncludeSpecifyAssets; }
+	FORCEINLINE bool AddSpecifyAsset(FPatcherSpecifyAsset const& InAsset)
+	{
+		IncludeSpecifyAssets.AddUnique(InAsset);
+		return true;
+	}
+
+	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
+	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
 
 	FORCEINLINE bool IsByPakList()const { return ByPakList; }
 	FORCEINLINE FFilePath GetPakListFile()const { return PakListFile; }
 
-	FORCEINLINE TArray<FPlatformExternAssets> GetAddExternAssetsToPlatform()const{return AddExternAssetsToPlatform;}
+	
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Version")

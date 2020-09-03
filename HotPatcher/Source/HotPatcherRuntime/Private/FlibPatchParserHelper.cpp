@@ -249,10 +249,10 @@ bool UFlibPatchParserHelper::DiffVersionExFiles(
 	{
 		TArray<FString> NewVersionFilesKeys;
 		lInNewVersion.ExternalFiles.GetKeys(NewVersionFilesKeys);
-
+	
 		TArray<FString> BaseVersionFilesKeys;
 		lInBaseVersion.ExternalFiles.GetKeys(BaseVersionFilesKeys);
-
+	
 		for (const auto& NewVersionFile : NewVersionFilesKeys)
 		{
 			if (!lInBaseVersion.ExternalFiles.Contains(NewVersionFile))
@@ -261,20 +261,20 @@ bool UFlibPatchParserHelper::DiffVersionExFiles(
 			}
 		}
 	};
-
+	
 	// Parser Add Files
 	ParserAddFiles(InNewVersion, InBaseVersion, OutAddFiles);
 	// Parser delete Files
 	ParserAddFiles(InBaseVersion, InNewVersion, OutDeleteFiles);
-
+	
 	// Parser modify Files
 	{
 		TArray<FString> NewVersionFilesKeys;
 		InNewVersion.ExternalFiles.GetKeys(NewVersionFilesKeys);
-
+	
 		TArray<FString> BaseVersionFilesKeys;
 		InBaseVersion.ExternalFiles.GetKeys(BaseVersionFilesKeys);
-
+	
 		for (const auto& NewVersionFile : NewVersionFilesKeys)
 		{
 			// UE_LOG(LogHotPatcher, Log, TEXT("check file %s."), *NewVersionFile);
@@ -870,6 +870,40 @@ TArray<FExternAssetFileInfo> UFlibPatchParserHelper::GetExternFilesFromChunk(con
 	return AllExternFiles;
 }
 
+TMap<ETargetPlatform,FHotPatcherPlatformFiles> UFlibPatchParserHelper::GetAllPlatformExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash)
+{
+	TMap<ETargetPlatform,FHotPatcherPlatformFiles> result;
+	auto ParserAllFileAndDirs = [](const FPlatformExternAssets& InPlatformInfo,bool bCalcHash=true)->FHotPatcherPlatformFiles
+	{
+		FHotPatcherPlatformFiles result;
+		result.Platform = InPlatformInfo.TargetPlatform;
+		result.ExternFiles = InPlatformInfo.AddExternFileToPak;
+		for (auto& ExFile : InPlatformInfo.AddExternFileToPak)
+		{
+			if (!result.ExternFiles.Contains(ExFile))
+			{
+				result.ExternFiles.Add(ExFile);
+			}
+		}
+		if (bCalcHash)
+		{
+			for (auto& ExFile : result.ExternFiles)
+			{
+				ExFile.GenerateFileHash();
+			}
+		}
+		return result;
+	};
+	
+	for(const auto& Platform:InChunk.AddExternAssetsToPlatform)
+	{
+		result.Add(Platform.TargetPlatform,ParserAllFileAndDirs(Platform));
+	}
+	
+	return result;
+}
+
+
 FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk)
 {
 	FChunkAssetDescribe ChunkAssetDescribe;
@@ -1112,7 +1146,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	const TArray<FString>& InIgnoreFilter,
 	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
 	const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
-	const TMap<ETargetPlatform,TArray<FExternAssetFileInfo>>& InAllPlatformExternFiles,
+	const TArray<FExternAssetFileInfo>& InAllExternFiles,
 	bool InIncludeHasRefAssetsOnly,
 	bool bInAnalysisFilterDepend
 )
@@ -1227,45 +1261,30 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 
 	ExportVersion.AssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(FilterAssetDependencies, SpecifyAssetDependencies);
 
-	TArray<ETargetPlatform> TargetPlatforms;
-	InAllPlatformExternFiles.GetKeys(TargetPlatforms);
-	
-	for (auto& Platform:TargetPlatforms)
+	for (const auto& File : InAllExternFiles)
 	{
-		if(!ExportVersion.ExternalFiles.Contains(Platform))
+		if (!ExportVersion.ExternalFiles.Contains(File.FilePath.FilePath))
 		{
-			ExportVersion.ExternalFiles.Add(Platform,FHotPatcherPlatformFiles(Platform,*InAllPlatformExternFiles.Find(Platform)));
+			ExportVersion.ExternalFiles.Add(File.MountPath, File);
 		}
-		else
-		{
-			for (const auto& File : *InAllPlatformExternFiles.Find(Platform))
-			{
-				if (!(ExportVersion.ExternalFiles.Find(Platform)->ExternFiles.Contains(File)))
-				{
-					ExportVersion.ExternalFiles.Find(Platform)->ExternFiles.Add(File);
-				}
-			}
-		}
-		
 	}
 	return ExportVersion;
 }
 
-
 FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(const FString& InVersionId, const FString& InBaseVersion, const FString& InDate, const FChunkInfo& InChunkInfo, bool InIncludeHasRefAssetsOnly /*= false */,bool bInAnalysisFilterDepend /* = true*/)
 {
 	return UFlibPatchParserHelper::ExportReleaseVersionInfo(
-		InVersionId,
-		InBaseVersion,
-		InDate,
-		UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIncludeFilters),
-		UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIgnoreFilters),
-		InChunkInfo.AssetRegistryDependencyTypes,
-		InChunkInfo.IncludeSpecifyAssets,
-		UFlibPatchParserHelper::GetExternFilesFromChunk(InChunkInfo, true),
-		InIncludeHasRefAssetsOnly,
-		bInAnalysisFilterDepend
-	);
+        InVersionId,
+        InBaseVersion,
+        InDate,
+        UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIncludeFilters),
+        UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIgnoreFilters),
+        InChunkInfo.AssetRegistryDependencyTypes,
+        InChunkInfo.IncludeSpecifyAssets,
+        UFlibPatchParserHelper::GetExternFilesFromChunk(InChunkInfo, true),
+        InIncludeHasRefAssetsOnly,
+        bInAnalysisFilterDepend
+    );
 }
 
 

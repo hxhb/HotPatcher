@@ -22,31 +22,6 @@ FExportPatchSettings::FExportPatchSettings()
 	);
 }
 
-TArray<FString> FExportPatchSettings::GetAssetIncludeFiltersPaths()const
-{
-	TArray<FString> Result;
-	for (const auto& Filter : AssetIncludeFilters)
-	{
-		if(!Filter.Path.IsEmpty())
-		{
-			Result.AddUnique(Filter.Path);
-		}
-	}
-	return Result;
-}
-
-TArray<FString> FExportPatchSettings::GetAssetIgnoreFiltersPaths()const
-{
-	TArray<FString> Result;
-	for (const auto& Filter : AssetIgnoreFilters)
-	{
-		if (!Filter.Path.IsEmpty())
-		{
-			Result.AddUnique(Filter.Path);
-		}
-	}
-	return Result;
-}
 
 FString FExportPatchSettings::GetSaveAbsPath()const
 {
@@ -205,16 +180,16 @@ FHotPatcherVersion FExportPatchSettings::GetNewPatchVersionInfo() const
 	this->GetBaseVersionInfo(BaseVersionInfo);
 
 	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
-		this->GetVersionId(),
-		BaseVersionInfo.VersionId,
-		FDateTime::UtcNow().ToString(),
-		this->GetAssetIncludeFiltersPaths(),
-		this->GetAssetIgnoreFiltersPaths(),
-		this->GetAssetRegistryDependencyTypes(),
-		this->GetIncludeSpecifyAssets(),
-		this->GetAllExternFiles(true),
-		this->IsIncludeHasRefAssetsOnly()
-	);
+        this->GetVersionId(),
+        BaseVersionInfo.VersionId,
+        FDateTime::UtcNow().ToString(),
+        this->GetAssetIncludeFiltersPaths(),
+        this->GetAssetIgnoreFiltersPaths(),
+        this->GetAssetRegistryDependencyTypes(),
+        this->GetIncludeSpecifyAssets(),
+        this->GetAllExternFiles(true),
+        this->IsIncludeHasRefAssetsOnly()
+    );
 
 	return CurrentVersion;
 }
@@ -309,4 +284,17 @@ TArray<FString> FExportPatchSettings::GetPakTargetPlatformNames() const
 		Resault.Add(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
 	}
 	return Resault;
+}
+
+TArray<FString> FExportPatchSettings::GetAssetIgnoreFiltersPaths()const
+{
+	TArray<FString> Result;
+	for (const auto& Filter : AssetIgnoreFilters)
+	{
+		if (!Filter.Path.IsEmpty())
+		{
+			Result.AddUnique(Filter.Path);
+		}
+	}
+	return Result;
 }

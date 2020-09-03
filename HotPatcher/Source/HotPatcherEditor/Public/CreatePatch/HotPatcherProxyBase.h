@@ -21,6 +21,7 @@ public:
     }
     FORCEINLINE virtual bool DoExport(){return false;};
     FORCEINLINE virtual FHotPatcherSettingBase* GetSettingObject(){return Setting;};
+
 public:
     FExportPakProcess OnPaking;
     FExportPakShowMsg OnShowMsg;

@@ -119,8 +119,6 @@ bool UPatcherProxy::SavePatchDiffJson(const FHotPatcherVersion& InSaveVersion, c
 		if (UFLibAssetManageHelperEx::SaveStringToFile(SaveDiffToFile, SerializeDiffInfo))
 		{
 			bStatus = true;
-			// auto Msg = LOCTEXT("SavePatchDiffInfo", "Succeed to export New Patch Diff Info.");
-			// UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveDiffToFile);
 
 			FString Msg = FString::Printf(TEXT("Succeed to export New Patch Diff Info."),*SaveDiffToFile);
 			OnPaking.Broadcast(TEXT("SavePatchDiffInfo"),Msg);
@@ -728,8 +726,7 @@ bool UPatcherProxy::DoExport()
 		if (GetSettingObject()->IsSavePatchConfig())
 		{
 			FString SerializedJsonStr;
-			GetSettingObject()->SerializePatchConfigToString(SerializedJsonStr);
-
+			UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetSettingObject(),SerializedJsonStr);
 			if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveConfigPath))
 			{
 				if(IsRunningCommandlet())

@@ -26,20 +26,20 @@ bool UReleaseProxy::DoExport()
 	
 	FHotPatcherVersion ExportVersion;
 	{
-		FText DiaLogMsg = FText::Format(NSLOCTEXT("AnalysisRelease", "AnalysisReleaseVersionInfo", "Analysis Release {0} Assets info."), FText::FromString(GetSettingObject()->GetVersionId()));
-		UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
-		ExportVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
-			GetSettingObject()->GetVersionId(),
-			TEXT(""),
-			FDateTime::UtcNow().ToString(),
-			GetSettingObject()->GetAssetIncludeFiltersPaths(),
-			GetSettingObject()->GetAssetIgnoreFiltersPaths(),
-			GetSettingObject()->GetAssetRegistryDependencyTypes(),
-			GetSettingObject()->GetSpecifyAssets(),
-			GetSettingObject()->GetAllPlatfotmExternFiles(),
-			GetSettingObject()->IsIncludeHasRefAssetsOnly(),
-			GetSettingObject()->IsAnalysisFilterDependencies()
-		);
+    	FText DiaLogMsg = FText::Format(NSLOCTEXT("AnalysisRelease", "AnalysisReleaseVersionInfo", "Analysis Release {0} Assets info."), FText::FromString(GetSettingObject()->GetVersionId()));
+    	UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
+    	ExportVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
+            GetSettingObject()->GetVersionId(),
+            TEXT(""),
+            FDateTime::UtcNow().ToString(),
+            GetSettingObject()->GetAssetIncludeFiltersPaths(),
+            GetSettingObject()->GetAssetIgnoreFiltersPaths(),
+            GetSettingObject()->GetAssetRegistryDependencyTypes(),
+            GetSettingObject()->GetSpecifyAssets(),
+            GetSettingObject()->GetAllExternFiles(true),
+            GetSettingObject()->IsIncludeHasRefAssetsOnly(),
+            GetSettingObject()->IsAnalysisFilterDependencies()
+        );
 	}
 	FString SaveVersionDir = FPaths::Combine(GetSettingObject()->GetSavePath(), GetSettingObject()->GetVersionId());
 

@@ -45,17 +45,17 @@ public:
 		static FString GetUE4CmdBinary();
 
 	static FHotPatcherVersion ExportReleaseVersionInfo(
-		const FString& InVersionId,
-		const FString& InBaseVersion,
-		const FString& InDate,
-		const TArray<FString>& InIncludeFilter,
-		const TArray<FString>& InIgnoreFilter,
-		const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
-		const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
-		const TMap<ETargetPlatform,TArray<FExternAssetFileInfo>>& InAllPlatformExternFiles,
-		bool InIncludeHasRefAssetsOnly = false,
-		bool bInAnalysisFilterDepend = true
-	);
+        const FString& InVersionId,
+        const FString& InBaseVersion,
+        const FString& InDate,
+        const TArray<FString>& InIncludeFilter,
+        const TArray<FString>& InIgnoreFilter,
+        const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+        const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
+        const TArray<FExternAssetFileInfo>& InAllExternFiles,
+        bool InIncludeHasRefAssetsOnly = false,
+        bool bInAnalysisFilterDepend = true
+    );
 	static FHotPatcherVersion ExportReleaseVersionInfoByChunk(
 		const FString& InVersionId,
 		const FString& InBaseVersion,
@@ -153,6 +153,7 @@ public:
 	static TArray<FString> GetDirectoryPaths(const TArray<FDirectoryPath>& InDirectoryPath);
 	
 	static TArray<FExternAssetFileInfo> GetExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash = false);
+	TMap<ETargetPlatform,FHotPatcherPlatformFiles> GetAllPlatformExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash);
 	static FPatchVersionDiff DiffPatchVersion(const FHotPatcherVersion& Base, const FHotPatcherVersion& New);
 
 	static FChunkAssetDescribe CollectFChunkAssetsDescribeByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk);
