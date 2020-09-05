@@ -16,6 +16,8 @@ struct FPatchVersionExternDiff
 	GENERATED_USTRUCT_BODY()
 public:
 	UPROPERTY(EditAnywhere)
+	ETargetPlatform Platform;
+	UPROPERTY(EditAnywhere)
 	TArray<FExternAssetFileInfo> AddExternalFiles;
 	UPROPERTY(EditAnywhere)
 	TArray<FExternAssetFileInfo> ModifyExternalFiles;

@@ -41,6 +41,7 @@ bool UReleaseProxy::DoExport()
             GetSettingObject()->IsAnalysisFilterDependencies()
         );
 	}
+
 	FString SaveVersionDir = FPaths::Combine(GetSettingObject()->GetSavePath(), GetSettingObject()->GetVersionId());
 
 	// save release asset info

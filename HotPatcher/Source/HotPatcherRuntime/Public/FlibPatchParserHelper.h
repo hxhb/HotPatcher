@@ -13,6 +13,7 @@
 #include "FExternDirectoryInfo.h"
 #include "FAssetRelatedInfo.h"
 #include "FCookerConfig.h"
+#include "FHotPatcherPlatformFiles.h"
 
 // cpp standard
 #include <typeinfo>
@@ -80,8 +81,13 @@ public:
 			TArray<FExternAssetFileInfo>& OutModifyFiles,
 			TArray<FExternAssetFileInfo>& OutDeleteFiles
 		);
-
-
+	UFUNCTION()
+	static bool DiffVersionAllPlatformExFiles(const FHotPatcherVersion& InNewVersion,
+        const FHotPatcherVersion& InBaseVersion,
+		TMap<ETargetPlatform,FPatchVersionExternDiff> OutDiff        
+    );
+	UFUNCTION()
+	static FHotPatcherPlatformFiles GetAllExFilesByPlatform(const FPlatformExternAssets& InPlatformConf,bool InGeneratedHash=true);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool GetPakFileInfo(const FString& InFile,FPakFileInfo& OutFileInfo);
 

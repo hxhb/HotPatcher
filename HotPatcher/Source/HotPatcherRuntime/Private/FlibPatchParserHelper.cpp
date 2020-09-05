@@ -298,6 +298,122 @@ bool UFlibPatchParserHelper::DiffVersionExFiles(
 
 	return true;
 }
+
+bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(const FHotPatcherVersion& InNewVersion,
+	const FHotPatcherVersion& InBaseVersion, TMap<ETargetPlatform, FPatchVersionExternDiff> OutDiff)
+{
+	OutDiff.Empty();
+	auto ParserDiffPlatformExFileLambda = [](const FHotPatcherPlatformFiles& InBase,const FHotPatcherPlatformFiles& InNew)->FPatchVersionExternDiff
+	{
+		FPatchVersionExternDiff result;
+		result.Platform = InNew.Platform;
+		
+		auto ParserAddFiles = [](const TArray<FExternAssetFileInfo>& InBase,const TArray<FExternAssetFileInfo>& InNew,TArray<FExternAssetFileInfo>& Out)
+		{
+			for (const auto& NewVersionFile : InNew)
+			{
+				if (!InBase.Contains(NewVersionFile))
+				{
+					Out.AddUnique(NewVersionFile);
+				}
+			}
+		};
+	
+		// Parser Add Files
+		ParserAddFiles(InBase.ExternFiles, InNew.ExternFiles, result.AddExternalFiles);
+		// Parser delete Files
+		ParserAddFiles(InNew.ExternFiles, InBase.ExternFiles, result.DeleteExternalFiles);
+	
+		// Parser modify Files
+		{
+			for (const auto& NewVersionFile : InNew.ExternFiles)
+			{
+				// UE_LOG(LogHotPatcher, Log, TEXT("check file %s."), *NewVersionFile);
+				if (InBase.ExternFiles.Contains(NewVersionFile))
+				{
+					uint32 BaseFileIndex = InBase.ExternFiles.Find(NewVersionFile);
+					bool bIsSame = (NewVersionFile.FileHash == InBase.ExternFiles[BaseFileIndex].FileHash);
+					if (!bIsSame)
+					{
+						// UE_LOG(LogHotPatcher, Log, TEXT("%s is not same."), *NewFile.MountPath);
+						result.ModifyExternalFiles.Add(NewVersionFile);
+					}
+				}
+				else
+				{
+					UE_LOG(LogHotPatcher, Log, TEXT("base version not contains %s."), *NewVersionFile.MountPath);
+				}
+			}
+		}
+
+		return result;
+	};
+
+	TArray<ETargetPlatform> NewPlatformKeys;
+	TArray<ETargetPlatform> BasePlatformKeys;
+	InNewVersion.PlatformAssets.GetKeys(NewPlatformKeys);
+	InBaseVersion.PlatformAssets.GetKeys(BasePlatformKeys);
+
+	// ADD
+	for(const auto& Platform:NewPlatformKeys)
+	{
+		if(InBaseVersion.PlatformAssets.Contains(Platform))
+		{
+			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
+				UFlibPatchParserHelper::GetAllExFilesByPlatform(InBaseVersion.PlatformAssets[Platform]),
+				UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform])
+			));
+		}
+		else
+		{
+			FHotPatcherPlatformFiles EmptyBase;
+			EmptyBase.Platform = Platform;
+			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
+				EmptyBase,
+                UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform])
+            ));
+		}
+	}
+
+	// Delete
+	for(const auto& Platform:BasePlatformKeys)
+	{
+		if(!InNewVersion.PlatformAssets.Contains(Platform))
+		{
+			FHotPatcherPlatformFiles EmptyNew;
+			EmptyNew.Platform = Platform;
+			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
+                UFlibPatchParserHelper::GetAllExFilesByPlatform(InBaseVersion.PlatformAssets[Platform]),
+                EmptyNew
+            ));
+		}
+	}
+	return true;
+}
+
+FHotPatcherPlatformFiles UFlibPatchParserHelper::GetAllExFilesByPlatform(
+	const FPlatformExternAssets& InPlatformConf,bool InGeneratedHash)
+{
+	FHotPatcherPlatformFiles result;
+	result.ExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(InPlatformConf.AddExternDirectoryToPak);
+
+	for (auto& ExFile : InPlatformConf.AddExternFileToPak)
+	{
+		if (!result.ExternFiles.Contains(ExFile))
+		{
+			result.ExternFiles.Add(ExFile);
+		}
+	}
+	if (InGeneratedHash)
+	{
+		for (auto& ExFile : result.ExternFiles)
+		{
+			ExFile.GenerateFileHash();
+		}
+	}
+	return result;
+}
+
 bool UFlibPatchParserHelper::GetPakFileInfo(const FString& InFile, FPakFileInfo& OutFileInfo)
 {
 	bool bRunStatus = false;

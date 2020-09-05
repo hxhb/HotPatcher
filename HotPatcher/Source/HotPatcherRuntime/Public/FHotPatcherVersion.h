@@ -4,24 +4,14 @@
 #include "FPatcherSpecifyAsset.h"
 #include "FExternAssetFileInfo.h"
 #include "ETargetPlatform.h"
-
+#include "FHotPatcherPlatformFiles.h"
 // engine header
 #include "CoreMinimal.h"
+#include "UObject/ObjectMacros.h"
+
 #include "FHotPatcherVersion.generated.h"
 
-USTRUCT(BlueprintType)
-struct FHotPatcherPlatformFiles
-{
-	GENERATED_BODY()
-	FORCEINLINE FHotPatcherPlatformFiles()=default;
-	FORCEINLINE FHotPatcherPlatformFiles(ETargetPlatform InPlatform,const TArray<FExternAssetFileInfo>& InFiles):
-		Platform(InPlatform),ExternFiles(InFiles){}
-	
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	ETargetPlatform Platform;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	TArray<FExternAssetFileInfo> ExternFiles;
-};
+
 
 USTRUCT(BlueprintType)
 struct FHotPatcherVersion
@@ -50,4 +40,6 @@ public:
 	FAssetDependenciesInfo AssetInfo;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TMap<FString, FExternAssetFileInfo> ExternalFiles;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	TMap<ETargetPlatform,FPlatformExternAssets> PlatformAssets;
 };

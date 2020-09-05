@@ -236,9 +236,9 @@ public:
 		bool bIncludeProjectIni;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		bool bEnableExternFilesDiff;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		TArray<FExternAssetFileInfo> AddExternFileToPak;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
