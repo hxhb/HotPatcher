@@ -9,6 +9,8 @@
 #include "HotPatcherLog.h"
 
 // engine header
+// #include <agile.h>
+
 #include "Misc/SecureHash.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetStringLibrary.h"
@@ -299,8 +301,8 @@ bool UFlibPatchParserHelper::DiffVersionExFiles(
 	return true;
 }
 
-bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(const FHotPatcherVersion& InNewVersion,
-	const FHotPatcherVersion& InBaseVersion, TMap<ETargetPlatform, FPatchVersionExternDiff> OutDiff)
+bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
+	const FHotPatcherVersion& InBaseVersion,const FHotPatcherVersion& InNewVersion, TMap<ETargetPlatform, FPatchVersionExternDiff>& OutDiff)
 {
 	OutDiff.Empty();
 	auto ParserDiffPlatformExFileLambda = [](const FHotPatcherPlatformFiles& InBase,const FHotPatcherPlatformFiles& InNew)->FPatchVersionExternDiff
@@ -335,8 +337,11 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(const FHotPatcherVers
 					bool bIsSame = (NewVersionFile.FileHash == InBase.ExternFiles[BaseFileIndex].FileHash);
 					if (!bIsSame)
 					{
-						// UE_LOG(LogHotPatcher, Log, TEXT("%s is not same."), *NewFile.MountPath);
+						UE_LOG(LogHotPatcher, Log, TEXT("%s is not same."), *NewVersionFile.MountPath);
 						result.ModifyExternalFiles.Add(NewVersionFile);
+					}else
+					{
+						UE_LOG(LogHotPatcher, Log, TEXT("%s is same."), *NewVersionFile.MountPath);
 					}
 				}
 				else
@@ -360,7 +365,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(const FHotPatcherVers
 		if(InBaseVersion.PlatformAssets.Contains(Platform))
 		{
 			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
-				UFlibPatchParserHelper::GetAllExFilesByPlatform(InBaseVersion.PlatformAssets[Platform]),
+				UFlibPatchParserHelper::GetAllExFilesByPlatform(InBaseVersion.PlatformAssets[Platform],false),
 				UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform])
 			));
 		}
@@ -370,7 +375,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(const FHotPatcherVers
 			EmptyBase.Platform = Platform;
 			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
 				EmptyBase,
-                UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform])
+                UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform],true)
             ));
 		}
 	}
@@ -1243,14 +1248,14 @@ FPatchVersionDiff UFlibPatchParserHelper::DiffPatchVersion(const FHotPatcherVers
 		VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo
 	);
 
-	UFlibPatchParserHelper::DiffVersionExFiles(
-		New,
-		Base,
-		VersionDiffInfo.ExternDiffInfo.AddExternalFiles,
-		VersionDiffInfo.ExternDiffInfo.ModifyExternalFiles,
-		VersionDiffInfo.ExternDiffInfo.DeleteExternalFiles
-	);
-
+	// UFlibPatchParserHelper::DiffVersionExFiles(
+	// 	New,
+	// 	Base,
+	// 	VersionDiffInfo.ExternDiffInfo.AddExternalFiles,
+	// 	VersionDiffInfo.ExternDiffInfo.ModifyExternalFiles,
+	// 	VersionDiffInfo.ExternDiffInfo.DeleteExternalFiles
+	// );
+	UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(Base,New,VersionDiffInfo.PlatformExternDiffInfo);
 	return VersionDiffInfo;
 }
 
@@ -1262,7 +1267,8 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	const TArray<FString>& InIgnoreFilter,
 	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
 	const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
-	const TArray<FExternAssetFileInfo>& InAllExternFiles,
+	// const TArray<FExternAssetFileInfo>& InAllExternFiles,
+	const TArray<FPlatformExternAssets>& AddToPlatformExFiles,
 	bool InIncludeHasRefAssetsOnly,
 	bool bInAnalysisFilterDepend
 )
@@ -1377,12 +1383,21 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 
 	ExportVersion.AssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(FilterAssetDependencies, SpecifyAssetDependencies);
 
-	for (const auto& File : InAllExternFiles)
+	// for (const auto& File : InAllExternFiles)
+	// {
+	// 	if (!ExportVersion.ExternalFiles.Contains(File.FilePath.FilePath))
+	// 	{
+	// 		ExportVersion.ExternalFiles.Add(File.MountPath, File);
+	// 	}
+	// }
+
+	for(const auto& PlatformExInfo:AddToPlatformExFiles)
 	{
-		if (!ExportVersion.ExternalFiles.Contains(File.FilePath.FilePath))
-		{
-			ExportVersion.ExternalFiles.Add(File.MountPath, File);
-		}
+		FHotPatcherPlatformFiles PlatformFileInfo = UFlibPatchParserHelper::GetAllExFilesByPlatform(PlatformExInfo);
+		FPlatformExternAssets PlatformExternAssets;
+		PlatformExternAssets.TargetPlatform = PlatformExInfo.TargetPlatform;
+		PlatformExternAssets.AddExternFileToPak = PlatformFileInfo.ExternFiles;
+		ExportVersion.PlatformAssets.Add(PlatformExInfo.TargetPlatform,PlatformExternAssets);
 	}
 	return ExportVersion;
 }
@@ -1397,7 +1412,8 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(const
         UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIgnoreFilters),
         InChunkInfo.AssetRegistryDependencyTypes,
         InChunkInfo.IncludeSpecifyAssets,
-        UFlibPatchParserHelper::GetExternFilesFromChunk(InChunkInfo, true),
+        // UFlibPatchParserHelper::GetExternFilesFromChunk(InChunkInfo, true),
+        InChunkInfo.AddExternAssetsToPlatform,
         InIncludeHasRefAssetsOnly,
         bInAnalysisFilterDepend
     );

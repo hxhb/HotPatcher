@@ -187,7 +187,8 @@ FHotPatcherVersion FExportPatchSettings::GetNewPatchVersionInfo() const
         this->GetAssetIgnoreFiltersPaths(),
         this->GetAssetRegistryDependencyTypes(),
         this->GetIncludeSpecifyAssets(),
-        this->GetAllExternFiles(true),
+        this->GetAddExternAssetsToPlatform(),
+        // this->GetAllExternFiles(true),
         this->IsIncludeHasRefAssetsOnly()
     );
 

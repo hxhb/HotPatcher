@@ -36,7 +36,8 @@ bool UReleaseProxy::DoExport()
             GetSettingObject()->GetAssetIgnoreFiltersPaths(),
             GetSettingObject()->GetAssetRegistryDependencyTypes(),
             GetSettingObject()->GetSpecifyAssets(),
-            GetSettingObject()->GetAllExternFiles(true),
+            // GetSettingObject()->GetAllExternFiles(true),
+            GetSettingObject()->GetAddExternAssetsToPlatform(),
             GetSettingObject()->IsIncludeHasRefAssetsOnly(),
             GetSettingObject()->IsAnalysisFilterDependencies()
         );

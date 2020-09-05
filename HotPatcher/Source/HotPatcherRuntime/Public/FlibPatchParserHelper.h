@@ -53,7 +53,8 @@ public:
         const TArray<FString>& InIgnoreFilter,
         const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
         const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
-        const TArray<FExternAssetFileInfo>& InAllExternFiles,
+        // const TArray<FExternAssetFileInfo>& InAllExternFiles,
+        const TArray<FPlatformExternAssets>& AddToPlatformExFiles,
         bool InIncludeHasRefAssetsOnly = false,
         bool bInAnalysisFilterDepend = true
     );
@@ -82,9 +83,10 @@ public:
 			TArray<FExternAssetFileInfo>& OutDeleteFiles
 		);
 	UFUNCTION()
-	static bool DiffVersionAllPlatformExFiles(const FHotPatcherVersion& InNewVersion,
+	static bool DiffVersionAllPlatformExFiles(
         const FHotPatcherVersion& InBaseVersion,
-		TMap<ETargetPlatform,FPatchVersionExternDiff> OutDiff        
+        const FHotPatcherVersion& InNewVersion,
+		TMap<ETargetPlatform,FPatchVersionExternDiff>& OutDiff        
     );
 	UFUNCTION()
 	static FHotPatcherPlatformFiles GetAllExFilesByPlatform(const FPlatformExternAssets& InPlatformConf,bool InGeneratedHash=true);

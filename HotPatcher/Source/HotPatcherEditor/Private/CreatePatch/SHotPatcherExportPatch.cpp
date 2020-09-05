@@ -260,7 +260,8 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		ExportPatchSetting->GetAssetIgnoreFiltersPaths(),
 		ExportPatchSetting->GetAssetRegistryDependencyTypes(),
 		ExportPatchSetting->GetIncludeSpecifyAssets(),
-		ExportPatchSetting->GetAllExternFiles(true),
+		ExportPatchSetting->GetAddExternAssetsToPlatform(),
+		// ExportPatchSetting->GetAllExternFiles(true),
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
 	);
 

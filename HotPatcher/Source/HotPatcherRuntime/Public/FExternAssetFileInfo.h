@@ -43,10 +43,16 @@ public:
 
 	bool operator==(const FExternAssetFileInfo& Right)const
 	{
-		bool bIsSamePath = (FilePath.FilePath == Right.FilePath.FilePath);
+		
 		bool bIsSameMountPath = (MountPath == Right.MountPath);
+		
+		return bIsSameMountPath;
+	}
+	bool IsAbsSame(const FExternAssetFileInfo& Right)const
+	{
+		bool bIsSamePath = (FilePath.FilePath == Right.FilePath.FilePath);
 		bool IsSameHash = (FileHash == Right.FileHash);
-		return bIsSamePath && bIsSameMountPath && IsSameHash;
+		return (*this == Right) && bIsSamePath &&  IsSameHash;
 	}
 
 };

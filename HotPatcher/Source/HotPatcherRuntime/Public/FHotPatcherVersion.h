@@ -5,6 +5,7 @@
 #include "FExternAssetFileInfo.h"
 #include "ETargetPlatform.h"
 #include "FHotPatcherPlatformFiles.h"
+
 // engine header
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"
