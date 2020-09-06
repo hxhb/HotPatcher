@@ -11,9 +11,9 @@
 #include "FlibPakHelper.h"
 #include "FExternDirectoryInfo.h"
 #include "FExternDirectoryInfo.h"
-#include "FAssetRelatedInfo.h"
+#include "FAssetDependency.h"
 #include "FCookerConfig.h"
-#include "FHotPatcherPlatformFiles.h"
+#include "FPlatformExternFiles.h"
 
 // cpp standard
 #include <typeinfo>
@@ -75,13 +75,7 @@ public:
 								FAssetDependenciesInfo& OutModifyAsset,
 								FAssetDependenciesInfo& OutDeleteAsset
 		);
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static bool DiffVersionExFiles(const FHotPatcherVersion& InNewVersion,
-			const FHotPatcherVersion& InBaseVersion,
-			TArray<FExternAssetFileInfo>& OutAddFiles,
-			TArray<FExternAssetFileInfo>& OutModifyFiles,
-			TArray<FExternAssetFileInfo>& OutDeleteFiles
-		);
+
 	UFUNCTION()
 	static bool DiffVersionAllPlatformExFiles(
         const FHotPatcherVersion& InBaseVersion,
@@ -89,7 +83,7 @@ public:
 		TMap<ETargetPlatform,FPatchVersionExternDiff>& OutDiff        
     );
 	UFUNCTION()
-	static FHotPatcherPlatformFiles GetAllExFilesByPlatform(const FPlatformExternAssets& InPlatformConf,bool InGeneratedHash=true);
+	static FPlatformExternFiles GetAllExFilesByPlatform(const FPlatformExternAssets& InPlatformConf,bool InGeneratedHash=true);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool GetPakFileInfo(const FString& InFile,FPakFileInfo& OutFileInfo);
 
@@ -121,7 +115,7 @@ public:
 			const FString& InCookedFile,
 			FString& OutCommand,
 			TFunction<void(const FPakCommand&)> InReceiveCommand = [](const FPakCommand&) {});
-	static bool ConvNotAssetFileToExFile(const FString& InProjectDir, const FString& InPlatformName, const FString& InCookedFile, FExternAssetFileInfo& OutExFile);
+	static bool ConvNotAssetFileToExFile(const FString& InProjectDir, const FString& InPlatformName, const FString& InCookedFile, FExternFileInfo& OutExFile);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 	static FString HashStringWithSHA1(const FString &InString);
 
@@ -138,8 +132,8 @@ public:
 	static TArray<FString> GetEnabledPluginConfigs(const FString& InPlatformName);
 
 
-	static TArray<FExternAssetFileInfo> ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys);
-	static TArray<FAssetDetail> ParserExFilesInfoAsAssetDetailInfo(const TArray<FExternAssetFileInfo>& InExFiles);
+	static TArray<FExternFileInfo> ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys);
+	static TArray<FAssetDetail> ParserExFilesInfoAsAssetDetailInfo(const TArray<FExternFileInfo>& InExFiles);
 
 	// get Engine / Project / Plugin ini files
 	static TArray<FString> GetIniFilesByPakInternalInfo(const FPakInternalInfo& InPakInternalInfo,const FString& PlatformName);
@@ -148,7 +142,7 @@ public:
 		const FPakInternalInfo& InPakInternalInfo, 
 		const FString& PlatformName);
 
-	static TArray<FExternAssetFileInfo> GetInternalFilesAsExFiles(const FPakInternalInfo& InPakInternalInfo, const FString& InPlatformName);
+	static TArray<FExternFileInfo> GetInternalFilesAsExFiles(const FPakInternalInfo& InPakInternalInfo, const FString& InPlatformName);
 	static TArray<FString> GetPakCommandsFromInternalInfo(
 		const FPakInternalInfo& InPakInternalInfo, 
 		const FString& PlatformName, 
@@ -160,11 +154,11 @@ public:
 
 	static TArray<FString> GetDirectoryPaths(const TArray<FDirectoryPath>& InDirectoryPath);
 	
-	static TArray<FExternAssetFileInfo> GetExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash = false);
-	TMap<ETargetPlatform,FHotPatcherPlatformFiles> GetAllPlatformExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash);
+	// static TArray<FExternFileInfo> GetExternFilesFromChunk(const FChunkInfo& InChunk, TArray<ETargetPlatform> InTargetPlatforms, bool bCalcHash = false);
+	TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatformExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash);
 	static FPatchVersionDiff DiffPatchVersion(const FHotPatcherVersion& Base, const FHotPatcherVersion& New);
 
-	static FChunkAssetDescribe CollectFChunkAssetsDescribeByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk);
+	static FChunkAssetDescribe CollectFChunkAssetsDescribeByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, TArray<ETargetPlatform> Platforms);
 
 	static TArray<FString> CollectPakCommandsStringsByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions);
 
@@ -176,9 +170,9 @@ public:
 
 	static FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions, bool block);
 
-	static FAssetRelatedInfo GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
-	static TArray<FAssetRelatedInfo> GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
-	static TArray<FAssetRelatedInfo> GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
+	static FAssetDependency GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
+	static TArray<FAssetDependency> GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
+	static TArray<FAssetDependency> GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
 
 	static bool GetCookProcCommandParams(const FCookerConfig& InConfig,FString& OutParams);
 	//static bool SerializeMonolithicPathMode(const EMonolithicPathMode& InMode, TSharedPtr<FJsonValue>& OutJsonValue);
@@ -237,7 +231,7 @@ public:
 		static void ReloadShaderbytecode();
 
 
-	static FString SerializeAssetsDependencyAsJsonString(const TArray<FAssetRelatedInfo>& InAssetsDependency);
+	static FString SerializeAssetsDependencyAsJsonString(const TArray<FAssetDependency>& InAssetsDependency);
 	static bool SerializePlatformPakInfoToString(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, FString& OutString);
 	static bool SerializePlatformPakInfoToJsonObject(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject);
 	template<typename TStructType>

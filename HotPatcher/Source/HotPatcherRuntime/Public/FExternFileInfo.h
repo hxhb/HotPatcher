@@ -4,17 +4,17 @@
 #include "Misc/SecureHash.h"
 #include "CoreMinimal.h"
 #include "Engine/EngineTypes.h"
-#include "FExternAssetFileInfo.generated.h"
+#include "FExternFileInfo.generated.h"
 
 USTRUCT(BlueprintType)
-struct FExternAssetFileInfo
+struct FExternFileInfo
 {
 	GENERATED_USTRUCT_BODY()
 
 public:
-	FORCEINLINE FExternAssetFileInfo():MountPath(FPaths::Combine(TEXT("../../.."),FApp::GetProjectName())){}
-	FExternAssetFileInfo(const FExternAssetFileInfo&) = default;
-	FExternAssetFileInfo& operator=(const FExternAssetFileInfo&) = default;
+	FORCEINLINE FExternFileInfo():MountPath(FPaths::Combine(TEXT("../../.."),FApp::GetProjectName())){}
+	FExternFileInfo(const FExternFileInfo&) = default;
+	FExternFileInfo& operator=(const FExternFileInfo&) = default;
 
 	FORCEINLINE FString GenerateFileHash()
 	{
@@ -41,14 +41,14 @@ public:
 	UPROPERTY()
 		FString FileHash;
 
-	bool operator==(const FExternAssetFileInfo& Right)const
+	bool operator==(const FExternFileInfo& Right)const
 	{
 		
 		bool bIsSameMountPath = (MountPath == Right.MountPath);
 		
 		return bIsSameMountPath;
 	}
-	bool IsAbsSame(const FExternAssetFileInfo& Right)const
+	bool IsAbsSame(const FExternFileInfo& Right)const
 	{
 		bool bIsSamePath = (FilePath.FilePath == Right.FilePath.FilePath);
 		bool IsSameHash = (FileHash == Right.FileHash);

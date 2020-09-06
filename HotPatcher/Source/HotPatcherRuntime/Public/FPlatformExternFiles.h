@@ -2,25 +2,25 @@
 // project header
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "FPatcherSpecifyAsset.h"
-#include "FExternAssetFileInfo.h"
+#include "FExternFileInfo.h"
 #include "ETargetPlatform.h"
 
 // engine header
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"
 
-#include "FHotPatcherPlatformFiles.generated.h"
+#include "FPlatformExternFiles.generated.h"
 
 USTRUCT(BlueprintType)
-struct FHotPatcherPlatformFiles
+struct FPlatformExternFiles
 {
     GENERATED_BODY()
-    FORCEINLINE FHotPatcherPlatformFiles()=default;
-    FORCEINLINE FHotPatcherPlatformFiles(ETargetPlatform InPlatform,const TArray<FExternAssetFileInfo>& InFiles):
+    FORCEINLINE FPlatformExternFiles()=default;
+    FORCEINLINE FPlatformExternFiles(ETargetPlatform InPlatform,const TArray<FExternFileInfo>& InFiles):
         Platform(InPlatform),ExternFiles(InFiles){}
 	
     UPROPERTY(EditAnywhere,BlueprintReadWrite)
     ETargetPlatform Platform;
     UPROPERTY(EditAnywhere,BlueprintReadWrite)
-    TArray<FExternAssetFileInfo> ExternFiles;
+    TArray<FExternFileInfo> ExternFiles;
 };

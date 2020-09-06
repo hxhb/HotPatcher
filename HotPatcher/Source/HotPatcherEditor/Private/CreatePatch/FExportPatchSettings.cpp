@@ -90,7 +90,7 @@ TArray<FString> FExportPatchSettings::MakeAllExternDirectoryAsPakCommand() const
 		return CookCommandResault;
 
 
-	TArray<FExternAssetFileInfo>&& ExFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
+	TArray<FExternFileInfo>&& ExFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
 
 	for (const auto& File : ExFiles)
 	{
@@ -101,13 +101,20 @@ TArray<FString> FExportPatchSettings::MakeAllExternDirectoryAsPakCommand() const
 
 TArray<FString> FExportPatchSettings::MakeAllPakCommandsByTheSetting(const FString& InPlatformName, const FPatchVersionDiff& InVersionDiff, bool bDiffExFiles) const
 {
-
+	TArray<ETargetPlatform> Platforms{ETargetPlatform::AllPlatforms};
+	ETargetPlatform InPlatform;
+	UFlibPatchParserHelper::GetEnumValueByName(InPlatformName,InPlatform);
+	Platforms.Add(InPlatform);
+	
 	FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(InVersionDiff.AssetDiffInfo.AddAssetDependInfo, InVersionDiff.AssetDiffInfo.ModifyAssetDependInfo);
 
-	TArray<FExternAssetFileInfo> AllChangedExternalFiles;
-	AllChangedExternalFiles.Append(InVersionDiff.ExternDiffInfo.AddExternalFiles);
-	AllChangedExternalFiles.Append(InVersionDiff.ExternDiffInfo.ModifyExternalFiles);
-
+	
+	TArray<FExternFileInfo> AllChangedExternalFiles;
+	for(auto Platform:Platforms)
+	{
+		AllChangedExternalFiles.Append(InVersionDiff.PlatformExternDiffInfo[Platform].AddExternalFiles);
+		AllChangedExternalFiles.Append(InVersionDiff.PlatformExternDiffInfo[Platform].ModifyExternalFiles);
+	}
 	// combine all cook commands
 	{
 		FString ProjectDir = UKismetSystemLibrary::GetProjectDirectory();
@@ -130,7 +137,7 @@ TArray<FString> FExportPatchSettings::MakeAllPakCommandsByTheSetting(const FStri
 
 			// external not-asset files
 			{
-				TArray<FExternAssetFileInfo> ExFiles;
+				TArray<FExternFileInfo> ExFiles;
 				if (bDiffExFiles)
 				{
 					ExFiles = AllChangedExternalFiles;

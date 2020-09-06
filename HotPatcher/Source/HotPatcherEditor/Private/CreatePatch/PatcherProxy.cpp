@@ -189,7 +189,8 @@ FHotPatcherVersion UPatcherProxy::MakeNewRelease(const FHotPatcherVersion& InBas
 	FPatchVersionDiff DiffInfo = UFlibPatchParserHelper::DiffPatchVersion(BaseVersion,InCurrentVersion);
 	
 	FAssetDependenciesInfo& BaseAssetInfoRef = BaseVersion.AssetInfo;
-	TMap<FString, FExternAssetFileInfo>& BaseExternalFilesRef = BaseVersion.ExternalFiles;
+	// TMap<FString, FExternFileInfo>& BaseExternalFilesRef = BaseVersion.ExternalFiles;
+	TMap<ETargetPlatform,FPlatformExternAssets>& BasePlatformAssetsRef = BaseVersion.PlatformAssets;
 
 	// Modify Asset
 	auto DeleteOldAssetLambda = [&BaseAssetInfoRef](const FAssetDependenciesInfo& InAssetDependenciesInfo)
@@ -217,33 +218,57 @@ FHotPatcherVersion UPatcherProxy::MakeNewRelease(const FHotPatcherVersion& InBas
 	BaseAssetInfoRef = UFLibAssetManageHelperEx::CombineAssetDependencies(BaseAssetInfoRef, DiffInfo.AssetDiffInfo.ModifyAssetDependInfo);
 	NewRelease.AssetInfo = BaseAssetInfoRef;
 
-	// external files
-	auto DeleteOldExternalFilesLambda = [&BaseExternalFilesRef](const TArray<FExternAssetFileInfo>& InFiles)
+	// // external files
+	// auto RemoveOldExternalFilesLambda = [&BaseExternalFilesRef](const TArray<FExternFileInfo>& InFiles)
+	// {
+	// 	for (const auto& File : InFiles)
+	// 	{
+	// 		if (BaseExternalFilesRef.Contains(File.FilePath.FilePath))
+	// 		{
+	// 			BaseExternalFilesRef.Remove(File.FilePath.FilePath);
+	// 		}
+	// 	}
+	// };
+
+	TArray<ETargetPlatform> DiffPlatforms;
+	DiffInfo.PlatformExternDiffInfo.GetKeys(DiffPlatforms);
+
+	for(auto Platform:DiffPlatforms)
 	{
-		for (const auto& File : InFiles)
+		FPlatformExternAssets AddPlatformFiles;
+		AddPlatformFiles.TargetPlatform = Platform;
+		AddPlatformFiles.AddExternFileToPak = DiffInfo.PlatformExternDiffInfo[Platform].AddExternalFiles;
+		AddPlatformFiles.AddExternFileToPak.Append(DiffInfo.PlatformExternDiffInfo[Platform].ModifyExternalFiles);
+		if(BasePlatformAssetsRef.Contains(Platform))
 		{
-			if (BaseExternalFilesRef.Contains(File.FilePath.FilePath))
+			for(const auto& File:AddPlatformFiles.AddExternFileToPak)
 			{
-				BaseExternalFilesRef.Remove(File.FilePath.FilePath);
+				if(BasePlatformAssetsRef[Platform].AddExternFileToPak.Contains(File))
+				{
+					BasePlatformAssetsRef[Platform].AddExternFileToPak.Remove(File);
+				}
 			}
+		}else
+		{
+			BasePlatformAssetsRef.Add(Platform,AddPlatformFiles);
 		}
-	};
-	DeleteOldExternalFilesLambda(DiffInfo.ExternDiffInfo.ModifyExternalFiles);
+	}
+	// RemoveOldExternalFilesLambda(DiffInfo.ExternDiffInfo.ModifyExternalFiles);
 	// DeleteOldExternalFilesLambda(DiffInfo.DeleteExternalFiles);
 
-	auto AddExternalFilesLambda = [&BaseExternalFilesRef](const TArray<FExternAssetFileInfo>& InFiles)
-	{
-		for (const auto& File : InFiles)
-		{
-			if (!BaseExternalFilesRef.Contains(File.FilePath.FilePath))
-			{
-				BaseExternalFilesRef.Add(File.FilePath.FilePath,File);
-			}
-		}
-	};
-	AddExternalFilesLambda(DiffInfo.ExternDiffInfo.AddExternalFiles);
-	AddExternalFilesLambda(DiffInfo.ExternDiffInfo.ModifyExternalFiles);
-	NewRelease.ExternalFiles = BaseExternalFilesRef;
+	// auto AddExternalFilesLambda = [&BaseExternalFilesRef](const TArray<FExternFileInfo>& InFiles)
+	// {
+	// 	for (const auto& File : InFiles)
+	// 	{
+	// 		if (!BaseExternalFilesRef.Contains(File.FilePath.FilePath))
+	// 		{
+	// 			BaseExternalFilesRef.Add(File.FilePath.FilePath,File);
+	// 		}
+	// 	}
+	// };
+	// AddExternalFilesLambda(DiffInfo.ExternDiffInfo.AddExternalFiles);
+	// AddExternalFilesLambda(DiffInfo.ExternDiffInfo.ModifyExternalFiles);
+	// NewRelease.ExternalFiles = BaseExternalFilesRef;
 
 	return NewRelease;
 }
@@ -292,7 +317,7 @@ bool UPatcherProxy::DoExport()
 		// 在不进行外部文件diff的情况下清理掉基础版本的外部文件
 		if (!GetSettingObject()->IsEnableExternFilesDiff())
 		{
-			BaseVersion.ExternalFiles.Empty();
+			BaseVersion.PlatformAssets.Empty();
 		}
 	}
 	
@@ -336,7 +361,12 @@ bool UPatcherProxy::DoExport()
 		FChunkAssetDescribe ChunkDiffInfo = UFlibPatchParserHelper::DiffChunk(NewVersionChunk, TotalChunk, GetSettingObject()->IsIncludeHasRefAssetsOnly());
 
 		TArray<FString> AllUnselectedAssets = ChunkDiffInfo.GetAssetsStrings();
-		TArray<FString> AllUnselectedExFiles = ChunkDiffInfo.GetExFileStrings();
+		TArray<FString> AllUnselectedExFiles;
+		for(auto Platform:GetSettingObject()->GetPakTargetPlatforms())
+		{
+			AllUnselectedExFiles.Append(ChunkDiffInfo.GetExFileStrings(Platform));
+		}
+		
 		TArray<FString> UnSelectedInternalFiles = ChunkDiffInfo.GetInternalFileStrings();
 
 		auto ChunkCheckerMsg = [&TotalMsg](const FString& Category,const TArray<FString>& InAssetList)
@@ -591,7 +621,7 @@ bool UPatcherProxy::DoExport()
 			TArray<EAssetRegistryDependencyTypeEx> AssetDependencyTypes;
 			AssetDependencyTypes.Add(EAssetRegistryDependencyTypeEx::Packages);
 
-			TArray<FAssetRelatedInfo> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(
+			TArray<FAssetDependency> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(
 				UFLibAssetManageHelperEx::CombineAssetDependencies(VersionDiffInfo.AssetDiffInfo.AddAssetDependInfo, VersionDiffInfo.AssetDiffInfo.ModifyAssetDependInfo),
 				AssetDependencyTypes
 			);

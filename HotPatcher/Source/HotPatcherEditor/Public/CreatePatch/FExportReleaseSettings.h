@@ -4,7 +4,7 @@
 
 // project header
 #include "FPatcherSpecifyAsset.h"
-#include "FExternAssetFileInfo.h"
+#include "FExternFileInfo.h"
 #include "FExternDirectoryInfo.h"
 #include "FPlatformExternAssets.h"
 #include "HotPatcherLog.h"
@@ -122,9 +122,9 @@ public:
 					result.Asset = LongPackagePath;
 					return result;
 				};
-				auto ParseNoAssetFileLambda = [](const FString& InAsset)->FExternAssetFileInfo
+				auto ParseNoAssetFileLambda = [](const FString& InAsset)->FExternFileInfo
 				{
-					FExternAssetFileInfo result;
+					FExternFileInfo result;
 					int32 breakPoint = InAsset.Find(TEXT("\" \""));
 
 					auto RemoveDoubleQuoteLambda = [](const FString& InStr)->FString
@@ -168,7 +168,7 @@ public:
 					}
 					else
 					{
-						FExternAssetFileInfo ExFile = ParseNoAssetFileLambda(FileItem);
+						FExternFileInfo ExFile = ParseNoAssetFileLambda(FileItem);
 						InReleaseSetting->AddExternFileToPak.Add(ExFile);
 					}
 					
@@ -213,9 +213,9 @@ public:
 		return Result;
 	}
 
-	FORCEINLINE TArray<FExternAssetFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const
+	FORCEINLINE TArray<FExternFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const
 	{
-		TArray<FExternAssetFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
+		TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
 
 		for (auto& ExFile : GetAddExternFiles())
 		{
@@ -234,9 +234,9 @@ public:
 		return AllExternFiles;
 	}
 	
-	FORCEINLINE TArray<FExternAssetFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false)const
+	FORCEINLINE TArray<FExternFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false)const
 	{
-		TArray<FExternAssetFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectoryByPlatform(InTargetPlatform));
+		TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectoryByPlatform(InTargetPlatform));
 	
 		for (auto& ExFile : GetAddExternFilesByPlatform(InTargetPlatform))
 		{
@@ -255,13 +255,13 @@ public:
 		return AllExternFiles;
 	}
 	
-	FORCEINLINE TMap<ETargetPlatform,FHotPatcherPlatformFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false)const
+	FORCEINLINE TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false)const
 	{
-		TMap<ETargetPlatform,FHotPatcherPlatformFiles> result;
+		TMap<ETargetPlatform,FPlatformExternFiles> result;
 	
 		for(const auto& Platform:GetAddExternAssetsToPlatform())
 		{
-			FHotPatcherPlatformFiles PlatformIns(Platform.TargetPlatform,GetAllExternFilesByPlatform(Platform.TargetPlatform,InGeneratedHash));
+			FPlatformExternFiles PlatformIns(Platform.TargetPlatform,GetAllExternFilesByPlatform(Platform.TargetPlatform,InGeneratedHash));
 			result.Add(Platform.TargetPlatform,PlatformIns);
 		}
 		return result;
@@ -269,7 +269,7 @@ public:
 
 	FORCEINLINE TArray<FPlatformExternAssets> GetAddExternAssetsToPlatform()const{return AddExternAssetsToPlatform;}
 	
-	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)const
+	FORCEINLINE TArray<FExternFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)const
 	{
 		for(const auto& Platform:GetAddExternAssetsToPlatform())
 		{
@@ -279,7 +279,7 @@ public:
 			}
 		}
 
-		return TArray<FExternAssetFileInfo>{};
+		return TArray<FExternFileInfo>{};
 	}
 	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform)const
 	{
@@ -309,7 +309,7 @@ public:
 		return true;
 	}
 
-	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
+	FORCEINLINE TArray<FExternFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
 	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
 
 	FORCEINLINE bool IsByPakList()const { return ByPakList; }
@@ -338,7 +338,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpecifyAssets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ExternFiles")
-		TArray<FExternAssetFileInfo> AddExternFileToPak;
+		TArray<FExternFileInfo> AddExternFileToPak;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ExternFiles")
 		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ExternFiles")

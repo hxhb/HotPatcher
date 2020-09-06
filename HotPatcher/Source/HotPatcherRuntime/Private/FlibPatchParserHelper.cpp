@@ -235,82 +235,17 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 	return true;
 }
 
-bool UFlibPatchParserHelper::DiffVersionExFiles(
-	const FHotPatcherVersion& InNewVersion,
-	const FHotPatcherVersion& InBaseVersion,
-	TArray<FExternAssetFileInfo>& OutAddFiles,
-	TArray<FExternAssetFileInfo>& OutModifyFiles,
-	TArray<FExternAssetFileInfo>& OutDeleteFiles
-)
-{
-	OutAddFiles.Empty();
-	OutModifyFiles.Empty();
-	OutDeleteFiles.Empty();
-
-	auto ParserAddFiles = [](const FHotPatcherVersion& lInNewVersion, const FHotPatcherVersion& lInBaseVersion, TArray<FExternAssetFileInfo>& lOutAddFiles)
-	{
-		TArray<FString> NewVersionFilesKeys;
-		lInNewVersion.ExternalFiles.GetKeys(NewVersionFilesKeys);
-	
-		TArray<FString> BaseVersionFilesKeys;
-		lInBaseVersion.ExternalFiles.GetKeys(BaseVersionFilesKeys);
-	
-		for (const auto& NewVersionFile : NewVersionFilesKeys)
-		{
-			if (!lInBaseVersion.ExternalFiles.Contains(NewVersionFile))
-			{
-				lOutAddFiles.Add(*lInNewVersion.ExternalFiles.Find(NewVersionFile));
-			}
-		}
-	};
-	
-	// Parser Add Files
-	ParserAddFiles(InNewVersion, InBaseVersion, OutAddFiles);
-	// Parser delete Files
-	ParserAddFiles(InBaseVersion, InNewVersion, OutDeleteFiles);
-	
-	// Parser modify Files
-	{
-		TArray<FString> NewVersionFilesKeys;
-		InNewVersion.ExternalFiles.GetKeys(NewVersionFilesKeys);
-	
-		TArray<FString> BaseVersionFilesKeys;
-		InBaseVersion.ExternalFiles.GetKeys(BaseVersionFilesKeys);
-	
-		for (const auto& NewVersionFile : NewVersionFilesKeys)
-		{
-			// UE_LOG(LogHotPatcher, Log, TEXT("check file %s."), *NewVersionFile);
-			if (InBaseVersion.ExternalFiles.Contains(NewVersionFile))
-			{
-				const FExternAssetFileInfo& NewFile = *InBaseVersion.ExternalFiles.Find(NewVersionFile);
-				const FExternAssetFileInfo& BaseFile = *InNewVersion.ExternalFiles.Find(NewVersionFile);
-				bool bIsSame = NewFile == BaseFile;
-				if (!bIsSame)
-				{
-					// UE_LOG(LogHotPatcher, Log, TEXT("%s is not same."), *NewFile.MountPath);
-					OutModifyFiles.Add(*InNewVersion.ExternalFiles.Find(NewVersionFile));
-				}
-			}
-			else
-			{
-				// UE_LOG(LogHotPatcher, Log, TEXT("base version not contains %s."), *NewVersionFile);
-			}
-		}
-	}
-
-	return true;
-}
 
 bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 	const FHotPatcherVersion& InBaseVersion,const FHotPatcherVersion& InNewVersion, TMap<ETargetPlatform, FPatchVersionExternDiff>& OutDiff)
 {
 	OutDiff.Empty();
-	auto ParserDiffPlatformExFileLambda = [](const FHotPatcherPlatformFiles& InBase,const FHotPatcherPlatformFiles& InNew)->FPatchVersionExternDiff
+	auto ParserDiffPlatformExFileLambda = [](const FPlatformExternFiles& InBase,const FPlatformExternFiles& InNew)->FPatchVersionExternDiff
 	{
 		FPatchVersionExternDiff result;
 		result.Platform = InNew.Platform;
 		
-		auto ParserAddFiles = [](const TArray<FExternAssetFileInfo>& InBase,const TArray<FExternAssetFileInfo>& InNew,TArray<FExternAssetFileInfo>& Out)
+		auto ParserAddFiles = [](const TArray<FExternFileInfo>& InBase,const TArray<FExternFileInfo>& InNew,TArray<FExternFileInfo>& Out)
 		{
 			for (const auto& NewVersionFile : InNew)
 			{
@@ -371,7 +306,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 		}
 		else
 		{
-			FHotPatcherPlatformFiles EmptyBase;
+			FPlatformExternFiles EmptyBase;
 			EmptyBase.Platform = Platform;
 			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
 				EmptyBase,
@@ -385,7 +320,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 	{
 		if(!InNewVersion.PlatformAssets.Contains(Platform))
 		{
-			FHotPatcherPlatformFiles EmptyNew;
+			FPlatformExternFiles EmptyNew;
 			EmptyNew.Platform = Platform;
 			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
                 UFlibPatchParserHelper::GetAllExFilesByPlatform(InBaseVersion.PlatformAssets[Platform]),
@@ -396,10 +331,10 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 	return true;
 }
 
-FHotPatcherPlatformFiles UFlibPatchParserHelper::GetAllExFilesByPlatform(
+FPlatformExternFiles UFlibPatchParserHelper::GetAllExFilesByPlatform(
 	const FPlatformExternAssets& InPlatformConf,bool InGeneratedHash)
 {
-	FHotPatcherPlatformFiles result;
+	FPlatformExternFiles result;
 	result.ExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(InPlatformConf.AddExternDirectoryToPak);
 
 	for (auto& ExFile : InPlatformConf.AddExternFileToPak)
@@ -641,7 +576,7 @@ bool UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(
 	return bRunStatus;
 }
 
-bool UFlibPatchParserHelper::ConvNotAssetFileToExFile(const FString& InProjectDir, const FString& InPlatformName, const FString& InCookedFile, FExternAssetFileInfo& OutExFile)
+bool UFlibPatchParserHelper::ConvNotAssetFileToExFile(const FString& InProjectDir, const FString& InPlatformName, const FString& InCookedFile, FExternFileInfo& OutExFile)
 {
 	bool bRunStatus = false;
 	if (FPaths::FileExists(InCookedFile))
@@ -734,9 +669,9 @@ TArray<FString> UFlibPatchParserHelper::GetEnabledPluginConfigs(const FString& I
 }
 
 
-TArray<FExternAssetFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys)
+TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys)
 {
-	TArray<FExternAssetFileInfo> result;
+	TArray<FExternFileInfo> result;
 
 	if (!InExternDirectorys.Num())
 		return result;
@@ -757,7 +692,7 @@ TArray<FExternAssetFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(
 					FString RelativeMountPointPath = FPaths::Combine(DirectoryItem.MountPoint, RelativeParentPath);
 					FPaths::MakeStandardFilename(RelativeMountPointPath);
 
-					FExternAssetFileInfo CurrentFile;
+					FExternFileInfo CurrentFile;
 					CurrentFile.FilePath.FilePath = File;
 
 					CurrentFile.MountPath = RelativeMountPointPath;
@@ -772,7 +707,7 @@ TArray<FExternAssetFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(
 }
 
 
-TArray<FAssetDetail> UFlibPatchParserHelper::ParserExFilesInfoAsAssetDetailInfo(const TArray<FExternAssetFileInfo>& InExFiles)
+TArray<FAssetDetail> UFlibPatchParserHelper::ParserExFilesInfoAsAssetDetailInfo(const TArray<FExternFileInfo>& InExFiles)
 {
 	TArray<FAssetDetail> result;
 
@@ -850,9 +785,9 @@ TArray<FString> UFlibPatchParserHelper::GetCookedFilesByPakInternalInfo(const FP
 }
 
 
-TArray<FExternAssetFileInfo> UFlibPatchParserHelper::GetInternalFilesAsExFiles(const FPakInternalInfo& InPakInternalInfo, const FString& InPlatformName)
+TArray<FExternFileInfo> UFlibPatchParserHelper::GetInternalFilesAsExFiles(const FPakInternalInfo& InPakInternalInfo, const FString& InPlatformName)
 {
-	TArray<FExternAssetFileInfo> resultFiles;
+	TArray<FExternFileInfo> resultFiles;
 
 	TArray<FString> AllNeedPakInternalCookedFiles;
 
@@ -861,7 +796,7 @@ TArray<FExternAssetFileInfo> UFlibPatchParserHelper::GetInternalFilesAsExFiles(c
 
 	for (const auto& File : AllNeedPakInternalCookedFiles)
 	{
-		FExternAssetFileInfo CurrentFile;
+		FExternFileInfo CurrentFile;
 		UFlibPatchParserHelper::ConvNotAssetFileToExFile(ProjectAbsDir,InPlatformName, File, CurrentFile);
 		resultFiles.Add(CurrentFile);
 	}
@@ -930,9 +865,22 @@ FChunkInfo UFlibPatchParserHelper::CombineChunkInfo(const FChunkInfo& R, const F
 	result.AssetIgnoreFilters.Append(L.AssetIgnoreFilters);
 	result.bAnalysisFilterDependencies = L.bAnalysisFilterDependencies || R.bAnalysisFilterDependencies;
 	result.IncludeSpecifyAssets.Append(L.IncludeSpecifyAssets);
-	result.AddExternDirectoryToPak.Append(L.AddExternDirectoryToPak);
-	result.AddExternFileToPak.Append(L.AddExternFileToPak);
-
+	// result.AddExternDirectoryToPak.Append(L.AddExternDirectoryToPak);
+	// result.AddExternFileToPak.Append(L.AddExternFileToPak);
+	
+	for(const auto& LChunkPlatform:L.AddExternAssetsToPlatform)
+	{
+		int32 FoundIndex = result.AddExternAssetsToPlatform.Find(LChunkPlatform);
+		if(FoundIndex!=INDEX_NONE)
+		{
+			result.AddExternAssetsToPlatform[FoundIndex].AddExternDirectoryToPak.Append(LChunkPlatform.AddExternDirectoryToPak);
+			result.AddExternAssetsToPlatform[FoundIndex].AddExternFileToPak.Append(LChunkPlatform.AddExternFileToPak);
+		}
+		else
+		{
+			result.AddExternAssetsToPlatform.Add(LChunkPlatform);
+		}
+	}
 #define COMBINE_INTERNAL_FILES(InResult,Left,Right,PropertyName)\
 	InResult.InternalFiles.PropertyName = Left.InternalFiles.PropertyName || Right.InternalFiles.PropertyName;
 
@@ -970,33 +918,33 @@ TArray<FString> UFlibPatchParserHelper::GetDirectoryPaths(const TArray<FDirector
 	return Result;
 }
 
-TArray<FExternAssetFileInfo> UFlibPatchParserHelper::GetExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash)
-{
-	TArray<FExternAssetFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(InChunk.AddExternDirectoryToPak);
+// TArray<FExternFileInfo> UFlibPatchParserHelper::GetExternFilesFromChunk(const FChunkInfo& InChunk,TArray<ETargetPlatform> InTargetPlatforms, bool bCalcHash)
+// {
+// 	TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(InChunk.AddExternDirectoryToPak);
+//
+// 	for (auto& ExFile : InChunk.AddExternFileToPak)
+// 	{
+// 		if (!AllExternFiles.Contains(ExFile))
+// 		{
+// 			AllExternFiles.Add(ExFile);
+// 		}
+// 	}
+// 	if (bCalcHash)
+// 	{
+// 		for (auto& ExFile : AllExternFiles)
+// 		{
+// 			ExFile.GenerateFileHash();
+// 		}
+// 	}
+// 	return AllExternFiles;
+// }
 
-	for (auto& ExFile : InChunk.AddExternFileToPak)
-	{
-		if (!AllExternFiles.Contains(ExFile))
-		{
-			AllExternFiles.Add(ExFile);
-		}
-	}
-	if (bCalcHash)
-	{
-		for (auto& ExFile : AllExternFiles)
-		{
-			ExFile.GenerateFileHash();
-		}
-	}
-	return AllExternFiles;
-}
-
-TMap<ETargetPlatform,FHotPatcherPlatformFiles> UFlibPatchParserHelper::GetAllPlatformExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash)
+TMap<ETargetPlatform,FPlatformExternFiles> UFlibPatchParserHelper::GetAllPlatformExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash)
 {
-	TMap<ETargetPlatform,FHotPatcherPlatformFiles> result;
-	auto ParserAllFileAndDirs = [](const FPlatformExternAssets& InPlatformInfo,bool bCalcHash=true)->FHotPatcherPlatformFiles
+	TMap<ETargetPlatform,FPlatformExternFiles> result;
+	auto ParserAllFileAndDirs = [](const FPlatformExternAssets& InPlatformInfo,bool bCalcHash=true)->FPlatformExternFiles
 	{
-		FHotPatcherPlatformFiles result;
+		FPlatformExternFiles result;
 		result.Platform = InPlatformInfo.TargetPlatform;
 		result.ExternFiles = InPlatformInfo.AddExternFileToPak;
 		for (auto& ExFile : InPlatformInfo.AddExternFileToPak)
@@ -1025,7 +973,7 @@ TMap<ETargetPlatform,FHotPatcherPlatformFiles> UFlibPatchParserHelper::GetAllPla
 }
 
 
-FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk)
+FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, TArray<ETargetPlatform> Platforms)
 {
 	FChunkAssetDescribe ChunkAssetDescribe;
 	// Collect Chunk Assets
@@ -1117,28 +1065,39 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 		ChunkAssetDescribe.Assets = UFLibAssetManageHelperEx::CombineAssetDependencies(CollectChunkAssets(AddAssetsRef, AssetFilterPaths), CollectChunkAssets(ModifyAssetsRef, AssetFilterPaths));
 	}
 
-	// Collect Extern Files
+	auto CoolectPlatformExFiles = [](const FPatchVersionDiff& DiffInfo,const auto& Chunk,ETargetPlatform Platform)->TArray<FExternFileInfo>
 	{
-		TArray<FExternAssetFileInfo> AllFiles;
+		// Collect Extern Files
+		TArray<FExternFileInfo> AllFiles;
 
 		TSet<FString> AllSearchFileFilter;
 		{
-			for (const auto& Directory : Chunk.AddExternDirectoryToPak)
+			for(int32 PlatformIndex=0;PlatformIndex<Chunk.AddExternAssetsToPlatform.Num();++PlatformIndex)
 			{
-				if (!Directory.DirectoryPath.Path.IsEmpty())
-					AllSearchFileFilter.Add(Directory.DirectoryPath.Path);
-			}
-
-			for (const auto& File : Chunk.AddExternFileToPak)
-			{
-				AllSearchFileFilter.Add(File.FilePath.FilePath);
+				if(Chunk.AddExternAssetsToPlatform[PlatformIndex].TargetPlatform == Platform)
+				{
+					for (const auto& Directory : Chunk.AddExternAssetsToPlatform[PlatformIndex].AddExternDirectoryToPak)
+					{
+						if (!Directory.DirectoryPath.Path.IsEmpty())
+							AllSearchFileFilter.Add(Directory.DirectoryPath.Path);
+					}
+					for (const auto& File : Chunk.AddExternAssetsToPlatform[PlatformIndex].AddExternFileToPak)
+					{
+						AllSearchFileFilter.Add(File.FilePath.FilePath);
+					}
+				}			
 			}
 		}
+		TArray<FExternFileInfo> AddFilesRef;
+		TArray<FExternFileInfo> ModifyFilesRef;
+		if(DiffInfo.PlatformExternDiffInfo.Contains(Platform))
+		{
+			AddFilesRef = DiffInfo.PlatformExternDiffInfo.Find(Platform)->AddExternalFiles;
+			ModifyFilesRef = DiffInfo.PlatformExternDiffInfo.Find(Platform)->ModifyExternalFiles;
+		}
 
-		TArray<FExternAssetFileInfo> AddFilesRef = DiffInfo.ExternDiffInfo.AddExternalFiles;
-		TArray<FExternAssetFileInfo> ModifyFilesRef = DiffInfo.ExternDiffInfo.ModifyExternalFiles;
-
-		auto CollectExtenFilesLambda = [&AllFiles](const TArray<FExternAssetFileInfo>& SearchBase, const TSet<FString>& Filters)
+		// TArray<FString>
+		auto CollectExtenFilesLambda = [&AllFiles](const TArray<FExternFileInfo>& SearchBase, const TSet<FString>& Filters)
 		{
 			for (const auto& Filter : Filters)
 			{
@@ -1153,12 +1112,18 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 		};
 		CollectExtenFilesLambda(AddFilesRef, AllSearchFileFilter);
 		CollectExtenFilesLambda(ModifyFilesRef, AllSearchFileFilter);
+		return AllFiles;
+	};
 
-		ChunkAssetDescribe.AllExFiles.Append(AllFiles);
+	for(auto Platform:Platforms)
+	{
+		FPlatformExternFiles PlatformFiles;
+		PlatformFiles.Platform = Platform;
+		PlatformFiles.ExternFiles = CoolectPlatformExFiles(DiffInfo,Chunk,Platform);
+		ChunkAssetDescribe.AllPlatformExFiles.Add(Platform,PlatformFiles);
 	}
-
+	
 	ChunkAssetDescribe.InternalFiles = Chunk.InternalFiles;
-
 	return ChunkAssetDescribe;
 }
 
@@ -1181,7 +1146,11 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(const FPatc
 {
 	auto CollectPakCommandsByChunkLambda = [](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)->TArray<FPakCommand>
 	{
-		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(DiffInfo, Chunk);
+		ETargetPlatform Platform;
+		UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
+		TArray<ETargetPlatform> CollectPlatforms = {ETargetPlatform::AllPlatforms};
+		CollectPlatforms.AddUnique(Platform);
+		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(DiffInfo, Chunk ,CollectPlatforms);
 
 		FString PakOptionsStr;
 		{
@@ -1216,7 +1185,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(const FPatc
 
 		// Collect Extern Files
 		{
-			for (const auto& CollectFile : ChunkAssetsDescrible.AllExFiles)
+			for (const auto& CollectFile : ChunkAssetsDescrible.AllPlatformExFiles[Platform].ExternFiles)
 			{
 				FPakCommand CurrentPakCommand;
 				CurrentPakCommand.MountPath = CollectFile.MountPath;
@@ -1248,13 +1217,6 @@ FPatchVersionDiff UFlibPatchParserHelper::DiffPatchVersion(const FHotPatcherVers
 		VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo
 	);
 
-	// UFlibPatchParserHelper::DiffVersionExFiles(
-	// 	New,
-	// 	Base,
-	// 	VersionDiffInfo.ExternDiffInfo.AddExternalFiles,
-	// 	VersionDiffInfo.ExternDiffInfo.ModifyExternalFiles,
-	// 	VersionDiffInfo.ExternDiffInfo.DeleteExternalFiles
-	// );
 	UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(Base,New,VersionDiffInfo.PlatformExternDiffInfo);
 	return VersionDiffInfo;
 }
@@ -1393,7 +1355,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 
 	for(const auto& PlatformExInfo:AddToPlatformExFiles)
 	{
-		FHotPatcherPlatformFiles PlatformFileInfo = UFlibPatchParserHelper::GetAllExFilesByPlatform(PlatformExInfo);
+		FPlatformExternFiles PlatformFileInfo = UFlibPatchParserHelper::GetAllExFilesByPlatform(PlatformExInfo);
 		FPlatformExternAssets PlatformExternAssets;
 		PlatformExternAssets.TargetPlatform = PlatformExInfo.TargetPlatform;
 		PlatformExternAssets.AddExternFileToPak = PlatformFileInfo.ExternFiles;
@@ -1412,7 +1374,6 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(const
         UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIgnoreFilters),
         InChunkInfo.AssetRegistryDependencyTypes,
         InChunkInfo.IncludeSpecifyAssets,
-        // UFlibPatchParserHelper::GetExternFilesFromChunk(InChunkInfo, true),
         InChunkInfo.AddExternAssetsToPlatform,
         InIncludeHasRefAssetsOnly,
         bInAnalysisFilterDepend
@@ -1449,9 +1410,17 @@ FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkByBaseVersion(const FChunkI
 
 	result.Assets = UFLibAssetManageHelperEx::CombineAssetDependencies(ChunkDiffInfo.AssetDiffInfo.AddAssetDependInfo, ChunkDiffInfo.AssetDiffInfo.ModifyAssetDependInfo);
 
-	result.AllExFiles.Append(ChunkDiffInfo.ExternDiffInfo.AddExternalFiles);
-	result.AllExFiles.Append(ChunkDiffInfo.ExternDiffInfo.ModifyExternalFiles);
-
+	TArray<ETargetPlatform> Platforms;
+	ChunkDiffInfo.PlatformExternDiffInfo.GetKeys(Platforms);
+	for(auto Platform:Platforms)
+	{
+		FPlatformExternFiles PlatformFiles;
+		PlatformFiles.Platform = Platform;
+		PlatformFiles.ExternFiles = ChunkDiffInfo.PlatformExternDiffInfo.Find(Platform)->AddExternalFiles;
+		PlatformFiles.ExternFiles = ChunkDiffInfo.PlatformExternDiffInfo.Find(Platform)->ModifyExternalFiles;
+		result.AllPlatformExFiles.Add(Platform,PlatformFiles);	
+	}
+	
 	result.InternalFiles.bIncludeAssetRegistry = CurrentVersionChunk.InternalFiles.bIncludeAssetRegistry != TotalChunk.InternalFiles.bIncludeAssetRegistry;
 	result.InternalFiles.bIncludeGlobalShaderCache = CurrentVersionChunk.InternalFiles.bIncludeGlobalShaderCache != TotalChunk.InternalFiles.bIncludeGlobalShaderCache;
 	result.InternalFiles.bIncludeShaderBytecode = CurrentVersionChunk.InternalFiles.bIncludeShaderBytecode != TotalChunk.InternalFiles.bIncludeShaderBytecode;
@@ -1517,9 +1486,9 @@ FProcHandle UFlibPatchParserHelper::DoUnrealPak(TArray<FString> UnrealPakOptions
 }
 
 
-FAssetRelatedInfo UFlibPatchParserHelper::GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
+FAssetDependency UFlibPatchParserHelper::GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
 {
-	FAssetRelatedInfo Dependency;
+	FAssetDependency Dependency;
 	Dependency.Asset = InAsset;
 	FString LongPackageName;
 	if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.mPackagePath, LongPackageName))
@@ -1538,9 +1507,9 @@ FAssetRelatedInfo UFlibPatchParserHelper::GetAssetRelatedInfo(const FAssetDetail
 	return Dependency;
 }
 
-TArray<FAssetRelatedInfo> UFlibPatchParserHelper::GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
+TArray<FAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
 {
-	TArray<FAssetRelatedInfo> AssetsDependency;
+	TArray<FAssetDependency> AssetsDependency;
 
 	for (const auto& Asset : InAssets)
 	{
@@ -1549,7 +1518,7 @@ TArray<FAssetRelatedInfo> UFlibPatchParserHelper::GetAssetsRelatedInfo(const TAr
 	return AssetsDependency;
 }
 
-TArray<FAssetRelatedInfo> UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
+TArray<FAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
 {
 	TArray<FAssetDetail> AssetsDetail;
 	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(InAssetsDependencies, AssetsDetail);
@@ -1630,10 +1599,10 @@ void UFlibPatchParserHelper::ReloadShaderbytecode()
 }
 
 FString UFlibPatchParserHelper::SerializeAssetsDependencyAsJsonString(
-	const TArray<FAssetRelatedInfo>& InAssetsDependency)
+	const TArray<FAssetDependency>& InAssetsDependency)
 {
 	FString AssetsDependencyString;
-	auto SerializeAssetsDependencyLambda = [](const TArray<FAssetRelatedInfo>& InAssetsDependency, TSharedPtr<FJsonObject>& OutJsonObject)->bool
+	auto SerializeAssetsDependencyLambda = [](const TArray<FAssetDependency>& InAssetsDependency, TSharedPtr<FJsonObject>& OutJsonObject)->bool
 	{
 		if (!OutJsonObject.IsValid())
 			OutJsonObject = MakeShareable(new FJsonObject);

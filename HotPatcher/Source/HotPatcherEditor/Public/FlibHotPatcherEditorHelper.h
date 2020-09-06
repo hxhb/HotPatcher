@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "FExternAssetFileInfo.h"
+#include "FExternFileInfo.h"
 #include "FExternDirectoryInfo.h"
 #include "FPatcherSpecifyAsset.h"
 

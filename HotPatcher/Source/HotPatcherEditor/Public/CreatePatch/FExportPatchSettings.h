@@ -7,7 +7,7 @@
 #include "FChunkInfo.h"
 #include "FReplaceText.h"
 #include "ETargetPlatform.h"
-#include "FExternAssetFileInfo.h"
+#include "FExternFileInfo.h"
 #include "FExternDirectoryInfo.h"
 #include "FPlatformExternAssets.h"
 #include "FPatcherSpecifyAsset.h"
@@ -42,9 +42,9 @@ public:
 		return &StaticIns;
 	}
 
-	FORCEINLINE TArray<FExternAssetFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const
+	FORCEINLINE TArray<FExternFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const
 	{
-		TArray<FExternAssetFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
+		TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
 
 		for (auto& ExFile : GetAddExternFiles())
 		{
@@ -113,7 +113,7 @@ public:
 	FORCEINLINE TArray<FChunkInfo> GetChunkInfos()const { return ChunkInfos; }
 
 	FORCEINLINE FString GetPakVersionFileMountPoint()const { return PakVersionFileMountPoint; }
-	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
+	FORCEINLINE TArray<FExternFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
 	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
 	static FPakVersion GetPakVersion(const FHotPatcherVersion& InHotPatcherVersion,const FString& InUtcTime);
 	static FString GetSavePakVersionPath(const FString& InSaveAbsPath,const FHotPatcherVersion& InVersion);
@@ -139,9 +139,9 @@ public:
 		return Result;
 	}
 	
-	FORCEINLINE TArray<FExternAssetFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false)const
+	FORCEINLINE TArray<FExternFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false)const
 	{
-		TArray<FExternAssetFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectoryByPlatform(InTargetPlatform));
+		TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectoryByPlatform(InTargetPlatform));
 	
 		for (auto& ExFile : GetAddExternFilesByPlatform(InTargetPlatform))
 		{
@@ -160,13 +160,13 @@ public:
 		return AllExternFiles;
 	}
 	
-	FORCEINLINE TMap<ETargetPlatform,FHotPatcherPlatformFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false)const
+	FORCEINLINE TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false)const
 	{
-		TMap<ETargetPlatform,FHotPatcherPlatformFiles> result;
+		TMap<ETargetPlatform,FPlatformExternFiles> result;
 	
 		for(const auto& Platform:GetAddExternAssetsToPlatform())
 		{
-			FHotPatcherPlatformFiles PlatformIns{Platform.TargetPlatform,GetAllExternFilesByPlatform(Platform.TargetPlatform,InGeneratedHash)};
+			FPlatformExternFiles PlatformIns{Platform.TargetPlatform,GetAllExternFilesByPlatform(Platform.TargetPlatform,InGeneratedHash)};
 			result.Add(Platform.TargetPlatform,PlatformIns);
 		}
 		return result;
@@ -174,7 +174,7 @@ public:
 
 	FORCEINLINE TArray<FPlatformExternAssets> GetAddExternAssetsToPlatform()const{return AddExternAssetsToPlatform;}
 	
-	FORCEINLINE TArray<FExternAssetFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)const
+	FORCEINLINE TArray<FExternFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)const
 	{
 		for(const auto& Platform:GetAddExternAssetsToPlatform())
 		{
@@ -184,7 +184,7 @@ public:
 			}
 		}
 
-		return TArray<FExternAssetFileInfo>{};
+		return TArray<FExternFileInfo>{};
 	}
 	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform)const
 	{
@@ -237,7 +237,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		bool bEnableExternFilesDiff;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
-		TArray<FExternAssetFileInfo> AddExternFileToPak;
+		TArray<FExternFileInfo> AddExternFileToPak;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")

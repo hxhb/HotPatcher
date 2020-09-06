@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "ETargetPlatform.h"
-#include "FExternAssetFileInfo.h"
+#include "FExternFileInfo.h"
 #include "FExternDirectoryInfo.h"
 
 // engine heacer
@@ -19,9 +19,15 @@ struct FPlatformExternAssets
     ETargetPlatform TargetPlatform;
 
     UPROPERTY(EditAnywhere,BlueprintReadWrite)
-    TArray<FExternAssetFileInfo> AddExternFileToPak;
+    TArray<FExternFileInfo> AddExternFileToPak;
     UPROPERTY(EditAnywhere,BlueprintReadWrite)
     TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
+
+
+    bool operator==(const FPlatformExternAssets& R)const
+    {
+        return TargetPlatform == R.TargetPlatform;
+    }
 };
 
 

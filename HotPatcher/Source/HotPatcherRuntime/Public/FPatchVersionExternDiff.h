@@ -1,7 +1,7 @@
 #pragma once
 // project header
 #include "Struct/AssetManager/FAssetDependenciesInfo.h"
-#include "FExternAssetFileInfo.h"
+#include "FExternFileInfo.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -18,9 +18,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	ETargetPlatform Platform;
 	UPROPERTY(EditAnywhere)
-	TArray<FExternAssetFileInfo> AddExternalFiles;
+	TArray<FExternFileInfo> AddExternalFiles;
 	UPROPERTY(EditAnywhere)
-	TArray<FExternAssetFileInfo> ModifyExternalFiles;
+	TArray<FExternFileInfo> ModifyExternalFiles;
 	UPROPERTY(EditAnywhere)
-	TArray<FExternAssetFileInfo> DeleteExternalFiles;
+	TArray<FExternFileInfo> DeleteExternalFiles;
 };

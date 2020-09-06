@@ -17,8 +17,8 @@ public:
 	UPROPERTY(EditAnywhere)
 	FPatchVersionAssetDiff AssetDiffInfo;
 	
-	UPROPERTY(EditAnywhere)
-	FPatchVersionExternDiff ExternDiffInfo;
+	// UPROPERTY(EditAnywhere)
+	// FPatchVersionExternDiff ExternDiffInfo;
 
 	UPROPERTY(EditAnywhere)
 	TMap<ETargetPlatform,FPatchVersionExternDiff> PlatformExternDiffInfo;

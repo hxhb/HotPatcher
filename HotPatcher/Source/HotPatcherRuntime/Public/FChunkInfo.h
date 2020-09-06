@@ -1,14 +1,18 @@
 #pragma once
 
-#include "FExternAssetFileInfo.h"
+#include "FExternFileInfo.h"
 #include "FExternDirectoryInfo.h"
 #include "FPatcherSpecifyAsset.h"
 #include "FPlatformExternAssets.h"
 #include "Struct/AssetManager/FAssetDependenciesInfo.h"
 #include "Flib/FLibAssetManageHelperEx.h"
+#include "FPlatformExternFiles.h"
+#include "ETargetPlatform.h"
 
 // engine header
 #include "CoreMinimal.h"
+
+#include "FlibPatchParserHelper.h"
 #include "Engine/EngineTypes.h"
 #include "FChunkInfo.generated.h"
 
@@ -69,10 +73,10 @@ public:
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern", meta = (EditCondition = "!bMonolithic"))
-		TArray<FExternAssetFileInfo> AddExternFileToPak;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern", meta = (EditCondition = "!bMonolithic"))
-		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern", meta = (EditCondition = "!bMonolithic"))
+	// 	TArray<FExternFileInfo> AddExternFileToPak;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern", meta = (EditCondition = "!bMonolithic"))
+	// 	TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern")
 		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Internal", meta = (EditCondition = "!bMonolithic"))
@@ -95,7 +99,8 @@ struct FChunkAssetDescribe
 	GENERATED_USTRUCT_BODY()
 public:
 	FAssetDependenciesInfo Assets;
-	TArray<FExternAssetFileInfo> AllExFiles;
+	// TArray<FExternFileInfo> AllExFiles;
+	TMap<ETargetPlatform,FPlatformExternFiles> AllPlatformExFiles;
 	FPakInternalInfo InternalFiles; // general platform
 
 	FORCEINLINE TArray<FString> GetAssetsStrings()const
@@ -117,9 +122,10 @@ public:
 		return CollectStringByAssetDep(Assets);
 	}
 
-	FORCEINLINE TArray<FString> GetExFileStrings()const
+	FORCEINLINE TArray<FString> GetExFileStrings(ETargetPlatform Platform)const
 	{
-		auto CollectExFilesStrings = [](const TArray<FExternAssetFileInfo>& InFiles)->TArray<FString>
+		TArray<FString> result;
+ 		auto CollectExFilesStrings = [](const TArray<FExternFileInfo>& InFiles)->TArray<FString>
 		{
 			TArray<FString> result;
 			for (const auto& File : InFiles)
@@ -128,7 +134,11 @@ public:
 			}
 			return result;
 		};
-		return CollectExFilesStrings(AllExFiles);
+		if(AllPlatformExFiles.Contains(Platform))
+		{
+			result = CollectExFilesStrings(AllPlatformExFiles.Find(Platform)->ExternFiles);
+		}
+		return result;
 	}
 	FORCEINLINE TArray<FString> GetInternalFileStrings()const
 	{

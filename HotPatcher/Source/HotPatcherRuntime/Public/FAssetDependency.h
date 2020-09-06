@@ -5,10 +5,10 @@
 // engine header
 #include "CoreMinimal.h"
 #include "Engine/EngineTypes.h"
-#include "FAssetRelatedInfo.generated.h"
+#include "FAssetDependency.generated.h"
 
 USTRUCT(BlueprintType)
-struct FAssetRelatedInfo
+struct FAssetDependency
 {
 	GENERATED_USTRUCT_BODY()
 public:

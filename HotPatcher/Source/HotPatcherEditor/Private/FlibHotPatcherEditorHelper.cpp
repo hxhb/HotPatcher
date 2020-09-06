@@ -99,8 +99,7 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(const FExport
 	Chunk.AssetIgnoreFilters = InPatchSetting->GetAssetIgnoreFilters();
 	Chunk.bAnalysisFilterDependencies = InPatchSetting->IsAnalysisFilterDependencies();
 	Chunk.IncludeSpecifyAssets = InPatchSetting->GetIncludeSpecifyAssets();
-	Chunk.AddExternDirectoryToPak = InPatchSetting->GetAddExternDirectory();
-	Chunk.AddExternFileToPak = InPatchSetting->GetAddExternFiles();
+	Chunk.AddExternAssetsToPlatform = InPatchSetting->GetAddExternAssetsToPlatform();
 	Chunk.AssetRegistryDependencyTypes = InPatchSetting->GetAssetRegistryDependencyTypes();
 	Chunk.InternalFiles.bIncludeAssetRegistry = InPatchSetting->IsIncludeAssetRegistry();
 	Chunk.InternalFiles.bIncludeGlobalShaderCache = InPatchSetting->IsIncludeGlobalShaderCache();
@@ -144,9 +143,18 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchVerison(const FHotPatc
 		Chunk.IncludeSpecifyAssets.AddUnique(CurrentAsset);
 	}
 	// Chunk.AddExternDirectoryToPak = InPatchSetting->GetAddExternDirectory();
-	for (const auto& File : InPatchVersion.ExternalFiles)
+	// for (const auto& File : InPatchVersion.ExternalFiles)
+	// {
+	// 	Chunk.AddExternFileToPak.AddUnique(File.Value);
+	// }
+
+	TArray<ETargetPlatform> VersionPlatforms;
+
+	InPatchVersion.PlatformAssets.GetKeys(VersionPlatforms);
+
+	for(auto Platform:VersionPlatforms)
 	{
-		Chunk.AddExternFileToPak.AddUnique(File.Value);
+		Chunk.AddExternAssetsToPlatform.Add(InPatchVersion.PlatformAssets[Platform]);
 	}
 	
 	Chunk.InternalFiles.bIncludeAssetRegistry = false;

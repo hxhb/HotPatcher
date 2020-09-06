@@ -108,7 +108,7 @@ bool UReleaseProxy::DoExport()
 		UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
 		if (GetSettingObject()->IsSaveAssetRelatedInfo())
 		{
-			TArray<FAssetRelatedInfo> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(ExportVersion.AssetInfo,GetSettingObject()->GetAssetRegistryDependencyTypes());
+			TArray<FAssetDependency> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(ExportVersion.AssetInfo,GetSettingObject()->GetAssetRegistryDependencyTypes());
 
 			FString AssetsDependencyString = UFlibPatchParserHelper::SerializeAssetsDependencyAsJsonString(AssetsDependency);
 			
