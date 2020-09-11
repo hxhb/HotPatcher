@@ -16,6 +16,9 @@
 
 // cpp standard
 #include <typeinfo>
+#include <cctype>
+#include <algorithm>
+#include <string>
 
 // engine header
 #include "CoreMinimal.h"
@@ -236,6 +239,16 @@ public:
 	//static bool SerializeMonolithicPathMode(const EMonolithicPathMode& InMode, TSharedPtr<FJsonValue>& OutJsonValue);
 	//static bool DeSerializeMonolithicPathMode(const TSharedPtr<FJsonValue>& InJsonValue, EMonolithicPathMode& OutMode);
 
+	template<typename T>
+    static std::string GetCPPTypeName()
+	{
+		std::string result;
+		std::string type_name = typeid(T).name();
+
+		std::for_each(type_name.begin(),type_name.end(),[&result](const char& character){if(!std::isdigit(character)) result.push_back(character);});
+
+		return result;
+	}
 
 	template<typename ENUM_TYPE>
 	static FString GetEnumNameByValue(ENUM_TYPE InEnumValue, bool bFullName = false)
@@ -245,7 +258,12 @@ public:
 			FString TypeName;
 			FString ValueName;
 
+#if ENGINE_MINOR_VERSION > 21
 			UEnum* FoundEnum = StaticEnum<ENUM_TYPE>();
+#else
+			FString EnumTypeName = ANSI_TO_TCHAR(UFlibPatchParserHelper::GetCPPTypeName<ENUM_TYPE>().c_str());
+			UEnum* FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true); 
+#endif
 			if (FoundEnum)
 			{
 				result = FoundEnum->GetNameByValue((int64)InEnumValue).ToString();
@@ -264,9 +282,13 @@ public:
 	{
 		bool bStatus = false;
 
+#if ENGINE_MINOR_VERSION > 21
 		UEnum* FoundEnum = StaticEnum<ENUM_TYPE>();
-
 		FString EnumTypeName = FoundEnum->CppType;
+#else
+		FString EnumTypeName = ANSI_TO_TCHAR(UFlibPatchParserHelper::GetCPPTypeName<ENUM_TYPE>().c_str());
+		UEnum* FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true); 
+#endif
 		if (FoundEnum)
 		{
 			FString EnumValueFullName = EnumTypeName + TEXT("::") + InEnumValueName;
