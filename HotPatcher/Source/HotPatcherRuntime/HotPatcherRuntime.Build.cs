@@ -1,5 +1,6 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
+using System.IO;
 using UnrealBuildTool;
 
 public class HotPatcherRuntime : ModuleRules
@@ -10,6 +11,7 @@ public class HotPatcherRuntime : ModuleRules
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
+				Path.Combine(EngineDirectory,"Source/Runtime/Launch")
 				// ... add public include paths required here ...
 			}
 			);
@@ -56,7 +58,7 @@ public class HotPatcherRuntime : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
-
+		
         OptimizeCode = CodeOptimization.InShippingBuildsOnly;
     }
 }

@@ -22,6 +22,7 @@
 #include <string>
 
 // engine header
+#include "Resources/Version.h"
 #include "JsonObjectConverter.h"
 #include "CoreMinimal.h"
 #include "FPlatformExternAssets.h"
@@ -29,6 +30,7 @@
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FlibPatchParserHelper.generated.h"
+
 
 /**
  * 
@@ -181,16 +183,7 @@ public:
 	//static bool SerializeMonolithicPathMode(const EMonolithicPathMode& InMode, TSharedPtr<FJsonValue>& OutJsonValue);
 	//static bool DeSerializeMonolithicPathMode(const TSharedPtr<FJsonValue>& InJsonValue, EMonolithicPathMode& OutMode);
 
-	template<typename T>
-    static std::string GetCPPTypeName()
-	{
-		std::string result;
-		std::string type_name = typeid(T).name();
 
-		std::for_each(type_name.begin(),type_name.end(),[&result](const char& character){if(!std::isdigit(character)) result.push_back(character);});
-
-		return result;
-	}
 
 	template<typename ENUM_TYPE>
 	static FString GetEnumNameByValue(ENUM_TYPE InEnumValue, bool bFullName = false)
@@ -246,6 +239,18 @@ public:
 		return bStatus;
 	}
 
+#if ENGINE_MINOR_VERSION <= 21
+	template<typename T>
+	static std::string GetCPPTypeName()
+	{
+		std::string result;
+		std::string type_name = typeid(T).name();
+
+		std::for_each(type_name.begin(),type_name.end(),[&result](const char& character){if(!std::isdigit(character)) result.push_back(character);});
+
+		return result;
+	}
+#endif
 	static FString MountPathToRelativePath(const FString& InMountPath);
 
 	// reload Global&Project shaderbytecode
