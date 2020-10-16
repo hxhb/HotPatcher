@@ -13,6 +13,30 @@
 #include "Serialization/JsonReader.h"
 #include "Misc/FileHelper.h"
 
+#include "IPlatformFilePak.h"
+
+FPakFile* UFlibPakHelper::GetPakFileInsByPath(const FString& PakPath)
+{
+	FPakFile* Pak = NULL;
+#if !WITH_EDITOR
+	FPakPlatformFile* PakFileMgr = (FPakPlatformFile*)FPlatformFileManager::Get().GetPlatformFile(FPakPlatformFile::GetTypeName());
+	IPlatformFile* LowerLevel = PakFileMgr->GetLowerLevel();
+	Pak = new FPakFile(LowerLevel, *PakPath, false, true);
+#endif
+	return Pak;
+}
+
+TArray<FString> UFlibPakHelper::LoadPakFileList(const FString& PakFilePath)
+{
+	TArray<FString> Files;
+	FPakFile* Pak = UFlibPakHelper::GetPakFileInsByPath(PakFilePath);
+	if(Pak)
+	{
+		Pak->GetFilenames(Files);
+	}
+	return Files;
+}
+
 void UFlibPakHelper::ExecMountPak(FString InPakPath, int32 InPakOrder, FString InMountPoint)
 {
 	UFlibPakHelper::MountPak(InPakPath, InPakOrder, InMountPoint);
