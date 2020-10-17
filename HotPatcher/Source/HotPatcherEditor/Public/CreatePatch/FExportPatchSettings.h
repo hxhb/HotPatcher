@@ -67,6 +67,7 @@ public:
 	TArray<FString> GetAssetIgnoreFiltersPaths()const;
 	FORCEINLINE TArray<FDirectoryPath> GetAssetIgnoreFilters()const { return AssetIgnoreFilters; }
 	FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
+	FORCEINLINE bool IsRecursiveWidgetTree()const {return bRecursiveWidgetTree;}
 	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
 	FORCEINLINE TArray<FPatcherSpecifyAsset> GetIncludeSpecifyAssets()const { return IncludeSpecifyAssets; }
 
@@ -216,6 +217,8 @@ public:
 		bool bIncludeHasRefAssetsOnly;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
 		bool bAnalysisFilterDependencies=true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
+		bool bRecursiveWidgetTree = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter",meta = (EditCondition="bAnalysisFilterDependencies"))
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Specify Assets")

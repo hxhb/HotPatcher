@@ -1395,7 +1395,7 @@ FChunkAssetDescribe UFlibPatchParserHelper::DiffChunk(const FChunkInfo& CurrentV
 	return UFlibPatchParserHelper::DiffChunkByBaseVersion(CurrentVersionChunk, TotalChunk ,TotalChunkVersion, InIncludeHasRefAssetsOnly);
 }
 
-FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkByBaseVersion(const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, const FHotPatcherVersion& BaseVersion, bool InIncludeHasRefAssetsOnly)
+FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkByBaseVersion(const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, const FHotPatcherVersion& BaseVersion, bool InIncludeHasRefAssetsOnly,bool InRecursiveWidgetTree)
 {
 	FChunkAssetDescribe result;
 	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
@@ -1408,6 +1408,11 @@ FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkByBaseVersion(const FChunkI
 	);
 	FPatchVersionDiff ChunkDiffInfo = DiffPatchVersion(BaseVersion, CurrentVersion);
 
+	if(InRecursiveWidgetTree)
+	{
+		UFlibPatchParserHelper::AnalysisWidgetTree(ChunkDiffInfo);
+	}
+	
 	result.Assets = UFLibAssetManageHelperEx::CombineAssetDependencies(ChunkDiffInfo.AssetDiffInfo.AddAssetDependInfo, ChunkDiffInfo.AssetDiffInfo.ModifyAssetDependInfo);
 
 	TArray<ETargetPlatform> Platforms;
@@ -1669,5 +1674,72 @@ bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FSt
 		bRunStatus = true;
 	}
 	return bRunStatus;
+}
+
+TArray<FAssetDetail> UFlibPatchParserHelper::GetAllAssetDependencyDetails(const FAssetDetail& Asset,
+	const TArray<EAssetRegistryDependencyTypeEx>& Types,const FString& AssetType)
+{
+	TArray<FAssetDetail> result;
+	TArray<FAssetDependency> AssetDeps = UFlibPatchParserHelper::GetAssetsRelatedInfo(TArray<FAssetDetail>{Asset}, Types);
+	for(const auto& AssetDependency:AssetDeps)
+	{
+		for(const auto& AssetRederenceItem:AssetDependency.AssetReference)
+		{
+			if(AssetType.IsEmpty() || AssetRederenceItem.mAssetType.Equals(AssetType,ESearchCase::IgnoreCase))
+			{
+				TArray<FAssetDetail> CurrentAssetDepAssetList = UFlibPatchParserHelper::GetAllAssetDependencyDetails(AssetRederenceItem,Types,AssetType);
+				CurrentAssetDepAssetList.AddUnique(AssetRederenceItem);
+				for(const auto& AssetItem:CurrentAssetDepAssetList)
+				{
+					result.AddUnique(AssetItem);
+				}
+            }
+		}
+	}
+	return result;
+}
+
+void UFlibPatchParserHelper::AnalysisWidgetTree(FPatchVersionDiff& PakDiff,int32 flags)
+{
+	TArray<FAssetDetail> AnalysisAssets;
+	if(flags & 0x1)
+	{
+		TArray<FAssetDetail> AddAssets;
+		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(PakDiff.AssetDiffInfo.AddAssetDependInfo,AddAssets);
+		AnalysisAssets.Append(AddAssets);
+		
+	}
+	if(flags & 0x2)
+	{
+		TArray<FAssetDetail> ModifyAssets;
+		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(PakDiff.AssetDiffInfo.ModifyAssetDependInfo,ModifyAssets);
+		AnalysisAssets.Append(ModifyAssets);
+	}
+	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDepTypes {EAssetRegistryDependencyTypeEx::Packages};
+	FString AssetType = TEXT("WidgetBlueprint");
+	for(const auto& OriginAsset:AnalysisAssets)
+	{
+		if(OriginAsset.mAssetType.Equals(AssetType))
+		{
+			TArray<FAssetDetail> CurrentAssetDeps = UFlibPatchParserHelper::GetAllAssetDependencyDetails(OriginAsset,AssetRegistryDepTypes,AssetType);
+			for(const auto& Asset:CurrentAssetDeps)
+			{
+				FString ModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(Asset.mPackagePath);
+				FString LongPackageName;
+				UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath,LongPackageName);
+				if(PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName))
+				{
+					PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName)->AssetDependencyDetails.Add(LongPackageName,Asset);
+				}
+				else
+				{
+					FAssetDependenciesDetail AssetModuleDetail;
+					AssetModuleDetail.ModuleCategory = ModuleName;
+					AssetModuleDetail.AssetDependencyDetails.Add(LongPackageName,Asset);
+					PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Add(ModuleName,AssetModuleDetail);
+				}
+			}
+		}
+	}
 }
 

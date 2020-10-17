@@ -266,6 +266,11 @@ FReply SHotPatcherExportPatch::DoDiff()const
 
 	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersion(BaseVersion, CurrentVersion);
 
+	if(ExportPatchSetting->IsRecursiveWidgetTree())
+	{
+		UFlibPatchParserHelper::AnalysisWidgetTree(VersionDiffInfo);
+	}
+	
 	bool bShowDeleteAsset = false;
 	FString SerializeDiffInfo;
 	UFlibPatchParserHelper::TSerializeStructAsJsonString(VersionDiffInfo,SerializeDiffInfo);
@@ -458,7 +463,7 @@ FReply SHotPatcherExportPatch::DoPreviewPatch()
 
 	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
 	
-	FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::DiffChunkByBaseVersion(NewVersionChunk,DefaultChunk, BaseVersion, ExportPatchSetting->IsIncludeHasRefAssetsOnly());
+	FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::DiffChunkByBaseVersion(NewVersionChunk,DefaultChunk, BaseVersion, ExportPatchSetting->IsIncludeHasRefAssetsOnly(),ExportPatchSetting->IsRecursiveWidgetTree());
 
 	TArray<FString> AllUnselectedAssets = ChunkAssetsDescrible.GetAssetsStrings();
 	TArray<FString> UnSelectedInternalFiles = ChunkAssetsDescrible.GetInternalFileStrings();

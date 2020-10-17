@@ -35,7 +35,7 @@ public:
     bool CanExportPatch() const;
     virtual bool DoExport()override;
     FString MakePakShortName(const FHotPatcherVersion& InCurrentVersion,const FChunkInfo& InChunkInfo,const FString& InPlatform);
-    
+
     FORCEINLINE bool IsRunningCommandlet()const{return bCommandlet;}
     FORCEINLINE uint32 GetPakCounter()const{return PakCounter;}
 

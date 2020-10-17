@@ -3,6 +3,8 @@
 #include "ThreadUtils/FThreadUtils.hpp"
 
 // engine header
+#include <Module.h>
+
 #include "CoreGlobals.h"
 #include "FlibHotPatcherEditorHelper.h"
 #include "Dom/JsonValue.h"
@@ -341,7 +343,12 @@ bool UPatcherProxy::DoExport()
 		OnShowMsg.Broadcast(ReceiveMsg);
 		return false;
 	}
-
+	
+	if(GetSettingObject()->IsRecursiveWidgetTree())
+	{
+		UFlibPatchParserHelper::AnalysisWidgetTree(VersionDiffInfo);
+	}
+	
 	int32 ChunkNum = GetSettingObject()->IsEnableChunk() ? GetSettingObject()->GetChunkInfos().Num() : 1;
 	
 
@@ -821,6 +828,5 @@ FString UPatcherProxy::MakePakShortName(const FHotPatcherVersion& InCurrentVersi
 	
 	return CustomPakNameRegular(RegularOpList,GetSettingObject()->GetPakNameRegular());
 }
-
 
 #undef LOCTEXT_NAMESPACE
