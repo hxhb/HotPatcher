@@ -377,6 +377,43 @@ bool UFlibPakHelper::LoadVersionInfoByPak(const FString& InPakFile, FPakVersion&
 	return bRunStatus;
 }
 
+int32 UFlibPakHelper::GetPakOrderByPakPath(const FString& PakFile)
+{
+	int32 PakOrder = 0;
+    if (!PakFile.IsEmpty())
+    {
+    	FString PakFilename = PakFile;
+    	if (PakFilename.EndsWith(TEXT("_P.pak")))
+    	{    
+			// Prioritize based on the chunk version number
+    		// Default to version 1 for single patch system
+    		uint32 ChunkVersionNumber = 1;
+    		FString StrippedPakFilename = PakFilename.LeftChop(6);
+    		int32 VersionEndIndex = PakFilename.Find("_", ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+    		if (VersionEndIndex != INDEX_NONE && VersionEndIndex > 0)
+    		{
+    			int32 VersionStartIndex = PakFilename.Find("_", ESearchCase::CaseSensitive, ESearchDir::FromEnd, VersionEndIndex - 1);
+    			if (VersionStartIndex != INDEX_NONE)
+    			{
+    				VersionStartIndex++;
+    				FString VersionString = PakFilename.Mid(VersionStartIndex, VersionEndIndex - VersionStartIndex);
+    				if (VersionString.IsNumeric())
+    				{
+    					int32 ChunkVersionSigned = FCString::Atoi(*VersionString);
+    					if (ChunkVersionSigned >= 1)
+    					{
+    						// Increment by one so that the first patch file still gets more priority than the base pak file
+    						ChunkVersionNumber = (uint32)ChunkVersionSigned + 1;
+    					}
+    				}
+    			}
+    		}
+    		PakOrder += 100 * ChunkVersionNumber;
+		}
+    }
+	return PakOrder;
+}
+
 TArray<FString> UFlibPakHelper::GetAllMountedPaks()
 {
 	FPakPlatformFile* PakPlatformFile = (FPakPlatformFile*)(FPlatformFileManager::Get().FindPlatformFile(FPakPlatformFile::GetTypeName()));

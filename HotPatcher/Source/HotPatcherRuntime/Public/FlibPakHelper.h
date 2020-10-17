@@ -63,4 +63,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|Pak")
 		static TArray<FString> GetAllMountedPaks();
+
+	UFUNCTION(BlueprintCallable)
+		static int32 GetPakOrderByPakPath(const FString& PakFile);
 };
