@@ -29,11 +29,7 @@
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-
 #include "FlibPatchParserHelper.generated.h"
-
 
 /**
  * 

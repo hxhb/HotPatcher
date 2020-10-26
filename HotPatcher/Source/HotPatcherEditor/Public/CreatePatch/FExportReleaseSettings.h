@@ -11,7 +11,7 @@
 #include "HotPatcherSettingBase.h"
 #include "FlibHotPatcherEditorHelper.h"
 #include "FlibPatchParserHelper.h"
-
+#include "HotPatcherLog.h"
 // engine header
 #include "Misc/FileHelper.h"
 #include "CoreMinimal.h"
@@ -63,8 +63,13 @@ public:
 
 	virtual void ImportPakLists()
 	{
-		UE_LOG(LogTemp,Log,TEXT("FExportReleaseSettings::ImportPakList"));
+		UE_LOG(LogHotPatcher,Log,TEXT("FExportReleaseSettings::ImportPakList"));
 		TArray<FPlatformPakAssets> PlatformAssets;
+		if(!PlatformAssets.Num())
+		{
+			return;
+		}
+		
 		for(const auto& PlatformPakList:GetPlatformsPakListFiles())
 		{
 			PlatformAssets.Add(PlatformPakListParser(PlatformPakList.TargetPlatform,PlatformPakList.PakList.FilePath));
@@ -150,7 +155,7 @@ public:
 	
 	virtual void ClearImportedPakList()
 	{
-		UE_LOG(LogTemp,Log,TEXT("FExportReleaseSettings::ClearImportedPakList"));
+		UE_LOG(LogHotPatcher,Log,TEXT("FExportReleaseSettings::ClearImportedPakList"));
 		AddExternAssetsToPlatform.Empty();
 		IncludeSpecifyAssets.Empty();
 	}

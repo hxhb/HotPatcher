@@ -63,8 +63,14 @@ public class HotPatcherEditor : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
-		bUseRTTI = true;
-        OptimizeCode = CodeOptimization.InShippingBuildsOnly;
+		
+		if (Target.Version.MajorVersion <= 21)
+		{
+			bUseRTTI = true;
+			PublicDefinitions.Add("USE_RTTI=1");
+		}
+
+		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
         
 	}
 }
