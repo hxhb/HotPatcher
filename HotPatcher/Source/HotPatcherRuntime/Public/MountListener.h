@@ -30,7 +30,7 @@ public:
 
     UFUNCTION(BlueprintCallable)
     void Init();
-    virtual void OnMountPak(const TCHAR* Pak, int32 ChunkID);
+    virtual bool OnMountPak(const FString& Pak, int32 ChunkID,IPlatformFile::FDirectoryVisitor*);
     virtual bool OnUnMountPak(const FString& Pak);
 
     virtual TMap<FString,FPakMountInfo>& GetMountedPaks();

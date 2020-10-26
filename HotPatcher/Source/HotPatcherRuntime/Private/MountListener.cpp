@@ -14,7 +14,7 @@ void UMountListener::Init()
 {
     if(!HasAnyFlags(RF_ClassDefaultObject))
     {
-        FCoreDelegates::OnPakFileMounted.AddUObject(this,&UMountListener::OnMountPak);
+        FCoreDelegates::OnMountPak.BindUObject(this,&UMountListener::OnMountPak);
         FCoreDelegates::OnUnmountPak.BindUObject(this,&UMountListener::OnUnMountPak);
     #if !WITH_EDITOR
         FPakPlatformFile* PakFileMgr = (FPakPlatformFile*)(FPlatformFileManager::Get().FindPlatformFile(FPakPlatformFile::GetTypeName()));
@@ -27,15 +27,16 @@ void UMountListener::Init()
     }
 }
 
-void UMountListener::OnMountPak(const TCHAR* Pak, int32 ChunkID)
+bool UMountListener::OnMountPak(const FString& Pak, int32 ChunkID,IPlatformFile::FDirectoryVisitor*)
 {
-    UE_LOG(LogMountListener,Log,TEXT("Pak %s is Mounted! PakOrder as %d"),Pak,ChunkID);
+    UE_LOG(LogMountListener,Log,TEXT("Pak %s is Mounted! PakOrder as %d"),*Pak,ChunkID);
     FPakMountInfo MountedPak;
     MountedPak.Pak = Pak;
     MountedPak.PakOrder = ChunkID;
 
     PaksMap.Add(MountedPak.Pak,MountedPak);
     OnMountPakDelegate.Broadcast(MountedPak);
+    return false;
 }
 
 bool UMountListener::OnUnMountPak(const FString& Pak)

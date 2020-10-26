@@ -263,7 +263,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<ETargetPlatform> PakTargetPlatforms;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-		bool bCustomPakNameRegular;
+		bool bCustomPakNameRegular = false;
 	// Can use value: {VERSION} {BASEVERSION} {CHUNKNAME} {PLATFORM} 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options",meta=(EditCondition = "bCustomPakNameRegular"))
 		FString PakNameRegular = TEXT("{VERSION}_{CHUNKNAME}_{PLATFORM}_001_P");
