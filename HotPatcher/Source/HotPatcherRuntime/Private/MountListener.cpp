@@ -21,7 +21,7 @@ void UMountListener::Init()
         TArray<FString> MountedPaks = UFlibPakHelper::GetAllMountedPaks();
         for(const auto& Pak:MountedPaks)
         {
-            OnMountPak(*Pak,UFlibPakHelper::GetPakOrderByPakPath(Pak));
+            OnMountPak(*Pak,UFlibPakHelper::GetPakOrderByPakPath(Pak),NULL);
         }
     #endif
     }
