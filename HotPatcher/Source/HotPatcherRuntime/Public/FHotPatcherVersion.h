@@ -5,6 +5,7 @@
 #include "FExternFileInfo.h"
 #include "ETargetPlatform.h"
 #include "FPlatformExternFiles.h"
+#include "FPlatformExternAssets.h"
 
 // engine header
 #include "CoreMinimal.h"
