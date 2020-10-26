@@ -69,30 +69,48 @@ public:
 		{
 			PlatformAssets.Add(PlatformPakListParser(PlatformPakList.TargetPlatform,PlatformPakList.PakList.FilePath));
 		}
+		
+		PlatformAssets.Sort([](const FPlatformPakAssets& l,const FPlatformPakAssets& r)->bool{return l.Assets.Num()<r.Assets.Num();});
+		
+		for(const auto& Asset:PlatformAssets[0].Assets)
+        {
+			AddSpecifyAsset(Asset);
+        }
 
-		int32 MinElementIndex = INDEX_NONE;
-		if(!!PlatformAssets.Num())
+		PlatformAssets.Sort([](const FPlatformPakAssets& l,const FPlatformPakAssets& r)->bool{return l.ExternFiles.Num()<r.ExternFiles.Num();});
+
+		FPlatformPakAssets AllPlatform;
+		AllPlatform.Platform = ETargetPlatform::AllPlatforms;
+		for(int32 FileIndex=0;FileIndex<PlatformAssets[0].ExternFiles.Num();)
 		{
-			int32 MinElementNum = PlatformAssets[0].Assets.Num();
-			for(int32 index=0;index < PlatformAssets.Num();++index)
+			FExternFileInfo& MinPlatformFileItem = PlatformAssets[0].ExternFiles[FileIndex];
+			bool IsAllPlatformFile = true;
+			for(int32 Internalindex =1;Internalindex<PlatformAssets.Num();++Internalindex)
 			{
-				if(MinElementNum > PlatformAssets[index].Assets.Num())
+				int32 FindIndex = PlatformAssets[Internalindex].ExternFiles.FindLastByPredicate([&MinPlatformFileItem](const FExternFileInfo& file)
 				{
-					MinElementNum = PlatformAssets[index].Assets.Num();
-					MinElementIndex = index;
+					return MinPlatformFileItem.IsAbsSame(file);
+				});
+				
+				if(FindIndex != INDEX_NONE)
+				{
+					PlatformAssets[Internalindex].ExternFiles.RemoveAt(FindIndex);				
+				}
+				else
+				{
+					IsAllPlatformFile = false;
+					break;
 				}
 			}
+			if(IsAllPlatformFile)
+			{
+				AllPlatform.ExternFiles.AddUnique(MinPlatformFileItem);
+				PlatformAssets[0].ExternFiles.RemoveAt(FileIndex);
+				continue;
+			}
+			++FileIndex;
 		}
-
-		if(MinElementIndex != INDEX_NONE)
-		{
-			for(const auto& Asset:PlatformAssets[MinElementIndex].Assets)
-            {
-            	AddSpecifyAsset(Asset);
-            }
-		}
-		
-
+		PlatformAssets.Add(AllPlatform);
 		// for not-uasset file
 		for(const auto& Platform:PlatformAssets)
 		{
@@ -261,7 +279,7 @@ public:
 						UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(LongPackageName, LongPackagePath);
 					}
 
-					UE_LOG(LogHotPatcher, Log, TEXT("UEAsset: Str: %s LongPackagePath %s"),*InAsset,*LongPackagePath);
+					// UE_LOG(LogHotPatcher, Log, TEXT("UEAsset: Str: %s LongPackagePath %s"),*InAsset,*LongPackagePath);
 					result.Asset = LongPackagePath;
 					return result;
 				};
@@ -278,7 +296,7 @@ public:
 					result.MountPath = RemoveDoubleQuoteLambda(AssetMountPath);
 
 					result.GenerateFileHash();
-					UE_LOG(LogHotPatcher, Log, TEXT("NoAsset: left:%s,Right:%s"), *result.FilePath.FilePath, *result.MountPath);
+					// UE_LOG(LogHotPatcher, Log, TEXT("NoAsset: left:%s,Right:%s"), *result.FilePath.FilePath, *result.MountPath);
 					return result;
 				};
 				TArray<FString> UAssetFormats = { TEXT(".uasset"),TEXT(".ubulk"),TEXT(".uexp"),TEXT(".umap"),TEXT(".ufont") };
