@@ -189,7 +189,15 @@ FHotPatcherVersion UPatcherProxy::MakeNewRelease(const FHotPatcherVersion& InBas
 	FHotPatcherVersion BaseVersion = InBaseVersion;
 	FHotPatcherVersion NewRelease = InCurrentVersion;
 	FPatchVersionDiff DiffInfo = UFlibPatchParserHelper::DiffPatchVersion(BaseVersion,InCurrentVersion);
-	
+
+	TArray<FString> IgnoreDeletionModulesAsset = const_cast<UPatcherProxy*>(this)->GetSettingObject()->GetIgnoreDeletionModulesAsset();
+	if(IgnoreDeletionModulesAsset.Num())
+	{
+		for(const auto& ModuleName:IgnoreDeletionModulesAsset)
+		{
+			DiffInfo.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap.Remove(ModuleName);
+		}
+	}
 	FAssetDependenciesInfo& BaseAssetInfoRef = BaseVersion.AssetInfo;
 	// TMap<FString, FExternFileInfo>& BaseExternalFilesRef = BaseVersion.ExternalFiles;
 	TMap<ETargetPlatform,FPlatformExternAssets>& BasePlatformAssetsRef = BaseVersion.PlatformAssets;
@@ -337,6 +345,14 @@ bool UPatcherProxy::DoExport()
 	FString CurrentVersionSavePath = GetSettingObject()->GetCurrentVersionSavePath();
 	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersion(BaseVersion, CurrentVersion);
 
+	if(GetSettingObject()->GetIgnoreDeletionModulesAsset().Num())
+	{
+		for(const auto& ModuleName:GetSettingObject()->GetIgnoreDeletionModulesAsset())
+		{
+			VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap.Remove(ModuleName);
+		}
+	}
+	
 	FString ReceiveMsg;
 	if (!CheckPatchRequire(VersionDiffInfo, ReceiveMsg))
 	{

@@ -266,6 +266,14 @@ FReply SHotPatcherExportPatch::DoDiff()const
 
 	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersion(BaseVersion, CurrentVersion);
 
+	if(ExportPatchSetting->GetIgnoreDeletionModulesAsset().Num())
+	{
+		for(const auto& ModuleName:ExportPatchSetting->GetIgnoreDeletionModulesAsset())
+		{
+			VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap.Remove(ModuleName);
+		}
+	}
+	
 	if(ExportPatchSetting->IsRecursiveWidgetTree())
 	{
 		UFlibPatchParserHelper::AnalysisWidgetTree(VersionDiffInfo);

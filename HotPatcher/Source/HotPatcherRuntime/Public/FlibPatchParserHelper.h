@@ -29,6 +29,9 @@
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+
 #include "FlibPatchParserHelper.generated.h"
 
 
@@ -170,7 +173,7 @@ public:
 	static TArray<FPakCommand> CollectPakCommandByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions);
 	// CurrenrVersionChunk中的过滤器会进行依赖分析，TotalChunk的不会，目的是让用户可以自己控制某个文件夹打包到哪个Pak里，而不会对该文件夹下的资源进行依赖分析
 	static FChunkAssetDescribe DiffChunk(const FChunkInfo& CurrentVersionChunk,const FChunkInfo& TotalChunk, bool InIncludeHasRefAssetsOnly);
-	static FChunkAssetDescribe DiffChunkByBaseVersion(const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, const FHotPatcherVersion& BaseVersion, bool InIncludeHasRefAssetsOnly,bool InRecursiveWidgetTree=false);
+	static FChunkAssetDescribe DiffChunkByBaseVersion(const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, const FHotPatcherVersion& BaseVersion, bool InIncludeHasRefAssetsOnly, bool InRecursiveWidgetTree=false);
 	static TArray<FString> GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands, const TArray<FReplaceText>& InReplaceTexts = TArray<FReplaceText>{});
 
 	static FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions, bool block);

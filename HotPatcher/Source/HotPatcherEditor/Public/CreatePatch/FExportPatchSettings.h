@@ -93,6 +93,7 @@ public:
 
 	FORCEINLINE bool IsSavePakList()const { return bSavePakList; }
 	FORCEINLINE bool IsSaveDiffAnalysis()const { return IsByBaseVersion() && bSaveDiffAnalysis; }
+	FORCEINLINE TArray<FString> GetIgnoreDeletionModulesAsset()const{return IgnoreDeletionModulesAsset;}
 //	FORCEINLINE bool IsSavePakVersion()const { return bSavePakVersion; }
 	FORCEINLINE bool IsSavePatchConfig()const { return bSavePatchConfig; }
 
@@ -239,6 +240,8 @@ public:
 		bool bIncludeProjectIni;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		bool bEnableExternFilesDiff;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
+		TArray<FString> IgnoreDeletionModulesAsset;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		TArray<FExternFileInfo> AddExternFileToPak;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")

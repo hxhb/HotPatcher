@@ -240,10 +240,10 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 	const FHotPatcherVersion& InBaseVersion,const FHotPatcherVersion& InNewVersion, TMap<ETargetPlatform, FPatchVersionExternDiff>& OutDiff)
 {
 	OutDiff.Empty();
-	auto ParserDiffPlatformExFileLambda = [](const FPlatformExternFiles& InBase,const FPlatformExternFiles& InNew)->FPatchVersionExternDiff
+	auto ParserDiffPlatformExFileLambda = [](const FPlatformExternFiles& InBase,const FPlatformExternFiles& InNew,ETargetPlatform Platform)->FPatchVersionExternDiff
 	{
 		FPatchVersionExternDiff result;
-		result.Platform = InNew.Platform;
+		result.Platform = Platform;
 		
 		auto ParserAddFiles = [](const TArray<FExternFileInfo>& InBase,const TArray<FExternFileInfo>& InNew,TArray<FExternFileInfo>& Out)
 		{
@@ -301,7 +301,8 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 		{
 			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
 				UFlibPatchParserHelper::GetAllExFilesByPlatform(InBaseVersion.PlatformAssets[Platform],false),
-				UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform])
+				UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform]),
+				Platform
 			));
 		}
 		else
@@ -310,7 +311,8 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 			EmptyBase.Platform = Platform;
 			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
 				EmptyBase,
-                UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform],true)
+                UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform],true),
+                Platform
             ));
 		}
 	}
@@ -324,7 +326,8 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 			EmptyNew.Platform = Platform;
 			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
                 UFlibPatchParserHelper::GetAllExFilesByPlatform(InBaseVersion.PlatformAssets[Platform]),
-                EmptyNew
+                EmptyNew,
+                Platform
             ));
 		}
 	}
@@ -1395,7 +1398,7 @@ FChunkAssetDescribe UFlibPatchParserHelper::DiffChunk(const FChunkInfo& CurrentV
 	return UFlibPatchParserHelper::DiffChunkByBaseVersion(CurrentVersionChunk, TotalChunk ,TotalChunkVersion, InIncludeHasRefAssetsOnly);
 }
 
-FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkByBaseVersion(const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, const FHotPatcherVersion& BaseVersion, bool InIncludeHasRefAssetsOnly,bool InRecursiveWidgetTree)
+FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkByBaseVersion(const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, const FHotPatcherVersion& BaseVersion, bool InIncludeHasRefAssetsOnly, bool InRecursiveWidgetTree)
 {
 	FChunkAssetDescribe result;
 	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
@@ -1422,7 +1425,7 @@ FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkByBaseVersion(const FChunkI
 		FPlatformExternFiles PlatformFiles;
 		PlatformFiles.Platform = Platform;
 		PlatformFiles.ExternFiles = ChunkDiffInfo.PlatformExternDiffInfo.Find(Platform)->AddExternalFiles;
-		PlatformFiles.ExternFiles = ChunkDiffInfo.PlatformExternDiffInfo.Find(Platform)->ModifyExternalFiles;
+		PlatformFiles.ExternFiles.Append(ChunkDiffInfo.PlatformExternDiffInfo.Find(Platform)->ModifyExternalFiles);
 		result.AllPlatformExFiles.Add(Platform,PlatformFiles);	
 	}
 	
