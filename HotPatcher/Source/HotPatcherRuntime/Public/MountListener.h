@@ -30,7 +30,11 @@ public:
 
     UFUNCTION(BlueprintCallable)
     void Init();
-    virtual bool OnMountPak(const FString& Pak, int32 ChunkID,IPlatformFile::FDirectoryVisitor*);
+#if ENGINE_MINOR_VERSION >24
+    void OnMountPak(const TCHAR* Pak, int32 ChunkID);
+#else
+    virtual void OnMountPak(const TCHAR* Pak);
+#endif
     virtual bool OnUnMountPak(const FString& Pak);
 
     virtual TMap<FString,FPakMountInfo>& GetMountedPaks();
