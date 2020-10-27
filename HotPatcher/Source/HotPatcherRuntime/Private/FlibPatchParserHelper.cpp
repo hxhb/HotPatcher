@@ -1188,15 +1188,17 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(const FPatc
 
 		// Collect Extern Files
 		{
-			for(const auto& PlatformItenm)
-			for (const auto& CollectFile : ChunkAssetsDescrible.AllPlatformExFiles[Platform].ExternFiles)
+			for(const auto& PlatformItenm:CollectPlatforms)
 			{
-				FPakCommand CurrentPakCommand;
-				CurrentPakCommand.MountPath = CollectFile.MountPath;
-				CurrentPakCommand.AssetPackage = UFlibPatchParserHelper::MountPathToRelativePath(CurrentPakCommand.MountPath);
-				CurrentPakCommand.PakCommands = TArray<FString>{ FString::Printf(TEXT("\"%s\" \"%s\"%s"), *CollectFile.FilePath.FilePath, *CollectFile.MountPath,*PakOptionsStr) };
+				for (const auto& CollectFile : ChunkAssetsDescrible.AllPlatformExFiles[PlatformItenm].ExternFiles)
+				{
+					FPakCommand CurrentPakCommand;
+					CurrentPakCommand.MountPath = CollectFile.MountPath;
+					CurrentPakCommand.AssetPackage = UFlibPatchParserHelper::MountPathToRelativePath(CurrentPakCommand.MountPath);
+					CurrentPakCommand.PakCommands = TArray<FString>{ FString::Printf(TEXT("\"%s\" \"%s\"%s"), *CollectFile.FilePath.FilePath, *CollectFile.MountPath,*PakOptionsStr) };
 
-				PakCommands.Add(CurrentPakCommand);
+					PakCommands.Add(CurrentPakCommand);
+				}
 			}
 		}
 		// internal files

@@ -26,6 +26,7 @@ private:
 private:
 	void PrintUsageMsg();
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& InSpawnTabArgs);
+	void OnTabClosed(TSharedRef<SDockTab> InTab);
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
 	TSharedPtr<SDockTab> DockTab;
