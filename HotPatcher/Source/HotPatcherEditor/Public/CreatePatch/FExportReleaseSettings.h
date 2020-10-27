@@ -64,12 +64,12 @@ public:
 	virtual void ImportPakLists()
 	{
 		UE_LOG(LogHotPatcher,Log,TEXT("FExportReleaseSettings::ImportPakList"));
-		TArray<FPlatformPakAssets> PlatformAssets;
-		if(!PlatformAssets.Num())
+		
+		if(!GetPlatformsPakListFiles().Num())
 		{
 			return;
 		}
-		
+		TArray<FPlatformPakAssets> PlatformAssets;
 		for(const auto& PlatformPakList:GetPlatformsPakListFiles())
 		{
 			PlatformAssets.Add(PlatformPakListParser(PlatformPakList.TargetPlatform,PlatformPakList.PakList.FilePath));

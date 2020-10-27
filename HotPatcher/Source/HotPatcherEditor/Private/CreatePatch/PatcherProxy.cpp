@@ -423,7 +423,7 @@ bool UPatcherProxy::DoExport()
 		// 因为默认情况下Chunk的过滤器不会进行依赖分析，当bEnableChunk未开启时，之前导出的Chunk中的过滤器不包含Patch中所选过滤器进行依赖分析之后的所有资源的模块。
 		{
 			TArray<FString> DependenciesFilters;
-
+		
 			auto GetKeysLambda = [&DependenciesFilters](const FAssetDependenciesInfo& Assets)
 			{
 				TArray<FAssetDetail> AllAssets;
