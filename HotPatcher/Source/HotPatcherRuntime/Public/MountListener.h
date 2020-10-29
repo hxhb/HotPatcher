@@ -20,17 +20,21 @@ struct HOTPATCHERRUNTIME_API FPakMountInfo
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnListenerMountPak,FPakMountInfo,PakInfo);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnListenerUnMountPak,const FString&,PakName);
 /**
- * 
- */
+* 
+*/
 UCLASS(Blueprintable,BlueprintType)
 class HOTPATCHERRUNTIME_API UMountListener : public UObject
 {
-	GENERATED_UCLASS_BODY()
+    GENERATED_UCLASS_BODY()
 public:
 
     UFUNCTION(BlueprintCallable)
     void Init();
-    virtual void OnMountPak(const TCHAR* Pak, int32 ChunkID);
+#if ENGINE_MINOR_VERSION >24
+    void OnMountPak(const TCHAR* Pak, int32 ChunkID);
+#else
+    virtual void OnMountPak(const TCHAR* Pak);
+#endif
     virtual bool OnUnMountPak(const FString& Pak);
 
     virtual TMap<FString,FPakMountInfo>& GetMountedPaks();
@@ -40,6 +44,6 @@ public:
     UPROPERTY(BlueprintAssignable)
     FOnListenerUnMountPak OnUnMountPakDelegate;
     
-private:
+    private:
     TMap<FString,FPakMountInfo> PaksMap;
 };
