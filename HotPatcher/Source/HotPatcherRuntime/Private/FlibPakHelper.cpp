@@ -8,6 +8,9 @@
 #include "HotPatcherLog.h"
 
 // Engine Header
+#include "ArrayReader.h"
+#include "AssetRegistryModule.h"
+#include "IAssetRegistry.h"
 #include "Misc/ScopeExit.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonReader.h"
@@ -414,6 +417,22 @@ int32 UFlibPakHelper::GetPakOrderByPakPath(const FString& PakFile)
 		}
     }
 	return PakOrder;
+}
+
+bool UFlibPakHelper::LoadAssetRegistry(const FString& InAssetRegistryBin)
+{
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
+	bool bSuccess = false;
+	FArrayReader SerializedAssetData;
+	FString AssetRegistryBinPath = InAssetRegistryBin;
+	if (IFileManager::Get().FileExists(*AssetRegistryBinPath) && FFileHelper::LoadFileToArray(SerializedAssetData, *AssetRegistryBinPath))
+	{
+		SerializedAssetData.Seek(0);
+		AssetRegistry.Serialize(SerializedAssetData);
+		bSuccess = true;
+	}
+	return bSuccess;
 }
 
 TArray<FString> UFlibPakHelper::GetAllMountedPaks()

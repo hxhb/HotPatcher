@@ -67,4 +67,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		static int32 GetPakOrderByPakPath(const FString& PakFile);
+
+	UFUNCTION(BlueprintCallable)
+		static bool LoadAssetRegistry(const FString& InAssetRegistryBin);
 };
