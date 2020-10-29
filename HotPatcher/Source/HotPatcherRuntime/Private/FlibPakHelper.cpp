@@ -24,23 +24,26 @@ FPakFile* UFlibPakHelper::GetPakFileInsByPath(const FString& PakPath)
 #if !WITH_EDITOR
 	FPakPlatformFile* PakFileMgr = (FPakPlatformFile*)FPlatformFileManager::Get().GetPlatformFile(FPakPlatformFile::GetTypeName());
 	IPlatformFile* LowerLevel = PakFileMgr->GetLowerLevel();
-	Pak = new FPakFile(LowerLevel, *PakPath, false, true);
+	if(LowerLevel)
+		Pak = new FPakFile(LowerLevel, *PakPath, false, true);
 #endif
 	return Pak;
 }
 
-#if ENGINE_MINOR_VERSION >22
+
 TArray<FString> UFlibPakHelper::LoadPakFileList(const FString& PakFilePath)
 {
 	TArray<FString> Files;
 	FPakFile* Pak = UFlibPakHelper::GetPakFileInsByPath(PakFilePath);
 	if(Pak)
 	{
+#if ENGINE_MINOR_VERSION >22
 		Pak->GetFilenames(Files);
+#endif
 	}
 	return Files;
 }
-#endif
+
 
 void UFlibPakHelper::ExecMountPak(FString InPakPath, int32 InPakOrder, FString InMountPoint)
 {
@@ -426,6 +429,7 @@ bool UFlibPakHelper::LoadAssetRegistry(const FString& InAssetRegistryBin)
 	bool bSuccess = false;
 	FArrayReader SerializedAssetData;
 	FString AssetRegistryBinPath = InAssetRegistryBin;
+	UE_LOG(LogHotPatcher,Log,TEXT("Load AssetRegistry %s"),*AssetRegistryBinPath);
 	if (IFileManager::Get().FileExists(*AssetRegistryBinPath) && FFileHelper::LoadFileToArray(SerializedAssetData, *AssetRegistryBinPath))
 	{
 		SerializedAssetData.Seek(0);

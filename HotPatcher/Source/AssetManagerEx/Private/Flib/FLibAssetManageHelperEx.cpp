@@ -218,6 +218,11 @@ void UFLibAssetManageHelperEx::GetAssetDependencies(const FString& InLongPackage
 			}
 			if (AssetDataList.Num() > 1)
 			{
+				for(const auto& Asset:AssetDataList)
+				{
+					UE_LOG(LogAssetManagerEx,Log,TEXT("AssetData ObjectPath %s"),*Asset.ObjectPath.ToString())
+					UE_LOG(LogAssetManagerEx,Log,TEXT("AssetData AssetName %s"),*Asset.AssetName.ToString())
+				}
 				UE_LOG(LogAssetManagerEx, Warning, TEXT("Got mulitple AssetData of %s,please check."), *InLongPackageName);
 			}
 		}
