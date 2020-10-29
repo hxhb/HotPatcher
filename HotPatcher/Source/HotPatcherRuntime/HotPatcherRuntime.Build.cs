@@ -32,8 +32,7 @@ public class HotPatcherRuntime : ModuleRules
                 "Json",
                 "JsonUtilities",
                 "PakFile",
-                "AssetManagerEx",
-                "BackgroundHTTP"
+                "AssetManagerEx"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -45,20 +44,18 @@ public class HotPatcherRuntime : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"Slate",
-				"SlateCore",
-                "RenderCore"
+				"SlateCore"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
-		
-		
-		DynamicallyLoadedModuleNames.AddRange(
-			new string[]
-			{
-				// ... add any modules that your module loads dynamically here ...
-			}
-			);
-		
-        OptimizeCode = CodeOptimization.InShippingBuildsOnly;
+		if (Target.Version.MinorVersion > 21)
+		{
+			PrivateDependencyModuleNames.Add("RenderCore");
+		}
+		else
+		{
+			PrivateDependencyModuleNames.Add("ShaderCore");
+		}
+		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
     }
 }

@@ -63,7 +63,6 @@ public class HotPatcherEditor : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
-		
 		if (Target.Version.MajorVersion <= 21)
 		{
 			bUseRTTI = true;

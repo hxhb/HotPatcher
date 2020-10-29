@@ -26,6 +26,7 @@ FPakFile* UFlibPakHelper::GetPakFileInsByPath(const FString& PakPath)
 	return Pak;
 }
 
+#if ENGINE_MINOR_VERSION >22
 TArray<FString> UFlibPakHelper::LoadPakFileList(const FString& PakFilePath)
 {
 	TArray<FString> Files;
@@ -36,6 +37,7 @@ TArray<FString> UFlibPakHelper::LoadPakFileList(const FString& PakFilePath)
 	}
 	return Files;
 }
+#endif
 
 void UFlibPakHelper::ExecMountPak(FString InPakPath, int32 InPakOrder, FString InMountPoint)
 {

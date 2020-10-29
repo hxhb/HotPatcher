@@ -3,7 +3,6 @@
 #include "ThreadUtils/FThreadUtils.hpp"
 
 // engine header
-#include <Module.h>
 
 #include "CoreGlobals.h"
 #include "FlibHotPatcherEditorHelper.h"

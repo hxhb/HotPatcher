@@ -20,7 +20,7 @@ void UMountListener::Init()
         FCoreDelegates::PakFileMountedCallback.AddUObject(this,&UMountListener::OnMountPak);
 #endif
         FCoreDelegates::OnUnmountPak.BindUObject(this,&UMountListener::OnUnMountPak);
-    #if !WITH_EDITOR
+#if !WITH_EDITOR
         FPakPlatformFile* PakFileMgr = (FPakPlatformFile*)(FPlatformFileManager::Get().FindPlatformFile(FPakPlatformFile::GetTypeName()));
         TArray<FString> MountedPaks = UFlibPakHelper::GetAllMountedPaks();
         for(const auto& Pak:MountedPaks)
@@ -31,7 +31,7 @@ void UMountListener::Init()
             OnMountPak(*Pak);
 #endif
         }
-    #endif
+#endif
     }
 }
 #if ENGINE_MINOR_VERSION > 24
