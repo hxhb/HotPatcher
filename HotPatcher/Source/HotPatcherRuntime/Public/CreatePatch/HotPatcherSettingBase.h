@@ -4,7 +4,7 @@
 #include "HotPatcherSettingBase.generated.h"
 
 USTRUCT()
-struct HOTPATCHEREDITOR_API FHotPatcherSettingBase
+struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase
 {
     GENERATED_USTRUCT_BODY()
 };

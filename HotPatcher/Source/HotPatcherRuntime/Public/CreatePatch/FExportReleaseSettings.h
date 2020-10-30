@@ -9,7 +9,6 @@
 #include "FPlatformExternAssets.h"
 #include "HotPatcherLog.h"
 #include "HotPatcherSettingBase.h"
-#include "FlibHotPatcherEditorHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "HotPatcherLog.h"
 // engine header
@@ -27,7 +26,7 @@
 
 
 USTRUCT(BlueprintType)
-struct FPlatformPakListFiles
+struct HOTPATCHERRUNTIME_API FPlatformPakListFiles
 {
 	GENERATED_USTRUCT_BODY()
 
@@ -38,7 +37,7 @@ struct FPlatformPakListFiles
 };
 
 USTRUCT(BlueprintType)
-struct FPlatformPakAssets
+struct HOTPATCHERRUNTIME_API FPlatformPakAssets
 {
 	GENERATED_USTRUCT_BODY()
 	UPROPERTY(EditAnywhere)
@@ -51,7 +50,7 @@ struct FPlatformPakAssets
 
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
 USTRUCT(BlueprintType)
-struct FExportReleaseSettings:public FHotPatcherSettingBase
+struct HOTPATCHERRUNTIME_API FExportReleaseSettings:public FHotPatcherSettingBase
 {
 	GENERATED_USTRUCT_BODY()
 public:

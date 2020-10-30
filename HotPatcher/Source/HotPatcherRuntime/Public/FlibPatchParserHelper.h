@@ -14,13 +14,11 @@
 #include "FAssetDependency.h"
 #include "FCookerConfig.h"
 #include "FPlatformExternFiles.h"
-
 // cpp standard
 #include <typeinfo>
 #include <cctype>
 #include <algorithm>
 #include <string>
-
 // engine header
 #include "Resources/Version.h"
 #include "JsonObjectConverter.h"
@@ -160,7 +158,7 @@ public:
 	
 	// static TArray<FExternFileInfo> GetExternFilesFromChunk(const FChunkInfo& InChunk, TArray<ETargetPlatform> InTargetPlatforms, bool bCalcHash = false);
 	TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatformExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash);
-	static FPatchVersionDiff DiffPatchVersion(const FHotPatcherVersion& Base, const FHotPatcherVersion& New);
+	static FPatchVersionDiff DiffPatchVersionWithPatchSetting(const struct FExportPatchSettings& PatchSetting, const FHotPatcherVersion& Base, const FHotPatcherVersion& New);
 
 	static FChunkAssetDescribe CollectFChunkAssetsDescribeByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, TArray<ETargetPlatform> Platforms);
 
@@ -168,8 +166,8 @@ public:
 
 	static TArray<FPakCommand> CollectPakCommandByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions);
 	// CurrenrVersionChunk中的过滤器会进行依赖分析，TotalChunk的不会，目的是让用户可以自己控制某个文件夹打包到哪个Pak里，而不会对该文件夹下的资源进行依赖分析
-	static FChunkAssetDescribe DiffChunk(const FChunkInfo& CurrentVersionChunk,const FChunkInfo& TotalChunk, bool InIncludeHasRefAssetsOnly);
-	static FChunkAssetDescribe DiffChunkByBaseVersion(const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, const FHotPatcherVersion& BaseVersion, bool InIncludeHasRefAssetsOnly, bool InRecursiveWidgetTree=false);
+	static FChunkAssetDescribe DiffChunkWithPatchSetting(const struct FExportPatchSettings& PatchSetting, const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk);
+	static FChunkAssetDescribe DiffChunkByBaseVersionWithPatchSetting(const struct FExportPatchSettings& PatchSetting, const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, const FHotPatcherVersion& BaseVersion);
 	static TArray<FString> GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands, const TArray<FReplaceText>& InReplaceTexts = TArray<FReplaceText>{});
 
 	static FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions, bool block);
@@ -182,8 +180,8 @@ public:
 	//static bool SerializeMonolithicPathMode(const EMonolithicPathMode& InMode, TSharedPtr<FJsonValue>& OutJsonValue);
 	//static bool DeSerializeMonolithicPathMode(const TSharedPtr<FJsonValue>& InJsonValue, EMonolithicPathMode& OutMode);
 
-
-
+	static void ExcludeContentForVersionDiff(FPatchVersionDiff& VersionDiff,const TArray<FString>& ExcludeRules = {TEXT("")});
+	
 	template<typename ENUM_TYPE>
 	static FString GetEnumNameByValue(ENUM_TYPE InEnumValue, bool bFullName = false)
 	{

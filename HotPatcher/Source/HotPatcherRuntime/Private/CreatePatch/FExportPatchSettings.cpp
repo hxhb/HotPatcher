@@ -20,6 +20,13 @@ FExportPatchSettings::FExportPatchSettings()
 		UFlibPatchParserHelper::GetProjectName(),
 		TEXT("Extention/Versions")
 	);
+	TArray<FString> DefaultSkipEditorContentRules = {TEXT("/Engine/Editor"),TEXT("/Engine/VREditor")};
+	for(const auto& Ruls:DefaultSkipEditorContentRules)
+	{
+		FDirectoryPath PathIns;
+		PathIns.Path = Ruls;
+		ForceSkipContentRules.Add(PathIns);
+	}
 }
 
 

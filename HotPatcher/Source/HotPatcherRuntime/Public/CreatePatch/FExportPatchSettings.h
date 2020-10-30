@@ -28,7 +28,7 @@
 
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
 USTRUCT(BlueprintType)
-struct FExportPatchSettings:public FHotPatcherSettingBase
+struct HOTPATCHERRUNTIME_API FExportPatchSettings:public FHotPatcherSettingBase
 {
 	GENERATED_USTRUCT_BODY()
 public:
@@ -96,7 +96,17 @@ public:
 	FORCEINLINE TArray<FString> GetIgnoreDeletionModulesAsset()const{return IgnoreDeletionModulesAsset;}
 //	FORCEINLINE bool IsSavePakVersion()const { return bSavePakVersion; }
 	FORCEINLINE bool IsSavePatchConfig()const { return bSavePatchConfig; }
-
+	FORCEINLINE bool IsForceSkipContent()const{return bForceSkipContent;}
+	FORCEINLINE TArray<FDirectoryPath> GetForceSkipContentRules()const {return ForceSkipContentRules;}
+	FORCEINLINE TArray<FString> GetForceSkipContentStrRules()const
+	{
+		TArray<FString> Path;
+		for(const auto& DirPath:GetForceSkipContentRules())
+		{
+			Path.AddUnique(DirPath.Path);
+		}
+		return Path;
+	}
 	FORCEINLINE bool IsIncludeAssetRegistry()const { return bIncludeAssetRegistry; }
 	FORCEINLINE bool IsIncludeGlobalShaderCache()const { return bIncludeGlobalShaderCache; }
 	FORCEINLINE bool IsIncludeShaderBytecode()const { return bIncludeShaderBytecode; }
@@ -212,8 +222,14 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Asset Filter",meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
+	// Ignore directories in AssetIncludeFilters 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIgnoreFilters;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
+		bool bForceSkipContent = true;
+	// force exclude asset folder e.g. Exclude editor content when cooking in Project Settings
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Asset Filter",meta = (RelativeToGameContentDir, LongPackageName, EditCondition="bForceSkipContent"))
+    		TArray<FDirectoryPath> ForceSkipContentRules;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
 		bool bIncludeHasRefAssetsOnly;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")

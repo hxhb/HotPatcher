@@ -2,7 +2,7 @@
 
 
 #include "Model/FHotPatcherCreatePatchModel.h"
-#include "FExportPatchSettings.h"
+#include "CreatePatch/FExportPatchSettings.h"
 #include "SHotPatcherInformations.h"
 #include "SHotPatcherPatchableBase.h"
 #include "FPatchVersionDiff.h"
@@ -43,7 +43,10 @@ public:
 	{
 	    return (FExportPatchSettings*)Setting;
 	}
-
+    virtual FExportPatchSettings* GetSettingObject() const
+    {
+        return (FExportPatchSettings*)Setting;
+    }
 private:
     // FExportPatchSettingsEx* ExportPatchSetting;
     bool bCommandlet = false;

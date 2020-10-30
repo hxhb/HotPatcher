@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "FExportReleaseSettings.h"
+#include "CreatePatch/FExportReleaseSettings.h"
 #include "HotPatcherProxyBase.h"
 // ENGINE HEADER
 #include "CoreMinimal.h"
