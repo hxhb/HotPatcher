@@ -1240,7 +1240,10 @@ FPatchVersionDiff UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(const
 	
 	if(PatchSetting.IsForceSkipContent())
 	{
-		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,PatchSetting.GetForceSkipContentStrRules());
+		TArray<FString> AllSkipContents;
+		AllSkipContents.Append(PatchSetting.GetForceSkipContentStrRules());
+		AllSkipContents.Append(PatchSetting.GetForceSkipAssetsStr());
+		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipContents);
 	}
 	return VersionDiffInfo;
 }

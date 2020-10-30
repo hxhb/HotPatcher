@@ -107,6 +107,19 @@ public:
 		}
 		return Path;
 	}
+
+	FORCEINLINE TArray<FSoftObjectPath> GetForceSkipAssets()const {return ForceSkipAssets;}
+
+	FORCEINLINE TArray<FString> GetForceSkipAssetsStr()const
+	{
+		TArray<FString> result;
+		for(const auto &Asset:GetForceSkipAssets())
+		{
+			result.Add(Asset.GetLongPackageName());
+		}
+		return result;
+	}
+	
 	FORCEINLINE bool IsIncludeAssetRegistry()const { return bIncludeAssetRegistry; }
 	FORCEINLINE bool IsIncludeGlobalShaderCache()const { return bIncludeGlobalShaderCache; }
 	FORCEINLINE bool IsIncludeShaderBytecode()const { return bIncludeShaderBytecode; }
@@ -229,7 +242,10 @@ public:
 		bool bForceSkipContent = true;
 	// force exclude asset folder e.g. Exclude editor content when cooking in Project Settings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Asset Filter",meta = (RelativeToGameContentDir, LongPackageName, EditCondition="bForceSkipContent"))
-    		TArray<FDirectoryPath> ForceSkipContentRules;
+    	TArray<FDirectoryPath> ForceSkipContentRules;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Asset Filter",meta = (EditCondition="bForceSkipContent"))
+		TArray<FSoftObjectPath> ForceSkipAssets;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
 		bool bIncludeHasRefAssetsOnly;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
