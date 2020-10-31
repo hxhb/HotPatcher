@@ -187,8 +187,8 @@ FHotPatcherVersion UPatcherProxy::MakeNewRelease(const FHotPatcherVersion& InBas
 {
 	FHotPatcherVersion BaseVersion = InBaseVersion;
 	FHotPatcherVersion NewRelease = InCurrentVersion;
-	FPatchVersionDiff DiffInfo = UFlibPatchParserHelper::DiffPatchVersion(BaseVersion,InCurrentVersion);
-	
+	FPatchVersionDiff DiffInfo = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*GetSettingObject(),BaseVersion, InCurrentVersion);
+
 	FAssetDependenciesInfo& BaseAssetInfoRef = BaseVersion.AssetInfo;
 	// TMap<FString, FExternFileInfo>& BaseExternalFilesRef = BaseVersion.ExternalFiles;
 	TMap<ETargetPlatform,FPlatformExternAssets>& BasePlatformAssetsRef = BaseVersion.PlatformAssets;
@@ -334,8 +334,8 @@ bool UPatcherProxy::DoExport()
 	);
 
 	FString CurrentVersionSavePath = GetSettingObject()->GetCurrentVersionSavePath();
-	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersion(BaseVersion, CurrentVersion);
-
+	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*GetSettingObject(), BaseVersion, CurrentVersion);
+	
 	FString ReceiveMsg;
 	if (!CheckPatchRequire(VersionDiffInfo, ReceiveMsg))
 	{
@@ -364,7 +364,7 @@ bool UPatcherProxy::DoExport()
 		FString TotalMsg;
 		FChunkInfo TotalChunk = UFlibPatchParserHelper::CombineChunkInfos(GetSettingObject()->GetChunkInfos());
 
-		FChunkAssetDescribe ChunkDiffInfo = UFlibPatchParserHelper::DiffChunk(NewVersionChunk, TotalChunk, GetSettingObject()->IsIncludeHasRefAssetsOnly());
+		FChunkAssetDescribe ChunkDiffInfo = UFlibPatchParserHelper::DiffChunkWithPatchSetting(*GetSettingObject(), NewVersionChunk, TotalChunk);
 
 		TArray<FString> AllUnselectedAssets = ChunkDiffInfo.GetAssetsStrings();
 		TArray<FString> AllUnselectedExFiles;
@@ -406,7 +406,7 @@ bool UPatcherProxy::DoExport()
 		// 因为默认情况下Chunk的过滤器不会进行依赖分析，当bEnableChunk未开启时，之前导出的Chunk中的过滤器不包含Patch中所选过滤器进行依赖分析之后的所有资源的模块。
 		{
 			TArray<FString> DependenciesFilters;
-
+		
 			auto GetKeysLambda = [&DependenciesFilters](const FAssetDependenciesInfo& Assets)
 			{
 				TArray<FAssetDetail> AllAssets;

@@ -11,6 +11,7 @@
 #include "LevelEditor.h"
 #include "HAL/FileManager.h"
 #include "Interfaces/IPluginManager.h"
+#include "Widgets/Docking/SDockableTab.h"
 
 
 static const FName HotPatcherTabName("HotPatcher");
@@ -48,9 +49,7 @@ void FHotPatcherEditorModule::StartupModule()
 
 	 	LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
 	 }
-	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateRaw(this, &FHotPatcherEditorModule::OnSpawnPluginTab))
-		.SetDisplayName(LOCTEXT("FHotPatcherTabTitle", "HotPatcher"))
-		.SetMenuType(ETabSpawnerMenuType::Hidden);
+
 
 }
 
@@ -71,6 +70,12 @@ void FHotPatcherEditorModule::ShutdownModule()
 
 void FHotPatcherEditorModule::PluginButtonClicked()
 {
+	if(!DockTab.IsValid())
+	{
+		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateRaw(this, &FHotPatcherEditorModule::OnSpawnPluginTab))
+	    .SetDisplayName(LOCTEXT("FHotPatcherTabTitle", "HotPatcher"))
+	    .SetMenuType(ETabSpawnerMenuType::Hidden);
+	}
 	FGlobalTabmanager::Get()->InvokeTab(HotPatcherTabName);
 }
 
@@ -83,6 +88,11 @@ void FHotPatcherEditorModule::PrintUsageMsg()
 	FMessageDialog::Open(EAppMsgType::Ok, DialogText);
 }
 
+void FHotPatcherEditorModule::OnTabClosed(TSharedRef<SDockTab> InTab)
+{
+	DockTab.Reset();
+}
+
 
 TSharedRef<class SDockTab> FHotPatcherEditorModule::OnSpawnPluginTab(const class FSpawnTabArgs& InSpawnTabArgs)
 {
@@ -90,6 +100,7 @@ TSharedRef<class SDockTab> FHotPatcherEditorModule::OnSpawnPluginTab(const class
 		.TabRole(ETabRole::NomadTab)
 		.Label(LOCTEXT("HotPatcherTab", "Hot Patcher"))
 		.ToolTipText(LOCTEXT("HotPatcherTabTextToolTip", "Hot Patcher"))
+		.OnTabClosed(SDockTab::FOnTabClosedCallback::CreateRaw(this,&FHotPatcherEditorModule::OnTabClosed))
 		.Clipping(EWidgetClipping::ClipToBounds)
 		[
 			SNew(SHotPatcher)

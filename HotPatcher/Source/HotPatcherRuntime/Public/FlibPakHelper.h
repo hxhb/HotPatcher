@@ -19,9 +19,10 @@ class HOTPATCHERRUNTIME_API UFlibPakHelper : public UBlueprintFunctionLibrary
 
 public:
 	static FPakFile* GetPakFileInsByPath(const FString& PakPath);
-#if ENGINE_MINOR_VERSION >22
+
+	UFUNCTION(BlueprintCallable)
 	    static TArray<FString> LoadPakFileList(const FString& PakFilePath);
-#endif
+
 	UFUNCTION(Exec)
 		static void ExecMountPak(FString InPakPath, int32 InPakOrder=0, FString InMountPoint=TEXT(""));
 
@@ -67,4 +68,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		static int32 GetPakOrderByPakPath(const FString& PakFile);
+
+	UFUNCTION(BlueprintCallable)
+		static bool LoadAssetRegistry(const FString& InAssetRegistryBin);
 };

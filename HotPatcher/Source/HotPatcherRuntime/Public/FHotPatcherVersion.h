@@ -5,6 +5,7 @@
 #include "FExternFileInfo.h"
 #include "ETargetPlatform.h"
 #include "FPlatformExternFiles.h"
+#include "FPlatformExternAssets.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -27,15 +28,15 @@ public:
 	FString BaseVersionId;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString Date;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FString> IncludeFilter;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FString> IgnoreFilter;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIncludeHasRefAssetsOnly;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FAssetDependenciesInfo AssetInfo;

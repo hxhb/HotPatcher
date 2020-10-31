@@ -4,8 +4,8 @@
 
 #include "Model/FHotPatcherCreatePatchModel.h"
 #include "SHotPatcherPatchableBase.h"
-#include "FExportPatchSettings.h"
-#include "FExportReleaseSettings.h"
+#include "CreatePatch/FExportPatchSettings.h"
+#include "CreatePatch/FExportReleaseSettings.h"
 
 // engine header
 #include "Interfaces/ITargetPlatformManagerModule.h"

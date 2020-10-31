@@ -7,8 +7,10 @@
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "FHotPatcherVersion.h"
 #include "HotPatcherLog.h"
-// engine header
+#include "CreatePatch/ReleaseSettingsDetails.h"
 #include "CreatePatch/FExportReleaseSettings.h"
+
+// engine header
 #include "CreatePatch/ReleaseProxy.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
@@ -139,6 +141,8 @@ void SHotPatcherExportRelease::CreateExportFilterListView()
 
 	SettingsView = EditModule.CreateStructureDetailView(DetailsViewArgs, StructureViewArgs, nullptr);
 	FStructOnScope* Struct = new FStructOnScope(FExportReleaseSettings::StaticStruct(), (uint8*)ExportReleaseSettings.Get());
+	SettingsView->GetOnFinishedChangingPropertiesDelegate().AddRaw(ExportReleaseSettings.Get(),&FExportReleaseSettings::OnFinishedChangingProperties);
+	SettingsView->GetDetailsView()->RegisterInstancedCustomPropertyLayout(FExportReleaseSettings::StaticStruct(),FOnGetDetailCustomizationInstance::CreateStatic(&FReleaseSettingsDetails::MakeInstance));
 	SettingsView->SetStructureData(MakeShareable(Struct));
 }
 

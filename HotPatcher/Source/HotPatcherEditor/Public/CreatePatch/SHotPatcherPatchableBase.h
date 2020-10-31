@@ -4,7 +4,7 @@
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Model/FHotPatcherCreatePatchModel.h"
-#include "FExportPatchSettings.h"
+#include "CreatePatch/FExportPatchSettings.h"
 #include "SHotPatcherInformations.h"
 #include "IPatchableInterface.h"
 

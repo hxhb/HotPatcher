@@ -3,11 +3,11 @@
 #pragma once
 
 #include "Model/FHotPatcherCreatePatchModel.h"
-#include "FExportPatchSettings.h"
+#include "CreatePatch/FExportPatchSettings.h"
 #include "SHotPatcherInformations.h"
 #include "SHotPatcherPatchableBase.h"
 #include "FPatchVersionDiff.h"
-#include "FExportPatchSettings.h"
+#include "CreatePatch/FExportPatchSettings.h"
 
 // engine header
 #include "Interfaces/ITargetPlatformManagerModule.h"
