@@ -31,14 +31,14 @@ public:
 		return DefaultSettings;
 	}
 
-	FORCEINLINE TArray<FDirectoryPath>& GetAlwayCookFilters()
-	{
-		return AlwayCookFilters;
-	}
+	FORCEINLINE TArray<FDirectoryPath>& GetAlwayCookFilters(){return AlwayCookFilters;}
+	FORCEINLINE TArray<FSoftObjectPath>& GetCookAssets(){return CookAssets;}
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SpecifyDirectorys",meta = (RelativeToGameContentDir, LongPackageName))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Directory",meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AlwayCookFilters;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Assets")
+		TArray<FSoftObjectPath> CookAssets;
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "CookDirectoryFilter",meta = (RelativeToGameContentDir, LongPackageName))
 	//	TArray<FDirectoryPath> NeverCookFilters;
 
