@@ -330,7 +330,8 @@ bool UPatcherProxy::DoExport()
 		BaseVersion.VersionId,
 		FDateTime::UtcNow().ToString(),
 		NewVersionChunk,
-		GetSettingObject()->IsIncludeHasRefAssetsOnly()
+		GetSettingObject()->IsIncludeHasRefAssetsOnly(),
+		GetSettingObject()->IsAnalysisFilterDependencies()
 	);
 
 	FString CurrentVersionSavePath = GetSettingObject()->GetCurrentVersionSavePath();
@@ -341,11 +342,6 @@ bool UPatcherProxy::DoExport()
 	{
 		OnShowMsg.Broadcast(ReceiveMsg);
 		return false;
-	}
-	
-	if(GetSettingObject()->IsRecursiveWidgetTree())
-	{
-		UFlibPatchParserHelper::AnalysisWidgetTree(VersionDiffInfo);
 	}
 	
 	int32 ChunkNum = GetSettingObject()->IsEnableChunk() ? GetSettingObject()->GetChunkInfos().Num() : 1;
