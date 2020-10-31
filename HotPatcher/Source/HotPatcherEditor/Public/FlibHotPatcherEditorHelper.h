@@ -10,7 +10,7 @@
 #include "FHotPatcherVersion.h"
 #include "FChunkInfo.h"
 #include "CreatePatch/FExportPatchSettings.h"
-
+#include "ETargetPlatform.h"
 // engine header
 #include "Templates/SharedPointer.h"
 #include "Dom/JsonObject.h"
@@ -39,4 +39,9 @@ public:
 
 	static FChunkInfo MakeChunkFromPatchSettings(struct FExportPatchSettings const* InPatchSetting);
 	static FChunkInfo MakeChunkFromPatchVerison(const FHotPatcherVersion& InPatchVersion);
+	static FString GetCookAssetsSaveDir(const FString& BaseDir, UPackage* Pacakge, const FString& Platform);
+	
+	UFUNCTION(BlueprintCallable)
+		static bool CookAsset(const TArray<FSoftObjectPath>& Assets, const TArray<ETargetPlatform>& Platforms, const FString& SavePath = TEXT(""));
+	static bool CookPackage(TArray<UPackage*>& Packages, const TArray<FString>& Platforms, const FString& SavePath);
 };

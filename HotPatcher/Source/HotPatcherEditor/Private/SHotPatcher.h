@@ -33,3 +33,4 @@ private:
 	TSharedPtr<FHotPatcherCookModel> CookModel;
 	TSharedPtr<FHotPatcherCreatePatchModel> CreatePatchModel;
 };
+

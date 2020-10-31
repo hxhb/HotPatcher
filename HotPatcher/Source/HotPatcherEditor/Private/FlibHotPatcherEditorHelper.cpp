@@ -7,6 +7,8 @@
 #include "HotPatcherLog.h"
 
 // engine header
+#include "IPlatformFileSandboxWrapper.h"
+#include "IPluginManager.h"
 #include "Misc/SecureHash.h"
 
 TArray<FString> UFlibHotPatcherEditorHelper::GetAllCookOption()
@@ -165,5 +167,157 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchVerison(const FHotPatc
 	Chunk.InternalFiles.bIncludeProjectIni = false;
 
 	return Chunk;
+}
+
+#define REMAPPED_PLUGGINS TEXT("RemappedPlugins")
+
+
+FString ConvertToFullSandboxPath( const FString &FileName, bool bForWrite )
+{
+	FString ProjectContentAbsir = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+	if(FileName.StartsWith(ProjectContentAbsir))
+	{
+		FString GameFileName = FileName;
+		GameFileName.RemoveFromStart(ProjectContentAbsir);
+		return FPaths::Combine(FApp::GetProjectName(),TEXT("Content"),GameFileName);
+	}
+	if(FileName.StartsWith(FPaths::EngineContentDir()))
+	{
+		FString EngineFileName = FileName;
+		EngineFileName.RemoveFromStart(FPaths::EngineContentDir());
+		return FPaths::Combine(TEXT("Engine/Content"),EngineFileName);;
+	}
+	TArray<TSharedRef<IPlugin> > PluginsToRemap = IPluginManager::Get().GetEnabledPlugins();
+	// Ideally this would be in the Sandbox File but it can't access the project or plugin
+	if (PluginsToRemap.Num() > 0)
+	{
+		// Handle remapping of plugins
+		for (TSharedRef<IPlugin> Plugin : PluginsToRemap)
+		{
+			FString PluginContentDir = Plugin->GetContentDir();
+			if (FileName.StartsWith(PluginContentDir))
+			{
+				FString SearchFor;
+				SearchFor /= Plugin->GetName() / TEXT("Content");
+				int32 FoundAt = FileName.Find(SearchFor, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
+				check(FoundAt != -1);
+				// Strip off everything but <PluginName/Content/<remaing path to file>
+				FString SnippedOffPath = FileName.RightChop(FoundAt);
+
+				FString LoadingFrom;
+				switch(Plugin->GetLoadedFrom())
+				{
+				case EPluginLoadedFrom::Engine:
+					{
+						LoadingFrom = TEXT("Engine/Plugins");
+						break;
+					}
+				case EPluginLoadedFrom::Project:
+					{
+						LoadingFrom = FPaths::Combine(FApp::GetProjectName(),TEXT("Plugins"));
+						break;
+					}
+				}
+					
+				return FPaths::Combine(LoadingFrom,SnippedOffPath);
+			}
+		}
+	}
+
+	return TEXT("");
+}
+
+FString UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(const FString& BaseDir, UPackage* Package, const FString& Platform)
+{
+	FString Filename;
+	FString PackageFilename;
+	FString StandardFilename;
+	FName StandardFileFName = NAME_None;
+
+	if (FPackageName::DoesPackageExist(Package->FileName.ToString(), NULL, &Filename, false))
+	{
+		StandardFilename = PackageFilename = FPaths::ConvertRelativePathToFull(Filename);
+
+		FPaths::MakeStandardFilename(StandardFilename);
+		StandardFileFName = FName(*StandardFilename);
+	}
+
+	FString SandboxFilename = ConvertToFullSandboxPath(*StandardFilename, true);
+	
+	FString CookDir =FPaths::Combine(BaseDir,Platform,SandboxFilename);
+	return 	CookDir;
+}
+
+bool UFlibHotPatcherEditorHelper::CookAsset(const TArray<FSoftObjectPath>& Assets, const TArray<ETargetPlatform>&Platforms,
+                                            const FString& SavePath)
+{
+	FString FinalSavePath = SavePath;
+	if(FinalSavePath.IsEmpty())
+	{
+		FinalSavePath = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
+	}
+	TArray<FAssetData> AssetsData;
+	TArray<UPackage*> Packages;
+	for(const auto& Asset:Assets)
+	{
+		FAssetData AssetData;
+		if(UFLibAssetManageHelperEx::GetSingleAssetsData(Asset.GetAssetPathString(),AssetData))
+		{
+			AssetsData.AddUnique(AssetData);
+			Packages.AddUnique(AssetData.GetPackage());
+		}
+	}
+	TArray<FString> StringPlatforms;
+	for(const auto& Platform:Platforms)
+	{
+		StringPlatforms.AddUnique(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+	}
+	
+	return CookPackage(Packages,StringPlatforms,SavePath);
+}
+
+bool UFlibHotPatcherEditorHelper::CookPackage(TArray<UPackage*>& InPackage, const TArray<FString>& Platforms, const FString& SavePath)
+{
+	const bool bSaveConcurrent = FParse::Param(FCommandLine::Get(), TEXT("ConcurrentSave"));
+	bool bUnversioned = false;
+	uint32 SaveFlags = SAVE_KeepGUID | SAVE_Async | SAVE_ComputeHash | (bUnversioned ? SAVE_Unversioned : 0);
+	if (bSaveConcurrent)
+	{
+		SaveFlags |= SAVE_Concurrent;
+	}
+	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
+	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
+	TArray<ITargetPlatform*> CookPlatforms; 
+	for (ITargetPlatform *TargetPlatform : TargetPlatforms)
+	{
+		if (Platforms.Contains(TargetPlatform->PlatformName()))
+		{
+			CookPlatforms.AddUnique(TargetPlatform);
+		}
+	}
+	for(auto& Package:InPackage)
+	{
+		for(auto& Platform:CookPlatforms)
+		{
+			if(!Platform->HasEditorOnlyData())
+			{
+				Package->SetPackageFlags(PKG_FilterEditorOnly);
+			}
+			else
+			{
+				Package->ClearPackageFlags(PKG_FilterEditorOnly);
+			}
+			FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(SavePath,Package, Platform->PlatformName());
+			GIsCookerLoadingPackage = true;
+			FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, RF_Public, *CookedSavePath, 
+                                                    GError, nullptr, false, false, SaveFlags, Platform, 
+                                                    FDateTime::MinValue(), false, /*DiffMap*/ nullptr, 
+                                                    nullptr);
+			GIsCookerLoadingPackage = false;
+			bool bSuccessed = Result == ESavePackageResult::Success;
+		}
+		
+	}
+	return true;
 }
 

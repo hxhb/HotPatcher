@@ -1,6 +1,8 @@
 // Copyright 2019 Lipeng Zha, Inc. All Rights Reserved.
 
 #include "HotPatcherEditor.h"
+
+#include "ContentBrowserModule.h"
 #include "HotPatcherStyle.h"
 #include "HotPatcherCommands.h"
 #include "SHotPatcher.h"
@@ -8,9 +10,12 @@
 #include "Misc/MessageDialog.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "DesktopPlatformModule.h"
+#include "FlibHotPatcherEditorHelper.h"
+#include "HotPatcherLog.h"
 #include "LevelEditor.h"
 #include "HAL/FileManager.h"
 #include "Interfaces/IPluginManager.h"
+#include "Kismet/KismetTextLibrary.h"
 #include "Widgets/Docking/SDockableTab.h"
 
 
@@ -50,7 +55,7 @@ void FHotPatcherEditorModule::StartupModule()
 	 	LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
 	 }
 
-
+	AddAssetContentMenu();
 }
 
 void FHotPatcherEditorModule::ShutdownModule()
@@ -112,7 +117,104 @@ void FHotPatcherEditorModule::AddMenuExtension(FMenuBuilder& Builder)
 	Builder.AddMenuEntry(FHotPatcherCommands::Get().PluginAction);
 }
 
+#include "ToolMenus.h"
+#include "ToolMenuDelegates.h"
+#include "IContentBrowserSingleton.h"
 
+void FHotPatcherEditorModule::AddAssetContentMenu()
+{
+	if (!UToolMenus::IsToolMenuUIEnabled())
+	{
+		return;
+	}
+ 
+	FToolMenuOwnerScoped MenuOwner("CookUtilities");
+	UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("ContentBrowser.AssetContextMenu");
+	FToolMenuSection& Section = Menu->AddSection("AssetContextCookUtilities", LOCTEXT("CookUtilitiesMenuHeading", "CookUtilities"));;
+	
+	// Asset Actions sub-menu
+	Section.AddSubMenu(
+        "CookActionsSubMenu",
+        LOCTEXT("CookActionsSubMenuLabel", "Cook Actions"),
+        LOCTEXT("CookActionsSubMenuToolTip", "Cook actions"),
+        FNewToolMenuDelegate::CreateRaw(this, &FHotPatcherEditorModule::MakeCookActionsSubMenu),
+        FUIAction(
+            FExecuteAction()
+            ),
+        EUserInterfaceActionType::Button,
+        false, 
+        FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions")
+        );
+}
+
+void FHotPatcherEditorModule::MakeCookActionsSubMenu(UToolMenu* Menu)
+{
+	
+	FToolMenuSection& Section = Menu->AddSection("CookActionsSection");
+	
+	
+		
+	for (auto Platform : GetAllCookPlatforms())
+	{
+		Section.AddMenuEntry(
+            NAME_None,
+            FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))),
+            FText(),
+            FSlateIcon(),
+            FUIAction(
+                FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookPlatform, Platform)
+            )
+        );
+	}
+}
+
+TArray<ETargetPlatform> FHotPatcherEditorModule::GetAllCookPlatforms() const
+{
+	TArray<ETargetPlatform> TargetPlatforms;//{ETargetPlatform::Android_ASTC,ETargetPlatform::IOS,ETargetPlatform::WindowsNoEditor};
+#if ENGINE_MINOR_VERSION > 21
+	UEnum* FoundEnum = StaticEnum<ETargetPlatform>();
+#else
+	FString EnumTypeName = ANSI_TO_TCHAR(UFlibPatchParserHelper::GetCPPTypeName<ETargetPlatform>().c_str());
+	UEnum* FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true); 
+#endif
+	if (FoundEnum)
+	{
+		for(int32 index =1;index < FoundEnum->GetMaxEnumValue();++index)
+		{
+			TargetPlatforms.AddUnique((ETargetPlatform)(index));
+		}
+			
+	}
+	return TargetPlatforms;
+}
+
+void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
+{
+	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
+	TArray<FAssetData> AssetsData;
+	ContentBrowserModule.Get().GetSelectedAssets(AssetsData);
+	TArray<UPackage*> AssetsPackage;
+
+	for(const auto& AssetData:AssetsData)
+	{
+		AssetsPackage.AddUnique(AssetData.GetPackage());
+		UE_LOG(LogHotPatcher,Log,TEXT("Cook Package %s Platform %s"),*AssetData.PackagePath.ToString(),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+	}
+	FString CookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
+	if(UFlibHotPatcherEditorHelper::CookPackage(AssetsPackage,TArray<FString>{UFlibPatchParserHelper::GetEnumNameByValue(Platform)},CookedDir))
+	{
+		for(const auto& AssetPacakge:AssetsPackage)
+		{
+			FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookedDir,AssetPacakge, UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+			auto Msg = FText::Format(
+				LOCTEXT("CookAssetsNotify", "Cook Platform {1} for {0} Successfully!"),
+				UKismetTextLibrary::Conv_StringToText(AssetPacakge->FileName.ToString()),
+				UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))
+				);
+			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,CookedSavePath);
+		}
+	}
+}
 
 void FHotPatcherEditorModule::AddToolbarExtension(FToolBarBuilder& Builder)
 {

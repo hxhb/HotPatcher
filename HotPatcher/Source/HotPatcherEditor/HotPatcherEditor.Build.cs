@@ -27,6 +27,9 @@ public class HotPatcherEditor : ModuleRules
 			{
 				"Core",
                 "Json",
+                "ToolMenus",
+                "ContentBrowser",
+                "SandboxFile",
                 "JsonUtilities",
                 "TargetPlatform",
                 "PropertyEditor",

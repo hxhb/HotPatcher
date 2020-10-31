@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
+#include "ETargetPlatform.h"
 #include "Modules/ModuleManager.h"
 
 class FToolBarBuilder;
@@ -23,6 +25,11 @@ private:
 
 	void AddToolbarExtension(FToolBarBuilder& Builder);
 	void AddMenuExtension(FMenuBuilder& Builder);
+
+	void AddAssetContentMenu();
+	void MakeCookActionsSubMenu(UToolMenu* Menu);
+	TArray<ETargetPlatform> GetAllCookPlatforms()const;
+	void OnCookPlatform(ETargetPlatform Platform);
 private:
 	void PrintUsageMsg();
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& InSpawnTabArgs);
