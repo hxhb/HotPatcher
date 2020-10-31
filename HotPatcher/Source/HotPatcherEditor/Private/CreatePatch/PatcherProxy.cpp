@@ -202,7 +202,7 @@ FHotPatcherVersion UPatcherProxy::MakeNewRelease(const FHotPatcherVersion& InBas
 
 			for (const auto& NeedDeleteAsset : AssetsModulePair.Value.AssetDependencyDetails)
 			{
-				if (NewReleaseModuleAssets->AssetDependencyDetails.Contains(NeedDeleteAsset.Key))
+				if (NewReleaseModuleAssets && NewReleaseModuleAssets->AssetDependencyDetails.Contains(NeedDeleteAsset.Key))
 				{
 					NewReleaseModuleAssets->AssetDependencyDetails.Remove(NeedDeleteAsset.Key);
 				}
