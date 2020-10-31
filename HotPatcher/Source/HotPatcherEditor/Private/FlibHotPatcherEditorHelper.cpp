@@ -8,7 +8,7 @@
 
 // engine header
 #include "IPlatformFileSandboxWrapper.h"
-#include "IPluginManager.h"
+#include "Interfaces/IPluginManager.h"
 #include "Misc/SecureHash.h"
 
 TArray<FString> UFlibHotPatcherEditorHelper::GetAllCookOption()

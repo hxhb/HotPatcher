@@ -8,7 +8,7 @@
 #include "HotPatcherLog.h"
 
 // Engine Header
-#include "ArrayReader.h"
+#include "Serialization/ArrayReader.h"
 #include "AssetRegistryModule.h"
 #include "IAssetRegistry.h"
 #include "Misc/ScopeExit.h"

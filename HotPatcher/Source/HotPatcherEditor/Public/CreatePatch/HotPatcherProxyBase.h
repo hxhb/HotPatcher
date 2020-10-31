@@ -1,6 +1,6 @@
 ﻿#pragma once
 // project header
-#include "HotPatcherSettingBase.h"
+#include "CreatePatch/HotPatcherSettingBase.h"
 
 // engine header
 #include "CoreMinimal.h"

@@ -12,7 +12,7 @@
 #include "FPlatformExternAssets.h"
 #include "FPatcherSpecifyAsset.h"
 #include "FlibPatchParserHelper.h"
-#include "HotPatcherSettingBase.h"
+#include "CreatePatch/HotPatcherSettingBase.h"
 
 // engine header
 #include "CoreMinimal.h"

@@ -8,7 +8,7 @@
 #include "FExternDirectoryInfo.h"
 #include "FPlatformExternAssets.h"
 #include "HotPatcherLog.h"
-#include "HotPatcherSettingBase.h"
+#include "CreatePatch/HotPatcherSettingBase.h"
 #include "FlibPatchParserHelper.h"
 #include "HotPatcherLog.h"
 // engine header
