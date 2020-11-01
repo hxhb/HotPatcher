@@ -248,13 +248,18 @@ FString UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(const FString& BaseDir
 	return 	CookDir;
 }
 
+FString UFlibHotPatcherEditorHelper::GetProjectCookedDir()
+{
+	return FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));;
+}
+
 bool UFlibHotPatcherEditorHelper::CookAsset(const TArray<FSoftObjectPath>& Assets, const TArray<ETargetPlatform>&Platforms,
                                             const FString& SavePath)
 {
 	FString FinalSavePath = SavePath;
 	if(FinalSavePath.IsEmpty())
 	{
-		FinalSavePath = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
+		FinalSavePath = UFlibHotPatcherEditorHelper::GetProjectCookedDir();
 	}
 	TArray<FAssetData> AssetsData;
 	TArray<UPackage*> Packages;

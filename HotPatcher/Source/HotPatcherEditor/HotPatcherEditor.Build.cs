@@ -71,7 +71,7 @@ public class HotPatcherEditor : ModuleRules
 			bUseRTTI = true;
 			PublicDefinitions.Add("USE_RTTI=1");
 		}
-
+		bLegacyPublicIncludePaths = false;
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
         
 	}

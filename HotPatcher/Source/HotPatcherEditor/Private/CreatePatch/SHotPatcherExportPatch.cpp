@@ -13,6 +13,7 @@
 #include "FPakFileInfo.h"
 #include "ThreadUtils/FThreadUtils.hpp"
 #include "HotPatcherLog.h"
+#include "HotPatcherEditor.h"
 
 // engine header
 #include "Misc/FileHelper.h"
@@ -31,6 +32,7 @@
 void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCreatePatchModel> InCreatePatchModel)
 {
 	ExportPatchSetting = MakeShareable(new FExportPatchSettings);
+	GPatchSettings = ExportPatchSetting.Get();
 	CreateExportFilterListView();
 	mCreatePatchModel = InCreatePatchModel;
 
@@ -417,6 +419,7 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 FReply SHotPatcherExportPatch::DoExportPatch()
 {
 	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
+	PatcherProxy->AddToRoot();
 	PatcherProxy->SetProxySettings(ExportPatchSetting.Get());
 	PatcherProxy->OnShowMsg.AddRaw(this,&SHotPatcherExportPatch::ShowMsg);
 	PatcherProxy->DoExport();

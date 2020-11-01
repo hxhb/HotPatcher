@@ -40,7 +40,8 @@ public:
 	static FChunkInfo MakeChunkFromPatchSettings(struct FExportPatchSettings const* InPatchSetting);
 	static FChunkInfo MakeChunkFromPatchVerison(const FHotPatcherVersion& InPatchVersion);
 	static FString GetCookAssetsSaveDir(const FString& BaseDir, UPackage* Pacakge, const FString& Platform);
-	
+
+	static FString GetProjectCookedDir();
 	UFUNCTION(BlueprintCallable)
 		static bool CookAsset(const TArray<FSoftObjectPath>& Assets, const TArray<ETargetPlatform>& Platforms, const FString& SavePath = TEXT(""));
 	static bool CookPackage(TArray<UPackage*>& Packages, const TArray<FString>& Platforms, const FString& SavePath);

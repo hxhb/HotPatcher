@@ -150,7 +150,7 @@ public:
 
 	FORCEINLINE bool IsCustomPakNameRegular()const {return bCustomPakNameRegular;}
 	FORCEINLINE FString GetPakNameRegular()const { return PakNameRegular;}
-
+	FORCEINLINE bool IsCookPatchAssets()const {return bCookPatchAssets;}
 	FORCEINLINE TArray<FString> GetAssetIncludeFiltersPaths()const
 	{
 		TArray<FString> Result;
@@ -288,7 +288,8 @@ public:
 		bool bEnableChunk;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options", meta = (EditCondition = "bEnableChunk"))
 		TArray<FChunkInfo> ChunkInfos;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+		bool bCookPatchAssets = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<FString> PakCommandOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")

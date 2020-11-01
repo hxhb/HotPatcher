@@ -1,12 +1,14 @@
 // Copyright 2019 Lipeng Zha, Inc. All Rights Reserved.
 
 #include "HotPatcherEditor.h"
-
 #include "ContentBrowserModule.h"
 #include "HotPatcherStyle.h"
 #include "HotPatcherCommands.h"
 #include "SHotPatcher.h"
 
+#include "ToolMenus.h"
+#include "ToolMenuDelegates.h"
+#include "IContentBrowserSingleton.h"
 #include "Misc/MessageDialog.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "DesktopPlatformModule.h"
@@ -18,6 +20,8 @@
 #include "Kismet/KismetTextLibrary.h"
 #include "Widgets/Docking/SDockableTab.h"
 
+FExportPatchSettings* GPatchSettings = nullptr;
+FExportReleaseSettings* GReleaseSettings = nullptr;
 
 static const FName HotPatcherTabName("HotPatcher");
 
@@ -84,18 +88,26 @@ void FHotPatcherEditorModule::PluginButtonClicked()
 	FGlobalTabmanager::Get()->InvokeTab(HotPatcherTabName);
 }
 
-void FHotPatcherEditorModule::PrintUsageMsg()
-{
-	UWorld* World = GEditor->GetEditorWorldContext().World();
-	FText DialogText = FText::FromString(
-		TEXT("This is a Test Message!")
-	);
-	FMessageDialog::Open(EAppMsgType::Ok, DialogText);
-}
+// void FHotPatcherEditorModule::PrintUsageMsg()
+// {
+// 	UWorld* World = GEditor->GetEditorWorldContext().World();
+// 	FText DialogText = FText::FromString(
+// 		TEXT("This is a Test Message!")
+// 	);
+// 	FMessageDialog::Open(EAppMsgType::Ok, DialogText);
+// }
 
 void FHotPatcherEditorModule::OnTabClosed(TSharedRef<SDockTab> InTab)
 {
 	DockTab.Reset();
+}
+
+TArray<FAssetData> FHotPatcherEditorModule::GetSelectedAssetsInBrowserContent()
+{
+	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
+	TArray<FAssetData> AssetsData;
+	ContentBrowserModule.Get().GetSelectedAssets(AssetsData);
+	return AssetsData;
 }
 
 
@@ -116,10 +128,6 @@ void FHotPatcherEditorModule::AddMenuExtension(FMenuBuilder& Builder)
 {
 	Builder.AddMenuEntry(FHotPatcherCommands::Get().PluginAction);
 }
-
-#include "ToolMenus.h"
-#include "ToolMenuDelegates.h"
-#include "IContentBrowserSingleton.h"
 
 void FHotPatcherEditorModule::AddAssetContentMenu()
 {
@@ -145,15 +153,43 @@ void FHotPatcherEditorModule::AddAssetContentMenu()
         false, 
         FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions")
         );
+
+	Section.AddDynamicEntry("AddToPatchSettgins", FNewToolMenuSectionDelegate::CreateLambda([this](FToolMenuSection& InSection)
+       {
+           const TAttribute<FText> Label = LOCTEXT("CookUtilities_AddToPatchSettgins", "Add To Patch Settgins");
+           const TAttribute<FText> ToolTip = LOCTEXT("CookUtilities_AddToPatchSettginsTooltip", "Add Selected Assets To HotPatcher Patch Settgins");
+           const FSlateIcon Icon = FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions.Duplicate");
+           const FToolMenuExecuteAction UIAction = FToolMenuExecuteAction::CreateRaw(this,&FHotPatcherEditorModule::OnAddToPatchSettings);
+	
+           InSection.AddMenuEntry("CookUtilities_AddToPatchSettgins", Label, ToolTip, Icon, UIAction);
+       }));
+}
+
+void FHotPatcherEditorModule::OnAddToPatchSettings(const FToolMenuContext& MenuContent)
+{
+	if(!DockTab.IsValid() || !GPatchSettings)
+	{
+		PluginButtonClicked();
+	}
+	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
+	TArray<FPatcherSpecifyAsset> AssetsSoftPath;
+
+	for(const auto& AssetData:AssetsData)
+	{
+		FPatcherSpecifyAsset PatchSettingAssetElement;
+		FSoftObjectPath AssetObjectPath;
+		AssetObjectPath.SetPath(AssetData.ObjectPath);
+		PatchSettingAssetElement.Asset = AssetObjectPath;
+		AssetsSoftPath.AddUnique(PatchSettingAssetElement);
+	}
+	GPatchSettings->IncludeSpecifyAssets.Append(AssetsSoftPath);
 }
 
 void FHotPatcherEditorModule::MakeCookActionsSubMenu(UToolMenu* Menu)
 {
 	
 	FToolMenuSection& Section = Menu->AddSection("CookActionsSection");
-	
-	
-		
+
 	for (auto Platform : GetAllCookPlatforms())
 	{
 		Section.AddMenuEntry(
@@ -190,9 +226,7 @@ TArray<ETargetPlatform> FHotPatcherEditorModule::GetAllCookPlatforms() const
 
 void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 {
-	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
-	TArray<FAssetData> AssetsData;
-	ContentBrowserModule.Get().GetSelectedAssets(AssetsData);
+	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
 	TArray<UPackage*> AssetsPackage;
 
 	for(const auto& AssetData:AssetsData)

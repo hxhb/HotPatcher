@@ -338,7 +338,7 @@ bool UPatcherProxy::DoExport()
 	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*GetSettingObject(), BaseVersion, CurrentVersion);
 	
 	FString ReceiveMsg;
-	if (!CheckPatchRequire(VersionDiffInfo, ReceiveMsg))
+	if (!GetSettingObject()->IsCookPatchAssets() && !CheckPatchRequire(VersionDiffInfo, ReceiveMsg))
 	{
 		OnShowMsg.Broadcast(ReceiveMsg);
 		return false;
@@ -446,7 +446,7 @@ bool UPatcherProxy::DoExport()
 			NewVersionChunk.AssetIncludeFilters.Append(DepOtherModule);
 		}
 	}
-
+	
 	bool bEnableChunk = GetSettingObject()->IsEnableChunk();
 
 	TArray<FChunkInfo> PakChunks;
@@ -461,10 +461,17 @@ bool UPatcherProxy::DoExport()
 
 	float AmountOfWorkProgress = 2.f * (GetSettingObject()->GetPakTargetPlatforms().Num() * ChunkNum) + 4.0f;
 	UScopedSlowTaskContext* UnrealPakSlowTask = NewObject<UScopedSlowTaskContext>();
+	UnrealPakSlowTask->AddToRoot();
 	UnrealPakSlowTask->init(AmountOfWorkProgress);
 	
 	for(const auto& PlatformName :GetSettingObject()->GetPakTargetPlatformNames())
 	{
+		if(GetSettingObject()->IsCookPatchAssets())
+		{
+			ETargetPlatform Platform;
+			UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
+			CookChunkAssets(VersionDiffInfo,NewVersionChunk,TArray<ETargetPlatform>{Platform});
+		}
 		// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
 		for (const auto& Chunk : PakChunks)
 		{
@@ -474,8 +481,6 @@ bool UPatcherProxy::DoExport()
 				OnPaking.Broadcast(TEXT("ExportPatch"),*Dialog.ToString());
 				UnrealPakSlowTask->EnterProgressFrame(1.0, Dialog);
 			}
-			
-			
 			FString ChunkSaveBasePath = FPaths::Combine(GetSettingObject()->SavePath.Path, CurrentVersion.VersionId, PlatformName);
 			TArray<FPakFileProxy> PakFileProxys;
 
@@ -822,6 +827,25 @@ FString UPatcherProxy::MakePakShortName(const FHotPatcherVersion& InCurrentVersi
  	};
 	
 	return CustomPakNameRegular(RegularOpList,GetSettingObject()->GetPakNameRegular());
+}
+
+void UPatcherProxy::CookChunkAssets(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const TArray<ETargetPlatform>& Platforms)
+{
+	FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(DiffInfo, Chunk ,Platforms);
+	TArray<FAssetDetail> ChunkAssets;
+	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(ChunkAssetsDescrible.Assets,ChunkAssets);
+	TArray<FSoftObjectPath> AssetsSoftPath;
+
+	for(const auto& Asset:ChunkAssets)
+	{
+		FSoftObjectPath AssetSoftPath;
+		AssetSoftPath.SetPath(Asset.mPackagePath);
+		AssetsSoftPath.AddUnique(AssetSoftPath);
+	}
+	if(!!AssetsSoftPath.Num())
+	{
+		UFlibHotPatcherEditorHelper::CookAsset(AssetsSoftPath,Platforms,UFlibHotPatcherEditorHelper::GetProjectCookedDir());
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

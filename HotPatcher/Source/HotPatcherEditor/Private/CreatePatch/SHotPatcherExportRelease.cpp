@@ -9,6 +9,7 @@
 #include "HotPatcherLog.h"
 #include "CreatePatch/ReleaseSettingsDetails.h"
 #include "CreatePatch/FExportReleaseSettings.h"
+#include "HotPatcherEditor.h"
 
 // engine header
 #include "CreatePatch/ReleaseProxy.h"
@@ -23,6 +24,7 @@
 void SHotPatcherExportRelease::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCreatePatchModel> InCreatePatchModel)
 {
 	ExportReleaseSettings = MakeShareable(new FExportReleaseSettings);
+	GReleaseSettings = ExportReleaseSettings.Get();
 	CreateExportFilterListView();
 
 	mCreatePatchModel = InCreatePatchModel;
@@ -164,6 +166,7 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 FReply SHotPatcherExportRelease::DoExportRelease()
 {
 	UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
+	ReleaseProxy->AddToRoot();
 	ReleaseProxy->SetProxySettings(ExportReleaseSettings.Get());
 	ReleaseProxy->DoExport();
 	
