@@ -27,7 +27,6 @@ public class HotPatcherEditor : ModuleRules
 			{
 				"Core",
                 "Json",
-                "ToolMenus",
                 "ContentBrowser",
                 "SandboxFile",
                 "JsonUtilities",
@@ -39,8 +38,11 @@ public class HotPatcherEditor : ModuleRules
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
-			
-		
+		if (Target.Version.MinorVersion > 23)
+		{
+			PublicDependencyModuleNames.Add("ToolMenus");
+		}
+
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
@@ -69,7 +71,6 @@ public class HotPatcherEditor : ModuleRules
 		if (Target.Version.MajorVersion <= 21)
 		{
 			bUseRTTI = true;
-			PublicDefinitions.Add("USE_RTTI=1");
 		}
 		bLegacyPublicIncludePaths = false;
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;

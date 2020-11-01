@@ -29,10 +29,11 @@ private:
 	void AddToolbarExtension(FToolBarBuilder& Builder);
 	void AddMenuExtension(FMenuBuilder& Builder);
 
+#if ENGINE_MINOR_VERSION >23
 	void AddAssetContentMenu();
 	void OnAddToPatchSettings(const FToolMenuContext& MenuContent);
 	void MakeCookActionsSubMenu(UToolMenu* Menu);
-	
+#endif
 	TArray<ETargetPlatform> GetAllCookPlatforms()const;
 	void OnCookPlatform(ETargetPlatform Platform);
 private:

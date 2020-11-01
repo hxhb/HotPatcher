@@ -316,8 +316,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(TArray<UPackage*>& InPackage, cons
 			GIsCookerLoadingPackage = true;
 			FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, RF_Public, *CookedSavePath, 
                                                     GError, nullptr, false, false, SaveFlags, Platform, 
-                                                    FDateTime::MinValue(), false, /*DiffMap*/ nullptr, 
-                                                    nullptr);
+                                                    FDateTime::MinValue(), false, /*DiffMap*/ nullptr);
 			GIsCookerLoadingPackage = false;
 			bool bSuccessed = Result == ESavePackageResult::Success;
 		}

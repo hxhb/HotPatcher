@@ -1,13 +1,12 @@
 // Copyright 2019 Lipeng Zha, Inc. All Rights Reserved.
 
 #include "HotPatcherEditor.h"
-#include "ContentBrowserModule.h"
 #include "HotPatcherStyle.h"
 #include "HotPatcherCommands.h"
 #include "SHotPatcher.h"
 
-#include "ToolMenus.h"
-#include "ToolMenuDelegates.h"
+// ENGINE HEADER
+#include "ContentBrowserModule.h"
 #include "IContentBrowserSingleton.h"
 #include "Misc/MessageDialog.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
@@ -19,6 +18,11 @@
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "Widgets/Docking/SDockableTab.h"
+
+#if ENGINE_MINOR_VERSION >23
+#include "ToolMenus.h"
+#include "ToolMenuDelegates.h"
+#endif
 
 FExportPatchSettings* GPatchSettings = nullptr;
 FExportReleaseSettings* GReleaseSettings = nullptr;
@@ -58,8 +62,9 @@ void FHotPatcherEditorModule::StartupModule()
 
 	 	LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
 	 }
-
+#if ENGINE_MINOR_VERSION >23
 	AddAssetContentMenu();
+#endif
 }
 
 void FHotPatcherEditorModule::ShutdownModule()
@@ -129,6 +134,7 @@ void FHotPatcherEditorModule::AddMenuExtension(FMenuBuilder& Builder)
 	Builder.AddMenuEntry(FHotPatcherCommands::Get().PluginAction);
 }
 
+#if ENGINE_MINOR_VERSION >23
 void FHotPatcherEditorModule::AddAssetContentMenu()
 {
 	if (!UToolMenus::IsToolMenuUIEnabled())
@@ -203,6 +209,7 @@ void FHotPatcherEditorModule::MakeCookActionsSubMenu(UToolMenu* Menu)
         );
 	}
 }
+#endif
 
 TArray<ETargetPlatform> FHotPatcherEditorModule::GetAllCookPlatforms() const
 {
