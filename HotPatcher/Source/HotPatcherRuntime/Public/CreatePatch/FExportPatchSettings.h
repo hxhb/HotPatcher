@@ -288,6 +288,11 @@ public:
 		bool bEnableChunk;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options", meta = (EditCondition = "bEnableChunk"))
 		TArray<FChunkInfo> ChunkInfos;
+	/*
+	 * Cook Asset in current patch
+	 * shader code gets saved inline inside material assets
+	 * bShareMaterialShaderCode as false
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		bool bCookPatchAssets = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
