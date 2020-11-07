@@ -183,7 +183,7 @@ bool UPatcherProxy::SavePakCommands(const FString& InPlatformName, const FPatchV
 }
 
 
-FHotPatcherVersion UPatcherProxy::MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion)const
+FHotPatcherVersion UPatcherProxy::MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings)const
 {
 	FHotPatcherVersion BaseVersion = InBaseVersion;
 	FHotPatcherVersion NewRelease = InCurrentVersion;
@@ -211,7 +211,10 @@ FHotPatcherVersion UPatcherProxy::MakeNewRelease(const FHotPatcherVersion& InBas
 	};
 	
 	DeleteOldAssetLambda(DiffInfo.AssetDiffInfo.ModifyAssetDependInfo);
-	// DeleteOldAssetLambda(DiffInfo.DeleteAssetDependInfo);
+	if(InPatchSettings && !InPatchSettings->IsSaveDeletedAssetsToNewReleaseJson())
+	{
+		DeleteOldAssetLambda(DiffInfo.AssetDiffInfo.DeleteAssetDependInfo);
+	}
 
 	// Add Asset
 	BaseAssetInfoRef = UFLibAssetManageHelperEx::CombineAssetDependencies(BaseAssetInfoRef, DiffInfo.AssetDiffInfo.AddAssetDependInfo);
@@ -685,7 +688,7 @@ bool UPatcherProxy::DoExport()
 		}
 		
 		FString SerializeReleaseVersionInfo;
-		FHotPatcherVersion NewReleaseVersion = MakeNewRelease(BaseVersion, CurrentVersion);
+		FHotPatcherVersion NewReleaseVersion = MakeNewRelease(BaseVersion, CurrentVersion,GetSettingObject());
 		UFlibPatchParserHelper::TSerializeStructAsJsonString(NewReleaseVersion, SerializeReleaseVersionInfo);
 
 		FString SaveCurrentVersionToFile = FPaths::Combine(

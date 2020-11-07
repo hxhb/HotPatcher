@@ -484,7 +484,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Version")
 		FString VersionId;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version")
-		bool ByPakList;
+		bool ByPakList = false;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version", meta = (RelativeToGameContentDir, EditCondition = "ByPakList"))
 		FFilePath PakListFile;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version", meta = (RelativeToGameContentDir, EditCondition = "ByPakList"))
@@ -496,11 +496,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetFilters", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIgnoreFilters;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetFilters")
-		bool bAnalysisFilterDependencies=true;
+		bool bAnalysisFilterDependencies = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetFilters",meta=(EditCondition="bAnalysisFilterDependencies"))
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetFilters")
-		bool bIncludeHasRefAssetsOnly;
+		bool bIncludeHasRefAssetsOnly = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpecifyAssets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ExternFiles")
@@ -510,9 +510,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ExternFiles")
 		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bSaveAssetRelatedInfo;
+		bool bSaveAssetRelatedInfo = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bSaveReleaseConfig;
+		bool bSaveReleaseConfig = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
 		FDirectoryPath SavePath;
 };

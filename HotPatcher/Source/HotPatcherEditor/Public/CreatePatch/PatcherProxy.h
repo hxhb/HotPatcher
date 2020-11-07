@@ -31,7 +31,7 @@ public:
     bool SavePatchDiffJson(const FHotPatcherVersion& InSaveVersion, const FPatchVersionDiff& InDiff);
     FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions, bool block);
     bool SavePakCommands(const FString& InPlatformName, const FPatchVersionDiff& InDiffInfo, const FString& InSavePath);
-    FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion) const;
+    FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings = nullptr) const;
     bool CanExportPatch() const;
     virtual bool DoExport()override;
     FString MakePakShortName(const FHotPatcherVersion& InCurrentVersion,const FChunkInfo& InChunkInfo,const FString& InPlatform);

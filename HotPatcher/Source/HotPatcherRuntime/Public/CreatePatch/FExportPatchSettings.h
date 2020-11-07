@@ -151,6 +151,7 @@ public:
 	FORCEINLINE bool IsCustomPakNameRegular()const {return bCustomPakNameRegular;}
 	FORCEINLINE FString GetPakNameRegular()const { return PakNameRegular;}
 	FORCEINLINE bool IsCookPatchAssets()const {return bCookPatchAssets;}
+	FORCEINLINE bool IsSaveDeletedAssetsToNewReleaseJson()const {return bSaveDeletedAssetsToNewReleaseJson;}
 	FORCEINLINE TArray<FString> GetAssetIncludeFiltersPaths()const
 	{
 		TArray<FString> Result;
@@ -247,7 +248,7 @@ public:
 		TArray<FSoftObjectPath> ForceSkipAssets;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
-		bool bIncludeHasRefAssetsOnly;
+		bool bIncludeHasRefAssetsOnly = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
 		bool bAnalysisFilterDependencies=true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
@@ -258,20 +259,20 @@ public:
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
-		bool bIncludeAssetRegistry;
+		bool bIncludeAssetRegistry = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
-		bool bIncludeGlobalShaderCache;
+		bool bIncludeGlobalShaderCache = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
-		bool bIncludeShaderBytecode;
+		bool bIncludeShaderBytecode = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini Config Files")
-		bool bIncludeEngineIni;
+		bool bIncludeEngineIni = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini Config Files")
-		bool bIncludePluginIni;
+		bool bIncludePluginIni = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini Config Files")
-		bool bIncludeProjectIni;
+		bool bIncludeProjectIni = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
-		bool bEnableExternFilesDiff;
+		bool bEnableExternFilesDiff = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		TArray<FString> IgnoreDeletionModulesAsset;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
@@ -285,7 +286,7 @@ public:
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))
 		FString PakVersionFileMountPoint;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options")
-		bool bEnableChunk;
+		bool bEnableChunk = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options", meta = (EditCondition = "bEnableChunk"))
 		TArray<FChunkInfo> ChunkInfos;
 	/*
@@ -308,7 +309,8 @@ public:
 	// Can use value: {VERSION} {BASEVERSION} {CHUNKNAME} {PLATFORM} 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options",meta=(EditCondition = "bCustomPakNameRegular"))
 		FString PakNameRegular = TEXT("{VERSION}_{CHUNKNAME}_{PLATFORM}_001_P");
-	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+		bool bSaveDeletedAssetsToNewReleaseJson = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSavePakList = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bByBaseVersion"))
