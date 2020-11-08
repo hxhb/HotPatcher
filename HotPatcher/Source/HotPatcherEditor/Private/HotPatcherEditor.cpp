@@ -242,19 +242,24 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 		UE_LOG(LogHotPatcher,Log,TEXT("Cook Package %s Platform %s"),*AssetData.PackagePath.ToString(),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
 	}
 	FString CookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
-	if(UFlibHotPatcherEditorHelper::CookPackage(AssetsPackage,TArray<FString>{UFlibPatchParserHelper::GetEnumNameByValue(Platform)},CookedDir))
+	FString CookForPlatform = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+	TArray<FString> CookForPlatforms{CookForPlatform};
+	
+	for(const auto& AssetPacakge:AssetsPackage)
 	{
-		for(const auto& AssetPacakge:AssetsPackage)
-		{
-			FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookedDir,AssetPacakge, UFlibPatchParserHelper::GetEnumNameByValue(Platform));
-			auto Msg = FText::Format(
-				LOCTEXT("CookAssetsNotify", "Cook Platform {1} for {0} Successfully!"),
-				UKismetTextLibrary::Conv_StringToText(AssetPacakge->FileName.ToString()),
-				UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))
-				);
-			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,CookedSavePath);
-		}
+		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookedDir,AssetPacakge, CookForPlatform);
+		
+    	bool bCookStatus = UFlibHotPatcherEditorHelper::CookPackage(AssetPacakge,CookForPlatforms,CookedSavePath);
+		auto Msg = FText::Format(
+            LOCTEXT("CookAssetsNotify", "Cook Platform {1} for {0} {2}!"),
+            UKismetTextLibrary::Conv_StringToText(AssetPacakge->FileName.ToString()),
+            UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
+            bCookStatus ? UKismetTextLibrary::Conv_StringToText(TEXT("Successfuly")):UKismetTextLibrary::Conv_StringToText(TEXT("Faild"))
+            );
+		SNotificationItem::ECompletionState CookStatus = bCookStatus ? SNotificationItem::CS_Success:SNotificationItem::CS_Fail;
+		UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,CookedSavePath,CookStatus);
 	}
+	
 }
 
 void FHotPatcherEditorModule::AddToolbarExtension(FToolBarBuilder& Builder)

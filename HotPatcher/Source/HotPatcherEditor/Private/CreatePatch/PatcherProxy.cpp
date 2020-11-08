@@ -847,7 +847,7 @@ void UPatcherProxy::CookChunkAssets(const FPatchVersionDiff& DiffInfo, const FCh
 	}
 	if(!!AssetsSoftPath.Num())
 	{
-		UFlibHotPatcherEditorHelper::CookAsset(AssetsSoftPath,Platforms,UFlibHotPatcherEditorHelper::GetProjectCookedDir());
+		UFlibHotPatcherEditorHelper::CookAssets(AssetsSoftPath,Platforms,UFlibHotPatcherEditorHelper::GetProjectCookedDir());
 	}
 }
 

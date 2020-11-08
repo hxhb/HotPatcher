@@ -33,7 +33,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HotPatch|Editor|Flib")
 		static TArray<FString> GetAllCookOption();
 
-	static void CreateSaveFileNotify(const FText& InMsg,const FString& InSavedFile);
+	static void CreateSaveFileNotify(const FText& InMsg,const FString& InSavedFile,SNotificationItem::ECompletionState NotifyType = SNotificationItem::CS_Success);
 
 	static void CheckInvalidCookFilesByAssetDependenciesInfo(const FString& InProjectAbsDir, const FString& InPlatformName, const FAssetDependenciesInfo& InAssetDependencies,TArray<FAssetDetail>& OutValidAssets,TArray<FAssetDetail>& OutInvalidAssets);
 
@@ -43,6 +43,7 @@ public:
 
 	static FString GetProjectCookedDir();
 	UFUNCTION(BlueprintCallable)
-		static bool CookAsset(const TArray<FSoftObjectPath>& Assets, const TArray<ETargetPlatform>& Platforms, const FString& SavePath = TEXT(""));
-	static bool CookPackage(TArray<UPackage*>& Packages, const TArray<FString>& Platforms, const FString& SavePath);
+		static bool CookAssets(const TArray<FSoftObjectPath>& Assets, const TArray<ETargetPlatform>& Platforms, const FString& SavePath = TEXT(""));
+	static bool CookPackages(TArray<UPackage*>& Packages, const TArray<FString>& Platforms, const FString& SavePath);
+	static bool CookPackage(UPackage* Package, const TArray<FString>& Platforms, const FString& SavePath);
 };

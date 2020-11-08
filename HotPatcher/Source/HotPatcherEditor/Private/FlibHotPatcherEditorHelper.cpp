@@ -23,7 +23,7 @@ TArray<FString> UFlibHotPatcherEditorHelper::GetAllCookOption()
 	return result;
 }
 
-void UFlibHotPatcherEditorHelper::CreateSaveFileNotify(const FText& InMsg, const FString& InSavedFile)
+void UFlibHotPatcherEditorHelper::CreateSaveFileNotify(const FText& InMsg, const FString& InSavedFile,SNotificationItem::ECompletionState NotifyType)
 {
 	auto Message = InMsg;
 	FNotificationInfo Info(Message);
@@ -33,7 +33,7 @@ void UFlibHotPatcherEditorHelper::CreateSaveFileNotify(const FText& InMsg, const
 	Info.bUseLargeFont = false;
 
 	const FString HyperLinkText = InSavedFile;
-	Info.Hyperlink = FSimpleDelegate::CreateStatic(
+	Info.Hyperlink = FSimpleDelegate::CreateLambda(
 		[](FString SourceFilePath)
 		{
 			FPlatformProcess::ExploreFolder(*SourceFilePath);
@@ -42,7 +42,7 @@ void UFlibHotPatcherEditorHelper::CreateSaveFileNotify(const FText& InMsg, const
 	);
 	Info.HyperlinkText = FText::FromString(HyperLinkText);
 
-	FSlateNotificationManager::Get().AddNotification(Info)->SetCompletionState(SNotificationItem::CS_Success);
+	FSlateNotificationManager::Get().AddNotification(Info)->SetCompletionState(NotifyType);
 }
 
 void UFlibHotPatcherEditorHelper::CheckInvalidCookFilesByAssetDependenciesInfo(
@@ -253,7 +253,9 @@ FString UFlibHotPatcherEditorHelper::GetProjectCookedDir()
 	return FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));;
 }
 
-bool UFlibHotPatcherEditorHelper::CookAsset(const TArray<FSoftObjectPath>& Assets, const TArray<ETargetPlatform>&Platforms,
+
+
+bool UFlibHotPatcherEditorHelper::CookAssets(const TArray<FSoftObjectPath>& Assets, const TArray<ETargetPlatform>&Platforms,
                                             const FString& SavePath)
 {
 	FString FinalSavePath = SavePath;
@@ -278,11 +280,12 @@ bool UFlibHotPatcherEditorHelper::CookAsset(const TArray<FSoftObjectPath>& Asset
 		StringPlatforms.AddUnique(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
 	}
 	
-	return CookPackage(Packages,StringPlatforms,SavePath);
+	return CookPackages(Packages,StringPlatforms,SavePath);
 }
 
-bool UFlibHotPatcherEditorHelper::CookPackage(TArray<UPackage*>& InPackage, const TArray<FString>& Platforms, const FString& SavePath)
+bool UFlibHotPatcherEditorHelper::CookPackage(UPackage* Package, const TArray<FString>& Platforms, const FString& SavePath)
 {
+	bool bSuccessed = false;
 	const bool bSaveConcurrent = FParse::Param(FCommandLine::Get(), TEXT("ConcurrentSave"));
 	bool bUnversioned = false;
 	uint32 SaveFlags = SAVE_KeepGUID | SAVE_Async | SAVE_ComputeHash | (bUnversioned ? SAVE_Unversioned : 0);
@@ -300,27 +303,40 @@ bool UFlibHotPatcherEditorHelper::CookPackage(TArray<UPackage*>& InPackage, cons
 			CookPlatforms.AddUnique(TargetPlatform);
 		}
 	}
-	for(auto& Package:InPackage)
+	if(Package->FileName.IsNone())
+		return bSuccessed;
+	for(auto& Platform:CookPlatforms)
 	{
-		for(auto& Platform:CookPlatforms)
+		if(!Platform->HasEditorOnlyData())
 		{
-			if(!Platform->HasEditorOnlyData())
-			{
-				Package->SetPackageFlags(PKG_FilterEditorOnly);
-			}
-			else
-			{
-				Package->ClearPackageFlags(PKG_FilterEditorOnly);
-			}
-			FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(SavePath,Package, Platform->PlatformName());
-			GIsCookerLoadingPackage = true;
-			FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, RF_Public, *CookedSavePath, 
-                                                    GError, nullptr, false, false, SaveFlags, Platform, 
-                                                    FDateTime::MinValue(), false, /*DiffMap*/ nullptr);
-			GIsCookerLoadingPackage = false;
-			bool bSuccessed = Result == ESavePackageResult::Success;
+			Package->SetPackageFlags(PKG_FilterEditorOnly);
+		}
+		else
+		{
+			Package->ClearPackageFlags(PKG_FilterEditorOnly);
+		}
+		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(SavePath,Package, Platform->PlatformName());
+		// delete old cooked assets
+		if(FPaths::FileExists(CookedSavePath))
+		{
+			IFileManager::Get().Delete(*CookedSavePath);
 		}
 		
+		GIsCookerLoadingPackage = true;
+		FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, RF_Public, *CookedSavePath, 
+                                                GError, nullptr, false, false, SaveFlags, Platform, 
+                                                FDateTime::MinValue(), false, /*DiffMap*/ nullptr);
+		GIsCookerLoadingPackage = false;
+		bSuccessed = Result == ESavePackageResult::Success;
+	}
+	return bSuccessed;
+}
+
+bool UFlibHotPatcherEditorHelper::CookPackages(TArray<UPackage*>& InPackage, const TArray<FString>& Platforms, const FString& SavePath)
+{
+	for(const auto& Package:InPackage)
+	{
+		CookPackage(Package,Platforms,SavePath);
 	}
 	return true;
 }
