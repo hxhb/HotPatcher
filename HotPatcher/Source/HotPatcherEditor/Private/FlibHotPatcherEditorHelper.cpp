@@ -105,7 +105,7 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(const FExport
 	Chunk.AssetRegistryDependencyTypes = InPatchSetting->GetAssetRegistryDependencyTypes();
 	Chunk.InternalFiles.bIncludeAssetRegistry = InPatchSetting->IsIncludeAssetRegistry();
 	Chunk.InternalFiles.bIncludeGlobalShaderCache = InPatchSetting->IsIncludeGlobalShaderCache();
-	Chunk.InternalFiles.bIncludeShaderBytecode = InPatchSetting->IsIncludeGlobalShaderCache();
+	Chunk.InternalFiles.bIncludeShaderBytecode = InPatchSetting->IsIncludeShaderBytecode();
 	Chunk.InternalFiles.bIncludeEngineIni = InPatchSetting->IsIncludeEngineIni();
 	Chunk.InternalFiles.bIncludePluginIni = InPatchSetting->IsIncludePluginIni();
 	Chunk.InternalFiles.bIncludeProjectIni = InPatchSetting->IsIncludeProjectIni();
