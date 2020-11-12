@@ -3,7 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-
+#include "ToolMenuContext.h"
+#include "ToolMenu.h"
 #include "ETargetPlatform.h"
 #include "Modules/ModuleManager.h"
 #include "CreatePatch/FExportPatchSettings.h"

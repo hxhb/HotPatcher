@@ -184,7 +184,7 @@ void FHotPatcherEditorModule::OnAddToPatchSettings(const FToolMenuContext& MenuC
 	{
 		FPatcherSpecifyAsset PatchSettingAssetElement;
 		FSoftObjectPath AssetObjectPath;
-		AssetObjectPath.SetPath(AssetData.ObjectPath);
+		AssetObjectPath.SetPath(AssetData.ObjectPath.ToString());
 		PatchSettingAssetElement.Asset = AssetObjectPath;
 		AssetsSoftPath.AddUnique(PatchSettingAssetElement);
 	}
