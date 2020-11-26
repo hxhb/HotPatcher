@@ -431,16 +431,36 @@ bool SHotPatcherExportPatch::CanPreviewPatch() const
 {
 	bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFiltersPaths().Num();
 	bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
-	bool bHasExternFiles = !!ExportPatchSetting->GetAddExternFiles().Num();
-	bool bHasExDirs = !!ExportPatchSetting->GetAddExternDirectory().Num();
+	
+	auto HasExFilesLambda = [this]()
+	{
+		bool result = false;
+		const TMap<ETargetPlatform,FPlatformExternFiles>& ExFiles = ExportPatchSetting->GetAllPlatfotmExternFiles(false);
+		if(!!ExFiles.Num())
+		{
+			TArray<ETargetPlatform> Platforms;
+			ExFiles.GetKeys(Platforms);
+			for(const auto& Platform:Platforms)
+			{
+				if(!!ExFiles.Find(Platform)->ExternFiles.Num())
+				{
+					result=true;
+					break;
+				}
+			}
+		}
+		return result;
+	};
+	bool bHasExternFiles = HasExFilesLambda();
+	
 	bool bHasAnyPakFiles = (
-		bHasFilter || bHasSpecifyAssets || bHasExternFiles || bHasExDirs ||
+		bHasFilter || bHasSpecifyAssets || bHasExternFiles ||
 		ExportPatchSetting->IsIncludeEngineIni() ||
 		ExportPatchSetting->IsIncludePluginIni() ||
 		ExportPatchSetting->IsIncludeProjectIni()
 		);
 
-	return bHasFilter || bHasSpecifyAssets || bHasExternFiles || bHasExDirs || bHasAnyPakFiles;
+	return bHasFilter || bHasSpecifyAssets || bHasExternFiles || bHasAnyPakFiles;
 }
 
 

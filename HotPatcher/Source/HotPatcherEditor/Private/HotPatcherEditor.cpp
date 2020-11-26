@@ -249,7 +249,7 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 	{
 		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookedDir,AssetPacakge, CookForPlatform);
 		
-    	bool bCookStatus = UFlibHotPatcherEditorHelper::CookPackage(AssetPacakge,CookForPlatforms,CookedSavePath);
+    	bool bCookStatus = UFlibHotPatcherEditorHelper::CookPackage(AssetPacakge,CookForPlatforms,CookedDir);
 		auto Msg = FText::Format(
             LOCTEXT("CookAssetsNotify", "Cook Platform {1} for {0} {2}!"),
             UKismetTextLibrary::Conv_StringToText(AssetPacakge->FileName.ToString()),
