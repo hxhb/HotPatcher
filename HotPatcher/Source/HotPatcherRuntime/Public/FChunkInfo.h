@@ -123,7 +123,7 @@ public:
 
 	FORCEINLINE TArray<FString> GetExFileStrings(ETargetPlatform Platform)const
 	{
-		TArray<FString> result;
+		TArray<FString> ExFilesResult;
  		auto CollectExFilesStrings = [](const TArray<FExternFileInfo>& InFiles)->TArray<FString>
 		{
 			TArray<FString> result;
@@ -135,9 +135,9 @@ public:
 		};
 		if(AllPlatformExFiles.Contains(Platform))
 		{
-			result = CollectExFilesStrings(AllPlatformExFiles.Find(Platform)->ExternFiles);
+			ExFilesResult = CollectExFilesStrings(AllPlatformExFiles.Find(Platform)->ExternFiles);
 		}
-		return result;
+		return ExFilesResult;
 	}
 	FORCEINLINE TArray<FString> GetInternalFileStrings()const
 	{

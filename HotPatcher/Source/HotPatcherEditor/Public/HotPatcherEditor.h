@@ -2,9 +2,12 @@
 
 #pragma once
 
+#if ENGINE_MINOR_VERSION >23
+	#include "ToolMenuContext.h"
+	#include "ToolMenu.h"
+#endif
+
 #include "CoreMinimal.h"
-#include "ToolMenuContext.h"
-#include "ToolMenu.h"
 #include "ETargetPlatform.h"
 #include "Modules/ModuleManager.h"
 #include "CreatePatch/FExportPatchSettings.h"

@@ -118,12 +118,12 @@ public:
 		// for not-uasset file
 		for(const auto& Platform:PlatformAssets)
 		{
-			auto CheckIsExisitPlatform = [this](ETargetPlatform Platform)->bool
+			auto CheckIsExisitPlatform = [this](ETargetPlatform InPlatform)->bool
 			{
 				bool result = false;
 				for(auto& ExistPlatform:AddExternAssetsToPlatform)
 				{
-					if(ExistPlatform.TargetPlatform == Platform)
+					if(ExistPlatform.TargetPlatform == InPlatform)
 					{
 						result = true;
 						break;
@@ -201,16 +201,16 @@ public:
 			{
 				auto RemoveDoubleQuoteLambda = [](const FString& InStr)->FString
 				{
-					FString result = InStr;
-					if(result.StartsWith(TEXT("\"")))
+					FString resultStr = InStr;
+					if(resultStr.StartsWith(TEXT("\"")))
 					{
-						result.RemoveAt(0);
+						resultStr.RemoveAt(0);
 					}
-					if(result.EndsWith(TEXT("\"")))
+					if(resultStr.EndsWith(TEXT("\"")))
 					{
-						result.RemoveAt(result.Len() - 1);
+						resultStr.RemoveAt(resultStr.Len() - 1);
 					}
-					return result;
+					return resultStr;
 				};
 				
 				auto ParseUassetLambda = [&RemoveDoubleQuoteLambda](const FString& InAsset)->FPatcherSpecifyAsset
