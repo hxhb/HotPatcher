@@ -68,7 +68,7 @@ public class HotPatcherEditor : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
-		if (Target.Version.MajorVersion <= 21)
+		if (Target.Version.MajorVersion <= 21 && Target.Platform != UnrealTargetPlatform.Mac)
 		{
 			bUseRTTI = true;
 		}
