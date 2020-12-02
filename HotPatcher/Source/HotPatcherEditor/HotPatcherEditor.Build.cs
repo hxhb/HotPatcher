@@ -1,6 +1,8 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
+using System;
+using System.IO;
 
 public class HotPatcherEditor : ModuleRules
 {
@@ -68,10 +70,11 @@ public class HotPatcherEditor : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
-		if (Target.Version.MajorVersion <= 21 && Target.Platform != UnrealTargetPlatform.Mac)
+		if (Target.Version.MinorVersion <= 21)
 		{
 			bUseRTTI = true;
 		}
+		System.Console.WriteLine("MajorVersion {0} MinorVersion: {1} PatchVersion {2}",Target.Version.MajorVersion,Target.Version.MinorVersion,Target.Version.PatchVersion);
 		bLegacyPublicIncludePaths = false;
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
         
