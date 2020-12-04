@@ -289,6 +289,11 @@ bool UFlibHotPatcherEditorHelper::CookPackage(UPackage* Package, const TArray<FS
 	const bool bSaveConcurrent = FParse::Param(FCommandLine::Get(), TEXT("ConcurrentSave"));
 	bool bUnversioned = false;
 	uint32 SaveFlags = SAVE_KeepGUID | SAVE_Async | SAVE_ComputeHash | (bUnversioned ? SAVE_Unversioned : 0);
+	EObjectFlags CookedFlags = RF_Public;
+	if(Cast<UWorld>(Package))
+	{
+		CookedFlags = RF_NoFlags;
+	}
 	if (bSaveConcurrent)
 	{
 		SaveFlags |= SAVE_Concurrent;
@@ -307,14 +312,34 @@ bool UFlibHotPatcherEditorHelper::CookPackage(UPackage* Package, const TArray<FS
 		return bSuccessed;
 	for(auto& Platform:CookPlatforms)
 	{
-		if(!Platform->HasEditorOnlyData())
+		struct FFilterEditorOnlyFlag
 		{
-			Package->SetPackageFlags(PKG_FilterEditorOnly);
-		}
-		else
-		{
-			Package->ClearPackageFlags(PKG_FilterEditorOnly);
-		}
+			FFilterEditorOnlyFlag(UPackage* InPackage,ITargetPlatform* InPlatform)
+			{
+				Package = InPackage;
+				Platform = InPlatform;
+				if(!Platform->HasEditorOnlyData())
+				{
+					Package->SetPackageFlags(PKG_FilterEditorOnly);
+				}
+				else
+				{
+					Package->ClearPackageFlags(PKG_FilterEditorOnly);
+				}
+			}
+			~FFilterEditorOnlyFlag()
+			{
+				if(!Platform->HasEditorOnlyData())
+				{
+					Package->ClearPackageFlags(PKG_FilterEditorOnly);
+				}
+			}
+			UPackage* Package;
+			ITargetPlatform* Platform;
+		};
+
+		FFilterEditorOnlyFlag SetPackageEditorOnlyFlag(Package,Platform);
+		
 		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(SavePath,Package, Platform->PlatformName());
 		// delete old cooked assets
 		if(FPaths::FileExists(CookedSavePath))
@@ -323,7 +348,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(UPackage* Package, const TArray<FS
 		}
 		
 		GIsCookerLoadingPackage = true;
-		FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, RF_Public, *CookedSavePath, 
+		FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, CookedFlags, *CookedSavePath, 
                                                 GError, nullptr, false, false, SaveFlags, Platform, 
                                                 FDateTime::MinValue(), false, /*DiffMap*/ nullptr);
 		GIsCookerLoadingPackage = false;
