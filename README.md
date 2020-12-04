@@ -1,7 +1,7 @@
 ## UE4 Plugin: HotPatcher
 [HotPatcher](https://github.com/hxhb/HotPatcher)是我最近写的用于打包UE项目资源热更的工具，用于追踪工程版本的资源变动来打出Patch。支持资源版本管理、版本间的差异对比和打包、支持导出多平台的基础包信息、方便地Cook和打包多平台的Patch，支持迭代打包、丰富的配置化选项，全功能的commandlet支持，可以与ci平台相集成。
 
->目前支持的引擎版本为UE4.21-UE4.25，我创建了个群来讨论UE4热更新和HotPatcher插件的问题(QQ群958363331)。
+>目前支持的引擎版本为UE4.21-UE4.26，我创建了个群来讨论UE4热更新和HotPatcher插件的问题(QQ群958363331)。
 
 插件文档：[UE4资源热更打包工具HotPatcher](https://imzlp.me/posts/17590/)
 
