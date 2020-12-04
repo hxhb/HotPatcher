@@ -4,5 +4,7 @@
 >目前支持的引擎版本为UE4.21-UE4.25，我创建了个群来讨论UE4热更新和HotPatcher插件的问题(QQ群958363331)。
 
 插件文档：[UE4资源热更打包工具HotPatcher](https://imzlp.me/posts/17590/)
-视频教程：[Youtube](https://youtu.be/wmGlZ2aB5RI)/[Bilibili](https://www.bilibili.com/video/BV1Tz4y197tR/)
+
+视频教程：[UE4热更新：HotPatcher插件使用教程](https://www.bilibili.com/video/BV1Tz4y197tR/)
+
 我的UOD热更新主题演讲：[Unreal Open Day2020 虚幻引擎4全平台热更新方案 | 查利鹏](https://www.bilibili.com/video/BV1ir4y1c76g)
