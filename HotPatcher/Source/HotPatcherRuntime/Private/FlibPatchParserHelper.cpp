@@ -1513,9 +1513,9 @@ FProcHandle UFlibPatchParserHelper::DoUnrealPak(TArray<FString> UnrealPakOptions
 }
 
 
-FAssetDependency UFlibPatchParserHelper::GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
+FHotPatcherAssetDependency UFlibPatchParserHelper::GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
 {
-	FAssetDependency Dependency;
+	FHotPatcherAssetDependency Dependency;
 	Dependency.Asset = InAsset;
 	FString LongPackageName;
 	if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.mPackagePath, LongPackageName))
@@ -1534,9 +1534,9 @@ FAssetDependency UFlibPatchParserHelper::GetAssetRelatedInfo(const FAssetDetail&
 	return Dependency;
 }
 
-TArray<FAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
+TArray<FHotPatcherAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
 {
-	TArray<FAssetDependency> AssetsDependency;
+	TArray<FHotPatcherAssetDependency> AssetsDependency;
 
 	for (const auto& Asset : InAssets)
 	{
@@ -1545,7 +1545,7 @@ TArray<FAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfo(const TArr
 	return AssetsDependency;
 }
 
-TArray<FAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
+TArray<FHotPatcherAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
 {
 	TArray<FAssetDetail> AssetsDetail;
 	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(InAssetsDependencies, AssetsDetail);
@@ -1664,10 +1664,10 @@ void UFlibPatchParserHelper::ReloadShaderbytecode()
 }
 
 FString UFlibPatchParserHelper::SerializeAssetsDependencyAsJsonString(
-	const TArray<FAssetDependency>& InAssetsDependency)
+	const TArray<FHotPatcherAssetDependency>& InAssetsDependency)
 {
 	FString AssetsDependencyString;
-	auto SerializeAssetsDependencyLambda = [](const TArray<FAssetDependency>& InAssetsDependency, TSharedPtr<FJsonObject>& OutJsonObject)->bool
+	auto SerializeAssetsDependencyLambda = [](const TArray<FHotPatcherAssetDependency>& InAssetsDependency, TSharedPtr<FJsonObject>& OutJsonObject)->bool
 	{
 		if (!OutJsonObject.IsValid())
 			OutJsonObject = MakeShareable(new FJsonObject);
@@ -1740,7 +1740,7 @@ TArray<FAssetDetail> UFlibPatchParserHelper::GetAllAssetDependencyDetails(const 
 	const TArray<EAssetRegistryDependencyTypeEx>& Types,const FString& AssetType)
 {
 	TArray<FAssetDetail> result;
-	TArray<FAssetDependency> AssetDeps = UFlibPatchParserHelper::GetAssetsRelatedInfo(TArray<FAssetDetail>{Asset}, Types);
+	TArray<FHotPatcherAssetDependency> AssetDeps = UFlibPatchParserHelper::GetAssetsRelatedInfo(TArray<FAssetDetail>{Asset}, Types);
 	for(const auto& AssetDependency:AssetDeps)
 	{
 		for(const auto& AssetRederenceItem:AssetDependency.AssetReference)

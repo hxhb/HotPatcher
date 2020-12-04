@@ -631,7 +631,7 @@ bool UPatcherProxy::DoExport()
 			TArray<EAssetRegistryDependencyTypeEx> AssetDependencyTypes;
 			AssetDependencyTypes.Add(EAssetRegistryDependencyTypeEx::Packages);
 
-			TArray<FAssetDependency> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(
+			TArray<FHotPatcherAssetDependency> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(
 				UFLibAssetManageHelperEx::CombineAssetDependencies(VersionDiffInfo.AssetDiffInfo.AddAssetDependInfo, VersionDiffInfo.AssetDiffInfo.ModifyAssetDependInfo),
 				AssetDependencyTypes
 			);

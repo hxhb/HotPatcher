@@ -11,7 +11,7 @@
 #include "FlibPakHelper.h"
 #include "FExternDirectoryInfo.h"
 #include "FExternDirectoryInfo.h"
-#include "FAssetDependency.h"
+#include "FHotPatcherAssetDependency.h"
 #include "FCookerConfig.h"
 #include "FPlatformExternFiles.h"
 // cpp standard
@@ -172,9 +172,9 @@ public:
 
 	static FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions, bool block);
 
-	static FAssetDependency GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
-	static TArray<FAssetDependency> GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
-	static TArray<FAssetDependency> GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
+	static FHotPatcherAssetDependency GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
+	static TArray<FHotPatcherAssetDependency> GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
+	static TArray<FHotPatcherAssetDependency> GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
 
 	static bool GetCookProcCommandParams(const FCookerConfig& InConfig,FString& OutParams);
 	//static bool SerializeMonolithicPathMode(const EMonolithicPathMode& InMode, TSharedPtr<FJsonValue>& OutJsonValue);
@@ -255,7 +255,7 @@ public:
 		static void ReloadShaderbytecode();
 
 
-	static FString SerializeAssetsDependencyAsJsonString(const TArray<FAssetDependency>& InAssetsDependency);
+	static FString SerializeAssetsDependencyAsJsonString(const TArray<FHotPatcherAssetDependency>& InAssetsDependency);
 	static bool SerializePlatformPakInfoToString(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, FString& OutString);
 	static bool SerializePlatformPakInfoToJsonObject(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject);
 	template<typename TStructType>
