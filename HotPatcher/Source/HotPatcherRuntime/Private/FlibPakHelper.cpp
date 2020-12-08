@@ -8,6 +8,7 @@
 #include "HotPatcherLog.h"
 
 // Engine Header
+#include "Resources/Version.h"
 #include "Serialization/ArrayReader.h"
 #include "AssetRegistryModule.h"
 #include "IAssetRegistry.h"
@@ -25,7 +26,13 @@ FPakFile* UFlibPakHelper::GetPakFileInsByPath(const FString& PakPath)
 	FPakPlatformFile* PakFileMgr = (FPakPlatformFile*)FPlatformFileManager::Get().GetPlatformFile(FPakPlatformFile::GetTypeName());
 	IPlatformFile* LowerLevel = PakFileMgr->GetLowerLevel();
 	if(LowerLevel)
+	{
+#if ENGINE_MINOR_VERSION > 21
 		Pak = new FPakFile(LowerLevel, *PakPath, false, true);
+#else
+		Pak = new FPakFile(LowerLevel, *PakPath, false);
+#endif
+	}
 #endif
 	return Pak;
 }
