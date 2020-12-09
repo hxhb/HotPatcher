@@ -320,7 +320,7 @@ void SProjectCookPage::SpawnRuningCookNotification()
 		{
 			ProjectCookPage->PendingProgressPtr.Pin()->ExpireAndFadeout();
 		}
-		FNotificationInfo Info(LOCTEXT("CookNotificationInProgress", "Cook in porogress"));
+		FNotificationInfo Info(LOCTEXT("CookNotificationInProgress", "Cook in progress"));
 
 		Info.bFireAndForget = false;
 		Info.ButtonDetails.Add(FNotificationButtonInfo(LOCTEXT("RunningCookNotificationCancelButton", "Cancel"), FText(),
