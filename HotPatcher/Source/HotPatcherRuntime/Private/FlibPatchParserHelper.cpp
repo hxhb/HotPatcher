@@ -7,6 +7,7 @@
 #include "FLibAssetManageHelperEx.h"
 #include "Flib/FLibAssetManageHelperEx.h"
 #include "HotPatcherLog.h"
+#include "CreatePatch/FExportPatchSettings.h"
 
 // engine header
 #include "Misc/SecureHash.h"
