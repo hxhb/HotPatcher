@@ -1,6 +1,6 @@
 #include "HotReleaseCommandlet.h"
 #include "CreatePatch/FExportReleaseSettings.h"
-#include "CreatePatch/PatcherProxy.h"
+#include "CreatePatch/ReleaseProxy.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -21,7 +21,7 @@ namespace NSRelease
 
 	void ReceiveShowMsg(const FString& InMsg)
 	{
-		UE_LOG(LogHotReleaseCommandlet,Error,TEXT("%s"),*InMsg);
+		UE_LOG(LogHotReleaseCommandlet,Log,TEXT("%s"),*InMsg);
 	}
 }
 
@@ -50,11 +50,11 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 	{
 		TSharedPtr<FExportReleaseSettings> ExportReleaseSetting = MakeShareable(new FExportReleaseSettings);
 		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportReleaseSetting);
-		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-		PatcherProxy->SetProxySettings(ExportReleaseSetting.Get());
-		PatcherProxy->OnPaking.AddStatic(&::NSRelease::ReceiveMsg);
-		PatcherProxy->OnShowMsg.AddStatic(&::NSRelease::ReceiveShowMsg);
-		bExportStatus = PatcherProxy->DoExport();
+		UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
+		ReleaseProxy->SetProxySettings(ExportReleaseSetting.Get());
+		ReleaseProxy->OnPaking.AddStatic(&::NSRelease::ReceiveMsg);
+		ReleaseProxy->OnShowMsg.AddStatic(&::NSRelease::ReceiveShowMsg);
+		bExportStatus = ReleaseProxy->DoExport();
 		
 		UE_LOG(LogHotReleaseCommandlet,Log,TEXT("Export Release Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));
 	}
