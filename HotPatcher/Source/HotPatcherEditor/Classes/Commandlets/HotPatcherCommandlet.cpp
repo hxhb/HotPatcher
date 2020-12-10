@@ -21,7 +21,7 @@ namespace NSPatch
 
 	void ReceiveShowMsg(const FString& InMsg)
 	{
-		UE_LOG(LogHotPatcherCommandlet,Error,TEXT("%s"),*InMsg);
+		UE_LOG(LogHotPatcherCommandlet,Log,TEXT("%s"),*InMsg);
 	}
 }
 
