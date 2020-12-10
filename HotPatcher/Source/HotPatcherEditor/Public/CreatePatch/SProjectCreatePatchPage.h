@@ -39,6 +39,7 @@ public:
 	void HandleHotPatcherMenuEntryClicked(EHotPatcherActionModes::Type InMode);
 	EVisibility HandleExportPatchVisibility() const;
 	EVisibility HandleExportReleaseVisibility() const;
+	EVisibility HandleExportShaderPatchVisibility() const;
 
 	EVisibility HandleOperatorConfigVisibility()const;
 protected:
@@ -51,4 +52,5 @@ private:
 	TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
 	TSharedPtr<SHotPatcherPatchableBase> mPatch;
 	TSharedPtr<SHotPatcherPatchableBase> mRelease;
+	TSharedPtr<SHotPatcherPatchableBase> mShaderPatch;
 };

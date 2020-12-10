@@ -3,6 +3,7 @@
 #include "CreatePatch/SProjectCreatePatchPage.h"
 #include "CreatePatch/SHotPatcherExportPatch.h"
 #include "CreatePatch/SHotPatcherExportRelease.h"
+#include "ShaderPatch/SHotPatcherExportShaderPatch.h"
 
 // engine header
 #include "Framework/Commands/UIAction.h"
@@ -29,6 +30,9 @@ void SProjectCreatePatchPage::Construct(const FArguments& InArgs, TSharedPtr<FHo
 
 		FUIAction ByPatchAction(FExecuteAction::CreateSP(this, &SProjectCreatePatchPage::HandleHotPatcherMenuEntryClicked, EHotPatcherActionModes::ByPatch));
 		PatchModeMenuBuilder.AddMenuEntry(LOCTEXT("ByCreatePatch", "ByPatch"), LOCTEXT("CreatePatchActionHint", "Create an Patch form Release version."), FSlateIcon(), ByPatchAction);
+
+		FUIAction ByShaderPatchAction(FExecuteAction::CreateSP(this, &SProjectCreatePatchPage::HandleHotPatcherMenuEntryClicked, EHotPatcherActionModes::ByShaderPatch));
+		PatchModeMenuBuilder.AddMenuEntry(LOCTEXT("ByShaderPatch", "ByShaderPatch"), LOCTEXT("CreateShaderPatchActionHint", "Create an Shader code Patch form Metadata."), FSlateIcon(), ByShaderPatchAction);
 	}
 
 	ChildSlot
@@ -106,6 +110,13 @@ void SProjectCreatePatchPage::Construct(const FArguments& InArgs, TSharedPtr<FHo
 				SAssignNew(mRelease,SHotPatcherExportRelease, mCreatePatchModel)
 				.Visibility(this, &SProjectCreatePatchPage::HandleExportReleaseVisibility)
 			]
+			+ SVerticalBox::Slot()
+                .AutoHeight()
+                .Padding(0.0, 8.0, 0.0, 0.0)
+                [
+                    SAssignNew(mShaderPatch,SHotPatcherExportShaderPatch, mCreatePatchModel)
+                    .Visibility(this, &SProjectCreatePatchPage::HandleExportShaderPatchVisibility)
+                ]
 	];
 
 	HandleHotPatcherMenuEntryClicked(EHotPatcherActionModes::ByPatch);
@@ -155,6 +166,11 @@ TSharedPtr<IPatchableInterface> SProjectCreatePatchPage::GetActivePatchable()con
 				result = mRelease;
 				break;
 			}
+			case EHotPatcherActionModes::ByShaderPatch:
+			{
+				result = mShaderPatch;
+				break;
+			}
 		}
 	}
 	return result;
@@ -184,6 +200,20 @@ EVisibility SProjectCreatePatchPage::HandleExportReleaseVisibility() const
 
 	return EVisibility::Collapsed;
 }
+
+EVisibility SProjectCreatePatchPage::HandleExportShaderPatchVisibility() const
+{
+	if (mCreatePatchModel.IsValid())
+	{
+		if (mCreatePatchModel->GetPatcherMode() == EHotPatcherActionModes::ByShaderPatch)
+		{
+			return EVisibility::Visible;
+		}
+	}
+
+	return EVisibility::Collapsed;
+}
+
 EVisibility SProjectCreatePatchPage::HandleOperatorConfigVisibility()const
 {
 	return EVisibility::Visible;
@@ -210,6 +240,10 @@ FText SProjectCreatePatchPage::HandlePatchModeComboButtonContentText() const
 		{
 			return LOCTEXT("PatcherModeComboButton_ByRelease", "By Release");
 		}
+		if (PatcherMode == EHotPatcherActionModes::ByShaderPatch)
+        {
+        	return LOCTEXT("PatcherModeComboButton_ByShaderPatch", "By SahderPatch");
+        }
 	}
 
 	return FText();

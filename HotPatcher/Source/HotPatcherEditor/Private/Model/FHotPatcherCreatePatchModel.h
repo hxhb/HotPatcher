@@ -7,7 +7,8 @@ namespace EHotPatcherActionModes
 	enum Type
 	{
 		ByPatch,
-		ByRelease
+		ByRelease,
+		ByShaderPatch
 	};
 }
 
