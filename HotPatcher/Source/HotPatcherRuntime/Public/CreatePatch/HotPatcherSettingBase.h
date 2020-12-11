@@ -8,5 +8,5 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase
 {
     GENERATED_USTRUCT_BODY()
 
-    ~FHotPatcherSettingBase(){}
+    virtual ~FHotPatcherSettingBase(){}
 };

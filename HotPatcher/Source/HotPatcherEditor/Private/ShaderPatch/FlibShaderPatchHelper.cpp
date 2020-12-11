@@ -7,7 +7,11 @@
 
 bool UFlibShaderPatchHelper::CreateShaderCodePatch(TArray<FString> const& OldMetaDataDirs, FString const& NewMetaDataDir, FString const& OutDir, bool bNativeFormat)
 {
+#if ENGINE_MINOR_VERSION > 25
+	return FShaderCodeLibrary::CreatePatchLibrary(OldMetaDataDirs,NewMetaDataDir,OutDir,bNativeFormat,true);
+#else
 	return FShaderCodeLibrary::CreatePatchLibrary(OldMetaDataDirs,NewMetaDataDir,OutDir,bNativeFormat);
+#endif
 }
 
 TArray<FString> UFlibShaderPatchHelper::ConvDirectoryPathToStr(const TArray<FDirectoryPath>& Dirs)
