@@ -19,39 +19,6 @@
 
 #include "IPlatformFilePak.h"
 
-FPakFile* UFlibPakHelper::GetPakFileInsByPath(const FString& PakPath)
-{
-	FPakFile* Pak = NULL;
-#if !WITH_EDITOR
-	FPakPlatformFile* PakFileMgr = (FPakPlatformFile*)FPlatformFileManager::Get().GetPlatformFile(FPakPlatformFile::GetTypeName());
-	IPlatformFile* LowerLevel = PakFileMgr->GetLowerLevel();
-	if(LowerLevel)
-	{
-#if ENGINE_MINOR_VERSION > 21
-		Pak = new FPakFile(LowerLevel, *PakPath, false, true);
-#else
-		Pak = new FPakFile(LowerLevel, *PakPath, false);
-#endif
-	}
-#endif
-	return Pak;
-}
-
-
-TArray<FString> UFlibPakHelper::LoadPakFileList(const FString& PakFilePath)
-{
-	TArray<FString> Files;
-	FPakFile* Pak = UFlibPakHelper::GetPakFileInsByPath(PakFilePath);
-	if(Pak)
-	{
-#if ENGINE_MINOR_VERSION >22
-		Pak->GetFilenames(Files);
-#endif
-	}
-	return Files;
-}
-
-
 void UFlibPakHelper::ExecMountPak(FString InPakPath, int32 InPakOrder, FString InMountPoint)
 {
 	UFlibPakHelper::MountPak(InPakPath, InPakOrder, InMountPoint);
