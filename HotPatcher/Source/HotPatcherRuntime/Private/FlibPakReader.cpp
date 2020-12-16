@@ -355,15 +355,6 @@ IFileHandle* UFlibPakReader::CreatePakFileHandle(IPlatformFile* InLowLevel, FPak
 	return Result;
 }
 
-#include "HACK_PRIVATE_MEMBER_UTILS.hpp"
-DECL_HACK_PRIVATE_NOCONST_FUNCTION(FPakFile,CreatePakReader,FArchive*,IFileHandle&,const TCHAR*);
-
-FArchive* UFlibPakReader::CreatePakReader(FPakFile* InPakFile, IFileHandle& InHandle, const TCHAR* InFilename)
-{
-	auto FPakFile_CreatePakReader =GET_PRIVATE_MEMBER_FUNCTION(FPakFile, CreatePakReader);
-	return CALL_MEMBER_FUNCTION(InPakFile, FPakFile_CreatePakReader, InHandle,InFilename);
-}
-
 /**
  * Load a text file to an FString.
  * Supports all combination of ANSI/Unicode files and platforms.
@@ -407,6 +398,18 @@ bool UFlibPakReader::LoadFileToString(FString& Result, FArchive* InReader, const
 	return Success;
 	
 }
+
+#if PLATFORM_WINDOWS
+
+#include "HACK_PRIVATE_MEMBER_UTILS.hpp"
+DECL_HACK_PRIVATE_NOCONST_FUNCTION(FPakFile,CreatePakReader,FArchive*,IFileHandle&,const TCHAR*);
+
+FArchive* UFlibPakReader::CreatePakReader(FPakFile* InPakFile, IFileHandle& InHandle, const TCHAR* InFilename)
+{
+	auto FPakFile_CreatePakReader =GET_PRIVATE_MEMBER_FUNCTION(FPakFile, CreatePakReader);
+	return CALL_MEMBER_FUNCTION(InPakFile, FPakFile_CreatePakReader, InHandle,InFilename);
+}
+
 FString UFlibPakReader::LoadPakFileToString(const FString& InPakFile, const FString& InFileName)
 {
 	FString ret;
@@ -437,3 +440,5 @@ FString UFlibPakReader::LoadPakFileToString(const FString& InPakFile, const FStr
 	}
 	return ret;
 }
+
+#endif

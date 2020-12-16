@@ -22,8 +22,10 @@ public:
 	static FPakFile* GetPakFileInsByPath(const FString& PakPath);
 	static bool FindFileInPakFile(FPakFile* InPakFile, const FString& InFileName, FPakEntry* OutPakEntry);
 	static IFileHandle* CreatePakFileHandle(IPlatformFile* InLowLevel, FPakFile* PakFile, const FPakEntry* FileEntry);
-	static FArchive* CreatePakReader(FPakFile* InPakFile, IFileHandle& InHandle, const TCHAR* InFilename);
 	static bool LoadFileToString(FString& Result, FArchive* InReader, const TCHAR* Filename, FFileHelper::EHashOptions VerifyFlags = FFileHelper::EHashOptions::None);
-	UFUNCTION(BlueprintCallable)
+
+#if PLATFORM_WINDOWS
+	static FArchive* CreatePakReader(FPakFile* InPakFile, IFileHandle& InHandle, const TCHAR* InFilename);
 	static FString LoadPakFileToString(const FString& InPakFile,const FString& InFileName);
+#endif
 };
