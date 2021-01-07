@@ -172,7 +172,11 @@ public:
 	FPakCommand() = default;
 	FPakCommand(const FString& InMountPath, const TArray<FString>& InCommands)
 		:MountPath(InMountPath),PakCommands(InCommands){}
-
+	bool operator==(const FPakCommand& PakCmd)const
+	{
+		return GetMountPath() == PakCmd.GetMountPath() && GetPakCommands() == PakCmd.GetPakCommands();
+	}
+	
 	const FString& GetMountPath()const
 	{
 		return MountPath;

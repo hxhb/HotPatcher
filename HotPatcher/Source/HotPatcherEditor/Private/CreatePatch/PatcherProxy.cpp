@@ -349,11 +349,23 @@ bool UPatcherProxy::DoExport()
 	
 	int32 ChunkNum = GetSettingObject()->IsEnableChunk() ? GetSettingObject()->GetChunkInfos().Num() : 1;
 	
-
+	TArray<FPakCommand> AdditionalFileToPak;
+	
 	// save pakversion.json
-	//FPakVersion CurrentPakVersion;
-	//SavePatchVersionJson(CurrentVersion, CurrentVersionSavePath, CurrentPakVersion);
-
+	{
+		FPakVersion CurrentPakVersion;
+		SavePatchVersionJson(CurrentVersion, CurrentVersionSavePath, CurrentPakVersion);
+		FPakCommand VersionCmd;
+		FString AbsPath = FExportPatchSettings::GetSavePakVersionPath(CurrentVersionSavePath, CurrentVersion);
+		FString MountPath = GetSettingObject()->GetPakVersionFileMountPoint();
+		VersionCmd.MountPath = MountPath;
+		VersionCmd.PakCommands = TArray<FString>{
+			FString::Printf(TEXT("\"%s\" \"%s\""),*AbsPath,*MountPath)
+		};
+		VersionCmd.AssetPackage = UFlibPatchParserHelper::MountPathToRelativePath(MountPath);
+		AdditionalFileToPak.AddUnique(VersionCmd);
+	}
+	
 	// package all selected platform
 	TMap<FString,TArray<FPakFileInfo>> PakFilesInfoMap;
 
@@ -501,6 +513,8 @@ bool UPatcherProxy::DoExport()
 			{
 				FPakFileProxy SinglePakForChunk;
 				SinglePakForChunk.PakCommands = ChunkPakCommands;
+				// add extern file to pak(version file)
+				SinglePakForChunk.PakCommands.Append(AdditionalFileToPak);
 				
 				const FString ChunkPakName = MakePakShortName(CurrentVersion,Chunk,PlatformName);
 				SinglePakForChunk.PakCommandSavePath = FPaths::Combine(ChunkSaveBasePath, FString::Printf(TEXT("%s_PakCommands.txt"), *ChunkPakName));
@@ -513,6 +527,8 @@ bool UPatcherProxy::DoExport()
 				{
 					FPakFileProxy CurrentPak;
 					CurrentPak.PakCommands.Add(PakCommand);
+					// add extern file to pak(version file)
+					CurrentPak.PakCommands.Append(AdditionalFileToPak);
 					FString Path;
 					switch (Chunk.MonolithicPathMode)
 					{

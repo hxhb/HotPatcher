@@ -281,9 +281,9 @@ public:
 		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		bool bIncludePakVersionFile = false;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))
 		FString PakVersionFileMountPoint;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options")
 		bool bEnableChunk = false;

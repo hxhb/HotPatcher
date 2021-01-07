@@ -18,7 +18,7 @@ FExportPatchSettings::FExportPatchSettings()
 	PakVersionFileMountPoint = FPaths::Combine(
 		TEXT("../../../"),
 		UFlibPatchParserHelper::GetProjectName(),
-		TEXT("Extention/Versions")
+		TEXT("Versions/version.json")
 	);
 	TArray<FString> DefaultSkipEditorContentRules = {TEXT("/Engine/Editor"),TEXT("/Engine/VREditor")};
 	for(const auto& Ruls:DefaultSkipEditorContentRules)
