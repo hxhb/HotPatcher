@@ -37,6 +37,9 @@ private:
 	void AddAssetContentMenu();
 	void OnAddToPatchSettings(const FToolMenuContext& MenuContent);
 	void MakeCookActionsSubMenu(UToolMenu* Menu);
+
+	void AddFolderContentMenu();
+	void OnFolderAddToPatchSettings(const FToolMenuContext& MenuContent);
 #endif
 	TArray<ETargetPlatform> GetAllCookPlatforms()const;
 	void OnCookPlatform(ETargetPlatform Platform);
@@ -44,6 +47,7 @@ private:
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& InSpawnTabArgs);
 	void OnTabClosed(TSharedRef<SDockTab> InTab);
 	TArray<FAssetData> GetSelectedAssetsInBrowserContent();
+	TArray<FString> GetSelectedFolderInBrowserContent();
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
 	TSharedPtr<SDockTab> DockTab;

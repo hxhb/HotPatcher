@@ -64,6 +64,7 @@ void FHotPatcherEditorModule::StartupModule()
 	 }
 #if ENGINE_MINOR_VERSION >23
 	AddAssetContentMenu();
+	AddFolderContentMenu();
 #endif
 }
 
@@ -113,6 +114,14 @@ TArray<FAssetData> FHotPatcherEditorModule::GetSelectedAssetsInBrowserContent()
 	TArray<FAssetData> AssetsData;
 	ContentBrowserModule.Get().GetSelectedAssets(AssetsData);
 	return AssetsData;
+}
+
+TArray<FString> FHotPatcherEditorModule::GetSelectedFolderInBrowserContent()
+{
+	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
+	TArray<FString> Folders;
+	ContentBrowserModule.Get().GetSelectedFolders(Folders);
+	return Folders;
 }
 
 
@@ -207,6 +216,44 @@ void FHotPatcherEditorModule::MakeCookActionsSubMenu(UToolMenu* Menu)
                 FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookPlatform, Platform)
             )
         );
+	}
+}
+
+void FHotPatcherEditorModule::AddFolderContentMenu()
+{
+	if (!UToolMenus::IsToolMenuUIEnabled())
+	{
+		return;
+	}
+ 
+	FToolMenuOwnerScoped MenuOwner("PatchUtilities");
+	UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("ContentBrowser.FolderContextMenu");
+	FToolMenuSection& Section = Menu->AddSection("FolderContextCookUtilities", LOCTEXT("PatchUtilitiesMenuHeading", "PatchUtilities"));;
+	
+	Section.AddDynamicEntry("AddToPatchSettgins", FNewToolMenuSectionDelegate::CreateLambda([this](FToolMenuSection& InSection)
+       {
+           const TAttribute<FText> Label = LOCTEXT("PatchUtilities_AddToPatchSettgins", "Add To Patch Settgins");
+           const TAttribute<FText> ToolTip = LOCTEXT("PatchUtilities_AddToPatchSettginsTooltip", "Add Selected Folder To HotPatcher Patch Settgins");
+           const FSlateIcon Icon = FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions.Duplicate");
+           const FToolMenuExecuteAction UIAction = FToolMenuExecuteAction::CreateRaw(this,&FHotPatcherEditorModule::OnFolderAddToPatchSettings);
+	
+           InSection.AddMenuEntry("CookUtilities_AddToPatchSettgins", Label, ToolTip, Icon, UIAction);
+       }));
+}
+
+void FHotPatcherEditorModule::OnFolderAddToPatchSettings(const FToolMenuContext& MenuContent)
+{
+	if(!DockTab.IsValid() || !GPatchSettings)
+	{
+		PluginButtonClicked();
+	}
+	TArray<FString> Folders = GetSelectedFolderInBrowserContent();
+
+	for(const auto& folder:Folders)
+	{
+		FDirectoryPath Path;
+		Path.Path = folder;
+		GPatchSettings->AssetIncludeFilters.Add(Path);
 	}
 }
 #endif
