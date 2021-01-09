@@ -346,6 +346,26 @@ bool UFlibHotPatcherEditorHelper::CookPackage(UPackage* Package, const TArray<FS
 		{
 			IFileManager::Get().Delete(*CookedSavePath);
 		}
+		Package->FullyLoad();
+		TArray<UObject*> ExportMap;
+		GetObjectsWithOuter(Package,ExportMap);
+		for(const auto& ExportObj:ExportMap)
+		{
+			ExportObj->BeginCacheForCookedPlatformData(Platform);
+		}
+
+		if(!bSaveConcurrent)
+		{
+			TArray<UObject*> TagExpObjects;
+			GetObjectsWithAnyMarks(TagExpObjects,OBJECTMARK_TagExp);
+			for(const auto& TagExportObj:TagExpObjects)
+			{
+				if(TagExportObj->HasAnyMarks(OBJECTMARK_TagExp))
+				{
+					TagExportObj->BeginCacheForCookedPlatformData(Platform);
+				}
+			}
+		}
 		
 		GIsCookerLoadingPackage = true;
 		FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, CookedFlags, *CookedSavePath, 

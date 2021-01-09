@@ -1563,6 +1563,8 @@ bool UFlibPatchParserHelper::GetCookProcCommandParams(const FCookerConfig& InCon
 
 	auto CombineParamsLambda = [&FinalParams,&InConfig](const FString& InName, const TArray<FString>& InArray)
 	{
+		if(!InArray.Num())
+			return;
 		FinalParams.Append(InName);
 
 		for (int32 Index = 0; Index < InArray.Num(); ++Index)
