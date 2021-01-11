@@ -66,6 +66,7 @@ protected:
 	void SetInformationContent(const FString& InContent)const;
 	void SetInfomationContentVisibility(EVisibility InVisibility)const;
 
+	virtual FExportPatchSettings* GetConfigSettings() override{return ExportPatchSetting.Get();};
 protected:
 
 	void ShowMsg(const FString& InMsg)const;

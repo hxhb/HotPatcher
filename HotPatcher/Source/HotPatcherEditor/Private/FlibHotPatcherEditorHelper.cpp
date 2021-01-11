@@ -97,11 +97,11 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(const FExport
 	Chunk.bMonolithic = false;
 	Chunk.MonolithicPathMode = EMonolithicPathMode::MountPath;
 	Chunk.bSavePakCommands = true;
-	Chunk.AssetIncludeFilters = InPatchSetting->GetAssetIncludeFilters();
-	Chunk.AssetIgnoreFilters = InPatchSetting->GetAssetIgnoreFilters();
+	Chunk.AssetIncludeFilters = const_cast<FExportPatchSettings*>(InPatchSetting)->GetAssetIncludeFilters();
+	Chunk.AssetIgnoreFilters = const_cast<FExportPatchSettings*>(InPatchSetting)->GetAssetIgnoreFilters();
 	Chunk.bAnalysisFilterDependencies = InPatchSetting->IsAnalysisFilterDependencies();
-	Chunk.IncludeSpecifyAssets = InPatchSetting->GetIncludeSpecifyAssets();
-	Chunk.AddExternAssetsToPlatform = InPatchSetting->GetAddExternAssetsToPlatform();
+	Chunk.IncludeSpecifyAssets = const_cast<FExportPatchSettings*>(InPatchSetting)->GetIncludeSpecifyAssets();
+	Chunk.AddExternAssetsToPlatform = const_cast<FExportPatchSettings*>(InPatchSetting)->GetAddExternAssetsToPlatform();
 	Chunk.AssetRegistryDependencyTypes = InPatchSetting->GetAssetRegistryDependencyTypes();
 	Chunk.InternalFiles.bIncludeAssetRegistry = InPatchSetting->IsIncludeAssetRegistry();
 	Chunk.InternalFiles.bIncludeGlobalShaderCache = InPatchSetting->IsIncludeGlobalShaderCache();

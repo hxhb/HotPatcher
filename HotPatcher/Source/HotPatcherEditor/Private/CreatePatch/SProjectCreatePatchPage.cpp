@@ -51,6 +51,15 @@ void SProjectCreatePatchPage::Construct(const FArguments& InArgs, TSharedPtr<FHo
 				.Text(LOCTEXT("WhichProjectToUseText", "How would you like to Create Patch the content?"))
 			]
 			+ SHorizontalBox::Slot()
+                .AutoWidth()
+                .Padding(8.0, 0.0, 0.0, 0.0)
+                [
+                    SNew(SButton)
+                    .Text(LOCTEXT("ImportProjectConfig", "Import Project Config"))
+                    .OnClicked(this,&SProjectCreatePatchPage::DoImportProjectConfig)
+                    .Visibility(this,&SProjectCreatePatchPage::HandleImportProjectConfigVisibility)
+                ]
+			+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.Padding(8.0, 0.0, 0.0, 0.0)
 				[
@@ -127,6 +136,15 @@ FReply SProjectCreatePatchPage::DoImportConfig()const
 	if (GetActivePatchable().IsValid())
 	{
 		GetActivePatchable()->ImportConfig();
+	}
+	return FReply::Handled();
+}
+
+FReply SProjectCreatePatchPage::DoImportProjectConfig() const
+{
+	if (GetActivePatchable().IsValid())
+	{
+		GetActivePatchable()->ImportProjectConfig();
 	}
 	return FReply::Handled();
 }
@@ -218,6 +236,20 @@ EVisibility SProjectCreatePatchPage::HandleOperatorConfigVisibility()const
 {
 	return EVisibility::Visible;
 }
+
+EVisibility SProjectCreatePatchPage::HandleImportProjectConfigVisibility() const
+{
+	switch (mCreatePatchModel->GetPatcherMode())
+	{
+		case EHotPatcherActionModes::ByShaderPatch:
+			{
+				return EVisibility::Hidden;
+			}
+		default:
+			return EVisibility::Visible;
+	}
+}
+
 void SProjectCreatePatchPage::HandleHotPatcherMenuEntryClicked(EHotPatcherActionModes::Type InMode)
 {
 	if (mCreatePatchModel.IsValid())

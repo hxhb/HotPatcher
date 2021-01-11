@@ -137,8 +137,8 @@ void SHotPatcherExportPatch::ImportConfig()
 		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportPatchSetting);
 		SettingsView->GetDetailsView()->ForceRefresh();
 	}
-	
 }
+
 void SHotPatcherExportPatch::ExportConfig()const
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Patch Export Config"));

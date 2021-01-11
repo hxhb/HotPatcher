@@ -63,13 +63,17 @@ public:
 		return AllExternFiles;
 	}
 
-	FORCEINLINE TArray<FDirectoryPath> GetAssetIncludeFilters()const { return AssetIncludeFilters; }
+	// override
+	FORCEINLINE virtual TArray<FDirectoryPath>& GetAssetIncludeFilters() override{ return AssetIncludeFilters; }
+	FORCEINLINE virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets()override { return IncludeSpecifyAssets; }
+	FORCEINLINE virtual TArray<FDirectoryPath>& GetAssetIgnoreFilters() override { return AssetIgnoreFilters; }
+	FORCEINLINE virtual TArray<FPlatformExternAssets>& GetAddExternAssetsToPlatform()override{return AddExternAssetsToPlatform;}
+	
 	TArray<FString> GetAssetIgnoreFiltersPaths()const;
-	FORCEINLINE TArray<FDirectoryPath> GetAssetIgnoreFilters()const { return AssetIgnoreFilters; }
 	FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
 	FORCEINLINE bool IsRecursiveWidgetTree()const {return bRecursiveWidgetTree;}
 	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
-	FORCEINLINE TArray<FPatcherSpecifyAsset> GetIncludeSpecifyAssets()const { return IncludeSpecifyAssets; }
+	
 
 	// pak command
 	TArray<FString> MakeAddExternFileToPakCommands()const;
@@ -144,7 +148,7 @@ public:
 	static FString GetSavePakVersionPath(const FString& InSaveAbsPath,const FHotPatcherVersion& InVersion);
 	static FString GetPakCommandsSaveToPath(const FString& InSaveAbsPath, const FString& InPlatfornName, const FHotPatcherVersion& InVersion);
 
-	FHotPatcherVersion GetNewPatchVersionInfo()const;
+	FHotPatcherVersion GetNewPatchVersionInfo();
 	bool GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion)const;
 	FString GetCurrentVersionSavePath()const;
 
@@ -165,7 +169,7 @@ public:
 		return Result;
 	}
 	
-	FORCEINLINE TArray<FExternFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false)const
+	FORCEINLINE TArray<FExternFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false)
 	{
 		TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectoryByPlatform(InTargetPlatform));
 	
@@ -186,7 +190,7 @@ public:
 		return AllExternFiles;
 	}
 	
-	FORCEINLINE TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false)const
+	FORCEINLINE TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false)
 	{
 		TMap<ETargetPlatform,FPlatformExternFiles> result;
 	
@@ -197,10 +201,8 @@ public:
 		}
 		return result;
 	}
-
-	FORCEINLINE TArray<FPlatformExternAssets> GetAddExternAssetsToPlatform()const{return AddExternAssetsToPlatform;}
 	
-	FORCEINLINE TArray<FExternFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)const
+	FORCEINLINE TArray<FExternFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)
 	{
 		for(const auto& Platform:GetAddExternAssetsToPlatform())
 		{
@@ -212,7 +214,7 @@ public:
 
 		return TArray<FExternFileInfo>{};
 	}
-	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform)const
+	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform)
 	{
 		for(const auto& Platform:GetAddExternAssetsToPlatform())
 		{

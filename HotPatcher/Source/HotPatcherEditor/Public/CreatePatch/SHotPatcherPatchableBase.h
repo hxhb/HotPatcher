@@ -34,12 +34,14 @@ public:
 	 */
 	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCreatePatchModel> InCreateModel);
 
+	virtual void ImportProjectConfig();
 	FORCEINLINE virtual void ImportConfig() override {};
 	FORCEINLINE virtual void ExportConfig()const override {};
 	FORCEINLINE virtual void ResetConfig() override {};
 	FORCEINLINE virtual void DoGenerate() override {};
 
-
+	virtual FHotPatcherSettingBase* GetConfigSettings(){return nullptr;};
+	
 	TArray<FString> OpenFileDialog()const;
 	TArray<FString> SaveFileDialog()const;
 

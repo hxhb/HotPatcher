@@ -78,6 +78,7 @@ void SHotPatcherExportRelease::ImportConfig()
 		SettingsView->GetDetailsView()->ForceRefresh();
 	}
 }
+
 void SHotPatcherExportRelease::ExportConfig()const
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Release Export Config"));

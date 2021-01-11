@@ -36,6 +36,7 @@ public:
 
 public:
 	virtual void ImportConfig();
+	virtual void ImportProjectConfig(){};
 	virtual void ExportConfig()const;
 	virtual void ResetConfig();
 	virtual void DoGenerate();

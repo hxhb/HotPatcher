@@ -165,7 +165,7 @@ TArray<FString> FExportPatchSettings::MakeAllPakCommandsByTheSetting(const FStri
 
 		// add PakVersion.json to cook commands
 		{
-			FHotPatcherVersion CurrentNewPatchVersion = GetNewPatchVersionInfo();
+			FHotPatcherVersion CurrentNewPatchVersion = const_cast<FExportPatchSettings*>(this)->GetNewPatchVersionInfo();
 			FString CurrentVersionSavePath = FPaths::Combine(this->GetSaveAbsPath(), CurrentNewPatchVersion.VersionId);
 
 			FString SavedPakVersionFilePath = FExportPatchSettings::GetSavePakVersionPath(CurrentVersionSavePath, CurrentNewPatchVersion);
@@ -188,7 +188,7 @@ TArray<FString> FExportPatchSettings::MakeAllPakCommandsByTheSetting(const FStri
 	}
 }
 
-FHotPatcherVersion FExportPatchSettings::GetNewPatchVersionInfo() const
+FHotPatcherVersion FExportPatchSettings::GetNewPatchVersionInfo()
 {
 	FHotPatcherVersion BaseVersionInfo;
 	this->GetBaseVersionInfo(BaseVersionInfo);
@@ -228,7 +228,7 @@ bool FExportPatchSettings::GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion
 
 FString FExportPatchSettings::GetCurrentVersionSavePath() const
 {
-	FString CurrentVersionSavePath = FPaths::Combine(this->GetSaveAbsPath(), GetNewPatchVersionInfo().VersionId);
+	FString CurrentVersionSavePath = FPaths::Combine(this->GetSaveAbsPath(), const_cast<FExportPatchSettings*>(this)->GetNewPatchVersionInfo().VersionId);
 	return CurrentVersionSavePath;
 }
 

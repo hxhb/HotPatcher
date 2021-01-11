@@ -42,9 +42,11 @@ public:
 	EVisibility HandleExportShaderPatchVisibility() const;
 
 	EVisibility HandleOperatorConfigVisibility()const;
+	EVisibility HandleImportProjectConfigVisibility()const;
 protected:
 	FReply DoExportConfig()const;
 	FReply DoImportConfig()const;
+	FReply DoImportProjectConfig()const;
 	FReply DoResetConfig()const;
 
 	TSharedPtr<IPatchableInterface> GetActivePatchable()const;

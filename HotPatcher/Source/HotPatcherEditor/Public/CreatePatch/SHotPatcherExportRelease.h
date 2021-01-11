@@ -40,7 +40,7 @@ public:
 	virtual void ExportConfig()const;
 	virtual void ResetConfig();
 	virtual void DoGenerate();
-
+	virtual FExportReleaseSettings* GetConfigSettings()override{return ExportReleaseSettings.Get();};
 protected:
 	void CreateExportFilterListView();
 	bool CanExportRelease()const;

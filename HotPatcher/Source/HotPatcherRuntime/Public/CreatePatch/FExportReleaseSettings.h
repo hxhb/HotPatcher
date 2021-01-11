@@ -479,7 +479,23 @@ public:
 	FORCEINLINE FFilePath GetPakListFile()const { return PakListFile; }
 	FORCEINLINE TArray<FPlatformPakListFiles> GetPlatformsPakListFiles()const {return PlatformsPakListFiles;}
 	
-	
+	// override
+	virtual TArray<FDirectoryPath>& GetAssetIncludeFilters() override
+	{
+		return AssetIncludeFilters;
+	}
+	virtual TArray<FDirectoryPath>& GetAssetIgnoreFilters()override
+	{
+		return AssetIgnoreFilters;
+	}
+	virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets()override
+	{
+		return IncludeSpecifyAssets;
+	}
+	virtual TArray<FPlatformExternAssets>& GetAddExternAssetsToPlatform()override
+	{
+		return AddExternAssetsToPlatform;
+	}
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Version")
 		FString VersionId;
