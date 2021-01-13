@@ -75,6 +75,9 @@ int32 UHotCookerCommandlet::Main(const FString& Params)
 			CookerProc->Join();
 		}
 	}
-	system("pause");
+	if(FParse::Param(FCommandLine::Get(), TEXT("wait")))
+	{
+		system("pause");
+	}
 	return 0;
 }

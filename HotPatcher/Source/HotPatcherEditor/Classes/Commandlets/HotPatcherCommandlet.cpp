@@ -61,6 +61,11 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 		
 		UE_LOG(LogHotPatcherCommandlet,Log,TEXT("Export Patch Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));
 	}
-	system("pause");
+
+	if(FParse::Param(FCommandLine::Get(), TEXT("wait")))
+	{
+		system("pause");
+	}
+	
 	return (int32)!bExportStatus;
 }

@@ -61,6 +61,11 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 		
 		UE_LOG(LogHotReleaseCommandlet,Log,TEXT("Export Release Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));
 	}
-	system("pause");
+	
+	if(FParse::Param(FCommandLine::Get(), TEXT("wait")))
+	{
+		system("pause");
+	}
+	
 	return (int32)!bExportStatus;
 }
