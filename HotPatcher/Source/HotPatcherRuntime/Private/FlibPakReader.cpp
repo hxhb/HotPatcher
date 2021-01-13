@@ -8,6 +8,7 @@
 #include "HAL/PlatformFilemanager.h"
 #include "Resources/Version.h"
 
+#if PLATFORM_WINDOWS
 /**
  * Thread local class to manage working buffers for file compression
  */
@@ -399,7 +400,7 @@ bool UFlibPakReader::LoadFileToString(FString& Result, FArchive* InReader, const
 	
 }
 
-#if PLATFORM_WINDOWS
+
 
 #include "HACK_PRIVATE_MEMBER_UTILS.hpp"
 DECL_HACK_PRIVATE_NOCONST_FUNCTION(FPakFile,CreatePakReader,FArchive*,IFileHandle&,const TCHAR*);

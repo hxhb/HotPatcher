@@ -17,14 +17,14 @@ class HOTPATCHERRUNTIME_API UFlibPakReader : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 public:
-	UFUNCTION(BlueprintCallable)
+#if PLATFORM_WINDOWS
 	static TArray<FString> GetPakFileList(const FString& PakFilePath);
 	static FPakFile* GetPakFileInsByPath(const FString& PakPath);
 	static bool FindFileInPakFile(FPakFile* InPakFile, const FString& InFileName, FPakEntry* OutPakEntry);
 	static IFileHandle* CreatePakFileHandle(IPlatformFile* InLowLevel, FPakFile* PakFile, const FPakEntry* FileEntry);
 	static bool LoadFileToString(FString& Result, FArchive* InReader, const TCHAR* Filename, FFileHelper::EHashOptions VerifyFlags = FFileHelper::EHashOptions::None);
 
-#if PLATFORM_WINDOWS
+
 	static FArchive* CreatePakReader(FPakFile* InPakFile, IFileHandle& InHandle, const TCHAR* InFilename);
 	static FString LoadPakFileToString(const FString& InPakFile,const FString& InFileName);
 #endif

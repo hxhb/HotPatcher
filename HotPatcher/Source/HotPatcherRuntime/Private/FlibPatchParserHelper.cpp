@@ -275,7 +275,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 						result.ModifyExternalFiles.Add(NewVersionFile);
 					}else
 					{
-						UE_LOG(LogHotPatcher, Log, TEXT("%s is same."), *NewVersionFile.MountPath);
+						// UE_LOG(LogHotPatcher, Log, TEXT("%s is same."), *NewVersionFile.MountPath);
 					}
 				}
 				else

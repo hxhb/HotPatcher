@@ -96,7 +96,7 @@ void SHotPatcherPatchableBase::ImportProjectConfig()
 	{
 		FExternDirectoryInfo DirInfo;
 		DirInfo.DirectoryPath.Path = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectContentDir(),UFSDir));
-		DirInfo.MountPoint = FString::Printf(TEXT("../../../%s/%s"),FApp::GetProjectName(),*UFSDir);
+		DirInfo.MountPoint = FString::Printf(TEXT("../../../%s/Content/%s"),FApp::GetProjectName(),*UFSDir);
 		AddToAllPlatform.AddExternDirectoryToPak.Add(DirInfo);
 		
 	}
