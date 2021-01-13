@@ -83,38 +83,43 @@ public:
 
 		PlatformAssets.Sort([](const FPlatformPakAssets& l,const FPlatformPakAssets& r)->bool{return l.ExternFiles.Num()<r.ExternFiles.Num();});
 
-		FPlatformPakAssets AllPlatform;
-		AllPlatform.Platform = ETargetPlatform::AllPlatforms;
-		for(int32 FileIndex=0;FileIndex<PlatformAssets[0].ExternFiles.Num();)
+		// 分析全平台都包含的外部文件添加至AllPlatform
+		if(PlatformAssets.Num() > 1)
 		{
-			FExternFileInfo& MinPlatformFileItem = PlatformAssets[0].ExternFiles[FileIndex];
-			bool IsAllPlatformFile = true;
-			for(int32 Internalindex =1;Internalindex<PlatformAssets.Num();++Internalindex)
+			FPlatformPakAssets AllPlatform;
+			AllPlatform.Platform = ETargetPlatform::AllPlatforms;
+			for(int32 FileIndex=0;FileIndex<PlatformAssets[0].ExternFiles.Num();)
 			{
-				int32 FindIndex = PlatformAssets[Internalindex].ExternFiles.FindLastByPredicate([&MinPlatformFileItem](const FExternFileInfo& file)
+				FExternFileInfo& MinPlatformFileItem = PlatformAssets[0].ExternFiles[FileIndex];
+				bool IsAllPlatformFile = true;
+				for(int32 Internalindex =1;Internalindex<PlatformAssets.Num();++Internalindex)
 				{
-					return MinPlatformFileItem.IsAbsSame(file);
-				});
+					int32 FindIndex = PlatformAssets[Internalindex].ExternFiles.FindLastByPredicate([&MinPlatformFileItem](const FExternFileInfo& file)
+                    {
+                        return MinPlatformFileItem.IsAbsSame(file);
+                    });
 				
-				if(FindIndex != INDEX_NONE)
-				{
-					PlatformAssets[Internalindex].ExternFiles.RemoveAt(FindIndex);				
+					if(FindIndex != INDEX_NONE)
+					{
+						PlatformAssets[Internalindex].ExternFiles.RemoveAt(FindIndex);				
+					}
+					else
+					{
+						IsAllPlatformFile = false;
+						break;
+					}
 				}
-				else
+				if(IsAllPlatformFile)
 				{
-					IsAllPlatformFile = false;
-					break;
+					AllPlatform.ExternFiles.AddUnique(MinPlatformFileItem);
+					PlatformAssets[0].ExternFiles.RemoveAt(FileIndex);
+					continue;
 				}
+				++FileIndex;
 			}
-			if(IsAllPlatformFile)
-			{
-				AllPlatform.ExternFiles.AddUnique(MinPlatformFileItem);
-				PlatformAssets[0].ExternFiles.RemoveAt(FileIndex);
-				continue;
-			}
-			++FileIndex;
+			PlatformAssets.Add(AllPlatform);
 		}
-		PlatformAssets.Add(AllPlatform);
+		
 		// for not-uasset file
 		for(const auto& Platform:PlatformAssets)
 		{
