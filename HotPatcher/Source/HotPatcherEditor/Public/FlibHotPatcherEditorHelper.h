@@ -20,6 +20,8 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FlibHotPatcherEditorHelper.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogHotPatcherEditorHelper, Log, All);
+
 struct FExportPatchSettings;
 /**
  * 

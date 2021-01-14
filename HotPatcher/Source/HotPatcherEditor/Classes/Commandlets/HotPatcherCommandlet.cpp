@@ -25,6 +25,8 @@ namespace NSPatch
 	}
 }
 
+
+
 int32 UHotPatcherCommandlet::Main(const FString& Params)
 {
 	UE_LOG(LogHotPatcherCommandlet, Display, TEXT("UHotPatcherCommandlet::Main"));
@@ -47,12 +49,21 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 	bool bExportStatus = false;
 	if (FFileHelper::LoadFileToString(JsonContent, *config_path))
 	{
+		
 		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 		AssetRegistryModule.Get().SearchAllAssets(true);
-		
-		UE_LOG(LogHotPatcherCommandlet, Display, TEXT("%s"), *JsonContent);
+
 		TSharedPtr<FExportPatchSettings> ExportPatchSetting = MakeShareable(new FExportPatchSettings);
 		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportPatchSetting);
+		
+		TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
+		UFlibPatchParserHelper::ReplaceProperty(*ExportPatchSetting, KeyValues);
+
+		FString FinalConfig;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportPatchSetting,FinalConfig);
+		UE_LOG(LogHotPatcherCommandlet, Log, TEXT("%s"), *FinalConfig);
+
+		
 		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
 		PatcherProxy->SetProxySettings(ExportPatchSetting.Get());
 		PatcherProxy->OnPaking.AddStatic(&::NSPatch::ReceiveMsg);

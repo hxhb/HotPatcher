@@ -53,6 +53,14 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 
 		TSharedPtr<FExportReleaseSettings> ExportReleaseSetting = MakeShareable(new FExportReleaseSettings);
 		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportReleaseSetting);
+		
+		TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
+		UFlibPatchParserHelper::ReplaceProperty(*ExportReleaseSetting, KeyValues);
+
+		FString FinalConfig;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportReleaseSetting,FinalConfig);
+		UE_LOG(LogHotReleaseCommandlet, Log, TEXT("%s"), *FinalConfig);
+		
 		UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
 		ReleaseProxy->SetProxySettings(ExportReleaseSetting.Get());
 		ReleaseProxy->OnPaking.AddStatic(&::NSRelease::ReceiveMsg);

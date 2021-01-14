@@ -11,6 +11,8 @@
 #include "Interfaces/IPluginManager.h"
 #include "Misc/SecureHash.h"
 
+DEFINE_LOG_CATEGORY(LogHotPatcherEditorHelper);
+
 TArray<FString> UFlibHotPatcherEditorHelper::GetAllCookOption()
 {
 	TArray<FString> result
@@ -194,8 +196,12 @@ FString ConvertToFullSandboxPath( const FString &FileName, bool bForWrite )
 		// Handle remapping of plugins
 		for (TSharedRef<IPlugin> Plugin : PluginsToRemap)
 		{
-			FString PluginContentDir = FPaths::ConvertRelativePathToFull(Plugin->GetContentDir());
-			// UE_LOG(LogTemp,Log,TEXT("Plugin Content:%s"),*PluginContentDir);
+			FString PluginContentDir;
+			if (FPaths::IsRelative(FileName))
+				PluginContentDir = Plugin->GetContentDir();
+			else
+				PluginContentDir = FPaths::ConvertRelativePathToFull(Plugin->GetContentDir());
+			// UE_LOG(LogHotPatcherEditorHelper,Log,TEXT("Plugin Content:%s"),*PluginContentDir);
 			if (FileName.StartsWith(PluginContentDir))
 			{
 				FString SearchFor;
@@ -244,7 +250,7 @@ FString UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(const FString& BaseDir
 	}
 
 	FString SandboxFilename = ConvertToFullSandboxPath(*StandardFilename, true);
-	UE_LOG(LogTemp,Log,TEXT("Filename:%s,PackageFileName:%s,StandardFileName:%s"),*Filename,*PackageFilename,*StandardFilename);
+	// UE_LOG(LogHotPatcherEditorHelper,Log,TEXT("Filename:%s,PackageFileName:%s,StandardFileName:%s"),*Filename,*PackageFilename,*StandardFilename);
 	
 	FString CookDir =FPaths::Combine(BaseDir,Platform,SandboxFilename);
 	
@@ -349,7 +355,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(UPackage* Package, const TArray<FS
 		{
 			IFileManager::Get().Delete(*CookedSavePath);
 		}
-		UE_LOG(LogTemp,Log,TEXT("Cook Assets:%s"),*Package->GetName());
+		// UE_LOG(LogHotPatcherEditorHelper,Log,TEXT("Cook Assets:%s"),*Package->GetName());
 		Package->FullyLoad();
 		TArray<UObject*> ExportMap;
 		GetObjectsWithOuter(Package,ExportMap);
@@ -372,7 +378,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(UPackage* Package, const TArray<FS
 		// }
 		
 		GIsCookerLoadingPackage = true;
-		UE_LOG(LogTemp,Log,TEXT("Cook Assets:%s save to %s"),*Package->GetName(),*CookedSavePath);
+		// UE_LOG(LogHotPatcherEditorHelper,Log,TEXT("Cook Assets:%s save to %s"),*Package->GetName(),*CookedSavePath);
 		FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, CookedFlags, *CookedSavePath, 
                                                 GError, nullptr, false, false, SaveFlags, Platform, 
                                                 FDateTime::MinValue(), false, /*DiffMap*/ nullptr);

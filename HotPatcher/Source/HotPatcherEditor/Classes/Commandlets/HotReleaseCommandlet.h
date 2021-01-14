@@ -3,7 +3,7 @@
 #include "Commandlets/Commandlet.h"
 #include "HotReleaseCommandlet.generated.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(LogHotReleaseCommandlet, Log, All);
+DECLARE_LOG_CATEGORY_EXTERN(LogHotReleaseCommandlet, All, All);
 
 UCLASS()
 class UHotReleaseCommandlet :public UCommandlet

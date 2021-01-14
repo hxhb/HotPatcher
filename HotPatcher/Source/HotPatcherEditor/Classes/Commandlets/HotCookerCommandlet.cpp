@@ -57,6 +57,10 @@ int32 UHotCookerCommandlet::Main(const FString& Params)
 		UE_LOG(LogHotCookerCommandlet, Display, TEXT("%s"), *JsonContent);
 		FCookerConfig CookConfig;
 		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,CookConfig);
+		
+		TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
+		UFlibPatchParserHelper::ReplaceProperty(CookConfig, KeyValues);
+		
 		if (CookConfig.bCookAllMap)
 		{
 			CookConfig.CookMaps = UFlibPatchParserHelper::GetAvailableMaps(UKismetSystemLibrary::GetProjectDirectory(), false, false, true);
