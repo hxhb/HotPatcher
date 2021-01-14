@@ -34,6 +34,10 @@ struct HOTPATCHERRUNTIME_API FPlatformPakListFiles
 	ETargetPlatform TargetPlatform = ETargetPlatform::None;
 	UPROPERTY(EditAnywhere)
 	FFilePath PakList;
+	bool operator==(const FPlatformPakListFiles& R)const
+	{
+		return TargetPlatform == R.TargetPlatform && PakList.FilePath.Equals(R.PakList.FilePath);
+	}
 };
 
 USTRUCT(BlueprintType)
@@ -48,7 +52,7 @@ struct HOTPATCHERRUNTIME_API FPlatformPakAssets
 		TArray<FExternFileInfo> ExternFiles;
 };
 
-/** Singleton wrapper to allow for using the setting structure in SSettingsView */
+/** Singleton wrapper to allow for using the setting structur e in SSettingsView */
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FExportReleaseSettings:public FHotPatcherSettingBase
 {

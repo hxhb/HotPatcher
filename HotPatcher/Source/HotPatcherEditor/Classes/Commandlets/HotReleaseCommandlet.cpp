@@ -25,6 +25,38 @@ namespace NSRelease
 	}
 }
 
+#define ADD_PLATFORM_PAK_LIST TEXT("AddPlatformPakList")
+TArray<FPlatformPakListFiles> ParserPlatformPakList(const FString& Commandline)
+{
+	TArray<FPlatformPakListFiles> result;
+	TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Commandline);
+	if(KeyValues.Find(ADD_PLATFORM_PAK_LIST))
+	{
+		FString AddPakListInfo = *KeyValues.Find(ADD_PLATFORM_PAK_LIST);
+		TArray<FString> PlatformPakLists;
+		AddPakListInfo.ParseIntoArray(PlatformPakLists,TEXT(","));
+
+		for(auto& PlatformPakList:PlatformPakLists)
+		{
+			TArray<FString> PlatformPakListToken;
+			PlatformPakList.ParseIntoArray(PlatformPakListToken,TEXT("+"));
+			if(PlatformPakListToken.Num() == 2)
+			{
+				FString PlatformName = PlatformPakListToken[0];
+				FString PakListPath = PlatformPakListToken[1];
+				if(FPaths::FileExists(PakListPath))
+				{
+					FPlatformPakListFiles PlatformPakListItem;
+					UFlibPatchParserHelper::GetEnumValueByName(PlatformName,PlatformPakListItem.TargetPlatform);
+					PlatformPakListItem.PakList.FilePath = PakListPath;
+					
+					result.Add(PlatformPakListItem);
+				}
+			}
+		}
+	}
+	return result;
+}
 
 int32 UHotReleaseCommandlet::Main(const FString& Params)
 {
@@ -34,41 +66,48 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 	bool bStatus = FParse::Value(*Params, *FString(PATCHER_CONFIG_PARAM_NAME).ToLower(), config_path);
 	if (!bStatus)
 	{
-		UE_LOG(LogHotReleaseCommandlet, Error, TEXT("UHotReleaseCommandlet error: not -config=xxxx.json params."));
-		return -1;
+		UE_LOG(LogHotReleaseCommandlet, Warning, TEXT("UHotReleaseCommandlet: not -config=xxxx.json params."));
+		// return -1;
 	}
 
-	if (!FPaths::FileExists(config_path))
+	if (bStatus && !FPaths::FileExists(config_path))
 	{
 		UE_LOG(LogHotReleaseCommandlet, Error, TEXT("UHotReleaseCommandlet error: cofnig file %s not exists."), *config_path);
 		return -1;
 	}
-
+	// load asset registry
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	AssetRegistryModule.Get().SearchAllAssets(true);
+	
+	TSharedPtr<FExportReleaseSettings> ExportReleaseSetting = MakeShareable(new FExportReleaseSettings);
+	
 	FString JsonContent;
-	bool bExportStatus = false;
-	if (FFileHelper::LoadFileToString(JsonContent, *config_path))
+	if (FPaths::FileExists(config_path) && FFileHelper::LoadFileToString(JsonContent, *config_path))
 	{
-		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-		AssetRegistryModule.Get().SearchAllAssets(true);
-
-		TSharedPtr<FExportReleaseSettings> ExportReleaseSetting = MakeShareable(new FExportReleaseSettings);
 		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportReleaseSetting);
-		
-		TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
-		UFlibPatchParserHelper::ReplaceProperty(*ExportReleaseSetting, KeyValues);
-
-		FString FinalConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportReleaseSetting,FinalConfig);
-		UE_LOG(LogHotReleaseCommandlet, Log, TEXT("%s"), *FinalConfig);
-		
-		UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
-		ReleaseProxy->SetProxySettings(ExportReleaseSetting.Get());
-		ReleaseProxy->OnPaking.AddStatic(&::NSRelease::ReceiveMsg);
-		ReleaseProxy->OnShowMsg.AddStatic(&::NSRelease::ReceiveShowMsg);
-		bExportStatus = ReleaseProxy->DoExport();
-		
-		UE_LOG(LogHotReleaseCommandlet,Log,TEXT("Export Release Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));
 	}
+
+	TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
+	UFlibPatchParserHelper::ReplaceProperty(*ExportReleaseSetting, KeyValues);
+
+	// 从命令行分析PlatformPakList
+	TArray<FPlatformPakListFiles> ReadPakList = ParserPlatformPakList(Params);
+	if(ReadPakList.Num())
+	{
+		ExportReleaseSetting->PlatformsPakListFiles = ReadPakList;
+	}
+
+	FString FinalConfig;
+	UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportReleaseSetting,FinalConfig);
+	UE_LOG(LogHotReleaseCommandlet, Log, TEXT("%s"), *FinalConfig);
+		
+	UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
+	ReleaseProxy->SetProxySettings(ExportReleaseSetting.Get());
+	ReleaseProxy->OnPaking.AddStatic(&::NSRelease::ReceiveMsg);
+	ReleaseProxy->OnShowMsg.AddStatic(&::NSRelease::ReceiveShowMsg);
+	bool bExportStatus = ReleaseProxy->DoExport();
+		
+	UE_LOG(LogHotReleaseCommandlet,Log,TEXT("Export Release Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));
 	
 	if(FParse::Param(FCommandLine::Get(), TEXT("wait")))
 	{

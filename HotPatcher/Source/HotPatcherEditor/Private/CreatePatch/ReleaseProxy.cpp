@@ -23,6 +23,14 @@ bool UReleaseProxy::DoExport()
 	// UnrealPakSlowTask.MakeDialog();
 	UScopedSlowTaskContext* UnrealPakSlowTask = NewObject<UScopedSlowTaskContext>();
 	UnrealPakSlowTask->init(AmountOfWorkProgress);
+
+	if(GetSettingObject()->ByPakList)
+	{
+		if(GetSettingObject()->PlatformsPakListFiles.Num())
+		{
+			GetSettingObject()->ImportPakLists();
+		}
+	}
 	
 	FHotPatcherVersion ExportVersion;
 	{
@@ -127,6 +135,7 @@ bool UReleaseProxy::DoExport()
 				{
 					UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Message, SaveAssetRelatedInfoToFile);
 				}
+				bRetStatus = true;
 			}
 		}
 	}
