@@ -378,7 +378,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(UPackage* Package, const TArray<FS
 		// }
 		
 		GIsCookerLoadingPackage = true;
-		// UE_LOG(LogHotPatcherEditorHelper,Log,TEXT("Cook Assets:%s save to %s"),*Package->GetName(),*CookedSavePath);
+		UE_LOG(LogHotPatcherEditorHelper,Display,TEXT("Cook Assets:%s save to %s"),*Package->GetName(),*CookedSavePath);
 		FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, CookedFlags, *CookedSavePath, 
                                                 GError, nullptr, false, false, SaveFlags, Platform, 
                                                 FDateTime::MinValue(), false, /*DiffMap*/ nullptr);
