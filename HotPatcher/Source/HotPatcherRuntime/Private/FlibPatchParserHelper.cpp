@@ -1778,7 +1778,7 @@ void UFlibPatchParserHelper::AnalysisWidgetTree(FPatchVersionDiff& PakDiff,int32
 		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(PakDiff.AssetDiffInfo.ModifyAssetDependInfo,ModifyAssets);
 		AnalysisAssets.Append(ModifyAssets);
 	}
-	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDepTypes {EAssetRegistryDependencyTypeEx::Packages};
+	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDepTypes {EAssetRegistryDependencyTypeEx::Hard};
 	FString AssetType = TEXT("WidgetBlueprint");
 	for(const auto& OriginAsset:AnalysisAssets)
 	{
