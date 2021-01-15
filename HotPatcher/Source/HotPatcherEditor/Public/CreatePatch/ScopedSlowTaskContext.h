@@ -29,7 +29,7 @@ public:
             ProgressPtr->EnterProgressFrame(ExpectedWorkThisFrame,Text);
         }else
         {
-            UE_LOG(LogHotPatcher,Log,TEXT("%s"),*Text.ToString());
+            UE_LOG(LogHotPatcher,Display,TEXT("%s"),*Text.ToString());
         }
     }
 

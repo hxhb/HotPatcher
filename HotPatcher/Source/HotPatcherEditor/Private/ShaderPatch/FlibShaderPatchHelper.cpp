@@ -2,6 +2,8 @@
 
 
 #include "ShaderPatch/FlibShaderPatchHelper.h"
+
+#include "Misc/Paths.h"
 #include "ShaderCodeLibrary.h"
 
 

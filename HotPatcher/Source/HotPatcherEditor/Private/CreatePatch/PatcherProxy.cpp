@@ -326,8 +326,12 @@ bool UPatcherProxy::DoExport()
 	}
 	
 	UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(true);
+
+	UE_LOG(LogHotPatcher,Display,TEXT("Make Patch Setting..."));
+	
 	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(GetSettingObject());
 
+	UE_LOG(LogHotPatcher,Display,TEXT("Deserialize Release Version by Patch Setting..."));
 	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 		GetSettingObject()->GetVersionId(),
 		BaseVersion.VersionId,
@@ -338,8 +342,13 @@ bool UPatcherProxy::DoExport()
 	);
 
 	FString CurrentVersionSavePath = GetSettingObject()->GetCurrentVersionSavePath();
+
+	UE_LOG(LogHotPatcher,Display,TEXT("Deserialize Release Version by Patch Setting..."));
+
+	UE_LOG(LogHotPatcher,Display,TEXT("Diff base version and current project version..."));
 	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*GetSettingObject(), BaseVersion, CurrentVersion);
-	
+
+	UE_LOG(LogHotPatcher,Display,TEXT("Checking patch require..."));
 	FString ReceiveMsg;
 	if (!GetSettingObject()->IsCookPatchAssets() && !CheckPatchRequire(VersionDiffInfo, ReceiveMsg))
 	{
@@ -365,6 +374,8 @@ bool UPatcherProxy::DoExport()
 		};
 		VersionCmd.AssetPackage = UFlibPatchParserHelper::MountPathToRelativePath(MountPath);
 		AdditionalFileToPak.AddUnique(VersionCmd);
+
+		UE_LOG(LogHotPatcher,Display,TEXT("Save current patch pakversion.json to %s ..."),*AbsPath);
 	}
 	
 	// package all selected platform
