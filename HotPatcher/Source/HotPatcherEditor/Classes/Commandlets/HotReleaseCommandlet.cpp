@@ -21,7 +21,7 @@ namespace NSRelease
 
 	void ReceiveShowMsg(const FString& InMsg)
 	{
-		UE_LOG(LogHotReleaseCommandlet,Log,TEXT("%s"),*InMsg);
+		UE_LOG(LogHotReleaseCommandlet,Display,TEXT("%s"),*InMsg);
 	}
 }
 
@@ -99,7 +99,7 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 
 	FString FinalConfig;
 	UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportReleaseSetting,FinalConfig);
-	UE_LOG(LogHotReleaseCommandlet, Log, TEXT("%s"), *FinalConfig);
+	UE_LOG(LogHotReleaseCommandlet, Display, TEXT("%s"), *FinalConfig);
 		
 	UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
 	ReleaseProxy->SetProxySettings(ExportReleaseSetting.Get());
@@ -107,12 +107,12 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 	ReleaseProxy->OnShowMsg.AddStatic(&::NSRelease::ReceiveShowMsg);
 	bool bExportStatus = ReleaseProxy->DoExport();
 		
-	UE_LOG(LogHotReleaseCommandlet,Log,TEXT("Export Release Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));
+	UE_LOG(LogHotReleaseCommandlet,Display,TEXT("Export Release Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));
 	
 	if(FParse::Param(FCommandLine::Get(), TEXT("wait")))
 	{
 		system("pause");
 	}
 	
-	return (int32)!bExportStatus;
+	return (int32)bExportStatus;
 }

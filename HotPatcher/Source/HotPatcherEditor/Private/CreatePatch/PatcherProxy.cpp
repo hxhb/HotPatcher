@@ -352,6 +352,7 @@ bool UPatcherProxy::DoExport()
 	TArray<FPakCommand> AdditionalFileToPak;
 	
 	// save pakversion.json
+	if(GetSettingObject()->IsIncludePakVersion())
 	{
 		FPakVersion CurrentPakVersion;
 		SavePatchVersionJson(CurrentVersion, CurrentVersionSavePath, CurrentPakVersion);
@@ -637,8 +638,6 @@ bool UPatcherProxy::DoExport()
 	//		IFileManager::Get().Delete(*PakVersionSavedPath);
 	//	}
 	//}
-
-
 
 	// save asset dependency
 	{

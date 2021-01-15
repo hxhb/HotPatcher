@@ -21,7 +21,7 @@ namespace NSPatch
 
 	void ReceiveShowMsg(const FString& InMsg)
 	{
-		UE_LOG(LogHotPatcherCommandlet,Log,TEXT("%s"),*InMsg);
+		UE_LOG(LogHotPatcherCommandlet,Display,TEXT("%s"),*InMsg);
 	}
 }
 
@@ -61,7 +61,7 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 
 		FString FinalConfig;
 		UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportPatchSetting,FinalConfig);
-		UE_LOG(LogHotPatcherCommandlet, Log, TEXT("%s"), *FinalConfig);
+		UE_LOG(LogHotPatcherCommandlet, Display, TEXT("%s"), *FinalConfig);
 
 		
 		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
@@ -70,7 +70,7 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 		PatcherProxy->OnShowMsg.AddStatic(&::NSPatch::ReceiveShowMsg);
 		bExportStatus = PatcherProxy->DoExport();
 		
-		UE_LOG(LogHotPatcherCommandlet,Log,TEXT("Export Patch Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));
+		UE_LOG(LogHotPatcherCommandlet,Display,TEXT("Export Patch Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));
 	}
 
 	if(FParse::Param(FCommandLine::Get(), TEXT("wait")))

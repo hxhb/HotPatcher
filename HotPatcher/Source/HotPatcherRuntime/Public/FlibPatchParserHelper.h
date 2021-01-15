@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
+
 //project header
 #include "FChunkInfo.h"
 #include "FPakFileInfo.h"
@@ -14,20 +15,27 @@
 #include "FHotPatcherAssetDependency.h"
 #include "FCookerConfig.h"
 #include "FPlatformExternFiles.h"
+
 // cpp standard
 #include <typeinfo>
 #include <cctype>
 #include <algorithm>
 #include <string>
+
 // engine header
+#include "CoreMinimal.h"
 #include "Resources/Version.h"
 #include "JsonObjectConverter.h"
-#include "CoreMinimal.h"
+#include "Misc/CommandLine.h"
 #include "FPlatformExternAssets.h"
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FlibPatchParserHelper.generated.h"
+
+#if ENGINE_MINOR_VERSION < 25
+#define FProperty UProperty
+#endif
 
 /**
  * 
@@ -343,9 +351,7 @@ public:
 		}
 		return false;
 	}
-#if ENGINE_MINOR_VERSION < 25
-#define FProperty UProperty
-#endif
+
 	
 	template<typename T>
     static void ReplaceProperty(T& Struct, const TMap<FString, FString>& ParamsMap)
