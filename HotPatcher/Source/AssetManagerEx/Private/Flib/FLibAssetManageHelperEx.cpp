@@ -1181,7 +1181,7 @@ bool UFLibAssetManageHelperEx::GetPluginModuleAbsDir(const FString& InPluginModu
 void UFLibAssetManageHelperEx::GetAllEnabledModuleName(TMap<FString, FString>& OutModules)
 {
 	OutModules.Add(TEXT("Game"), FPaths::ProjectDir());
-	OutModules.Add(TEXT("Engine"), FPaths::EngineContentDir());
+	OutModules.Add(TEXT("Engine"), FPaths::EngineDir());
 
 	TArray<TSharedRef<IPlugin>> AllPlugin = IPluginManager::Get().GetEnabledPlugins();
 

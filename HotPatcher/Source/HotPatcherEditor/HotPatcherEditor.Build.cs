@@ -64,7 +64,11 @@ public class HotPatcherEditor : ModuleRules
 			}
 			);
 		
-		
+		PublicDefinitions.AddRange(new string[]
+		{
+			"ENABLE_COOK_ENGINE_MAP=0",
+			"ENABLE_COOK_PLUGIN_MAP=0"
+		});
 		DynamicallyLoadedModuleNames.AddRange(
 			new string[]
 			{

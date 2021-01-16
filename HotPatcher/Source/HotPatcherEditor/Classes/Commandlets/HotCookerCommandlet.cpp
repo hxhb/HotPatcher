@@ -63,7 +63,7 @@ int32 UHotCookerCommandlet::Main(const FString& Params)
 		
 		if (CookConfig.bCookAllMap)
 		{
-			CookConfig.CookMaps = UFlibPatchParserHelper::GetAvailableMaps(UKismetSystemLibrary::GetProjectDirectory(), false, false, true);
+			CookConfig.CookMaps = UFlibPatchParserHelper::GetAvailableMaps(UKismetSystemLibrary::GetProjectDirectory(), ENABLE_COOK_ENGINE_MAP, ENABLE_COOK_PLUGIN_MAP, true);
 		}
 		FString CookCommand;
 		UFlibPatchParserHelper::GetCookProcCommandParams(CookConfig, CookCommand);

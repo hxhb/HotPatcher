@@ -137,7 +137,7 @@ void SHotPatcherCookMaps::RefreshMapList()
 {
 	MapList.Reset();
 
-	TArray<FString> AvailableMaps = UFlibPatchParserHelper::GetAvailableMaps(UKismetSystemLibrary::GetProjectDirectory(), false, false, true);
+	TArray<FString> AvailableMaps = UFlibPatchParserHelper::GetAvailableMaps(UKismetSystemLibrary::GetProjectDirectory(), ENABLE_COOK_ENGINE_MAP, ENABLE_COOK_PLUGIN_MAP, true);
 	for (int32 AvailableMapIndex = 0; AvailableMapIndex < AvailableMaps.Num(); ++AvailableMapIndex)
 	{
 		FString& Map = AvailableMaps[AvailableMapIndex];

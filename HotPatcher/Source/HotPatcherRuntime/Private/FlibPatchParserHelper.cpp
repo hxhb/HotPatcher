@@ -32,7 +32,8 @@ TArray<FString> UFlibPatchParserHelper::GetAvailableMaps(FString GameName, bool 
 	auto ScanMapsByModuleName = [WildCard,&AllMaps](const FString& InModuleBaseDir)
 	{
 		TArray<FString> OutMaps;
-		IFileManager::Get().FindFilesRecursive(OutMaps, *FPaths::Combine(*InModuleBaseDir, TEXT("Content")), *WildCard, true, false);
+		FString ModuleContentAbsPath= FPaths::ConvertRelativePathToFull(FPaths::Combine(*InModuleBaseDir, TEXT("Content")));
+		IFileManager::Get().FindFilesRecursive(OutMaps, *ModuleContentAbsPath, *WildCard, true, false);
 		
 		for (const auto& MapPath : OutMaps)
 		{
