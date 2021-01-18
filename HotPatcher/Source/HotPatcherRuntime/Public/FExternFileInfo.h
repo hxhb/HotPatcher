@@ -43,11 +43,16 @@ public:
 
 	bool operator==(const FExternFileInfo& Right)const
 	{
-		
-		bool bIsSameMountPath = (MountPath == Right.MountPath);
-		
-		return bIsSameMountPath;
+		return MountPath == Right.MountPath;
 	}
+
+	// ignore FilePath abs path (only mount path and filehash)
+	bool IsSameMount(const FExternFileInfo& Right)const
+	{
+		bool IsSameHash = (FileHash == Right.FileHash);
+		return (*this == Right) &&  IsSameHash;
+	}
+	
 	bool IsAbsSame(const FExternFileInfo& Right)const
 	{
 		bool bIsSamePath = (FilePath.FilePath == Right.FilePath.FilePath);

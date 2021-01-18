@@ -401,11 +401,13 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
 		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFiltersPaths().Num();
 		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
-		bool bHasExternFiles = !!ExportPatchSetting->GetAddExternFiles().Num();
-		bool bHasExDirs = !!ExportPatchSetting->GetAddExternDirectory().Num();
+		// bool bHasExternFiles = !!ExportPatchSetting->GetAddExternFiles().Num();
+		// bool bHasExDirs = !!ExportPatchSetting->GetAddExternDirectory().Num();
+		bool bHasExternFiles = !!ExportPatchSetting->GetAllPlatfotmExternFiles().Num();
+		bool bHasExDirs = !!ExportPatchSetting->GetAddExternAssetsToPlatform().Num();
 		bool bHasSavePath = !ExportPatchSetting->GetSaveAbsPath().IsEmpty();
 		bool bHasPakPlatfotm = !!ExportPatchSetting->GetPakTargetPlatforms().Num();
-
+		
 		bool bHasAnyPakFiles = (
 			bHasFilter || bHasSpecifyAssets || bHasExternFiles || bHasExDirs ||
 			ExportPatchSetting->IsIncludeEngineIni() ||
@@ -419,11 +421,13 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 
 FReply SHotPatcherExportPatch::DoExportPatch()
 {
-	// UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-	// PatcherProxy->AddToRoot();
-	// PatcherProxy->SetProxySettings(ExportPatchSetting.Get());
-	// PatcherProxy->OnShowMsg.AddRaw(this,&SHotPatcherExportPatch::ShowMsg);
-	// PatcherProxy->DoExport();
+#if PATCH_BLOCK_EDITOR
+	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
+	PatcherProxy->AddToRoot();
+	PatcherProxy->SetProxySettings(ExportPatchSetting.Get());
+	PatcherProxy->OnShowMsg.AddRaw(this,&SHotPatcherExportPatch::ShowMsg);
+	PatcherProxy->DoExport();
+#else
 	FString CurrentConfig;
 	UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
 	FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPacther"),TEXT("PatchConfig.json")));
@@ -431,6 +435,8 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\""),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo);
 	UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibPatchParserHelper::GetUE4CmdBinary(),*MissionCommand);
 	RunProcMission(UFlibPatchParserHelper::GetUE4CmdBinary(),MissionCommand);
+#endif
+	
 	return FReply::Handled();
 }
 

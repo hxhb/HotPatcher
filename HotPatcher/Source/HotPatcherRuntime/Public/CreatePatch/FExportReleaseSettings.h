@@ -100,7 +100,7 @@ public:
 				{
 					int32 FindIndex = PlatformAssets[Internalindex].ExternFiles.FindLastByPredicate([&MinPlatformFileItem](const FExternFileInfo& file)
                     {
-                        return MinPlatformFileItem.IsAbsSame(file);
+                        return MinPlatformFileItem.IsSameMount(file);
                     });
 				
 					if(FindIndex != INDEX_NONE)

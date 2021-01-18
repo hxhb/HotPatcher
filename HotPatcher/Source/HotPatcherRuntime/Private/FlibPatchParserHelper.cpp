@@ -269,8 +269,8 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 		ParserAddFiles(InBase.ExternFiles, InNew.ExternFiles, result.AddExternalFiles);
 		// Parser delete Files
 		ParserAddFiles(InNew.ExternFiles, InBase.ExternFiles, result.DeleteExternalFiles);
-	
-		// Parser modify Files
+
+		auto ParserModifyFiles = [](const FPlatformExternFiles& InBase,const FPlatformExternFiles& InNew,TArray<FExternFileInfo>& Out)
 		{
 			for (const auto& NewVersionFile : InNew.ExternFiles)
 			{
@@ -282,7 +282,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 					if (!bIsSame)
 					{
 						UE_LOG(LogHotPatcher, Log, TEXT("%s is not same."), *NewVersionFile.MountPath);
-						result.ModifyExternalFiles.Add(NewVersionFile);
+						Out.Add(NewVersionFile);
 					}else
 					{
 						// UE_LOG(LogHotPatcher, Log, TEXT("%s is same."), *NewVersionFile.MountPath);
@@ -293,7 +293,10 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 					UE_LOG(LogHotPatcher, Log, TEXT("base version not contains %s."), *NewVersionFile.MountPath);
 				}
 			}
-		}
+		};
+		
+		// Parser modify Files
+		ParserModifyFiles(InBase,InNew,result.ModifyExternalFiles);
 
 		return result;
 	};
