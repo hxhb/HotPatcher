@@ -428,7 +428,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
 	FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPacther"),TEXT("PatchConfig.json")));
 	FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
-	FString MissionCommand = FString::Printf(TEXT("%s -run=HotPatcher -config=\"%s\""),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo);
+	FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\""),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo);
 	UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibPatchParserHelper::GetUE4CmdBinary(),*MissionCommand);
 	RunProcMission(UFlibPatchParserHelper::GetUE4CmdBinary(),MissionCommand);
 	return FReply::Handled();

@@ -115,7 +115,7 @@ void SHotPatcherPatchableBase::RunProcMission(const FString& Bin, const FString&
 	}
 	else
 	{
-		mProcWorkingThread = MakeShareable(new FProcWorkerThread(TEXT("Thread"), Bin, Command));
+		mProcWorkingThread = MakeShareable(new FProcWorkerThread(*FString::Printf(TEXT("%sThread"),*GetMissionName()), Bin, Command));
 		mProcWorkingThread->ProcOutputMsgDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::ReceiveOutputMsg);
 		mProcWorkingThread->ProcBeginDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnRuningMissionNotification);
 		mProcWorkingThread->ProcSuccessedDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnMissionSuccessedNotification);
