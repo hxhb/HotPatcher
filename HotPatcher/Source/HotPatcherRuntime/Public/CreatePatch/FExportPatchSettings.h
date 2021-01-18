@@ -318,7 +318,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bByBaseVersion"))
 		bool bSaveDiffAnalysis = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bSaveAssetRelatedInfo;
+		bool bSaveAssetRelatedInfo = false;
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo", meta = (EditCondition = "bIncludePakVersion"))
 	//	bool bSavePakVersion;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")

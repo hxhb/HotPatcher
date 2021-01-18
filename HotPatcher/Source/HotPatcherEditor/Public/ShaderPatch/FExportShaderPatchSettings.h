@@ -48,7 +48,7 @@ public:
 	TArray<FShaderPatchConf> ShaderPatchConfigs;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bSaveConfig;
+	bool bSaveConfig = true;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FDirectoryPath SaveTo;
