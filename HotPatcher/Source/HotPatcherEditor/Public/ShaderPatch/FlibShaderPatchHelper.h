@@ -4,6 +4,8 @@
 
 #include "Engine/EngineTypes.h"
 #include "CoreMinimal.h"
+
+#include "ETargetPlatform.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FlibShaderPatchHelper.generated.h"
 
@@ -22,6 +24,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	static TArray<FString> ConvDirectoryPathToStr(const TArray<FDirectoryPath>& Dirs);
 	
-
+	// static void InitShaderCodeLibrary(const TArray<ETargetPlatform>& Platforms);
+	// static void CleanShaderCodeLibraries(const TArray<ETargetPlatform>& Platforms);
+	// void SaveGlobalShaderLibrary(const TArray<ETargetPlatform>& Platforms);
+	// void SaveShaderLibrary(const ITargetPlatform* TargetPlatform, FString const& Name, const TArray<TSet<FName>>* ChunkAssignments);
 };
 

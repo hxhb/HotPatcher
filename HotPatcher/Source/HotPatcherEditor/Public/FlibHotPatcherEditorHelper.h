@@ -48,4 +48,7 @@ public:
 		static bool CookAssets(const TArray<FSoftObjectPath>& Assets, const TArray<ETargetPlatform>& Platforms, const FString& SavePath = TEXT(""));
 	static bool CookPackages(TArray<UPackage*>& Packages, const TArray<FString>& Platforms, const FString& SavePath);
 	static bool CookPackage(UPackage* Package, const TArray<FString>& Platforms, const FString& SavePath);
+
+	static ITargetPlatform* GetTargetPlatformByName(const FString& PlatformName);
+	static TArray<ITargetPlatform*> GetTargetPlatformsByNames(const TArray<ETargetPlatform>& PlatformNames);
 };

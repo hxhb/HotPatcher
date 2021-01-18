@@ -388,6 +388,37 @@ bool UFlibHotPatcherEditorHelper::CookPackage(UPackage* Package, const TArray<FS
 	return bSuccessed;
 }
 
+ITargetPlatform* UFlibHotPatcherEditorHelper::GetTargetPlatformByName(const FString& PlatformName)
+{
+	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
+	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
+	ITargetPlatform* PlatformIns = NULL; 
+	for (ITargetPlatform *TargetPlatform : TargetPlatforms)
+	{
+		if (PlatformName.Contains(TargetPlatform->PlatformName()))
+		{
+			PlatformIns = TargetPlatform;
+		}
+	}
+	return PlatformIns;
+}
+
+TArray<ITargetPlatform*> UFlibHotPatcherEditorHelper::GetTargetPlatformsByNames(const TArray<ETargetPlatform>& Platforms)
+{
+
+	TArray<ITargetPlatform*> result;
+	for(const auto& Platform:Platforms)
+	{
+    			
+		ITargetPlatform* Found = UFlibHotPatcherEditorHelper::GetTargetPlatformByName(UFlibPatchParserHelper::GetEnumNameByValue(Platform,false));
+		if(Found)
+		{
+			result.Add(Found);
+		}
+	}
+	return result;
+}
+
 bool UFlibHotPatcherEditorHelper::CookPackages(TArray<UPackage*>& InPackage, const TArray<FString>& Platforms, const FString& SavePath)
 {
 	for(const auto& Package:InPackage)
