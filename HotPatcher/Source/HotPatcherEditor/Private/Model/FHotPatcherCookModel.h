@@ -187,12 +187,7 @@ public:
 	FCookerConfig GetCookConfig()
 	{
 		FCookerConfig result;
-		FString ProjectFilePath;
-		{
-			FString ProjectPath = UKismetSystemLibrary::GetProjectDirectory();
-			FString ProjectName = FString(FApp::GetProjectName()).Append(TEXT(".uproject"));
-			ProjectFilePath =  FPaths::Combine(ProjectPath, ProjectName);
-		}
+		FString ProjectFilePath = UFlibPatchParserHelper::GetProjectFilePath();
 		FString EngineBin = UFlibPatchParserHelper::GetUE4CmdBinary();
 
 		result.EngineBin = EngineBin;

@@ -41,13 +41,13 @@ int32 UHotCookerCommandlet::Main(const FString& Params)
 	bool bStatus = FParse::Value(*Params, *FString(COOKER_CONFIG_PARAM_NAME).ToLower(), config_path);
 	if (!bStatus)
 	{
-		UE_LOG(LogHotCookerCommandlet, Error, TEXT("UHotCookerCommandlet error: not -config=xxxx.json params."));
+		UE_LOG(LogHotCookerCommandlet, Error, TEXT("not -config=xxxx.json params."));
 		return -1;
 	}
 
 	if (!FPaths::FileExists(config_path))
 	{
-		UE_LOG(LogHotCookerCommandlet, Error, TEXT("UHotCookerCommandlet error: cofnig file %s not exists."), *config_path);
+		UE_LOG(LogHotCookerCommandlet, Error, TEXT("cofnig file %s not exists."), *config_path);
 		return -1;
 	}
 

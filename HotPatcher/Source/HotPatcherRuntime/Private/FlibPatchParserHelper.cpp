@@ -132,7 +132,16 @@ FString UFlibPatchParserHelper::GetUE4CmdBinary()
 	return TEXT("");
 }
 
-
+FString UFlibPatchParserHelper::GetProjectFilePath()
+{
+	FString ProjectFilePath;
+	{
+		FString ProjectPath = UKismetSystemLibrary::GetProjectDirectory();
+		FString ProjectName = FString(FApp::GetProjectName()).Append(TEXT(".uproject"));
+		ProjectFilePath =  FPaths::Combine(ProjectPath, ProjectName);
+	}
+	return ProjectFilePath;
+}
 
 
 bool UFlibPatchParserHelper::DiffVersionAssets(

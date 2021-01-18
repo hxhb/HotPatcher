@@ -35,6 +35,7 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 	GPatchSettings = ExportPatchSetting.Get();
 	CreateExportFilterListView();
 	mCreatePatchModel = InCreatePatchModel;
+	InitMissionNotificationProxy();
 
 	ChildSlot
 		[
@@ -418,12 +419,18 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 
 FReply SHotPatcherExportPatch::DoExportPatch()
 {
-	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-	PatcherProxy->AddToRoot();
-	PatcherProxy->SetProxySettings(ExportPatchSetting.Get());
-	PatcherProxy->OnShowMsg.AddRaw(this,&SHotPatcherExportPatch::ShowMsg);
-	PatcherProxy->DoExport();
-
+	// UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
+	// PatcherProxy->AddToRoot();
+	// PatcherProxy->SetProxySettings(ExportPatchSetting.Get());
+	// PatcherProxy->OnShowMsg.AddRaw(this,&SHotPatcherExportPatch::ShowMsg);
+	// PatcherProxy->DoExport();
+	FString CurrentConfig;
+	UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
+	FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPacther"),TEXT("PatchConfig.json")));
+	FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
+	FString MissionCommand = FString::Printf(TEXT("%s -run=HotPatcher -config=\"%s\""),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo);
+	UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibPatchParserHelper::GetUE4CmdBinary(),*MissionCommand);
+	RunProcMission(UFlibPatchParserHelper::GetUE4CmdBinary(),MissionCommand);
 	return FReply::Handled();
 }
 

@@ -9,6 +9,7 @@
 #include "ThreadUtils/FProcWorkerThread.hpp"
 
 #include "ICookerItemInterface.h"
+#include "MissionNotificationProxy.h"
 #include "SHotPatcherCookedPlatforms.h"
 #include "SHotPatcherCookMaps.h"
 #include "SHotPatcherCookSetting.h"
@@ -53,13 +54,7 @@ protected:
 
 protected:
 	TArray<FString> GetDefaultCookParams()const;
-
-	static void ReceiveOutputMsg(const FString& InMsg);
-	void SpawnRuningCookNotification();
-	void SpawnCookSuccessedNotification();
-	void SpawnCookFaildNotification();
 	void CancelCookMission();
-
 
 	TArray<ICookerItemInterface*> GetSerializableItems()const
 	{
@@ -74,6 +69,7 @@ protected:
 	FString SerializeAsString()const;
 
 private:
+	UMissionNotificationProxy* MissionNotifyProay;
 	bool InCooking=false;
 	/** The pending progress message */
 	TWeakPtr<SNotificationItem> PendingProgressPtr;

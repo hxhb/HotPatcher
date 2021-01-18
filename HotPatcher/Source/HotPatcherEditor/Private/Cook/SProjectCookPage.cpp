@@ -30,7 +30,16 @@ DEFINE_LOG_CATEGORY(LogCookPage);
 void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCookModel> InCookModel)
 {
 	mCookModel = InCookModel;
-
+	MissionNotifyProay = NewObject<UMissionNotificationProxy>();
+	MissionNotifyProay->AddToRoot();
+	MissionNotifyProay->SetMissionName(TEXT("Cook"));
+	MissionNotifyProay->SetMissionNotifyText(
+		LOCTEXT("CookNotificationInProgress", "Cook in progress"),
+		LOCTEXT("RunningCookNotificationCancelButton", "Cancel"),
+		LOCTEXT("CookSuccessedNotification", "Cook Finished!"),
+		LOCTEXT("CookFaildNotification", "Cook Faild!")
+	);
+	
 	ChildSlot
 	[
 		SNew(SVerticalBox)
@@ -290,93 +299,6 @@ FReply SProjectCookPage::RunCook()const
 	return FReply::Handled();
 }
 
-
-void SProjectCookPage::ReceiveOutputMsg(const FString& InMsg)
-{
-	FString FindItem(TEXT("Display:"));
-	int32 Index = InMsg.Len() - InMsg.Find(FindItem) - FindItem.Len();
-
-	if (InMsg.Contains(TEXT("Error:")))
-	{
-		UE_LOG(LogCookPage, Error, TEXT("%s"), *InMsg);
-	}
-	else if (InMsg.Contains(TEXT("Warning:")))
-	{
-		UE_LOG(LogCookPage, Warning, TEXT("%s"), *InMsg.Right(Index));
-	}
-	else
-	{
-		UE_LOG(LogCookPage, Log, TEXT("%s"), *InMsg);
-	}
-}
-
-
-void SProjectCookPage::SpawnRuningCookNotification()
-{
-	SProjectCookPage* ProjectCookPage=this;
-	AsyncTask(ENamedThreads::GameThread, [ProjectCookPage]()
-	{
-		if (ProjectCookPage->PendingProgressPtr.IsValid())
-		{
-			ProjectCookPage->PendingProgressPtr.Pin()->ExpireAndFadeout();
-		}
-		FNotificationInfo Info(LOCTEXT("CookNotificationInProgress", "Cook in progress"));
-
-		Info.bFireAndForget = false;
-		Info.ButtonDetails.Add(FNotificationButtonInfo(LOCTEXT("RunningCookNotificationCancelButton", "Cancel"), FText(),
-			FSimpleDelegate::CreateLambda([ProjectCookPage]() {ProjectCookPage->CancelCookMission(); }),
-			SNotificationItem::CS_Pending
-		));
-
-		ProjectCookPage->PendingProgressPtr = FSlateNotificationManager::Get().AddNotification(Info);
-
-		ProjectCookPage->PendingProgressPtr.Pin()->SetCompletionState(SNotificationItem::CS_Pending);
-		ProjectCookPage->InCooking = true;
-	});
-
-}
-
-
-void SProjectCookPage::SpawnCookSuccessedNotification()
-{
-	SProjectCookPage* ProjectCookPage = this;
-	AsyncTask(ENamedThreads::GameThread, [ProjectCookPage]() {
-		TSharedPtr<SNotificationItem> NotificationItem = ProjectCookPage->PendingProgressPtr.Pin();
-
-		if (NotificationItem.IsValid())
-		{
-			NotificationItem->SetText(LOCTEXT("CookSuccessedNotification", "Cook Finished!"));
-			NotificationItem->SetCompletionState(SNotificationItem::CS_Success);
-			NotificationItem->ExpireAndFadeout();
-
-			ProjectCookPage->PendingProgressPtr.Reset();
-		}
-
-		ProjectCookPage->InCooking = false;
-		UE_LOG(LogCookPage, Log, TEXT("The Cook Mission is Successfuly."))
-	});
-}
-
-
-void SProjectCookPage::SpawnCookFaildNotification()
-{
-	SProjectCookPage* ProjectCookPage = this;
-	AsyncTask(ENamedThreads::GameThread, [ProjectCookPage]() {
-		TSharedPtr<SNotificationItem> NotificationItem = ProjectCookPage->PendingProgressPtr.Pin();
-
-		if (NotificationItem.IsValid())
-		{
-			NotificationItem->SetText(LOCTEXT("CookFaildNotification", "Cook Faild!"));
-			NotificationItem->SetCompletionState(SNotificationItem::CS_Fail);
-			NotificationItem->ExpireAndFadeout();
-
-			ProjectCookPage->PendingProgressPtr.Reset();
-			ProjectCookPage->InCooking = false;
-		}
-		UE_LOG(LogCookPage, Error, TEXT("The Cook Mission is faild."))
-	});
-}
-
 void SProjectCookPage::CancelCookMission()
 {
 	if (mCookProcWorkingThread.IsValid() && mCookProcWorkingThread->GetThreadStatus() == EThreadStatus::Busy)
@@ -394,10 +316,11 @@ void SProjectCookPage::RunCookProc(const FString& InBinPath, const FString& InCo
 	else
 	{
 		mCookProcWorkingThread = MakeShareable(new FProcWorkerThread(TEXT("CookThread"), InBinPath, InCommand));
-		mCookProcWorkingThread->ProcOutputMsgDelegate.AddStatic(&SProjectCookPage::ReceiveOutputMsg);
-		mCookProcWorkingThread->ProcBeginDelegate.AddRaw(const_cast<SProjectCookPage*>(this), &SProjectCookPage::SpawnRuningCookNotification);
-		mCookProcWorkingThread->ProcSuccessedDelegate.AddRaw(const_cast<SProjectCookPage*>(this), &SProjectCookPage::SpawnCookSuccessedNotification);
-		mCookProcWorkingThread->ProcFaildDelegate.AddRaw(const_cast<SProjectCookPage*>(this), &SProjectCookPage::SpawnCookFaildNotification);
+		mCookProcWorkingThread->ProcOutputMsgDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::ReceiveOutputMsg);
+		mCookProcWorkingThread->ProcBeginDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnRuningMissionNotification);
+		mCookProcWorkingThread->ProcSuccessedDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnMissionSuccessedNotification);
+		mCookProcWorkingThread->ProcFaildDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnMissionFaildNotification);
+		MissionNotifyProay->MissionCanceled.AddRaw(const_cast<SProjectCookPage*>(this),&SProjectCookPage::CancelCookMission);
 		mCookProcWorkingThread->Execute();
 	}
 }

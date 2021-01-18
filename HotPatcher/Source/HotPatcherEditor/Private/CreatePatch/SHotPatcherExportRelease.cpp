@@ -28,7 +28,8 @@ void SHotPatcherExportRelease::Construct(const FArguments& InArgs, TSharedPtr<FH
 	CreateExportFilterListView();
 
 	mCreatePatchModel = InCreatePatchModel;
-
+	InitMissionNotificationProxy();
+	
 	ChildSlot
 		[
 
@@ -166,10 +167,18 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 
 FReply SHotPatcherExportRelease::DoExportRelease()
 {
-	UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
-	ReleaseProxy->AddToRoot();
-	ReleaseProxy->SetProxySettings(ExportReleaseSettings.Get());
-	ReleaseProxy->DoExport();
+	// UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
+	// ReleaseProxy->AddToRoot();
+	// ReleaseProxy->SetProxySettings(ExportReleaseSettings.Get());
+	// ReleaseProxy->DoExport();
+
+	FString CurrentConfig;
+	UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
+	FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPacther"),TEXT("ReleaseConfig.json")));
+	FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
+	FString MissionCommand = FString::Printf(TEXT("%s -run=HotRelease -config=\"%s\""),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo);
+	UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibPatchParserHelper::GetUE4CmdBinary(),*MissionCommand);
+	RunProcMission(UFlibPatchParserHelper::GetUE4CmdBinary(),MissionCommand);
 	
 	return FReply::Handled();
 }

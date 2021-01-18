@@ -35,13 +35,13 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 	bool bStatus = FParse::Value(*Params, *FString(PATCHER_CONFIG_PARAM_NAME).ToLower(), config_path);
 	if (!bStatus)
 	{
-		UE_LOG(LogHotPatcherCommandlet, Error, TEXT("UHotPatcherCommandlet error: not -config=xxxx.json params."));
+		UE_LOG(LogHotPatcherCommandlet, Error, TEXT("not -config=xxxx.json params."));
 		return -1;
 	}
 
 	if (!FPaths::FileExists(config_path))
 	{
-		UE_LOG(LogHotPatcherCommandlet, Error, TEXT("UHotPatcherCommandlet error: cofnig file %s not exists."), *config_path);
+		UE_LOG(LogHotPatcherCommandlet, Error, TEXT("cofnig file %s not exists."), *config_path);
 		return -1;
 	}
 
@@ -49,10 +49,13 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 	bool bExportStatus = false;
 	if (FFileHelper::LoadFileToString(JsonContent, *config_path))
 	{
-		
-		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-		AssetRegistryModule.Get().SearchAllAssets(true);
 
+		if(IsRunningCommandlet())
+		{
+			FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+			AssetRegistryModule.Get().SearchAllAssets(true);
+		}
+		
 		TSharedPtr<FExportPatchSettings> ExportPatchSetting = MakeShareable(new FExportPatchSettings);
 		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportPatchSetting);
 		

@@ -44,7 +44,7 @@ public:
 	virtual void ExportConfig()const;
 	virtual void ResetConfig();
 	virtual void DoGenerate();
-
+	virtual FString GetMissionName() override{return TEXT("Patch");}
 protected:
 	void CreateExportFilterListView();
 	bool CanExportPatch()const;

@@ -54,7 +54,9 @@ public:
 		static FString GetUnrealPakBinary();
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static FString GetUE4CmdBinary();
-
+	UFUNCTION(BlueprintCallable)
+	static FString GetProjectFilePath();
+	
 	static FHotPatcherVersion ExportReleaseVersionInfo(
         const FString& InVersionId,
         const FString& InBaseVersion,

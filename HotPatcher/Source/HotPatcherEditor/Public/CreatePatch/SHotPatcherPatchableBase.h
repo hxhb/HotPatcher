@@ -12,7 +12,9 @@
 #include "Interfaces/ITargetPlatform.h"
 #include "Templates/SharedPointer.h"
 #include "IDetailsView.h"
+#include "MissionNotificationProxy.h"
 #include "PropertyEditorModule.h"
+#include "ThreadUtils/FProcWorkerThread.hpp"
 #include "Widgets/Text/SMultiLineEditableText.h"
 /**
  * Implements the cooked platforms panel.
@@ -39,14 +41,17 @@ public:
 	FORCEINLINE virtual void ExportConfig()const override {};
 	FORCEINLINE virtual void ResetConfig() override {};
 	FORCEINLINE virtual void DoGenerate() override {};
-
+	virtual void RunProcMission(const FString& Bin,const FString& Command);
+	virtual void CancelProcMission();
 	virtual FHotPatcherSettingBase* GetConfigSettings(){return nullptr;};
-	
+	virtual FString GetMissionName(){return TEXT("");};
+	virtual void InitMissionNotificationProxy() override;
 	TArray<FString> OpenFileDialog()const;
 	TArray<FString> SaveFileDialog()const;
 
 protected:
-
+	mutable TSharedPtr<FProcWorkerThread> mProcWorkingThread;
+	UMissionNotificationProxy* MissionNotifyProay;
 	TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
 
 };

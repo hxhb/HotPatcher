@@ -66,19 +66,22 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 	bool bStatus = FParse::Value(*Params, *FString(PATCHER_CONFIG_PARAM_NAME).ToLower(), config_path);
 	if (!bStatus)
 	{
-		UE_LOG(LogHotReleaseCommandlet, Warning, TEXT("UHotReleaseCommandlet: not -config=xxxx.json params."));
+		UE_LOG(LogHotReleaseCommandlet, Warning, TEXT("not -config=xxxx.json params."));
 		// return -1;
 	}
 
 	if (bStatus && !FPaths::FileExists(config_path))
 	{
-		UE_LOG(LogHotReleaseCommandlet, Error, TEXT("UHotReleaseCommandlet error: cofnig file %s not exists."), *config_path);
+		UE_LOG(LogHotReleaseCommandlet, Error, TEXT("cofnig file %s not exists."), *config_path);
 		return -1;
 	}
-	// load asset registry
-	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-	AssetRegistryModule.Get().SearchAllAssets(true);
-	
+	if(IsRunningCommandlet())
+	{
+		// load asset registry
+		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+		AssetRegistryModule.Get().SearchAllAssets(true);
+	}
+
 	TSharedPtr<FExportReleaseSettings> ExportReleaseSetting = MakeShareable(new FExportReleaseSettings);
 	
 	FString JsonContent;

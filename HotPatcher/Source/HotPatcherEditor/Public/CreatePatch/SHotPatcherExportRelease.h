@@ -40,6 +40,7 @@ public:
 	virtual void ExportConfig()const;
 	virtual void ResetConfig();
 	virtual void DoGenerate();
+	virtual FString GetMissionName() override{return TEXT("Release");}
 	virtual FExportReleaseSettings* GetConfigSettings()override{return ExportReleaseSettings.Get();};
 protected:
 	void CreateExportFilterListView();
