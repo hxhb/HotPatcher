@@ -15,6 +15,10 @@
 #include "Misc/FileHelper.h"
 #include "CoreMinimal.h"
 
+
+
+#include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
 #include "Engine/EngineTypes.h"
@@ -33,11 +37,7 @@ struct HOTPATCHERRUNTIME_API FPlatformPakListFiles
 	UPROPERTY(EditAnywhere)
 	ETargetPlatform TargetPlatform = ETargetPlatform::None;
 	UPROPERTY(EditAnywhere)
-	FFilePath PakList;
-	bool operator==(const FPlatformPakListFiles& R)const
-	{
-		return TargetPlatform == R.TargetPlatform && PakList.FilePath.Equals(R.PakList.FilePath);
-	}
+	TArray<FFilePath> PakLists;
 };
 
 USTRUCT(BlueprintType)
@@ -65,8 +65,8 @@ public:
 	virtual void ClearImportedPakList();
 	void OnFinishedChangingProperties(const FPropertyChangedEvent& PropertyChangedEvent);
 	virtual void PostEditChangeProperty(const FPropertyChangedEvent& PropertyChangedEvent);
-	virtual bool ParseByPaklist(FExportReleaseSettings* InReleaseSetting,const FString& InPaklistFile);
-	virtual FPlatformPakAssets PlatformPakListParser(const ETargetPlatform Platform,const FString& InPaklistFile);
+	virtual bool ParseByPaklist(FExportReleaseSettings* InReleaseSetting,const TArray<FString>& InPaklistFile);
+	virtual FPlatformPakAssets PlatformPakListParser(const ETargetPlatform Platform, const TArray<FString>& );
 	static FExportReleaseSettings* Get();
 	FString GetVersionId()const;
 	TArray<FString> GetAssetIncludeFiltersPaths()const;
@@ -95,7 +95,6 @@ public:
 	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
 
 	FORCEINLINE bool IsByPakList()const { return ByPakList; }
-	FORCEINLINE FFilePath GetPakListFile()const { return PakListFile; }
 	FORCEINLINE TArray<FPlatformPakListFiles> GetPlatformsPakListFiles()const {return PlatformsPakListFiles;}
 	
 	// override
@@ -120,8 +119,7 @@ public:
 		FString VersionId;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version")
 		bool ByPakList = false;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version", meta = (RelativeToGameContentDir, EditCondition = "ByPakList"))
-		FFilePath PakListFile;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version", meta = (RelativeToGameContentDir, EditCondition = "ByPakList"))
 		TArray<FPlatformPakListFiles> PlatformsPakListFiles;
 	

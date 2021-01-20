@@ -40,18 +40,22 @@ TArray<FPlatformPakListFiles> ParserPlatformPakList(const FString& Commandline)
 		{
 			TArray<FString> PlatformPakListToken;
 			PlatformPakList.ParseIntoArray(PlatformPakListToken,TEXT("+"));
-			if(PlatformPakListToken.Num() == 2)
+			if(PlatformPakListToken.Num() > 2)
 			{
 				FString PlatformName = PlatformPakListToken[0];
-				FString PakListPath = PlatformPakListToken[1];
-				if(FPaths::FileExists(PakListPath))
+				FPlatformPakListFiles PlatformPakListItem;
+				UFlibPatchParserHelper::GetEnumValueByName(PlatformName,PlatformPakListItem.TargetPlatform);
+				for(int32 index=1;index<PlatformPakListToken.Num();++index)
 				{
-					FPlatformPakListFiles PlatformPakListItem;
-					UFlibPatchParserHelper::GetEnumValueByName(PlatformName,PlatformPakListItem.TargetPlatform);
-					PlatformPakListItem.PakList.FilePath = PakListPath;
-					
-					result.Add(PlatformPakListItem);
+					FString PakListPath = PlatformPakListToken[index];
+					if(FPaths::FileExists(PakListPath))
+					{
+						FFilePath PakFilePath;
+						PakFilePath.FilePath = PakListPath;
+						PlatformPakListItem.PakLists.Add(PakFilePath);
+					}
 				}
+				result.Add(PlatformPakListItem);
 			}
 		}
 	}

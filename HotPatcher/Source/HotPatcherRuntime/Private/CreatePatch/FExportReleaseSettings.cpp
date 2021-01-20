@@ -22,7 +22,12 @@
 		TArray<FPlatformPakAssets> PlatformAssets;
 		for(const auto& PlatformPakList:GetPlatformsPakListFiles())
 		{
-			PlatformAssets.Add(PlatformPakListParser(PlatformPakList.TargetPlatform,PlatformPakList.PakList.FilePath));
+			TArray<FString> PakFiles;
+			for(const auto& PakFile:PlatformPakList.PakLists)
+			{
+				PakFiles.AddUnique(PakFile.FilePath);
+			}
+			PlatformAssets.Add(PlatformPakListParser(PlatformPakList.TargetPlatform,PakFiles));
 		}
 		
 		PlatformAssets.Sort([](const FPlatformPakAssets& l,const FPlatformPakAssets& r)->bool{return l.Assets.Num()<r.Assets.Num();});
@@ -123,16 +128,10 @@
 	
 	void FExportReleaseSettings::PostEditChangeProperty(const FPropertyChangedEvent& PropertyChangedEvent)
 	{
-		if (PropertyChangedEvent.Property && PropertyChangedEvent.MemberProperty->GetName() == TEXT("PakListFile"))
-		{
-			FString PakListAbsPath = FPaths::ConvertRelativePathToFull(PakListFile.FilePath);
-			ParseByPaklist(this, PakListAbsPath);
-			
-		}
-		// Super::PostEditChangeProperty(PropertyChangedEvent);
+		
 	}
 
-	bool FExportReleaseSettings::ParseByPaklist(FExportReleaseSettings* InReleaseSetting,const FString& InPaklistFile)
+	bool FExportReleaseSettings::ParseByPaklist(FExportReleaseSettings* InReleaseSetting,const TArray<FString>& InPaklistFile)
 	{
 		FPlatformPakAssets PlatformAssets = PlatformPakListParser(ETargetPlatform::AllPlatforms,InPaklistFile);
 		for(const auto& Asset:PlatformAssets.Assets)
@@ -146,154 +145,158 @@
 		return true;
 	}
 	
-	FPlatformPakAssets FExportReleaseSettings::PlatformPakListParser(const ETargetPlatform Platform,const FString& InPaklistFile)
+	FPlatformPakAssets FExportReleaseSettings::PlatformPakListParser(const ETargetPlatform Platform, const TArray<FString>& InPaklistFiles)
 	{
 		FPlatformPakAssets result;
 		result.Platform = Platform;
-		if (FPaths::FileExists(InPaklistFile))
+		for(auto& File:InPaklistFiles)
 		{
-			TArray<FString> PakListContent;
-			if (FFileHelper::LoadFileToStringArray(PakListContent, *InPaklistFile))
+			if (FPaths::FileExists(File))
 			{
-				auto RemoveDoubleQuoteLambda = [](const FString& InStr)->FString
+				TArray<FString> PakListContent;
+				if (FFileHelper::LoadFileToStringArray(PakListContent, *File))
 				{
-					FString resultStr = InStr;
-					if(resultStr.StartsWith(TEXT("\"")))
+					auto RemoveDoubleQuoteLambda = [](const FString& InStr)->FString
 					{
-						resultStr.RemoveAt(0);
-					}
-					if(resultStr.EndsWith(TEXT("\"")))
+						FString resultStr = InStr;
+						if(resultStr.StartsWith(TEXT("\"")))
+						{
+							resultStr.RemoveAt(0);
+						}
+						if(resultStr.EndsWith(TEXT("\"")))
+						{
+							resultStr.RemoveAt(resultStr.Len() - 1);
+						}
+						return resultStr;
+					};
+					
+					auto ParseUassetLambda = [&RemoveDoubleQuoteLambda](const FString& InAsset)->FPatcherSpecifyAsset
 					{
-						resultStr.RemoveAt(resultStr.Len() - 1);
-					}
-					return resultStr;
-				};
-				
-				auto ParseUassetLambda = [&RemoveDoubleQuoteLambda](const FString& InAsset)->FPatcherSpecifyAsset
-				{
-					FPatcherSpecifyAsset result;
-					result.bAnalysisAssetDependencies = false;
-		
-					FString LongPackagePath;
+						FPatcherSpecifyAsset result;
+						result.bAnalysisAssetDependencies = false;
+			
+						FString LongPackagePath;
+						{
+							TArray<FString> AssetPakCmd = UKismetStringLibrary::ParseIntoArray(InAsset,TEXT("\" "));
+
+							FString AssetAbsPath = AssetPakCmd[0];
+							FString AssetMountPath = AssetPakCmd[1];
+							AssetAbsPath = RemoveDoubleQuoteLambda(AssetAbsPath);
+							AssetMountPath = RemoveDoubleQuoteLambda(AssetMountPath);
+							
+							FString LongPackageName = AssetMountPath;
+
+							LongPackageName.RemoveFromStart(TEXT("../../.."));
+							LongPackageName.RemoveFromEnd(TEXT(".uasset"));
+							
+							LongPackageName.Replace(TEXT("/Content"), TEXT(""));
+							
+							FString ModuleName = LongPackageName;
+							{
+								ModuleName.RemoveAt(0);
+								int32 Index;
+								if (ModuleName.FindChar('/', Index))
+								{
+									ModuleName = ModuleName.Left(Index);
+								}
+							}
+
+							if (ModuleName.Equals(FApp::GetProjectName()))
+							{
+								LongPackageName.RemoveFromStart(TEXT("/") + ModuleName);
+								LongPackageName = TEXT("/Game") + LongPackageName;
+							}
+
+							if (LongPackageName.Contains(TEXT("/Plugins/")))
+							{
+								TMap<FString, FString> ReceiveModuleMap;
+								UFLibAssetManageHelperEx::GetAllEnabledModuleName(ReceiveModuleMap);
+								TArray<FString> ModuleKeys;
+								ReceiveModuleMap.GetKeys(ModuleKeys);
+
+								TArray<FString> IgnoreModules = { TEXT("Game"),TEXT("Engine") };
+
+								for (const auto& IgnoreModule : IgnoreModules)
+								{
+									ModuleKeys.Remove(IgnoreModule);
+								}
+
+								for (const auto& Module : ModuleKeys)
+								{
+									FString FindStr = TEXT("/") + Module + TEXT("/");
+									if (LongPackageName.Contains(FindStr))
+									{
+										int32 PluginModuleIndex = LongPackageName.Find(FindStr,ESearchCase::CaseSensitive,ESearchDir::FromEnd);
+
+										LongPackageName = LongPackageName.Right(LongPackageName.Len()- PluginModuleIndex-FindStr.Len());
+										LongPackageName = TEXT("/") + Module + TEXT("/") + LongPackageName;
+										break;
+									}
+								}
+							}
+
+							int32 ContentPoint = LongPackageName.Find(TEXT("/Content"));
+							LongPackageName = FPaths::Combine(LongPackageName.Left(ContentPoint), LongPackageName.Right(LongPackageName.Len() - ContentPoint - 8));
+							UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(LongPackageName, LongPackagePath);
+						}
+
+						// UE_LOG(LogHotPatcher, Log, TEXT("UEAsset: Str: %s LongPackagePath %s"),*InAsset,*LongPackagePath);
+						result.Asset = LongPackagePath;
+						return result;
+					};
+					auto ParseNoAssetFileLambda = [&RemoveDoubleQuoteLambda](const FString& InAsset)->FExternFileInfo
 					{
+						FExternFileInfo result;
+						
 						TArray<FString> AssetPakCmd = UKismetStringLibrary::ParseIntoArray(InAsset,TEXT("\" "));
 
 						FString AssetAbsPath = AssetPakCmd[0];
 						FString AssetMountPath = AssetPakCmd[1];
-						AssetAbsPath = RemoveDoubleQuoteLambda(AssetAbsPath);
-						AssetMountPath = RemoveDoubleQuoteLambda(AssetMountPath);
-						
-						FString LongPackageName = AssetMountPath;
 
-						LongPackageName.RemoveFromStart(TEXT("../../.."));
-						LongPackageName.RemoveFromEnd(TEXT(".uasset"));
-						
-						LongPackageName.Replace(TEXT("/Content"), TEXT(""));
-						
-						FString ModuleName = LongPackageName;
+						result.FilePath.FilePath = RemoveDoubleQuoteLambda(AssetAbsPath);
+						result.MountPath = RemoveDoubleQuoteLambda(AssetMountPath);
+
+						result.GenerateFileHash();
+						// UE_LOG(LogHotPatcher, Log, TEXT("NoAsset: left:%s,Right:%s"), *result.FilePath.FilePath, *result.MountPath);
+						return result;
+					};
+					TArray<FString> UAssetFormats = { TEXT(".uasset"),TEXT(".ubulk"),TEXT(".uexp"),TEXT(".umap"),TEXT(".ufont") };
+					auto IsUAssetLambda = [&UAssetFormats](const FString& InStr)->bool
+					{
+						bool bResult = false;
+						for (const auto& Format:UAssetFormats)
 						{
-							ModuleName.RemoveAt(0);
-							int32 Index;
-							if (ModuleName.FindChar('/', Index))
+							if (InStr.Contains(Format))
 							{
-								ModuleName = ModuleName.Left(Index);
+								bResult = true;
+								break;
 							}
 						}
+						return bResult;
+					};
 
-						if (ModuleName.Equals(FApp::GetProjectName()))
+					for (const auto& FileItem : PakListContent)
+					{
+						if (IsUAssetLambda(FileItem))
 						{
-							LongPackageName.RemoveFromStart(TEXT("/") + ModuleName);
-							LongPackageName = TEXT("/Game") + LongPackageName;
-						}
-
-						if (LongPackageName.Contains(TEXT("/Plugins/")))
-						{
-							TMap<FString, FString> ReceiveModuleMap;
-							UFLibAssetManageHelperEx::GetAllEnabledModuleName(ReceiveModuleMap);
-							TArray<FString> ModuleKeys;
-							ReceiveModuleMap.GetKeys(ModuleKeys);
-
-							TArray<FString> IgnoreModules = { TEXT("Game"),TEXT("Engine") };
-
-							for (const auto& IgnoreModule : IgnoreModules)
+							if (FileItem.Contains(TEXT(".uasset")))
 							{
-								ModuleKeys.Remove(IgnoreModule);
+								FPatcherSpecifyAsset Asset = ParseUassetLambda(FileItem);
+								result.Assets.AddUnique(Asset);
 							}
-
-							for (const auto& Module : ModuleKeys)
-							{
-								FString FindStr = TEXT("/") + Module + TEXT("/");
-								if (LongPackageName.Contains(FindStr))
-								{
-									int32 PluginModuleIndex = LongPackageName.Find(FindStr,ESearchCase::CaseSensitive,ESearchDir::FromEnd);
-
-									LongPackageName = LongPackageName.Right(LongPackageName.Len()- PluginModuleIndex-FindStr.Len());
-									LongPackageName = TEXT("/") + Module + TEXT("/") + LongPackageName;
-									break;
-								}
-							}
+							continue;
 						}
-
-						int32 ContentPoint = LongPackageName.Find(TEXT("/Content"));
-						LongPackageName = FPaths::Combine(LongPackageName.Left(ContentPoint), LongPackageName.Right(LongPackageName.Len() - ContentPoint - 8));
-						UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(LongPackageName, LongPackagePath);
-					}
-
-					// UE_LOG(LogHotPatcher, Log, TEXT("UEAsset: Str: %s LongPackagePath %s"),*InAsset,*LongPackagePath);
-					result.Asset = LongPackagePath;
-					return result;
-				};
-				auto ParseNoAssetFileLambda = [&RemoveDoubleQuoteLambda](const FString& InAsset)->FExternFileInfo
-				{
-					FExternFileInfo result;
-					
-					TArray<FString> AssetPakCmd = UKismetStringLibrary::ParseIntoArray(InAsset,TEXT("\" "));
-
-					FString AssetAbsPath = AssetPakCmd[0];
-					FString AssetMountPath = AssetPakCmd[1];
-
-					result.FilePath.FilePath = RemoveDoubleQuoteLambda(AssetAbsPath);
-					result.MountPath = RemoveDoubleQuoteLambda(AssetMountPath);
-
-					result.GenerateFileHash();
-					// UE_LOG(LogHotPatcher, Log, TEXT("NoAsset: left:%s,Right:%s"), *result.FilePath.FilePath, *result.MountPath);
-					return result;
-				};
-				TArray<FString> UAssetFormats = { TEXT(".uasset"),TEXT(".ubulk"),TEXT(".uexp"),TEXT(".umap"),TEXT(".ufont") };
-				auto IsUAssetLambda = [&UAssetFormats](const FString& InStr)->bool
-				{
-					bool bResult = false;
-					for (const auto& Format:UAssetFormats)
-					{
-						if (InStr.Contains(Format))
+						else
 						{
-							bResult = true;
-							break;
-						}
+							FExternFileInfo ExFile = ParseNoAssetFileLambda(FileItem);
+							result.ExternFiles.AddUnique(ExFile);
+						}					
 					}
-					return bResult;
-				};
-
-				for (const auto& FileItem : PakListContent)
-				{
-					if (IsUAssetLambda(FileItem))
-					{
-						if (FileItem.Contains(TEXT(".uasset")))
-						{
-							FPatcherSpecifyAsset Asset = ParseUassetLambda(FileItem);
-							result.Assets.AddUnique(Asset);
-						}
-						continue;
-					}
-					else
-					{
-						FExternFileInfo ExFile = ParseNoAssetFileLambda(FileItem);
-						result.ExternFiles.AddUnique(ExFile);
-					}					
 				}
-			}
 
+			}
 		}
+		
 		return result;
 	}
 	
