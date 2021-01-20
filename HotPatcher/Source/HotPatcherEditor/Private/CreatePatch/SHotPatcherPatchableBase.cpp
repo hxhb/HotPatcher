@@ -31,7 +31,7 @@ void SHotPatcherPatchableBase::Construct(const FArguments& InArgs, TSharedPtr<FH
 
 void SHotPatcherPatchableBase::ImportProjectConfig()
 {
-		FString DefaultEditorIni = FPaths::ProjectConfigDir()/TEXT("DefaultEditor.ini");
+	FString DefaultEditorIni = FPaths::ProjectConfigDir()/TEXT("DefaultEditor.ini");
 	FString DefaultGameIni = FPaths::ProjectConfigDir()/TEXT("DefaultGame.ini");
 	auto GameConingLoader = [](const FString& Section,const FString& Key,const FString& Ini)->TArray<FString>
 	{
@@ -47,6 +47,7 @@ void SHotPatcherPatchableBase::ImportProjectConfig()
 	{
 		AddToPatchMaps.AddUnique(CookMap);
 	}
+	GetConfigSettings()->GetIncludeSpecifyAssets().Empty();
 	for(const auto& Map: AddToPatchMaps)
 	{
 		FPatcherSpecifyAsset Asset;
@@ -73,7 +74,7 @@ void SHotPatcherPatchableBase::ImportProjectConfig()
 		return result;
 	};
 	TArray<FString> AlwayCookDirs = GameConingLoader(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("+DirectoriesToAlwaysCook"),DefaultGameIni);
-
+	GetConfigSettings()->GetAssetIncludeFilters().Empty();
 	for(const auto& AlwayCookDir:CleanPath(AlwayCookDirs))
 	{
 		FDirectoryPath path;
@@ -82,6 +83,7 @@ void SHotPatcherPatchableBase::ImportProjectConfig()
 	}
 	
 	TArray<FString> NeverCookDirs = GameConingLoader(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("+DirectoriesToNeverCook"),DefaultGameIni);
+	GetConfigSettings()->GetAssetIgnoreFilters().Empty();
 	for(const auto& NeverCookDir:CleanPath(NeverCookDirs))
 	{
 		FDirectoryPath path;
@@ -96,13 +98,14 @@ void SHotPatcherPatchableBase::ImportProjectConfig()
 	for(const auto& UFSDir:CleanPath(NotUFSDirsToPackage))
 	{
 		FExternDirectoryInfo DirInfo;
-		DirInfo.DirectoryPath.Path = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectContentDir(),UFSDir));
+		// DirInfo.DirectoryPath.Path = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectContentDir(),UFSDir));
+		DirInfo.DirectoryPath.Path = FPaths::Combine(TEXT("[PROJECT_CONTENT_DIR]"),UFSDir);
 		DirInfo.MountPoint = FString::Printf(TEXT("../../../%s/Content/%s"),FApp::GetProjectName(),*UFSDir);
 		AddToAllPlatform.AddExternDirectoryToPak.Add(DirInfo);
-		
 	}
 	if(AddToAllPlatform.AddExternDirectoryToPak.Num() || AddToAllPlatform.AddExternFileToPak.Num())
 	{
+		GetConfigSettings()->GetAddExternAssetsToPlatform().Empty();
 		GetConfigSettings()->GetAddExternAssetsToPlatform().Add(AddToAllPlatform);
 	}
 }

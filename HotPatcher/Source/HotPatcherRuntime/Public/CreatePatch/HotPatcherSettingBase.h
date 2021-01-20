@@ -33,5 +33,6 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase
         static TArray<FPlatformExternAssets> PlatformNoAssets;
         return PlatformNoAssets;
     };
+    virtual void Init(){};
     virtual ~FHotPatcherSettingBase(){}
 };

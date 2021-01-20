@@ -354,7 +354,8 @@ FPlatformExternFiles UFlibPatchParserHelper::GetAllExFilesByPlatform(
 
 	for (auto& ExFile : InPlatformConf.AddExternFileToPak)
 	{
-		if (!ExFile.FilePath.FilePath.IsEmpty() && FPaths::FileExists(ExFile.FilePath.FilePath) && !result.ExternFiles.Contains(ExFile))
+		// ignore FPaths::FileExists(ExFile.FilePath.FilePath) 
+		if (!ExFile.FilePath.FilePath.IsEmpty() && !result.ExternFiles.Contains(ExFile))
 		{
 			result.ExternFiles.Add(ExFile);
 		}
@@ -696,6 +697,7 @@ TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const
 		if(DirectoryItem.DirectoryPath.Path.IsEmpty())
 			continue;
 		FString DirAbsPath = FPaths::ConvertRelativePathToFull(DirectoryItem.DirectoryPath.Path);
+		
 		FPaths::MakeStandardFilename(DirAbsPath);
 		if (!DirAbsPath.IsEmpty() && FPaths::DirectoryExists(DirAbsPath))
 		{
@@ -1259,6 +1261,18 @@ FPatchVersionDiff UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(const
 		AllSkipContents.Append(PatchSetting.GetForceSkipAssetsStr());
 		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipContents);
 	}
+	// clean deleted asset info in patch
+	if(PatchSetting.IsIgnoreDeleatedAssetsInfo())
+	{
+		UE_LOG(LogHotPatcher,Display,TEXT("ignore deleted assets info in patch..."));
+		VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap.Empty();
+		VersionDiffInfo.PlatformExternDiffInfo.Find(ETargetPlatform::AllPlatforms)->DeleteExternalFiles.Empty();
+		for(const auto& Platform:PatchSetting.GetPakTargetPlatforms())
+		{
+			VersionDiffInfo.PlatformExternDiffInfo.Find(Platform)->DeleteExternalFiles.Empty();
+		}
+	}
+	
 	return VersionDiffInfo;
 }
 
@@ -1819,3 +1833,53 @@ void UFlibPatchParserHelper::AnalysisWidgetTree(FPatchVersionDiff& PakDiff,int32
 	}
 }
 
+#define ENGINEDIR_MARK TEXT("[ENGINEDIR]/")
+#define ENGINE_CONTENT_DIR_MARK TEXT("[ENGINE_CONTENT_DIR]/")
+#define PROJECTDIR_MARK TEXT("[PROJECTDIR]/")
+#define PROJECT_CONTENT_DIR_MARK TEXT("[PROJECT_CONTENT_DIR]/")
+#define PROJECT_SAVED_DIR_MARK TEXT("[PROJECT_SAVED_DIR]/")
+#define PROJECT_CONFIG_DIR_MARK TEXT("[PROJECT_CONFIG_DIR]/")
+
+void UFlibPatchParserHelper::ReplacePatherSettingProjectDir(TArray<FPlatformExternAssets>& PlatformAssets)
+{
+	TMap<FString,FString> MarkMap;
+	MarkMap.Add(ENGINEDIR_MARK,FPaths::EngineDir());
+	MarkMap.Add(ENGINE_CONTENT_DIR_MARK,FPaths::EngineContentDir());
+	MarkMap.Add(PROJECTDIR_MARK,FPaths::ProjectDir());
+	MarkMap.Add(PROJECT_CONTENT_DIR_MARK,FPaths::ProjectContentDir());
+	MarkMap.Add(PROJECT_SAVED_DIR_MARK,FPaths::ProjectSavedDir());
+	MarkMap.Add(PROJECT_CONFIG_DIR_MARK,FPaths::ProjectConfigDir());
+
+	auto ReplaceProjectDir = [&MarkMap](const FString& OriginDir)->FString
+	{
+		TArray<FString> MarkKeys;
+		MarkMap.GetKeys(MarkKeys);
+		
+		FString result = OriginDir;
+		for(const auto& Key:MarkKeys)
+		{
+			if(OriginDir.StartsWith(Key))
+			{
+				result = OriginDir;
+				result.RemoveFromStart(Key,ESearchCase::IgnoreCase);
+				result = FPaths::Combine(MarkMap[Key],result);
+				break;
+			}
+		}
+		
+		result = FPaths::ConvertRelativePathToFull(result);
+		FPaths::MakeStandardFilename(result);
+		return result;
+	};
+	for(auto& ExPlatform:PlatformAssets)
+	{
+		for(auto& ExFile:ExPlatform.AddExternFileToPak)
+		{
+			ExFile.FilePath.FilePath = ReplaceProjectDir(ExFile.FilePath.FilePath);
+		}
+		for(auto& ExDir:ExPlatform.AddExternDirectoryToPak)
+		{
+			ExDir.DirectoryPath.Path = ReplaceProjectDir(ExDir.DirectoryPath.Path);
+		}
+	}
+}

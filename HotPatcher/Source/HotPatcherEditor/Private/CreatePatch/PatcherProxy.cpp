@@ -309,6 +309,7 @@ bool UPatcherProxy::CanExportPatch()const
 
 bool UPatcherProxy::DoExport()
 {
+	GetSettingObject()->Init();
 	FHotPatcherVersion BaseVersion;
 
 	if (GetSettingObject()->IsByBaseVersion() && !GetSettingObject()->GetBaseVersionInfo(BaseVersion))

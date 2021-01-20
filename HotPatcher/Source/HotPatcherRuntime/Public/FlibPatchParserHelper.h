@@ -397,4 +397,7 @@ public:
 	 * 0x2 Modyfy
 	 */
 	static void AnalysisWidgetTree(FPatchVersionDiff& PakDiff,int32 flags = 0x1|0x2);
+
+	// [PORJECTDIR] to real path
+	static void ReplacePatherSettingProjectDir(TArray<FPlatformExternAssets>& PlatformAssets);
 };

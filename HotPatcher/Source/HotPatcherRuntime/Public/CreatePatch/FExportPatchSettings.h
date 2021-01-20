@@ -34,7 +34,8 @@ struct HOTPATCHERRUNTIME_API FExportPatchSettings:public FHotPatcherSettingBase
 public:
 
 	FExportPatchSettings();
-
+	virtual void Init() override;
+	
 	FORCEINLINE static FExportPatchSettings* Get()
 	{
 		static FExportPatchSettings StaticIns;
@@ -42,26 +43,7 @@ public:
 		return &StaticIns;
 	}
 
-	FORCEINLINE TArray<FExternFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const
-	{
-		TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
-
-		for (auto& ExFile : GetAddExternFiles())
-		{
-			if (!AllExternFiles.Contains(ExFile))
-			{
-				AllExternFiles.Add(ExFile);
-			}
-		}
-		if (InGeneratedHash)
-		{
-			for (auto& ExFile : AllExternFiles)
-			{
-				ExFile.GenerateFileHash();
-			}
-		}
-		return AllExternFiles;
-	}
+	TArray<FExternFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const;
 
 	// override
 	FORCEINLINE virtual TArray<FDirectoryPath>& GetAssetIncludeFilters() override{ return AssetIncludeFilters; }
@@ -83,9 +65,6 @@ public:
 	bool MakeAllExternAssetAsPakCommands(const FString& InProjectDir, const FString& InPlatform, const TArray<FString>& PakOptions, TArray<FString>& OutPakCommands)const;
 
 	FString GetSaveAbsPath()const;
-	bool SerializePatchConfigToJsonObject(TSharedPtr<FJsonObject>& OutJsonObject)const;
-	bool SerializePatchConfigToString(FString& OutSerializedStr)const;
-	void DeserializePatchConfig(const FString& InContent);
 
 	FORCEINLINE FString GetVersionId()const { return VersionId; }
 	FORCEINLINE FString GetBaseVersion()const { return BaseVersion.FilePath; }
@@ -102,27 +81,9 @@ public:
 	FORCEINLINE bool IsSavePatchConfig()const { return bSavePatchConfig; }
 	FORCEINLINE bool IsForceSkipContent()const{return bForceSkipContent;}
 	FORCEINLINE TArray<FDirectoryPath> GetForceSkipContentRules()const {return ForceSkipContentRules;}
-	FORCEINLINE TArray<FString> GetForceSkipContentStrRules()const
-	{
-		TArray<FString> Path;
-		for(const auto& DirPath:GetForceSkipContentRules())
-		{
-			Path.AddUnique(DirPath.Path);
-		}
-		return Path;
-	}
-
 	FORCEINLINE TArray<FSoftObjectPath> GetForceSkipAssets()const {return ForceSkipAssets;}
-
-	FORCEINLINE TArray<FString> GetForceSkipAssetsStr()const
-	{
-		TArray<FString> result;
-		for(const auto &Asset:GetForceSkipAssets())
-		{
-			result.Add(Asset.GetLongPackageName());
-		}
-		return result;
-	}
+	TArray<FString> GetForceSkipContentStrRules()const;
+	TArray<FString> GetForceSkipAssetsStr()const;
 	
 	FORCEINLINE bool IsIncludeAssetRegistry()const { return bIncludeAssetRegistry; }
 	FORCEINLINE bool IsIncludeGlobalShaderCache()const { return bIncludeGlobalShaderCache; }
@@ -155,78 +116,14 @@ public:
 	FORCEINLINE bool IsCustomPakNameRegular()const {return bCustomPakNameRegular;}
 	FORCEINLINE FString GetPakNameRegular()const { return PakNameRegular;}
 	FORCEINLINE bool IsCookPatchAssets()const {return bCookPatchAssets;}
+	FORCEINLINE bool IsIgnoreDeleatedAssetsInfo()const {return bIgnoreDeleatedAssetsInfo;}
 	FORCEINLINE bool IsSaveDeletedAssetsToNewReleaseJson()const {return bSaveDeletedAssetsToNewReleaseJson;}
-	FORCEINLINE TArray<FString> GetAssetIncludeFiltersPaths()const
-	{
-		TArray<FString> Result;
-		for (const auto& Filter : AssetIncludeFilters)
-		{
-			if (!Filter.Path.IsEmpty())
-			{
-				Result.AddUnique(Filter.Path);
-			}
-		}
-		return Result;
-	}
 	
-	FORCEINLINE TArray<FExternFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false)
-	{
-		TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectoryByPlatform(InTargetPlatform));
-	
-		for (auto& ExFile : GetAddExternFilesByPlatform(InTargetPlatform))
-		{
-			if (!AllExternFiles.Contains(ExFile))
-			{
-				AllExternFiles.Add(ExFile);
-			}
-		}
-		if (InGeneratedHash)
-		{
-			for (auto& ExFile : AllExternFiles)
-			{
-				ExFile.GenerateFileHash();
-			}
-		}
-		return AllExternFiles;
-	}
-	
-	FORCEINLINE TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false)
-	{
-		TMap<ETargetPlatform,FPlatformExternFiles> result;
-	
-		for(const auto& Platform:GetAddExternAssetsToPlatform())
-		{
-			FPlatformExternFiles PlatformIns{Platform.TargetPlatform,GetAllExternFilesByPlatform(Platform.TargetPlatform,InGeneratedHash)};
-			result.Add(Platform.TargetPlatform,PlatformIns);
-		}
-		return result;
-	}
-	
-	FORCEINLINE TArray<FExternFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)
-	{
-		for(const auto& Platform:GetAddExternAssetsToPlatform())
-		{
-			if (Platform.TargetPlatform == InTargetPlatform)
-			{
-				return Platform.AddExternFileToPak;
-			}
-		}
-
-		return TArray<FExternFileInfo>{};
-	}
-	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform)
-	{
-		for(const auto& Platform:GetAddExternAssetsToPlatform())
-		{
-			if (Platform.TargetPlatform == InTargetPlatform)
-			{
-				return Platform.AddExternDirectoryToPak;
-			}
-		}
-
-		return TArray<FExternDirectoryInfo>{};
-	}
-
+	TArray<FString> GetAssetIncludeFiltersPaths()const;
+	TArray<FExternFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false);
+	TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false);
+	TArray<FExternFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform);
+	TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform);
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
@@ -311,6 +208,9 @@ public:
 	// Can use value: {VERSION} {BASEVERSION} {CHUNKNAME} {PLATFORM} 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options",meta=(EditCondition = "bCustomPakNameRegular"))
 		FString PakNameRegular = TEXT("{VERSION}_{CHUNKNAME}_{PLATFORM}_001_P");
+	// dont display deleted asset info in patcher
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+		bool bIgnoreDeleatedAssetsInfo = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSaveDeletedAssetsToNewReleaseJson = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")

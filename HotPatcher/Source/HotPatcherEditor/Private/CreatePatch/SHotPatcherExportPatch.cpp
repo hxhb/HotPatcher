@@ -254,7 +254,7 @@ FReply SHotPatcherExportPatch::DoDiff()const
 			return FReply::Handled();
 		}
 	}
-
+	ExportPatchSetting->Init();
 	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
 		ExportPatchSetting->GetVersionId(),
 		BaseVersion.VersionId,
@@ -323,7 +323,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 			BaseVersion.PlatformAssets.Empty();
 		}
 	}
-
+	ExportPatchSetting->Init();
 	UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(true);
 	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
 
@@ -479,6 +479,7 @@ bool SHotPatcherExportPatch::CanPreviewPatch() const
 
 FReply SHotPatcherExportPatch::DoPreviewPatch()
 {
+	ExportPatchSetting->Init();
 	FChunkInfo DefaultChunk;
 	FHotPatcherVersion BaseVersion;
 

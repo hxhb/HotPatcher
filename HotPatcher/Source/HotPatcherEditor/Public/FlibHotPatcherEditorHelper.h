@@ -51,4 +51,5 @@ public:
 
 	static ITargetPlatform* GetTargetPlatformByName(const FString& PlatformName);
 	static TArray<ITargetPlatform*> GetTargetPlatformsByNames(const TArray<ETargetPlatform>& PlatformNames);
+
 };

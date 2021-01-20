@@ -16,6 +16,7 @@
 
 bool UReleaseProxy::DoExport()
 {
+	GetSettingObject()->Init();
     bool bRetStatus = false;
 
     float AmountOfWorkProgress = 4.0f;
