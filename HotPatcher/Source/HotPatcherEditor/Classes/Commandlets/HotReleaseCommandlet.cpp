@@ -40,7 +40,7 @@ TArray<FPlatformPakListFiles> ParserPlatformPakList(const FString& Commandline)
 		{
 			TArray<FString> PlatformPakListToken;
 			PlatformPakList.ParseIntoArray(PlatformPakListToken,TEXT("+"));
-			if(PlatformPakListToken.Num() > 2)
+			if(PlatformPakListToken.Num() >= 2)
 			{
 				FString PlatformName = PlatformPakListToken[0];
 				FPlatformPakListFiles PlatformPakListItem;
