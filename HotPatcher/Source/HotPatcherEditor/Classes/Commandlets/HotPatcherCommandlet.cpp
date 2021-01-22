@@ -25,7 +25,29 @@ namespace NSPatch
 	}
 }
 
+#define ADD_PATCH_PLATFORMS TEXT("AddPatchPlatforms")
+TArray<ETargetPlatform> ParserPatchPlatforms(const FString& Commandline)
+{
+	TArray<ETargetPlatform> result;
+	TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Commandline);
+	if(KeyValues.Find(ADD_PATCH_PLATFORMS))
+	{
+		FString AddPakListInfo = *KeyValues.Find(ADD_PATCH_PLATFORMS);
+		TArray<FString> PlatformLists;
+		AddPakListInfo.ParseIntoArray(PlatformLists,TEXT(","));
 
+		for(auto& PlatformName:PlatformLists)
+		{
+			ETargetPlatform Platform = ETargetPlatform::None;
+			UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
+			if(Platform != ETargetPlatform::None)
+			{
+				result.AddUnique(Platform);
+			}
+		}
+	}
+	return result;
+}
 
 int32 UHotPatcherCommandlet::Main(const FString& Params)
 {
@@ -61,7 +83,16 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 		
 		TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
 		UFlibPatchParserHelper::ReplaceProperty(*ExportPatchSetting, KeyValues);
+		TArray<ETargetPlatform> AddPlatforms = ParserPatchPlatforms(Params);
 
+		if(AddPlatforms.Num())
+		{
+			for(auto& Platform:AddPlatforms)
+			{
+				ExportPatchSetting->PakTargetPlatforms.AddUnique(Platform);
+			}
+		}
+		
 		FString FinalConfig;
 		UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportPatchSetting,FinalConfig);
 		UE_LOG(LogHotPatcherCommandlet, Display, TEXT("%s"), *FinalConfig);
