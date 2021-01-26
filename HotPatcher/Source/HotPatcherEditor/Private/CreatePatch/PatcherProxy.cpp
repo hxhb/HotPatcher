@@ -814,6 +814,10 @@ bool UPatcherProxy::DoExport()
 		UE_LOG(LogHotPatcher, Error, TEXT("The Patch not contain any invalie file!"));
 		OnShowMsg.Broadcast(TEXT("The Patch not contain any invalie file!"));
 	}
+	else
+	{
+		OnShowMsg.Broadcast(TEXT(""));
+	}
 	UnrealPakSlowTask->Final();
 	return true;
 }
