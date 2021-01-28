@@ -428,3 +428,90 @@ bool UFlibHotPatcherEditorHelper::CookPackages(TArray<UPackage*>& InPackage, con
 	return true;
 }
 
+
+
+FString UFlibHotPatcherEditorHelper::GetUnrealPakBinary()
+{
+#if PLATFORM_WINDOWS
+	return FPaths::Combine(
+        FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
+        TEXT("Binaries"),
+#if PLATFORM_64BITS	
+        TEXT("Win64"),
+#else
+        TEXT("Win32"),
+#endif
+        TEXT("UnrealPak.exe")
+    );
+#endif
+
+#if PLATFORM_MAC
+	return FPaths::Combine(
+            FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
+            TEXT("Binaries"),
+            TEXT("Mac"),
+            TEXT("UnrealPak")
+    );
+#endif
+
+	return TEXT("");
+}
+
+FString UFlibHotPatcherEditorHelper::GetUE4CmdBinary()
+{
+#if PLATFORM_WINDOWS
+	return FPaths::Combine(
+        FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
+        TEXT("Binaries"),
+#if PLATFORM_64BITS	
+        TEXT("Win64"),
+#else
+        TEXT("Win32"),
+#endif
+#ifdef WITH_HOTPATCHER_DEBUGGAME
+	#if PLATFORM_64BITS
+	        TEXT("UE4Editor-Win64-DebugGame-Cmd.exe")
+	#else
+	        TEXT("UE4Editor-Win32-DebugGame-Cmd.exe")
+	#endif
+#else
+        TEXT("UE4Editor-Cmd.exe")
+#endif
+    );
+#endif
+#if PLATFORM_MAC
+	return FPaths::Combine(
+        FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
+        TEXT("Binaries"),
+        TEXT("Mac"),
+        TEXT("UE4Editor-Cmd")
+    );
+#endif
+	return TEXT("");
+}
+
+
+FProcHandle UFlibHotPatcherEditorHelper::DoUnrealPak(TArray<FString> UnrealPakOptions, bool block)
+{
+	FString UnrealPakBinary = UFlibHotPatcherEditorHelper::GetUnrealPakBinary();
+
+	FString CommandLine;
+	for (const auto& Option : UnrealPakOptions)
+	{
+		CommandLine.Append(FString::Printf(TEXT(" %s"), *Option));
+	}
+
+	// create UnrealPak process
+
+	uint32 *ProcessID = NULL;
+	FProcHandle ProcHandle = FPlatformProcess::CreateProc(*UnrealPakBinary, *CommandLine, true, false, false, ProcessID, 0, NULL, NULL, NULL);
+
+	if (ProcHandle.IsValid())
+	{
+		if (block)
+		{
+			FPlatformProcess::WaitForProc(ProcHandle);
+		}
+	}
+	return ProcHandle;
+}

@@ -131,7 +131,7 @@ bool UPatcherProxy::SavePatchDiffJson(const FHotPatcherVersion& InSaveVersion, c
 
 FProcHandle UPatcherProxy::DoUnrealPak(TArray<FString> UnrealPakOptions, bool block)
 {
-	FString UnrealPakBinary = UFlibPatchParserHelper::GetUnrealPakBinary();
+	FString UnrealPakBinary = UFlibHotPatcherEditorHelper::GetUnrealPakBinary();
 
 	FString CommandLine;
 	for (const auto& Option : UnrealPakOptions)

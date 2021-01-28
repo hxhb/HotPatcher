@@ -72,65 +72,6 @@ FString UFlibPatchParserHelper::GetProjectName()
 	return FApp::GetProjectName();
 }
 
-FString UFlibPatchParserHelper::GetUnrealPakBinary()
-{
-#if PLATFORM_WINDOWS
-	return FPaths::Combine(
-		FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
-		TEXT("Binaries"),
-#if PLATFORM_64BITS	
-		TEXT("Win64"),
-#else
-		TEXT("Win32"),
-#endif
-		TEXT("UnrealPak.exe")
-	);
-#endif
-
-#if PLATFORM_MAC
-    return FPaths::Combine(
-            FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
-            TEXT("Binaries"),
-            TEXT("Mac"),
-            TEXT("UnrealPak")
-    );
-#endif
-
-	return TEXT("");
-}
-
-FString UFlibPatchParserHelper::GetUE4CmdBinary()
-{
-#if PLATFORM_WINDOWS
-	return FPaths::Combine(
-		FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
-		TEXT("Binaries"),
-#if PLATFORM_64BITS	
-		TEXT("Win64"),
-#else
-		TEXT("Win32"),
-#endif
-#if UE_BUILD_DEBUG
-#if PLATFORM_64BITS
-		TEXT("UE4Editor-Win64-Debug-Cmd.exe")
-#else
-		TEXT("UE4Editor-Win32-Debug-Cmd.exe")
-#endif
-#else
-		TEXT("UE4Editor-Cmd.exe")
-#endif
-	);
-#endif
-#if PLATFORM_MAC
-    return FPaths::Combine(
-		FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
-		TEXT("Binaries"),
-		TEXT("Mac"),
-		TEXT("UE4Editor-Cmd")
-	);
-#endif
-	return TEXT("");
-}
 
 FString UFlibPatchParserHelper::GetProjectFilePath()
 {
@@ -1515,30 +1456,6 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<
 	return ResultPakCommands;
 }
 
-FProcHandle UFlibPatchParserHelper::DoUnrealPak(TArray<FString> UnrealPakOptions, bool block)
-{
-	FString UnrealPakBinary = UFlibPatchParserHelper::GetUnrealPakBinary();
-
-	FString CommandLine;
-	for (const auto& Option : UnrealPakOptions)
-	{
-		CommandLine.Append(FString::Printf(TEXT(" %s"), *Option));
-	}
-
-	// create UnrealPak process
-
-	uint32 *ProcessID = NULL;
-	FProcHandle ProcHandle = FPlatformProcess::CreateProc(*UnrealPakBinary, *CommandLine, true, false, false, ProcessID, 0, NULL, NULL, NULL);
-
-	if (ProcHandle.IsValid())
-	{
-		if (block)
-		{
-			FPlatformProcess::WaitForProc(ProcHandle);
-		}
-	}
-	return ProcHandle;
-}
 
 
 FHotPatcherAssetDependency UFlibPatchParserHelper::GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)

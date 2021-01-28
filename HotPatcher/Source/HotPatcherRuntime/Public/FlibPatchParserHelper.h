@@ -50,10 +50,6 @@ public:
 		static TArray<FString> GetAvailableMaps(FString GameName, bool IncludeEngineMaps,bool IncludePluginMaps, bool Sorted);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static FString GetProjectName();
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static FString GetUnrealPakBinary();
-	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
-		static FString GetUE4CmdBinary();
 	UFUNCTION(BlueprintCallable)
 	static FString GetProjectFilePath();
 	
@@ -179,8 +175,6 @@ public:
 	static FChunkAssetDescribe DiffChunkWithPatchSetting(const struct FExportPatchSettings& PatchSetting, const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk);
 	static FChunkAssetDescribe DiffChunkByBaseVersionWithPatchSetting(const struct FExportPatchSettings& PatchSetting, const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, const FHotPatcherVersion& BaseVersion);
 	static TArray<FString> GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands, const TArray<FReplaceText>& InReplaceTexts = TArray<FReplaceText>{});
-
-	static FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions, bool block);
 
 	static FHotPatcherAssetDependency GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
 	static TArray<FHotPatcherAssetDependency> GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);

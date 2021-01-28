@@ -64,6 +64,20 @@ public class HotPatcherEditor : ModuleRules
 			}
 			);
 		
+		switch (Target.Configuration)
+		{
+			case UnrealTargetConfiguration.DebugGame:
+			{
+				PublicDefinitions.Add("WITH_HOTPATCHER_DEBUGGAME");
+				break;
+			}
+			case UnrealTargetConfiguration.Development:
+			{
+				PublicDefinitions.Add("WITH_HOTPATCHER_DEVELOPMENT");
+				break;
+			}
+		};
+		
 		PublicDefinitions.AddRange(new string[]
 		{
 			"ENABLE_COOK_ENGINE_MAP=0",

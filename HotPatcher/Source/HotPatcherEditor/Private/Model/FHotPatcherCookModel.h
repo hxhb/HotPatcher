@@ -7,6 +7,8 @@
 // engine header
 #include "Misc/App.h"
 #include "CoreMinimal.h"
+
+#include "FlibHotPatcherEditorHelper.h"
 #include "Engine/Engine.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Delegates/DelegateCombinations.h"
@@ -188,7 +190,7 @@ public:
 	{
 		FCookerConfig result;
 		FString ProjectFilePath = UFlibPatchParserHelper::GetProjectFilePath();
-		FString EngineBin = UFlibPatchParserHelper::GetUE4CmdBinary();
+		FString EngineBin = UFlibHotPatcherEditorHelper::GetUE4CmdBinary();
 
 		result.EngineBin = EngineBin;
 		result.ProjectPath = ProjectFilePath;

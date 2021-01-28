@@ -52,4 +52,10 @@ public:
 	static ITargetPlatform* GetTargetPlatformByName(const FString& PlatformName);
 	static TArray<ITargetPlatform*> GetTargetPlatformsByNames(const TArray<ETargetPlatform>& PlatformNames);
 
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Editor|Flib")
+    static FString GetUnrealPakBinary();
+	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Editor|Flib")
+        static FString GetUE4CmdBinary();
+
+	static FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions, bool block);
 };
