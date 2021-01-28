@@ -96,6 +96,7 @@ public:
 
 	FORCEINLINE bool IsByPakList()const { return ByPakList; }
 	FORCEINLINE TArray<FPlatformPakListFiles> GetPlatformsPakListFiles()const {return PlatformsPakListFiles;}
+	FORCEINLINE bool IsStandaloneMode()const {return bStandaloneMode;}
 	
 	// override
 	virtual TArray<FDirectoryPath>& GetAssetIncludeFilters() override
@@ -148,4 +149,7 @@ public:
 		bool bSaveReleaseConfig = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
 		FDirectoryPath SavePath;
+	// create a UE4Editor-cmd.exe process execute patch mission.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
+		bool bStandaloneMode = true;
 };

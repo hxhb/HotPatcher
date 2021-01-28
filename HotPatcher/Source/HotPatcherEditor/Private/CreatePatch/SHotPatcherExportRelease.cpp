@@ -167,20 +167,23 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 
 FReply SHotPatcherExportRelease::DoExportRelease()
 {
-#if RELEASE_BLOCK_EDITOR
-	UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
-	ReleaseProxy->AddToRoot();
-	ReleaseProxy->SetProxySettings(ExportReleaseSettings.Get());
-	ReleaseProxy->DoExport();
-#else
-	FString CurrentConfig;
-	UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
-	FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPacther"),TEXT("ReleaseConfig.json")));
-	FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
-	FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotRelease -config=\"%s\""),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo);
-	UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUE4CmdBinary(),*MissionCommand);
-	RunProcMission(UFlibHotPatcherEditorHelper::GetUE4CmdBinary(),MissionCommand);
-#endif
+	if(!GetConfigSettings()->IsStandaloneMode())
+	{
+		UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
+		ReleaseProxy->AddToRoot();
+		ReleaseProxy->SetProxySettings(ExportReleaseSettings.Get());
+		ReleaseProxy->DoExport();
+	}
+	else
+	{
+		FString CurrentConfig;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
+		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPacther"),TEXT("ReleaseConfig.json")));
+		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
+		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotRelease -config=\"%s\""),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo);
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUE4CmdBinary(),*MissionCommand);
+		RunProcMission(UFlibHotPatcherEditorHelper::GetUE4CmdBinary(),MissionCommand);
+	}
 	return FReply::Handled();
 }
 

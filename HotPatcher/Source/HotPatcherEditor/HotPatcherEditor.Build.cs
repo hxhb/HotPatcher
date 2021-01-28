@@ -84,13 +84,6 @@ public class HotPatcherEditor : ModuleRules
 			"ENABLE_COOK_PLUGIN_MAP=0"
 		});
 		
-		// BLOCK EDITOR
-		PublicDefinitions.AddRange(new string[]
-		{
-			"PATCH_BLOCK_EDITOR=0",
-			"RELEASE_BLOCK_EDITOR=0"
-		});
-		
 		DynamicallyLoadedModuleNames.AddRange(
 			new string[]
 			{

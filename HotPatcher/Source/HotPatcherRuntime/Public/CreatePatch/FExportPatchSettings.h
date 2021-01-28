@@ -124,7 +124,8 @@ public:
 	TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false);
 	TArray<FExternFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform);
 	TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform);
-	
+
+	FORCEINLINE bool IsStandaloneMode()const {return bStandaloneMode;}
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = true;
@@ -225,5 +226,7 @@ public:
 		bool bSavePatchConfig = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		FDirectoryPath SavePath;
-
+	// create a UE4Editor-cmd.exe process execute patch mission.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
+		bool bStandaloneMode = true;
 };

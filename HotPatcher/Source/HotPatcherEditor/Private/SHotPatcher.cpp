@@ -12,6 +12,7 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Layout/SGridPanel.h"
+#include "Widgets/Layout/SSeparator.h"
 #include "EditorStyleSet.h"
 #include "PropertyEditorModule.h"
 #include "Modules/ModuleManager.h"
