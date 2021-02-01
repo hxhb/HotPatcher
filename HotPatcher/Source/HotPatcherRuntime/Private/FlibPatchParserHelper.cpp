@@ -1724,13 +1724,45 @@ void UFlibPatchParserHelper::AnalysisWidgetTree(FPatchVersionDiff& PakDiff,int32
 	}
 	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDepTypes {EAssetRegistryDependencyTypeEx::Hard};
 	FString AssetType = TEXT("WidgetBlueprint");
+
+	auto AssetsIsExist = [&PakDiff](const FAssetDetail& Asset)->bool
+	{
+		bool result = false;
+		FString ModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(Asset.mPackagePath);
+		FString LongPackageName;
+		UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath,LongPackageName);
+		if(PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName))
+		{
+			if(PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName)->AssetDependencyDetails.Find(LongPackageName))
+			{
+				result = true;
+			}
+		}
+		return result;
+	};
+	TArray<EAssetRegistryDependencyType::Type> SearchType{EAssetRegistryDependencyType::Hard};
+	
 	for(const auto& OriginAsset:AnalysisAssets)
 	{
 		if(OriginAsset.mAssetType.Equals(AssetType))
 		{
-			TArray<FAssetDetail> CurrentAssetDeps = UFlibPatchParserHelper::GetAllAssetDependencyDetails(OriginAsset,AssetRegistryDepTypes,AssetType);
-			for(const auto& Asset:CurrentAssetDeps)
+			// if asset is existed
+			if(AssetsIsExist(OriginAsset))
 			{
+				continue;
+			}
+			TArray<FAssetDetail> CurrentAssetsRef;
+			UFLibAssetManageHelperEx::GetAssetReferenceRecursively(OriginAsset, SearchType, TArray<FString>{AssetType}, CurrentAssetsRef);
+			UE_LOG(LogHotPatcher,Display,TEXT("Reference %s Widgets:"),*OriginAsset.mPackagePath);
+			// TArray<FAssetDetail> CurrentAssetDeps = UFlibPatchParserHelper::GetAllAssetDependencyDetails(OriginAsset,AssetRegistryDepTypes,AssetType);
+			for(const auto& Asset:CurrentAssetsRef)
+			{
+				if(!Asset.mAssetType.Equals(AssetType))
+				{
+					continue;
+				}
+				
+				UE_LOG(LogHotPatcher,Display,TEXT("Widget: %s"),*Asset.mPackagePath);
 				FString ModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(Asset.mPackagePath);
 				FString LongPackageName;
 				UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath,LongPackageName);

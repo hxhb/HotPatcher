@@ -9,6 +9,7 @@
 #include "Templates/SharedPointer.h"
 #include "AssetRegistryModule.h"
 #include "CoreMinimal.h"
+
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FLibAssetManageHelperEx.generated.h"
@@ -108,6 +109,10 @@ public:
 		static bool GetAssetDependencyByDetail(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, TArray<FAssetDetail>& OutRefAsset, bool bRecursively = true);
 	// UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetAssetReference(const FAssetDetail& InAsset,const TArray<EAssetRegistryDependencyType::Type>& SearchAssetDepTypes, TArray<FAssetDetail>& OutRefAsset);
+	static void GetAssetReferenceRecursively(const FAssetDetail& InAsset,
+	                                         const TArray<EAssetRegistryDependencyType::Type>& SearchAssetDepTypes,
+	                                         const TArray<FString>& SearchAssetsTypes,
+	                                         TArray<FAssetDetail>& OutRefAsset);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetAssetReferenceEx(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& SearchAssetDepTypes, TArray<FAssetDetail>& OutRefAsset);
 

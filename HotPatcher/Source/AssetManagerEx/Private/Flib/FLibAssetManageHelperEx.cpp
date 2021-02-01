@@ -313,6 +313,49 @@ bool UFLibAssetManageHelperEx::GetAssetReference(const FAssetDetail& InAsset, co
 	return bStatus;
 }
 
+void UFLibAssetManageHelperEx::GetAssetReferenceRecursively(const FAssetDetail& InAsset,
+                                                            const TArray<EAssetRegistryDependencyType::Type>&
+                                                            SearchAssetDepTypes,
+                                                            const TArray<FString>& SearchAssetsTypes,
+                                                            TArray<FAssetDetail>& OutRefAsset)
+{
+	TArray<FAssetDetail> CurrentAssetsRef;
+	UFLibAssetManageHelperEx::GetAssetReference(InAsset,SearchAssetDepTypes,CurrentAssetsRef);
+
+	auto MatchAssetsTypesLambda = [](const FAssetDetail& InAsset,const TArray<FString>& SearchAssetsTypes)->bool
+	{
+		bool bresult = false;
+		if(SearchAssetsTypes.Num() > 0)
+		{
+			for(const auto& AssetType:SearchAssetsTypes)
+			{
+				if(InAsset.mAssetType.Equals(AssetType))
+				{
+					bresult = true;
+					break;
+				}
+			}
+		}
+		else
+		{
+			bresult = true;
+		}
+		return bresult;
+	};
+	
+    for(const auto& AssetRef:CurrentAssetsRef)
+    {
+    	if(MatchAssetsTypesLambda(AssetRef,SearchAssetsTypes))
+    	{
+    		if(!OutRefAsset.Contains(AssetRef))
+    		{
+    			OutRefAsset.AddUnique(AssetRef);
+    			UFLibAssetManageHelperEx::GetAssetReferenceRecursively(AssetRef,SearchAssetDepTypes,SearchAssetsTypes,OutRefAsset);
+    		}
+    	}
+    }
+}
+
 bool UFLibAssetManageHelperEx::GetAssetReferenceEx(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& SearchAssetDepTypes, TArray<FAssetDetail>& OutRefAsset)
 {
 	TArray<EAssetRegistryDependencyType::Type> local_SearchAssetDepTypes;
