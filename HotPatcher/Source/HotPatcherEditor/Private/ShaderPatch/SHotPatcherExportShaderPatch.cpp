@@ -92,7 +92,7 @@ void SHotPatcherExportShaderPatch::ResetConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Reset Shader Patch Config"));
 	FString DefaultSettingJson;
-	UFlibPatchParserHelper::TSerializeStructAsJsonString(*FExportPatchSettings::Get(),DefaultSettingJson);
+	UFlibPatchParserHelper::TSerializeStructAsJsonString(*FExportShaderPatchSettings::Get(),DefaultSettingJson);
 	UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*ExportShaderPatchSettings);
 	SettingsView->GetDetailsView()->ForceRefresh();
 }

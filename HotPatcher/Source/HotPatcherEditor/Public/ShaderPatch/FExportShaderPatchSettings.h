@@ -44,6 +44,13 @@ public:
 	FExportShaderPatchSettings(){}
 	virtual ~FExportShaderPatchSettings(){};
 
+	FORCEINLINE static FExportShaderPatchSettings* Get()
+	{
+		static FExportShaderPatchSettings StaticIns;
+
+		return &StaticIns;
+	}
+	
 	UPROPERTY(EditAnywhere, Category="Version")
 	FString VersionID;
 	
