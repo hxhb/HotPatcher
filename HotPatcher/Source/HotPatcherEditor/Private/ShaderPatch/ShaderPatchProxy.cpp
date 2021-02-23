@@ -19,7 +19,7 @@ bool UShaderPatchProxy::DoExport()
 	{
 		UE_LOG(LogHotShaderPatchCommandlet,Display,TEXT("Generating Shader Patch for %s"),*UFlibPatchParserHelper::GetEnumNameByValue(PlatformConfig.Platform));
 		
-		FString SaveToPath = FPaths::Combine(FPaths::ConvertRelativePathToFull(GetSettingObject()->SaveTo.Path),GetSettingObject()->VersionID,UFlibPatchParserHelper::GetEnumNameByValue(PlatformConfig.Platform),TEXT("ShaderLibrarySource"));
+		FString SaveToPath = FPaths::Combine(FPaths::ConvertRelativePathToFull(GetSettingObject()->SaveTo.Path),GetSettingObject()->VersionID,UFlibPatchParserHelper::GetEnumNameByValue(PlatformConfig.Platform));
 		bool bCreateStatus = UFlibShaderPatchHelper::CreateShaderCodePatch(
         UFlibShaderPatchHelper::ConvDirectoryPathToStr(PlatformConfig.OldMetadataDir),
         FPaths::ConvertRelativePathToFull(PlatformConfig.NewMetadataDir.Path),
