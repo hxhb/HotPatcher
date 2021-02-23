@@ -44,6 +44,9 @@ public:
 	FExportShaderPatchSettings(){}
 	virtual ~FExportShaderPatchSettings(){};
 
+	UPROPERTY(EditAnywhere, Category="Version")
+	FString VersionID;
+	
 	UPROPERTY(EditAnywhere, Category="Config")
 	TArray<FShaderPatchConf> ShaderPatchConfigs;
 	

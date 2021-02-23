@@ -19,7 +19,7 @@ bool UShaderPatchProxy::DoExport()
 	{
 		UE_LOG(LogHotShaderPatchCommandlet,Display,TEXT("Generating Shader Patch for %s"),*UFlibPatchParserHelper::GetEnumNameByValue(PlatformConfig.Platform));
 		
-		FString SaveToPath = FPaths::Combine(FPaths::ConvertRelativePathToFull(GetSettingObject()->SaveTo.Path),UFlibPatchParserHelper::GetEnumNameByValue(PlatformConfig.Platform));
+		FString SaveToPath = FPaths::Combine(FPaths::ConvertRelativePathToFull(GetSettingObject()->SaveTo.Path),GetSettingObject()->VersionID,UFlibPatchParserHelper::GetEnumNameByValue(PlatformConfig.Platform),TEXT("ShaderLibrarySource"));
 		bool bCreateStatus = UFlibShaderPatchHelper::CreateShaderCodePatch(
         UFlibShaderPatchHelper::ConvDirectoryPathToStr(PlatformConfig.OldMetadataDir),
         FPaths::ConvertRelativePathToFull(PlatformConfig.NewMetadataDir.Path),
@@ -79,6 +79,27 @@ bool UShaderPatchProxy::DoExport()
 						UE_LOG(LogHotShaderPatchCommandlet,Display,TEXT("ERROR: %s not found!"),*OutputFilePath);
 					}
 				}
+			}
+		}
+	}
+
+	if(GetSettingObject()->bSaveConfig)
+	{
+		FString SerializedJsonStr;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetSettingObject(),SerializedJsonStr);
+
+		FString SaveToPath = FPaths::Combine(FPaths::ConvertRelativePathToFull(GetSettingObject()->SaveTo.Path),GetSettingObject()->VersionID,GetSettingObject()->VersionID).Append(TEXT(".json"));
+		
+		if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToPath))
+		{
+			FText Msg = LOCTEXT("SavedShaderPatchConfigMas", "Successd to Export the Shader Patch Config.");
+			if(!IsRunningCommandlet())
+			{
+				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveToPath);
+			}
+			else
+			{
+				UE_LOG(LogHotShaderPatchCommandlet,Display,TEXT("%s"),*Msg.ToString());
 			}
 		}
 	}
