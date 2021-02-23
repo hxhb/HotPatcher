@@ -44,14 +44,17 @@ public:
 	FExportShaderPatchSettings(){}
 	virtual ~FExportShaderPatchSettings(){};
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="Config")
 	TArray<FShaderPatchConf> ShaderPatchConfigs;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Save")
 	bool bSaveConfig = true;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Save")
 	FDirectoryPath SaveTo;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
+	bool bStandaloneMode = true;
 };
 
 

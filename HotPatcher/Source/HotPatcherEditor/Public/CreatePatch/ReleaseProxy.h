@@ -13,7 +13,7 @@ class HOTPATCHEREDITOR_API UReleaseProxy:public UHotPatcherProxyBase
 public:
     GENERATED_BODY()
 
-    bool DoExport();
+    virtual bool DoExport() override ;
     FORCEINLINE bool IsRunningCommandlet()const{return ::IsRunningCommandlet();}
     FORCEINLINE virtual FExportReleaseSettings* GetSettingObject()override
     {

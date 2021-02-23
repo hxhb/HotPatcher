@@ -4,6 +4,7 @@
 #include "ShaderPatch/FExportShaderPatchSettings.h"
 #include "ShaderPatch/FlibShaderPatchHelper.h"
 #include "RHI.h"
+#include "ShaderPatch/ShaderPatchProxy.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherShaderPatch"
 
@@ -95,68 +96,14 @@ void SHotPatcherExportShaderPatch::ResetConfig()
 	SettingsView->GetDetailsView()->ForceRefresh();
 }
 
-static FString ShaderExtension = TEXT(".ushaderbytecode");
-static FString GetCodeArchiveFilename(const FString& BaseDir, const FString& LibraryName, FName Platform)
-{
-	return BaseDir / FString::Printf(TEXT("ShaderArchive-%s-"), *LibraryName) + Platform.ToString() + ShaderExtension;
-}
-
-
-
 void SHotPatcherExportShaderPatch::DoGenerate()
 {
-	for(const auto& PlatformConfig:ExportShaderPatchSettings->ShaderPatchConfigs)
+	UShaderPatchProxy* ShaderPatchProxy = NewObject<UShaderPatchProxy>();
+	ShaderPatchProxy->AddToRoot();
+	ShaderPatchProxy->SetProxySettings(ExportShaderPatchSettings.Get());
+	if(!ShaderPatchProxy->GetSettingObject()->bStandaloneMode)
 	{
-		FString SaveToPath = FPaths::Combine(FPaths::ConvertRelativePathToFull(ExportShaderPatchSettings->SaveTo.Path),UFlibPatchParserHelper::GetEnumNameByValue(PlatformConfig.Platform));
-		bool bCreateStatus = UFlibShaderPatchHelper::CreateShaderCodePatch(
-        UFlibShaderPatchHelper::ConvDirectoryPathToStr(PlatformConfig.OldMetadataDir),
-        FPaths::ConvertRelativePathToFull(PlatformConfig.NewMetadataDir.Path),
-        SaveToPath,
-        PlatformConfig.bNativeFormat
-        );
-
-		auto GetShaderPatchFormatLambda = [](const FString& ShaderPatchDir)->TMap<FName, TSet<FString>>
-		{
-			TMap<FName, TSet<FString>> FormatLibraryMap;
-			TArray<FString> LibraryFiles;
-			IFileManager::Get().FindFiles(LibraryFiles, *(ShaderPatchDir), *ShaderExtension);
-	
-			for (FString const& Path : LibraryFiles)
-			{
-				FString Name = FPaths::GetBaseFilename(Path);
-				if (Name.RemoveFromStart(TEXT("ShaderArchive-")))
-				{
-					TArray<FString> Components;
-					if (Name.ParseIntoArray(Components, TEXT("-")) == 2)
-					{
-						FName Format(*Components[1]);
-						TSet<FString>& Libraries = FormatLibraryMap.FindOrAdd(Format);
-						Libraries.Add(Components[0]);
-					}
-				}
-			}
-			return FormatLibraryMap;
-		};
-		
-		if(bCreateStatus)
-		{
-			TMap<FName,TSet<FString>> ShaderFormatLibraryMap  = GetShaderPatchFormatLambda(SaveToPath);
-			FText Msg = LOCTEXT("GeneratedShaderPatch", "Successd to Generated the Shader Patch.");
-			TArray<FName> FormatNames;
-			ShaderFormatLibraryMap.GetKeys(FormatNames);
-			for(const auto& FormatName:FormatNames)
-			{
-				TArray<FString> LibraryNames= ShaderFormatLibraryMap[FormatName].Array();
-				for(const auto& LibrartName:LibraryNames)
-				{
-					FString OutputFilePath = GetCodeArchiveFilename(SaveToPath, LibrartName, FormatName);
-					if(FPaths::FileExists(OutputFilePath))
-					{
-						UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, OutputFilePath);
-					}
-				}
-			}
-		}
+		ShaderPatchProxy->DoExport();
 	}
 }
 
