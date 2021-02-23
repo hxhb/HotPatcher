@@ -54,7 +54,7 @@ public:
 	FDirectoryPath SaveTo;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
-	bool bStandaloneMode = true;
+	bool bStandaloneMode = false;
 };
 
 

@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "ShaderPatch/ShaderPatchProxy.h"
 #include "FlibHotPatcherEditorHelper.h"
+#include "Commandlets/HotShaderPatchCommandlet.h"
 #include "ShaderPatch/FlibShaderPatchHelper.h"
 
 #define LOCTEXT_NAMESPACE "HotPatcherShaderPatchProxy"
@@ -16,6 +17,8 @@ bool UShaderPatchProxy::DoExport()
 	bool bStatus = false;
 	for(const auto& PlatformConfig:GetSettingObject()->ShaderPatchConfigs)
 	{
+		UE_LOG(LogHotShaderPatchCommandlet,Display,TEXT("Generating Shader Patch for %s"),*UFlibPatchParserHelper::GetEnumNameByValue(PlatformConfig.Platform));
+		
 		FString SaveToPath = FPaths::Combine(FPaths::ConvertRelativePathToFull(GetSettingObject()->SaveTo.Path),UFlibPatchParserHelper::GetEnumNameByValue(PlatformConfig.Platform));
 		bool bCreateStatus = UFlibShaderPatchHelper::CreateShaderCodePatch(
         UFlibShaderPatchHelper::ConvDirectoryPathToStr(PlatformConfig.OldMetadataDir),
@@ -66,6 +69,14 @@ bool UShaderPatchProxy::DoExport()
 						{
 							UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, OutputFilePath);
 						}
+						else
+						{
+							UE_LOG(LogHotShaderPatchCommandlet,Display,TEXT("%s"),*Msg.ToString());
+						}
+					}
+					else
+					{
+						UE_LOG(LogHotShaderPatchCommandlet,Display,TEXT("ERROR: %s not found!"),*OutputFilePath);
 					}
 				}
 			}

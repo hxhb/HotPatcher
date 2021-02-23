@@ -63,5 +63,5 @@ int32 UHotShaderPatchCommandlet::Main(const FString& Params)
 		system("pause");
 	}
 	
-	return (int32)bExportStatus;
+	return bExportStatus ? 0 : -1;
 }

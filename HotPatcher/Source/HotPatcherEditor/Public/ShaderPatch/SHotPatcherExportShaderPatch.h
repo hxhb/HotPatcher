@@ -40,7 +40,8 @@ public:
 	virtual void ExportConfig()const;
 	virtual void ResetConfig();
 	virtual void DoGenerate();
-
+	virtual FExportShaderPatchSettings* GetConfigSettings() override{return ExportShaderPatchSettings.Get();};
+	virtual FString GetMissionName() override{return TEXT("Shader Patch");}
 protected:
 	void CreateExportFilterListView();
 	bool CanExportShaderPatch()const;

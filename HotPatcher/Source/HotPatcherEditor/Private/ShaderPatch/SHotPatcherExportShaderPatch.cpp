@@ -13,9 +13,10 @@ void SHotPatcherExportShaderPatch::Construct(const FArguments& InArgs,
 {
 	ExportShaderPatchSettings = MakeShareable(new FExportShaderPatchSettings);
 	CreateExportFilterListView();
-
+	InitMissionNotificationProxy();
+	
 	mCreatePatchModel = InCreateModel;
-
+	
 	ChildSlot
         [
 
@@ -104,6 +105,16 @@ void SHotPatcherExportShaderPatch::DoGenerate()
 	if(!ShaderPatchProxy->GetSettingObject()->bStandaloneMode)
 	{
 		ShaderPatchProxy->DoExport();
+	}
+	else
+	{
+		FString CurrentConfig;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
+		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPacther"),TEXT("ShaderPatchConfig.json")));
+		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
+		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotShaderPatch -config=\"%s\""),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo);
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUE4CmdBinary(),*MissionCommand);
+		RunProcMission(UFlibHotPatcherEditorHelper::GetUE4CmdBinary(),MissionCommand);
 	}
 }
 
