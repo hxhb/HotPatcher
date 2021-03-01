@@ -3,7 +3,7 @@
 
 >目前支持的引擎版本为UE4.21-UE4.26，我创建了个群来讨论UE4热更新和HotPatcher插件的问题(QQ群958363331)。
 
-插件文档：[UE4资源热更打包工具HotPatcher](https://imzlp.me/posts/17590/)
+插件文档：[UE4资源热更打包工具HotPatcher](https://imzlp.com/posts/17590/)
 
 视频教程：[UE4热更新：HotPatcher插件使用教程](https://www.bilibili.com/video/BV1Tz4y197tR/)
 
