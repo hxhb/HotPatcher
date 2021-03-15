@@ -93,6 +93,8 @@ public:
 	FORCEINLINE bool IsByPakList()const { return ByPakList; }
 	FORCEINLINE TArray<FPlatformPakListFiles> GetPlatformsPakListFiles()const {return PlatformsPakListFiles;}
 	FORCEINLINE bool IsStandaloneMode()const {return bStandaloneMode;}
+	FORCEINLINE bool IsBackupMetadata()const {return bBackupMetadata;}
+	FORCEINLINE TArray<ETargetPlatform> GetBackupMetadataPlatforms()const{return BackupMetadataPlatforms;}
 	
 	// override
 	virtual TArray<FDirectoryPath>& GetAssetIncludeFilters() override
@@ -143,6 +145,11 @@ public:
 		bool bSaveAssetRelatedInfo = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSaveReleaseConfig = true;
+	// backup current project Cooked/PLATFORM/PROJECTNAME/Metadata directory
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+		bool bBackupMetadata = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bBackupMetadata"))
+		TArray<ETargetPlatform> BackupMetadataPlatforms;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
 		FDirectoryPath SavePath;
 	// create a UE4Editor-cmd.exe process execute patch mission.

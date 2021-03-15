@@ -515,3 +515,26 @@ FProcHandle UFlibHotPatcherEditorHelper::DoUnrealPak(TArray<FString> UnrealPakOp
 	}
 	return ProcHandle;
 }
+
+FString UFlibHotPatcherEditorHelper::GetMetadataDir(const FString& ProjectDir, const FString& ProjectName,ETargetPlatform Platform)
+{
+	FString result;
+	FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform,false);
+	return FPaths::Combine(ProjectDir,TEXT("Saved/Cooked"),PlatformName,ProjectName,TEXT("Metadata"));
+}
+
+void UFlibHotPatcherEditorHelper::BackupMetadataDir(const FString& ProjectDir, const FString& ProjectName,
+	const TArray<ETargetPlatform>& Platforms, const FString& OutDir)
+{
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	for(const auto& Platform:Platforms)
+	{
+		FString MetadataDir = FPaths::ConvertRelativePathToFull(UFlibHotPatcherEditorHelper::GetMetadataDir(ProjectDir,ProjectName,Platform));
+		FString OutMetadir = FPaths::Combine(OutDir,TEXT("BackupMatedatas"),UFlibPatchParserHelper::GetEnumNameByValue(Platform,false));
+		if(FPaths::DirectoryExists(MetadataDir))
+		{
+			PlatformFile.CreateDirectoryTree(*OutMetadir);
+			PlatformFile.CopyDirectoryTree(*OutMetadir,*MetadataDir,true);
+		}
+	}
+}

@@ -19,7 +19,7 @@ bool UReleaseProxy::DoExport()
 	GetSettingObject()->Init();
     bool bRetStatus = false;
 
-    float AmountOfWorkProgress = 4.0f;
+    float AmountOfWorkProgress = 5.0f;
 	// FScopedSlowTask UnrealPakSlowTask(AmountOfWorkProgress);
 	// UnrealPakSlowTask.MakeDialog();
 	UScopedSlowTaskContext* UnrealPakSlowTask = NewObject<UScopedSlowTaskContext>();
@@ -138,6 +138,16 @@ bool UReleaseProxy::DoExport()
 				}
 				bRetStatus = true;
 			}
+		}
+	}
+
+	// backup Metadata
+	{
+		FText DiaLogMsg = FText::Format(NSLOCTEXT("BackupMetadata", "BackupMetadata", "Backup Release {0} Metadatas."), FText::FromString(GetSettingObject()->GetVersionId()));
+		UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
+		if(GetSettingObject()->IsBackupMetadata())
+		{
+			UFlibHotPatcherEditorHelper::BackupMetadataDir(FPaths::ProjectDir(),FApp::GetProjectName(),GetSettingObject()->GetBackupMetadataPlatforms(),FPaths::Combine(GetSettingObject()->GetSavePath(),GetSettingObject()->GetVersionId()));
 		}
 	}
 	UnrealPakSlowTask->Final();

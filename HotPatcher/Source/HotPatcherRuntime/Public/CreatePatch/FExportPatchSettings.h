@@ -125,6 +125,7 @@ public:
 	TArray<FExternFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform);
 	TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform);
 
+	FORCEINLINE bool IsBackupMetadata()const {return bBackupMetadata;}
 	FORCEINLINE bool IsStandaloneMode()const {return bStandaloneMode;}
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
@@ -224,6 +225,9 @@ public:
 	//	bool bSavePakVersion;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSavePatchConfig = true;
+	// backup current project Cooked/PLATFORM/PROJECTNAME/Metadata directory
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+		bool bBackupMetadata = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		FDirectoryPath SavePath;
 	// create a UE4Editor-cmd.exe process execute patch mission.

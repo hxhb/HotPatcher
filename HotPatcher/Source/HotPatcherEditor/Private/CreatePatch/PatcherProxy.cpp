@@ -487,7 +487,7 @@ bool UPatcherProxy::DoExport()
 		PakChunks.Add(NewVersionChunk);
 	}
 
-	float AmountOfWorkProgress = 2.f * (GetSettingObject()->GetPakTargetPlatforms().Num() * ChunkNum) + 4.0f;
+	float AmountOfWorkProgress = 2.f * (GetSettingObject()->GetPakTargetPlatforms().Num() * ChunkNum) + 5.0f;
 	UScopedSlowTaskContext* UnrealPakSlowTask = NewObject<UScopedSlowTaskContext>();
 	UnrealPakSlowTask->AddToRoot();
 	UnrealPakSlowTask->init(AmountOfWorkProgress);
@@ -806,6 +806,17 @@ bool UPatcherProxy::DoExport()
 					UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveConfigPath);
 				}
 			}
+		}
+	}
+
+	// backup Metadata
+	if(GetPakCounter())
+	{
+		FText DiaLogMsg = FText::Format(NSLOCTEXT("BackupMetadata", "BackupMetadata", "Backup Release {0} Metadatas."), FText::FromString(GetSettingObject()->GetVersionId()));
+		UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
+		if(GetSettingObject()->IsBackupMetadata())
+		{
+			UFlibHotPatcherEditorHelper::BackupMetadataDir(FPaths::ProjectDir(),FApp::GetProjectName(),GetSettingObject()->GetPakTargetPlatforms(),FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),GetSettingObject()->GetVersionId()));
 		}
 	}
 
