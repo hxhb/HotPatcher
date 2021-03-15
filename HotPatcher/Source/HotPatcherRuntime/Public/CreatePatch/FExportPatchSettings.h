@@ -227,7 +227,7 @@ public:
 		bool bSavePatchConfig = true;
 	// backup current project Cooked/PLATFORM/PROJECTNAME/Metadata directory
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bBackupMetadata = true;
+		bool bBackupMetadata = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		FDirectoryPath SavePath;
 	// create a UE4Editor-cmd.exe process execute patch mission.

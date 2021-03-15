@@ -147,7 +147,7 @@ public:
 		bool bSaveReleaseConfig = true;
 	// backup current project Cooked/PLATFORM/PROJECTNAME/Metadata directory
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bBackupMetadata = true;
+		bool bBackupMetadata = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bBackupMetadata"))
 		TArray<ETargetPlatform> BackupMetadataPlatforms;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
