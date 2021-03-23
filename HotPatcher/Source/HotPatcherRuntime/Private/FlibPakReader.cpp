@@ -287,7 +287,7 @@ FPakFile* UFlibPakReader::GetPakFileInsByPath(const FString& PakPath)
 	IPlatformFile* LowerLevel = PakFileMgr->GetLowerLevel();
 	if(LowerLevel)
 	{
-#if ENGINE_MINOR_VERSION > 21
+#if ENGINE_MINOR_VERSION > 23
 		Pak = new FPakFile(LowerLevel, *PakPath, false, true);
 #else
 		Pak = new FPakFile(LowerLevel, *PakPath, false);
