@@ -1612,7 +1612,8 @@ void UFlibPatchParserHelper::ReloadShaderbytecode()
 
 bool UFlibPatchParserHelper::LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir)
 {
-	return FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
+	FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
+	return true;
 }
 
 FString UFlibPatchParserHelper::SerializeAssetsDependencyAsJsonString(
