@@ -104,6 +104,14 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 		ExportReleaseSetting->PlatformsPakListFiles = ReadPakList;
 	}
 
+	if(ReadPakList.Num() && ExportReleaseSetting->IsBackupMetadata())
+	{
+		for(const auto& PlatformPakList:ReadPakList)
+		{
+			ExportReleaseSetting->BackupMetadataPlatforms.AddUnique(PlatformPakList.TargetPlatform);
+        }
+	}
+	
 	FString FinalConfig;
 	UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportReleaseSetting,FinalConfig);
 	UE_LOG(LogHotReleaseCommandlet, Display, TEXT("%s"), *FinalConfig);

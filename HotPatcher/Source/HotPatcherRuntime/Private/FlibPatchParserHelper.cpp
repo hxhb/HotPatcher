@@ -1612,7 +1612,13 @@ void UFlibPatchParserHelper::ReloadShaderbytecode()
 
 bool UFlibPatchParserHelper::LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir)
 {
-	return FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
+	bool result = true;
+#if ENGINE_MINOR_VERSION >= 23
+	result = FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
+#else
+	FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
+#endif
+	return result;
 }
 
 FString UFlibPatchParserHelper::SerializeAssetsDependencyAsJsonString(
