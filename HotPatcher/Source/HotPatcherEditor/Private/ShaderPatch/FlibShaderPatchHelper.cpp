@@ -9,10 +9,10 @@
 #include "Settings/ProjectPackagingSettings.h"
 
 
-bool UFlibShaderPatchHelper::CreateShaderCodePatch(TArray<FString> const& OldMetaDataDirs, FString const& NewMetaDataDir, FString const& OutDir, bool bNativeFormat)
+bool UFlibShaderPatchHelper::CreateShaderCodePatch(TArray<FString> const& OldMetaDataDirs, FString const& NewMetaDataDir, FString const& OutDir, bool bNativeFormat,bool bDeterministicShaderCodeOrder)
 {
 #if ENGINE_MINOR_VERSION > 25
-	return FShaderCodeLibrary::CreatePatchLibrary(OldMetaDataDirs,NewMetaDataDir,OutDir,bNativeFormat,true);
+	return FShaderCodeLibrary::CreatePatchLibrary(OldMetaDataDirs,NewMetaDataDir,OutDir,bNativeFormat,bDeterministicShaderCodeOrder);
 #else
 	#if ENGINE_MINOR_VERSION > 23
 		return FShaderCodeLibrary::CreatePatchLibrary(OldMetaDataDirs,NewMetaDataDir,OutDir,bNativeFormat);

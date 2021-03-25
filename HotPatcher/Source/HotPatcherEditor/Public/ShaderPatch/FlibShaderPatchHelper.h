@@ -19,7 +19,7 @@ class HOTPATCHEREDITOR_API UFlibShaderPatchHelper : public UBlueprintFunctionLib
 public:
 	
 	UFUNCTION(BlueprintCallable)
-	static bool CreateShaderCodePatch(TArray<FString> const& OldMetaDataDirs, FString const& NewMetaDataDir, FString const& OutDir, bool bNativeFormat);
+	static bool CreateShaderCodePatch(TArray<FString> const& OldMetaDataDirs, FString const& NewMetaDataDir, FString const& OutDir, bool bNativeFormat,bool bDeterministicShaderCodeOrder = true);
 
 	UFUNCTION(BlueprintCallable)
 	static TArray<FString> ConvDirectoryPathToStr(const TArray<FDirectoryPath>& Dirs);

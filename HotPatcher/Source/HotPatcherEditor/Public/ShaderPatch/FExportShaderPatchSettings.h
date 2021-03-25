@@ -33,6 +33,9 @@ struct FShaderPatchConf
     	FDirectoryPath NewMetadataDir;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
    		bool bNativeFormat;
+	// since UE 4.26 (Below 4.26 this parameter has no effect)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		bool bDeterministicShaderCodeOrder = true;
 };
 
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */

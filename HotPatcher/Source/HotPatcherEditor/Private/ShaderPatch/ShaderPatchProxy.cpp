@@ -24,7 +24,8 @@ bool UShaderPatchProxy::DoExport()
         UFlibShaderPatchHelper::ConvDirectoryPathToStr(PlatformConfig.OldMetadataDir),
         FPaths::ConvertRelativePathToFull(PlatformConfig.NewMetadataDir.Path),
         SaveToPath,
-        PlatformConfig.bNativeFormat
+        PlatformConfig.bNativeFormat,
+        PlatformConfig.bDeterministicShaderCodeOrder
         );
 
 		auto GetShaderPatchFormatLambda = [](const FString& ShaderPatchDir)->TMap<FName, TSet<FString>>
