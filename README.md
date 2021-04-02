@@ -9,15 +9,15 @@ Plug-in documentation: [UE4 resource hot update packaging tool HotPatcher](https
 
 Video tutorial: [UE4 hot update: HotPatcher plug-in tutorial](https://www.bilibili.com/video/BV1Tz4y197tR/)
 
-My UOD Hot Update Keynote Speech: [Unreal Open Day2020 Unreal Engine 4 Full Platform Hot Update Solution | Zha Lipeng](https://www.bilibili.com/video/BV1ir4y1c76g)
+My UOD Hot Update Keynote Speech: [Unreal Open Day2020 Unreal Engine 4 Full Platform Hot Update Solution | lipengzha](https://www.bilibili.com/video/BV1ir4y1c76g)
 
 The series of UE4 hot update articles I wrote can be used as a reference for engineering practice:
 
--[UE4 Hot Update: Demand Analysis and Scheme Design](https://imzlp.com/posts/17371)
--[UE4 Resource HotPatcher](https://imzlp.com/posts/17590/)
--[UE4 Hot Update: Automated Process Based on HotPatcher](https://imzlp.com/posts/10938/)
--[2020 Unreal Open Day](https://imzlp.com/posts/11043/)
--[UE4 Hot Update: Split the basic package](https://imzlp.com/posts/13765/)
--[UE4 Hot Update: Asset Management and Audit Tool](https://imzlp.com/posts/3675)
--[UE4 Hot Update: Create Shader Patch](https://imzlp.com/posts/5867/)
--[UE4 Hot Update: Questions & Answers](https://imzlp.com/posts/16895/)
+- [UE4 Hot Update: Demand Analysis and Scheme Design](https://imzlp.com/posts/17371)
+- [UE4 Resource HotPatcher](https://imzlp.com/posts/17590/)
+- [UE4 Hot Update: Automated Process Based on HotPatcher](https://imzlp.com/posts/10938/)
+- [2020 Unreal Open Day](https://imzlp.com/posts/11043/)
+- [UE4 Hot Update: Split the basic package](https://imzlp.com/posts/13765/)
+- [UE4 Hot Update: Asset Management and Audit Tool](https://imzlp.com/posts/3675)
+- [UE4 Hot Update: Create Shader Patch](https://imzlp.com/posts/5867/)
+- [UE4 Hot Update: Questions & Answers](https://imzlp.com/posts/16895/)
