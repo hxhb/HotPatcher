@@ -1,5 +1,5 @@
 ## UE4 Plugin: HotPatcher
-中文文档：[README_zh](https://github.com/hxhb/HotPatcher/blob/master/README_zh.md).
+Chinese Document：[README_Chinese.md](https://github.com/hxhb/HotPatcher/blob/master/README_Chinese.md).
 
 [HotPatcher](https://github.com/hxhb/HotPatcher) is a tool for managing hot update versions and resource packaging. It is used to track changes in the original resources of the project version to create patches. Support resource version management, difference comparison and packaging between versions, support exporting basic package information for multiple platforms, easily cook and package multi-platform Patches, support iterative packaging, rich configuration options, full-featured commandlet support, can be combined with ci/cd platform is integrated.
 
