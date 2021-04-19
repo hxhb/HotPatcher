@@ -1,10 +1,23 @@
 ## UE4 Plugin: HotPatcher
-[HotPatcher](https://github.com/hxhb/HotPatcher)是我最近写的用于打包UE项目资源热更的工具，用于追踪工程版本的资源变动来打出Patch。支持资源版本管理、版本间的差异对比和打包、支持导出多平台的基础包信息、方便地Cook和打包多平台的Patch，支持迭代打包、丰富的配置化选项，全功能的commandlet支持，可以与ci平台相集成。
+Chinese Document：[README_Chinese.md](https://github.com/hxhb/HotPatcher/blob/master/README_Chinese.md).
 
->目前支持的引擎版本为UE4.21-UE4.26，我创建了个群来讨论UE4热更新和HotPatcher插件的问题(QQ群958363331)。
+[HotPatcher](https://github.com/hxhb/HotPatcher) is a tool for managing hot update versions and resource packaging. It is used to track changes in the original resources of the project version to create patches. Support resource version management, difference comparison and packaging between versions, support exporting basic package information for multiple platforms, easily cook and package multi-platform Patches, support iterative packaging, rich configuration options, full-featured commandlet support, can be combined with ci/cd platform is integrated.
 
-插件文档：[UE4资源热更打包工具HotPatcher](https://imzlp.com/posts/17590/)
+>The currently supported engine version is UE4.21-UE4.26. I created a group to discuss UE4 hot update and HotPatcher plug-in issues (QQ group 958363331).
 
-视频教程：[UE4热更新：HotPatcher插件使用教程](https://www.bilibili.com/video/BV1Tz4y197tR/)
+Plug-in documentation: [UE4 resource hot update packaging tool HotPatcher](https://imzlp.com/posts/17590/)
 
-我的UOD热更新主题演讲：[Unreal Open Day2020 虚幻引擎4全平台热更新方案 | 查利鹏](https://www.bilibili.com/video/BV1ir4y1c76g)
+Video tutorial: [UE4 hot update: HotPatcher plug-in tutorial](https://www.bilibili.com/video/BV1Tz4y197tR/)
+
+My UOD Hot Update Keynote Speech: [Unreal Open Day2020 Unreal Engine 4 Full Platform Hot Update Solution | lipengzha](https://www.bilibili.com/video/BV1ir4y1c76g)
+
+The series of UE4 hot update articles I wrote can be used as a reference for engineering practice:
+
+- [UE4 Hot Update: Demand Analysis and Scheme Design](https://imzlp.com/posts/17371)
+- [UE4 Resource HotPatcher](https://imzlp.com/posts/17590/)
+- [UE4 Hot Update: Automated Process Based on HotPatcher](https://imzlp.com/posts/10938/)
+- [2020 Unreal Open Day](https://imzlp.com/posts/11043/)
+- [UE4 Hot Update: Split the basic package](https://imzlp.com/posts/13765/)
+- [UE4 Hot Update: Asset Management and Audit Tool](https://imzlp.com/posts/3675)
+- [UE4 Hot Update: Create Shader Patch](https://imzlp.com/posts/5867/)
+- [UE4 Hot Update: Questions & Answers](https://imzlp.com/posts/16895/)
