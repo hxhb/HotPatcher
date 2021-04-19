@@ -4,6 +4,7 @@
 #include "HotPatcherStyle.h"
 #include "HotPatcherCommands.h"
 #include "SHotPatcher.h"
+#include "HotPatcherSettings.h"
 
 // ENGINE HEADER
 #include "ContentBrowserModule.h"
@@ -13,11 +14,13 @@
 #include "DesktopPlatformModule.h"
 #include "FlibHotPatcherEditorHelper.h"
 #include "HotPatcherLog.h"
+#include "ISettingsModule.h"
 #include "LevelEditor.h"
 #include "HAL/FileManager.h"
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "Widgets/Docking/SDockableTab.h"
+#include "PakFileUtilities.h"
 
 #if ENGINE_MINOR_VERSION >23
 #include "ToolMenus.h"
@@ -30,6 +33,18 @@ FExportReleaseSettings* GReleaseSettings = nullptr;
 static const FName HotPatcherTabName("HotPatcher");
 
 #define LOCTEXT_NAMESPACE "FHotPatcherEditorModule"
+
+
+void MakeProjectSettingsForHotPatcher()
+{
+	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
+	{
+		SettingsModule->RegisterSettings("Project", "Plugins", "Hot Patcher",
+            LOCTEXT("HotPatcherSettingsName", "Hot Patcher"),
+            LOCTEXT("HotPatcherSettingsDescroption", "Configure the HotPatcher plugin"),
+            GetMutableDefault<UHotPatcherSettings>());
+	}
+}
 
 void FHotPatcherEditorModule::StartupModule()
 {
@@ -47,6 +62,8 @@ void FHotPatcherEditorModule::StartupModule()
 		FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::PluginButtonClicked),
 		FCanExecuteAction());
 
+	
+	
 	FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
 
 	{
@@ -55,17 +72,19 @@ void FHotPatcherEditorModule::StartupModule()
 
 		LevelEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
 	}
-
+	
 	 {
 	 	TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
 	 	ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddToolbarExtension));
 
 	 	LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
 	 }
+	MakeProjectSettingsForHotPatcher();
 #if ENGINE_MINOR_VERSION >23
 	AddAssetContentMenu();
 	AddFolderContentMenu();
 #endif
+
 }
 
 void FHotPatcherEditorModule::ShutdownModule()
@@ -168,7 +187,18 @@ void FHotPatcherEditorModule::AddAssetContentMenu()
         false, 
         FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions")
         );
-
+	Section.AddSubMenu(
+        "CookAndPakActionsSubMenu",
+        LOCTEXT("CookAndPakActionsSubMenuLabel", "Cook And Pak Actions"),
+        LOCTEXT("CookAndPakActionsSubMenuToolTip", "Cook And Pak actions"),
+        FNewToolMenuDelegate::CreateRaw(this, &FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu),
+        FUIAction(
+            FExecuteAction()
+            ),
+        EUserInterfaceActionType::Button,
+        false, 
+        FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.SaveAllCurrentFolder")
+        );
 	Section.AddDynamicEntry("AddToPatchSettgins", FNewToolMenuSectionDelegate::CreateLambda([this](FToolMenuSection& InSection)
        {
            const TAttribute<FText> Label = LOCTEXT("CookUtilities_AddToPatchSettgins", "Add To Patch Settgins");
@@ -202,18 +232,39 @@ void FHotPatcherEditorModule::OnAddToPatchSettings(const FToolMenuContext& MenuC
 
 void FHotPatcherEditorModule::MakeCookActionsSubMenu(UToolMenu* Menu)
 {
-	
 	FToolMenuSection& Section = Menu->AddSection("CookActionsSection");
-
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
 	for (auto Platform : GetAllCookPlatforms())
 	{
+		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
+			continue;
 		Section.AddMenuEntry(
-            NAME_None,
+            FName(UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
             FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))),
             FText(),
             FSlateIcon(),
             FUIAction(
                 FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookPlatform, Platform)
+            )
+        );
+	}
+}
+
+void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
+{
+	FToolMenuSection& Section = Menu->AddSection("CookAndPakActionsSection");
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	for (auto Platform : GetAllCookPlatforms())
+	{
+		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
+			continue;
+		Section.AddMenuEntry(
+            FName(UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
+            FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))),
+            FText(),
+            FSlateIcon(),
+            FUIAction(
+                FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookAndPakPlatform, Platform)
             )
         );
 	}
@@ -307,6 +358,45 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 		UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,CookedSavePath,CookStatus);
 	}
 	
+}
+
+void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
+{
+	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
+	TArray<UPackage*> AssetsPackage;
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	OnCookPlatform(Platform);
+	FString CookForPlatform = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+	FString AbsProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+	TArray<FString> FinalCookCommands;
+	for(const auto& AssetData:AssetsData)
+	{
+		TArray<FString> CookCommands;
+		UFLibAssetManageHelperEx::MakePakCommandFromLongPackageName(AbsProjectPath, CookForPlatform, AssetData.PackageName.ToString(), Settings->CookParams, CookCommands,[](const TArray<FString>&, const FString&, const FString&){});
+		FinalCookCommands.Append(CookCommands);
+	}
+	if(!!FinalCookCommands.Num())
+	{
+		FString TempPakCommandsSavePath =  FPaths::Combine(AbsProjectPath,Settings->TempPakDir,FDateTime::UtcNow().ToString()+TEXT("_")+CookForPlatform+TEXT(".txt"));
+		FString TempPakSavePath =  FPaths::Combine(AbsProjectPath,Settings->TempPakDir,FDateTime::UtcNow().ToString()+TEXT("_")+CookForPlatform+TEXT(".pak"));
+		FFileHelper::SaveStringArrayToFile(FinalCookCommands,*TempPakCommandsSavePath);
+		if(FPaths::FileExists(TempPakCommandsSavePath))
+		{
+			FString UnrealPakOptionsSinglePak(
+                            FString::Printf(
+                                TEXT("%s -create=%s"),
+                                *(TEXT("\"") + TempPakSavePath + TEXT("\"")),
+                                *(TEXT("\"") + TempPakCommandsSavePath + TEXT("\""))
+                            )
+                        );
+			ExecuteUnrealPak(*UnrealPakOptionsSinglePak);
+			if (FPaths::FileExists(TempPakSavePath))
+			{
+				FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
+				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, TempPakSavePath);
+			}	
+		}
+	}
 }
 
 void FHotPatcherEditorModule::AddToolbarExtension(FToolBarBuilder& Builder)

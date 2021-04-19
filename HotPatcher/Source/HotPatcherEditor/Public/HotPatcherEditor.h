@@ -28,7 +28,7 @@ public:
 	/** This function will be bound to Command. */
 	void PluginButtonClicked();
 	
-private:
+public:
 
 	void AddToolbarExtension(FToolBarBuilder& Builder);
 	void AddMenuExtension(FMenuBuilder& Builder);
@@ -37,12 +37,13 @@ private:
 	void AddAssetContentMenu();
 	void OnAddToPatchSettings(const FToolMenuContext& MenuContent);
 	void MakeCookActionsSubMenu(UToolMenu* Menu);
-
+	void MakeCookAndPakActionsSubMenu(UToolMenu* Menu);
 	void AddFolderContentMenu();
 	void OnFolderAddToPatchSettings(const FToolMenuContext& MenuContent);
 #endif
 	TArray<ETargetPlatform> GetAllCookPlatforms()const;
 	void OnCookPlatform(ETargetPlatform Platform);
+	void OnCookAndPakPlatform(ETargetPlatform Platform);
 private:
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& InSpawnTabArgs);
 	void OnTabClosed(TSharedRef<SDockTab> InTab);

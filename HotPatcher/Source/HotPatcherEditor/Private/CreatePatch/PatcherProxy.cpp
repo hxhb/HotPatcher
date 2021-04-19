@@ -3,7 +3,7 @@
 #include "ThreadUtils/FThreadUtils.hpp"
 
 // engine header
-
+#include "Async/Async.h"
 #include "CoreGlobals.h"
 #include "FlibHotPatcherEditorHelper.h"
 #include "Dom/JsonValue.h"
@@ -573,11 +573,12 @@ bool UPatcherProxy::DoExport()
 
 			TArray<FString> UnrealPakOptions = GetSettingObject()->GetUnrealPakOptions();
 			TArray<FReplaceText> ReplacePakCommandTexts = GetSettingObject()->GetReplacePakCommandTexts();
+			TArray<FThread> PakWorker;
 			// 创建chunk的pak文件
 			for (const auto& PakFileProxy : PakFileProxys)
 			{
 				++PakCounter;
-				FThread CurrentPakThread(*PakFileProxy.PakSavePath, [/*CurrentPakVersion, */PlatformName, UnrealPakOptions, ReplacePakCommandTexts, PakFileProxy, &Chunk, &PakFilesInfoMap,this]()
+				uint32 index = PakWorker.Emplace(*PakFileProxy.PakSavePath, [/*CurrentPakVersion, */PlatformName, UnrealPakOptions, ReplacePakCommandTexts, PakFileProxy, &Chunk, &PakFilesInfoMap,this]()
 				{
 
 					bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(
@@ -603,33 +604,37 @@ bool UPatcherProxy::DoExport()
 						ExecuteUnrealPak(*CommandLine);
 						// FProcHandle ProcessHandle = UFlibPatchParserHelper::DoUnrealPak(UnrealPakOptionsSinglePak, true);
 
-						if (FPaths::FileExists(PakFileProxy.PakSavePath))
+						AsyncTask(ENamedThreads::GameThread, [this,PakFileProxy,&PakFilesInfoMap,PlatformName]()
 						{
-							if(IsRunningCommandlet())
+							if (FPaths::FileExists(PakFileProxy.PakSavePath))
 							{
-								FString Msg = FString::Printf(TEXT("Successd to Package the patch as %s."),*PakFileProxy.PakSavePath);
-								OnPaking.Broadcast(TEXT("SavedPakFile"),Msg);
-							}else
-							{
-								FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
-								UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, PakFileProxy.PakSavePath);
-							}
+                                if(IsRunningCommandlet())
+                                {
+                                    FString Msg = FString::Printf(TEXT("Successd to Package the patch as %s."),*PakFileProxy.PakSavePath);
+                                    OnPaking.Broadcast(TEXT("SavedPakFile"),Msg);
+                                }else
+                                {
+                                    FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
+                                    UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, PakFileProxy.PakSavePath);
+                                }
 							
 							
-							FPakFileInfo CurrentPakInfo;
-							if (UFlibPatchParserHelper::GetPakFileInfo(PakFileProxy.PakSavePath, CurrentPakInfo))
-							{
-								// CurrentPakInfo.PakVersion = CurrentPakVersion;
-								if (!PakFilesInfoMap.Contains(PlatformName))
-								{
-									PakFilesInfoMap.Add(PlatformName, TArray<FPakFileInfo>{CurrentPakInfo});
-								}
-								else
-								{
-									PakFilesInfoMap.Find(PlatformName)->Add(CurrentPakInfo);
-								}
-							}
-						}
+                                FPakFileInfo CurrentPakInfo;
+                                if (UFlibPatchParserHelper::GetPakFileInfo(PakFileProxy.PakSavePath, CurrentPakInfo))
+                                {
+                                    // CurrentPakInfo.PakVersion = CurrentPakVersion;
+                                    if (!PakFilesInfoMap.Contains(PlatformName))
+                                    {
+                                        PakFilesInfoMap.Add(PlatformName, TArray<FPakFileInfo>{CurrentPakInfo});
+                                    }
+                                    else
+                                    {
+                                        PakFilesInfoMap.Find(PlatformName)->Add(CurrentPakInfo);
+                                    }
+                                }
+                            }
+						});
+						
 						if (!Chunk.bSavePakCommands)
 						{
 							IFileManager::Get().Delete(*PakFileProxy.PakCommandSavePath);
@@ -637,7 +642,7 @@ bool UPatcherProxy::DoExport()
 					}
 
 				});
-				CurrentPakThread.Run();
+				PakWorker[index].Run();
 			}
 		}
 	}

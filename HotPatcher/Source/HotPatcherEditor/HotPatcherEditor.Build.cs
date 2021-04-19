@@ -34,6 +34,7 @@ public class HotPatcherEditor : ModuleRules
                 "JsonUtilities",
                 "TargetPlatform",
                 "PropertyEditor",
+                "Settings",
                 "AssetManagerEx",
                 "PakFileUtilities",
                 "HotPatcherRuntime"
