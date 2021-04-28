@@ -422,7 +422,8 @@ bool UFlibPatchParserHelper::ConvIniFilesToPakCommands(
 	{
 		for (const auto& PakOption : InPakOptions)
 		{
-			PakOptionsStr += PakOption + TEXT(" ");
+			if(!PakOption.Equals(TEXT("-compress"),ESearchCase::IgnoreCase))
+				PakOptionsStr += PakOption + TEXT(" ");
 		}
 	}
 	OutCommands.Reset();
@@ -1112,14 +1113,6 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(const FPatc
 		CollectPlatforms.AddUnique(Platform);
 		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(DiffInfo, Chunk ,CollectPlatforms);
 
-		FString PakOptionsStr;
-		{
-			for (const auto& Param : PakOptions)
-			{
-				PakOptionsStr += TEXT(" ") + Param;
-			}
-		}
-
 		TArray<FPakCommand> PakCommands;
 
 		auto ReceivePakCommandAssetLambda = [&PakCommands](const TArray<FString>& InCommand, const FString& InMountPath,const FString& InLongPackageName)
@@ -1143,23 +1136,46 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(const FPatc
 			PakCommands.Emplace(InCommand);
 		};
 
+		// [Pak]
+		// +ExtensionsToNotUsePluginCompression=uplugin
+		// +ExtensionsToNotUsePluginCompression=upluginmanifest
+		// +ExtensionsToNotUsePluginCompression=uproject
+		// +ExtensionsToNotUsePluginCompression=ini
+		// +ExtensionsToNotUsePluginCompression=icu
+		// +ExtensionsToNotUsePluginCompression=res
+		TArray<FString> IgnoreCompressFormats;
+		GConfig->GetArray(TEXT("Pak"),TEXT("ExtensionsToNotUsePluginCompression"),IgnoreCompressFormats,GEngineIni);
+		
 		// Collect Extern Files
+		for(const auto& PlatformItenm:CollectPlatforms)
 		{
-			for(const auto& PlatformItenm:CollectPlatforms)
+			for (const auto& CollectFile : ChunkAssetsDescrible.AllPlatformExFiles[PlatformItenm].ExternFiles)
 			{
-				for (const auto& CollectFile : ChunkAssetsDescrible.AllPlatformExFiles[PlatformItenm].ExternFiles)
+				FPakCommand CurrentPakCommand;
+				CurrentPakCommand.MountPath = CollectFile.MountPath;
+				CurrentPakCommand.AssetPackage = UFlibPatchParserHelper::MountPathToRelativePath(CurrentPakCommand.MountPath);
+				
+				FString PakOptionsStr;
+				for (const auto& Param : PakOptions)
 				{
-					FPakCommand CurrentPakCommand;
-					CurrentPakCommand.MountPath = CollectFile.MountPath;
-					CurrentPakCommand.AssetPackage = UFlibPatchParserHelper::MountPathToRelativePath(CurrentPakCommand.MountPath);
-					CurrentPakCommand.PakCommands = TArray<FString>{ FString::Printf(TEXT("\"%s\" \"%s\"%s"), *CollectFile.FilePath.FilePath, *CollectFile.MountPath,*PakOptionsStr) };
-
-					PakCommands.Add(CurrentPakCommand);
+					FString FileExtension = FPaths::GetExtension(CollectFile.FilePath.FilePath,false);
+					if(IgnoreCompressFormats.Contains(FileExtension) && Param.Equals(TEXT("-compress"),ESearchCase::IgnoreCase))
+					{
+						continue;
+					}
+					PakOptionsStr += TEXT(" ") + Param;
 				}
+				
+				CurrentPakCommand.PakCommands = TArray<FString>{ FString::Printf(TEXT("\"%s\" \"%s\"%s"), *CollectFile.FilePath.FilePath, *CollectFile.MountPath,*PakOptionsStr) };
+
+				PakCommands.Add(CurrentPakCommand);
 			}
 		}
 		// internal files
-		UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(ChunkAssetsDescrible.InternalFiles, PlatformName, PakOptions, ReceivePakCommandExFilesLambda);
+		TArray<FString> NotCompressOptions = PakOptions;
+		if(NotCompressOptions.Contains(TEXT("-compress")))
+			NotCompressOptions.Remove(TEXT("-compress"));
+		UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(ChunkAssetsDescrible.InternalFiles, PlatformName, NotCompressOptions, ReceivePakCommandExFilesLambda);
 		return PakCommands;
 	};
 
