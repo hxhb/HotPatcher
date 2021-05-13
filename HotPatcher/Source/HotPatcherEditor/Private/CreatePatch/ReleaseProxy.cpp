@@ -16,6 +16,7 @@
 
 bool UReleaseProxy::DoExport()
 {
+	GetSettingObject()->GetAssetsDependenciesScanedCaches().Empty();
 	GetSettingObject()->Init();
     bool bRetStatus = false;
 
@@ -47,6 +48,7 @@ bool UReleaseProxy::DoExport()
             GetSettingObject()->GetSpecifyAssets(),
             // GetSettingObject()->GetAllExternFiles(true),
             GetSettingObject()->GetAddExternAssetsToPlatform(),
+            GetSettingObject()->GetAssetsDependenciesScanedCaches(),
             GetSettingObject()->IsIncludeHasRefAssetsOnly(),
             GetSettingObject()->IsAnalysisFilterDependencies()
         );
@@ -117,7 +119,7 @@ bool UReleaseProxy::DoExport()
 		UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
 		if (GetSettingObject()->IsSaveAssetRelatedInfo())
 		{
-			TArray<FHotPatcherAssetDependency> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(ExportVersion.AssetInfo,GetSettingObject()->GetAssetRegistryDependencyTypes());
+			TArray<FHotPatcherAssetDependency> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(ExportVersion.AssetInfo,GetSettingObject()->GetAssetRegistryDependencyTypes(),GetSettingObject()->GetAssetsDependenciesScanedCaches());
 
 			FString AssetsDependencyString = UFlibPatchParserHelper::SerializeAssetsDependencyAsJsonString(AssetsDependency);
 			

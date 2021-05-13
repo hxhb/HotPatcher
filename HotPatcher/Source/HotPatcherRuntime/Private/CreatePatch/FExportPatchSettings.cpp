@@ -232,6 +232,7 @@ FHotPatcherVersion FExportPatchSettings::GetNewPatchVersionInfo()
         this->GetIncludeSpecifyAssets(),
         this->GetAddExternAssetsToPlatform(),
         // this->GetAllExternFiles(true),
+        this->GetAssetsDependenciesScanedCaches(),
         this->IsIncludeHasRefAssetsOnly()
     );
 

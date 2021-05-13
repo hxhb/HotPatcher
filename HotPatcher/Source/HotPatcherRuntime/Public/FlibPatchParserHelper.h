@@ -31,6 +31,9 @@
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+
 #include "FlibPatchParserHelper.generated.h"
 
 #if ENGINE_MINOR_VERSION < 25
@@ -63,6 +66,7 @@ public:
         const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
         // const TArray<FExternAssetFileInfo>& InAllExternFiles,
         const TArray<FPlatformExternAssets>& AddToPlatformExFiles,
+        TMap<FString, FAssetDependenciesInfo>& ScanedCaches,
         bool InIncludeHasRefAssetsOnly = false,
         bool bInAnalysisFilterDepend = true
     );
@@ -71,6 +75,7 @@ public:
 		const FString& InBaseVersion,
 		const FString& InDate,
 		const FChunkInfo& InChunkInfo,
+		TMap<FString, FAssetDependenciesInfo>& ScanedCaches,
 		bool InIncludeHasRefAssetsOnly = false,
 		bool bInAnalysisFilterDepend = true
 	);
@@ -166,19 +171,58 @@ public:
 	TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatformExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash);
 	static FPatchVersionDiff DiffPatchVersionWithPatchSetting(const struct FExportPatchSettings& PatchSetting, const FHotPatcherVersion& Base, const FHotPatcherVersion& New);
 
-	static FChunkAssetDescribe CollectFChunkAssetsDescribeByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, TArray<ETargetPlatform> Platforms);
+	static FChunkAssetDescribe CollectFChunkAssetsDescribeByChunk(
+		const FPatchVersionDiff& DiffInfo,
+		const FChunkInfo& Chunk, TArray<ETargetPlatform> Platforms,
+		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+	);
 
-	static TArray<FString> CollectPakCommandsStringsByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions);
+	static TArray<FString> CollectPakCommandsStringsByChunk(
+		const FPatchVersionDiff& DiffInfo,
+		const FChunkInfo& Chunk,
+		const FString& PlatformName,
+		const TArray<FString>& PakOptions,
+		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+	);
 
-	static TArray<FPakCommand> CollectPakCommandByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions);
+	static TArray<FPakCommand> CollectPakCommandByChunk(
+		const FPatchVersionDiff& DiffInfo,
+		const FChunkInfo& Chunk,
+		const FString& PlatformName,
+		const TArray<FString>& PakOptions,
+		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+	);
 	// CurrenrVersionChunk中的过滤器会进行依赖分析，TotalChunk的不会，目的是让用户可以自己控制某个文件夹打包到哪个Pak里，而不会对该文件夹下的资源进行依赖分析
-	static FChunkAssetDescribe DiffChunkWithPatchSetting(const struct FExportPatchSettings& PatchSetting, const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk);
-	static FChunkAssetDescribe DiffChunkByBaseVersionWithPatchSetting(const struct FExportPatchSettings& PatchSetting, const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, const FHotPatcherVersion& BaseVersion);
+	static FChunkAssetDescribe DiffChunkWithPatchSetting(
+		const struct FExportPatchSettings& PatchSetting,
+		const FChunkInfo& CurrentVersionChunk,
+		const FChunkInfo& TotalChunk,
+		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+	);
+	static FChunkAssetDescribe DiffChunkByBaseVersionWithPatchSetting(
+		const struct FExportPatchSettings& PatchSetting,
+		const FChunkInfo& CurrentVersionChunk,
+		const FChunkInfo& TotalChunk,
+		const FHotPatcherVersion& BaseVersion,
+		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+	);
 	static TArray<FString> GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands, const TArray<FReplaceText>& InReplaceTexts = TArray<FReplaceText>{});
 
-	static FHotPatcherAssetDependency GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
-	static TArray<FHotPatcherAssetDependency> GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
-	static TArray<FHotPatcherAssetDependency> GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes);
+	static FHotPatcherAssetDependency GetAssetRelatedInfo(
+		const FAssetDetail& InAsset,
+		const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+	);
+	static TArray<FHotPatcherAssetDependency> GetAssetsRelatedInfo(
+		const TArray<FAssetDetail>& InAssets,
+		const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+	);
+	static TArray<FHotPatcherAssetDependency> GetAssetsRelatedInfoByFAssetDependencies(
+		const FAssetDependenciesInfo& InAssetsDependencies,
+		const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+	);
 
 	static bool GetCookProcCommandParams(const FCookerConfig& InConfig,FString& OutParams);
 	//static bool SerializeMonolithicPathMode(const EMonolithicPathMode& InMode, TSharedPtr<FJsonValue>& OutJsonValue);
@@ -387,7 +431,12 @@ public:
 	}	
 
 	UFUNCTION(BlueprintCallable)
-	static TArray<FAssetDetail> GetAllAssetDependencyDetails(const FAssetDetail& Asset,const TArray<EAssetRegistryDependencyTypeEx>& Types,const FString& AssetType = TEXT(""));
+	static TArray<FAssetDetail> GetAllAssetDependencyDetails(
+		const FAssetDetail& Asset,
+		const TArray<EAssetRegistryDependencyTypeEx>& Types,
+		const FString& AssetType,
+		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+	);
 	/*
 	 * 0x1 Add
 	 * 0x2 Modyfy

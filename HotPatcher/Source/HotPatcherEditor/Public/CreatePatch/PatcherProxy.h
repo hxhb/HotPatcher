@@ -48,7 +48,7 @@ public:
         return (FExportPatchSettings*)Setting;
     }
 
-    void CookChunkAssets(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const TArray<ETargetPlatform>&);
+    void CookChunkAssets(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const TArray<ETargetPlatform>& Platforms,TMap<FString,FAssetDependenciesInfo>& ScanedCaches);
 private:
     // FExportPatchSettingsEx* ExportPatchSetting;
     bool bCommandlet = false;

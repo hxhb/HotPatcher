@@ -934,7 +934,12 @@ TMap<ETargetPlatform,FPlatformExternFiles> UFlibPatchParserHelper::GetAllPlatfor
 }
 
 
-FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, TArray<ETargetPlatform> Platforms)
+FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
+	const FPatchVersionDiff& DiffInfo,
+	const FChunkInfo& Chunk,
+	TArray<ETargetPlatform> Platforms,
+	TMap<FString,FAssetDependenciesInfo>& ScanedCaches
+	)
 {
 	FChunkAssetDescribe ChunkAssetDescribe;
 	// Collect Chunk Assets
@@ -954,7 +959,7 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 		};
 		FAssetDependenciesInfo SpecifyDependAssets;
 
-		auto GetSpecifyAssets = [&SpecifyDependAssets](const TArray<FPatcherSpecifyAsset>& SpecifyAssets)->TArray<FString>
+		auto GetSpecifyAssets = [&SpecifyDependAssets,&ScanedCaches](const TArray<FPatcherSpecifyAsset>& SpecifyAssets)->TArray<FString>
 		{
 			TArray<FString> result;
 			for (const auto& Assset : SpecifyAssets)
@@ -963,7 +968,7 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 				result.Add(CurrentAssetLongPackageName);
 				if (Assset.bAnalysisAssetDependencies)
 				{
-					UFLibAssetManageHelperEx::GetAssetDependencies(CurrentAssetLongPackageName,Assset.AssetRegistryDependencyTypes, SpecifyDependAssets);
+					UFLibAssetManageHelperEx::GetAssetDependencies(CurrentAssetLongPackageName,Assset.AssetRegistryDependencyTypes, SpecifyDependAssets,ScanedCaches);
 				}
 			}
 			return result;
@@ -1089,11 +1094,17 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 }
 
 
-TArray<FString> UFlibPatchParserHelper::CollectPakCommandsStringsByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)
+TArray<FString> UFlibPatchParserHelper::CollectPakCommandsStringsByChunk(
+	const FPatchVersionDiff& DiffInfo,
+	const FChunkInfo& Chunk,
+	const FString& PlatformName,
+	const TArray<FString>& PakOptions,
+	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+)
 {
 	TArray<FString> ChunkPakCommands;
 	{
-		TArray<FPakCommand> ChunkPakCommands_r = UFlibPatchParserHelper::CollectPakCommandByChunk(DiffInfo, Chunk, PlatformName, PakOptions);
+		TArray<FPakCommand> ChunkPakCommands_r = UFlibPatchParserHelper::CollectPakCommandByChunk(DiffInfo, Chunk, PlatformName, PakOptions,ScanedCaches);
 		for (const auto PakCommand : ChunkPakCommands_r)
 		{
 			ChunkPakCommands.Append(PakCommand.GetPakCommands());
@@ -1103,15 +1114,21 @@ TArray<FString> UFlibPatchParserHelper::CollectPakCommandsStringsByChunk(const F
 	return ChunkPakCommands;
 }
 
-TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)
+TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
+	const FPatchVersionDiff& DiffInfo,
+	const FChunkInfo& Chunk,
+	const FString& PlatformName,
+	const TArray<FString>& PakOptions,
+	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+)
 {
-	auto CollectPakCommandsByChunkLambda = [](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)->TArray<FPakCommand>
+	auto CollectPakCommandsByChunkLambda = [&ScanedCaches](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)->TArray<FPakCommand>
 	{
 		ETargetPlatform Platform;
 		UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
 		TArray<ETargetPlatform> CollectPlatforms = {ETargetPlatform::AllPlatforms};
 		CollectPlatforms.AddUnique(Platform);
-		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(DiffInfo, Chunk ,CollectPlatforms);
+		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(DiffInfo, Chunk ,CollectPlatforms,ScanedCaches);
 
 		TArray<FPakCommand> PakCommands;
 
@@ -1246,6 +1263,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
 	// const TArray<FExternAssetFileInfo>& InAllExternFiles,
 	const TArray<FPlatformExternAssets>& AddToPlatformExFiles,
+	TMap<FString, FAssetDependenciesInfo>& ScanedCaches,
 	bool InIncludeHasRefAssetsOnly,
 	bool bInAnalysisFilterDepend
 )
@@ -1284,7 +1302,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 		TArray<FAssetDetail> AllNeedPakRefAssets;
 		{
 			TArray<FAssetDetail> AllAssets;
-			UFLibAssetManageHelperEx::GetAssetsList(ExportVersion.IncludeFilter, AssetRegistryDependencyTypes, AllAssets);
+			UFLibAssetManageHelperEx::GetAssetsList(ExportVersion.IncludeFilter, AssetRegistryDependencyTypes, AllAssets,ScanedCaches);
 			if (InIncludeHasRefAssetsOnly)
 			{
 				TArray<FAssetDetail> AllDontHasRefAssets;
@@ -1322,7 +1340,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 
 	}
 
-	auto AnalysisAssetDependency = [](const TArray<FAssetDetail>& InAssetDetail, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, bool bInAnalysisDepend)->FAssetDependenciesInfo
+	auto AnalysisAssetDependency = [&ScanedCaches](const TArray<FAssetDetail>& InAssetDetail, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, bool bInAnalysisDepend)->FAssetDependenciesInfo
 	{
 		FAssetDependenciesInfo RetAssetDepend;
 		if (InAssetDetail.Num())
@@ -1332,7 +1350,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 			if (bInAnalysisDepend)
 			{
 				FAssetDependenciesInfo AssetDependencies;
-				UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(InAssetDetail,AssetRegistryDependencyTypes, AssetDependencies);
+				UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(InAssetDetail,AssetRegistryDependencyTypes, AssetDependencies,ScanedCaches);
 
 				RetAssetDepend = UFLibAssetManageHelperEx::CombineAssetDependencies(RetAssetDepend, AssetDependencies);
 			}
@@ -1379,7 +1397,14 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	return ExportVersion;
 }
 
-FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(const FString& InVersionId, const FString& InBaseVersion, const FString& InDate, const FChunkInfo& InChunkInfo, bool InIncludeHasRefAssetsOnly /*= false */,bool bInAnalysisFilterDepend /* = true*/)
+FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
+	const FString& InVersionId,
+	const FString& InBaseVersion,
+	const FString& InDate,
+	const FChunkInfo& InChunkInfo,
+	TMap<FString, FAssetDependenciesInfo>& ScanedCaches,
+	bool InIncludeHasRefAssetsOnly /*= false */,
+	bool bInAnalysisFilterDepend /* = true*/)
 {
 	return UFlibPatchParserHelper::ExportReleaseVersionInfo(
         InVersionId,
@@ -1390,27 +1415,40 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(const
         InChunkInfo.AssetRegistryDependencyTypes,
         InChunkInfo.IncludeSpecifyAssets,
         InChunkInfo.AddExternAssetsToPlatform,
+        ScanedCaches,
         InIncludeHasRefAssetsOnly,
         bInAnalysisFilterDepend
     );
 }
 
 
-FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkWithPatchSetting(const FExportPatchSettings& PatchSetting, const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk)
+FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkWithPatchSetting(
+	const FExportPatchSettings& PatchSetting,
+	const FChunkInfo& CurrentVersionChunk,
+	const FChunkInfo& TotalChunk,
+	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+)
 {
 	FHotPatcherVersion TotalChunkVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 		TEXT(""),
 		TEXT(""),
 		TEXT(""),
 		TotalChunk,
+		ScanedCaches,
 		PatchSetting.IsIncludeHasRefAssetsOnly(),
 		TotalChunk.bAnalysisFilterDependencies
 	);
 
-	return UFlibPatchParserHelper::DiffChunkByBaseVersionWithPatchSetting(PatchSetting, CurrentVersionChunk ,TotalChunk, TotalChunkVersion);
+	return UFlibPatchParserHelper::DiffChunkByBaseVersionWithPatchSetting(PatchSetting, CurrentVersionChunk ,TotalChunk, TotalChunkVersion,ScanedCaches);
 }
 
-FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkByBaseVersionWithPatchSetting(const FExportPatchSettings& PatchSetting, const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, const FHotPatcherVersion& BaseVersion)
+FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkByBaseVersionWithPatchSetting(
+	const FExportPatchSettings& PatchSetting,
+	const FChunkInfo& CurrentVersionChunk,
+	const FChunkInfo& TotalChunk,
+	const FHotPatcherVersion& BaseVersion,
+	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+)
 {
 	FChunkAssetDescribe result;
 	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
@@ -1418,6 +1456,7 @@ FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkByBaseVersionWithPatchSetti
 		TEXT(""),
 		TEXT(""),
 		CurrentVersionChunk,
+		ScanedCaches,
 		PatchSetting.IsIncludeHasRefAssetsOnly(),
 		CurrentVersionChunk.bAnalysisFilterDependencies
 	);
@@ -1477,7 +1516,11 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<
 
 
 
-FHotPatcherAssetDependency UFlibPatchParserHelper::GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
+FHotPatcherAssetDependency UFlibPatchParserHelper::GetAssetRelatedInfo(
+	const FAssetDetail& InAsset,
+	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+)
 {
 	FHotPatcherAssetDependency Dependency;
 	Dependency.Asset = InAsset;
@@ -1490,7 +1533,7 @@ FHotPatcherAssetDependency UFlibPatchParserHelper::GetAssetRelatedInfo(const FAs
 			SearchAssetDepTypes.AddUnique(UFLibAssetManageHelperEx::ConvAssetRegistryDependencyToInternal(Type));
 		}
 
-		UFLibAssetManageHelperEx::GetAssetDependency(LongPackageName, AssetRegistryDependencyTypes,Dependency.AssetDependency, false);
+		UFLibAssetManageHelperEx::GetAssetDependency(LongPackageName, AssetRegistryDependencyTypes,Dependency.AssetDependency, ScanedCaches,false);
 		UFLibAssetManageHelperEx::GetAssetReference(InAsset, SearchAssetDepTypes, Dependency.AssetReference);
 
 	}
@@ -1498,22 +1541,30 @@ FHotPatcherAssetDependency UFlibPatchParserHelper::GetAssetRelatedInfo(const FAs
 	return Dependency;
 }
 
-TArray<FHotPatcherAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
+TArray<FHotPatcherAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfo(
+	const TArray<FAssetDetail>& InAssets,
+	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+)
 {
 	TArray<FHotPatcherAssetDependency> AssetsDependency;
 
 	for (const auto& Asset : InAssets)
 	{
-		AssetsDependency.Add(UFlibPatchParserHelper::GetAssetRelatedInfo(Asset, AssetRegistryDependencyTypes));
+		AssetsDependency.Add(UFlibPatchParserHelper::GetAssetRelatedInfo(Asset, AssetRegistryDependencyTypes,ScanedCaches));
 	}
 	return AssetsDependency;
 }
 
-TArray<FHotPatcherAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
+TArray<FHotPatcherAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(
+	const FAssetDependenciesInfo& InAssetsDependencies,
+	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+)
 {
 	TArray<FAssetDetail> AssetsDetail;
 	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(InAssetsDependencies, AssetsDetail);
-	return UFlibPatchParserHelper::GetAssetsRelatedInfo(AssetsDetail, AssetRegistryDependencyTypes);
+	return UFlibPatchParserHelper::GetAssetsRelatedInfo(AssetsDetail, AssetRegistryDependencyTypes,ScanedCaches);
 }
 
 
@@ -1713,18 +1764,22 @@ bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FSt
 	return bRunStatus;
 }
 
-TArray<FAssetDetail> UFlibPatchParserHelper::GetAllAssetDependencyDetails(const FAssetDetail& Asset,
-	const TArray<EAssetRegistryDependencyTypeEx>& Types,const FString& AssetType)
+TArray<FAssetDetail> UFlibPatchParserHelper::GetAllAssetDependencyDetails(
+	const FAssetDetail& Asset,
+	const TArray<EAssetRegistryDependencyTypeEx>& Types,
+	const FString& AssetType,
+	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+	)
 {
 	TArray<FAssetDetail> result;
-	TArray<FHotPatcherAssetDependency> AssetDeps = UFlibPatchParserHelper::GetAssetsRelatedInfo(TArray<FAssetDetail>{Asset}, Types);
+	TArray<FHotPatcherAssetDependency> AssetDeps = UFlibPatchParserHelper::GetAssetsRelatedInfo(TArray<FAssetDetail>{Asset}, Types,ScanedCaches);
 	for(const auto& AssetDependency:AssetDeps)
 	{
 		for(const auto& AssetRederenceItem:AssetDependency.AssetReference)
 		{
 			if(AssetType.IsEmpty() || AssetRederenceItem.mAssetType.Equals(AssetType,ESearchCase::IgnoreCase))
 			{
-				TArray<FAssetDetail> CurrentAssetDepAssetList = UFlibPatchParserHelper::GetAllAssetDependencyDetails(AssetRederenceItem,Types,AssetType);
+				TArray<FAssetDetail> CurrentAssetDepAssetList = UFlibPatchParserHelper::GetAllAssetDependencyDetails(AssetRederenceItem,Types,AssetType,ScanedCaches);
 				CurrentAssetDepAssetList.AddUnique(AssetRederenceItem);
 				for(const auto& AssetItem:CurrentAssetDepAssetList)
 				{

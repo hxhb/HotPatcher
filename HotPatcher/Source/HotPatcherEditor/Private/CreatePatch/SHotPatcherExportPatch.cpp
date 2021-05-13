@@ -264,6 +264,7 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		ExportPatchSetting->GetAssetRegistryDependencyTypes(),
 		ExportPatchSetting->GetIncludeSpecifyAssets(),
 		ExportPatchSetting->GetAddExternAssetsToPlatform(),
+		ExportPatchSetting->GetAssetsDependenciesScanedCaches(),
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
 	);
 
@@ -332,6 +333,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 		BaseVersion.VersionId,
 		FDateTime::UtcNow().ToString(),
 		NewVersionChunk,
+		ExportPatchSetting->GetAssetsDependenciesScanedCaches(),
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
 	);
 
@@ -341,7 +343,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 	FString ShowMsg;
 	for (const auto& Chunk : ExportPatchSetting->GetChunkInfos())
 	{	
-		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(VersionDiffInfo, Chunk,ExportPatchSetting->GetPakTargetPlatforms());
+		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(VersionDiffInfo, Chunk,ExportPatchSetting->GetPakTargetPlatforms(),ExportPatchSetting->GetAssetsDependenciesScanedCaches());
 		ShowMsg.Append(FString::Printf(TEXT("Chunk:%s\n"), *Chunk.ChunkName));
 		auto AppendFilesToMsg = [&ShowMsg](const FString& CategoryName, const TArray<FString>& InFiles)
 		{
@@ -497,7 +499,7 @@ FReply SHotPatcherExportPatch::DoPreviewPatch()
 
 	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
 	
-	FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::DiffChunkByBaseVersionWithPatchSetting(*ExportPatchSetting.Get(),NewVersionChunk, DefaultChunk, BaseVersion);
+	FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::DiffChunkByBaseVersionWithPatchSetting(*ExportPatchSetting.Get(),NewVersionChunk, DefaultChunk, BaseVersion,ExportPatchSetting->GetAssetsDependenciesScanedCaches());
 
 	TArray<FString> AllUnselectedAssets = ChunkAssetsDescrible.GetAssetsStrings();
 	TArray<FString> UnSelectedInternalFiles = ChunkAssetsDescrible.GetInternalFileStrings();

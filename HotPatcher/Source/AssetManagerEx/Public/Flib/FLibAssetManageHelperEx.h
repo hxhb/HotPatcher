@@ -12,6 +12,21 @@
 
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+
 #include "FLibAssetManageHelperEx.generated.h"
 
 
@@ -100,13 +115,34 @@ public:
 	 @Param OutDependices: Output Asset Dependencies
 	*/
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static void GetAssetDependencies(const FString& InLongPackageName, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, FAssetDependenciesInfo& OutDependices);
+		static void GetAssetDependencies(
+			const FString& InLongPackageName,
+			const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+			FAssetDependenciesInfo& OutDependices,
+			TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+		);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static void GetAssetListDependencies(const TArray<FString>& InLongPackageNameList, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, FAssetDependenciesInfo& OutDependices);
+		static void GetAssetListDependencies(
+			const TArray<FString>& InLongPackageNameList,
+			const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+			FAssetDependenciesInfo& OutDependices,
+			TMap<FString, FAssetDependenciesInfo>& ScandCaches
+		);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool GetAssetDependency(const FString& InLongPackageName, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, TArray<FAssetDetail>& OutRefAsset, bool bRecursively = true);
+		static bool GetAssetDependency(
+			const FString& InLongPackageName,
+			const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+			TArray<FAssetDetail>& OutRefAsset,
+			TMap<FString, FAssetDependenciesInfo>& ScandCaches,
+			bool bRecursively = true
+		);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool GetAssetDependencyByDetail(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, TArray<FAssetDetail>& OutRefAsset, bool bRecursively = true);
+		static bool GetAssetDependencyByDetail(
+			const FAssetDetail& InAsset,
+			const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+			TArray<FAssetDetail>& OutRefAsset,
+			TMap<FString, FAssetDependenciesInfo>& ScandCaches,
+			bool bRecursively = true);
 	// UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetAssetReference(const FAssetDetail& InAsset,const TArray<EAssetRegistryDependencyType::Type>& SearchAssetDepTypes, TArray<FAssetDetail>& OutRefAsset);
 	static void GetAssetReferenceRecursively(const FAssetDetail& InAsset,
@@ -118,9 +154,19 @@ public:
 
 
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static void GetAssetDependenciesForAssetDetail(const FAssetDetail& InAssetDetail, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, FAssetDependenciesInfo& OutDependices);
+		static void GetAssetDependenciesForAssetDetail(
+			const FAssetDetail& InAssetDetail,
+			const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+			FAssetDependenciesInfo& OutDependices,
+			TMap<FString, FAssetDependenciesInfo>& ScandCaches
+		);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static void GetAssetListDependenciesForAssetDetail(const TArray<FAssetDetail>& InAssetsDetailList, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, FAssetDependenciesInfo& OutDependices);
+		static void GetAssetListDependenciesForAssetDetail(
+			const TArray<FAssetDetail>& InAssetsDetailList, 
+			const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+			FAssetDependenciesInfo& OutDependices,
+			TMap<FString, FAssetDependenciesInfo>& ScandCaches
+		);
 
 	// 获取FAssetDependenciesInfo中所有的FAssetDetail
 	static void GetAssetDetailsByAssetDependenciesInfo(const FAssetDependenciesInfo& InAssetDependencies,TArray<FAssetDetail>& OutAssetDetails);
@@ -133,17 +179,28 @@ public:
 		const FString& InTargetLongPackageName,
 		const TArray<EAssetRegistryDependencyTypeEx>& InAssetDependencyTypes,
 		FAssetDependenciesInfo& OutDependencies,
+		TMap<FString,FAssetDependenciesInfo>& ScanedCaches,
 		bool bRecursively=true
 	);
 
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager",meta=(AutoCreateRefTerm="InExFilterPackagePaths",AdvancedDisplay="InExFilterPackagePaths"))
-		static bool GetModuleAssetsList(const FString& InModuleName,const TArray<FString>& InExFilterPackagePaths, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, TArray<FAssetDetail>& OutAssetList);
-
+	static bool GetModuleAssetsList(
+			const FString& InModuleName,
+			const TArray<FString>& InExFilterPackagePaths,
+			const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+			TArray<FAssetDetail>& OutAssetList,
+			TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+		);
 	/*
 	 * FilterPackageName format is /Game or /Game/TEST
 	 */
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool GetAssetsList(const TArray<FString>& InFilterPackagePaths, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, TArray<FAssetDetail>& OutAssetList, bool bReTargetRedirector=true);
+	static bool GetAssetsList(	const TArray<FString>& InFilterPackagePaths,
+			const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+			TArray<FAssetDetail>& OutAssetList,
+			TMap<FString, FAssetDependenciesInfo>& ScanedCaches,
+			bool bReTargetRedirector=true
+		);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetRedirectorList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutRedirector);
 		static bool GetSpecifyAssetData(const FString& InLongPackageName, TArray<FAssetData>& OutAssetData,bool InIncludeOnlyOnDiskAssets);

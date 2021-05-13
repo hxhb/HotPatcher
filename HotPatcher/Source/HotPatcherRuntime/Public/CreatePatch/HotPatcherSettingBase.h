@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include "FPatcherSpecifyAsset.h"
 #include "FPlatformExternAssets.h"
+#include "Struct/AssetManager/FAssetDependenciesInfo.h"
+
 // engine 
 #include "CoreMinimal.h"
 #include "Engine/EngineTypes.h"
@@ -33,6 +35,13 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase
         static TArray<FPlatformExternAssets> PlatformNoAssets;
         return PlatformNoAssets;
     };
+    virtual TMap<FString,FAssetDependenciesInfo>& GetAssetsDependenciesScanedCaches()
+    {
+        return ScanedCaches;
+    }
+    
     virtual void Init(){};
     virtual ~FHotPatcherSettingBase(){}
+protected:
+    TMap<FString,FAssetDependenciesInfo> ScanedCaches;
 };
