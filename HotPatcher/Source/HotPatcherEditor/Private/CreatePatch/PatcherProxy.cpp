@@ -354,7 +354,7 @@ bool UPatcherProxy::DoExport()
 	UE_LOG(LogHotPatcher,Display,TEXT("Diff base version and current project version..."));
 	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*GetSettingObject(), BaseVersion, CurrentVersion);
 
-	UE_LOG(LogHotPatcher,Display,TEXT("Deserialize BaseVersion/Export New Version/Diff Patch time %ds"),ExportVersionUsedTime.GetSeconds());
+	UE_LOG(LogHotPatcher,Display,TEXT("Deserialize BaseVersion/Export New Version/Diff Patch time %s"),*ExportVersionUsedTime.ToString());
 	UE_LOG(LogHotPatcher,Display,TEXT("New Version total asset number is %d."),GetSettingObject()->GetAssetsDependenciesScanedCaches().Num());
 	UE_LOG(LogHotPatcher,Display,TEXT("Checking patch require..."));
 	FString ReceiveMsg;
@@ -847,7 +847,7 @@ bool UPatcherProxy::DoExport()
 	
 	FDateTime EndTime = FDateTime::Now();
 	FTimespan ExecutionTime = EndTime - BeginTime;
-	OnShowMsg.Broadcast(FString::Printf(TEXT("The Patch execution time of this task is %d seconds"),ExecutionTime.GetSeconds()));
+	OnShowMsg.Broadcast(FString::Printf(TEXT("The Patch execution time of this task is %s"),*ExecutionTime.ToString()));
 	return true;
 }
 
