@@ -509,7 +509,7 @@ bool UPatcherProxy::DoExport()
 				OnPaking.Broadcast(TEXT("ExportPatch"),*Dialog.ToString());
 				UnrealPakSlowTask->EnterProgressFrame(1.0, Dialog);
 			}
-			FString ChunkSaveBasePath = FPaths::Combine(GetSettingObject()->SavePath.Path, CurrentVersion.VersionId, PlatformName);
+			FString ChunkSaveBasePath = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(), CurrentVersion.VersionId, PlatformName);
 			TArray<FPakFileProxy> PakFileProxys;
 
 			TArray<FPakCommand> ChunkPakCommands = UFlibPatchParserHelper::CollectPakCommandByChunk(VersionDiffInfo, Chunk, PlatformName, GetSettingObject()->GetPakCommandOptions());
@@ -604,7 +604,7 @@ bool UPatcherProxy::DoExport()
 						ExecuteUnrealPak(*CommandLine);
 						// FProcHandle ProcessHandle = UFlibPatchParserHelper::DoUnrealPak(UnrealPakOptionsSinglePak, true);
 
-						AsyncTask(ENamedThreads::GameThread, [this,PakFileProxy,&PakFilesInfoMap,PlatformName]()
+						// AsyncTask(ENamedThreads::GameThread, [this,PakFileProxy,&PakFilesInfoMap,PlatformName]()
 						{
 							if (FPaths::FileExists(PakFileProxy.PakSavePath))
 							{
@@ -633,14 +633,13 @@ bool UPatcherProxy::DoExport()
                                     }
                                 }
                             }
-						});
+						}//);
 						
 						if (!Chunk.bSavePakCommands)
 						{
 							IFileManager::Get().Delete(*PakFileProxy.PakCommandSavePath);
 						}
 					}
-
 				});
 				PakWorker[index].Run();
 			}

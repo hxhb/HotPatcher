@@ -16,8 +16,9 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonReader.h"
 #include "Misc/FileHelper.h"
-
 #include "IPlatformFilePak.h"
+#include "ShaderPipelineCache.h"
+#include "RHI.h"
 
 void UFlibPakHelper::ExecMountPak(FString InPakPath, int32 InPakOrder, FString InMountPoint)
 {
@@ -366,7 +367,7 @@ int32 UFlibPakHelper::GetPakOrderByPakPath(const FString& PakFile)
     {
     	FString PakFilename = PakFile;
     	if (PakFilename.EndsWith(TEXT("_P.pak")))
-    	{    
+    	{
 			// Prioritize based on the chunk version number
     		// Default to version 1 for single patch system
     		uint32 ChunkVersionNumber = 1;
@@ -413,10 +414,15 @@ bool UFlibPakHelper::LoadAssetRegistry(const FString& InAssetRegistryBin)
 	return bSuccess;
 }
 
+bool UFlibPakHelper::OpenPSO(const FString& Name)
+{
+	return FShaderPipelineCache::OpenPipelineFileCache(Name,GMaxRHIShaderPlatform);
+}
+
 TArray<FString> UFlibPakHelper::GetAllMountedPaks()
 {
 	FPakPlatformFile* PakPlatformFile = (FPakPlatformFile*)(FPlatformFileManager::Get().FindPlatformFile(FPakPlatformFile::GetTypeName()));
-
+	
 	TArray<FString> Resault;
 	if(PakPlatformFile)
 		PakPlatformFile->GetMountedPakFilenames(Resault);

@@ -1223,7 +1223,10 @@ FPatchVersionDiff UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(const
 	{
 		UE_LOG(LogHotPatcher,Display,TEXT("ignore deleted assets info in patch..."));
 		VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap.Empty();
-		VersionDiffInfo.PlatformExternDiffInfo.Find(ETargetPlatform::AllPlatforms)->DeleteExternalFiles.Empty();
+		if(VersionDiffInfo.PlatformExternDiffInfo.Contains(ETargetPlatform::AllPlatforms))
+		{
+			VersionDiffInfo.PlatformExternDiffInfo.Find(ETargetPlatform::AllPlatforms)->DeleteExternalFiles.Empty();
+		}
 		for(const auto& Platform:PatchSetting.GetPakTargetPlatforms())
 		{
 			VersionDiffInfo.PlatformExternDiffInfo.Find(Platform)->DeleteExternalFiles.Empty();
@@ -1808,7 +1811,6 @@ void UFlibPatchParserHelper::AnalysisWidgetTree(FPatchVersionDiff& PakDiff,int32
 		}
 	}
 }
-
 #define ENGINEDIR_MARK TEXT("[ENGINEDIR]/")
 #define ENGINE_CONTENT_DIR_MARK TEXT("[ENGINE_CONTENT_DIR]/")
 #define PROJECTDIR_MARK TEXT("[PROJECTDIR]/")
@@ -1816,7 +1818,7 @@ void UFlibPatchParserHelper::AnalysisWidgetTree(FPatchVersionDiff& PakDiff,int32
 #define PROJECT_SAVED_DIR_MARK TEXT("[PROJECT_SAVED_DIR]/")
 #define PROJECT_CONFIG_DIR_MARK TEXT("[PROJECT_CONFIG_DIR]/")
 
-void UFlibPatchParserHelper::ReplacePatherSettingProjectDir(TArray<FPlatformExternAssets>& PlatformAssets)
+TMap<FString, FString> UFlibPatchParserHelper::GetReplacePathMarkMap()
 {
 	TMap<FString,FString> MarkMap;
 	MarkMap.Add(ENGINEDIR_MARK,FPaths::EngineDir());
@@ -1825,7 +1827,12 @@ void UFlibPatchParserHelper::ReplacePatherSettingProjectDir(TArray<FPlatformExte
 	MarkMap.Add(PROJECT_CONTENT_DIR_MARK,FPaths::ProjectContentDir());
 	MarkMap.Add(PROJECT_SAVED_DIR_MARK,FPaths::ProjectSavedDir());
 	MarkMap.Add(PROJECT_CONFIG_DIR_MARK,FPaths::ProjectConfigDir());
+	return MarkMap;
+}
 
+FString UFlibPatchParserHelper::ReplaceMarkPath(const FString& Src)
+{
+	TMap<FString,FString> MarkMap = UFlibPatchParserHelper::GetReplacePathMarkMap();
 	auto ReplaceProjectDir = [&MarkMap](const FString& OriginDir)->FString
 	{
 		TArray<FString> MarkKeys;
@@ -1847,15 +1854,21 @@ void UFlibPatchParserHelper::ReplacePatherSettingProjectDir(TArray<FPlatformExte
 		FPaths::MakeStandardFilename(result);
 		return result;
 	};
+	return ReplaceProjectDir(Src);
+}
+
+
+void UFlibPatchParserHelper::ReplacePatherSettingProjectDir(TArray<FPlatformExternAssets>& PlatformAssets)
+{
 	for(auto& ExPlatform:PlatformAssets)
 	{
 		for(auto& ExFile:ExPlatform.AddExternFileToPak)
 		{
-			ExFile.FilePath.FilePath = ReplaceProjectDir(ExFile.FilePath.FilePath);
+			ExFile.FilePath.FilePath = UFlibPatchParserHelper::ReplaceMarkPath(ExFile.FilePath.FilePath);
 		}
 		for(auto& ExDir:ExPlatform.AddExternDirectoryToPak)
 		{
-			ExDir.DirectoryPath.Path = ReplaceProjectDir(ExDir.DirectoryPath.Path);
+			ExDir.DirectoryPath.Path = UFlibPatchParserHelper::ReplaceMarkPath(ExDir.DirectoryPath.Path);
 		}
 	}
 }

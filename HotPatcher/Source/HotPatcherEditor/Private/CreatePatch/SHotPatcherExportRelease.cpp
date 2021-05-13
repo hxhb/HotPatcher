@@ -158,7 +158,7 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 		bool bHasVersion = !ExportReleaseSettings->GetVersionId().IsEmpty();
 		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFiltersPaths().Num();
 		bool bHasSpecifyAssets = !!ExportReleaseSettings->GetSpecifyAssets().Num();
-		bool bHasSavePath = !(ExportReleaseSettings->GetSavePath().IsEmpty());
+		bool bHasSavePath = !(ExportReleaseSettings->GetSaveAbsPath().IsEmpty());
 
 		bCanExport = bHasVersion && (bHasFilter||bHasSpecifyAssets) && bHasSavePath;
 	}

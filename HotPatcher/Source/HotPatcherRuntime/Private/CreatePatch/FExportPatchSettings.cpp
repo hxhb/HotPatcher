@@ -38,11 +38,15 @@ FString FExportPatchSettings::GetSaveAbsPath()const
 {
 	if (!SavePath.Path.IsEmpty())
 	{
-		return FPaths::ConvertRelativePathToFull(SavePath.Path);
+		return UFlibPatchParserHelper::ReplaceMarkPath(SavePath.Path);
 	}
 	return TEXT("");
 }
 
+FString FExportPatchSettings::GetBaseVersion() const
+{
+	return UFlibPatchParserHelper::ReplaceMarkPath(BaseVersion.FilePath); 
+}
 
 FPakVersion FExportPatchSettings::GetPakVersion(const FHotPatcherVersion& InHotPatcherVersion, const FString& InUtcTime)
 {

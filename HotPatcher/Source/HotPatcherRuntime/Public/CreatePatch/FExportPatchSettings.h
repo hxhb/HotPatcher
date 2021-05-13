@@ -67,7 +67,7 @@ public:
 	FString GetSaveAbsPath()const;
 
 	FORCEINLINE FString GetVersionId()const { return VersionId; }
-	FORCEINLINE FString GetBaseVersion()const { return BaseVersion.FilePath; }
+	FString GetBaseVersion()const;
 	FORCEINLINE TArray<FString> GetPakCommandOptions()const { return PakCommandOptions; }
 	FORCEINLINE TArray<FReplaceText> GetReplacePakCommandTexts()const { return ReplacePakCommandTexts; }
 	FORCEINLINE TArray<FString> GetUnrealPakOptions()const { return UnrealPakOptions; }

@@ -415,4 +415,8 @@
 
 		return TArray<FExternDirectoryInfo>{};
 	}
-	
+
+FString FExportReleaseSettings::GetSaveAbsPath() const
+{
+	return UFlibPatchParserHelper::ReplaceMarkPath(SavePath.Path);
+}

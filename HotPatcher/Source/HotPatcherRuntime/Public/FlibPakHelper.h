@@ -67,4 +67,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		static bool LoadAssetRegistry(const FString& InAssetRegistryBin);
+
+	// Default Load FApp::GetProjectName() on Enging launching
+	UFUNCTION(BlueprintCallable)
+		static bool OpenPSO(const FString& Name);
 };

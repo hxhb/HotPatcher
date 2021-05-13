@@ -27,6 +27,7 @@ public class HotPatcherRuntime : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"RHI",
 				"Core",
                 "Projects",
                 "Json",

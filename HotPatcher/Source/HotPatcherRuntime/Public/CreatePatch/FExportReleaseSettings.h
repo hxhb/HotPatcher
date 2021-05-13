@@ -74,7 +74,7 @@ public:
 	TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform)const;
 
 	TArray<FPlatformExternAssets> GetAddExternAssetsToPlatform()const{return AddExternAssetsToPlatform;}
-	FORCEINLINE FString GetSavePath()const{return SavePath.Path;}
+	FString GetSaveAbsPath()const;
 	FORCEINLINE bool IsSaveConfig()const {return bSaveReleaseConfig;}
 	FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bSaveAssetRelatedInfo; }
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }

@@ -52,7 +52,7 @@ bool UReleaseProxy::DoExport()
         );
 	}
 
-	FString SaveVersionDir = FPaths::Combine(GetSettingObject()->GetSavePath(), GetSettingObject()->GetVersionId());
+	FString SaveVersionDir = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(), GetSettingObject()->GetVersionId());
 
 	// save release asset info
 	{
@@ -147,7 +147,7 @@ bool UReleaseProxy::DoExport()
 		UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
 		if(GetSettingObject()->IsBackupMetadata())
 		{
-			UFlibHotPatcherEditorHelper::BackupMetadataDir(FPaths::ProjectDir(),FApp::GetProjectName(),GetSettingObject()->GetBackupMetadataPlatforms(),FPaths::Combine(GetSettingObject()->GetSavePath(),GetSettingObject()->GetVersionId()));
+			UFlibHotPatcherEditorHelper::BackupMetadataDir(FPaths::ProjectDir(),FApp::GetProjectName(),GetSettingObject()->GetBackupMetadataPlatforms(),FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),GetSettingObject()->GetVersionId()));
 		}
 	}
 	UnrealPakSlowTask->Final();
