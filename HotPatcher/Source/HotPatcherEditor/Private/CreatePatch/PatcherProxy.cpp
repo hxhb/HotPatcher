@@ -355,6 +355,7 @@ bool UPatcherProxy::DoExport()
 	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*GetSettingObject(), BaseVersion, CurrentVersion);
 
 	UE_LOG(LogHotPatcher,Display,TEXT("Deserialize BaseVersion/Export New Version/Diff Patch time %ds"),ExportVersionUsedTime.GetSeconds());
+	UE_LOG(LogHotPatcher,Display,TEXT("New Version total asset number is %d."),GetSettingObject()->GetAssetsDependenciesScanedCaches().Num());
 	UE_LOG(LogHotPatcher,Display,TEXT("Checking patch require..."));
 	FString ReceiveMsg;
 	if (!GetSettingObject()->IsCookPatchAssets() && !CheckPatchRequire(VersionDiffInfo, ReceiveMsg))
@@ -831,20 +832,22 @@ bool UPatcherProxy::DoExport()
 		}
 	}
 
-	FDateTime EndTime = FDateTime::Now();
-	FTimespan ExecutionTime = EndTime - BeginTime;
+	
 	if (!GetPakCounter())
 	{
 		UE_LOG(LogHotPatcher, Error, TEXT("The Patch not contain any invalie file!"));
 		OnShowMsg.Broadcast(TEXT("The Patch not contain any invalie file!"));
-		OnShowMsg.Broadcast(FString::Printf(TEXT("The Patch execution time of this task is %d seconds"),ExecutionTime.GetSeconds()));
+		
 	}
 	else
 	{
 		OnShowMsg.Broadcast(TEXT(""));
 	}
 	UnrealPakSlowTask->Final();
-
+	
+	FDateTime EndTime = FDateTime::Now();
+	FTimespan ExecutionTime = EndTime - BeginTime;
+	OnShowMsg.Broadcast(FString::Printf(TEXT("The Patch execution time of this task is %d seconds"),ExecutionTime.GetSeconds()));
 	return true;
 }
 

@@ -522,7 +522,7 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 						// search cached
 						if(ScanedCaches.Find(InAssetPackageName))
 						{
-							UE_LOG(LogAssetManagerEx, Display, TEXT("Search Asset %s dependencies is cached"), *InAssetPackageName);
+							// UE_LOG(LogAssetManagerEx, Display, TEXT("Search Asset %s dependencies is cached"), *InAssetPackageName);
 							CurrentDependencies = *ScanedCaches.Find(InAssetPackageName);
 						}
 						else
