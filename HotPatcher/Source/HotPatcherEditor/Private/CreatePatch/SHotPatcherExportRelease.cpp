@@ -16,6 +16,7 @@
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
 #include "HAL/FileManager.h"
+#include "Kismet/KismetTextLibrary.h"
 #include "Misc/FileHelper.h"
 #include "Misc/ScopedSlowTask.h"
 
@@ -58,9 +59,9 @@ void SHotPatcherExportRelease::Construct(const FArguments& InArgs, TSharedPtr<FH
 				.Text(LOCTEXT("GenerateRelease", "Export Release"))
 				.OnClicked(this,&SHotPatcherExportRelease::DoExportRelease)
 				.IsEnabled(this,&SHotPatcherExportRelease::CanExportRelease)
+				.ToolTipText(this,&SHotPatcherExportRelease::GetGenerateTooltipText)
 			]
 		];
-	
 }
 
 void SHotPatcherExportRelease::ImportConfig()
@@ -185,6 +186,39 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 		RunProcMission(UFlibHotPatcherEditorHelper::GetUE4CmdBinary(),MissionCommand);
 	}
 	return FReply::Handled();
+}
+
+FText SHotPatcherExportRelease::GetGenerateTooltipText() const
+{
+	FString FinalString;
+	if (ExportReleaseSettings)
+	{
+		bool bHasVersion = !ExportReleaseSettings->GetVersionId().IsEmpty();
+		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFiltersPaths().Num();
+		bool bHasSpecifyAssets = !!ExportReleaseSettings->GetSpecifyAssets().Num();
+		bool bHasSavePath = !(ExportReleaseSettings->GetSaveAbsPath().IsEmpty());
+
+		struct FStatus
+		{
+			FStatus(bool InMatch,const FString& InDisplay):bMatch(InMatch)
+			{
+				Display = FString::Printf(TEXT("%s:%s"),*InDisplay,InMatch?TEXT("true"):TEXT("false"));
+			}
+			FString GetDisplay()const{return Display;}
+			bool bMatch;
+			FString Display;
+		};
+		TArray<FStatus> AllStatus;
+		AllStatus.Emplace(bHasVersion,TEXT("HasVersion"));
+		AllStatus.Emplace((bHasFilter||bHasSpecifyAssets),TEXT("HasFilter or HasSpecifyAssets"));
+		AllStatus.Emplace(bHasSavePath,TEXT("HasSavePath"));
+		
+		for(const auto& Status:AllStatus)
+		{
+			FinalString+=FString::Printf(TEXT("%s\n"),*Status.GetDisplay());
+		}
+	}
+	return UKismetTextLibrary::Conv_StringToText(FinalString);
 }
 
 #undef LOCTEXT_NAMESPACE

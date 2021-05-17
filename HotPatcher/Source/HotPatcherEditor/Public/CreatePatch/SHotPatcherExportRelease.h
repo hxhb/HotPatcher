@@ -46,7 +46,7 @@ protected:
 	void CreateExportFilterListView();
 	bool CanExportRelease()const;
 	FReply DoExportRelease();
-
+	virtual FText GetGenerateTooltipText() const override;
 private:
 
 	// TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;

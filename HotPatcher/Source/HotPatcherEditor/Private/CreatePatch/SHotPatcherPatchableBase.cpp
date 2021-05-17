@@ -20,6 +20,7 @@
 #include "Misc/SecureHash.h"
 #include "Misc/ScopedSlowTask.h"
 #include "HAL/FileManager.h"
+#include "Kismet/KismetTextLibrary.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCreatePatch"
 
@@ -148,6 +149,11 @@ void SHotPatcherPatchableBase::InitMissionNotificationProxy()
         FText::FromString(FString::Printf(TEXT("%s Mission Finished!"),*GetMissionName())),
         FText::FromString(FString::Printf(TEXT("%s Failed!"),*GetMissionName()))
     );
+}
+
+FText SHotPatcherPatchableBase::GetGenerateTooltipText() const
+{
+	return UKismetTextLibrary::Conv_StringToText(TEXT(""));
 }
 
 TArray<FString> SHotPatcherPatchableBase::OpenFileDialog()const

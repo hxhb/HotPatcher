@@ -14,7 +14,7 @@ My UOD Hot Update Keynote Speech: [Unreal Open Day2020 Unreal Engine 4 Full Plat
 The series of UE4 hot update articles I wrote can be used as a reference for engineering practice:
 
 - [UE4 Hot Update: Demand Analysis and Scheme Design](https://imzlp.com/posts/17371)
-- [UE4 Resource HotPatcher](https://imzlp.com/posts/17590/)
+- [UE4 resource packaging tool HotPatcher](https://imzlp.com/posts/17590/)
 - [UE4 Hot Update: Automated Process Based on HotPatcher](https://imzlp.com/posts/10938/)
 - [2020 Unreal Open Day](https://imzlp.com/posts/11043/)
 - [UE4 Hot Update: Split the basic package](https://imzlp.com/posts/13765/)

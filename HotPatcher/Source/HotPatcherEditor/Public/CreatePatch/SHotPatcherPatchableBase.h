@@ -46,6 +46,7 @@ public:
 	virtual FHotPatcherSettingBase* GetConfigSettings(){return nullptr;};
 	virtual FString GetMissionName(){return TEXT("");};
 	virtual void InitMissionNotificationProxy() override;
+	virtual FText GetGenerateTooltipText() const;
 	TArray<FString> OpenFileDialog()const;
 	TArray<FString> SaveFileDialog()const;
 

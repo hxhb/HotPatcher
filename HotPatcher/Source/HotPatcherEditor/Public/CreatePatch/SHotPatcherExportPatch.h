@@ -49,10 +49,11 @@ protected:
 	void CreateExportFilterListView();
 	bool CanExportPatch()const;
 	FReply DoExportPatch();
-
+	virtual FText GetGenerateTooltipText() const override;
+	
 	bool CanPreviewPatch()const;
 	FReply DoPreviewPatch();
-
+	
 	FReply DoDiff()const;
 	bool CanDiff()const;
 	FReply DoClearDiff()const;

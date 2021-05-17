@@ -25,6 +25,7 @@
 #include "Misc/SecureHash.h"
 #include "HAL/FileManager.h"
 #include "PakFileUtilities.h"
+#include "Kismet/KismetTextLibrary.h"
 
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCreatePatch"
@@ -99,6 +100,7 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 						.Text(LOCTEXT("PreviewPatch", "PreviewPatch"))
 						.IsEnabled(this, &SHotPatcherExportPatch::CanPreviewPatch)
 						.OnClicked(this, &SHotPatcherExportPatch::DoPreviewPatch)
+						.ToolTipText(this,&SHotPatcherExportPatch::GetGenerateTooltipText)
 					]
 				+ SHorizontalBox::Slot()
 					.HAlign(HAlign_Right)
@@ -107,6 +109,7 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 					[
 						SNew(SButton)
 						.Text(LOCTEXT("GeneratePatch", "GeneratePatch"))
+						.ToolTipText(this,&SHotPatcherExportPatch::GetGenerateTooltipText)
 						.IsEnabled(this, &SHotPatcherExportPatch::CanExportPatch)
 						.OnClicked(this, &SHotPatcherExportPatch::DoExportPatch)
 					]
@@ -442,6 +445,57 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		RunProcMission(UFlibHotPatcherEditorHelper::GetUE4CmdBinary(),MissionCommand);
 	}
 	return FReply::Handled();
+}
+
+FText SHotPatcherExportPatch::GetGenerateTooltipText() const
+{
+	FString FinalString;
+	if (ExportPatchSetting)
+	{
+		bool bHasBase = false;
+		if (ExportPatchSetting->IsByBaseVersion())
+			bHasBase = !ExportPatchSetting->GetBaseVersion().IsEmpty() && FPaths::FileExists(ExportPatchSetting->GetBaseVersion());
+		else
+			bHasBase = true;
+		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
+		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFiltersPaths().Num();
+		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
+		// bool bHasExternFiles = !!ExportPatchSetting->GetAddExternFiles().Num();
+		// bool bHasExDirs = !!ExportPatchSetting->GetAddExternDirectory().Num();
+		bool bHasExternFiles = !!ExportPatchSetting->GetAllPlatfotmExternFiles().Num();
+		bool bHasExDirs = !!ExportPatchSetting->GetAddExternAssetsToPlatform().Num();
+		bool bHasSavePath = !ExportPatchSetting->GetSaveAbsPath().IsEmpty();
+		bool bHasPakPlatfotm = !!ExportPatchSetting->GetPakTargetPlatforms().Num();
+		
+		bool bHasAnyPakFiles = (
+			bHasFilter || bHasSpecifyAssets || bHasExternFiles || bHasExDirs ||
+			ExportPatchSetting->IsIncludeEngineIni() ||
+			ExportPatchSetting->IsIncludePluginIni() ||
+			ExportPatchSetting->IsIncludeProjectIni()
+			);
+		struct FStatus
+		{
+			FStatus(bool InMatch,const FString& InDisplay):bMatch(InMatch)
+			{
+				Display = FString::Printf(TEXT("%s:%s"),*InDisplay,InMatch?TEXT("true"):TEXT("false"));
+			}
+			FString GetDisplay()const{return Display;}
+			bool bMatch;
+			FString Display;
+		};
+		TArray<FStatus> AllStatus;
+		AllStatus.Emplace(bHasBase,TEXT("BaseVersion"));
+		AllStatus.Emplace(bHasVersionId,TEXT("HasVersionId"));
+		AllStatus.Emplace(bHasAnyPakFiles,TEXT("HasAnyPakFiles"));
+		AllStatus.Emplace(bHasPakPlatfotm,TEXT("HasPakPlatfotm"));
+		AllStatus.Emplace(bHasSavePath,TEXT("HasSavePath"));
+		
+		for(const auto& Status:AllStatus)
+		{
+			FinalString+=FString::Printf(TEXT("%s\n"),*Status.GetDisplay());
+		}
+	}
+	return UKismetTextLibrary::Conv_StringToText(FinalString);
 }
 
 bool SHotPatcherExportPatch::CanPreviewPatch() const
