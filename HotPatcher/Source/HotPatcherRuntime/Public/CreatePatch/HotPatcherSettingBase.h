@@ -39,9 +39,11 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase
     {
         return ScanedCaches;
     }
-    
+    virtual bool IsScanCacheOptimize()const{return bScanCacheOptimize;}
     virtual void Init(){};
     virtual ~FHotPatcherSettingBase(){}
 protected:
+    // UPROPERTY(EditAnywhere, Category = "Advanced")
+    bool bScanCacheOptimize=true;
     TMap<FString,FAssetDependenciesInfo> ScanedCaches;
 };

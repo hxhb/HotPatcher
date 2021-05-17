@@ -21,6 +21,8 @@
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #endif
 
+bool GScanCacheOptimize = true;
+
 FString UFLibAssetManageHelperEx::ConvVirtualToAbsPath(const FString& InPackagePath)
 {
 	FString ResultAbsPath;
@@ -308,7 +310,11 @@ bool UFLibAssetManageHelperEx::GetAssetReference(const FAssetDetail& InAsset, co
 			for (const auto& AssetDepType : SearchAssetDepTypes)
 			{
 				TArray<FAssetIdentifier> CurrentTypeReferenceNames;
+#if ENGINE_MINOR_VERSION >=26
+				AssetRegistryModule.Get().GetReferencers(AssetId, CurrentTypeReferenceNames, (UE::AssetRegistry::EDependencyCategory)((uint8)AssetDepType));
+#else
 				AssetRegistryModule.Get().GetReferencers(AssetId, CurrentTypeReferenceNames, AssetDepType);
+#endif
 				for (const auto& Name : CurrentTypeReferenceNames)
 				{
 					if (!(Name.PackageName.ToString() == LongPackageName))
@@ -475,8 +481,11 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 	}
 
 	// AssetTypes.AddUnique(UFLibAssetManageHelperEx::ConvAssetRegistryDependencyToInternal(DepType));
+#if ENGINE_MINOR_VERSION >=26
+	bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(FName(*InTargetLongPackageName), local_Dependencies, (UE::AssetRegistry::EDependencyCategory)((uint8)TotalType));
+#else
 	bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(FName(*InTargetLongPackageName), local_Dependencies, TotalType);
-
+#endif
 	if (bGetDependenciesSuccess)
 	{
 		for (auto &DependItem : local_Dependencies)
@@ -518,22 +527,30 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 					
 					if (bRecursively)
 					{
-						FAssetDependenciesInfo CurrentDependencies;
-						// search cached
-						if(ScanedCaches.Find(InAssetPackageName))
+						if(!GScanCacheOptimize)
 						{
-							// UE_LOG(LogAssetManagerEx, Display, TEXT("Search Asset %s dependencies is cached"), *InAssetPackageName);
-							CurrentDependencies = *ScanedCaches.Find(InAssetPackageName);
+							UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(InAssetRegistryModule, InAssetPackageName, InAssetDependencyTypes,OutDependencies, ScanedCaches,true);
 						}
 						else
 						{
-							if(CheckEndlessRecursively(InAssetPackageName))
+							FAssetDependenciesInfo CurrentDependencies;
+							// search cached
+							if(ScanedCaches.Find(InAssetPackageName))
 							{
-								UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(InAssetRegistryModule, InAssetPackageName, InAssetDependencyTypes,CurrentDependencies, ScanedCaches,true);
-								// Add to ScanedCaches
-								ScanedCaches.Add(InAssetPackageName,CurrentDependencies);
+								// UE_LOG(LogAssetManagerEx, Display, TEXT("Search Asset %s dependencies is cached"), *InAssetPackageName);
+								CurrentDependencies = *ScanedCaches.Find(InAssetPackageName);
+							}
+							else
+							{
+								if(CheckEndlessRecursively(InAssetPackageName))
+								{
+									UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(InAssetRegistryModule, InAssetPackageName, InAssetDependencyTypes,CurrentDependencies, ScanedCaches,true);
+									// Add to ScanedCaches
+									ScanedCaches.Add(InAssetPackageName,CurrentDependencies);
+								}
 							}
 						}
+						
 					}
 				}
 			};

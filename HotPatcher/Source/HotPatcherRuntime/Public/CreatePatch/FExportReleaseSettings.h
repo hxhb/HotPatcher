@@ -113,6 +113,7 @@ public:
 	{
 		return AddExternAssetsToPlatform;
 	}
+	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Version")
 		FString VersionId;
@@ -155,4 +156,5 @@ public:
 	// create a UE4Editor-cmd.exe process execute patch mission.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
 		bool bStandaloneMode = true;
+	
 };

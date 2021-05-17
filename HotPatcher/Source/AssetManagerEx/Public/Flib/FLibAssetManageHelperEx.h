@@ -19,6 +19,8 @@
 #define JSON_ALL_ASSETS_LIST_SECTION_NAME TEXT("AssetsList")
 #define JSON_ALL_ASSETS_Detail_SECTION_NAME TEXT("AssetsDetail")
 
+ASSETMANAGEREX_API extern bool GScanCacheOptimize;
+
 USTRUCT(BlueprintType)
 struct FPackageInfo
 {

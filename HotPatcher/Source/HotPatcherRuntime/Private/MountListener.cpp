@@ -14,10 +14,16 @@ void UMountListener::Init()
 {
     if(!HasAnyFlags(RF_ClassDefaultObject))
     {
-#if ENGINE_MINOR_VERSION > 24
-        FCoreDelegates::OnPakFileMounted.AddUObject(this,&UMountListener::OnMountPak);
-#else
-        FCoreDelegates::PakFileMountedCallback.AddUObject(this,&UMountListener::OnMountPak);
+#if ENGINE_MINOR_VERSION >=26
+    	FCoreDelegates::OnPakFileMounted2.AddLambda([this](const IPakFile& PakFile){this->OnMountPak(*PakFile.PakGetPakFilename(),0);});
+#endif
+
+#if ENGINE_MINOR_VERSION <=25 && ENGINE_MINOR_VERSION > 22
+        FCoreDelegates::OnPakFileMounted.AddLambda([this](const TCHAR* Pak, const int32 ChunkID){this->OnMountPak(Pak,ChunkID);});
+#endif
+    	
+#if ENGINE_MINOR_VERSION <= 22
+    	FCoreDelegates::PakFileMountedCallback.AddLambda([this](const TCHAR* Pak){this->OnMountPak(Pak,0);});
 #endif
         FCoreDelegates::OnUnmountPak.BindUObject(this,&UMountListener::OnUnMountPak);
 #if !WITH_EDITOR
@@ -34,20 +40,14 @@ void UMountListener::Init()
 #endif
     }
 }
-#if ENGINE_MINOR_VERSION > 24
-void UMountListener::OnMountPak(const TCHAR* Pak, int32 ChunkID)
-#else
-void UMountListener::OnMountPak(const TCHAR* Pak)
-#endif
+
+void UMountListener::OnMountPak(const TCHAR* PakFileName, int32 ChunkID)
 {
-    UE_LOG(LogMountListener,Log,TEXT("Pak %s is Mounted!"),Pak);
+    UE_LOG(LogMountListener,Log,TEXT("Pak %s is Mounted!"),PakFileName);
     FPakMountInfo MountedPak;
-    MountedPak.Pak = Pak;
-#if ENGINE_MINOR_VERSION > 24
+    MountedPak.Pak = PakFileName;
     MountedPak.PakOrder = ChunkID;
-#else
-    MountedPak.PakOrder = UFlibPakHelper::GetPakOrderByPakPath(Pak);
-#endif
+    MountedPak.PakOrder = UFlibPakHelper::GetPakOrderByPakPath(PakFileName);
     PaksMap.Add(MountedPak.Pak,MountedPak);
     OnMountPakDelegate.Broadcast(MountedPak);
 }

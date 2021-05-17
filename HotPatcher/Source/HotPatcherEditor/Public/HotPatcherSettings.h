@@ -3,7 +3,6 @@
 #include "HotPatcherEditor.h"
 
 #include "CoreMinimal.h"
-#include "ToolMenus.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "HotPatcherSettings.generated.h"
 #define LOCTEXT_NAMESPACE "UHotPatcherSettings"

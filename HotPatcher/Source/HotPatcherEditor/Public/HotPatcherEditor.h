@@ -12,6 +12,11 @@
 #include "Modules/ModuleManager.h"
 #include "CreatePatch/FExportPatchSettings.h"
 #include "CreatePatch/FExportReleaseSettings.h"
+
+#if ENGINE_MINOR_VERSION>=26
+	#define InvokeTab TryInvokeTab
+#endif
+
 class FToolBarBuilder;
 class FMenuBuilder;
 extern FExportPatchSettings* GPatchSettings;

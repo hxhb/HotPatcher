@@ -7,6 +7,7 @@
 #include "GenericPlatform/GenericPlatformFile.h"
 #include "MountListener.generated.h"
 
+
 USTRUCT(Blueprintable,BlueprintType)
 struct HOTPATCHERRUNTIME_API FPakMountInfo
 {
@@ -29,12 +30,10 @@ class HOTPATCHERRUNTIME_API UMountListener : public UObject
 public:
 
     UFUNCTION(BlueprintCallable)
-    void Init();
-#if ENGINE_MINOR_VERSION >24
-    void OnMountPak(const TCHAR* Pak, int32 ChunkID);
-#else
-    virtual void OnMountPak(const TCHAR* Pak);
-#endif
+    void Init();   
+
+    void OnMountPak(const TCHAR* PakFileName, int32 ChunkID);
+
     virtual bool OnUnMountPak(const FString& Pak);
 
     virtual TMap<FString,FPakMountInfo>& GetMountedPaks();

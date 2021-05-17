@@ -311,6 +311,8 @@ bool UPatcherProxy::DoExport()
 {
 	FDateTime BeginTime = FDateTime::Now();
 	GetSettingObject()->GetAssetsDependenciesScanedCaches().Empty();
+	GScanCacheOptimize = GetSettingObject()->IsScanCacheOptimize();
+	UE_LOG(LogHotPatcher, Display, TEXT("Enable Scan Cache Optimize %s"),GScanCacheOptimize?TEXT("true"):TEXT("false"));
 	GetSettingObject()->Init();
 	FHotPatcherVersion BaseVersion;
 
