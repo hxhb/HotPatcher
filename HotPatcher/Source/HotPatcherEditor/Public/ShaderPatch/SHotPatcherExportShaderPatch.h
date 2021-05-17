@@ -42,9 +42,11 @@ public:
 	virtual void DoGenerate();
 	virtual FExportShaderPatchSettings* GetConfigSettings() override{return ExportShaderPatchSettings.Get();};
 	virtual FString GetMissionName() override{return TEXT("Shader Patch");}
+	virtual FText GetGenerateTooltipText() const override;
 protected:
 	void CreateExportFilterListView();
 	bool CanExportShaderPatch()const;
+	bool HasValidConfig()const;
 	FReply DoExportShaderPatch();
 
 private:

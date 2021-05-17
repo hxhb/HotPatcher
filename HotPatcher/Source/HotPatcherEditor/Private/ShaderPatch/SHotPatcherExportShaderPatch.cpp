@@ -4,6 +4,7 @@
 #include "ShaderPatch/FExportShaderPatchSettings.h"
 #include "ShaderPatch/FlibShaderPatchHelper.h"
 #include "RHI.h"
+#include "Kismet/KismetTextLibrary.h"
 #include "ShaderPatch/ShaderPatchProxy.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherShaderPatch"
@@ -45,9 +46,9 @@ void SHotPatcherExportShaderPatch::Construct(const FArguments& InArgs,
                 .Text(LOCTEXT("GenerateShaderPatch", "Export ShaderPatch"))
                 .OnClicked(this,&SHotPatcherExportShaderPatch::DoExportShaderPatch)
                 .IsEnabled(this,&SHotPatcherExportShaderPatch::CanExportShaderPatch)
+                .ToolTipText(this,&SHotPatcherExportShaderPatch::GetGenerateTooltipText)
             ]
         ];
-
 }
 
 void SHotPatcherExportShaderPatch::ImportConfig()
@@ -118,6 +119,31 @@ void SHotPatcherExportShaderPatch::DoGenerate()
 	}
 }
 
+FText SHotPatcherExportShaderPatch::GetGenerateTooltipText() const
+{
+	FString FinalString;
+	struct FStatus
+	{
+		FStatus(bool InMatch,const FString& InDisplay):bMatch(InMatch)
+		{
+			Display = FString::Printf(TEXT("%s:%s"),*InDisplay,InMatch?TEXT("true"):TEXT("false"));
+		}
+		FString GetDisplay()const{return Display;}
+		bool bMatch;
+		FString Display;
+	};
+	TArray<FStatus> AllStatus;
+	AllStatus.Emplace(HasValidConfig(),TEXT("HasValidShaderPatchConfig"));
+	bool bHasSavePath = ExportShaderPatchSettings->SaveTo.Path.IsEmpty()?false:FPaths::DirectoryExists(FPaths::ConvertRelativePathToFull(ExportShaderPatchSettings->SaveTo.Path));
+	AllStatus.Emplace(bHasSavePath,TEXT("HasSavePath"));
+		
+	for(const auto& Status:AllStatus)
+	{
+		FinalString+=FString::Printf(TEXT("%s\n"),*Status.GetDisplay());
+	}
+	return UKismetTextLibrary::Conv_StringToText(FinalString);
+}
+
 void SHotPatcherExportShaderPatch::CreateExportFilterListView()
 {
 	// Create a property view
@@ -155,6 +181,12 @@ void SHotPatcherExportShaderPatch::CreateExportFilterListView()
 
 bool SHotPatcherExportShaderPatch::CanExportShaderPatch() const
 {
+	bool bHasSavePath = ExportShaderPatchSettings->SaveTo.Path.IsEmpty()?false:FPaths::DirectoryExists(FPaths::ConvertRelativePathToFull(ExportShaderPatchSettings->SaveTo.Path));
+	return HasValidConfig() && bHasSavePath;
+}
+
+bool SHotPatcherExportShaderPatch::HasValidConfig() const
+{
 	auto HasValidDir = [](const TArray<FDirectoryPath>& Dirs)->bool
 	{
 		bool bresult = false;
@@ -175,13 +207,13 @@ bool SHotPatcherExportShaderPatch::CanExportShaderPatch() const
 	for(const auto& Platform:ExportShaderPatchSettings->ShaderPatchConfigs)
 	{
 		if(HasValidDir(Platform.OldMetadataDir) &&
-        FPaths::DirectoryExists(Platform.NewMetadataDir.Path))
+		FPaths::DirectoryExists(Platform.NewMetadataDir.Path))
 		{
 			HasValidPatchConfig = true;
 			break;
 		}
 	}
-	return HasValidPatchConfig && FPaths::DirectoryExists(ExportShaderPatchSettings->SaveTo.Path);
+	return HasValidPatchConfig;
 }
 
 FReply SHotPatcherExportShaderPatch::DoExportShaderPatch()
