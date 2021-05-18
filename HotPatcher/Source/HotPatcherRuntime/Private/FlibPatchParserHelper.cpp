@@ -1906,9 +1906,9 @@ FString UFlibPatchParserHelper::ReplaceMarkPath(const FString& Src)
 				break;
 			}
 		}
-		
-		result = FPaths::ConvertRelativePathToFull(result);
+
 		FPaths::MakeStandardFilename(result);
+		result = FPaths::ConvertRelativePathToFull(result);
 		return result;
 	};
 	return ReplaceProjectDir(Src);
