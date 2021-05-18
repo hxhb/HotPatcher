@@ -62,4 +62,7 @@ public:
 	static FString GetMetadataDir(const FString& ProjectDir,const FString& ProjectName,ETargetPlatform Platform);
 	
 	static void BackupMetadataDir(const FString& ProjectDir,const FString& ProjectName,const TArray<ETargetPlatform>& Platforms,const FString& OutDir);
+
+	static FString ReleaseSummary(const FHotPatcherVersion& NewVersion);
+	static FString PatchSummary(const FPatchVersionDiff& DiffInfo);
 };

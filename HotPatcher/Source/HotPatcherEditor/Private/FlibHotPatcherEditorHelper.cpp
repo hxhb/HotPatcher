@@ -538,3 +538,61 @@ void UFlibHotPatcherEditorHelper::BackupMetadataDir(const FString& ProjectDir, c
 		}
 	}
 }
+
+FString UFlibHotPatcherEditorHelper::ReleaseSummary(const FHotPatcherVersion& NewVersion)
+{
+	FString result = TEXT("\n---------------------HotPatcher Release Summary---------------------\n");
+
+	auto ParserPlatformExternAssets = [](ETargetPlatform Platform,const FPlatformExternAssets& PlatformExternAssets)->FString
+	{
+		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);;
+		FString result = FString::Printf(TEXT("======== %s Non-Assets =========\n"),*PlatformName);
+		result += FString::Printf(TEXT("External Files: %d\n"),PlatformExternAssets.AddExternFileToPak.Num());
+		// result += FString::Printf(TEXT("External Directorys: %d\n"),PlatformExternAssets.AddExternDirectoryToPak.Num());
+		result += FString::Printf(TEXT("================================\n"));
+		return result;
+	};
+	TMap<FString,uint32> AddModuleAssetNumMap;
+	result += FString::Printf(TEXT("New Release Asset Number: %d\n"),UFLibAssetManageHelperEx::ParserAssetDependenciesInfoNumber(NewVersion.AssetInfo,AddModuleAssetNumMap));
+	result += UFLibAssetManageHelperEx::ParserModuleAssetsNumMap(AddModuleAssetNumMap);
+	TArray<ETargetPlatform> Keys;
+	NewVersion.PlatformAssets.GetKeys(Keys);
+	for(const auto& Key:Keys)
+	{
+		result += ParserPlatformExternAssets(Key,*NewVersion.PlatformAssets.Find(Key));
+	}
+	return result;
+}
+
+FString UFlibHotPatcherEditorHelper::PatchSummary(const FPatchVersionDiff& DiffInfo)
+{
+	auto ExternFileSummary = [](ETargetPlatform Platform,const FPatchVersionExternDiff& ExternDiff)->FString
+	{
+		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);;
+		FString result = FString::Printf(TEXT("======== %s Non-Assets =========\n"),*PlatformName);
+		result += FString::Printf(TEXT("Add Non-Asset Number: %d\n"),ExternDiff.AddExternalFiles.Num());
+		result += FString::Printf(TEXT("Modify Non-Asset Number: %d\n"),ExternDiff.ModifyExternalFiles.Num());
+		result += FString::Printf(TEXT("Delete Non-Asset Number: %d\n"),ExternDiff.DeleteExternalFiles.Num());
+		result += FString::Printf(TEXT("================================\n"));
+		return result;
+	};
+	
+	FString result = TEXT("\n-----------------HotPatcher Patch Summary-----------------\n");
+	result+= TEXT("=================\n");
+	TMap<FString,uint32> AddModuleAssetNumMap;
+	result += FString::Printf(TEXT("Add Asset Number: %d\n"),UFLibAssetManageHelperEx::ParserAssetDependenciesInfoNumber(DiffInfo.AssetDiffInfo.AddAssetDependInfo,AddModuleAssetNumMap));
+	result += UFLibAssetManageHelperEx::ParserModuleAssetsNumMap(AddModuleAssetNumMap);
+	TMap<FString,uint32> ModifyModuleAssetNumMap;
+	result += FString::Printf(TEXT("Modify Asset Number: %d\n"),UFLibAssetManageHelperEx::ParserAssetDependenciesInfoNumber(DiffInfo.AssetDiffInfo.ModifyAssetDependInfo,ModifyModuleAssetNumMap));
+	result += UFLibAssetManageHelperEx::ParserModuleAssetsNumMap(ModifyModuleAssetNumMap);
+	TMap<FString,uint32> DeleteModuleAssetNumMap;
+	result += FString::Printf(TEXT("Delete Asset Number: %d\n"),UFLibAssetManageHelperEx::ParserAssetDependenciesInfoNumber(DiffInfo.AssetDiffInfo.DeleteAssetDependInfo,DeleteModuleAssetNumMap));
+	result += UFLibAssetManageHelperEx::ParserModuleAssetsNumMap(DeleteModuleAssetNumMap);
+	TArray<ETargetPlatform> Platforms;
+	DiffInfo.PlatformExternDiffInfo.GetKeys(Platforms);
+	for(const auto& Platform:Platforms)
+	{
+		result += ExternFileSummary(Platform,*DiffInfo.PlatformExternDiffInfo.Find(Platform));
+	}
+	return result;
+}

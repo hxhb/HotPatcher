@@ -310,6 +310,7 @@ bool UPatcherProxy::CanExportPatch()const
 bool UPatcherProxy::DoExport()
 {
 	TimeRecorder TotalTimeTR(TEXT("HotPatcher Generate Patch Total Time"));
+	// OnShowMsg.AddLambda([](const FString& DisplayInfo){ UE_LOG(LogHotPatcher, Display, TEXT("%s"),*DisplayInfo); });
 	
 	GetSettingObject()->GetAssetsDependenciesScanedCaches().Empty();
 	GScanCacheOptimize = GetSettingObject()->IsScanCacheOptimize();
@@ -752,6 +753,7 @@ bool UPatcherProxy::DoExport()
 	}
 
 	// save Patch Tracked asset info to file
+	FHotPatcherVersion NewReleaseVersion;
 	if(GetPakCounter())
 	{
 		TimeRecorder TR(FString::Printf(TEXT("Save New Release info")));
@@ -767,7 +769,7 @@ bool UPatcherProxy::DoExport()
 		}
 		
 		FString SerializeReleaseVersionInfo;
-		FHotPatcherVersion NewReleaseVersion = MakeNewRelease(BaseVersion, CurrentVersion,GetSettingObject());
+		NewReleaseVersion = MakeNewRelease(BaseVersion, CurrentVersion,GetSettingObject());
 		UFlibPatchParserHelper::TSerializeStructAsJsonString(NewReleaseVersion, SerializeReleaseVersionInfo);
 
 		FString SaveCurrentVersionToFile = FPaths::Combine(
@@ -875,19 +877,24 @@ bool UPatcherProxy::DoExport()
 		}
 	}
 
+	// show summary infomation
+	if(GetPakCounter())
+	{
+		OnShowMsg.Broadcast(UFlibHotPatcherEditorHelper::PatchSummary(VersionDiffInfo));
+		OnShowMsg.Broadcast(UFlibHotPatcherEditorHelper::ReleaseSummary(NewReleaseVersion));
+	}
 	
 	if (!GetPakCounter())
 	{
 		UE_LOG(LogHotPatcher, Error, TEXT("The Patch not contain any invalie file!"));
 		OnShowMsg.Broadcast(TEXT("The Patch not contain any invalie file!"));
-		
 	}
 	else
 	{
 		OnShowMsg.Broadcast(TEXT(""));
 	}
 	UnrealPakSlowTask->Final();
-	
+
 	return true;
 }
 
@@ -955,5 +962,6 @@ void UPatcherProxy::CookChunkAssets(
 		UFlibHotPatcherEditorHelper::CookAssets(AssetsSoftPath,Platforms,UFlibHotPatcherEditorHelper::GetProjectCookedDir());
 	}
 }
+
 
 #undef LOCTEXT_NAMESPACE

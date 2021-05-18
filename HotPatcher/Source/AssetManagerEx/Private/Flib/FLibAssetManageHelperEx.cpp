@@ -1507,6 +1507,34 @@ bool UFLibAssetManageHelperEx::FindFilesRecursive(const FString& InStartDir, TAr
 	return true;
 }
 
+uint32 UFLibAssetManageHelperEx::ParserAssetDependenciesInfoNumber(const FAssetDependenciesInfo& AssetDependenciesInfo, TMap<FString, uint32> ModuleAssetsNumMaps)
+{
+	uint32 TotalAssetNum = 0;
+	TArray<FString> ModuleCategorys;
+	AssetDependenciesInfo.AssetsDependenciesMap.GetKeys(ModuleCategorys);
+	for(const auto& ModuleKey:ModuleCategorys)
+	{
+		TArray<FString> AssetKeys;
+		AssetDependenciesInfo.AssetsDependenciesMap.Find(ModuleKey)->AssetDependencyDetails.GetKeys(AssetKeys);
+		ModuleAssetsNumMaps.Add(ModuleKey,AssetKeys.Num());
+		TotalAssetNum+=AssetKeys.Num();
+	}
+	return TotalAssetNum;
+}
+
+FString UFLibAssetManageHelperEx::ParserModuleAssetsNumMap(const TMap<FString, uint32>& InMap)
+{
+	FString result;
+	TArray<FString> Keys;
+	InMap.GetKeys(Keys);
+
+	for(const auto& Key:Keys)
+	{
+		result += FString::Printf(TEXT("%s\t%d\n"),*Key,*InMap.Find(Key));
+	}
+	return result;
+}
+
 FString UFLibAssetManageHelperEx::ConvPath_Slash2BackSlash(const FString& InPath)
 {
 	FString ResaultPath;

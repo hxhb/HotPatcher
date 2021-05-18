@@ -19,6 +19,7 @@ public:
     {
         return (FExportReleaseSettings*)Setting;
     }
+    
 private:
     FExportReleaseSettings* ExportReleaseSettings;
 };
