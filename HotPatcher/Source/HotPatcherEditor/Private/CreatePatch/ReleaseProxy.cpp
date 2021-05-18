@@ -16,7 +16,8 @@
 
 bool UReleaseProxy::DoExport()
 {
-	FDateTime BeginTime = FDateTime::Now();
+	TimeRecorder TotalTimeTR(TEXT("HotPatcher Generate Release Total Time"));
+	
 	GetSettingObject()->GetAssetsDependenciesScanedCaches().Empty();
 	GScanCacheOptimize = GetSettingObject()->IsScanCacheOptimize();
 	UE_LOG(LogHotPatcher, Display, TEXT("Enable Scan Cache Optimize %s"),GScanCacheOptimize?TEXT("true"):TEXT("false"));
@@ -40,6 +41,8 @@ bool UReleaseProxy::DoExport()
 	
 	FHotPatcherVersion ExportVersion;
 	{
+		TimeRecorder TotalTimeTR(TEXT("Export Release Version Info"));
+		
     	FText DiaLogMsg = FText::Format(NSLOCTEXT("AnalysisRelease", "AnalysisReleaseVersionInfo", "Analysis Release {0} Assets info."), FText::FromString(GetSettingObject()->GetVersionId()));
     	UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
     	ExportVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
@@ -58,15 +61,13 @@ bool UReleaseProxy::DoExport()
         );
 	}
 
-	FDateTime ExportVersionTime = FDateTime::Now();
-	FTimespan ExportVersionUsedTime = ExportVersionTime-BeginTime;
-	UE_LOG(LogHotPatcher,Display,TEXT("Deserialize BaseVersion/Export New Version/Diff Patch time %s"),*ExportVersionUsedTime.ToString());
 	UE_LOG(LogHotPatcher,Display,TEXT("New Version total asset number is %d."),GetSettingObject()->GetAssetsDependenciesScanedCaches().Num());
 	
 	FString SaveVersionDir = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(), GetSettingObject()->GetVersionId());
 
 	// save release asset info
 	{
+		TimeRecorder TR(TEXT("Save release asset info"));
 		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportReleaseJson", "ExportReleaseVersionInfoJson", "Export Release {0} Assets info to file."), FText::FromString(GetSettingObject()->GetVersionId()));
 		UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
 		FString SaveToJson;
@@ -96,6 +97,7 @@ bool UReleaseProxy::DoExport()
 	}
 
 	{
+		TimeRecorder TR(TEXT("Save release config"));
 		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportReleaseConfig", "ExportReleaseConfigJson", "Export Release {0} Configuration to file."), FText::FromString(GetSettingObject()->GetVersionId()));
 		UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
 		FString ConfigJson;
@@ -124,6 +126,7 @@ bool UReleaseProxy::DoExport()
 
 	// save asset dependency
 	{
+		TimeRecorder TR(TEXT("save asset dependency"));
 		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportReleaseAssetDependency", "ExportReleaseAssetDependencyJson", "Export Release {0} Asset Dependency to file."), FText::FromString(GetSettingObject()->GetVersionId()));
 		UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
 		if (GetSettingObject()->IsSaveAssetRelatedInfo())
@@ -154,6 +157,7 @@ bool UReleaseProxy::DoExport()
 
 	// backup Metadata
 	{
+		TimeRecorder TR(TEXT("Backup Metadata"));
 		FText DiaLogMsg = FText::Format(NSLOCTEXT("BackupMetadata", "BackupMetadata", "Backup Release {0} Metadatas."), FText::FromString(GetSettingObject()->GetVersionId()));
 		UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
 		if(GetSettingObject()->IsBackupMetadata())
@@ -163,10 +167,6 @@ bool UReleaseProxy::DoExport()
 	}
 	UnrealPakSlowTask->Final();
 
-	FDateTime EndTime = FDateTime::Now();
-	FTimespan ExecutionTime = EndTime - BeginTime;
-	OnShowMsg.Broadcast(FString::Printf(TEXT("The Release execution time of this task is %s"),*ExecutionTime.ToString()));
-	
 	return bRetStatus;
 }
 

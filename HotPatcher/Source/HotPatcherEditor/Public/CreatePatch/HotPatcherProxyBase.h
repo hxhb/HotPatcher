@@ -1,6 +1,7 @@
 ﻿#pragma once
 // project header
 #include "CreatePatch/HotPatcherSettingBase.h"
+#include "HotPatcherLog.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -8,6 +9,26 @@
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FExportPakProcess,const FString&,const FString&);
 DECLARE_MULTICAST_DELEGATE_OneParam(FExportPakShowMsg,const FString&);
+
+
+struct TimeRecorder
+{
+    TimeRecorder(const FString& InDisplay):Display(InDisplay)
+    {
+        BeginTime = FDateTime::Now();
+    }
+    ~TimeRecorder()
+    {
+        CurrentTime = FDateTime::Now();
+        UsedTime = CurrentTime-BeginTime;
+        UE_LOG(LogHotPatcher,Display,TEXT("----Time Recorder----: %s %s"),*Display,*UsedTime.ToString());
+    }
+public:
+    FDateTime BeginTime;
+    FDateTime CurrentTime;
+    FTimespan UsedTime;
+    FString Display;
+};
 
 UCLASS()
 class HOTPATCHEREDITOR_API UHotPatcherProxyBase : public UObject
