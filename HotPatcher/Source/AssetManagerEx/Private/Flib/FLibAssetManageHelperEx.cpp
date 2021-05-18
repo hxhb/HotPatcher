@@ -419,12 +419,20 @@ void UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(
 		FString AssetPackageName;
 		UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(AssetDetail.mPackagePath,AssetPackageName);
 		FAssetDependenciesInfo CurrentAsserInfo;
-		UFLibAssetManageHelperEx::GetAssetDependenciesForAssetDetail(AssetDetail, AssetRegistryDependencyTypes,CurrentAsserInfo,ScandCaches);
-		
-		if(GScanCacheOptimize && !ScandCaches.Find(AssetPackageName))
+
+		if(GScanCacheOptimize && ScandCaches.Find(AssetPackageName))
 		{
-			ScandCaches.Add(AssetPackageName,CurrentAsserInfo);
+			CurrentAsserInfo = *ScandCaches.Find(AssetPackageName);
 		}
+		else
+		{
+			UFLibAssetManageHelperEx::GetAssetDependenciesForAssetDetail(AssetDetail, AssetRegistryDependencyTypes,CurrentAsserInfo,ScandCaches);
+			if(GScanCacheOptimize && !ScandCaches.Find(AssetPackageName))
+			{
+				ScandCaches.Add(AssetPackageName,CurrentAsserInfo);
+			}
+		}
+		
 		result = UFLibAssetManageHelperEx::CombineAssetDependencies(result, CurrentAsserInfo);
 	}
 	OutDependices = result;
