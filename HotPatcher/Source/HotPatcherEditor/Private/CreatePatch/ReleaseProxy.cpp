@@ -16,7 +16,7 @@
 
 bool UReleaseProxy::DoExport()
 {
-	OnShowMsg.AddLambda([](const FString& DisplayInfo){ UE_LOG(LogHotPatcher, Display, TEXT("%s"),*DisplayInfo); });
+	// OnShowMsg.AddLambda([](const FString& DisplayInfo){ UE_LOG(LogHotPatcher, Display, TEXT("%s"),*DisplayInfo); });
 	
 	TimeRecorder TotalTimeTR(TEXT("HotPatcher Generate Release Total Time"));
 	

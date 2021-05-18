@@ -5,16 +5,13 @@
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "AssetManager/FAssetDetail.h"
 
+// engine
 #include "Dom/JsonValue.h"
 #include "Templates/SharedPointer.h"
 #include "AssetRegistryModule.h"
 #include "CoreMinimal.h"
-
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-
 #include "FLibAssetManageHelperEx.generated.h"
 
 #define JSON_MODULE_LIST_SECTION_NAME TEXT("ModuleList")
