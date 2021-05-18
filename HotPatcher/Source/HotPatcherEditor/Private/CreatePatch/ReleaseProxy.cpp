@@ -16,6 +16,7 @@
 
 bool UReleaseProxy::DoExport()
 {
+	FDateTime BeginTime = FDateTime::Now();
 	GetSettingObject()->GetAssetsDependenciesScanedCaches().Empty();
 	GScanCacheOptimize = GetSettingObject()->IsScanCacheOptimize();
 	UE_LOG(LogHotPatcher, Display, TEXT("Enable Scan Cache Optimize %s"),GScanCacheOptimize?TEXT("true"):TEXT("false"));
@@ -57,6 +58,11 @@ bool UReleaseProxy::DoExport()
         );
 	}
 
+	FDateTime ExportVersionTime = FDateTime::Now();
+	FTimespan ExportVersionUsedTime = ExportVersionTime-BeginTime;
+	UE_LOG(LogHotPatcher,Display,TEXT("Deserialize BaseVersion/Export New Version/Diff Patch time %s"),*ExportVersionUsedTime.ToString());
+	UE_LOG(LogHotPatcher,Display,TEXT("New Version total asset number is %d."),GetSettingObject()->GetAssetsDependenciesScanedCaches().Num());
+	
 	FString SaveVersionDir = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(), GetSettingObject()->GetVersionId());
 
 	// save release asset info
@@ -156,6 +162,11 @@ bool UReleaseProxy::DoExport()
 		}
 	}
 	UnrealPakSlowTask->Final();
+
+	FDateTime EndTime = FDateTime::Now();
+	FTimespan ExecutionTime = EndTime - BeginTime;
+	OnShowMsg.Broadcast(FString::Printf(TEXT("The Release execution time of this task is %s"),*ExecutionTime.ToString()));
+	
 	return bRetStatus;
 }
 

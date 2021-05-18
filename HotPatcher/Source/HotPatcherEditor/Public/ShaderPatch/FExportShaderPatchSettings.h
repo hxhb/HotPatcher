@@ -59,15 +59,7 @@ public:
 	
 	UPROPERTY(EditAnywhere, Category="Config")
 	TArray<FShaderPatchConf> ShaderPatchConfigs;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Save")
-	bool bSaveConfig = true;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Save")
-	FDirectoryPath SaveTo;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
-	bool bStandaloneMode = false;
 };
 
 

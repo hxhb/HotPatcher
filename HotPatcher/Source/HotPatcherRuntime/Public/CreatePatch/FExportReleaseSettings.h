@@ -68,14 +68,9 @@ public:
 	TArray<FString> GetAssetIncludeFiltersPaths()const;
 	TArray<FString> GetAssetIgnoreFiltersPaths()const;
 	TArray<FExternFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const;
-	TArray<FExternFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false)const;
-	TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false)const;
-	TArray<FExternFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)const;
-	TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform)const;
-
+	
 	TArray<FPlatformExternAssets> GetAddExternAssetsToPlatform()const{return AddExternAssetsToPlatform;}
-	FString GetSaveAbsPath()const;
-	FORCEINLINE bool IsSaveConfig()const {return bSaveReleaseConfig;}
+
 	FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bSaveAssetRelatedInfo; }
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 	FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
@@ -92,27 +87,14 @@ public:
 
 	FORCEINLINE bool IsByPakList()const { return ByPakList; }
 	FORCEINLINE TArray<FPlatformPakListFiles> GetPlatformsPakListFiles()const {return PlatformsPakListFiles;}
-	FORCEINLINE bool IsStandaloneMode()const {return bStandaloneMode;}
-	FORCEINLINE bool IsBackupMetadata()const {return bBackupMetadata;}
+
 	FORCEINLINE TArray<ETargetPlatform> GetBackupMetadataPlatforms()const{return BackupMetadataPlatforms;}
 	
 	// override
-	virtual TArray<FDirectoryPath>& GetAssetIncludeFilters() override
-	{
-		return AssetIncludeFilters;
-	}
-	virtual TArray<FDirectoryPath>& GetAssetIgnoreFilters()override
-	{
-		return AssetIgnoreFilters;
-	}
-	virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets()override
-	{
-		return IncludeSpecifyAssets;
-	}
-	virtual TArray<FPlatformExternAssets>& GetAddExternAssetsToPlatform()override
-	{
-		return AddExternAssetsToPlatform;
-	}
+	virtual TArray<FDirectoryPath>& GetAssetIncludeFilters() override{ return AssetIncludeFilters; }
+	virtual TArray<FDirectoryPath>& GetAssetIgnoreFilters()override{ return AssetIgnoreFilters; }
+	virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets()override{ return IncludeSpecifyAssets; }
+	virtual TArray<FPlatformExternAssets>& GetAddExternAssetsToPlatform()override{ return AddExternAssetsToPlatform;}
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Version")
@@ -144,17 +126,7 @@ public:
 		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSaveAssetRelatedInfo = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bSaveReleaseConfig = true;
-	// backup current project Cooked/PLATFORM/PROJECTNAME/Metadata directory
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bBackupMetadata = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bBackupMetadata"))
 		TArray<ETargetPlatform> BackupMetadataPlatforms;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "SaveTo")
-		FDirectoryPath SavePath;
-	// create a UE4Editor-cmd.exe process execute patch mission.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
-		bool bStandaloneMode = true;
-	
 };

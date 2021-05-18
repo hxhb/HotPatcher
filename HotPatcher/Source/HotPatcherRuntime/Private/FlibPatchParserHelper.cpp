@@ -298,7 +298,9 @@ FPlatformExternFiles UFlibPatchParserHelper::GetAllExFilesByPlatform(
 		// ignore FPaths::FileExists(ExFile.FilePath.FilePath) 
 		if (!ExFile.FilePath.FilePath.IsEmpty() && !result.ExternFiles.Contains(ExFile))
 		{
-			result.ExternFiles.Add(ExFile);
+			FExternFileInfo CurrentFile = ExFile;
+			CurrentFile.FilePath.FilePath = UFlibPatchParserHelper::ReplaceMarkPath(ExFile.FilePath.FilePath);
+			result.ExternFiles.Add(CurrentFile);
 		}
 	}
 	if (InGeneratedHash)
@@ -638,7 +640,7 @@ TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const
 	{
 		if(DirectoryItem.DirectoryPath.Path.IsEmpty())
 			continue;
-		FString DirAbsPath = FPaths::ConvertRelativePathToFull(DirectoryItem.DirectoryPath.Path);
+		FString DirAbsPath = UFlibPatchParserHelper::ReplaceMarkPath(DirectoryItem.DirectoryPath.Path); //FPaths::ConvertRelativePathToFull(DirectoryItem.DirectoryPath.Path);
 		
 		FPaths::MakeStandardFilename(DirAbsPath);
 		if (!DirAbsPath.IsEmpty() && FPaths::DirectoryExists(DirAbsPath))

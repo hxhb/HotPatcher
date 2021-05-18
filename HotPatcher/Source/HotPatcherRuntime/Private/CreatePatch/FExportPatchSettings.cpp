@@ -31,16 +31,7 @@ FExportPatchSettings::FExportPatchSettings()
 
 void FExportPatchSettings::Init()
 {
-	UFlibPatchParserHelper::ReplacePatherSettingProjectDir(GetAddExternAssetsToPlatform());
-}
-
-FString FExportPatchSettings::GetSaveAbsPath()const
-{
-	if (!SavePath.Path.IsEmpty())
-	{
-		return UFlibPatchParserHelper::ReplaceMarkPath(SavePath.Path);
-	}
-	return TEXT("");
+	// UFlibPatchParserHelper::ReplacePatherSettingProjectDir(GetAddExternAssetsToPlatform());
 }
 
 FString FExportPatchSettings::GetBaseVersion() const
@@ -361,61 +352,3 @@ TArray<FString> FExportPatchSettings::GetForceSkipAssetsStr()const
 	return result;
 }
 
-	
-TArray<FExternFileInfo> FExportPatchSettings::GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash)
-{
-	TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectoryByPlatform(InTargetPlatform));
-	
-	for (auto& ExFile : GetAddExternFilesByPlatform(InTargetPlatform))
-	{
-		if (!AllExternFiles.Contains(ExFile))
-		{
-			AllExternFiles.Add(ExFile);
-		}
-	}
-	if (InGeneratedHash)
-	{
-		for (auto& ExFile : AllExternFiles)
-		{
-			ExFile.GenerateFileHash();
-		}
-	}
-	return AllExternFiles;
-}
-	
-TMap<ETargetPlatform,FPlatformExternFiles> FExportPatchSettings::GetAllPlatfotmExternFiles(bool InGeneratedHash)
-{
-	TMap<ETargetPlatform,FPlatformExternFiles> result;
-	
-	for(const auto& Platform:GetAddExternAssetsToPlatform())
-	{
-		FPlatformExternFiles PlatformIns{Platform.TargetPlatform,GetAllExternFilesByPlatform(Platform.TargetPlatform,InGeneratedHash)};
-		result.Add(Platform.TargetPlatform,PlatformIns);
-	}
-	return result;
-}
-	
-TArray<FExternFileInfo> FExportPatchSettings::GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)
-{
-	for(const auto& Platform:GetAddExternAssetsToPlatform())
-	{
-		if (Platform.TargetPlatform == InTargetPlatform)
-		{
-			return Platform.AddExternFileToPak;
-		}
-	}
-
-	return TArray<FExternFileInfo>{};
-}
-TArray<FExternDirectoryInfo> FExportPatchSettings::GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform)
-{
-	for(const auto& Platform:GetAddExternAssetsToPlatform())
-	{
-		if (Platform.TargetPlatform == InTargetPlatform)
-		{
-			return Platform.AddExternDirectoryToPak;
-		}
-	}
-
-	return TArray<FExternDirectoryInfo>{};
-}

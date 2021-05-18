@@ -59,12 +59,9 @@ public:
 
 	// pak command
 	TArray<FString> MakeAddExternFileToPakCommands()const;
-	// TArray<FString> GetAllExternalCookCommands()const;
 	TArray<FString> MakeAllExternDirectoryAsPakCommand()const;
 	TArray<FString> MakeAllPakCommandsByTheSetting(const FString& InPlatformName, const FPatchVersionDiff& InVersionDiff, bool bDiffExFiles = true)const;
 	bool MakeAllExternAssetAsPakCommands(const FString& InProjectDir, const FString& InPlatform, const TArray<FString>& PakOptions, TArray<FString>& OutPakCommands)const;
-
-	FString GetSaveAbsPath()const;
 
 	FORCEINLINE FString GetVersionId()const { return VersionId; }
 	FString GetBaseVersion()const;
@@ -77,8 +74,7 @@ public:
 	FORCEINLINE bool IsSavePakList()const { return bSavePakList; }
 	FORCEINLINE bool IsSaveDiffAnalysis()const { return IsByBaseVersion() && bSaveDiffAnalysis; }
 	FORCEINLINE TArray<FString> GetIgnoreDeletionModulesAsset()const{return IgnoreDeletionModulesAsset;}
-//	FORCEINLINE bool IsSavePakVersion()const { return bSavePakVersion; }
-	FORCEINLINE bool IsSavePatchConfig()const { return bSavePatchConfig; }
+
 	FORCEINLINE bool IsForceSkipContent()const{return bForceSkipContent;}
 	FORCEINLINE TArray<FDirectoryPath> GetForceSkipContentRules()const {return ForceSkipContentRules;}
 	FORCEINLINE TArray<FSoftObjectPath> GetForceSkipAssets()const {return ForceSkipAssets;}
@@ -120,13 +116,7 @@ public:
 	FORCEINLINE bool IsSaveDeletedAssetsToNewReleaseJson()const {return bSaveDeletedAssetsToNewReleaseJson;}
 	
 	TArray<FString> GetAssetIncludeFiltersPaths()const;
-	TArray<FExternFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false);
-	TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false);
-	TArray<FExternFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform);
-	TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform);
 
-	FORCEINLINE bool IsBackupMetadata()const {return bBackupMetadata;}
-	FORCEINLINE bool IsStandaloneMode()const {return bStandaloneMode;}
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = true;
@@ -221,16 +211,4 @@ public:
 		bool bSaveDiffAnalysis = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSaveAssetRelatedInfo = false;
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo", meta = (EditCondition = "bIncludePakVersion"))
-	//	bool bSavePakVersion;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bSavePatchConfig = true;
-	// backup current project Cooked/PLATFORM/PROJECTNAME/Metadata directory
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bBackupMetadata = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		FDirectoryPath SavePath;
-	// create a UE4Editor-cmd.exe process execute patch mission.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
-		bool bStandaloneMode = true;
 };

@@ -134,9 +134,9 @@ FText SHotPatcherExportShaderPatch::GetGenerateTooltipText() const
 	};
 	TArray<FStatus> AllStatus;
 	AllStatus.Emplace(HasValidConfig(),TEXT("HasValidShaderPatchConfig"));
-	bool bHasSavePath = ExportShaderPatchSettings->SaveTo.Path.IsEmpty()?false:FPaths::DirectoryExists(FPaths::ConvertRelativePathToFull(ExportShaderPatchSettings->SaveTo.Path));
+	bool bHasSavePath = ExportShaderPatchSettings->GetSaveAbsPath().IsEmpty()?false:FPaths::DirectoryExists(ExportShaderPatchSettings->GetSaveAbsPath());
 	AllStatus.Emplace(bHasSavePath,TEXT("HasSavePath"));
-		
+	
 	for(const auto& Status:AllStatus)
 	{
 		FinalString+=FString::Printf(TEXT("%s\n"),*Status.GetDisplay());
@@ -181,7 +181,7 @@ void SHotPatcherExportShaderPatch::CreateExportFilterListView()
 
 bool SHotPatcherExportShaderPatch::CanExportShaderPatch() const
 {
-	bool bHasSavePath = ExportShaderPatchSettings->SaveTo.Path.IsEmpty()?false:FPaths::DirectoryExists(FPaths::ConvertRelativePathToFull(ExportShaderPatchSettings->SaveTo.Path));
+	bool bHasSavePath = ExportShaderPatchSettings->GetSaveAbsPath().IsEmpty()?false:FPaths::DirectoryExists(ExportShaderPatchSettings->GetSaveAbsPath());
 	return HasValidConfig() && bHasSavePath;
 }
 

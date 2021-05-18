@@ -346,16 +346,15 @@ bool UPatcherProxy::DoExport()
 		GetSettingObject()->IsIncludeHasRefAssetsOnly(),
 		GetSettingObject()->IsAnalysisFilterDependencies()
 	);
-	FDateTime ExportVersionTime = FDateTime::Now();
-	FTimespan ExportVersionUsedTime = ExportVersionTime-BeginTime;
-	
+
 	FString CurrentVersionSavePath = GetSettingObject()->GetCurrentVersionSavePath();
 
 	UE_LOG(LogHotPatcher,Display,TEXT("Deserialize Release Version by Patch Setting..."));
-
 	UE_LOG(LogHotPatcher,Display,TEXT("Diff base version and current project version..."));
 	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*GetSettingObject(), BaseVersion, CurrentVersion);
 
+	FDateTime ExportVersionTime = FDateTime::Now();
+	FTimespan ExportVersionUsedTime = ExportVersionTime-BeginTime;
 	UE_LOG(LogHotPatcher,Display,TEXT("Deserialize BaseVersion/Export New Version/Diff Patch time %s"),*ExportVersionUsedTime.ToString());
 	UE_LOG(LogHotPatcher,Display,TEXT("New Version total asset number is %d."),GetSettingObject()->GetAssetsDependenciesScanedCaches().Num());
 	UE_LOG(LogHotPatcher,Display,TEXT("Checking patch require..."));
@@ -804,7 +803,7 @@ bool UPatcherProxy::DoExport()
 			FString::Printf(TEXT("%s_PatchConfig.json"),*CurrentVersion.VersionId)
 		);
 
-		if (GetSettingObject()->IsSavePatchConfig())
+		if (GetSettingObject()->IsSaveConfig())
 		{
 			FString SerializedJsonStr;
 			UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetSettingObject(),SerializedJsonStr);

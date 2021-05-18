@@ -1,5 +1,6 @@
 #include "CreatePatch/FExportReleaseSettings.h"
 
+
 	FExportReleaseSettings::FExportReleaseSettings()
 	{
 		AssetRegistryDependencyTypes.Add(EAssetRegistryDependencyTypeEx::Packages);
@@ -8,7 +9,7 @@
 
 	void FExportReleaseSettings::Init()
 	{
-		UFlibPatchParserHelper::ReplacePatherSettingProjectDir(GetAddExternAssetsToPlatform());
+		// UFlibPatchParserHelper::ReplacePatherSettingProjectDir(GetAddExternAssetsToPlatform());
 	}
 	
 	void FExportReleaseSettings::ImportPakLists()
@@ -338,7 +339,7 @@
 	TArray<FExternFileInfo> FExportReleaseSettings::GetAllExternFiles(bool InGeneratedHash)const
 	{
 		TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
-
+	
 		for (auto& ExFile : GetAddExternFiles())
 		{
 			if (!AllExternFiles.Contains(ExFile))
@@ -355,68 +356,3 @@
 		}
 		return AllExternFiles;
 	}
-	
-	TArray<FExternFileInfo> FExportReleaseSettings::GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash)const
-	{
-		TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectoryByPlatform(InTargetPlatform));
-	
-		for (auto& ExFile : GetAddExternFilesByPlatform(InTargetPlatform))
-		{
-			if (!AllExternFiles.Contains(ExFile))
-			{
-				AllExternFiles.Add(ExFile);
-			}
-		}
-		if (InGeneratedHash)
-		{
-			for (auto& ExFile : AllExternFiles)
-			{
-				ExFile.GenerateFileHash();
-			}
-		}
-		return AllExternFiles;
-	}
-	
-	TMap<ETargetPlatform,FPlatformExternFiles> FExportReleaseSettings::GetAllPlatfotmExternFiles(bool InGeneratedHash)const
-	{
-		TMap<ETargetPlatform,FPlatformExternFiles> result;
-	
-		for(const auto& Platform:GetAddExternAssetsToPlatform())
-		{
-			FPlatformExternFiles PlatformIns(Platform.TargetPlatform,GetAllExternFilesByPlatform(Platform.TargetPlatform,InGeneratedHash));
-			result.Add(Platform.TargetPlatform,PlatformIns);
-		}
-		return result;
-	}
-
-	
-	
-	TArray<FExternFileInfo> FExportReleaseSettings::GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)const
-	{
-		for(const auto& Platform:GetAddExternAssetsToPlatform())
-		{
-			if (Platform.TargetPlatform == InTargetPlatform)
-			{
-				return Platform.AddExternFileToPak;
-			}
-		}
-
-		return TArray<FExternFileInfo>{};
-	}
-	TArray<FExternDirectoryInfo> FExportReleaseSettings::GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform)const
-	{
-		for(const auto& Platform:GetAddExternAssetsToPlatform())
-		{
-			if (Platform.TargetPlatform == InTargetPlatform)
-			{
-				return Platform.AddExternDirectoryToPak;
-			}
-		}
-
-		return TArray<FExternDirectoryInfo>{};
-	}
-
-FString FExportReleaseSettings::GetSaveAbsPath() const
-{
-	return UFlibPatchParserHelper::ReplaceMarkPath(SavePath.Path);
-}

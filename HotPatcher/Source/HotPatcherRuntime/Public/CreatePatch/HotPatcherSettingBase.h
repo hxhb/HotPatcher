@@ -1,47 +1,49 @@
 ﻿#pragma once
+#include "FPlatformExternFiles.h"
 #include "FPatcherSpecifyAsset.h"
 #include "FPlatformExternAssets.h"
 #include "Struct/AssetManager/FAssetDependenciesInfo.h"
 
-// engine 
+// engine
 #include "CoreMinimal.h"
 #include "Engine/EngineTypes.h"
 #include "HotPatcherSettingBase.generated.h"
-
-
 
 USTRUCT()
 struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase
 {
     GENERATED_USTRUCT_BODY()
 
-    virtual TArray<FDirectoryPath>& GetAssetIncludeFilters()
-    {
-        static TArray<FDirectoryPath> TempDir;
-        return TempDir;
-    };
-    virtual TArray<FDirectoryPath>& GetAssetIgnoreFilters()
-    {
-        static TArray<FDirectoryPath> TempDir;
-        return TempDir;
-    }
-    virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets()
-    {
-         static TArray<FPatcherSpecifyAsset> TempAssets;
-        return TempAssets;
-    };
-    virtual TArray<FPlatformExternAssets>& GetAddExternAssetsToPlatform()
-    {
-        static TArray<FPlatformExternAssets> PlatformNoAssets;
-        return PlatformNoAssets;
-    };
-    virtual TMap<FString,FAssetDependenciesInfo>& GetAssetsDependenciesScanedCaches()
-    {
-        return ScanedCaches;
-    }
-    virtual bool IsScanCacheOptimize()const{return bScanCacheOptimize;}
+    virtual TArray<FDirectoryPath>& GetAssetIncludeFilters();
+    virtual TArray<FDirectoryPath>& GetAssetIgnoreFilters();
+    virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets();
+    virtual TArray<FPlatformExternAssets>& GetAddExternAssetsToPlatform();
+    virtual TMap<FString,FAssetDependenciesInfo>& GetAssetsDependenciesScanedCaches();
+    virtual bool IsScanCacheOptimize()const{ return bScanCacheOptimize; }
     virtual void Init(){};
+
+    virtual TArray<FExternFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false);
+    virtual TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false);
+    virtual TArray<FExternFileInfo> GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform);
+    virtual TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform);
+
+    virtual FString GetSaveAbsPath()const;
+
+    FORCEINLINE virtual bool IsStandaloneMode()const {return bStandaloneMode;}
+    FORCEINLINE virtual bool IsBackupMetadata()const {return bBackupMetadata;}
+    FORCEINLINE virtual bool IsSaveConfig()const {return bSaveConfig;}
     virtual ~FHotPatcherSettingBase(){}
+public:
+    // backup current project Cooked/PLATFORM/PROJECTNAME/Metadata directory
+    UPROPERTY(EditAnywhere, Category = "SaveTo")
+    bool bBackupMetadata = false;
+    UPROPERTY(EditAnywhere, Category = "SaveTo")
+    bool bSaveConfig = true;
+    UPROPERTY(EditAnywhere, Category = "SaveTo")
+    FDirectoryPath SavePath;
+    // create a UE4Editor-cmd.exe process execute patch mission.
+    UPROPERTY(EditAnywhere, Category = "Advanced")
+    bool bStandaloneMode = true;
 protected:
     // UPROPERTY(EditAnywhere, Category = "Advanced")
     bool bScanCacheOptimize=true;

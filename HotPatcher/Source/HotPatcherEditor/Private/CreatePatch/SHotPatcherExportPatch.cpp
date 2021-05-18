@@ -154,7 +154,7 @@ void SHotPatcherExportPatch::ExportConfig()const
 
 	if (ExportPatchSetting)
 	{
-		if (ExportPatchSetting->IsSavePatchConfig())
+		if (ExportPatchSetting->IsSaveConfig())
 		{
 			FString SerializedJsonStr;
 			UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportPatchSetting,SerializedJsonStr);
