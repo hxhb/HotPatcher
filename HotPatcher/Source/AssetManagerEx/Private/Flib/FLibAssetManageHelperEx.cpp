@@ -416,8 +416,15 @@ void UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(
 	FAssetDependenciesInfo result;
 	for (const auto& AssetDetail : InAssetsDetailList)
 	{
+		FString AssetPackageName;
+		UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(AssetDetail.mPackagePath,AssetPackageName);
 		FAssetDependenciesInfo CurrentAsserInfo;
 		UFLibAssetManageHelperEx::GetAssetDependenciesForAssetDetail(AssetDetail, AssetRegistryDependencyTypes,CurrentAsserInfo,ScandCaches);
+		
+		if(GScanCacheOptimize && !ScandCaches.Find(AssetPackageName))
+		{
+			ScandCaches.Add(AssetPackageName,CurrentAsserInfo);
+		}
 		result = UFLibAssetManageHelperEx::CombineAssetDependencies(result, CurrentAsserInfo);
 	}
 	OutDependices = result;
