@@ -13,6 +13,8 @@ USTRUCT(BlueprintType)
 struct FPatchVersionDiff
 {
 	GENERATED_USTRUCT_BODY()
+	FPatchVersionDiff()=default;
+	FPatchVersionDiff(const FPatchVersionDiff&)=default;
 public:
 	UPROPERTY(EditAnywhere)
 	FPatchVersionAssetDiff AssetDiffInfo;

@@ -336,7 +336,6 @@ bool UPatcherProxy::DoExport()
 		}
 	}
 	
-	
 	UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(true);
 
 	UE_LOG(LogHotPatcher,Display,TEXT("Make Patch Setting..."));

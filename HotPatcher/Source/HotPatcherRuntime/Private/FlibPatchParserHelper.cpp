@@ -156,6 +156,7 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 
 				for (const auto& AssetItem : BeseVersionCurrentModuleAssetListKeys)
 				{
+					UE_LOG(LogHotPatcher,Display,TEXT("Modify Asset: %s"),*AssetItem);
 					const FAssetDetail* BaseVersionAssetDetail = BaseVersionModuleAssetsDetail.AssetDependencyDetails.Find(AssetItem);
 					const FAssetDetail* NewVersionAssetDetail = NewVersionModuleAssetsDetail.AssetDependencyDetails.Find(AssetItem);
 					if (!NewVersionAssetDetail)
@@ -222,7 +223,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 					bool bIsSame = (NewVersionFile.FileHash == InBase.ExternFiles[BaseFileIndex].FileHash);
 					if (!bIsSame)
 					{
-						UE_LOG(LogHotPatcher, Log, TEXT("%s is not same."), *NewVersionFile.MountPath);
+						// UE_LOG(LogHotPatcher, Log, TEXT("%s is not same."), *NewVersionFile.MountPath);
 						Out.Add(NewVersionFile);
 					}else
 					{
@@ -231,7 +232,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 				}
 				else
 				{
-					UE_LOG(LogHotPatcher, Log, TEXT("base version not contains %s."), *NewVersionFile.MountPath);
+					// UE_LOG(LogHotPatcher, Log, TEXT("base version not contains %s."), *NewVersionFile.MountPath);
 				}
 			}
 		};

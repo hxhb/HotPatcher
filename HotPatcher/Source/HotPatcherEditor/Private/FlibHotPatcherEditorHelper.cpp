@@ -378,7 +378,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(UPackage* Package, const TArray<FS
 		// }
 		
 		GIsCookerLoadingPackage = true;
-		UE_LOG(LogHotPatcherEditorHelper,Display,TEXT("Cook Assets:%s save to %s"),*Package->GetName(),*CookedSavePath);
+		// UE_LOG(LogHotPatcherEditorHelper,Display,TEXT("Cook Assets:%s save to %s"),*Package->GetName(),*CookedSavePath);
 		FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, CookedFlags, *CookedSavePath, 
                                                 GError, nullptr, false, false, SaveFlags, Platform, 
                                                 FDateTime::MinValue(), false, /*DiffMap*/ nullptr);
@@ -547,9 +547,13 @@ FString UFlibHotPatcherEditorHelper::ReleaseSummary(const FHotPatcherVersion& Ne
 	{
 		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);;
 		FString result = FString::Printf(TEXT("======== %s Non-Assets =========\n"),*PlatformName);
+		uint32 BeginLength = result.Len();
 		result += FString::Printf(TEXT("External Files: %d\n"),PlatformExternAssets.AddExternFileToPak.Num());
 		// result += FString::Printf(TEXT("External Directorys: %d\n"),PlatformExternAssets.AddExternDirectoryToPak.Num());
-		result += FString::Printf(TEXT("================================\n"));
+
+		for(uint32 index=0;index<BeginLength;++index)
+			result += TEXT("=");
+		result+=TEXT("\n");
 		return result;
 	};
 	TMap<FString,uint32> AddModuleAssetNumMap;
@@ -570,10 +574,13 @@ FString UFlibHotPatcherEditorHelper::PatchSummary(const FPatchVersionDiff& DiffI
 	{
 		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);;
 		FString result = FString::Printf(TEXT("======== %s Non-Assets =========\n"),*PlatformName);
+		uint32 BeginLength = result.Len();
 		result += FString::Printf(TEXT("Add Non-Asset Number: %d\n"),ExternDiff.AddExternalFiles.Num());
 		result += FString::Printf(TEXT("Modify Non-Asset Number: %d\n"),ExternDiff.ModifyExternalFiles.Num());
 		result += FString::Printf(TEXT("Delete Non-Asset Number: %d\n"),ExternDiff.DeleteExternalFiles.Num());
-		result += FString::Printf(TEXT("================================\n"));
+		for(uint32 index=0;index<BeginLength;++index)
+			result += TEXT("=");
+		result+=TEXT("\n");
 		return result;
 	};
 	

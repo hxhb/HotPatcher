@@ -15,6 +15,9 @@ struct FPatchVersionAssetDiff
 {
 	GENERATED_USTRUCT_BODY()
 public:
+	FPatchVersionAssetDiff()=default;
+	FPatchVersionAssetDiff(const FPatchVersionAssetDiff&)=default;
+	
 	UPROPERTY(EditAnywhere)
 	FAssetDependenciesInfo AddAssetDependInfo;
 	UPROPERTY(EditAnywhere)

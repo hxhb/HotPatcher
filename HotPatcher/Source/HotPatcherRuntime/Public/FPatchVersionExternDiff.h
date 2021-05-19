@@ -14,13 +14,14 @@ USTRUCT(BlueprintType)
 struct FPatchVersionExternDiff
 {
 	GENERATED_USTRUCT_BODY()
+	FPatchVersionExternDiff()=default;
 public:
 	UPROPERTY(EditAnywhere)
-	ETargetPlatform Platform;
+	ETargetPlatform Platform {ETargetPlatform::None};
 	UPROPERTY(EditAnywhere)
-	TArray<FExternFileInfo> AddExternalFiles;
+	TArray<FExternFileInfo> AddExternalFiles{};
 	UPROPERTY(EditAnywhere)
-	TArray<FExternFileInfo> ModifyExternalFiles;
+	TArray<FExternFileInfo> ModifyExternalFiles{};
 	UPROPERTY(EditAnywhere)
-	TArray<FExternFileInfo> DeleteExternalFiles;
+	TArray<FExternFileInfo> DeleteExternalFiles{};
 };

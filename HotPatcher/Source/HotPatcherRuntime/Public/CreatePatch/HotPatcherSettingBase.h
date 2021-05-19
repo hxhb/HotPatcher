@@ -44,8 +44,8 @@ public:
     // create a UE4Editor-cmd.exe process execute patch mission.
     UPROPERTY(EditAnywhere, Category = "Advanced")
     bool bStandaloneMode = true;
-protected:
-    // UPROPERTY(EditAnywhere, Category = "Advanced")
+    UPROPERTY(EditAnywhere, Category = "Advanced")
     bool bScanCacheOptimize=true;
+protected:
     TMap<FString,FAssetDependenciesInfo> ScanedCaches;
 };
