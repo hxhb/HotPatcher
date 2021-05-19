@@ -1048,13 +1048,13 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 					for (const auto& Directory : Chunk.AddExternAssetsToPlatform[PlatformIndex].AddExternDirectoryToPak)
 					{
 						if (!Directory.DirectoryPath.Path.IsEmpty())
-							AllSearchFileFilter.Add(Directory.DirectoryPath.Path);
+							AllSearchFileFilter.Add(UFlibPatchParserHelper::ReplaceMarkPath(Directory.DirectoryPath.Path));
 					}
 					for (const auto& File : Chunk.AddExternAssetsToPlatform[PlatformIndex].AddExternFileToPak)
 					{
-						AllSearchFileFilter.Add(File.FilePath.FilePath);
+						AllSearchFileFilter.Add(UFlibPatchParserHelper::ReplaceMarkPath(File.FilePath.FilePath));
 					}
-				}			
+				}
 			}
 		}
 		TArray<FExternFileInfo> AddFilesRef;
