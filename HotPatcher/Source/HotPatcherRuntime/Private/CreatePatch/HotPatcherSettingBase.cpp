@@ -1,7 +1,7 @@
 #include "CreatePatch/HotPatcherSettingBase.h"
-
 #include "FlibPatchParserHelper.h"
 #include "FPlatformExternFiles.h"
+#include "HotPatcherLog.h"
 
 TArray<FDirectoryPath>& FHotPatcherSettingBase::GetAssetIncludeFilters()
 {
@@ -26,6 +26,14 @@ TArray<FPlatformExternAssets>& FHotPatcherSettingBase::GetAddExternAssetsToPlatf
 TMap<FString,FAssetDependenciesInfo>& FHotPatcherSettingBase::GetAssetsDependenciesScanedCaches()
 {
 	return ScanedCaches;
+}
+
+void FHotPatcherSettingBase::Init()
+{
+	GetAssetsDependenciesScanedCaches().Empty();
+    GScanCacheOptimize = IsScanCacheOptimize();
+    UE_LOG(LogHotPatcher, Display, TEXT("Enable Scan Cache Optimize %s"),GScanCacheOptimize?TEXT("true"):TEXT("false"));
+    	
 }
 
 TArray<FExternFileInfo> FHotPatcherSettingBase::GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash)

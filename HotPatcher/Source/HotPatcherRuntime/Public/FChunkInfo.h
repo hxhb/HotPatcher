@@ -8,7 +8,6 @@
 #include "Flib/FLibAssetManageHelperEx.h"
 #include "FPlatformExternFiles.h"
 #include "ETargetPlatform.h"
-
 // engine header
 #include "CoreMinimal.h"
 
@@ -43,6 +42,54 @@ public:
 		bool bIncludePluginIni = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini")
 		bool bIncludeProjectIni = false;
+};
+
+
+USTRUCT(BlueprintType)
+struct FPakCommand
+{
+	GENERATED_USTRUCT_BODY()
+public:
+	FPakCommand() = default;
+	FPakCommand(const FString& InMountPath, const TArray<FString>& InCommands)
+		:MountPath(InMountPath),PakCommands(InCommands){}
+	bool operator==(const FPakCommand& PakCmd)const
+	{
+		return GetMountPath() == PakCmd.GetMountPath() && GetPakCommands() == PakCmd.GetPakCommands();
+	}
+	
+	const FString& GetMountPath()const
+	{
+		return MountPath;
+	}
+
+	const TArray<FString>& GetPakCommands()const
+	{
+		return PakCommands;
+	}
+
+public:
+	UPROPERTY(EditAnywhere)
+	FString ChunkName;
+	UPROPERTY(EditAnywhere)
+	FString MountPath;
+	UPROPERTY(EditAnywhere)
+	FString AssetPackage;
+	UPROPERTY(EditAnywhere)
+	TArray<FString> PakCommands;
+};
+
+USTRUCT(BlueprintType)
+struct FPakFileProxy
+{
+	GENERATED_USTRUCT_BODY()
+public:
+	UPROPERTY(EditAnywhere)
+	FString PakCommandSavePath;
+	UPROPERTY(EditAnywhere)
+	FString PakSavePath;
+	UPROPERTY(EditAnywhere)
+	TArray<FPakCommand> PakCommands;
 };
 
 USTRUCT(BlueprintType)
@@ -80,6 +127,8 @@ public:
 		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Internal", meta = (EditCondition = "!bMonolithic"))
 		FPakInternalInfo InternalFiles;
+
+	TArray<FPakFileProxy> PakFileProxys;
 };
 
 USTRUCT(BlueprintType)
@@ -165,40 +214,3 @@ public:
 //};
 
 
-
-struct FPakCommand
-{
-public:
-	FPakCommand() = default;
-	FPakCommand(const FString& InMountPath, const TArray<FString>& InCommands)
-		:MountPath(InMountPath),PakCommands(InCommands){}
-	bool operator==(const FPakCommand& PakCmd)const
-	{
-		return GetMountPath() == PakCmd.GetMountPath() && GetPakCommands() == PakCmd.GetPakCommands();
-	}
-	
-	const FString& GetMountPath()const
-	{
-		return MountPath;
-	}
-
-	const TArray<FString>& GetPakCommands()const
-	{
-		return PakCommands;
-	}
-
-public:
-	FString ChunkName;
-	FString MountPath;
-	FString AssetPackage;
-	TArray<FString> PakCommands;
-};
-
-
-struct FPakFileProxy
-{
-public:
-	FString PakCommandSavePath;
-	FString PakSavePath;
- 	TArray<FPakCommand> PakCommands;
-};

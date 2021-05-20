@@ -11,7 +11,8 @@ public class HotPatcherRuntime : ModuleRules
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
-				Path.Combine(EngineDirectory,"Source/Runtime/Launch")
+				Path.Combine(EngineDirectory,"Source/Runtime/Launch"),
+				Path.Combine(ModuleDirectory,"Public")
 				// ... add public include paths required here ...
 			}
 			);

@@ -3,13 +3,12 @@
 #include "FPatcherSpecifyAsset.h"
 #include "FPlatformExternAssets.h"
 #include "Struct/AssetManager/FAssetDependenciesInfo.h"
-
 // engine
 #include "CoreMinimal.h"
 #include "Engine/EngineTypes.h"
 #include "HotPatcherSettingBase.generated.h"
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase
 {
     GENERATED_USTRUCT_BODY()
@@ -20,7 +19,7 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase
     virtual TArray<FPlatformExternAssets>& GetAddExternAssetsToPlatform();
     virtual TMap<FString,FAssetDependenciesInfo>& GetAssetsDependenciesScanedCaches();
     virtual bool IsScanCacheOptimize()const{ return bScanCacheOptimize; }
-    virtual void Init(){};
+    virtual void Init();
 
     virtual TArray<FExternFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false);
     virtual TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatfotmExternFiles(bool InGeneratedHash = false);
@@ -28,7 +27,6 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase
     virtual TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform);
 
     virtual FString GetSaveAbsPath()const;
-
     FORCEINLINE virtual bool IsStandaloneMode()const {return bStandaloneMode;}
     FORCEINLINE virtual bool IsBackupMetadata()const {return bBackupMetadata;}
     FORCEINLINE virtual bool IsSaveConfig()const {return bSaveConfig;}

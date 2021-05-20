@@ -15,10 +15,7 @@ public:
 
     virtual bool DoExport() override ;
     FORCEINLINE bool IsRunningCommandlet()const{return ::IsRunningCommandlet();}
-    FORCEINLINE virtual FExportReleaseSettings* GetSettingObject()override
-    {
-        return (FExportReleaseSettings*)Setting;
-    }
+    FORCEINLINE virtual FExportReleaseSettings* GetSettingObject()override { return (FExportReleaseSettings*)Setting; }
     
 private:
     FExportReleaseSettings* ExportReleaseSettings;

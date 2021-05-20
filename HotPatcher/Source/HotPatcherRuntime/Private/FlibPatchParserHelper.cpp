@@ -1930,3 +1930,106 @@ void UFlibPatchParserHelper::ReplacePatherSettingProjectDir(TArray<FPlatformExte
 		}
 	}
 }
+
+
+FHotPatcherVersion UFlibPatchParserHelper::MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings)
+{
+	FHotPatcherVersion BaseVersion = InBaseVersion;
+	
+	FPatchVersionDiff DiffInfo = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*InPatchSettings,BaseVersion, InCurrentVersion);
+	return UFlibPatchParserHelper::MakeNewReleaseByDiff(InBaseVersion,DiffInfo, InPatchSettings);
+}
+
+FHotPatcherVersion UFlibPatchParserHelper::MakeNewReleaseByDiff(const FHotPatcherVersion& InBaseVersion,
+	const FPatchVersionDiff& InDiff, FExportPatchSettings* InPatchSettings)
+{
+	FHotPatcherVersion BaseVersion = InBaseVersion;
+	FHotPatcherVersion NewRelease;
+	
+	FAssetDependenciesInfo& BaseAssetInfoRef = BaseVersion.AssetInfo;
+	// TMap<FString, FExternFileInfo>& BaseExternalFilesRef = BaseVersion.ExternalFiles;
+	TMap<ETargetPlatform,FPlatformExternAssets>& BasePlatformAssetsRef = BaseVersion.PlatformAssets;
+
+	// Modify Asset
+	auto DeleteOldAssetLambda = [&BaseAssetInfoRef](const FAssetDependenciesInfo& InAssetDependenciesInfo)
+	{
+		for (const auto& AssetsModulePair : InAssetDependenciesInfo.AssetsDependenciesMap)
+		{
+			FAssetDependenciesDetail* NewReleaseModuleAssets = BaseAssetInfoRef.AssetsDependenciesMap.Find(AssetsModulePair.Key);
+
+			for (const auto& NeedDeleteAsset : AssetsModulePair.Value.AssetDependencyDetails)
+			{
+				if (NewReleaseModuleAssets && NewReleaseModuleAssets->AssetDependencyDetails.Contains(NeedDeleteAsset.Key))
+				{
+					NewReleaseModuleAssets->AssetDependencyDetails.Remove(NeedDeleteAsset.Key);
+				}
+			}
+		}
+	};
+	
+	DeleteOldAssetLambda(InDiff.AssetDiffInfo.ModifyAssetDependInfo);
+	if(InPatchSettings && !InPatchSettings->IsSaveDeletedAssetsToNewReleaseJson())
+	{
+		DeleteOldAssetLambda(InDiff.AssetDiffInfo.DeleteAssetDependInfo);
+	}
+
+	// Add Asset
+	BaseAssetInfoRef = UFLibAssetManageHelperEx::CombineAssetDependencies(BaseAssetInfoRef, InDiff.AssetDiffInfo.AddAssetDependInfo);
+	// modify Asset
+	BaseAssetInfoRef = UFLibAssetManageHelperEx::CombineAssetDependencies(BaseAssetInfoRef, InDiff.AssetDiffInfo.ModifyAssetDependInfo);
+	NewRelease.AssetInfo = BaseAssetInfoRef;
+
+	// // external files
+	// auto RemoveOldExternalFilesLambda = [&BaseExternalFilesRef](const TArray<FExternFileInfo>& InFiles)
+	// {
+	// 	for (const auto& File : InFiles)
+	// 	{
+	// 		if (BaseExternalFilesRef.Contains(File.FilePath.FilePath))
+	// 		{
+	// 			BaseExternalFilesRef.Remove(File.FilePath.FilePath);
+	// 		}
+	// 	}
+	// };
+
+	TArray<ETargetPlatform> DiffPlatforms;
+	InDiff.PlatformExternDiffInfo.GetKeys(DiffPlatforms);
+
+	for(auto Platform:DiffPlatforms)
+	{
+		FPlatformExternAssets AddPlatformFiles;
+		AddPlatformFiles.TargetPlatform = Platform;
+		AddPlatformFiles.AddExternFileToPak = InDiff.PlatformExternDiffInfo[Platform].AddExternalFiles;
+		AddPlatformFiles.AddExternFileToPak.Append(InDiff.PlatformExternDiffInfo[Platform].ModifyExternalFiles);
+		if(BasePlatformAssetsRef.Contains(Platform))
+		{
+			for(const auto& File:AddPlatformFiles.AddExternFileToPak)
+			{
+				if(BasePlatformAssetsRef[Platform].AddExternFileToPak.Contains(File))
+				{
+					BasePlatformAssetsRef[Platform].AddExternFileToPak.Remove(File);
+				}
+			}
+		}else
+		{
+			BasePlatformAssetsRef.Add(Platform,AddPlatformFiles);
+		}
+	}
+	// RemoveOldExternalFilesLambda(DiffInfo.ExternDiffInfo.ModifyExternalFiles);
+	// DeleteOldExternalFilesLambda(DiffInfo.DeleteExternalFiles);
+
+	// auto AddExternalFilesLambda = [&BaseExternalFilesRef](const TArray<FExternFileInfo>& InFiles)
+	// {
+	// 	for (const auto& File : InFiles)
+	// 	{
+	// 		if (!BaseExternalFilesRef.Contains(File.FilePath.FilePath))
+	// 		{
+	// 			BaseExternalFilesRef.Add(File.FilePath.FilePath,File);
+	// 		}
+	// 	}
+	// };
+	// AddExternalFilesLambda(DiffInfo.ExternDiffInfo.AddExternalFiles);
+	// AddExternalFilesLambda(DiffInfo.ExternDiffInfo.ModifyExternalFiles);
+	// NewRelease.ExternalFiles = BaseExternalFilesRef;
+
+	return NewRelease;
+}

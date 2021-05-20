@@ -11,17 +11,17 @@
 #include "CreatePatch/HotPatcherSettingBase.h"
 #include "FlibPatchParserHelper.h"
 #include "HotPatcherLog.h"
+#include "CreatePatch/HotPatcherSettingBase.h"
+
 // engine header
 #include "Misc/FileHelper.h"
 #include "CoreMinimal.h"
-
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
 #include "Engine/EngineTypes.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
-
 #include "FExportReleaseSettings.generated.h"
 
 

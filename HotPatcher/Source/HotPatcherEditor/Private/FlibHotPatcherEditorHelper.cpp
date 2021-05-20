@@ -262,8 +262,6 @@ FString UFlibHotPatcherEditorHelper::GetProjectCookedDir()
 	return FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));;
 }
 
-
-
 bool UFlibHotPatcherEditorHelper::CookAssets(const TArray<FSoftObjectPath>& Assets, const TArray<ETargetPlatform>&Platforms,
                                             const FString& SavePath)
 {
@@ -387,6 +385,31 @@ bool UFlibHotPatcherEditorHelper::CookPackage(const FAssetData& AssetData,UPacka
 		bSuccessed = Result == ESavePackageResult::Success;
 	}
 	return bSuccessed;
+}
+
+
+void UFlibHotPatcherEditorHelper::CookChunkAssets(
+	const FPatchVersionDiff& DiffInfo,
+	const FChunkInfo& Chunk,
+	const TArray<ETargetPlatform>& Platforms,
+	TMap<FString,FAssetDependenciesInfo>& ScanedCaches
+)
+{
+	FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(DiffInfo, Chunk ,Platforms,ScanedCaches);
+	TArray<FAssetDetail> ChunkAssets;
+	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(ChunkAssetsDescrible.Assets,ChunkAssets);
+	TArray<FSoftObjectPath> AssetsSoftPath;
+
+	for(const auto& Asset:ChunkAssets)
+	{
+		FSoftObjectPath AssetSoftPath;
+		AssetSoftPath.SetPath(Asset.mPackagePath);
+		AssetsSoftPath.AddUnique(AssetSoftPath);
+	}
+	if(!!AssetsSoftPath.Num())
+	{
+		UFlibHotPatcherEditorHelper::CookAssets(AssetsSoftPath,Platforms,UFlibHotPatcherEditorHelper::GetProjectCookedDir());
+	}
 }
 
 ITargetPlatform* UFlibHotPatcherEditorHelper::GetTargetPlatformByName(const FString& PlatformName)
@@ -605,4 +628,95 @@ FString UFlibHotPatcherEditorHelper::PatchSummary(const FPatchVersionDiff& DiffI
 		result += ExternFileSummary(Platform,*DiffInfo.PlatformExternDiffInfo.Find(Platform));
 	}
 	return result;
+}
+
+
+FString UFlibHotPatcherEditorHelper::MakePakShortName(const FHotPatcherVersion& InCurrentVersion, const FChunkInfo& InChunkInfo, const FString& InPlatform,const FString& InRegular)
+{
+	struct FResularOperator
+	{
+		FResularOperator(const FString& InName,TFunction<FString(void)> InOperator)
+			:Name(InName),Do(InOperator){}
+		FString Name;
+		TFunction<FString(void)> Do;
+	};
+	
+	TArray<FResularOperator> RegularOpList;
+	RegularOpList.Emplace(TEXT("{VERSION}"),[&InCurrentVersion]()->FString{return InCurrentVersion.VersionId;});
+	RegularOpList.Emplace(TEXT("{BASEVERSION}"),[&InCurrentVersion]()->FString{return InCurrentVersion.BaseVersionId;});
+	RegularOpList.Emplace(TEXT("{PLATFORM}"),[&InPlatform]()->FString{return InPlatform;});
+	RegularOpList.Emplace(TEXT("{CHUNKNAME}"),[&InChunkInfo,&InCurrentVersion]()->FString
+	{
+		if(!InCurrentVersion.VersionId.Equals(InChunkInfo.ChunkName))
+			return InChunkInfo.ChunkName;
+		else
+			return TEXT("");
+	});
+	
+	auto CustomPakNameRegular = [](const TArray<FResularOperator>& Operators,const FString& Regular)->FString
+	{
+		FString Result = Regular;
+		for(auto& Operator:Operators)
+		{
+			Result = Result.Replace(*Operator.Name,*(Operator.Do()));
+		}
+		while(Result.Contains(TEXT("__")))
+		{
+			Result = Result.Replace(TEXT("__"),TEXT("_"));
+		}
+		return Result;
+	};
+	
+	return CustomPakNameRegular(RegularOpList,InRegular);
+}
+
+bool UFlibHotPatcherEditorHelper::CheckSelectedAssetsCookStatus(const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets, FString& OutMsg)
+{
+	OutMsg.Empty();
+	// 检查所修改的资源是否被Cook过
+	for (const auto& PlatformName : PlatformNames)
+	{
+		TArray<FAssetDetail> ValidCookAssets;
+		TArray<FAssetDetail> InvalidCookAssets;
+
+		UFlibHotPatcherEditorHelper::CheckInvalidCookFilesByAssetDependenciesInfo(UKismetSystemLibrary::GetProjectDirectory(), PlatformName, SelectedAssets, ValidCookAssets, InvalidCookAssets);
+
+		if (InvalidCookAssets.Num() > 0)
+		{
+			OutMsg.Append(FString::Printf(TEXT("%s UnCooked Assets:\n"), *PlatformName));
+
+			for (const auto& Asset : InvalidCookAssets)
+			{
+				FString AssetLongPackageName;
+				UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath, AssetLongPackageName);
+				OutMsg.Append(FString::Printf(TEXT("\t%s\n"), *AssetLongPackageName));
+			}
+		}
+	}
+
+	return OutMsg.IsEmpty();
+}
+
+bool UFlibHotPatcherEditorHelper::CheckPatchRequire(const FPatchVersionDiff& InDiff,const TArray<FString>& PlatformNames,FString& OutMsg)
+{
+	bool Status = false;
+	// 错误处理
+	{
+		FString GenErrorMsg;
+		FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(InDiff.AssetDiffInfo.AddAssetDependInfo, InDiff.AssetDiffInfo.ModifyAssetDependInfo);
+		bool bSelectedCookStatus = CheckSelectedAssetsCookStatus(PlatformNames, AllChangedAssetInfo, GenErrorMsg);
+
+		// 如果有错误信息 则输出后退出
+		if (!bSelectedCookStatus)
+		{
+			OutMsg = GenErrorMsg;
+			Status = false;
+		}
+		else
+		{
+			OutMsg = TEXT("");
+			Status = true;
+		}
+	}
+	return Status;
 }

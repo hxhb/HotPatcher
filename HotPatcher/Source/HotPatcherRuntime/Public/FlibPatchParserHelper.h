@@ -443,4 +443,8 @@ public:
 	static FString ReplaceMarkPath(const FString& Src);
 	// [PORJECTDIR] to real path
 	static void ReplacePatherSettingProjectDir(TArray<FPlatformExternAssets>& PlatformAssets);
+
+
+	static FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings);
+	static FHotPatcherVersion MakeNewReleaseByDiff(const FHotPatcherVersion& InBaseVersion, const FPatchVersionDiff& InDiff, FExportPatchSettings* InPatchSettings);
 };

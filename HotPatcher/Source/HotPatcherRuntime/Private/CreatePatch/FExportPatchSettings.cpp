@@ -31,7 +31,7 @@ FExportPatchSettings::FExportPatchSettings()
 
 void FExportPatchSettings::Init()
 {
-	// UFlibPatchParserHelper::ReplacePatherSettingProjectDir(GetAddExternAssetsToPlatform());
+	Super::Init();
 }
 
 FString FExportPatchSettings::GetBaseVersion() const

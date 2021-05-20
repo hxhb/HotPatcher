@@ -44,11 +44,19 @@ public:
 	static FString GetCookAssetsSaveDir(const FString& BaseDir, const FString PacakgeName, const FString& Platform);
 
 	static FString GetProjectCookedDir();
+
 	UFUNCTION(BlueprintCallable)
 		static bool CookAssets(const TArray<FSoftObjectPath>& Assets, const TArray<ETargetPlatform>& Platforms, const FString& SavePath = TEXT(""));
 	static bool CookPackages(const TArray<FAssetData>& AssetDatas,TArray<UPackage*>& Packages, const TArray<FString>& Platforms, const FString& SavePath);
 	static bool CookPackage(const FAssetData& AssetData,UPackage* Package, const TArray<FString>& Platforms, const FString& SavePath);
 
+	static void CookChunkAssets(
+		const FPatchVersionDiff& DiffInfo,
+		const FChunkInfo& Chunk,
+		const TArray<ETargetPlatform>& Platforms,
+		TMap<FString,FAssetDependenciesInfo>& ScanedCaches
+	);
+	
 	static ITargetPlatform* GetTargetPlatformByName(const FString& PlatformName);
 	static TArray<ITargetPlatform*> GetTargetPlatformsByNames(const TArray<ETargetPlatform>& PlatformNames);
 
@@ -65,4 +73,9 @@ public:
 
 	static FString ReleaseSummary(const FHotPatcherVersion& NewVersion);
 	static FString PatchSummary(const FPatchVersionDiff& DiffInfo);
+
+	static FString MakePakShortName(const FHotPatcherVersion& InCurrentVersion, const FChunkInfo& InChunkInfo, const FString& InPlatform,const FString& InRegular);
+
+	static bool CheckSelectedAssetsCookStatus(const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets, FString& OutMsg);
+	static bool CheckPatchRequire(const FPatchVersionDiff& InDiff,const TArray<FString>& PlatformNames,FString& OutMsg);
 };

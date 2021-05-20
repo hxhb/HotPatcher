@@ -9,7 +9,7 @@
 
 	void FExportReleaseSettings::Init()
 	{
-		// UFlibPatchParserHelper::ReplacePatherSettingProjectDir(GetAddExternAssetsToPlatform());
+		Super::Init();
 	}
 	
 	void FExportReleaseSettings::ImportPakLists()
