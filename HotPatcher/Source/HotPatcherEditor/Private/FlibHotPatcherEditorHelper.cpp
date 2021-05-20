@@ -234,14 +234,14 @@ FString ConvertToFullSandboxPath( const FString &FileName, bool bForWrite )
 	return TEXT("");
 }
 
-FString UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(const FString& BaseDir, UPackage* Package, const FString& Platform)
+FString UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(const FString& BaseDir, const FString PacakgeName, const FString& Platform)
 {
 	FString Filename;
 	FString PackageFilename;
 	FString StandardFilename;
 	FName StandardFileFName = NAME_None;
 
-	if (FPackageName::DoesPackageExist(Package->FileName.ToString(), NULL, &Filename, false))
+	if (FPackageName::DoesPackageExist(PacakgeName, NULL, &Filename, false))
 	{
 		StandardFilename = PackageFilename = FPaths::ConvertRelativePathToFull(Filename);
 
@@ -289,10 +289,10 @@ bool UFlibHotPatcherEditorHelper::CookAssets(const TArray<FSoftObjectPath>& Asse
 		StringPlatforms.AddUnique(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
 	}
 	
-	return CookPackages(Packages,StringPlatforms,SavePath);
+	return CookPackages(AssetsData,Packages,StringPlatforms,SavePath);
 }
 
-bool UFlibHotPatcherEditorHelper::CookPackage(UPackage* Package, const TArray<FString>& Platforms, const FString& SavePath)
+bool UFlibHotPatcherEditorHelper::CookPackage(const FAssetData& AssetData,UPackage* Package, const TArray<FString>& Platforms, const FString& SavePath)
 {
 	bool bSuccessed = false;
 	const bool bSaveConcurrent = FParse::Param(FCommandLine::Get(), TEXT("ConcurrentSave"));
@@ -317,7 +317,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(UPackage* Package, const TArray<FS
 			CookPlatforms.AddUnique(TargetPlatform);
 		}
 	}
-	if(Package->FileName.IsNone())
+	if(Package->FileName.IsNone() && AssetData.PackageName.IsNone())
 		return bSuccessed;
 	for(auto& Platform:CookPlatforms)
 	{
@@ -348,8 +348,9 @@ bool UFlibHotPatcherEditorHelper::CookPackage(UPackage* Package, const TArray<FS
 		};
 
 		FFilterEditorOnlyFlag SetPackageEditorOnlyFlag(Package,Platform);
-		
-		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(SavePath,Package, Platform->PlatformName());
+
+		FString PackageName = Package->FileName.IsNone()?AssetData.PackageName.ToString():Package->FileName.ToString();
+		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(SavePath,PackageName, Platform->PlatformName());
 		// delete old cooked assets
 		if(FPaths::FileExists(CookedSavePath))
 		{
@@ -419,11 +420,13 @@ TArray<ITargetPlatform*> UFlibHotPatcherEditorHelper::GetTargetPlatformsByNames(
 	return result;
 }
 
-bool UFlibHotPatcherEditorHelper::CookPackages(TArray<UPackage*>& InPackage, const TArray<FString>& Platforms, const FString& SavePath)
+bool UFlibHotPatcherEditorHelper::CookPackages(const TArray<FAssetData>& AssetDatas,TArray<UPackage*>& InPackage, const TArray<FString>& Platforms, const FString& SavePath)
 {
-	for(const auto& Package:InPackage)
+	if(AssetDatas.Num()!=InPackage.Num())
+		return false;
+	for(int32 index=0;index<InPackage.Num();++index)
 	{
-		CookPackage(Package,Platforms,SavePath);
+		CookPackage(AssetDatas[index],InPackage[index],Platforms,SavePath);
 	}
 	return true;
 }

@@ -84,7 +84,8 @@ void FHotPatcherEditorModule::StartupModule()
 	AddAssetContentMenu();
 	AddFolderContentMenu();
 #endif
-
+	FCoreUObjectDelegates::OnObjectSaved.AddRaw(this,&FHotPatcherEditorModule::OnObjectSaved);
+	
 }
 
 void FHotPatcherEditorModule::ShutdownModule()
@@ -332,25 +333,20 @@ TArray<ETargetPlatform> FHotPatcherEditorModule::GetAllCookPlatforms() const
 void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 {
 	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
-	TArray<UPackage*> AssetsPackage;
 
-	for(const auto& AssetData:AssetsData)
-	{
-		AssetsPackage.AddUnique(AssetData.GetPackage());
-		UE_LOG(LogHotPatcher,Log,TEXT("Cook Package %s Platform %s"),*AssetData.PackagePath.ToString(),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
-	}
 	FString CookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
 	FString CookForPlatform = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
 	TArray<FString> CookForPlatforms{CookForPlatform};
 	
-	for(const auto& AssetPacakge:AssetsPackage)
+	for(int32 index=0;index < AssetsData.Num();++index)
 	{
-		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookedDir,AssetPacakge, CookForPlatform);
+		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookedDir,AssetsData[index].PackageName.ToString(), CookForPlatform);
+		UE_LOG(LogHotPatcher,Log,TEXT("Cook Package %s Platform %s"),*AssetsData[index].PackagePath.ToString(),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
 		
-    	bool bCookStatus = UFlibHotPatcherEditorHelper::CookPackage(AssetPacakge,CookForPlatforms,CookedDir);
+    	bool bCookStatus = UFlibHotPatcherEditorHelper::CookPackage(AssetsData[index],AssetsData[index].GetPackage(),CookForPlatforms,CookedDir);
 		auto Msg = FText::Format(
             LOCTEXT("CookAssetsNotify", "Cook Platform {1} for {0} {2}!"),
-            UKismetTextLibrary::Conv_StringToText(AssetPacakge->FileName.ToString()),
+            UKismetTextLibrary::Conv_StringToText(AssetsData[index].PackageName.ToString()),
             UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
             bCookStatus ? UKismetTextLibrary::Conv_StringToText(TEXT("Successfuly")):UKismetTextLibrary::Conv_StringToText(TEXT("Faild"))
             );
@@ -397,6 +393,27 @@ void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
 			}	
 		}
 	}
+}
+
+void FHotPatcherEditorModule::OnObjectSaved(UObject* ObjectSaved)
+{
+	if (GIsCookerLoadingPackage)
+	{
+		// This is the cooker saving a cooked package, ignore
+		return;
+	}
+
+	UPackage* Package = ObjectSaved->GetOutermost();
+	if (Package == nullptr || Package == GetTransientPackage())
+	{
+		return;
+	}
+
+
+	// Register the package filename as modified. We don't use the cache because the file may not exist on disk yet at this point
+	const FString PackageFilename = FPackageName::LongPackageNameToFilename(Package->GetName(), Package->ContainsMap() ? FPackageName::GetMapPackageExtension() : FPackageName::GetAssetPackageExtension());
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	AssetRegistryModule.Get().ScanFilesSynchronous(TArray<FString>{PackageFilename},false);
 }
 
 void FHotPatcherEditorModule::AddToolbarExtension(FToolBarBuilder& Builder)

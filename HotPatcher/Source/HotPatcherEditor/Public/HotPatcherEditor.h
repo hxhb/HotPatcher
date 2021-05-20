@@ -49,6 +49,8 @@ public:
 	TArray<ETargetPlatform> GetAllCookPlatforms()const;
 	void OnCookPlatform(ETargetPlatform Platform);
 	void OnCookAndPakPlatform(ETargetPlatform Platform);
+
+	void OnObjectSaved( UObject* ObjectSaved );
 private:
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& InSpawnTabArgs);
 	void OnTabClosed(TSharedRef<SDockTab> InTab);

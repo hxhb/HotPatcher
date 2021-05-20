@@ -41,13 +41,13 @@ public:
 
 	static FChunkInfo MakeChunkFromPatchSettings(struct FExportPatchSettings const* InPatchSetting);
 	static FChunkInfo MakeChunkFromPatchVerison(const FHotPatcherVersion& InPatchVersion);
-	static FString GetCookAssetsSaveDir(const FString& BaseDir, UPackage* Pacakge, const FString& Platform);
+	static FString GetCookAssetsSaveDir(const FString& BaseDir, const FString PacakgeName, const FString& Platform);
 
 	static FString GetProjectCookedDir();
 	UFUNCTION(BlueprintCallable)
 		static bool CookAssets(const TArray<FSoftObjectPath>& Assets, const TArray<ETargetPlatform>& Platforms, const FString& SavePath = TEXT(""));
-	static bool CookPackages(TArray<UPackage*>& Packages, const TArray<FString>& Platforms, const FString& SavePath);
-	static bool CookPackage(UPackage* Package, const TArray<FString>& Platforms, const FString& SavePath);
+	static bool CookPackages(const TArray<FAssetData>& AssetDatas,TArray<UPackage*>& Packages, const TArray<FString>& Platforms, const FString& SavePath);
+	static bool CookPackage(const FAssetData& AssetData,UPackage* Package, const TArray<FString>& Platforms, const FString& SavePath);
 
 	static ITargetPlatform* GetTargetPlatformByName(const FString& PlatformName);
 	static TArray<ITargetPlatform*> GetTargetPlatformsByNames(const TArray<ETargetPlatform>& PlatformNames);
