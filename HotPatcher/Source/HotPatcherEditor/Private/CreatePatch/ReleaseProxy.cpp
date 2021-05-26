@@ -5,8 +5,6 @@
 #include "HotPatcherLog.h"
 
 // engine header
-#include <concrt.h>
-
 #include "FlibHotPatcherEditorHelper.h"
 #include "Misc/DateTime.h"
 #include "CoreGlobals.h"

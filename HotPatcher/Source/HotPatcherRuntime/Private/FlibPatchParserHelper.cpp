@@ -156,7 +156,6 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 
 				for (const auto& AssetItem : BeseVersionCurrentModuleAssetListKeys)
 				{
-					UE_LOG(LogHotPatcher,Display,TEXT("Modify Asset: %s"),*AssetItem);
 					const FAssetDetail* BaseVersionAssetDetail = BaseVersionModuleAssetsDetail.AssetDependencyDetails.Find(AssetItem);
 					const FAssetDetail* NewVersionAssetDetail = NewVersionModuleAssetsDetail.AssetDependencyDetails.Find(AssetItem);
 					if (!NewVersionAssetDetail)
@@ -171,6 +170,7 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 
 					if (!(*NewVersionAssetDetail == *BaseVersionAssetDetail))
 					{
+						UE_LOG(LogHotPatcher,Display,TEXT("Modify Asset: %s"),*AssetItem);
 						if (!OutModifyAsset.AssetsDependenciesMap.Contains(BaseVersionAssetModule))
 						{
 							OutModifyAsset.AssetsDependenciesMap.Add(BaseVersionAssetModule, FAssetDependenciesDetail{ BaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
