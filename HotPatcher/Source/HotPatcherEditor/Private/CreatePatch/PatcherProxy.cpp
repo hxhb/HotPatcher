@@ -142,7 +142,7 @@ bool UPatcherProxy::DoExport()
 		}
 	}
 	PatchContext.UnrealPakSlowTask->Final();
-	return true;
+	return bRet;
 }
 
 namespace PatchWorker

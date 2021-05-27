@@ -35,7 +35,7 @@ bool UReleaseProxy::DoExport()
 {
 	TimeRecorder TotalTimeTR(TEXT("Generate the release total time"));
 	GetSettingObject()->Init();
-	bool bRet = false;
+	bool bRet = true;
 	FHotPatcherReleaseContext ReleaseContext;
 	ReleaseContext.ContextSetting = GetSettingObject();
 	ReleaseContext.UnrealPakSlowTask = NewObject<UScopedSlowTaskContext>();
