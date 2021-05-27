@@ -129,5 +129,5 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 		system("pause");
 	}
 	
-	return (int32)bExportStatus;
+	return (int32)!bExportStatus;
 }
