@@ -403,18 +403,19 @@ namespace PatchWorker
 				}
 				FString ChunkSaveBasePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(), Context.CurrentVersion.VersionId, PlatformName);
 				
-				TArray<FPakCommand> ChunkPakCommands;
+				TArray<FPakCommand> ChunkPakListCommands;
 				{
 					TimeRecorder CookAssetsTR(FString::Printf(TEXT("CollectPakCommandByChunk Platform:%s ChunkName:%s."),*PlatformName,*Chunk.ChunkName));
-					ChunkPakCommands= UFlibPatchParserHelper::CollectPakCommandByChunk(
+					ChunkPakListCommands= UFlibPatchParserHelper::CollectPakCommandByChunk(
 						Context.VersionDiff,
 						Chunk,
 						PlatformName,
-						Context.GetSettingObject()->GetPakCommandOptions(),
-						Context.GetSettingObject()->GetAssetsDependenciesScanedCaches()
+						// Context.GetSettingObject()->GetUnrealPakListOptions(),
+						Context.GetSettingObject()->GetAssetsDependenciesScanedCaches(),
+						Context.GetSettingObject()
 					);
 				}
-				if (!ChunkPakCommands.Num())
+				if (!ChunkPakListCommands.Num())
 				{
 					FString Msg = FString::Printf(TEXT("Chunk:%s not contain any file!!!"), *Chunk.ChunkName);
 					UE_LOG(LogHotPatcher, Warning, TEXT("%s"),*Msg);
@@ -425,7 +426,7 @@ namespace PatchWorker
 				if(!Chunk.bMonolithic)
 				{
 					FPakFileProxy SinglePakForChunk;
-					SinglePakForChunk.PakCommands = ChunkPakCommands;
+					SinglePakForChunk.PakCommands = ChunkPakListCommands;
 					// add extern file to pak(version file)
 					SinglePakForChunk.PakCommands.Append(Context.AdditionalFileToPak);
 					
@@ -436,7 +437,7 @@ namespace PatchWorker
 				}
 				else
 				{
-					for (const auto& PakCommand : ChunkPakCommands)
+					for (const auto& PakCommand : ChunkPakListCommands)
 					{
 						FPakFileProxy CurrentPak;
 						CurrentPak.PakCommands.Add(PakCommand);
@@ -486,8 +487,8 @@ namespace PatchWorker
 					Context.UnrealPakSlowTask->EnterProgressFrame(1.0, Dialog);
 				}
 
-				TArray<FString> UnrealPakOptions = Context.GetSettingObject()->GetUnrealPakOptions();
-				TArray<FReplaceText> ReplacePakCommandTexts = Context.GetSettingObject()->GetReplacePakCommandTexts();
+				TArray<FString> UnrealPakCommandletOptions = Context.GetSettingObject()->GetUnrealPakCommandletOptions();
+				TArray<FReplaceText> ReplacePakListTexts = Context.GetSettingObject()->GetReplacePakListTexts();
 				TArray<FThreadWorker> PakWorker;
 				
 				TMap<FString,TArray<FPakFileInfo>>& PakFilesInfoMap = Context.PakFilesInfoMap;
@@ -497,17 +498,17 @@ namespace PatchWorker
 				{
 					TimeRecorder CookAssetsTR(FString::Printf(TEXT("Create Pak Platform:%s ChunkName:%s Pak:%s."),*PlatformName,*Chunk.ChunkName,*PakFileProxy.PakSavePath));
 					// ++PakCounter;
-					uint32 index = PakWorker.Emplace(*PakFileProxy.PakSavePath, [/*CurrentPakVersion, */PlatformName, UnrealPakOptions, ReplacePakCommandTexts, PakFileProxy, &Chunk, &PakFilesInfoMap,&Context]()
+					uint32 index = PakWorker.Emplace(*PakFileProxy.PakSavePath, [/*CurrentPakVersion, */PlatformName, UnrealPakCommandletOptions, ReplacePakListTexts, PakFileProxy, &Chunk, &PakFilesInfoMap,&Context]()
 					{
 						bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(
-							UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands, ReplacePakCommandTexts),
+							UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands, ReplacePakListTexts),
 							*PakFileProxy.PakCommandSavePath,
 							FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 
 						if (PakCommandSaveStatus)
 						{
-							TArray<FString> UnrealPakOptionsSinglePak = UnrealPakOptions;
-							UnrealPakOptionsSinglePak.Add(
+							TArray<FString> UnrealPakCommandletOptionsSinglePak = UnrealPakCommandletOptions;
+							UnrealPakCommandletOptionsSinglePak.Add(
 								FString::Printf(
 									TEXT("%s -create=%s"),
 									*(TEXT("\"") + PakFileProxy.PakSavePath + TEXT("\"")),
@@ -515,12 +516,12 @@ namespace PatchWorker
 								)
 							);
 							FString CommandLine;
-							for (const auto& Option : UnrealPakOptionsSinglePak)
+							for (const auto& Option : UnrealPakCommandletOptionsSinglePak)
 							{
 								CommandLine.Append(FString::Printf(TEXT(" %s"), *Option));
 							}
 							ExecuteUnrealPak(*CommandLine);
-							// FProcHandle ProcessHandle = UFlibPatchParserHelper::DoUnrealPak(UnrealPakOptionsSinglePak, true);
+							// FProcHandle ProcessHandle = UFlibPatchParserHelper::DoUnrealPak(UnrealPakCommandletOptionsSinglePak, true);
 
 							// AsyncTask(ENamedThreads::GameThread, [this,PakFileProxy,&PakFilesInfoMap,PlatformName]()
 							{
@@ -551,7 +552,7 @@ namespace PatchWorker
 	                            }
 							}//);
 							
-							if (!Chunk.bSavePakCommands)
+							if (!Chunk.bSaveUnrealPakList)
 							{
 								IFileManager::Get().Delete(*PakFileProxy.PakCommandSavePath);
 							}

@@ -98,7 +98,8 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(const FExport
 	Chunk.ChunkName = InPatchSetting->VersionId;
 	Chunk.bMonolithic = false;
 	Chunk.MonolithicPathMode = EMonolithicPathMode::MountPath;
-	Chunk.bSavePakCommands = true;
+	Chunk.bSaveUnrealPakList = InPatchSetting->GetUnrealPakSettings().bSavePakList;
+	Chunk.bSaveIoStorePakList = InPatchSetting->GetIoStoreSettings().bSavePakList;
 	Chunk.AssetIncludeFilters = const_cast<FExportPatchSettings*>(InPatchSetting)->GetAssetIncludeFilters();
 	Chunk.AssetIgnoreFilters = const_cast<FExportPatchSettings*>(InPatchSetting)->GetAssetIgnoreFilters();
 	Chunk.bAnalysisFilterDependencies = InPatchSetting->IsAnalysisFilterDependencies();
@@ -120,7 +121,7 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchVerison(const FHotPatc
 	FChunkInfo Chunk;
 	Chunk.ChunkName = InPatchVersion.VersionId;
 	Chunk.bMonolithic = false;
-	Chunk.bSavePakCommands = false;
+	Chunk.bSaveUnrealPakList = false;
 	auto ConvPathStrToDirPaths = [](const TArray<FString>& InPathsStr)->TArray<FDirectoryPath>
 	{
 		TArray<FDirectoryPath> result;
@@ -529,12 +530,12 @@ FString UFlibHotPatcherEditorHelper::GetUECmdBinary()
 }
 
 
-FProcHandle UFlibHotPatcherEditorHelper::DoUnrealPak(TArray<FString> UnrealPakOptions, bool block)
+FProcHandle UFlibHotPatcherEditorHelper::DoUnrealPak(TArray<FString> UnrealPakCommandletOptions, bool block)
 {
 	FString UnrealPakBinary = UFlibHotPatcherEditorHelper::GetUnrealPakBinary();
 
 	FString CommandLine;
-	for (const auto& Option : UnrealPakOptions)
+	for (const auto& Option : UnrealPakCommandletOptions)
 	{
 		CommandLine.Append(FString::Printf(TEXT(" %s"), *Option));
 	}

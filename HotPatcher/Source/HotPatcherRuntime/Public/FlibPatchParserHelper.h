@@ -112,7 +112,7 @@ public:
 			const FString& InEngineAbsDir, 
 			const FString& InProjectAbsDir, 
 			const FString& InProjectName, 
-			const TArray<FString>& InPakOptions, 
+			// const TArray<FString>& InPakOptions, 
 			const TArray<FString>& InIniFiles, 
 			TArray<FString>& OutCommands, 
 			TFunction<void(const FPakCommand&)> InReceiveCommand = [](const FPakCommand&) {});
@@ -121,7 +121,7 @@ public:
 		static bool ConvNotAssetFileToPakCommand(
 			const FString& InProjectDir,
 			const FString& InPlatformName, 
-			const TArray<FString>& InPakOptions,
+			// const TArray<FString>& InPakOptions,
 			const FString& InCookedFile,
 			FString& OutCommand,
 			TFunction<void(const FPakCommand&)> InReceiveCommand = [](const FPakCommand&) {});
@@ -156,7 +156,7 @@ public:
 	static TArray<FString> GetPakCommandsFromInternalInfo(
 		const FPakInternalInfo& InPakInternalInfo, 
 		const FString& PlatformName, 
-		const TArray<FString>& InPakOptions, 
+		// const TArray<FString>& InPakOptions, 
 		TFunction<void(const FPakCommand&)> InReceiveCommand=[](const FPakCommand&) {});
 	
 	static FChunkInfo CombineChunkInfo(const FChunkInfo& R, const FChunkInfo& L);
@@ -178,16 +178,18 @@ public:
 		const FPatchVersionDiff& DiffInfo,
 		const FChunkInfo& Chunk,
 		const FString& PlatformName,
-		const TArray<FString>& PakOptions,
-		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+		// const TArray<FString>& PakOptions,
+		TMap<FString, FAssetDependenciesInfo>& ScanedCaches,
+		const FExportPatchSettings* PatcheSettings = nullptr
 	);
 
 	static TArray<FPakCommand> CollectPakCommandByChunk(
 		const FPatchVersionDiff& DiffInfo,
 		const FChunkInfo& Chunk,
 		const FString& PlatformName,
-		const TArray<FString>& PakOptions,
-		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+		// const TArray<FString>& PakOptions,
+		TMap<FString, FAssetDependenciesInfo>& ScanedCaches,
+		const FExportPatchSettings* PatcheSettings=nullptr
 	);
 	// CurrenrVersionChunk中的过滤器会进行依赖分析，TotalChunk的不会，目的是让用户可以自己控制某个文件夹打包到哪个Pak里，而不会对该文件夹下的资源进行依赖分析
 	static FChunkAssetDescribe DiffChunkWithPatchSetting(

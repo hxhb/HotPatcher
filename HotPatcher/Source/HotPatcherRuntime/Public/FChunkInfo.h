@@ -58,16 +58,9 @@ public:
 		return GetMountPath() == PakCmd.GetMountPath() && GetPakCommands() == PakCmd.GetPakCommands();
 	}
 	
-	const FString& GetMountPath()const
-	{
-		return MountPath;
-	}
-
-	const TArray<FString>& GetPakCommands()const
-	{
-		return PakCommands;
-	}
-
+	const FString& GetMountPath()const{ return MountPath; }
+	const TArray<FString>& GetPakCommands()const{ return PakCommands; }
+	const TArray<FString>& GetIoStoreCommands()const{ return IoStoreCommands; }
 public:
 	UPROPERTY(EditAnywhere)
 	FString ChunkName;
@@ -77,6 +70,8 @@ public:
 	FString AssetPackage;
 	UPROPERTY(EditAnywhere)
 	TArray<FString> PakCommands;
+	UPROPERTY(EditAnywhere)
+	TArray<FString> IoStoreCommands;
 };
 
 USTRUCT(BlueprintType)
@@ -90,6 +85,8 @@ public:
 	FString PakSavePath;
 	UPROPERTY(EditAnywhere)
 	TArray<FPakCommand> PakCommands;
+	UPROPERTY(EditAnywhere)
+	TArray<FString> IoStoreCommands;
 };
 
 USTRUCT(BlueprintType)
@@ -103,12 +100,14 @@ public:
 	}
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 		FString ChunkName;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool bMonolithic = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bMonolithic"))
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bMonolithic"))
 		EMonolithicPathMode MonolithicPathMode = EMonolithicPathMode::MountPath;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		bool bSavePakCommands = false;
+		bool bSaveUnrealPakList = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		bool bSaveIoStorePakList = false;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))
@@ -137,6 +136,7 @@ struct FChunkPakCommand
 	GENERATED_USTRUCT_BODY()
 public:
 	TArray<FString> AsssetPakCommands;
+	TArray<FString> AsssetIoStoreCommands;
 	TArray<FString> ExternFilePakCommands;
 	TArray<FString> InternalPakCommands;
 };

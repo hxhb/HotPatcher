@@ -3,6 +3,8 @@
 #pragma once
 
 // project header
+#include "FUnrealPakSettings.h"
+#include "FIoStoreSettings.h"
 #include "FPatchVersionDiff.h"
 #include "FChunkInfo.h"
 #include "FReplaceText.h"
@@ -56,22 +58,15 @@ public:
 	FORCEINLINE bool IsRecursiveWidgetTree()const {return bRecursiveWidgetTree;}
 	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
 	
-
-	// pak command
-	TArray<FString> MakeAddExternFileToPakCommands()const;
-	TArray<FString> MakeAllExternDirectoryAsPakCommand()const;
-	TArray<FString> MakeAllPakCommandsByTheSetting(const FString& InPlatformName, const FPatchVersionDiff& InVersionDiff, bool bDiffExFiles = true)const;
-	bool MakeAllExternAssetAsPakCommands(const FString& InProjectDir, const FString& InPlatform, const TArray<FString>& PakOptions, TArray<FString>& OutPakCommands)const;
-
 	FORCEINLINE FString GetVersionId()const { return VersionId; }
 	FString GetBaseVersion()const;
-	FORCEINLINE TArray<FString> GetPakCommandOptions()const { return PakCommandOptions; }
-	FORCEINLINE TArray<FReplaceText> GetReplacePakCommandTexts()const { return ReplacePakCommandTexts; }
-	FORCEINLINE TArray<FString> GetUnrealPakOptions()const { return UnrealPakOptions; }
+	FORCEINLINE TArray<FString> GetUnrealPakListOptions()const { return GetUnrealPakSettings().UnrealPakListOptions; }
+	FORCEINLINE TArray<FReplaceText> GetReplacePakListTexts()const { return ReplacePakListTexts; }
+	FORCEINLINE TArray<FString> GetUnrealPakCommandletOptions()const { return GetUnrealPakSettings().UnrealCommandletOptions; }
 	FORCEINLINE TArray<ETargetPlatform> GetPakTargetPlatforms()const { return PakTargetPlatforms; }
 	TArray<FString> GetPakTargetPlatformNames()const;
 
-	FORCEINLINE bool IsSavePakList()const { return bSavePakList; }
+	// FORCEINLINE bool IsSavePakList()const { return bSavePakList; }
 	FORCEINLINE bool IsSaveDiffAnalysis()const { return IsByBaseVersion() && bSaveDiffAnalysis; }
 	FORCEINLINE TArray<FString> GetIgnoreDeletionModulesAsset()const{return IgnoreDeletionModulesAsset;}
 
@@ -116,7 +111,9 @@ public:
 	FORCEINLINE bool IsSaveDeletedAssetsToNewReleaseJson()const {return bSaveDeletedAssetsToNewReleaseJson;}
 	
 	TArray<FString> GetAssetIncludeFiltersPaths()const;
-
+	
+	FORCEINLINE FIoStoreSettings GetIoStoreSettings()const { return IoStoreSettings; }
+	FORCEINLINE FUnrealPakSettings GetUnrealPakSettings()const {return UnrealPakSettings;}
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = true;
@@ -180,6 +177,7 @@ public:
 		bool bEnableChunk = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options", meta = (EditCondition = "bEnableChunk"))
 		TArray<FChunkInfo> ChunkInfos;
+
 	/*
 	 * Cook Asset in current patch
 	 * shader code gets saved inline inside material assets
@@ -188,11 +186,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		bool bCookPatchAssets = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-		TArray<FString> PakCommandOptions;
+		FIoStoreSettings IoStoreSettings;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-		TArray<FReplaceText> ReplacePakCommandTexts;
+		FUnrealPakSettings UnrealPakSettings;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+	// 	TArray<FString> UnrealPakListOptions;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+	// 	TArray<FString> UnrealPakCommandletOptions;
+	// using in Pak and IO Store
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-		TArray<FString> UnrealPakOptions;
+	TArray<FString> DefaultPakListOptions;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+	TArray<FReplaceText> ReplacePakListTexts;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<ETargetPlatform> PakTargetPlatforms;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
@@ -205,8 +210,8 @@ public:
 		bool bIgnoreDeleatedAssetsInfo = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bSaveDeletedAssetsToNewReleaseJson = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bSavePakList = true;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+	// 	bool bSavePakList = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bByBaseVersion"))
 		bool bSaveDiffAnalysis = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")

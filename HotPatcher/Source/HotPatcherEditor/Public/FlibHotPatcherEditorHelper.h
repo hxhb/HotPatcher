@@ -65,7 +65,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Editor|Flib")
         static FString GetUECmdBinary();
 
-	static FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions, bool block);
+	static FProcHandle DoUnrealPak(TArray<FString> UnrealPakCommandletOptions, bool block);
 
 	static FString GetMetadataDir(const FString& ProjectDir,const FString& ProjectName,ETargetPlatform Platform);
 	

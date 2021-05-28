@@ -210,11 +210,34 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool ConvLongPackageNameToCookedPath(const FString& InProjectAbsDir, const FString& InPlatformName, const FString& InLongPackageName, TArray<FString>& OutCookedAssetPath, TArray<FString>& OutCookedAssetRelativePath);
 	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool MakePakCommandFromAssetDependencies(const FString& InProjectDir, const FString& InPlatformName, const FAssetDependenciesInfo& InAssetDependencies, const TArray<FString> &InCookParams, TArray<FString>& OutCookCommand, TFunction<void(const TArray<FString>&,const FString&,const FString&)> InReceivePakCommand = [](const TArray<FString>&, const FString&, const FString&) {});
+		static bool MakePakCommandFromAssetDependencies(
+			const FString& InProjectDir,
+			const FString& InPlatformName,
+			const FAssetDependenciesInfo& InAssetDependencies,
+			//const TArray<FString> &InCookParams,
+			TArray<FString>& OutCookCommand,
+			TFunction<void(const TArray<FString>&,const TArray<FString>&,const FString&,const FString&)> InReceivePakCommand = [](const TArray<FString>&,const TArray<FString>&, const FString&, const FString&) {},
+			TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset = [](const FString&)->bool{return false;}
+		);
 	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool MakePakCommandFromLongPackageName(const FString& InProjectDir, const FString& InPlatformName, const FString& InAssetLongPackageName, const TArray<FString> &InCookParams, TArray<FString>& OutCookCommand, TFunction<void(const TArray<FString>&, const FString&, const FString&)>  InReceivePakCommand = [](const TArray<FString>&, const FString&, const FString&) {});
-	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool CombineCookedAssetCommand(const TArray<FString> &InAbsPath, const TArray<FString>& InRelativePath, const TArray<FString>& InParams, TArray<FString>& OutCommand);
+		static bool MakePakCommandFromLongPackageName(
+			const FString& InProjectDir,
+			const FString& InPlatformName,
+			const FString& InAssetLongPackageName,
+			//const TArray<FString> &InCookParams,
+			TArray<FString>& OutCookCommand,
+			TFunction<void(const TArray<FString>&, const TArray<FString>&,const FString&, const FString&)>  InReceivePakCommand = [](const TArray<FString>&,const TArray<FString>&, const FString&, const FString&) {},
+			TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset = [](const FString&)->bool{return false;}
+		);
+	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+		static bool CombineCookedAssetCommand(
+			const TArray<FString> &InAbsPath,
+			const TArray<FString>& InRelativePath,
+			//const TArray<FString>& InParams,
+			TArray<FString>& OutPakCommand,
+			TArray<FString>& OutIoStoreCommand,
+			TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset = [](const FString&)->bool{return false;}
+		);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool ExportCookPakCommandToFile(const TArray<FString>& InCommand, const FString& InFile);
 

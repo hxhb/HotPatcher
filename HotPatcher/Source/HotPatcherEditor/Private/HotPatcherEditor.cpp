@@ -371,7 +371,14 @@ void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
 	for(const auto& AssetData:AssetsData)
 	{
 		TArray<FString> CookCommands;
-		UFLibAssetManageHelperEx::MakePakCommandFromLongPackageName(AbsProjectPath, CookForPlatform, AssetData.PackageName.ToString(), Settings->CookParams, CookCommands,[](const TArray<FString>&, const FString&, const FString&){});
+		UFLibAssetManageHelperEx::MakePakCommandFromLongPackageName(
+			AbsProjectPath,
+			CookForPlatform,
+			AssetData.PackageName.ToString(),
+			// Settings->CookParams,
+			CookCommands//,
+			//[](const TArray<FString>&, const FString&, const FString&){}
+			);
 		FinalCookCommands.Append(CookCommands);
 	}
 	if(!!FinalCookCommands.Num())
@@ -381,14 +388,14 @@ void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
 		FFileHelper::SaveStringArrayToFile(FinalCookCommands,*TempPakCommandsSavePath);
 		if(FPaths::FileExists(TempPakCommandsSavePath))
 		{
-			FString UnrealPakOptionsSinglePak(
+			FString UnrealPakCommandletOptionsSinglePak(
                             FString::Printf(
                                 TEXT("%s -create=%s"),
                                 *(TEXT("\"") + TempPakSavePath + TEXT("\"")),
                                 *(TEXT("\"") + TempPakCommandsSavePath + TEXT("\""))
                             )
                         );
-			ExecuteUnrealPak(*UnrealPakOptionsSinglePak);
+			ExecuteUnrealPak(*UnrealPakCommandletOptionsSinglePak);
 			if (FPaths::FileExists(TempPakSavePath))
 			{
 				FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");

@@ -1014,9 +1014,11 @@ bool UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(
 	const FString& InProjectDir, 
 	const FString& InPlatformName, 
 	const FAssetDependenciesInfo& InAssetDependencies, 
-	const TArray<FString> &InCookParams, 
+	//const TArray<FString> &InCookParams, 
 	TArray<FString>& OutCookCommand, 
-	TFunction<void(const TArray<FString>&, const FString&, const FString&)> InReceivePakCommand)
+	TFunction<void(const TArray<FString>&,const TArray<FString>&, const FString&, const FString&)> InReceivePakCommand,
+	TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset
+)
 {
 	if (!FPaths::DirectoryExists(InProjectDir) || !UFLibAssetManageHelperEx::IsValidPlatform(InPlatformName))
 		return false;
@@ -1034,7 +1036,7 @@ bool UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(
 		for (const auto& AssetLongPackageName : AssetList)
 		{
 			TArray<FString> FinalCookedCommand;
-			if (UFLibAssetManageHelperEx::MakePakCommandFromLongPackageName(InProjectDir, InPlatformName, AssetLongPackageName, InCookParams, FinalCookedCommand,InReceivePakCommand))
+			if (UFLibAssetManageHelperEx::MakePakCommandFromLongPackageName(InProjectDir, InPlatformName, AssetLongPackageName, /*InCookParams, */FinalCookedCommand,InReceivePakCommand,IsIoStoreAsset))
 			{
 				OutCookCommand.Append(FinalCookedCommand);
 			}
@@ -1048,24 +1050,26 @@ bool UFLibAssetManageHelperEx::MakePakCommandFromLongPackageName(
 	const FString& InProjectDir, 
 	const FString& InPlatformName, 
 	const FString& InAssetLongPackageName, 
-	const TArray<FString> &InCookParams, 
+	//const TArray<FString> &InCookParams, 
 	TArray<FString>& OutCookCommand,
-	TFunction<void(const TArray<FString>&, const FString&, const FString&)> InReceivePakCommand
+	TFunction<void(const TArray<FString>&,const TArray<FString>&, const FString&, const FString&)> InReceivePakCommand,
+	TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset
 )
 {
 	OutCookCommand.Empty();
 	bool bStatus = false;
 	TArray<FString> CookedAssetAbsPath;
 	TArray<FString> CookedAssetRelativePath;
-	TArray<FString> FinalCookedCommand;
+	TArray<FString> FinalCookedPakCommand;
+	TArray<FString> FinalCookedIoStoreCommand;
 	if (UFLibAssetManageHelperEx::ConvLongPackageNameToCookedPath(InProjectDir, InPlatformName, InAssetLongPackageName, CookedAssetAbsPath, CookedAssetRelativePath))
 	{
-		if (UFLibAssetManageHelperEx::CombineCookedAssetCommand(CookedAssetAbsPath, CookedAssetRelativePath, InCookParams, FinalCookedCommand))
+		if (UFLibAssetManageHelperEx::CombineCookedAssetCommand(CookedAssetAbsPath, CookedAssetRelativePath,/* InCookParams,*/ FinalCookedPakCommand,FinalCookedIoStoreCommand,IsIoStoreAsset))
 		{
-			if (!!CookedAssetRelativePath.Num() && !!FinalCookedCommand.Num())
+			if (!!CookedAssetRelativePath.Num() && !!FinalCookedPakCommand.Num())
 			{
-				InReceivePakCommand(FinalCookedCommand, CookedAssetRelativePath[0],InAssetLongPackageName);
-				OutCookCommand.Append(FinalCookedCommand);
+				InReceivePakCommand(FinalCookedPakCommand,FinalCookedIoStoreCommand, CookedAssetRelativePath[0],InAssetLongPackageName);
+				OutCookCommand.Append(FinalCookedPakCommand);
 				bStatus = true;
 			}
 		}
@@ -1073,25 +1077,35 @@ bool UFLibAssetManageHelperEx::MakePakCommandFromLongPackageName(
 	return bStatus;
 }
 
-bool UFLibAssetManageHelperEx::CombineCookedAssetCommand(const TArray<FString> &InAbsPath, const TArray<FString>& InRelativePath, const TArray<FString>& InParams, TArray<FString>& OutCommand)
+bool UFLibAssetManageHelperEx::CombineCookedAssetCommand(
+	const TArray<FString> &InAbsPath,
+	const TArray<FString>& InRelativePath,
+	//const TArray<FString>& InParams,
+	TArray<FString>& OutPakCommand,
+	TArray<FString>& OutIoStoreCommand,
+	TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset
+)
 {
 	if (!(!!InAbsPath.Num() && !!InRelativePath.Num()))
 	{
 		return false;
 	}
 
-	OutCommand.Empty();
+	OutPakCommand.Empty();
 	if (InAbsPath.Num() != InRelativePath.Num())
 		return false;
 	int32 AssetNum = InAbsPath.Num();
 	for (int32 index = 0; index < AssetNum; ++index)
 	{
 		FString CurrentCommand = TEXT("\"") + InAbsPath[index] + TEXT("\" \"") + InRelativePath[index] + TEXT("\"");
-		for (const auto& Param : InParams)
-		{
-			CurrentCommand += TEXT(" ") + Param;
-		}
-		OutCommand.Add(CurrentCommand);
+		// for (const auto& Param : InParams)
+		// {
+		// 	CurrentCommand += TEXT(" ") + Param;
+		// }
+		if(!IsIoStoreAsset(InAbsPath[index]))
+			OutPakCommand.Add(CurrentCommand);
+		else
+			OutIoStoreCommand.Add(CurrentCommand);
 	}
 	return true;
 }
