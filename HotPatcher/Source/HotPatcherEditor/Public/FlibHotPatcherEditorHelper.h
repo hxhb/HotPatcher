@@ -63,7 +63,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Editor|Flib")
     static FString GetUnrealPakBinary();
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Editor|Flib")
-        static FString GetUE4CmdBinary();
+        static FString GetUECmdBinary();
 
 	static FProcHandle DoUnrealPak(TArray<FString> UnrealPakOptions, bool block);
 

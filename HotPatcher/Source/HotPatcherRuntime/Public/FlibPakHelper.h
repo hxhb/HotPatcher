@@ -56,12 +56,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|Pak")
 		static TArray<FString> ScanExtenPakFiles();
 		
-	static bool LoadPakDoSomething(const FString& InPakFile, TFunction<bool(const FPakFile*)> InDoSomething);
-	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|Pak")
-		static bool LoadFilesByPak(const FString& InPakFile, TArray<FString>& OutFiles);
-
-	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|Pak")
-		static bool LoadVersionInfoByPak(const FString& InPakFile, FPakVersion& OutVersion);
+	// static bool LoadPakDoSomething(const FString& InPakFile, TFunction<bool(const FPakFile*)> InDoSomething);
+	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|Pak")
+	// 	static bool LoadFilesByPak(const FString& InPakFile, TArray<FString>& OutFiles);
+	//
+	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|Pak")
+	// 	static bool LoadVersionInfoByPak(const FString& InPakFile, FPakVersion& OutVersion);
 
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|Pak")
 		static TArray<FString> GetAllMountedPaks();

@@ -1,7 +1,7 @@
 #pragma once
 #include "HAL/Runnable.h"
 #include "HAL/RunnableThread.h"
-DECLARE_MULTICAST_DELEGATE(FThreadStatusDelegate);
+DECLARE_MULTICAST_DELEGATE(FThreadWorkerStatusDelegate);
 
 namespace EThreadStatus
 {
@@ -19,11 +19,11 @@ namespace EThreadStatus
 	};
 
 }
-class FThread : public FRunnable
+class FThreadWorker : public FRunnable
 {
 public:
 	using FCallback = TFunction<void()>;
-	explicit FThread(const TCHAR *InThreadName, const FCallback& InRunFunc)
+	explicit FThreadWorker(const TCHAR *InThreadName, const FCallback& InRunFunc)
 		:mThreadName(InThreadName),mRunFunc(InRunFunc),mThreadStatus(EThreadStatus::InActive)
 	{}
 
@@ -67,7 +67,7 @@ public:
 		return mThreadStatus;
 	}
 public:
-	FThreadStatusDelegate CancelDelegate;
+	FThreadWorkerStatusDelegate CancelDelegate;
 protected:
 	FString mThreadName;
 	FCallback mRunFunc;
@@ -75,7 +75,7 @@ protected:
 	volatile EThreadStatus::Type mThreadStatus;
 
 private:
-	FThread(const FThread&) = delete;
-	FThread& operator=(const FThread&) = delete;
+	FThreadWorker(const FThreadWorker&) = delete;
+	FThreadWorker& operator=(const FThreadWorker&) = delete;
 
 };

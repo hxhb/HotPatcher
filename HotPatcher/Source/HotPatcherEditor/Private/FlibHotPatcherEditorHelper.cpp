@@ -483,8 +483,16 @@ FString UFlibHotPatcherEditorHelper::GetUnrealPakBinary()
 	return TEXT("");
 }
 
-FString UFlibHotPatcherEditorHelper::GetUE4CmdBinary()
+FString UFlibHotPatcherEditorHelper::GetUECmdBinary()
 {
+	FString Binary;
+#if ENGINE_MAJOR_VERSION > 4
+	Binary = TEXT("UnrealEditor");
+#else
+	Binary = TEXT("UE4Editor");
+#endif
+
+	
 #if PLATFORM_WINDOWS
 	return FPaths::Combine(
         FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
@@ -496,12 +504,15 @@ FString UFlibHotPatcherEditorHelper::GetUE4CmdBinary()
 #endif
 #ifdef WITH_HOTPATCHER_DEBUGGAME
 	#if PLATFORM_64BITS
-	        TEXT("UE4Editor-Win64-DebugGame-Cmd.exe")
+			FString::Printf(TEXT("%s-Win64-DebugGame-Cmd.exe"),*Binary)
+	        // TEXT("UE4Editor-Win64-DebugGame-Cmd.exe")
 	#else
-	        TEXT("UE4Editor-Win32-DebugGame-Cmd.exe")
+			FString::Printf(TEXT("%s-Win32-DebugGame-Cmd.exe"),*Binary)
+	        // TEXT("UE4Editor-Win32-DebugGame-Cmd.exe")
 	#endif
 #else
-        TEXT("UE4Editor-Cmd.exe")
+		FString::Printf(TEXT("%s-Cmd.exe"),*Binary)
+        // TEXT("UE4Editor-Cmd.exe")
 #endif
     );
 #endif
@@ -510,7 +521,8 @@ FString UFlibHotPatcherEditorHelper::GetUE4CmdBinary()
         FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
         TEXT("Binaries"),
         TEXT("Mac"),
-        TEXT("UE4Editor-Cmd")
+        FString::Printf(TEXT("%s-Cmd"),*Binary)
+        //TEXT("UE4Editor-Cmd")
     );
 #endif
 	return TEXT("");

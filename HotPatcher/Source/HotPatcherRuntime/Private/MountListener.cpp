@@ -14,7 +14,7 @@ void UMountListener::Init()
 {
     if(!HasAnyFlags(RF_ClassDefaultObject))
     {
-#if ENGINE_MINOR_VERSION >=26
+#if ENGINE_MAJOR_VERSION >4 || ENGINE_MINOR_VERSION >=26
     	FCoreDelegates::OnPakFileMounted2.AddLambda([this](const IPakFile& PakFile){this->OnMountPak(*PakFile.PakGetPakFilename(),0);});
 #endif
 
@@ -22,7 +22,7 @@ void UMountListener::Init()
         FCoreDelegates::OnPakFileMounted.AddLambda([this](const TCHAR* Pak, const int32 ChunkID){this->OnMountPak(Pak,ChunkID);});
 #endif
     	
-#if ENGINE_MINOR_VERSION <= 22
+#if ENGINE_MAJOR_VERSION <=4 && ENGINE_MINOR_VERSION <= 22
     	FCoreDelegates::PakFileMountedCallback.AddLambda([this](const TCHAR* Pak){this->OnMountPak(Pak,0);});
 #endif
         FCoreDelegates::OnUnmountPak.BindUObject(this,&UMountListener::OnUnMountPak);
@@ -31,7 +31,7 @@ void UMountListener::Init()
         TArray<FString> MountedPaks = UFlibPakHelper::GetAllMountedPaks();
         for(const auto& Pak:MountedPaks)
         {
-#if ENGINE_MINOR_VERSION > 24
+#if ENGINE_MAJOR_VERSION >4 || ENGINE_MINOR_VERSION > 24
             OnMountPak(*Pak,UFlibPakHelper::GetPakOrderByPakPath(Pak));
 #else
             OnMountPak(*Pak);

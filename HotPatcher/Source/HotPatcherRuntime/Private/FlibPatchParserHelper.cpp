@@ -1945,9 +1945,6 @@ FHotPatcherVersion UFlibPatchParserHelper::MakeNewReleaseByDiff(const FHotPatche
 {
 	FHotPatcherVersion BaseVersion = InBaseVersion;
 	FHotPatcherVersion NewRelease;
-	NewRelease.BaseVersionId = InBaseVersion.VersionId;
-	NewRelease.Date = FDateTime::UtcNow().ToString();
-	NewRelease.VersionId = InPatchSettings->VersionId;
 	
 	FAssetDependenciesInfo& BaseAssetInfoRef = BaseVersion.AssetInfo;
 	// TMap<FString, FExternFileInfo>& BaseExternalFilesRef = BaseVersion.ExternalFiles;
@@ -2033,6 +2030,6 @@ FHotPatcherVersion UFlibPatchParserHelper::MakeNewReleaseByDiff(const FHotPatche
 	// AddExternalFilesLambda(DiffInfo.ExternDiffInfo.AddExternalFiles);
 	// AddExternalFilesLambda(DiffInfo.ExternDiffInfo.ModifyExternalFiles);
 	// NewRelease.ExternalFiles = BaseExternalFilesRef;
-	NewRelease.PlatformAssets = BasePlatformAssetsRef;
+
 	return NewRelease;
 }

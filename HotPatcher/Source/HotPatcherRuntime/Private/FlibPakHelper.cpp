@@ -20,6 +20,7 @@
 #include "ShaderPipelineCache.h"
 #include "RHI.h"
 
+
 void UFlibPakHelper::ExecMountPak(FString InPakPath, int32 InPakOrder, FString InMountPoint)
 {
 	UFlibPakHelper::MountPak(InPakPath, InPakOrder, InMountPoint);
@@ -246,119 +247,119 @@ TArray<FString> UFlibPakHelper::ScanExtenPakFiles()
 	return FinalResult;
 }
 
-bool UFlibPakHelper::LoadPakDoSomething(const FString& InPakFile, TFunction<bool(const FPakFile*)> InDoSomething)
-{
-	bool bRunStatus = false;
-	bool bMounted = false;
-	FPakPlatformFile* PakPlatform = (FPakPlatformFile*)&FPlatformFileManager::Get().GetPlatformFile();
-
-	FString StandardFileName = InPakFile;
-	FPaths::MakeStandardFilename(StandardFileName);
-
-	TSharedPtr<FPakFile> PakFile = MakeShareable(new FPakFile(PakPlatform->GetLowerLevel(), *StandardFileName, false));
-
-	if (PakPlatform->FileExists(*StandardFileName))
-	{
-		FString MountPoint = PakFile->GetMountPoint();
-		UE_LOG(LogHotPatcher, Log, TEXT("Pak Mount Point %s"),*MountPoint);
-
-		if (UFlibPakHelper::MountPak(*StandardFileName,10, MountPoint))
-		{
-			TArray<FString> MountedPakList = UFlibPakHelper::GetAllMountedPaks();
-			UE_LOG(LogHotPatcher, Log, TEXT("Mounted Paks:"), *MountPoint);
-			
-			if (PakFile)
-			{
-				InDoSomething(PakFile.Get());;
-			}
-			bMounted = true;
-		}
-		else 
-		{
-			UE_LOG(LogHotPatcher, Log, TEXT("Mount Faild."));
-		}
-	}
-	else
-	{
-		UE_LOG(LogHotPatcher, Log, TEXT("file %s is not found."),*StandardFileName);
-	}
-
-	if (bMounted)
-	{
-		bRunStatus = UFlibPakHelper::UnMountPak(*StandardFileName);
-	}
-
-	return bRunStatus;
-}
-
-bool UFlibPakHelper::LoadFilesByPak(const FString& InPakFile, TArray<FString>& OutFiles)
-{
-	bool bRunStatus = false;
-	TArray<FString> AllFiles;
-	auto ScanAllFilesLambda = [&AllFiles](const FPakFile* InPakFileIns)->bool
-	{
-		bool bLambdaRunStatus = false;
-		if (InPakFileIns)
-		{
-			InPakFileIns->FindFilesAtPath(AllFiles, *InPakFileIns->GetMountPoint(), true, false, true);
-			bLambdaRunStatus = true;
-		}
-		return bLambdaRunStatus;
-	};
-	bRunStatus = UFlibPakHelper::LoadPakDoSomething(InPakFile, ScanAllFilesLambda);
-	OutFiles = AllFiles;
-	return bRunStatus;
-}
-
-bool UFlibPakHelper::LoadVersionInfoByPak(const FString& InPakFile, FPakVersion& OutVersion)
-{
-	bool bRunStatus = false;
-	
-	TArray<FPakVersion> AllVersionInfo;
-	auto ScanAllFilesLambda = [&AllVersionInfo](const FPakFile* InPakFile)->bool
-	{
-		bool bLambdaRunStatus = false;
-		if (InPakFile)
-		{
-			// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: InPakFile is not null."));
-			TArray<FString> AllVersionDescribleFiles;
-			FString PakMountPoint = InPakFile->GetMountPoint();
-
-			InPakFile->FindFilesAtPath(AllVersionDescribleFiles, *InPakFile->GetMountPoint(), true, false, true);
-
-			// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda:  FindFilesAtPath num is %d."),AllVersionDescribleFiles.Num());
-
-			
-			for (const auto& VersionDescribleFile : AllVersionDescribleFiles)
-			{
-				// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: VersionDescrible File %s."), *VersionDescribleFile);
-				if (!VersionDescribleFile.EndsWith(".json"))
-					continue;
-				FString CurrentVersionStr;
-				if (FFileHelper::LoadFileToString(CurrentVersionStr,*VersionDescribleFile))
-				{
-					// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: Load File Success."));
-					FPakVersion CurrentPakVersionInfo;
-					if (UFlibPakHelper::DeserializeStringToPakVersion(CurrentVersionStr, CurrentPakVersionInfo))
-					{
-						// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: Deserialize File Success."));
-						AllVersionInfo.Add(CurrentPakVersionInfo);
-						bLambdaRunStatus = true;
-					}
-				}
-			}
-			
-		}
-		return bLambdaRunStatus;
-	};
-	bRunStatus = UFlibPakHelper::LoadPakDoSomething(InPakFile, ScanAllFilesLambda);
-
-	if (bRunStatus && !!AllVersionInfo.Num())
-	{
-		OutVersion = AllVersionInfo[0];
-	}
-	return bRunStatus;
-}
+// bool UFlibPakHelper::LoadPakDoSomething(const FString& InPakFile, TFunction<bool(const FPakFile*)> InDoSomething)
+// {
+// 	bool bRunStatus = false;
+// 	bool bMounted = false;
+// 	FPakPlatformFile* PakPlatform = (FPakPlatformFile*)&FPlatformFileManager::Get().GetPlatformFile();
+//
+// 	FString StandardFileName = InPakFile;
+// 	FPaths::MakeStandardFilename(StandardFileName);
+//
+// 	TSharedPtr<FPakFile> PakFile = MakeShareable(new FPakFile(PakPlatform->GetLowerLevel(), *StandardFileName, false));
+//
+// 	if (PakPlatform->FileExists(*StandardFileName))
+// 	{
+// 		FString MountPoint = PakFile->GetMountPoint();
+// 		UE_LOG(LogHotPatcher, Log, TEXT("Pak Mount Point %s"),*MountPoint);
+//
+// 		if (UFlibPakHelper::MountPak(*StandardFileName,10, MountPoint))
+// 		{
+// 			TArray<FString> MountedPakList = UFlibPakHelper::GetAllMountedPaks();
+// 			UE_LOG(LogHotPatcher, Log, TEXT("Mounted Paks:"), *MountPoint);
+// 			
+// 			if (PakFile)
+// 			{
+// 				InDoSomething(PakFile.Get());;
+// 			}
+// 			bMounted = true;
+// 		}
+// 		else 
+// 		{
+// 			UE_LOG(LogHotPatcher, Log, TEXT("Mount Faild."));
+// 		}
+// 	}
+// 	else
+// 	{
+// 		UE_LOG(LogHotPatcher, Log, TEXT("file %s is not found."),*StandardFileName);
+// 	}
+//
+// 	if (bMounted)
+// 	{
+// 		bRunStatus = UFlibPakHelper::UnMountPak(*StandardFileName);
+// 	}
+//
+// 	return bRunStatus;
+// }
+//
+// bool UFlibPakHelper::LoadFilesByPak(const FString& InPakFile, TArray<FString>& OutFiles)
+// {
+// 	bool bRunStatus = false;
+// 	TArray<FString> AllFiles;
+// 	auto ScanAllFilesLambda = [&AllFiles](const FPakFile* InPakFileIns)->bool
+// 	{
+// 		bool bLambdaRunStatus = false;
+// 		if (InPakFileIns)
+// 		{
+// 			InPakFileIns->FindFilesAtPath(AllFiles, *InPakFileIns->GetMountPoint(), true, false, true);
+// 			bLambdaRunStatus = true;
+// 		}
+// 		return bLambdaRunStatus;
+// 	};
+// 	bRunStatus = UFlibPakHelper::LoadPakDoSomething(InPakFile, ScanAllFilesLambda);
+// 	OutFiles = AllFiles;
+// 	return bRunStatus;
+// }
+//
+// bool UFlibPakHelper::LoadVersionInfoByPak(const FString& InPakFile, FPakVersion& OutVersion)
+// {
+// 	bool bRunStatus = false;
+// 	
+// 	TArray<FPakVersion> AllVersionInfo;
+// 	auto ScanAllFilesLambda = [&AllVersionInfo](const FPakFile* InPakFile)->bool
+// 	{
+// 		bool bLambdaRunStatus = false;
+// 		if (InPakFile)
+// 		{
+// 			// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: InPakFile is not null."));
+// 			TArray<FString> AllVersionDescribleFiles;
+// 			FString PakMountPoint = InPakFile->GetMountPoint();
+//
+// 			InPakFile->FindFilesAtPath(AllVersionDescribleFiles, *InPakFile->GetMountPoint(), true, false, true);
+//
+// 			// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda:  FindFilesAtPath num is %d."),AllVersionDescribleFiles.Num());
+//
+// 			
+// 			for (const auto& VersionDescribleFile : AllVersionDescribleFiles)
+// 			{
+// 				// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: VersionDescrible File %s."), *VersionDescribleFile);
+// 				if (!VersionDescribleFile.EndsWith(".json"))
+// 					continue;
+// 				FString CurrentVersionStr;
+// 				if (FFileHelper::LoadFileToString(CurrentVersionStr,*VersionDescribleFile))
+// 				{
+// 					// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: Load File Success."));
+// 					FPakVersion CurrentPakVersionInfo;
+// 					if (UFlibPakHelper::DeserializeStringToPakVersion(CurrentVersionStr, CurrentPakVersionInfo))
+// 					{
+// 						// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: Deserialize File Success."));
+// 						AllVersionInfo.Add(CurrentPakVersionInfo);
+// 						bLambdaRunStatus = true;
+// 					}
+// 				}
+// 			}
+// 			
+// 		}
+// 		return bLambdaRunStatus;
+// 	};
+// 	bRunStatus = UFlibPakHelper::LoadPakDoSomething(InPakFile, ScanAllFilesLambda);
+//
+// 	if (bRunStatus && !!AllVersionInfo.Num())
+// 	{
+// 		OutVersion = AllVersionInfo[0];
+// 	}
+// 	return bRunStatus;
+// }
 
 int32 UFlibPakHelper::GetPakOrderByPakPath(const FString& PakFile)
 {

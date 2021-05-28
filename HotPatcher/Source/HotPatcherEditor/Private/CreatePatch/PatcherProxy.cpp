@@ -488,7 +488,7 @@ namespace PatchWorker
 
 				TArray<FString> UnrealPakOptions = Context.GetSettingObject()->GetUnrealPakOptions();
 				TArray<FReplaceText> ReplacePakCommandTexts = Context.GetSettingObject()->GetReplacePakCommandTexts();
-				TArray<FThread> PakWorker;
+				TArray<FThreadWorker> PakWorker;
 				
 				TMap<FString,TArray<FPakFileInfo>>& PakFilesInfoMap = Context.PakFilesInfoMap;
 				
@@ -635,8 +635,7 @@ namespace PatchWorker
 		
 					FString SerializeDiffInfo = SerializeChangedAssetInfo(InDiff);
 		
-					FString::Printf(TEXT("%s"),*SerializeDiffInfo
-					);
+					// FString::Printf(TEXT("%s"),*SerializeDiffInfo);
 
 					FString SaveDiffToFile = FPaths::Combine(
 						Context.GetSettingObject()->GetCurrentVersionSavePath(),

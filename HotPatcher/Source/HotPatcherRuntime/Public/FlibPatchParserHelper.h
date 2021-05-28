@@ -33,7 +33,7 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FlibPatchParserHelper.generated.h"
 
-#if ENGINE_MINOR_VERSION < 25
+#if  ENGINE_MAJOR_VERSION <=4 && ENGINE_MINOR_VERSION < 25
 #define FProperty UProperty
 #endif
 
@@ -235,7 +235,7 @@ public:
 			FString TypeName;
 			FString ValueName;
 
-#if ENGINE_MINOR_VERSION > 21
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 21
 			UEnum* FoundEnum = StaticEnum<ENUM_TYPE>();
 #else
 			FString EnumTypeName = ANSI_TO_TCHAR(UFlibPatchParserHelper::GetCPPTypeName<ENUM_TYPE>().c_str());
@@ -259,7 +259,7 @@ public:
 	{
 		bool bStatus = false;
 
-#if ENGINE_MINOR_VERSION > 21
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 21
 		UEnum* FoundEnum = StaticEnum<ENUM_TYPE>();
 		FString EnumTypeName = FoundEnum->CppType;
 #else
@@ -281,7 +281,7 @@ public:
 		return bStatus;
 	}
 
-#if ENGINE_MINOR_VERSION <= 21
+#if ENGINE_MAJOR_VERSION <= 4 || ENGINE_MINOR_VERSION <= 21
 	template<typename T>
 	static std::string GetCPPTypeName()
 	{

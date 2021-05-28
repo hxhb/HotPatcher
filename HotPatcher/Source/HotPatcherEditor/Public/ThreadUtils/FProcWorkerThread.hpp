@@ -7,11 +7,11 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOutputMsgDelegate, const FString&);
 DECLARE_MULTICAST_DELEGATE(FProcStatusDelegate);
 
 
-class FProcWorkerThread : public FThread
+class FProcWorkerThread : public FThreadWorker
 {
 public:
 	explicit FProcWorkerThread(const TCHAR *InThreadName,const FString& InProgramPath,const FString& InParams)
-		: FThread(InThreadName, []() {}), mProgramPath(InProgramPath), mPragramParams(InParams)
+		: FThreadWorker(InThreadName, []() {}), mProgramPath(InProgramPath), mPragramParams(InParams)
 	{}
 
 	virtual uint32 Run()override

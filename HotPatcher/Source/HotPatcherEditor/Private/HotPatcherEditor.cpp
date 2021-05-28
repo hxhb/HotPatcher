@@ -19,10 +19,13 @@
 #include "HAL/FileManager.h"
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetTextLibrary.h"
-#include "Widgets/Docking/SDockableTab.h"
 #include "PakFileUtilities.h"
 
-#if ENGINE_MINOR_VERSION >23
+#if ENGINE_MAJOR_VERSION < 5
+#include "Widgets/Docking/SDockableTab.h"
+#endif
+
+#if ENGINE_MAJOR_VERSION >4 || ENGINE_MINOR_VERSION >23
 #include "ToolMenus.h"
 #include "ToolMenuDelegates.h"
 #endif
@@ -80,7 +83,7 @@ void FHotPatcherEditorModule::StartupModule()
 	 	LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
 	 }
 	MakeProjectSettingsForHotPatcher();
-#if ENGINE_MINOR_VERSION >23
+#if ENGINE_MAJOR_VERSION > 4 ||  ENGINE_MINOR_VERSION >23
 	AddAssetContentMenu();
 	AddFolderContentMenu();
 #endif
@@ -163,7 +166,7 @@ void FHotPatcherEditorModule::AddMenuExtension(FMenuBuilder& Builder)
 	Builder.AddMenuEntry(FHotPatcherCommands::Get().PluginAction);
 }
 
-#if ENGINE_MINOR_VERSION >23
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >23
 void FHotPatcherEditorModule::AddAssetContentMenu()
 {
 	if (!UToolMenus::IsToolMenuUIEnabled())
@@ -284,12 +287,12 @@ void FHotPatcherEditorModule::AddFolderContentMenu()
 	
 	Section.AddDynamicEntry("AddToPatchSettgins", FNewToolMenuSectionDelegate::CreateLambda([this](FToolMenuSection& InSection)
        {
-           const TAttribute<FText> Label = LOCTEXT("PatchUtilities_AddToPatchSettgins", "Add To Patch Settgins");
-           const TAttribute<FText> ToolTip = LOCTEXT("PatchUtilities_AddToPatchSettginsTooltip", "Add Selected Folder To HotPatcher Patch Settgins");
+           const TAttribute<FText> Label = LOCTEXT("PatchUtilities_AddFolderToPatchSettgins", "Add Folder To Patch Settgins");
+           const TAttribute<FText> ToolTip = LOCTEXT("PatchUtilities_AddFolderToPatchSettginsTooltip", "Add Selected Folder To HotPatcher Patch Settgins");
            const FSlateIcon Icon = FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions.Duplicate");
            const FToolMenuExecuteAction UIAction = FToolMenuExecuteAction::CreateRaw(this,&FHotPatcherEditorModule::OnFolderAddToPatchSettings);
 	
-           InSection.AddMenuEntry("CookUtilities_AddToPatchSettgins", Label, ToolTip, Icon, UIAction);
+           InSection.AddMenuEntry("CookUtilities_AddFolderToPatchSettgins", Label, ToolTip, Icon, UIAction);
        }));
 }
 
@@ -313,7 +316,7 @@ void FHotPatcherEditorModule::OnFolderAddToPatchSettings(const FToolMenuContext&
 TArray<ETargetPlatform> FHotPatcherEditorModule::GetAllCookPlatforms() const
 {
 	TArray<ETargetPlatform> TargetPlatforms;//{ETargetPlatform::Android_ASTC,ETargetPlatform::IOS,ETargetPlatform::WindowsNoEditor};
-#if ENGINE_MINOR_VERSION > 21
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 21
 	UEnum* FoundEnum = StaticEnum<ETargetPlatform>();
 #else
 	FString EnumTypeName = ANSI_TO_TCHAR(UFlibPatchParserHelper::GetCPPTypeName<ETargetPlatform>().c_str());

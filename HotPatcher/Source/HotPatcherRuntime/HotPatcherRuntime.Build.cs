@@ -51,7 +51,7 @@ public class HotPatcherRuntime : ModuleRules
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
-		if (Target.Version.MinorVersion > 21)
+		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 21)
 		{
 			PrivateDependencyModuleNames.Add("RenderCore");
 		}
@@ -61,5 +61,18 @@ public class HotPatcherRuntime : ModuleRules
 		}
 		bLegacyPublicIncludePaths = false;
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
-    }
+
+		string ETargetPlatformFile;
+		if (Target.Version.MajorVersion > 4)
+		{
+			ETargetPlatformFile = "ETargetPlatformUE5.h";
+			
+		}
+		else
+		{
+			ETargetPlatformFile = "ETargetPlatformUE4.h";
+		}
+		string FianlTargetPlatformHeader = Path.Combine(ModuleDirectory, "../SupportUE5", ETargetPlatformFile);
+		File.Copy(FianlTargetPlatformHeader, Path.Combine(ModuleDirectory,"Public/ETargetPlatform.h"),true);
+	}
 }

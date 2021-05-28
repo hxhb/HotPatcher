@@ -16,3 +16,4 @@ Content/Test/
 *.xcodeproj
 *.xcworkspace
 UpdateProject.bat
+ETargetPlatform.h

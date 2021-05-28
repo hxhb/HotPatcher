@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if ENGINE_MINOR_VERSION >23
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >23
 	#include "ToolMenuContext.h"
 	#include "ToolMenu.h"
 #endif
@@ -13,7 +13,7 @@
 #include "CreatePatch/FExportPatchSettings.h"
 #include "CreatePatch/FExportReleaseSettings.h"
 
-#if ENGINE_MINOR_VERSION>=26
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION>=26
 	#define InvokeTab TryInvokeTab
 #endif
 
@@ -38,7 +38,7 @@ public:
 	void AddToolbarExtension(FToolBarBuilder& Builder);
 	void AddMenuExtension(FMenuBuilder& Builder);
 
-#if ENGINE_MINOR_VERSION >23
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >23
 	void AddAssetContentMenu();
 	void OnAddToPatchSettings(const FToolMenuContext& MenuContent);
 	void MakeCookActionsSubMenu(UToolMenu* Menu);

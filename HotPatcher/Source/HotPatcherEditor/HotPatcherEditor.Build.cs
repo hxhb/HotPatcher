@@ -41,7 +41,7 @@ public class HotPatcherEditor : ModuleRules
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
-		if (Target.Version.MinorVersion > 23)
+		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 23)
 		{
 			PublicDependencyModuleNames.Add("ToolMenus");
 		}
@@ -91,7 +91,7 @@ public class HotPatcherEditor : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
-		if (Target.Version.MinorVersion <= 21)
+		if (Target.Version.MajorVersion < 5 && Target.Version.MinorVersion <= 21)
 		{
 			bUseRTTI = true;
 		}

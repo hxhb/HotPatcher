@@ -190,7 +190,7 @@
 							LongPackageName.RemoveFromStart(TEXT("../../.."));
 							LongPackageName.RemoveFromEnd(TEXT(".uasset"));
 							
-							LongPackageName.Replace(TEXT("/Content"), TEXT(""));
+							LongPackageName = LongPackageName.Replace(TEXT("/Content"), TEXT(""));
 							
 							FString ModuleName = LongPackageName;
 							{

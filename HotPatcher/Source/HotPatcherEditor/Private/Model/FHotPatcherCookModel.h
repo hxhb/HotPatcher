@@ -190,7 +190,7 @@ public:
 	{
 		FCookerConfig result;
 		FString ProjectFilePath = UFlibPatchParserHelper::GetProjectFilePath();
-		FString EngineBin = UFlibHotPatcherEditorHelper::GetUE4CmdBinary();
+		FString EngineBin = UFlibHotPatcherEditorHelper::GetUECmdBinary();
 
 		result.EngineBin = EngineBin;
 		result.ProjectPath = ProjectFilePath;
