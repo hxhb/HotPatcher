@@ -14,5 +14,5 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		TArray<FString> UnrealCommandletOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		bool bSavePakList;
+		bool bStoragePakList;
 };

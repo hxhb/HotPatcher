@@ -37,6 +37,7 @@ public class HotPatcherEditor : ModuleRules
                 "Settings",
                 "AssetManagerEx",
                 "PakFileUtilities",
+                "IoStoreUtilities",
                 "HotPatcherRuntime"
 				// ... add other public dependencies that you statically link with here ...
 			}
@@ -50,10 +51,10 @@ public class HotPatcherEditor : ModuleRules
 			new string[]
 			{
                 "Core",
+                "UnrealEd",
                 "Projects",
                 "DesktopPlatform",
 				"InputCore",
-				"UnrealEd",
                 "EditorStyle",
                 "LevelEditor",
 				"CoreUObject",

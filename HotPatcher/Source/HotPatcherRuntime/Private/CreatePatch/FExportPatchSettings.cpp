@@ -7,20 +7,19 @@
 #include "HAL/PlatformFilemanager.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Serialization/BulkDataManifest.h"
+#include "Interfaces/ITargetPlatform.h"
+#include "Interfaces/ITargetPlatformManagerModule.h"
 
 
 FExportPatchSettings::FExportPatchSettings()
 	: bAnalysisFilterDependencies(true),
 	AssetRegistryDependencyTypes(TArray<EAssetRegistryDependencyTypeEx>{EAssetRegistryDependencyTypeEx::Packages}),
-	bEnableExternFilesDiff(true), 
-	DefaultPakListOptions{ TEXT("-compress") ,TEXT("-compressionformats=Zlib")}
+	bEnableExternFilesDiff(true),
+	DefaultPakListOptions{ TEXT("-compress") },
+	DefaultCommandletOptions{ TEXT("-compress") ,TEXT("-compressionformats=Zlib")}
 {
-	// for(const auto& Option:DefaultPakListOptions)
-	// {
-	// 	GetUnrealPakSettings().PakListOptions.Add(Option);
-	// 	GetIoStoreSettings().IoStorePakListOptions.Add(Option);
-	// }
-	//
+	// IoStoreSettings.IoStoreCommandletOptions.Add(TEXT("-CreateGlobalContainer="));
 	PakVersionFileMountPoint = FPaths::Combine(
 		TEXT("../../../"),
 		UFlibPatchParserHelper::GetProjectName(),
@@ -38,6 +37,52 @@ FExportPatchSettings::FExportPatchSettings()
 void FExportPatchSettings::Init()
 {
 	Super::Init();
+	auto AppendOptionsLambda = [](TArray<FString>& SrcOptions,const TArray<FString>& AppendOptions)
+	{
+		for(const auto& Option:AppendOptions)
+		{
+			SrcOptions.AddUnique(Option);
+		}
+	};
+	AppendOptionsLambda(UnrealPakSettings.UnrealPakListOptions,GetDefaultPakListOptions());
+	AppendOptionsLambda(UnrealPakSettings.UnrealCommandletOptions,GetDefaultCommandletOptions());
+	AppendOptionsLambda(IoStoreSettings.IoStorePakListOptions,GetDefaultPakListOptions());
+	AppendOptionsLambda(IoStoreSettings.IoStoreCommandletOptions,GetDefaultCommandletOptions());
+	InitPlatformPackageContexts();
+}
+
+void FExportPatchSettings::InitPlatformPackageContexts()
+{
+	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
+	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
+	TArray<ITargetPlatform*> CookPlatforms;
+	const FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+	for (ITargetPlatform *TargetPlatform : TargetPlatforms)
+	{
+		if (GetPakTargetPlatformNames().Contains(TargetPlatform->PlatformName()))
+		{
+			CookPlatforms.AddUnique(TargetPlatform);
+			const FString PlatformString = TargetPlatform->PlatformName();
+
+			// const FString ResolvedRootPath = RootPathSandbox.Replace(TEXT("[Platform]"), *PlatformString);
+			const FString ResolvedProjectPath = FPaths::Combine(ProjectPath,FString::Printf(TEXT("Saved/Cooked/%s/%s"),*TargetPlatform->PlatformName(),FApp::GetProjectName()));
+
+			FPackageStoreBulkDataManifest* BulkDataManifest	= new FPackageStoreBulkDataManifest(ResolvedProjectPath);
+			FLooseFileWriter* LooseFileWriter				= GetIoStoreSettings().bIoStore ? new FLooseFileWriter() : nullptr;
+
+			FConfigFile PlatformEngineIni;
+			FConfigCacheIni::LoadLocalIniFile(PlatformEngineIni, TEXT("Engine"), true, *TargetPlatform->IniPlatformName());
+		
+			bool bLegacyBulkDataOffsets = false;
+			PlatformEngineIni.GetBool(TEXT("Core.System"), TEXT("LegacyBulkDataOffsets"), bLegacyBulkDataOffsets);
+
+			FSavePackageContext* SavePackageContext	= new FSavePackageContext(LooseFileWriter, BulkDataManifest, bLegacyBulkDataOffsets);
+			ETargetPlatform Platform;
+			UFlibPatchParserHelper::GetEnumValueByName(TargetPlatform->PlatformName(),Platform);
+			PlatformSavePackageContexts.Add(Platform,SavePackageContext);
+		}
+	}
+	
 }
 
 FString FExportPatchSettings::GetBaseVersion() const
@@ -193,6 +238,20 @@ TArray<FString> FExportPatchSettings::GetAssetIncludeFiltersPaths()const
 		}
 	}
 	return Result;
+}
+
+bool FExportPatchSettings::SavePlatformBulkDataManifest(ETargetPlatform Platform)
+{
+	bool bRet = false;
+	if(!GetPlatformSavePackageContexts().Contains(Platform))
+		return bRet;
+	FSavePackageContext* PackageContext =* GetPlatformSavePackageContexts().Find(Platform);
+	if (PackageContext != nullptr && PackageContext->BulkDataManifest != nullptr)
+	{
+		PackageContext->BulkDataManifest->Save();
+		bRet = true;
+	}
+	return bRet;
 }
 
 TArray<FString> FExportPatchSettings::GetForceSkipContentStrRules()const

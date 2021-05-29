@@ -37,6 +37,7 @@ public:
 
 	FExportPatchSettings();
 	virtual void Init() override;
+	virtual void InitPlatformPackageContexts();
 	
 	FORCEINLINE static FExportPatchSettings* Get()
 	{
@@ -66,8 +67,8 @@ public:
 	FORCEINLINE TArray<ETargetPlatform> GetPakTargetPlatforms()const { return PakTargetPlatforms; }
 	TArray<FString> GetPakTargetPlatformNames()const;
 
-	// FORCEINLINE bool IsSavePakList()const { return bSavePakList; }
-	FORCEINLINE bool IsSaveDiffAnalysis()const { return IsByBaseVersion() && bSaveDiffAnalysis; }
+	// FORCEINLINE bool IsSavePakList()const { return bStoragePakList; }
+	FORCEINLINE bool IsSaveDiffAnalysis()const { return IsByBaseVersion() && bStorageDiffAnalysisResults; }
 	FORCEINLINE TArray<FString> GetIgnoreDeletionModulesAsset()const{return IgnoreDeletionModulesAsset;}
 
 	FORCEINLINE bool IsForceSkipContent()const{return bForceSkipContent;}
@@ -87,7 +88,7 @@ public:
 	FORCEINLINE bool IsEnableExternFilesDiff()const { return bEnableExternFilesDiff; }
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 	FORCEINLINE bool IsIncludePakVersion()const { return bIncludePakVersionFile; }
-	FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bSaveAssetRelatedInfo; }
+	FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bStorageAssetDependencies; }
 
 	// chunk infomation
 	FORCEINLINE bool IsEnableChunk()const { return bEnableChunk; }
@@ -107,13 +108,18 @@ public:
 	FORCEINLINE bool IsCustomPakNameRegular()const {return bCustomPakNameRegular;}
 	FORCEINLINE FString GetPakNameRegular()const { return PakNameRegular;}
 	FORCEINLINE bool IsCookPatchAssets()const {return bCookPatchAssets;}
-	FORCEINLINE bool IsIgnoreDeleatedAssetsInfo()const {return bIgnoreDeleatedAssetsInfo;}
-	FORCEINLINE bool IsSaveDeletedAssetsToNewReleaseJson()const {return bSaveDeletedAssetsToNewReleaseJson;}
+	FORCEINLINE bool IsIgnoreDeleatedAssetsInformation()const {return bIgnoreDeleatedAssetsInformation;}
+	FORCEINLINE bool IsSaveDeletedAssetsToNewReleaseJson()const {return bStorageDeletedAssetsToNewReleaseJson;}
 	
 	TArray<FString> GetAssetIncludeFiltersPaths()const;
 	
 	FORCEINLINE FIoStoreSettings GetIoStoreSettings()const { return IoStoreSettings; }
 	FORCEINLINE FUnrealPakSettings GetUnrealPakSettings()const {return UnrealPakSettings;}
+	FORCEINLINE TArray<FString> GetDefaultPakListOptions()const {return DefaultPakListOptions;}
+	FORCEINLINE TArray<FString> GetDefaultCommandletOptions()const {return DefaultCommandletOptions;}
+	FORCEINLINE TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
+
+	bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = true;
@@ -189,13 +195,13 @@ public:
 		FIoStoreSettings IoStoreSettings;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		FUnrealPakSettings UnrealPakSettings;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-	// 	TArray<FString> UnrealPakListOptions;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-	// 	TArray<FString> UnrealPakCommandletOptions;
+
 	// using in Pak and IO Store
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 	TArray<FString> DefaultPakListOptions;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+	TArray<FString> DefaultCommandletOptions;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 	TArray<FReplaceText> ReplacePakListTexts;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
@@ -207,13 +213,13 @@ public:
 		FString PakNameRegular = TEXT("{VERSION}_{CHUNKNAME}_{PLATFORM}_001_P");
 	// dont display deleted asset info in patcher
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bIgnoreDeleatedAssetsInfo = false;
+		bool bIgnoreDeleatedAssetsInformation = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bSaveDeletedAssetsToNewReleaseJson = true;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-	// 	bool bSavePakList = true;
+		bool bStorageDeletedAssetsToNewReleaseJson = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bByBaseVersion"))
-		bool bSaveDiffAnalysis = true;
+		bool bStorageDiffAnalysisResults = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bSaveAssetRelatedInfo = false;
+		bool bStorageAssetDependencies = false;
+private:
+	TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContexts;
 };

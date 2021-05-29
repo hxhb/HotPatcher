@@ -141,9 +141,9 @@ TArray<FString> UFlibShaderPatchHelper::ConvDirectoryPathToStr(const TArray<FDir
 // 		FString TargetPlatformName = TargetPlatform->PlatformName();
 // 		TMap<FName, TArray<FString>> OutSCLCSVPaths;
 // 		TArray<FString>& PlatformSCLCSVPaths = OutSCLCSVPaths.FindOrAdd(FName(TargetPlatformName));
-// 		bool bSaved = FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, MetaDataPath, ShaderFormats, PlatformSCLCSVPaths, ChunkAssignments);
+// 		bool bStoraged = FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, MetaDataPath, ShaderFormats, PlatformSCLCSVPaths, ChunkAssignments);
 //
-// 		if (UNLIKELY(!bSaved))
+// 		if (UNLIKELY(!bStoraged))
 // 		{
 // 			UE_LOG(LogTemp, Error, TEXT("%s"),*FString::Printf(TEXT("Saving shared material shader code library failed for %s."), *TargetPlatformName));
 // 		}
@@ -152,8 +152,8 @@ TArray<FString> UFlibShaderPatchHelper::ConvDirectoryPathToStr(const TArray<FDir
 // 			const UProjectPackagingSettings* const PackagingSettings = GetDefault<UProjectPackagingSettings>();
 // 			if (PackagingSettings->bSharedMaterialNativeLibraries)
 // 			{
-// 				bSaved = FShaderCodeLibrary::PackageNativeShaderLibrary(ShaderCodeDir, ShaderFormats);
-// 				if (!bSaved)
+// 				bStoraged = FShaderCodeLibrary::PackageNativeShaderLibrary(ShaderCodeDir, ShaderFormats);
+// 				if (!bStoraged)
 // 				{
 // 					// This is fatal - In this case we should cancel any launch on device operation or package write but we don't want to assert and crash the editor
 // 					UE_LOG(LogTemp, Error, TEXT("%s"),*FString::Printf(TEXT("Package Native Shader Library failed for %s."), *TargetPlatformName));

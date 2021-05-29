@@ -80,9 +80,13 @@ struct FPakFileProxy
 	GENERATED_USTRUCT_BODY()
 public:
 	UPROPERTY(EditAnywhere)
-	FString PakCommandSavePath;
+	FString ChunkStoreName;
 	UPROPERTY(EditAnywhere)
-	FString PakSavePath;
+	FString StorageDirectory;
+	// UPROPERTY(EditAnywhere)
+	// FString PakCommandSavePath;
+	// UPROPERTY(EditAnywhere)
+	// FString PakSavePath;
 	UPROPERTY(EditAnywhere)
 	TArray<FPakCommand> PakCommands;
 	UPROPERTY(EditAnywhere)
@@ -105,9 +109,9 @@ public:
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bMonolithic"))
 		EMonolithicPathMode MonolithicPathMode = EMonolithicPathMode::MountPath;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		bool bSaveUnrealPakList = false;
+		bool bStorageUnrealPakList = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		bool bSaveIoStorePakList = false;
+		bool bStorageIoStorePakList = false;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))

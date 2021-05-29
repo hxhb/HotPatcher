@@ -5,7 +5,7 @@
 #include "Interfaces/ITargetPlatform.h"
 #include "Model/FHotPatcherCookModel.h"
 #include "Templates/SharedPointer.h"
-
+#include "Widgets/Input/SEditableTextBox.h"
 // project header
 #include "ICookerItemInterface.h"
 

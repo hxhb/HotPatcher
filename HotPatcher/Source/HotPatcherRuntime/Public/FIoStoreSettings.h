@@ -1,7 +1,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
+#include "ETargetPlatform.h"
+
 #include "FIoStoreSettings.generated.h"
+
+USTRUCT(BlueprintType)
+struct FIoStorePlatformContainers
+{
+	GENERATED_USTRUCT_BODY()
+	// global.utoc file
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FFilePath GlobalContainers;
+};
 
 USTRUCT(BlueprintType)
 struct FIoStoreSettings
@@ -17,5 +29,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		TArray<FString> IoStoreCommandletOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		bool bSavePakList;
+		TMap<ETargetPlatform,FIoStorePlatformContainers> PlatformContainers;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		bool bStoragePakList;
 };

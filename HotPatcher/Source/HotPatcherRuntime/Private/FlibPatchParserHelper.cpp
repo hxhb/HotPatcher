@@ -421,14 +421,6 @@ bool UFlibPatchParserHelper::ConvIniFilesToPakCommands(
 	TFunction<void(const FPakCommand&)> InReceiveCommand
 )
 {
-	FString PakOptionsStr;
-	// {
-	// 	for (const auto& PakOption : InPakOptions)
-	// 	{
-	// 		if(!PakOption.Equals(TEXT("-compress"),ESearchCase::IgnoreCase))
-	// 			PakOptionsStr += PakOption + TEXT(" ");
-	// 	}
-	// }
 	OutCommands.Reset();
 	bool bRunStatus = false;
 	if (!FPaths::DirectoryExists(InProjectAbsDir) || !FPaths::DirectoryExists(InEngineAbsDir))
@@ -475,10 +467,9 @@ bool UFlibPatchParserHelper::ConvIniFilesToPakCommands(
 			FString IniFileNameWithExten = FString::Printf(TEXT("%s.%s"),*IniFileName,*IniExtention);
 			FString CookedIniRelativePath = FPaths::Combine(RelativePath, IniFileNameWithExten);
 			FString CookCommand = FString::Printf(
-				TEXT("\"%s\" \"%s\" %s"),
+				TEXT("\"%s\" \"%s\""),
 					*IniFile,
-					*CookedIniRelativePath,
-					*PakOptionsStr
+					*CookedIniRelativePath
 			);
 			FPakCommand CurrentPakCommand;
 			CurrentPakCommand.PakCommands = TArray<FString>{ CookCommand };
@@ -502,14 +493,6 @@ bool UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(
 	TFunction<void(const FPakCommand&)> InReceiveCommand
 )
 {
-	FString PakOptionsStr;
-	// {
-	// 	for (const auto& PakOption : InPakOptions)
-	// 	{
-	// 		PakOptionsStr += PakOption + TEXT(" ");
-	// 	}
-	// }
-
 	bool bRunStatus = false;
 	if (FPaths::FileExists(InCookedFile))
 	{
@@ -522,10 +505,9 @@ bool UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(
 		);
 
 		OutCommand = FString::Printf(
-			TEXT("\"%s\" \"%s\" %s"),
+			TEXT("\"%s\" \"%s\""),
 			*InCookedFile,
-			*AssetFileRelativeCookPath,
-			*PakOptionsStr
+			*AssetFileRelativeCookPath
 		);
 		FPakCommand CurrentPakCommand;
 		CurrentPakCommand.PakCommands = TArray<FString>{ OutCommand };
@@ -1139,11 +1121,13 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 
 		bool bIoStore =false;
 		bool bAllowBulkDataInIoStore = false;
+#if ENGINE_MAJOR_VERSION >5 ||ENGINE_MINOR_VERSION >=25
 		if(PatcheSettings)
 		{
 			bIoStore = PatcheSettings->GetIoStoreSettings().bIoStore;
 			bAllowBulkDataInIoStore = PatcheSettings->GetIoStoreSettings().bAllowBulkDataInIoStore;
 		}
+#endif
 		
 		auto IsIoStoreAssetsLambda = [bIoStore,bAllowBulkDataInIoStore](const FString& InAbsAssets)->bool
 		{
@@ -1199,16 +1183,6 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 		{
 			PakCommands.Emplace(InCommand);
 		};
-
-		// [Pak]
-		// +ExtensionsToNotUsePluginCompression=uplugin
-		// +ExtensionsToNotUsePluginCompression=upluginmanifest
-		// +ExtensionsToNotUsePluginCompression=uproject
-		// +ExtensionsToNotUsePluginCompression=ini
-		// +ExtensionsToNotUsePluginCompression=icu
-		// +ExtensionsToNotUsePluginCompression=res
-		TArray<FString> IgnoreCompressFormats;
-		GConfig->GetArray(TEXT("Pak"),TEXT("ExtensionsToNotUsePluginCompression"),IgnoreCompressFormats,GEngineIni);
 		
 		// Collect Extern Files
 		for(const auto& PlatformItenm:CollectPlatforms)
@@ -1283,7 +1257,7 @@ FPatchVersionDiff UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(const
 		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipContents);
 	}
 	// clean deleted asset info in patch
-	if(PatchSetting.IsIgnoreDeleatedAssetsInfo())
+	if(PatchSetting.IsIgnoreDeleatedAssetsInformation())
 	{
 		UE_LOG(LogHotPatcher,Display,TEXT("ignore deleted assets info in patch..."));
 		VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap.Empty();
@@ -1532,13 +1506,13 @@ FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkByBaseVersionWithPatchSetti
 	return result;
 }
 
-TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands,const TArray<FReplaceText>& InReplaceTexts)
+TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands,const TArray<FReplaceText>& InReplaceTexts,bool bIoStore)
 {
 	TArray<FString> ResultPakCommands;
 	{
 		for (const auto PakCommand : PakCommands)
 		{
-			const TArray<FString>& PakCommandOriginTexts = PakCommand.GetPakCommands();
+			const TArray<FString>& PakCommandOriginTexts = bIoStore?PakCommand.GetIoStoreCommands():PakCommand.GetPakCommands();
 			if (!!InReplaceTexts.Num())
 			{
 				for (const auto& PakCommandOriginText : PakCommandOriginTexts)

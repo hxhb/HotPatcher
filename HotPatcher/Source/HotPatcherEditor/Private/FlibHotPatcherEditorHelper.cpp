@@ -7,6 +7,7 @@
 #include "HotPatcherLog.h"
 
 // engine header
+#include "Editor.h"
 #include "IPlatformFileSandboxWrapper.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/SecureHash.h"
@@ -98,8 +99,8 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(const FExport
 	Chunk.ChunkName = InPatchSetting->VersionId;
 	Chunk.bMonolithic = false;
 	Chunk.MonolithicPathMode = EMonolithicPathMode::MountPath;
-	Chunk.bSaveUnrealPakList = InPatchSetting->GetUnrealPakSettings().bSavePakList;
-	Chunk.bSaveIoStorePakList = InPatchSetting->GetIoStoreSettings().bSavePakList;
+	Chunk.bStorageUnrealPakList = InPatchSetting->GetUnrealPakSettings().bStoragePakList;
+	Chunk.bStorageIoStorePakList = InPatchSetting->GetIoStoreSettings().bStoragePakList;
 	Chunk.AssetIncludeFilters = const_cast<FExportPatchSettings*>(InPatchSetting)->GetAssetIncludeFilters();
 	Chunk.AssetIgnoreFilters = const_cast<FExportPatchSettings*>(InPatchSetting)->GetAssetIgnoreFilters();
 	Chunk.bAnalysisFilterDependencies = InPatchSetting->IsAnalysisFilterDependencies();
@@ -121,7 +122,7 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchVerison(const FHotPatc
 	FChunkInfo Chunk;
 	Chunk.ChunkName = InPatchVersion.VersionId;
 	Chunk.bMonolithic = false;
-	Chunk.bSaveUnrealPakList = false;
+	Chunk.bStorageUnrealPakList = false;
 	auto ConvPathStrToDirPaths = [](const TArray<FString>& InPathsStr)->TArray<FDirectoryPath>
 	{
 		TArray<FDirectoryPath> result;
@@ -263,8 +264,12 @@ FString UFlibHotPatcherEditorHelper::GetProjectCookedDir()
 	return FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));;
 }
 
-bool UFlibHotPatcherEditorHelper::CookAssets(const TArray<FSoftObjectPath>& Assets, const TArray<ETargetPlatform>&Platforms,
-                                            const FString& SavePath)
+bool UFlibHotPatcherEditorHelper::CookAssets(
+	const TArray<FSoftObjectPath>& Assets,
+	const TArray<ETargetPlatform>&Platforms,
+    const FString& SavePath,
+    class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext
+)
 {
 	FString FinalSavePath = SavePath;
 	if(FinalSavePath.IsEmpty())
@@ -283,18 +288,51 @@ bool UFlibHotPatcherEditorHelper::CookAssets(const TArray<FSoftObjectPath>& Asse
 		}
 	}
 	TArray<FString> StringPlatforms;
+	TMap<FString,FSavePackageContext*> FinalPlatformSavePackageContext;
 	for(const auto& Platform:Platforms)
 	{
-		StringPlatforms.AddUnique(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+		StringPlatforms.AddUnique(PlatformName);
+		FSavePackageContext* CurrentPackageContext = NULL;
+		if(PlatformSavePackageContext.Contains(Platform))
+		{
+			CurrentPackageContext = *PlatformSavePackageContext.Find(Platform);
+		}
+		 
+		FinalPlatformSavePackageContext.Add(PlatformName,CurrentPackageContext);
 	}
 	
-	return CookPackages(AssetsData,Packages,StringPlatforms,SavePath);
+	return CookPackages(AssetsData,Packages,StringPlatforms,SavePath,FinalPlatformSavePackageContext);
 }
 
-bool UFlibHotPatcherEditorHelper::CookPackage(const FAssetData& AssetData,UPackage* Package, const TArray<FString>& Platforms, const FString& SavePath)
+bool UFlibHotPatcherEditorHelper::CookPackages(
+	const TArray<FAssetData>& AssetDatas,
+	TArray<UPackage*>& InPackage,
+	const TArray<FString>& Platforms,
+	const FString& SavePath,
+	class TMap<FString,FSavePackageContext*> PlatformSavePackageContext
+)
+{
+	if(AssetDatas.Num()!=InPackage.Num())
+		return false;
+	for(int32 index=0;index<InPackage.Num();++index)
+	{
+		CookPackage(AssetDatas[index],InPackage[index],Platforms,SavePath,PlatformSavePackageContext);
+	}
+	return true;
+}
+
+
+bool UFlibHotPatcherEditorHelper::CookPackage(
+	const FAssetData& AssetData,
+	UPackage* Package,
+	const TArray<FString>& Platforms,
+	const FString& SavePath,
+	class TMap<FString,FSavePackageContext*> PlatformSavePackageContext
+)
 {
 	bool bSuccessed = false;
-	const bool bSaveConcurrent = FParse::Param(FCommandLine::Get(), TEXT("ConcurrentSave"));
+	const bool bStorageConcurrent = FParse::Param(FCommandLine::Get(), TEXT("ConcurrentSave"));
 	bool bUnversioned = false;
 	uint32 SaveFlags = SAVE_KeepGUID | SAVE_Async | SAVE_ComputeHash | (bUnversioned ? SAVE_Unversioned : 0);
 	EObjectFlags CookedFlags = RF_Public;
@@ -302,7 +340,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(const FAssetData& AssetData,UPacka
 	{
 		CookedFlags = RF_NoFlags;
 	}
-	if (bSaveConcurrent)
+	if (bStorageConcurrent)
 	{
 		SaveFlags |= SAVE_Concurrent;
 	}
@@ -364,7 +402,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(const FAssetData& AssetData,UPacka
 			ExportObj->BeginCacheForCookedPlatformData(Platform);
 		}
 
-		// if(!bSaveConcurrent)
+		// if(!bStorageConcurrent)
 		// {
 		// 	TArray<UObject*> TagExpObjects;
 		// 	GetObjectsWithAnyMarks(TagExpObjects,OBJECTMARK_TagExp);
@@ -376,12 +414,13 @@ bool UFlibHotPatcherEditorHelper::CookPackage(const FAssetData& AssetData,UPacka
 		// 		}
 		// 	}
 		// }
-		
+
+		FSavePackageContext* CurrentPlatformPackageContext  = *PlatformSavePackageContext.Find(Platform->PlatformName());
 		GIsCookerLoadingPackage = true;
 		// UE_LOG(LogHotPatcherEditorHelper,Display,TEXT("Cook Assets:%s save to %s"),*Package->GetName(),*CookedSavePath);
 		FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, CookedFlags, *CookedSavePath, 
                                                 GError, nullptr, false, false, SaveFlags, Platform, 
-                                                FDateTime::MinValue(), false, /*DiffMap*/ nullptr);
+                                                FDateTime::MinValue(), false, /*DiffMap*/ nullptr,CurrentPlatformPackageContext);
 		GIsCookerLoadingPackage = false;
 		bSuccessed = Result == ESavePackageResult::Success;
 	}
@@ -390,18 +429,14 @@ bool UFlibHotPatcherEditorHelper::CookPackage(const FAssetData& AssetData,UPacka
 
 
 void UFlibHotPatcherEditorHelper::CookChunkAssets(
-	const FPatchVersionDiff& DiffInfo,
-	const FChunkInfo& Chunk,
+	TArray<FAssetDetail> Assets,
 	const TArray<ETargetPlatform>& Platforms,
-	TMap<FString,FAssetDependenciesInfo>& ScanedCaches
+	class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext
 )
 {
-	FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(DiffInfo, Chunk ,Platforms,ScanedCaches);
-	TArray<FAssetDetail> ChunkAssets;
-	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(ChunkAssetsDescrible.Assets,ChunkAssets);
 	TArray<FSoftObjectPath> AssetsSoftPath;
 
-	for(const auto& Asset:ChunkAssets)
+	for(const auto& Asset:Assets)
 	{
 		FSoftObjectPath AssetSoftPath;
 		AssetSoftPath.SetPath(Asset.mPackagePath);
@@ -442,17 +477,6 @@ TArray<ITargetPlatform*> UFlibHotPatcherEditorHelper::GetTargetPlatformsByNames(
 		}
 	}
 	return result;
-}
-
-bool UFlibHotPatcherEditorHelper::CookPackages(const TArray<FAssetData>& AssetDatas,TArray<UPackage*>& InPackage, const TArray<FString>& Platforms, const FString& SavePath)
-{
-	if(AssetDatas.Num()!=InPackage.Num())
-		return false;
-	for(int32 index=0;index<InPackage.Num();++index)
-	{
-		CookPackage(AssetDatas[index],InPackage[index],Platforms,SavePath);
-	}
-	return true;
 }
 
 

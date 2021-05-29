@@ -18,9 +18,27 @@ public:
     UPROPERTY(EditAnywhere, config, Category = "Editor")
     TArray<ETargetPlatform> PlatformWhitelists;
     UPROPERTY(EditAnywhere, config, Category = "Editor")
-    TArray<FString> CookParams;
-    UPROPERTY(EditAnywhere, config, Category = "Editor")
     FString TempPakDir = TEXT("Saved/HotPatcher/Paks");
+    
+    UPROPERTY(EditAnywhere, config, Category = "Editor|IoStore")
+    bool bIoStore = false;
+    UPROPERTY(EditAnywhere, config, Category = "Editor|IoStore")
+    bool bAllowBulkDataInIoStore = false;
+    UPROPERTY(EditAnywhere, config, Category = "Editor|IoStore")
+    bool bStorageIoStorePakList = false;
+    UPROPERTY(EditAnywhere, config, Category = "Editor|IoStore")
+    TArray<FString> IoStorePakListOptions;
+    UPROPERTY(EditAnywhere, config, Category = "Editor|IoStore")
+    TArray<FString> IoStoreCommandletOptions;
+    UPROPERTY(EditAnywhere, config, Category = "Editor|UnrealPak")
+    bool bStorageUnrealPakList = false;
+    UPROPERTY(EditAnywhere, config, Category = "Editor|UnrealPak")
+    TArray<FString> UnrealPakListOptions;
+    UPROPERTY(EditAnywhere, config, Category = "Editor|UnrealPak")
+    TArray<FString> UnrealPakCommandletOptions;
+    
+
+    
 };
 
 

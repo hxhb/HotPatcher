@@ -205,7 +205,7 @@ public:
 		const FHotPatcherVersion& BaseVersion,
 		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
 	);
-	static TArray<FString> GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands, const TArray<FReplaceText>& InReplaceTexts = TArray<FReplaceText>{});
+	static TArray<FString> GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands, const TArray<FReplaceText>& InReplaceTexts = TArray<FReplaceText>{},bool bIoStore=false);
 
 	static FHotPatcherAssetDependency GetAssetRelatedInfo(
 		const FAssetDetail& InAsset,

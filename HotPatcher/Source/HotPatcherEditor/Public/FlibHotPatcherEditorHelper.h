@@ -45,16 +45,32 @@ public:
 
 	static FString GetProjectCookedDir();
 
-	UFUNCTION(BlueprintCallable)
-		static bool CookAssets(const TArray<FSoftObjectPath>& Assets, const TArray<ETargetPlatform>& Platforms, const FString& SavePath = TEXT(""));
-	static bool CookPackages(const TArray<FAssetData>& AssetDatas,TArray<UPackage*>& Packages, const TArray<FString>& Platforms, const FString& SavePath);
-	static bool CookPackage(const FAssetData& AssetData,UPackage* Package, const TArray<FString>& Platforms, const FString& SavePath);
+	//UFUNCTION(BlueprintCallable)
+	static bool CookAssets(
+			const TArray<FSoftObjectPath>& Assets,
+			const TArray<ETargetPlatform>& Platforms,
+			const FString& SavePath = TEXT(""),
+			class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext = TMap<ETargetPlatform,FSavePackageContext*>{}
+		);
+	static bool CookPackages(
+		const TArray<FAssetData>& AssetDatas,
+		TArray<UPackage*>& Packages,
+		const TArray<FString>& Platforms,
+		const FString& SavePath,
+		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{}
+	);
+	static bool CookPackage(
+		const FAssetData& AssetData,
+		UPackage* Package,
+		const TArray<FString>& Platforms,
+		const FString& SavePath,
+		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{}
+	);
 
 	static void CookChunkAssets(
-		const FPatchVersionDiff& DiffInfo,
-		const FChunkInfo& Chunk,
+		TArray<FAssetDetail> Assets,
 		const TArray<ETargetPlatform>& Platforms,
-		TMap<FString,FAssetDependenciesInfo>& ScanedCaches
+		class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext = TMap<ETargetPlatform,FSavePackageContext*>{}
 	);
 	
 	static ITargetPlatform* GetTargetPlatformByName(const FString& PlatformName);

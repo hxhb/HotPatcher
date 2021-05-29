@@ -84,7 +84,7 @@ bool UShaderPatchProxy::DoExport()
 		}
 	}
 
-	if(GetSettingObject()->bSaveConfig)
+	if(GetSettingObject()->bStorageConfig)
 	{
 		FString SerializedJsonStr;
 		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetSettingObject(),SerializedJsonStr);
