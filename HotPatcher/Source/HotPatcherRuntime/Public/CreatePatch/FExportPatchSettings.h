@@ -118,7 +118,8 @@ public:
 	FORCEINLINE TArray<FString> GetDefaultPakListOptions()const {return DefaultPakListOptions;}
 	FORCEINLINE TArray<FString> GetDefaultCommandletOptions()const {return DefaultCommandletOptions;}
 	FORCEINLINE TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
-
+	FORCEINLINE bool IsStorageBulkDataInfo()const{return bStorageBulkDataInfo;}
+	
 	bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
@@ -220,6 +221,9 @@ public:
 		bool bStorageDiffAnalysisResults = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bStorageAssetDependencies = false;
+	// Metadata/BulkDataInfo.ubulkmanifest
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+		bool bStorageBulkDataInfo = true;
 private:
-	TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContexts;
+	TMap<ETargetPlatform,class FSavePackageContext*> PlatformSavePackageContexts;
 };

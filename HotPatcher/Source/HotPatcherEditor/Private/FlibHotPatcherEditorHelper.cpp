@@ -333,8 +333,17 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 {
 	bool bSuccessed = false;
 	const bool bStorageConcurrent = FParse::Param(FCommandLine::Get(), TEXT("ConcurrentSave"));
-	bool bUnversioned = false;
+	bool bUnversioned = true;
 	uint32 SaveFlags = SAVE_KeepGUID | SAVE_Async | SAVE_ComputeHash | (bUnversioned ? SAVE_Unversioned : 0);
+
+#if ENGINE_MAJOR_VERSION >4 || ENGINE_MINOR_VERSION >25
+	bool CookLinkerDiff = false;
+	if(CookLinkerDiff)
+	{
+		SaveFlags |= SAVE_CompareLinker;
+	}
+#endif
+	
 	EObjectFlags CookedFlags = RF_Public;
 	if(Cast<UWorld>(Package))
 	{
@@ -415,7 +424,10 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 		// 	}
 		// }
 
-		FSavePackageContext* CurrentPlatformPackageContext  = *PlatformSavePackageContext.Find(Platform->PlatformName());
+		FSavePackageContext* CurrentPlatformPackageContext = nullptr;
+		if(PlatformSavePackageContext.Contains(Platform->PlatformName()))
+			CurrentPlatformPackageContext = *PlatformSavePackageContext.Find(Platform->PlatformName());
+		
 		GIsCookerLoadingPackage = true;
 		// UE_LOG(LogHotPatcherEditorHelper,Display,TEXT("Cook Assets:%s save to %s"),*Package->GetName(),*CookedSavePath);
 		FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, CookedFlags, *CookedSavePath, 

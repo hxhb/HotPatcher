@@ -3,6 +3,7 @@
 #include "HotPatcherLog.h"
 
 // engine header
+#include "UObject/SavePackage.h"
 #include "Dom/JsonValue.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Kismet/KismetStringLibrary.h"
@@ -73,16 +74,18 @@ void FExportPatchSettings::InitPlatformPackageContexts()
 			FConfigFile PlatformEngineIni;
 			FConfigCacheIni::LoadLocalIniFile(PlatformEngineIni, TEXT("Engine"), true, *TargetPlatform->IniPlatformName());
 		
+#if ENGINE_MAJOR_VERSION >4 || ENGINE_MINOR_VERSION > 25
 			bool bLegacyBulkDataOffsets = false;
 			PlatformEngineIni.GetBool(TEXT("Core.System"), TEXT("LegacyBulkDataOffsets"), bLegacyBulkDataOffsets);
-
 			FSavePackageContext* SavePackageContext	= new FSavePackageContext(LooseFileWriter, BulkDataManifest, bLegacyBulkDataOffsets);
+#else
+			FSavePackageContext* SavePackageContext	= new FSavePackageContext(LooseFileWriter, BulkDataManifest);
+#endif
 			ETargetPlatform Platform;
 			UFlibPatchParserHelper::GetEnumValueByName(TargetPlatform->PlatformName(),Platform);
 			PlatformSavePackageContexts.Add(Platform,SavePackageContext);
 		}
 	}
-	
 }
 
 FString FExportPatchSettings::GetBaseVersion() const

@@ -405,8 +405,12 @@ namespace PatchWorker
 					TArray<ETargetPlatform>{Platform},
 					Context.GetSettingObject()->GetPlatformSavePackageContexts()
 				);
-				// Context.GetSettingObject()->SavePlatformBulkDataManifest(Platform);
-
+				// todo: multi-chunk support
+				if(Context.GetSettingObject()->IsStorageBulkDataInfo())
+				{
+					Context.GetSettingObject()->SavePlatformBulkDataManifest(Platform);
+				}
+				
 				struct CookOpenOrder
 				{
 					CookOpenOrder()=default;
@@ -697,6 +701,7 @@ namespace PatchWorker
 		{
 			IoStoreCommandletOptions+=FString::Printf(TEXT("%s "),*Option);
 		}
+		FIoStoreSettings IoStoreSettings = Context.GetSettingObject()->GetIoStoreSettings();
 		
 		for(const auto& Platform :Context.GetSettingObject()->GetPakTargetPlatforms())
 		{
@@ -715,6 +720,10 @@ namespace PatchWorker
 
 				TArray<FReplaceText> ReplacePakListTexts = Context.GetSettingObject()->GetReplacePakListTexts();
 				
+				if(!IoStoreSettings.PlatformContainers.Contains(Platform))
+					return true;
+
+				
 				// 创建chunk的Io Store文件
 				TArray<FString> IoStoreCommands;
 				for (const auto& PakFileProxy : Chunk.PakFileProxys)
@@ -726,12 +735,21 @@ namespace PatchWorker
 						UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands, ReplacePakListTexts,true),
 						*PakListFile,
 						FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
-					IoStoreCommands.Emplace(FString::Printf(TEXT("-Output=\"%s\" -ContainerName=\"%s\" -ResponseFile=\"%s\" -GenerateDiffPatch"),*PakSavePath,*PakFileProxy.ChunkStoreName,*PakListFile));
+					FString PatchDiffCommand = IoStoreSettings.PlatformContainers.Find(Platform)->bGenerateDiffPatch ?
+						FString::Printf(TEXT("-PatchSource=\"%s\" -GenerateDiffPatch"),*UFlibPatchParserHelper::ReplaceMarkPath(IoStoreSettings.PlatformContainers.Find(Platform)->PatchSource.FilePath)):TEXT("");
+					
+					IoStoreCommands.Emplace(
+						FString::Printf(TEXT("-Output=\"%s\" -ContainerName=\"%s\" -ResponseFile=\"%s\" %s"),
+							*PakSavePath,
+							*PakFileProxy.ChunkStoreName,
+							*PakListFile,
+							*PatchDiffCommand
+						)
+					);
 				}
 				FString IoStoreCommandsFile = FPaths::Combine(Chunk.PakFileProxys[0].StorageDirectory,TEXT("IoStoreCommands.txt"));
-				if(!Context.GetSettingObject()->GetIoStoreSettings().PlatformContainers.Contains(Platform))
-					return true;
-				FString PlatformGlocalContainers = UFlibPatchParserHelper::ReplaceMarkPath(Context.GetSettingObject()->GetIoStoreSettings().PlatformContainers.Find(Platform)->GlobalContainers.FilePath);
+				
+				FString PlatformGlocalContainers = UFlibPatchParserHelper::ReplaceMarkPath(IoStoreSettings.PlatformContainers.Find(Platform)->GlobalContainers.FilePath);
 				FString PlatformCookDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),TEXT("Saved/Cooked/"),PlatformName));
 
 				if(FPaths::FileExists(PlatformGlocalContainers))
@@ -750,7 +768,7 @@ namespace PatchWorker
 						*IoStoreCommandletOptions
 					);
 					FCommandLine::Set(*IoStoreCommandlet);
-					UE_LOG(LogHotPatcher,Log,TEXT("%s"),*IoStoreCommandlet);
+					UE_LOG(LogHotPatcher,Display,TEXT("%s"),*IoStoreCommandlet);
 					CreateIoStoreContainerFiles(*IoStoreCommandlet);
 				}
 				
