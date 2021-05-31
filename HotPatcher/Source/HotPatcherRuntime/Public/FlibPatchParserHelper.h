@@ -283,7 +283,7 @@ public:
 		return bStatus;
 	}
 
-#if ENGINE_MAJOR_VERSION <= 4 || ENGINE_MINOR_VERSION <= 21
+#if ENGINE_MAJOR_VERSION <= 4 && ENGINE_MINOR_VERSION <= 21
 	template<typename T>
 	static std::string GetCPPTypeName()
 	{
