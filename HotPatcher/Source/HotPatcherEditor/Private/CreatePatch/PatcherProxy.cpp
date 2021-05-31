@@ -16,6 +16,8 @@
 #include "Misc/FileHelper.h"
 #include <Templates/Function.h>
 
+#include "Async/ParallelFor.h"
+
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >24
 #include "IoStoreUtilities.h"
 #endif
@@ -76,7 +78,7 @@ namespace PatchWorker
 	bool GeneratePakProxysWorker(FHotPatcherPatchContext& Context);
 	// setup 9
 	bool CreatePakWorker(FHotPatcherPatchContext& Context);
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >=25 
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
 	bool CreateIoStoreWorker(FHotPatcherPatchContext& Context);
 #endif
 	// setup 10
@@ -106,7 +108,8 @@ bool UPatcherProxy::DoExport()
 	GetSettingObject()->Init();
 	bool bRet = true;
 	
-	FHotPatcherPatchContext PatchContext;
+	FHotPatcherPatchContext PatchContext;;
+
 	PatchContext.OnPaking.AddLambda([this](const FString& One,const FString& Msg){this->OnPaking.Broadcast(One,Msg);});
 	PatchContext.OnShowMsg.AddLambda([this](const FString& Msg){ this->OnShowMsg.Broadcast(Msg);});
 	PatchContext.UnrealPakSlowTask = NewObject<UScopedSlowTaskContext>();
@@ -124,7 +127,7 @@ bool UPatcherProxy::DoExport()
 	PatchWorkers.Emplace(&PatchWorker::CookPatchAssetsWorker);
 	PatchWorkers.Emplace(&PatchWorker::GeneratePakProxysWorker);
 	PatchWorkers.Emplace(&PatchWorker::CreatePakWorker);
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >=25 
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
 	PatchWorkers.Emplace(&PatchWorker::CreateIoStoreWorker);
 #endif
 	PatchWorkers.Emplace(&PatchWorker::SaveAssetDependenciesWorker);
@@ -140,11 +143,7 @@ bool UPatcherProxy::DoExport()
 
 	for(TFunction<bool(FHotPatcherPatchContext&)> Worker:PatchWorkers)
 	{
-		if(Worker(PatchContext))
-		{
-			continue;
-		}
-		else
+		if(!Worker(PatchContext))
 		{
 			bRet = false;
 			break;
@@ -405,57 +404,60 @@ namespace PatchWorker
 					TArray<ETargetPlatform>{Platform},
 					Context.GetSettingObject()->GetPlatformSavePackageContexts()
 				);
-				// todo: multi-chunk support
 				if(Context.GetSettingObject()->IsStorageBulkDataInfo())
 				{
 					Context.GetSettingObject()->SavePlatformBulkDataManifest(Platform);
 				}
 				
-				struct CookOpenOrder
+				if(Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
 				{
-					CookOpenOrder()=default;
-					CookOpenOrder(const FString& InPath,int32 InOrder):uasset_relative_path(InPath),order(InOrder){}
-					FString uasset_relative_path;
-					int32 order;
-				};
-				auto MakeCookOpenOrder = [](const TArray<FAssetDetail>& Assets)->TArray<CookOpenOrder>
-				{
-					TArray<CookOpenOrder> result;
-					TArray<FAssetData> AssetsData;
-					TArray<FString> AssetPackagePaths;
-					for (auto Asset : Assets)
+					TimeRecorder StorageCookOpenOrderTR(FString::Printf(TEXT("Storage CookOpenOrder.txt for %s, time:"),*PlatformName));
+					struct CookOpenOrder
 					{
-						FSoftObjectPath ObjectPath;
-						ObjectPath.SetPath(Asset.mPackagePath);
-						TArray<FAssetData> AssetData;
-						UFLibAssetManageHelperEx::GetSpecifyAssetData(ObjectPath.GetLongPackageName(),AssetData,true);
-						AssetsData.Append(AssetData);
-					}
+						CookOpenOrder()=default;
+						CookOpenOrder(const FString& InPath,int32 InOrder):uasset_relative_path(InPath),order(InOrder){}
+						FString uasset_relative_path;
+						int32 order;
+					};
+					auto MakeCookOpenOrder = [](const TArray<FAssetDetail>& Assets)->TArray<CookOpenOrder>
+					{
+						TArray<CookOpenOrder> result;
+						TArray<FAssetData> AssetsData;
+						TArray<FString> AssetPackagePaths;
+						for (auto Asset : Assets)
+						{
+							FSoftObjectPath ObjectPath;
+							ObjectPath.SetPath(Asset.mPackagePath);
+							TArray<FAssetData> AssetData;
+							UFLibAssetManageHelperEx::GetSpecifyAssetData(ObjectPath.GetLongPackageName(),AssetData,true);
+							AssetsData.Append(AssetData);
+						}
 
-					// UFLibAssetManageHelperEx::GetAssetsData(AssetPackagePaths,AssetsData);
+						// UFLibAssetManageHelperEx::GetAssetsData(AssetPackagePaths,AssetsData);
 					
-					for(int32 index=0;index<AssetsData.Num();++index)
-					{
-						UPackage* Package = AssetsData[index].GetPackage();
-						FString LocalPath;
-						const FString* PackageExtension = Package->ContainsMap() ? &FPackageName::GetMapPackageExtension() : &FPackageName::GetAssetPackageExtension();
-						FPackageName::TryConvertLongPackageNameToFilename(AssetsData[index].PackageName.ToString(), LocalPath, *PackageExtension);
-						result.Emplace(LocalPath,index);
-					}
-					return result;
-				};
-				TArray<CookOpenOrder> CookOpenOrders = MakeCookOpenOrder(ChunkAssets);
+						for(int32 index=0;index<AssetsData.Num();++index)
+						{
+							UPackage* Package = AssetsData[index].GetPackage();
+							FString LocalPath;
+							const FString* PackageExtension = Package->ContainsMap() ? &FPackageName::GetMapPackageExtension() : &FPackageName::GetAssetPackageExtension();
+							FPackageName::TryConvertLongPackageNameToFilename(AssetsData[index].PackageName.ToString(), LocalPath, *PackageExtension);
+							result.Emplace(LocalPath,index);
+						}
+						return result;
+					};
+					TArray<CookOpenOrder> CookOpenOrders = MakeCookOpenOrder(ChunkAssets);
 
-				auto SaveCookOpenOrder = [](const TArray<CookOpenOrder>& CookOpenOrders,const FString& File)
-				{
-					TArray<FString> result;
-					for(const auto& OrderFile:CookOpenOrders)
+					auto SaveCookOpenOrder = [](const TArray<CookOpenOrder>& CookOpenOrders,const FString& File)
 					{
-						result.Emplace(FString::Printf(TEXT("\"%s\" %d"),*OrderFile.uasset_relative_path,OrderFile.order));
-					}
-					FFileHelper::SaveStringArrayToFile(result,*FPaths::ConvertRelativePathToFull(File));
-				};
-				SaveCookOpenOrder(CookOpenOrders,FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.NewVersionChunk.ChunkName,PlatformName,TEXT("CookOpenOrder.txt")));
+						TArray<FString> result;
+						for(const auto& OrderFile:CookOpenOrders)
+						{
+							result.Emplace(FString::Printf(TEXT("\"%s\" %d"),*OrderFile.uasset_relative_path,OrderFile.order));
+						}
+						FFileHelper::SaveStringArrayToFile(result,*FPaths::ConvertRelativePathToFull(File));
+					};
+					SaveCookOpenOrder(CookOpenOrders,FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.NewVersionChunk.ChunkName,PlatformName,TEXT("CookOpenOrder.txt")));
+				}
 			}
 		}
 		return true;
@@ -536,7 +538,9 @@ namespace PatchWorker
 				for(auto& PakCommand:ChunkPakListCommands)
 				{
 					AppendOptionsLambda(PakCommand.PakCommands,Context.GetSettingObject()->GetUnrealPakSettings().UnrealPakListOptions);
+					AppendOptionsLambda(PakCommand.PakCommands,Context.GetSettingObject()->GetDefaultPakListOptions());
 					AppendOptionsLambda(PakCommand.IoStoreCommands,Context.GetSettingObject()->GetIoStoreSettings().IoStorePakListOptions);
+					AppendOptionsLambda(PakCommand.IoStoreCommands,Context.GetSettingObject()->GetDefaultPakListOptions());
 				}
 				
 				if (!ChunkPakListCommands.Num())
@@ -611,17 +615,19 @@ namespace PatchWorker
 				}
 
 				TArray<FString> UnrealPakCommandletOptions = Context.GetSettingObject()->GetUnrealPakSettings().UnrealCommandletOptions;
+				UnrealPakCommandletOptions.Append(Context.GetSettingObject()->GetDefaultCommandletOptions());
+				
 				TArray<FReplaceText> ReplacePakListTexts = Context.GetSettingObject()->GetReplacePakListTexts();
 				TArray<FThreadWorker> PakWorker;
 				
-				TMap<FString,TArray<FPakFileInfo>>& PakFilesInfoMap = Context.PakFilesInfoMap;
+				// TMap<FString,TArray<FPakFileInfo>>& PakFilesInfoMap = Context.PakFilesInfoMap;
 				
 				// 创建chunk的pak文件
 				for (const auto& PakFileProxy : Chunk.PakFileProxys)
 				{
 					TimeRecorder CookAssetsTR(FString::Printf(TEXT("Create Pak Platform:%s ChunkName:%s."),*PlatformName,*Chunk.ChunkName));
 					// ++PakCounter;
-					uint32 index = PakWorker.Emplace(*PakFileProxy.ChunkStoreName, [/*CurrentPakVersion, */PlatformName, UnrealPakCommandletOptions, ReplacePakListTexts, PakFileProxy, &Chunk, &PakFilesInfoMap,&Context]()
+					uint32 index = PakWorker.Emplace(*PakFileProxy.ChunkStoreName, [/*CurrentPakVersion, */PlatformName, UnrealPakCommandletOptions, ReplacePakListTexts, PakFileProxy, &Chunk,&Context]()
 					{
 						FString PakListFile = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s_PakCommands.txt"), *PakFileProxy.ChunkStoreName));
 						FString PakSavePath = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s.pak"), *PakFileProxy.ChunkStoreName));
@@ -645,6 +651,7 @@ namespace PatchWorker
 							{
 								CommandLine.Append(FString::Printf(TEXT(" %s"), *Option));
 							}
+							Context.OnPaking.Broadcast(TEXT("Create Pak CommandsL %s"),CommandLine);
 							ExecuteUnrealPak(*CommandLine);
 							// FProcHandle ProcessHandle = UFlibPatchParserHelper::DoUnrealPak(UnrealPakCommandletOptionsSinglePak, true);
 
@@ -665,13 +672,13 @@ namespace PatchWorker
 	                                if (UFlibPatchParserHelper::GetPakFileInfo(PakSavePath, CurrentPakInfo))
 	                                {
 	                                    // CurrentPakInfo.PakVersion = CurrentPakVersion;
-	                                    if (!PakFilesInfoMap.Contains(PlatformName))
+	                                    if (!Context.PakFilesInfoMap.Contains(PlatformName))
 	                                    {
-	                                        PakFilesInfoMap.Add(PlatformName, TArray<FPakFileInfo>{CurrentPakInfo});
+	                                        Context.PakFilesInfoMap.Add(PlatformName, TArray<FPakFileInfo>{CurrentPakInfo});
 	                                    }
 	                                    else
 	                                    {
-	                                        PakFilesInfoMap.Find(PlatformName)->Add(CurrentPakInfo);
+	                                        Context.PakFilesInfoMap.Find(PlatformName)->Add(CurrentPakInfo);
 	                                    }
 	                                }
 	                            }
@@ -689,15 +696,19 @@ namespace PatchWorker
 		}
 		return true;
 	};
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >=25 
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
 	// setup 9
 	bool CreateIoStoreWorker(FHotPatcherPatchContext& Context)
 	{
 		if(!Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
 			return true;
 		TimeRecorder CreateAllIoStoreToralTR(FString::Printf(TEXT("Generate all platform Io Store of all chunks Total Time:")));
+
+		TArray<FString> AdditionalIoStoreCommandletOptions = Context.GetSettingObject()->GetIoStoreSettings().IoStoreCommandletOptions;
+		AdditionalIoStoreCommandletOptions.Append(Context.GetSettingObject()->GetDefaultCommandletOptions());
+		
 		FString IoStoreCommandletOptions;
-		for(const auto& Option:Context.GetSettingObject()->GetIoStoreSettings().IoStoreCommandletOptions)
+		for(const auto& Option:AdditionalIoStoreCommandletOptions)
 		{
 			IoStoreCommandletOptions+=FString::Printf(TEXT("%s "),*Option);
 		}
@@ -731,6 +742,8 @@ namespace PatchWorker
 					TimeRecorder CookAssetsTR(FString::Printf(TEXT("Create Pak Platform:%s ChunkName:%s."),*PlatformName,*Chunk.ChunkName));
 					FString PakListFile = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s_IoStorePakList.txt"), *PakFileProxy.ChunkStoreName));
 					FString PakSavePath = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s.utoc"), *PakFileProxy.ChunkStoreName));
+					
+					
 					bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(
 						UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands, ReplacePakListTexts,true),
 						*PakListFile,
@@ -747,6 +760,11 @@ namespace PatchWorker
 						)
 					);
 				}
+#if ENGINE_MAJOR_VERSION < 5 && ENGINE_MINOR_VERSION < 26
+				FString OutputDirectoryCmd = FString::Printf(TEXT("-OutputDirectory=%s"),*FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath()));
+#else
+				FString OutputDirectoryCmd = TEXT("");
+#endif
 				FString IoStoreCommandsFile = FPaths::Combine(Chunk.PakFileProxys[0].StorageDirectory,TEXT("IoStoreCommands.txt"));
 				
 				FString PlatformGlocalContainers = UFlibPatchParserHelper::ReplaceMarkPath(IoStoreSettings.PlatformContainers.Find(Platform)->GlobalContainers.FilePath);
@@ -757,7 +775,7 @@ namespace PatchWorker
 					FString CookOrderFile = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.NewVersionChunk.ChunkName,PlatformName,TEXT("CookOpenOrder.txt"));
 					FFileHelper::SaveStringArrayToFile(IoStoreCommands,*IoStoreCommandsFile);
 					FString IoStoreCommandlet = FString::Printf(
-						TEXT("-CreateGlobalContainer=\"%s\" -CookedDirectory=\"%s\" -Commands=\"%s\" -CookerOrder=\"%s\" -TargetPlatform=\"%s\" %s"),
+						TEXT("-CreateGlobalContainer=\"%s\" -CookedDirectory=\"%s\" -Commands=\"%s\" -CookerOrder=\"%s\" -TargetPlatform=\"%s\" %s %s"),
 						// *UFlibHotPatcherEditorHelper::GetUECmdBinary(),
 						// *UFlibPatchParserHelper::GetProjectFilePath(),
 						*PlatformGlocalContainers,
@@ -765,7 +783,8 @@ namespace PatchWorker
 						*IoStoreCommandsFile,
 						*CookOrderFile,
 						*PlatformName,
-						*IoStoreCommandletOptions
+						*IoStoreCommandletOptions,
+						*OutputDirectoryCmd
 					);
 					FCommandLine::Set(*IoStoreCommandlet);
 					UE_LOG(LogHotPatcher,Display,TEXT("%s"),*IoStoreCommandlet);

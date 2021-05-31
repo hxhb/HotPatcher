@@ -108,7 +108,7 @@ public:
 	FORCEINLINE bool IsCustomPakNameRegular()const {return bCustomPakNameRegular;}
 	FORCEINLINE FString GetPakNameRegular()const { return PakNameRegular;}
 	FORCEINLINE bool IsCookPatchAssets()const {return bCookPatchAssets;}
-	FORCEINLINE bool IsIgnoreDeleatedAssetsInformation()const {return bIgnoreDeleatedAssetsInformation;}
+	FORCEINLINE bool IsIgnoreDeleatedAssetsInfo()const {return bIgnoreDeleatedAssetsInfo;}
 	FORCEINLINE bool IsSaveDeletedAssetsToNewReleaseJson()const {return bStorageDeletedAssetsToNewReleaseJson;}
 	
 	TArray<FString> GetAssetIncludeFiltersPaths()const;
@@ -119,6 +119,7 @@ public:
 	FORCEINLINE TArray<FString> GetDefaultCommandletOptions()const {return DefaultCommandletOptions;}
 	FORCEINLINE TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
 	FORCEINLINE bool IsStorageBulkDataInfo()const{return bStorageBulkDataInfo;}
+	FORCEINLINE bool IsEnableMultiThread()const{ return bEnableMultiThread; }
 	
 	bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
 public:
@@ -192,6 +193,7 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		bool bCookPatchAssets = false;
+	// support UE4.26 later
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		FIoStoreSettings IoStoreSettings;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
@@ -199,12 +201,12 @@ public:
 
 	// using in Pak and IO Store
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-	TArray<FString> DefaultPakListOptions;
+		TArray<FString> DefaultPakListOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-	TArray<FString> DefaultCommandletOptions;
+		TArray<FString> DefaultCommandletOptions;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-	TArray<FReplaceText> ReplacePakListTexts;
+		TArray<FReplaceText> ReplacePakListTexts;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<ETargetPlatform> PakTargetPlatforms;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
@@ -214,7 +216,7 @@ public:
 		FString PakNameRegular = TEXT("{VERSION}_{CHUNKNAME}_{PLATFORM}_001_P");
 	// dont display deleted asset info in patcher
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bIgnoreDeleatedAssetsInformation = false;
+		bool bIgnoreDeleatedAssetsInfo = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bStorageDeletedAssetsToNewReleaseJson = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bByBaseVersion"))
@@ -224,6 +226,8 @@ public:
 	// Metadata/BulkDataInfo.ubulkmanifest
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bStorageBulkDataInfo = true;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
+		bool bEnableMultiThread = false;
 private:
 	TMap<ETargetPlatform,class FSavePackageContext*> PlatformSavePackageContexts;
 };

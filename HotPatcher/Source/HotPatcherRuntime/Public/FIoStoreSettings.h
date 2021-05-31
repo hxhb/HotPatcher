@@ -32,9 +32,9 @@ struct FIoStoreSettings
 	GENERATED_USTRUCT_BODY()
 public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-		bool bIoStore;
+		bool bIoStore = false;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-		bool bAllowBulkDataInIoStore;
+		bool bAllowBulkDataInIoStore = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		TArray<FString> IoStorePakListOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -42,5 +42,5 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		TMap<ETargetPlatform,FIoStorePlatformContainers> PlatformContainers;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		bool bStoragePakList;
+		bool bStoragePakList = true;
 };

@@ -26,8 +26,5 @@ class HOTPATCHEREDITOR_API UPatcherProxy:public UHotPatcherProxyBase
 public:
     bool CanExportPatch() const;
     virtual bool DoExport()override;
-    
     virtual FExportPatchSettings* GetSettingObject()override{ return (FExportPatchSettings*)Setting; }
-
-    
 };

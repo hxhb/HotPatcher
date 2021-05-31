@@ -1121,7 +1121,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 
 		bool bIoStore =false;
 		bool bAllowBulkDataInIoStore = false;
-#if ENGINE_MAJOR_VERSION >5 ||ENGINE_MINOR_VERSION >=25
+#if ENGINE_MAJOR_VERSION > 4 ||ENGINE_MINOR_VERSION > 25
 		if(PatcheSettings)
 		{
 			bIoStore = PatcheSettings->GetIoStoreSettings().bIoStore;
@@ -1257,7 +1257,7 @@ FPatchVersionDiff UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(const
 		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipContents);
 	}
 	// clean deleted asset info in patch
-	if(PatchSetting.IsIgnoreDeleatedAssetsInformation())
+	if(PatchSetting.IsIgnoreDeleatedAssetsInfo())
 	{
 		UE_LOG(LogHotPatcher,Display,TEXT("ignore deleted assets info in patch..."));
 		VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap.Empty();

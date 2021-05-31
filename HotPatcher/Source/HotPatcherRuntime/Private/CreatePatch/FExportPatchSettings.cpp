@@ -38,17 +38,6 @@ FExportPatchSettings::FExportPatchSettings()
 void FExportPatchSettings::Init()
 {
 	Super::Init();
-	auto AppendOptionsLambda = [](TArray<FString>& SrcOptions,const TArray<FString>& AppendOptions)
-	{
-		for(const auto& Option:AppendOptions)
-		{
-			SrcOptions.AddUnique(Option);
-		}
-	};
-	AppendOptionsLambda(UnrealPakSettings.UnrealPakListOptions,GetDefaultPakListOptions());
-	AppendOptionsLambda(UnrealPakSettings.UnrealCommandletOptions,GetDefaultCommandletOptions());
-	AppendOptionsLambda(IoStoreSettings.IoStorePakListOptions,GetDefaultPakListOptions());
-	AppendOptionsLambda(IoStoreSettings.IoStoreCommandletOptions,GetDefaultCommandletOptions());
 	InitPlatformPackageContexts();
 }
 
@@ -203,7 +192,7 @@ bool FExportPatchSettings::GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion
 
 FString FExportPatchSettings::GetCurrentVersionSavePath() const
 {
-	FString CurrentVersionSavePath = FPaths::Combine(this->GetSaveAbsPath(), const_cast<FExportPatchSettings*>(this)->GetNewPatchVersionInfo().VersionId);
+	FString CurrentVersionSavePath = FPaths::Combine(this->GetSaveAbsPath(), /*const_cast<FExportPatchSettings*>(this)->GetNewPatchVersionInfo().*/VersionId);
 	return CurrentVersionSavePath;
 }
 

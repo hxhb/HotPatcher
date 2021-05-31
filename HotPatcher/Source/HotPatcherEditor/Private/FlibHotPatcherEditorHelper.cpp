@@ -9,6 +9,7 @@
 // engine header
 #include "Editor.h"
 #include "IPlatformFileSandboxWrapper.h"
+#include "Async/Async.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/SecureHash.h"
 
@@ -28,24 +29,26 @@ TArray<FString> UFlibHotPatcherEditorHelper::GetAllCookOption()
 
 void UFlibHotPatcherEditorHelper::CreateSaveFileNotify(const FText& InMsg, const FString& InSavedFile,SNotificationItem::ECompletionState NotifyType)
 {
-	auto Message = InMsg;
-	FNotificationInfo Info(Message);
-	Info.bFireAndForget = true;
-	Info.ExpireDuration = 5.0f;
-	Info.bUseSuccessFailIcons = false;
-	Info.bUseLargeFont = false;
+	AsyncTask(ENamedThreads::GameThread,[InMsg,InSavedFile,NotifyType]()
+	{
+		auto Message = InMsg;
+		FNotificationInfo Info(Message);
+		Info.bFireAndForget = true;
+		Info.ExpireDuration = 5.0f;
+		Info.bUseSuccessFailIcons = false;
+		Info.bUseLargeFont = false;
 
-	const FString HyperLinkText = InSavedFile;
-	Info.Hyperlink = FSimpleDelegate::CreateLambda(
-		[](FString SourceFilePath)
-		{
-			FPlatformProcess::ExploreFolder(*SourceFilePath);
-		},
-		HyperLinkText
-	);
-	Info.HyperlinkText = FText::FromString(HyperLinkText);
-
-	FSlateNotificationManager::Get().AddNotification(Info)->SetCompletionState(NotifyType);
+		const FString HyperLinkText = InSavedFile;
+		Info.Hyperlink = FSimpleDelegate::CreateLambda(
+			[](FString SourceFilePath)
+			{
+				FPlatformProcess::ExploreFolder(*SourceFilePath);
+			},
+			HyperLinkText
+		);
+		Info.HyperlinkText = FText::FromString(HyperLinkText);
+		FSlateNotificationManager::Get().AddNotification(Info)->SetCompletionState(NotifyType);
+	});
 }
 
 void UFlibHotPatcherEditorHelper::CheckInvalidCookFilesByAssetDependenciesInfo(
