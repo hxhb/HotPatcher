@@ -11,13 +11,17 @@
 
 bool UFlibShaderPatchHelper::CreateShaderCodePatch(TArray<FString> const& OldMetaDataDirs, FString const& NewMetaDataDir, FString const& OutDir, bool bNativeFormat,bool bDeterministicShaderCodeOrder)
 {
-#if ENGINE_MINOR_VERSION > 25
-	return FShaderCodeLibrary::CreatePatchLibrary(OldMetaDataDirs,NewMetaDataDir,OutDir,bNativeFormat,bDeterministicShaderCodeOrder);
+#if	ENGINE_MAJOR_VERSION > 4
+	return FShaderLibraryCooker::CreatePatchLibrary(OldMetaDataDirs,NewMetaDataDir,OutDir,bNativeFormat,bDeterministicShaderCodeOrder);
 #else
-	#if ENGINE_MINOR_VERSION > 23
-		return FShaderCodeLibrary::CreatePatchLibrary(OldMetaDataDirs,NewMetaDataDir,OutDir,bNativeFormat);
+	#if ENGINE_MINOR_VERSION > 25
+		return FShaderCodeLibrary::CreatePatchLibrary(OldMetaDataDirs,NewMetaDataDir,OutDir,bNativeFormat,bDeterministicShaderCodeOrder);
 	#else
-		return false;
+		#if ENGINE_MINOR_VERSION > 23
+			return FShaderCodeLibrary::CreatePatchLibrary(OldMetaDataDirs,NewMetaDataDir,OutDir,bNativeFormat);
+		#else
+			return false;
+		#endif
 	#endif
 #endif
 }

@@ -11,7 +11,7 @@
 #include "IPlatformFilePak.h"
 #include "FlibPakHelper.generated.h"
 
-#if ENGINE_MINOR_VERSION >=26
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >=26
 	#define FindFilesAtPath FindPrunedFilesAtPath
 	#define GetFilenames GetPrunedFilenames
 #endif

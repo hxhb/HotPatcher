@@ -310,7 +310,7 @@ bool UFLibAssetManageHelperEx::GetAssetReference(const FAssetDetail& InAsset, co
 			for (const auto& AssetDepType : SearchAssetDepTypes)
 			{
 				TArray<FAssetIdentifier> CurrentTypeReferenceNames;
-#if ENGINE_MINOR_VERSION >=26
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >=26
 				AssetRegistryModule.Get().GetReferencers(AssetId, CurrentTypeReferenceNames, (UE::AssetRegistry::EDependencyCategory)((uint8)AssetDepType));
 #else
 				AssetRegistryModule.Get().GetReferencers(AssetId, CurrentTypeReferenceNames, AssetDepType);
@@ -496,7 +496,7 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 	}
 
 	// AssetTypes.AddUnique(UFLibAssetManageHelperEx::ConvAssetRegistryDependencyToInternal(DepType));
-#if ENGINE_MINOR_VERSION >=26
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >=26
 	bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(FName(*InTargetLongPackageName), local_Dependencies, (UE::AssetRegistry::EDependencyCategory)((uint8)TotalType));
 #else
 	bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(FName(*InTargetLongPackageName), local_Dependencies, TotalType);

@@ -1704,7 +1704,7 @@ void UFlibPatchParserHelper::ReloadShaderbytecode()
 bool UFlibPatchParserHelper::LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir)
 {
 	bool result = true;
-#if ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >= 23
 	result = FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
 #else
 	FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
