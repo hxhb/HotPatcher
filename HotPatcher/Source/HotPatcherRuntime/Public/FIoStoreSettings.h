@@ -1,9 +1,10 @@
 #pragma once
-
-#include "CoreMinimal.h"
-
+// project
 #include "ETargetPlatform.h"
 
+// engine header
+#include "CoreMinimal.h"
+#include "Engine/EngineTypes.h"
 #include "FIoStoreSettings.generated.h"
 
 // -Output=E:\UnrealProjects\StarterContent\Package\DLC2\WindowsNoEditor\StarterContent\Content\Paks\StarterContent-WindowsNoEditor_0_P.utoc
