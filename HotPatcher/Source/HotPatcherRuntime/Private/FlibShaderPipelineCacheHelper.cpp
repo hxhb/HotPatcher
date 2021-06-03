@@ -24,3 +24,63 @@ bool UFlibShaderPipelineCacheHelper::EnableShaderPipelineCache(bool bEnable)
 	}
 	return !!Var;
 }
+
+bool UFlibShaderPipelineCacheHelper::SavePipelineFileCache(EPSOSaveMode Mode)
+{
+	return FShaderPipelineCache::SavePipelineFileCache((FPipelineFileCache::SaveMode)Mode);
+}
+
+bool UFlibShaderPipelineCacheHelper::EnableLogPSO(bool bEnable)
+{
+	UE_LOG(LogHotPatcher,Display,TEXT("EnableLogPSO %s"),bEnable?TEXT("true"):TEXT("false"));
+	auto Var =  IConsoleManager::Get().FindConsoleVariable(TEXT("r.ShaderPipelineCache.LogPSO"));
+	if(Var)
+	{
+		Var->Set( bEnable ? 1 : 0);
+	}
+	return !!Var;
+}
+
+bool UFlibShaderPipelineCacheHelper::EnableSaveBoundPSOLog(bool bEnable)
+{
+	UE_LOG(LogHotPatcher,Display,TEXT("EnableSaveBoundPSOLog %s"),bEnable?TEXT("true"):TEXT("false"));
+	auto Var =  IConsoleManager::Get().FindConsoleVariable(TEXT("r.ShaderPipelineCache.SaveBoundPSOLog"));
+	if(Var)
+	{
+		Var->Set( bEnable ? 1 : 0);
+	}
+	return !!Var;
+}
+
+bool UFlibShaderPipelineCacheHelper::IsEnabledUsePSO()
+{
+	bool ret = false;
+	auto Var =  IConsoleManager::Get().FindConsoleVariable(TEXT("r.ShaderPipelineCache.Enabled"));
+	if(Var)
+	{
+		ret = Var->GetBool();
+	}
+	return ret;
+}
+
+bool UFlibShaderPipelineCacheHelper::IsEnabledLogPSO()
+{
+	bool ret = false;
+	auto Var =  IConsoleManager::Get().FindConsoleVariable(TEXT("r.ShaderPipelineCache.LogPSO"));
+	if(Var)
+	{
+		ret = Var->GetBool();
+	}
+	return ret;
+}
+
+bool UFlibShaderPipelineCacheHelper::IsEnabledSaveBoundPSOLog()
+{
+	bool ret = false;
+	auto Var =  IConsoleManager::Get().FindConsoleVariable(TEXT("r.ShaderPipelineCache.SaveBoundPSOLog"));
+	if(Var)
+	{
+		ret = Var->GetBool();
+	}
+	return ret;
+}
