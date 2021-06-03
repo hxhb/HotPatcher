@@ -383,7 +383,7 @@ namespace PatchWorker
 		TimeRecorder CookAssetsTotalTR(FString::Printf(TEXT("Cook All Assets in Patch Total time:")));
 		for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
 		{
-			if(Context.GetSettingObject()->IsCookPatchAssets())
+			if(Context.GetSettingObject()->IsCookPatchAssets() || Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
 			{
 				TimeRecorder CookAssetsTR(FString::Printf(TEXT("Cook Platform %s Assets."),*PlatformName));
 
@@ -398,17 +398,20 @@ namespace PatchWorker
 				);
 				TArray<FAssetDetail> ChunkAssets;
 				UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(ChunkAssetsDescrible.Assets,ChunkAssets);
-				
-				UFlibHotPatcherEditorHelper::CookChunkAssets(
-					ChunkAssets,
-					TArray<ETargetPlatform>{Platform},
-					Context.GetSettingObject()->GetPlatformSavePackageContexts()
-				);
-				if(Context.GetSettingObject()->IsStorageBulkDataInfo())
+
+				if(Context.GetSettingObject()->IsCookPatchAssets())
 				{
-					Context.GetSettingObject()->SavePlatformBulkDataManifest(Platform);
+					UFlibHotPatcherEditorHelper::CookChunkAssets(
+						ChunkAssets,
+						TArray<ETargetPlatform>{Platform},
+						Context.GetSettingObject()->GetPlatformSavePackageContexts()
+					);
+					if(Context.GetSettingObject()->IsStorageBulkDataInfo())
+					{
+						Context.GetSettingObject()->SavePlatformBulkDataManifest(Platform);
+					}
 				}
-				
+
 				if(Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
 				{
 					TimeRecorder StorageCookOpenOrderTR(FString::Printf(TEXT("Storage CookOpenOrder.txt for %s, time:"),*PlatformName));
@@ -786,8 +789,15 @@ namespace PatchWorker
 						*IoStoreCommandletOptions,
 						*OutputDirectoryCmd
 					);
+					FString IoStoreNativeCommandlet = FString::Printf(
+						TEXT("%s %s -run=IoStore %s"),
+						*UFlibHotPatcherEditorHelper::GetUECmdBinary(),
+						*UFlibPatchParserHelper::GetProjectFilePath(),
+						*IoStoreCommandlet
+					);
+					
 					FCommandLine::Set(*IoStoreCommandlet);
-					UE_LOG(LogHotPatcher,Display,TEXT("%s"),*IoStoreCommandlet);
+					UE_LOG(LogHotPatcher,Log,TEXT("%s"),*IoStoreNativeCommandlet);
 					CreateIoStoreContainerFiles(*IoStoreCommandlet);
 				}
 				

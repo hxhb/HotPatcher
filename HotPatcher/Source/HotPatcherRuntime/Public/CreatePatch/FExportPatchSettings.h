@@ -194,7 +194,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		bool bCookPatchAssets = false;
 	// support UE4.26 later
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "!bCookPatchAssets"))
 		FIoStoreSettings IoStoreSettings;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		FUnrealPakSettings UnrealPakSettings;
