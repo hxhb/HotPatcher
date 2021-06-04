@@ -562,7 +562,7 @@ namespace PatchWorker
 				if (!ChunkPakListCommands.Num())
 				{
 					FString Msg = FString::Printf(TEXT("Chunk:%s not contain any file!!!"), *Chunk.ChunkName);
-					UE_LOG(LogHotPatcher, Warning, TEXT("%s"),*Msg);
+					UE_LOG(LogHotPatcher, Error, TEXT("%s"),*Msg);
 					Context.OnShowMsg.Broadcast(Msg);
 					continue;
 				}
@@ -751,7 +751,11 @@ namespace PatchWorker
 				if(!IoStoreSettings.PlatformContainers.Contains(Platform))
 					return true;
 
-				
+				if(!Chunk.PakFileProxys.Num())
+				{
+					UE_LOG(LogHotPatcher,Error,TEXT("Chunk %s Not Contain Any valid PakFileProxy!!!"),*Chunk.ChunkName);
+					continue;
+				}
 				// 创建chunk的Io Store文件
 				TArray<FString> IoStoreCommands;
 				for (const auto& PakFileProxy : Chunk.PakFileProxys)

@@ -228,6 +228,18 @@ public:
 	//static bool DeSerializeMonolithicPathMode(const TSharedPtr<FJsonValue>& InJsonValue, EMonolithicPathMode& OutMode);
 
 	static void ExcludeContentForVersionDiff(FPatchVersionDiff& VersionDiff,const TArray<FString>& ExcludeRules = {TEXT("")});
+
+	template<typename ENUM_TYPE>
+	static UEnum* GetUEnum()
+	{
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 21
+		UEnum* FoundEnum = StaticEnum<ENUM_TYPE>();
+#else
+		FString EnumTypeName = ANSI_TO_TCHAR(UFlibPatchParserHelper::GetCPPTypeName<ENUM_TYPE>().c_str());
+		UEnum* FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true); 
+#endif
+		return FoundEnum;
+	}
 	
 	template<typename ENUM_TYPE>
 	static FString GetEnumNameByValue(ENUM_TYPE InEnumValue, bool bFullName = false)

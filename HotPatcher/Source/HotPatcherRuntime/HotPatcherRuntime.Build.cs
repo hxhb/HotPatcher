@@ -61,18 +61,5 @@ public class HotPatcherRuntime : ModuleRules
 		}
 		bLegacyPublicIncludePaths = false;
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
-
-		string ETargetPlatformFile;
-		if (Target.Version.MajorVersion > 4)
-		{
-			ETargetPlatformFile = "ETargetPlatformUE5.h";
-			
-		}
-		else
-		{
-			ETargetPlatformFile = "ETargetPlatformUE4.h";
-		}
-		string FianlTargetPlatformHeader = Path.Combine(ModuleDirectory, "../SupportUE5", ETargetPlatformFile);
-		File.Copy(FianlTargetPlatformHeader, Path.Combine(ModuleDirectory,"Public/ETargetPlatform.h"),true);
 	}
 }
