@@ -29,6 +29,11 @@ struct FPakInternalInfo
 {
 	GENERATED_USTRUCT_BODY()
 public:
+	FORCEINLINE bool HasValidAssets()const
+	{
+		return bIncludeAssetRegistry || bIncludeGlobalShaderCache || bIncludeShaderBytecode || bIncludeEngineIni || bIncludePluginIni || bIncludeProjectIni;
+	}
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked")
 		bool bIncludeAssetRegistry = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked")
@@ -154,6 +159,21 @@ public:
 	// TArray<FExternFileInfo> AllExFiles;
 	TMap<ETargetPlatform,FPlatformExternFiles> AllPlatformExFiles;
 	FPakInternalInfo InternalFiles; // general platform
+
+	FORCEINLINE bool HasValidAssets()const
+	{
+		bool bHasValidExFiles = false;
+		for(const auto& Item:AllPlatformExFiles)
+		{
+			if(!!Item.Value.ExternFiles.Num())
+			{
+				bHasValidExFiles = true;
+				break;
+			}
+		}
+		
+		return !!GetAssetsDetail().Num() || InternalFiles.HasValidAssets() || bHasValidExFiles;
+	}
 	
 	FORCEINLINE TArray<FAssetDetail> GetAssetsDetail()const
 	{

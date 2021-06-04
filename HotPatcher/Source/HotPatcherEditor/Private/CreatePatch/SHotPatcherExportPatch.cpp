@@ -343,8 +343,27 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 	FString CurrentVersionSavePath = ExportPatchSetting->GetCurrentVersionSavePath();
 	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
 
+	TArray<FChunkInfo> PatchChunks = ExportPatchSetting->GetChunkInfos();
+	
+	// create default chunk
+	if(ExportPatchSetting->IsCreateDefaultChunk())
+	{
+		FChunkInfo TotalChunk = UFlibPatchParserHelper::CombineChunkInfos(ExportPatchSetting->GetChunkInfos());
+
+		FChunkAssetDescribe ChunkDiffInfo = UFlibPatchParserHelper::DiffChunkWithPatchSetting(
+			*ExportPatchSetting,
+			NewVersionChunk,
+			TotalChunk,
+			ExportPatchSetting->GetAssetsDependenciesScanedCaches()
+		);
+		if(ChunkDiffInfo.HasValidAssets())
+		{
+			PatchChunks.Add(ChunkDiffInfo.AsChunkInfo(TEXT("Default")));
+		}
+	}
+	
 	FString ShowMsg;
-	for (const auto& Chunk : ExportPatchSetting->GetChunkInfos())
+	for (const auto& Chunk : PatchChunks)
 	{	
 		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(VersionDiffInfo, Chunk,ExportPatchSetting->GetPakTargetPlatforms(),ExportPatchSetting->GetAssetsDependenciesScanedCaches());
 		ShowMsg.Append(FString::Printf(TEXT("Chunk:%s\n"), *Chunk.ChunkName));
@@ -371,6 +390,8 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 		AppendFilesToMsg(TEXT("Internal Files"), ChunkAssetsDescrible.GetInternalFileStrings());
 		ShowMsg.Append(TEXT("\n"));
 	}
+	
+	
 	if (!ShowMsg.IsEmpty())
 	{
 		this->ShowMsg(ShowMsg);

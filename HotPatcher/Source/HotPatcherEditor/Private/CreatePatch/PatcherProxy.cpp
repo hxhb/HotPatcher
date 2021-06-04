@@ -278,46 +278,49 @@ namespace PatchWorker
 				TotalChunk,
 				Context.GetSettingObject()->GetAssetsDependenciesScanedCaches()
 			);
-
-			if(Context.GetSettingObject()->IsCreateDefaultChunk())
-			{
-				
-				Context.PakChunks.Add(ChunkDiffInfo.AsChunkInfo(TEXT("Default")));
-			}
-			else
-			{
-				TArray<FString> AllUnselectedAssets = ChunkDiffInfo.GetAssetsStrings();
-				TArray<FString> AllUnselectedExFiles;
-				for(auto Platform:Context.GetSettingObject()->GetPakTargetPlatforms())
-				{
-					AllUnselectedExFiles.Append(ChunkDiffInfo.GetExFileStrings(Platform));
-				}
 			
-				TArray<FString> UnSelectedInternalFiles = ChunkDiffInfo.GetInternalFileStrings();
-
-				auto ChunkCheckerMsg = [&TotalMsg](const FString& Category,const TArray<FString>& InAssetList)
+			if(ChunkDiffInfo.HasValidAssets())
+			{
+				if(Context.GetSettingObject()->IsCreateDefaultChunk())
 				{
-					if (!!InAssetList.Num())
-					{
-						TotalMsg.Append(FString::Printf(TEXT("\n%s:\n"),*Category));
-						for (const auto& Asset : InAssetList)
-						{
-							TotalMsg.Append(FString::Printf(TEXT("%s\n"), *Asset));
-						}
-					}
-				};
-				ChunkCheckerMsg(TEXT("Unreal Asset"), AllUnselectedAssets);
-				ChunkCheckerMsg(TEXT("External Files"), AllUnselectedExFiles);
-				ChunkCheckerMsg(TEXT("Internal Files(Patch & Chunk setting not match)"), UnSelectedInternalFiles);
-
-				if (!TotalMsg.IsEmpty())
-				{
-					Context.OnShowMsg.Broadcast(FString::Printf(TEXT("Unselect in Chunk:\n%s"), *TotalMsg));
-					return false;
+				
+					Context.PakChunks.Add(ChunkDiffInfo.AsChunkInfo(TEXT("Default")));
 				}
 				else
 				{
-					Context.OnShowMsg.Broadcast(TEXT(""));
+					TArray<FString> AllUnselectedAssets = ChunkDiffInfo.GetAssetsStrings();
+					TArray<FString> AllUnselectedExFiles;
+					for(auto Platform:Context.GetSettingObject()->GetPakTargetPlatforms())
+					{
+						AllUnselectedExFiles.Append(ChunkDiffInfo.GetExFileStrings(Platform));
+					}
+			
+					TArray<FString> UnSelectedInternalFiles = ChunkDiffInfo.GetInternalFileStrings();
+
+					auto ChunkCheckerMsg = [&TotalMsg](const FString& Category,const TArray<FString>& InAssetList)
+					{
+						if (!!InAssetList.Num())
+						{
+							TotalMsg.Append(FString::Printf(TEXT("\n%s:\n"),*Category));
+							for (const auto& Asset : InAssetList)
+							{
+								TotalMsg.Append(FString::Printf(TEXT("%s\n"), *Asset));
+							}
+						}
+					};
+					ChunkCheckerMsg(TEXT("Unreal Asset"), AllUnselectedAssets);
+					ChunkCheckerMsg(TEXT("External Files"), AllUnselectedExFiles);
+					ChunkCheckerMsg(TEXT("Internal Files(Patch & Chunk setting not match)"), UnSelectedInternalFiles);
+
+					if (!TotalMsg.IsEmpty())
+					{
+						Context.OnShowMsg.Broadcast(FString::Printf(TEXT("Unselect in Chunk:\n%s"), *TotalMsg));
+						return false;
+					}
+					else
+					{
+						Context.OnShowMsg.Broadcast(TEXT(""));
+					}
 				}
 			}
 		}
