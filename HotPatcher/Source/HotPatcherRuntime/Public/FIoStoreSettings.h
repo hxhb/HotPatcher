@@ -17,14 +17,23 @@ USTRUCT(BlueprintType)
 struct FIoStorePlatformContainers
 {
 	GENERATED_USTRUCT_BODY()
-	// global.utoc file
+	// Saved/StagedBuilds/Windows
+	// Saved/StagedBuilds/Android_ASTC
+	// │  Manifest_NonUFSFiles_Win64.txt
+	// │  ThirdPerson_UE5.exe
+	// ├─Engine
+	// └─ThirdPerson_UE5
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FFilePath GlobalContainers;
+	FDirectoryPath BasePackageStagedRootDir;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bGenerateDiffPatch;
+	
+	// global.utoc file
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FFilePath GlobalContainersOverride;
 	// -PatchSource=E:\UnrealProjects\StarterContent\Releases\1.0\WindowsNoEditor\StarterContent-WindowsNoEditor*.utoc -GenerateDiffPatch
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,meta=(EditCondition="bGenerateDiffPatch"))
-	FFilePath PatchSource;
+	FFilePath PatchSourceOverride;
 };
 
 USTRUCT(BlueprintType)
@@ -44,4 +53,7 @@ public:
 		TMap<ETargetPlatform,FIoStorePlatformContainers> PlatformContainers;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool bStoragePakList = true;
+	// Metadata/BulkDataInfo.ubulkmanifest
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		bool bStorageBulkDataInfo = true;
 };

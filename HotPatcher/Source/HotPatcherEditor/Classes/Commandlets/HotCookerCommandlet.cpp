@@ -2,6 +2,7 @@
 #include "ThreadUtils/FProcWorkerThread.hpp"
 #include "FCookerConfig.h"
 #include "FlibPatchParserHelper.h"
+#include "HotPatcherEditor.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -15,24 +16,6 @@
 DEFINE_LOG_CATEGORY(LogHotCookerCommandlet);
 
 TSharedPtr<FProcWorkerThread> CookerProc;
-
-void ReceiveOutputMsg(const FString& InMsg)
-{
-	FString FindItem(TEXT("Display:"));
-	int32 Index= InMsg.Len() - InMsg.Find(FindItem)- FindItem.Len();
-	if (InMsg.Contains(TEXT("Error:")))
-	{
-		UE_LOG(LogHotCookerCommandlet, Error, TEXT("%s"), *InMsg);
-	}
-	else if (InMsg.Contains(TEXT("Warning:")))
-	{
-		UE_LOG(LogHotCookerCommandlet, Warning, TEXT("%s"), *InMsg);
-	}
-	else
-	{
-		UE_LOG(LogHotCookerCommandlet, Display, TEXT("%s"), *InMsg.Right(Index));
-	}
-}
 
 int32 UHotCookerCommandlet::Main(const FString& Params)
 {

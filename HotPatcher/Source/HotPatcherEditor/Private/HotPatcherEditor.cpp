@@ -37,6 +37,23 @@ static const FName HotPatcherTabName("HotPatcher");
 
 #define LOCTEXT_NAMESPACE "FHotPatcherEditorModule"
 
+void ReceiveOutputMsg(const FString& InMsg)
+{
+	FString FindItem(TEXT("Display:"));
+	int32 Index= InMsg.Len() - InMsg.Find(FindItem)- FindItem.Len();
+	if (InMsg.Contains(TEXT("Error:")))
+	{
+		UE_LOG(LogHotPatcher, Error, TEXT("%s"), *InMsg);
+	}
+	else if (InMsg.Contains(TEXT("Warning:")))
+	{
+		UE_LOG(LogHotPatcher, Warning, TEXT("%s"), *InMsg);
+	}
+	else
+	{
+		UE_LOG(LogHotPatcher, Display, TEXT("%s"), *InMsg.Right(Index));
+	}
+}
 
 void MakeProjectSettingsForHotPatcher()
 {

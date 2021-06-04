@@ -154,26 +154,36 @@ public:
 	// TArray<FExternFileInfo> AllExFiles;
 	TMap<ETargetPlatform,FPlatformExternFiles> AllPlatformExFiles;
 	FPakInternalInfo InternalFiles; // general platform
-
+	
+	FORCEINLINE TArray<FAssetDetail> GetAssetsDetail()const
+	{
+		TArray<FAssetDetail> OutAssetDetails;
+		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(Assets, OutAssetDetails);
+		return OutAssetDetails;
+	}
+	
+	
 	FORCEINLINE TArray<FString> GetAssetsStrings()const
 	{
-		auto CollectStringByAssetDep = [](const FAssetDependenciesInfo& InAssetDep)
+		TArray<FString> AllUnselectedAssets;
+		TArray<FAssetDetail> OutAssetDetails = GetAssetsDetail();
+
+		for (const auto& AssetDetail : OutAssetDetails)
 		{
-			TArray<FString> AllUnselectedAssets;
-			TArray<FAssetDetail> OutAssetDetails;
-			UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(InAssetDep, OutAssetDetails);
-
-			for (const auto& AssetDetail : OutAssetDetails)
-			{
-				AllUnselectedAssets.AddUnique(AssetDetail.mPackagePath);
-			}
-
-			return AllUnselectedAssets;
-		};
-
-		return CollectStringByAssetDep(Assets);
+			AllUnselectedAssets.AddUnique(AssetDetail.mPackagePath);
+		}
+		return AllUnselectedAssets;
 	}
 
+	FORCEINLINE TArray<FExternFileInfo> GetExFilesByPlatform(ETargetPlatform Platform)const
+	{
+		TArray<FExternFileInfo> result;
+		if(AllPlatformExFiles.Contains(Platform))
+		{
+			result = AllPlatformExFiles.Find(Platform)->ExternFiles;
+		}
+		return result;
+	}
 	FORCEINLINE TArray<FString> GetExFileStrings(ETargetPlatform Platform)const
 	{
 		TArray<FString> ExFilesResult;
@@ -188,10 +198,12 @@ public:
 		};
 		if(AllPlatformExFiles.Contains(Platform))
 		{
-			ExFilesResult = CollectExFilesStrings(AllPlatformExFiles.Find(Platform)->ExternFiles);
+			ExFilesResult = CollectExFilesStrings(GetExFilesByPlatform(Platform));
 		}
 		return ExFilesResult;
 	}
+	FORCEINLINE FPakInternalInfo GetInternalInfo()const{return InternalFiles;}
+	
 	FORCEINLINE TArray<FString> GetInternalFileStrings()const
 	{
 		TArray<FString> result;
@@ -204,6 +216,30 @@ public:
 			if (InternalFiles.bIncludeProjectIni) { result.Add(TEXT("bIncludeProjectIni")); };
 		}
 		return result;
+	}
+
+	FORCEINLINE FChunkInfo AsChunkInfo(const FString& ChunkName)
+	{
+		FChunkInfo DefaultChunk;
+
+		DefaultChunk.ChunkName = ChunkName;
+		DefaultChunk.bMonolithic = false;
+		DefaultChunk.InternalFiles = GetInternalInfo();
+		DefaultChunk.bStorageUnrealPakList = true;
+		DefaultChunk.bStorageIoStorePakList = true;
+		for(const auto& AssetDetail:GetAssetsDetail())
+		{
+			FPatcherSpecifyAsset Asset;
+			Asset.Asset.SetPath(AssetDetail.mPackagePath);
+			DefaultChunk.IncludeSpecifyAssets.AddUnique(Asset);
+		}
+		for(const auto& ExFiles:AllPlatformExFiles)
+		{
+			FPlatformExternAssets PlatformFiles;
+			PlatformFiles.TargetPlatform = ExFiles.Key;
+			PlatformFiles.AddExternFileToPak = ExFiles.Value.ExternFiles;
+		}
+		return DefaultChunk;
 	}
 };
 

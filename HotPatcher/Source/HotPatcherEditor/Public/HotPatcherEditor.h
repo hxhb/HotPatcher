@@ -17,6 +17,9 @@
 	#define InvokeTab TryInvokeTab
 #endif
 
+static void ReceiveOutputMsg(const FString& InMsg);
+
+
 class FToolBarBuilder;
 class FMenuBuilder;
 extern FExportPatchSettings* GPatchSettings;

@@ -4,6 +4,8 @@
 #include "CreatePatch/HotPatcherContext.h"
 #include "CreatePatch/ScopedSlowTaskContext.h"
 #include "CreatePatch/HotPatcherContext.h"
+#include "HotPatcherEditor.h"
+
 // engine header
 #include "Async/Async.h"
 #include "CoreGlobals.h"
@@ -277,38 +279,46 @@ namespace PatchWorker
 				Context.GetSettingObject()->GetAssetsDependenciesScanedCaches()
 			);
 
-			TArray<FString> AllUnselectedAssets = ChunkDiffInfo.GetAssetsStrings();
-			TArray<FString> AllUnselectedExFiles;
-			for(auto Platform:Context.GetSettingObject()->GetPakTargetPlatforms())
+			if(Context.GetSettingObject()->IsCreateDefaultChunk())
 			{
-				AllUnselectedExFiles.Append(ChunkDiffInfo.GetExFileStrings(Platform));
-			}
-			
-			TArray<FString> UnSelectedInternalFiles = ChunkDiffInfo.GetInternalFileStrings();
-
-			auto ChunkCheckerMsg = [&TotalMsg](const FString& Category,const TArray<FString>& InAssetList)
-			{
-				if (!!InAssetList.Num())
-				{
-					TotalMsg.Append(FString::Printf(TEXT("\n%s:\n"),*Category));
-					for (const auto& Asset : InAssetList)
-					{
-						TotalMsg.Append(FString::Printf(TEXT("%s\n"), *Asset));
-					}
-				}
-			};
-			ChunkCheckerMsg(TEXT("Unreal Asset"), AllUnselectedAssets);
-			ChunkCheckerMsg(TEXT("External Files"), AllUnselectedExFiles);
-			ChunkCheckerMsg(TEXT("Internal Files(Patch & Chunk setting not match)"), UnSelectedInternalFiles);
-
-			if (!TotalMsg.IsEmpty())
-			{
-				Context.OnShowMsg.Broadcast(FString::Printf(TEXT("Unselect in Chunk:\n%s"), *TotalMsg));
-				return false;
+				
+				Context.PakChunks.Add(ChunkDiffInfo.AsChunkInfo(TEXT("Default")));
 			}
 			else
 			{
-				Context.OnShowMsg.Broadcast(TEXT(""));
+				TArray<FString> AllUnselectedAssets = ChunkDiffInfo.GetAssetsStrings();
+				TArray<FString> AllUnselectedExFiles;
+				for(auto Platform:Context.GetSettingObject()->GetPakTargetPlatforms())
+				{
+					AllUnselectedExFiles.Append(ChunkDiffInfo.GetExFileStrings(Platform));
+				}
+			
+				TArray<FString> UnSelectedInternalFiles = ChunkDiffInfo.GetInternalFileStrings();
+
+				auto ChunkCheckerMsg = [&TotalMsg](const FString& Category,const TArray<FString>& InAssetList)
+				{
+					if (!!InAssetList.Num())
+					{
+						TotalMsg.Append(FString::Printf(TEXT("\n%s:\n"),*Category));
+						for (const auto& Asset : InAssetList)
+						{
+							TotalMsg.Append(FString::Printf(TEXT("%s\n"), *Asset));
+						}
+					}
+				};
+				ChunkCheckerMsg(TEXT("Unreal Asset"), AllUnselectedAssets);
+				ChunkCheckerMsg(TEXT("External Files"), AllUnselectedExFiles);
+				ChunkCheckerMsg(TEXT("Internal Files(Patch & Chunk setting not match)"), UnSelectedInternalFiles);
+
+				if (!TotalMsg.IsEmpty())
+				{
+					Context.OnShowMsg.Broadcast(FString::Printf(TEXT("Unselect in Chunk:\n%s"), *TotalMsg));
+					return false;
+				}
+				else
+				{
+					Context.OnShowMsg.Broadcast(TEXT(""));
+				}
 			}
 		}
 		else
@@ -368,7 +378,7 @@ namespace PatchWorker
 		// TArray<FChunkInfo> PakChunks;
 		if (bEnableChunk)
 		{
-			Context.PakChunks = Context.GetSettingObject()->GetChunkInfos();
+			Context.PakChunks.Append(Context.GetSettingObject()->GetChunkInfos());
 		}
 		else
 		{
@@ -406,7 +416,7 @@ namespace PatchWorker
 						TArray<ETargetPlatform>{Platform},
 						Context.GetSettingObject()->GetPlatformSavePackageContexts()
 					);
-					if(Context.GetSettingObject()->IsStorageBulkDataInfo())
+					if(Context.GetSettingObject()->GetIoStoreSettings().bStorageBulkDataInfo)
 					{
 						Context.GetSettingObject()->SavePlatformBulkDataManifest(Platform);
 					}
@@ -699,7 +709,8 @@ namespace PatchWorker
 		}
 		return true;
 	};
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+
 	// setup 9
 	bool CreateIoStoreWorker(FHotPatcherPatchContext& Context)
 	{
@@ -745,14 +756,27 @@ namespace PatchWorker
 					TimeRecorder CookAssetsTR(FString::Printf(TEXT("Create Pak Platform:%s ChunkName:%s."),*PlatformName,*Chunk.ChunkName));
 					FString PakListFile = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s_IoStorePakList.txt"), *PakFileProxy.ChunkStoreName));
 					FString PakSavePath = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s.utoc"), *PakFileProxy.ChunkStoreName));
+
+					FString PatchSource;
+				
+					FString BasePacakgeRootDir = FPaths::ConvertRelativePathToFull(UFlibPatchParserHelper::ReplaceMarkPath(Context.GetSettingObject()->GetIoStoreSettings().PlatformContainers.Find(Platform)->BasePackageStagedRootDir.Path));
+					if(FPaths::DirectoryExists(BasePacakgeRootDir))
+					{
+						PatchSource = FPaths::Combine(BasePacakgeRootDir,FApp::GetProjectName(),FString::Printf(TEXT("Content/Paks/%s*.utoc"),FApp::GetProjectName()));
+					}
 					
+					FString PatchSoruceSetting = UFlibPatchParserHelper::ReplaceMarkPath(IoStoreSettings.PlatformContainers.Find(Platform)->PatchSourceOverride.FilePath);
+					if(FPaths::FileExists(PatchSoruceSetting))
+					{
+						PatchSource = PatchSoruceSetting;
+					}
 					
 					bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(
 						UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands, ReplacePakListTexts,true),
 						*PakListFile,
 						FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 					FString PatchDiffCommand = IoStoreSettings.PlatformContainers.Find(Platform)->bGenerateDiffPatch ?
-						FString::Printf(TEXT("-PatchSource=\"%s\" -GenerateDiffPatch"),*UFlibPatchParserHelper::ReplaceMarkPath(IoStoreSettings.PlatformContainers.Find(Platform)->PatchSource.FilePath)):TEXT("");
+						FString::Printf(TEXT("-PatchSource=\"%s\" -GenerateDiffPatch"),*PatchSource):TEXT("");
 					
 					IoStoreCommands.Emplace(
 						FString::Printf(TEXT("-Output=\"%s\" -ContainerName=\"%s\" -ResponseFile=\"%s\" %s"),
@@ -768,9 +792,20 @@ namespace PatchWorker
 #else
 				FString OutputDirectoryCmd = TEXT("");
 #endif
-				FString IoStoreCommandsFile = FPaths::Combine(Chunk.PakFileProxys[0].StorageDirectory,TEXT("IoStoreCommands.txt"));
+				FString IoStoreCommandsFile = FPaths::Combine(Chunk.PakFileProxys[0].StorageDirectory,FString::Printf(TEXT("%s_IoStoreCommands.txt"),*Chunk.ChunkName));
 				
-				FString PlatformGlocalContainers = UFlibPatchParserHelper::ReplaceMarkPath(IoStoreSettings.PlatformContainers.Find(Platform)->GlobalContainers.FilePath);
+				FString PlatformGlocalContainers;
+				FString BasePacakgeRootDir = FPaths::ConvertRelativePathToFull(UFlibPatchParserHelper::ReplaceMarkPath(Context.GetSettingObject()->GetIoStoreSettings().PlatformContainers.Find(Platform)->BasePackageStagedRootDir.Path));
+				if(FPaths::DirectoryExists(BasePacakgeRootDir))
+				{
+					PlatformGlocalContainers = FPaths::Combine(BasePacakgeRootDir,FApp::GetProjectName(),TEXT("Content/Paks/global.utoc"));
+				}
+				FString GlobalUtocFile = UFlibPatchParserHelper::ReplaceMarkPath(IoStoreSettings.PlatformContainers.Find(Platform)->GlobalContainersOverride.FilePath);
+				if(FPaths::FileExists(GlobalUtocFile))
+				{
+					PlatformGlocalContainers = GlobalUtocFile;
+				}
+				
 				FString PlatformCookDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),TEXT("Saved/Cooked/"),PlatformName));
 
 				if(FPaths::FileExists(PlatformGlocalContainers))
@@ -790,17 +825,27 @@ namespace PatchWorker
 						*OutputDirectoryCmd
 					);
 					FString IoStoreNativeCommandlet = FString::Printf(
-						TEXT("%s %s -run=IoStore %s"),
+						TEXT("\"%s\" \"%s\" -run=IoStore %s"),
 						*UFlibHotPatcherEditorHelper::GetUECmdBinary(),
 						*UFlibPatchParserHelper::GetProjectFilePath(),
 						*IoStoreCommandlet
 					);
 					
-					FCommandLine::Set(*IoStoreCommandlet);
+					// FCommandLine::Set(*IoStoreCommandlet);
 					UE_LOG(LogHotPatcher,Log,TEXT("%s"),*IoStoreNativeCommandlet);
-					CreateIoStoreContainerFiles(*IoStoreCommandlet);
+					// CreateIoStoreContainerFiles(*IoStoreCommandlet);
+
+					TSharedPtr<FProcWorkerThread> IoStoreProc = MakeShareable(
+						new FProcWorkerThread(
+							TEXT("PakIoStoreThread"),
+							UFlibHotPatcherEditorHelper::GetUECmdBinary(),
+							FString::Printf(TEXT("\"%s\" -run=IoStore %s"), *UFlibPatchParserHelper::GetProjectFilePath(),*IoStoreCommandlet)
+						)
+					);
+					IoStoreProc->ProcOutputMsgDelegate.AddStatic(&::ReceiveOutputMsg);
+					IoStoreProc->Execute();
+					IoStoreProc->Join();
 				}
-				
 			}
 		}
 		return true;

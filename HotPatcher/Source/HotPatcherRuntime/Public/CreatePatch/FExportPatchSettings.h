@@ -118,7 +118,7 @@ public:
 	FORCEINLINE TArray<FString> GetDefaultPakListOptions()const {return DefaultPakListOptions;}
 	FORCEINLINE TArray<FString> GetDefaultCommandletOptions()const {return DefaultCommandletOptions;}
 	FORCEINLINE TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
-	FORCEINLINE bool IsStorageBulkDataInfo()const{return bStorageBulkDataInfo;}
+	FORCEINLINE bool IsCreateDefaultChunk()const { return bCreateDefaultChunk; }
 	FORCEINLINE bool IsEnableMultiThread()const{ return bEnableMultiThread; }
 	
 	bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
@@ -183,6 +183,10 @@ public:
 		FString PakVersionFileMountPoint;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options")
 		bool bEnableChunk = false;
+	
+	// If the resource is not contained by any chunk, create a default chunk storage
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options", meta = (EditCondition = "bEnableChunk"))
+		bool bCreateDefaultChunk = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options", meta = (EditCondition = "bEnableChunk"))
 		TArray<FChunkInfo> ChunkInfos;
 
@@ -223,9 +227,7 @@ public:
 		bool bStorageDiffAnalysisResults = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bStorageAssetDependencies = false;
-	// Metadata/BulkDataInfo.ubulkmanifest
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bStorageBulkDataInfo = true;
+	
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
 		bool bEnableMultiThread = false;
 private:
