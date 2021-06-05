@@ -16,12 +16,12 @@ namespace NSRelease
 {
 	void ReceiveMsg(const FString& InMsgType,const FString& InMsg)
 	{
-		UE_LOG(LogHotReleaseCommandlet,Display,TEXT("%s:%s"),*InMsgType,*InMsg);
+		UE_LOG(LogHotReleaseCommandlet,Log,TEXT("%s:%s"),*InMsgType,*InMsg);
 	}
 
 	void ReceiveShowMsg(const FString& InMsg)
 	{
-		UE_LOG(LogHotReleaseCommandlet,Display,TEXT("%s"),*InMsg);
+		UE_LOG(LogHotReleaseCommandlet,Log,TEXT("%s"),*InMsg);
 	}
 }
 

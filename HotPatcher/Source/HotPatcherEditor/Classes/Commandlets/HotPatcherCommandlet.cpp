@@ -16,12 +16,12 @@ namespace NSPatch
 {
 	void ReceiveMsg(const FString& InMsgType,const FString& InMsg)
 	{
-		UE_LOG(LogHotPatcherCommandlet,Display,TEXT("%s:%s"),*InMsgType,*InMsg);
+		UE_LOG(LogHotPatcherCommandlet,Log,TEXT("%s:%s"),*InMsgType,*InMsg);
 	}
 
 	void ReceiveShowMsg(const FString& InMsg)
 	{
-		UE_LOG(LogHotPatcherCommandlet,Display,TEXT("%s"),*InMsg);
+		UE_LOG(LogHotPatcherCommandlet,Log,TEXT("%s"),*InMsg);
 	}
 }
 
