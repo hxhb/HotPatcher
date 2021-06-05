@@ -80,6 +80,7 @@ public:
 	FORCEINLINE bool IsIncludeAssetRegistry()const { return bIncludeAssetRegistry; }
 	FORCEINLINE bool IsIncludeGlobalShaderCache()const { return bIncludeGlobalShaderCache; }
 	FORCEINLINE bool IsIncludeShaderBytecode()const { return bIncludeShaderBytecode; }
+	FORCEINLINE bool IsMakeBinaryConfig()const { return bMakeBinaryConfig; }
 	FORCEINLINE bool IsIncludeEngineIni()const { return bIncludeEngineIni; }
 	FORCEINLINE bool IsIncludePluginIni()const { return bIncludePluginIni; }
 	FORCEINLINE bool IsIncludeProjectIni()const { return bIncludeProjectIni; }
@@ -161,12 +162,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
 		bool bIncludeShaderBytecode = false;
 
+	// Only in UE5
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini Config Files")
+		bool bMakeBinaryConfig = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini Config Files")
 		bool bIncludeEngineIni = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini Config Files")
 		bool bIncludePluginIni = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini Config Files")
 		bool bIncludeProjectIni = false;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		bool bEnableExternFilesDiff = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")

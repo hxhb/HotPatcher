@@ -198,6 +198,38 @@ void SHotPatcherExportPatch::SetInfomationContentVisibility(EVisibility InVisibi
 	DiffWidget->SetVisibility(InVisibility);
 }
 
+void SHotPatcherExportPatch::ImportProjectConfig()
+{
+	SHotPatcherPatchableBase::ImportProjectConfig();
+	bool bUseIoStore = false;
+	bool bAllowBulkDataInIoStore = false;
+	
+	GConfig->GetBool(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("bUseIoStore"),bUseIoStore,GGameIni);
+	GConfig->GetBool(TEXT("Core.System"),TEXT("AllowBulkDataInIoStore"),bAllowBulkDataInIoStore,GEngineIni);
+	
+	GetConfigSettings()->IoStoreSettings.bIoStore = bUseIoStore;
+	GetConfigSettings()->IoStoreSettings.bAllowBulkDataInIoStore = bAllowBulkDataInIoStore;
+
+#if ENGINE_MAJOR_VERSION > 4
+	bool bMakeBinaryConfig = false;
+	GConfig->GetBool(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("bMakeBinaryConfig"),bMakeBinaryConfig,GEngineIni);
+	GetConfigSettings()->bMakeBinaryConfig = bMakeBinaryConfig;
+#endif
+	
+	FString PakFileCompressionFormats;
+	GConfig->GetString(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("PakFileCompressionFormats"),PakFileCompressionFormats,GGameIni);
+	if(!PakFileCompressionFormats.IsEmpty())
+	{
+		PakFileCompressionFormats = FString::Printf(TEXT("-compressionformats=%s"),*PakFileCompressionFormats);
+		GetConfigSettings()->DefaultCommandletOptions.AddUnique(PakFileCompressionFormats);
+	}
+	FString PakFileAdditionalCompressionOptions;
+	GConfig->GetString(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("PakFileAdditionalCompressionOptions"),PakFileAdditionalCompressionOptions,GGameIni);
+
+	if(!PakFileAdditionalCompressionOptions.IsEmpty())
+		GetConfigSettings()->DefaultCommandletOptions.AddUnique(PakFileAdditionalCompressionOptions);
+	
+}
 
 void SHotPatcherExportPatch::ShowMsg(const FString& InMsg)const
 {

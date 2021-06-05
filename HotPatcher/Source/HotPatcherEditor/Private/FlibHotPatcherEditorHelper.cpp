@@ -366,7 +366,13 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 			CookPlatforms.AddUnique(TargetPlatform);
 		}
 	}
-	if(Package->FileName.IsNone() && AssetData.PackageName.IsNone())
+
+#if ENGINE_MAJOR_VERSION > 4
+	FName PackageFileName = Package->GetLoadedPath().GetPackageFName();
+#else
+	FName PackageFileName = Package->FileName;
+#endif
+	if(PackageFileName.IsNone() && AssetData.PackageName.IsNone())
 		return bSuccessed;
 	for(auto& Platform:CookPlatforms)
 	{
@@ -398,7 +404,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 
 		FFilterEditorOnlyFlag SetPackageEditorOnlyFlag(Package,Platform);
 
-		FString PackageName = Package->FileName.IsNone()?AssetData.PackageName.ToString():Package->FileName.ToString();
+		FString PackageName = PackageFileName.IsNone()?AssetData.PackageName.ToString():PackageFileName.ToString();
 		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(SavePath,PackageName, Platform->PlatformName());
 		// delete old cooked assets
 		if(FPaths::FileExists(CookedSavePath))

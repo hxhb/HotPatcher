@@ -68,6 +68,8 @@ protected:
 	void SetInfomationContentVisibility(EVisibility InVisibility)const;
 
 	virtual FExportPatchSettings* GetConfigSettings() override{return ExportPatchSetting.Get();};
+
+	virtual void ImportProjectConfig() override;
 protected:
 
 	void ShowMsg(const FString& InMsg)const;
