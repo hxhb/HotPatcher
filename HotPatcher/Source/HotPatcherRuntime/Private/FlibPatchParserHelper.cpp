@@ -2030,6 +2030,7 @@ FHotPatcherVersion UFlibPatchParserHelper::MakeNewReleaseByDiff(const FHotPatche
 				{
 					BasePlatformAssetsRef[Platform].AddExternFileToPak.Remove(File);
 				}
+				BasePlatformAssetsRef[Platform].AddExternFileToPak.Add(File);
 			}
 		}else
 		{
@@ -2039,19 +2040,6 @@ FHotPatcherVersion UFlibPatchParserHelper::MakeNewReleaseByDiff(const FHotPatche
 	// RemoveOldExternalFilesLambda(DiffInfo.ExternDiffInfo.ModifyExternalFiles);
 	// DeleteOldExternalFilesLambda(DiffInfo.DeleteExternalFiles);
 
-	// auto AddExternalFilesLambda = [&BaseExternalFilesRef](const TArray<FExternFileInfo>& InFiles)
-	// {
-	// 	for (const auto& File : InFiles)
-	// 	{
-	// 		if (!BaseExternalFilesRef.Contains(File.FilePath.FilePath))
-	// 		{
-	// 			BaseExternalFilesRef.Add(File.FilePath.FilePath,File);
-	// 		}
-	// 	}
-	// };
-	// AddExternalFilesLambda(DiffInfo.ExternDiffInfo.AddExternalFiles);
-	// AddExternalFilesLambda(DiffInfo.ExternDiffInfo.ModifyExternalFiles);
-	// NewRelease.ExternalFiles = BaseExternalFilesRef;
 	NewRelease.PlatformAssets = BasePlatformAssetsRef;
 	return NewRelease;
 }
