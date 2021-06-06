@@ -16,6 +16,7 @@
 #include "Interfaces/IPluginManager.h"
 #include "Engine/AssetManager.h"
 #include "AssetData.h"
+#include "Resources/Version.h"
 #ifdef __DEVELOPER_MODE__
 #include "Interfaces/ITargetPlatform.h"
 #include "Interfaces/ITargetPlatformManagerModule.h"

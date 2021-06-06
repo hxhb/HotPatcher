@@ -632,6 +632,15 @@ namespace PatchWorker
 
 				TArray<FString> UnrealPakCommandletOptions = Context.GetSettingObject()->GetUnrealPakSettings().UnrealCommandletOptions;
 				UnrealPakCommandletOptions.Append(Context.GetSettingObject()->GetDefaultCommandletOptions());
+				if(FPaths::FileExists(Context.GetSettingObject()->GetCryptoKeys()))
+				{
+					UnrealPakCommandletOptions.Emplace(
+						FString::Printf(
+						TEXT("-crypto=\"%s\""),
+						*Context.GetSettingObject()->GetCryptoKeys()
+						)
+					);
+				}
 				
 				TArray<FReplaceText> ReplacePakListTexts = Context.GetSettingObject()->GetReplacePakListTexts();
 				TArray<FThreadWorker> PakWorker;
@@ -654,7 +663,7 @@ namespace PatchWorker
 
 						if (PakCommandSaveStatus)
 						{
-							TArray<FString> UnrealPakCommandletOptionsSinglePak = UnrealPakCommandletOptions;
+							TArray<FString> UnrealPakCommandletOptionsSinglePak;
 							UnrealPakCommandletOptionsSinglePak.Add(
 								FString::Printf(
 									TEXT("%s -create=%s"),
@@ -662,12 +671,14 @@ namespace PatchWorker
 									*(TEXT("\"") + PakListFile + TEXT("\""))
 								)
 							);
+							UnrealPakCommandletOptionsSinglePak.Append(UnrealPakCommandletOptions);
+							
 							FString CommandLine;
 							for (const auto& Option : UnrealPakCommandletOptionsSinglePak)
 							{
 								CommandLine.Append(FString::Printf(TEXT(" %s"), *Option));
 							}
-							Context.OnPaking.Broadcast(TEXT("Create Pak CommandsL %s"),CommandLine);
+							Context.OnPaking.Broadcast(TEXT("Create Pak Commandline: %s"),CommandLine);
 							ExecuteUnrealPak(*CommandLine);
 							// FProcHandle ProcessHandle = UFlibPatchParserHelper::DoUnrealPak(UnrealPakCommandletOptionsSinglePak, true);
 
@@ -723,6 +734,15 @@ namespace PatchWorker
 
 		TArray<FString> AdditionalIoStoreCommandletOptions = Context.GetSettingObject()->GetIoStoreSettings().IoStoreCommandletOptions;
 		AdditionalIoStoreCommandletOptions.Append(Context.GetSettingObject()->GetDefaultCommandletOptions());
+		if(FPaths::FileExists(Context.GetSettingObject()->GetCryptoKeys()))
+		{
+			AdditionalIoStoreCommandletOptions.Emplace(
+				FString::Printf(
+					TEXT("-crypto=%s"),
+					*Context.GetSettingObject()->GetCryptoKeys()
+				)
+			);
+		}
 		
 		FString IoStoreCommandletOptions;
 		for(const auto& Option:AdditionalIoStoreCommandletOptions)

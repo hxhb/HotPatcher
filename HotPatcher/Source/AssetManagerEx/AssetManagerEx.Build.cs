@@ -13,10 +13,10 @@ public class AssetManagerEx : ModuleRules
             new string[] {
 				// ... add public include paths required here ...
                 Path.Combine(ModuleDirectory,"Public/Flib"),
-                Path.Combine(ModuleDirectory,"Public/Struct")
+                Path.Combine(ModuleDirectory,"Public/Struct"),
+                Path.Combine(EngineDirectory,"Source/Runtime/Launch")
 			}
 			);
-				
 		
 		PrivateIncludePaths.AddRange(
 			new string[] {
