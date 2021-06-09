@@ -632,15 +632,7 @@ namespace PatchWorker
 
 				TArray<FString> UnrealPakCommandletOptions = Context.GetSettingObject()->GetUnrealPakSettings().UnrealCommandletOptions;
 				UnrealPakCommandletOptions.Append(Context.GetSettingObject()->GetDefaultCommandletOptions());
-				if(FPaths::FileExists(Context.GetSettingObject()->GetCryptoKeys()))
-				{
-					UnrealPakCommandletOptions.Emplace(
-						FString::Printf(
-						TEXT("-crypto=\"%s\""),
-						*Context.GetSettingObject()->GetCryptoKeys()
-						)
-					);
-				}
+				UnrealPakCommandletOptions.Add(Context.GetSettingObject()->GetCryptoCommandOptions());
 				
 				TArray<FReplaceText> ReplacePakListTexts = Context.GetSettingObject()->GetReplacePakListTexts();
 				TArray<FThreadWorker> PakWorker;
@@ -734,15 +726,7 @@ namespace PatchWorker
 
 		TArray<FString> AdditionalIoStoreCommandletOptions = Context.GetSettingObject()->GetIoStoreSettings().IoStoreCommandletOptions;
 		AdditionalIoStoreCommandletOptions.Append(Context.GetSettingObject()->GetDefaultCommandletOptions());
-		if(FPaths::FileExists(Context.GetSettingObject()->GetCryptoKeys()))
-		{
-			AdditionalIoStoreCommandletOptions.Emplace(
-				FString::Printf(
-					TEXT("-crypto=%s"),
-					*Context.GetSettingObject()->GetCryptoKeys()
-				)
-			);
-		}
+		AdditionalIoStoreCommandletOptions.Add(Context.GetSettingObject()->GetCryptoCommandOptions());
 		
 		FString IoStoreCommandletOptions;
 		for(const auto& Option:AdditionalIoStoreCommandletOptions)

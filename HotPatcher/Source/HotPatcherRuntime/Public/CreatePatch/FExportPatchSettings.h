@@ -119,6 +119,16 @@ public:
 	FORCEINLINE TArray<FString> GetDefaultPakListOptions()const {return DefaultPakListOptions;}
 	FORCEINLINE TArray<FString> GetDefaultCommandletOptions()const {return DefaultCommandletOptions;}
 	FORCEINLINE FString GetCryptoKeys()const{ return UFlibPatchParserHelper::ReplaceMarkPath(CryptoKeys.FilePath);}
+	FORCEINLINE FString GetCryptoCommandOptions()const
+	{
+		FString Result;
+		if(FPaths::FileExists(GetCryptoKeys()))
+		{
+			Result = FString::Printf(TEXT("-crypto=\"%s\""),*GetCryptoKeys());
+		}
+		return Result;
+	}
+	
 	FORCEINLINE TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
 	FORCEINLINE bool IsCreateDefaultChunk()const { return bCreateDefaultChunk; }
 	FORCEINLINE bool IsEnableMultiThread()const{ return bEnableMultiThread; }
