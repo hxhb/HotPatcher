@@ -632,7 +632,7 @@ namespace PatchWorker
 
 				TArray<FString> UnrealPakCommandletOptions = Context.GetSettingObject()->GetUnrealPakSettings().UnrealCommandletOptions;
 				UnrealPakCommandletOptions.Append(Context.GetSettingObject()->GetDefaultCommandletOptions());
-				UnrealPakCommandletOptions.Add(Context.GetSettingObject()->GetCryptoCommandOptions());
+				UnrealPakCommandletOptions.Add(Context.GetSettingObject()->GetEncryptSettingsCommandlineOptions(UFlibHotPatcherEditorHelper::Conv2IniPlatform(PlatformName)));
 				
 				TArray<FReplaceText> ReplacePakListTexts = Context.GetSettingObject()->GetReplacePakListTexts();
 				TArray<FThreadWorker> PakWorker;
@@ -715,7 +715,7 @@ namespace PatchWorker
 		}
 		return true;
 	};
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 24
 
 	// setup 9
 	bool CreateIoStoreWorker(FHotPatcherPatchContext& Context)
@@ -726,18 +726,17 @@ namespace PatchWorker
 
 		TArray<FString> AdditionalIoStoreCommandletOptions = Context.GetSettingObject()->GetIoStoreSettings().IoStoreCommandletOptions;
 		AdditionalIoStoreCommandletOptions.Append(Context.GetSettingObject()->GetDefaultCommandletOptions());
-		AdditionalIoStoreCommandletOptions.Add(Context.GetSettingObject()->GetCryptoCommandOptions());
 		
-		FString IoStoreCommandletOptions;
-		for(const auto& Option:AdditionalIoStoreCommandletOptions)
-		{
-			IoStoreCommandletOptions+=FString::Printf(TEXT("%s "),*Option);
-		}
 		FIoStoreSettings IoStoreSettings = Context.GetSettingObject()->GetIoStoreSettings();
 		
 		for(const auto& Platform :Context.GetSettingObject()->GetPakTargetPlatforms())
 		{
 			FString  PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+
+			FString IoStoreCommandletOptions;
+			for(const auto& Option:AdditionalIoStoreCommandletOptions) { IoStoreCommandletOptions+=FString::Printf(TEXT("%s "),*Option); }
+			IoStoreCommandletOptions += Context.GetSettingObject()->GetEncryptSettingsCommandlineOptions(UFlibHotPatcherEditorHelper::Conv2IniPlatform(PlatformName));
+			
 			// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
 			for (const auto& Chunk : Context.PakChunks)
 			{

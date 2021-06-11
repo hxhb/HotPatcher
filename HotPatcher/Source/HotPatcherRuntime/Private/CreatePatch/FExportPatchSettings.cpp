@@ -266,3 +266,24 @@ TArray<FString> FExportPatchSettings::GetForceSkipAssetsStr()const
 	return result;
 }
 
+FString FExportPatchSettings::GetEncryptSettingsCommandlineOptions(const FString& PlatformName)const
+{
+	FString Result; 
+	if(GetEncryptSettings().bEncrypt)
+	{
+		Result += GetEncryptSettings().bEncrypt? FString::Printf(TEXT("-encrypt ")):TEXT("");
+		Result += GetEncryptSettings().bEncryptIndex? FString::Printf(TEXT("-encryptindex ")):TEXT("");
+		Result += GetEncryptSettings().bUseDefaultCryptoIni? FString::Printf(TEXT("-encryptionini ")):TEXT("");
+		Result += GetEncryptSettings().bSign? FString::Printf(TEXT("-sign ")):TEXT("");
+		
+		if(FPaths::FileExists(UFlibPatchParserHelper::ReplaceMarkPath(GetEncryptSettings().CryptoKeys.FilePath)))
+		{
+			Result += GetCryptoCommandOptions();
+		}
+		
+		Result += FString::Printf(TEXT("-projectdir=%s "),*FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()));
+		Result += FString::Printf(TEXT("-enginedir=%s "),*FPaths::ConvertRelativePathToFull(FPaths::EngineDir()));
+		Result += FString::Printf(TEXT("-platform=%s"),*PlatformName);
+	}
+	return Result;
+}

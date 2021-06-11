@@ -28,6 +28,27 @@
 #include "FExportPatchSettings.generated.h"
 
 
+USTRUCT(BlueprintType)
+struct HOTPATCHERRUNTIME_API FPakEncryptSettings
+{
+	GENERATED_BODY()
+	// -encrypt
+	UPROPERTY(EditAnywhere)
+	bool bEncrypt;
+	// -encryptindex
+	UPROPERTY(EditAnywhere,meta=(EditCondition="bEncrypt"))
+    bool bEncryptIndex;
+	// Use DefaultCrypto.ini
+	UPROPERTY(EditAnywhere,meta=(EditCondition="bEncrypt"))
+	bool bUseDefaultCryptoIni;
+	// sign pak
+	UPROPERTY(EditAnywhere)
+	bool bSign;
+	// crypto.json (option)
+	UPROPERTY(EditAnywhere,meta=(EditCondition="bEncrypt && !bUseDefaultCryptoIni"))
+	FFilePath CryptoKeys;
+};
+
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FExportPatchSettings:public FHotPatcherSettingBase
@@ -118,13 +139,13 @@ public:
 	FORCEINLINE FUnrealPakSettings GetUnrealPakSettings()const {return UnrealPakSettings;}
 	FORCEINLINE TArray<FString> GetDefaultPakListOptions()const {return DefaultPakListOptions;}
 	FORCEINLINE TArray<FString> GetDefaultCommandletOptions()const {return DefaultCommandletOptions;}
-	FORCEINLINE FString GetCryptoKeys()const{ return UFlibPatchParserHelper::ReplaceMarkPath(CryptoKeys.FilePath);}
+	FORCEINLINE FString GetCryptoKeys()const{ return UFlibPatchParserHelper::ReplaceMarkPath(GetEncryptSettings().CryptoKeys.FilePath);}
 	FORCEINLINE FString GetCryptoCommandOptions()const
 	{
 		FString Result;
 		if(FPaths::FileExists(GetCryptoKeys()))
 		{
-			Result = FString::Printf(TEXT("-crypto=\"%s\""),*GetCryptoKeys());
+			Result = FString::Printf(TEXT("-crypto=\"%s\" "),*GetCryptoKeys());
 		}
 		return Result;
 	}
@@ -132,7 +153,9 @@ public:
 	FORCEINLINE TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
 	FORCEINLINE bool IsCreateDefaultChunk()const { return bCreateDefaultChunk; }
 	FORCEINLINE bool IsEnableMultiThread()const{ return bEnableMultiThread; }
-	
+
+	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
+	FString GetEncryptSettingsCommandlineOptions(const FString& PlatformName)const;
 	bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
@@ -225,9 +248,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<FString> DefaultCommandletOptions;
 
-	// crypto.json
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-		FFilePath CryptoKeys;
+		FPakEncryptSettings EncryptSettings;
+	// // crypto.json
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+	// 	FFilePath CryptoKeys;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<FReplaceText> ReplacePakListTexts;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")

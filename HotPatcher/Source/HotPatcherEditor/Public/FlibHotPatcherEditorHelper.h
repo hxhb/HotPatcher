@@ -94,4 +94,7 @@ public:
 
 	static bool CheckSelectedAssetsCookStatus(const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets, FString& OutMsg);
 	static bool CheckPatchRequire(const FPatchVersionDiff& InDiff,const TArray<FString>& PlatformNames,FString& OutMsg);
+
+	// WindowsNoEditor to Windows
+	static FString Conv2IniPlatform(const FString& Platform);
 };

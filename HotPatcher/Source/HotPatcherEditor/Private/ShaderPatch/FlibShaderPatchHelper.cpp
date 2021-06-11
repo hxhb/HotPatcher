@@ -11,7 +11,7 @@
 
 bool UFlibShaderPatchHelper::CreateShaderCodePatch(TArray<FString> const& OldMetaDataDirs, FString const& NewMetaDataDir, FString const& OutDir, bool bNativeFormat,bool bDeterministicShaderCodeOrder)
 {
-#if	ENGINE_MAJOR_VERSION > 4
+#if	ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 	return FShaderLibraryCooker::CreatePatchLibrary(OldMetaDataDirs,NewMetaDataDir,OutDir,bNativeFormat,bDeterministicShaderCodeOrder);
 #else
 	#if ENGINE_MINOR_VERSION > 25

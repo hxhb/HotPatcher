@@ -1204,7 +1204,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 				// 	PakOptionsStr += TEXT(" ") + Param;
 				// }
 				
-				CurrentPakCommand.PakCommands = TArray<FString>{ FString::Printf(TEXT("\"%s\" \"%s\"%s"), *CollectFile.FilePath.FilePath, *CollectFile.MountPath/*,*PakOptionsStr*/) };
+				CurrentPakCommand.PakCommands = TArray<FString>{ FString::Printf(TEXT("\"%s\" \"%s\""), *CollectFile.FilePath.FilePath, *CollectFile.MountPath/*,*PakOptionsStr*/) };
 
 				PakCommands.Add(CurrentPakCommand);
 			}
@@ -2043,3 +2043,5 @@ FHotPatcherVersion UFlibPatchParserHelper::MakeNewReleaseByDiff(const FHotPatche
 	NewRelease.PlatformAssets = BasePlatformAssetsRef;
 	return NewRelease;
 }
+
+

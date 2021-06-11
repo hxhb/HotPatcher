@@ -17,8 +17,7 @@
 	#define InvokeTab TryInvokeTab
 #endif
 
-static void ReceiveOutputMsg(const FString& InMsg);
-
+HOTPATCHEREDITOR_API void ReceiveOutputMsg(const FString& InMsg);
 
 class FToolBarBuilder;
 class FMenuBuilder;

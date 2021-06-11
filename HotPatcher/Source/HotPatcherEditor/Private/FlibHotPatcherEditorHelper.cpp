@@ -778,3 +778,19 @@ bool UFlibHotPatcherEditorHelper::CheckPatchRequire(const FPatchVersionDiff& InD
 	}
 	return Status;
 }
+
+FString UFlibHotPatcherEditorHelper::Conv2IniPlatform(const FString& Platform)
+{
+	FString Result;
+	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
+	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
+	TArray<ITargetPlatform*> CookPlatforms; 
+	for (ITargetPlatform *TargetPlatform : TargetPlatforms)
+	{
+		if (TargetPlatform->PlatformName().Equals(Platform))
+		{
+			Result = TargetPlatform->IniPlatformName();
+		}
+	}
+	return Result;
+}
