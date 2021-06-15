@@ -1,6 +1,7 @@
 #pragma once
 #include "ETargetPlatform.h"
 #include "HotPatcherEditor.h"
+#include "CreatePatch/FExportPatchSettings.h"
 
 #include "CoreMinimal.h"
 #include "Kismet/KismetTextLibrary.h"
@@ -37,7 +38,8 @@ public:
     UPROPERTY(EditAnywhere, config, Category = "Editor|UnrealPak")
     TArray<FString> UnrealPakCommandletOptions;
     
-
+    UPROPERTY(EditAnywhere, config, Category = "Editor|Encrypt")
+    FPakEncryptSettings EncryptSettings;
     
 };
 

@@ -271,10 +271,10 @@ FString FExportPatchSettings::GetEncryptSettingsCommandlineOptions(const FString
 	FString Result; 
 	if(GetEncryptSettings().bEncrypt)
 	{
-		Result += GetEncryptSettings().bEncrypt? FString::Printf(TEXT("-encrypt ")):TEXT("");
-		Result += GetEncryptSettings().bEncryptIndex? FString::Printf(TEXT("-encryptindex ")):TEXT("");
-		Result += GetEncryptSettings().bUseDefaultCryptoIni? FString::Printf(TEXT("-encryptionini ")):TEXT("");
-		Result += GetEncryptSettings().bSign? FString::Printf(TEXT("-sign ")):TEXT("");
+		Result += GetEncryptSettings().bEncrypt? TEXT("-encrypt "):TEXT("");
+		Result += GetEncryptSettings().bEncryptIndex? TEXT("-encryptindex "):TEXT("");
+		Result += GetEncryptSettings().bUseDefaultCryptoIni? TEXT("-encryptionini "):TEXT("");
+		Result += GetEncryptSettings().bSign? TEXT("-sign "):TEXT("");
 		
 		if(FPaths::FileExists(UFlibPatchParserHelper::ReplaceMarkPath(GetEncryptSettings().CryptoKeys.FilePath)))
 		{

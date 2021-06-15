@@ -97,4 +97,5 @@ public:
 
 	// WindowsNoEditor to Windows
 	static FString Conv2IniPlatform(const FString& Platform);
+	static TArray<FString> GetSupportPlatforms();
 };

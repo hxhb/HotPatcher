@@ -482,8 +482,9 @@ namespace PatchWorker
 	bool GeneratePakProxysWorker(FHotPatcherPatchContext& Context)
 	{
 		TimeRecorder PakChunkToralTR(FString::Printf(TEXT("Generate all platform pakproxys of all chunks Total Time:")));
-		for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
+		for(const auto& Platform :Context.GetSettingObject()->GetPakTargetPlatforms())
 		{
+			FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
 			// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
 			for (auto& Chunk : Context.PakChunks)
 			{
@@ -570,6 +571,7 @@ namespace PatchWorker
 				if(!Chunk.bMonolithic)
 				{
 					FPakFileProxy SinglePakForChunk;
+					SinglePakForChunk.Platform = Platform;
 					SinglePakForChunk.PakCommands = ChunkPakListCommands;
 					// add extern file to pak(version file)
 					SinglePakForChunk.PakCommands.Append(Context.AdditionalFileToPak);
@@ -584,6 +586,7 @@ namespace PatchWorker
 					for (const auto& PakCommand : ChunkPakListCommands)
 					{
 						FPakFileProxy CurrentPak;
+						CurrentPak.Platform = Platform;
 						CurrentPak.PakCommands.Add(PakCommand);
 						// add extern file to pak(version file)
 						CurrentPak.PakCommands.Append(Context.AdditionalFileToPak);
@@ -616,101 +619,102 @@ namespace PatchWorker
 	bool CreatePakWorker(FHotPatcherPatchContext& Context)
 	{
 		TimeRecorder CreateAllPakToralTR(FString::Printf(TEXT("Generate all platform pak of all chunks Total Time:")));
-		for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
+		// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
+		for (const auto& Chunk : Context.PakChunks)
 		{
-			// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
-			for (const auto& Chunk : Context.PakChunks)
-			{
-				TimeRecorder PakChunkToralTR(FString::Printf(TEXT("Package Chunk Platform:%s ChunkName:%s Total Time:"),*PlatformName,*Chunk.ChunkName));
+			TimeRecorder PakChunkToralTR(FString::Printf(TEXT("Package ChunkName:%s Total Time:"),*Chunk.ChunkName));
 				
-				// // Update SlowTask Progress
-				{
-					FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Pak list of {0} Platform Chunk {1}."), FText::FromString(PlatformName), FText::FromString(Chunk.ChunkName));
-					Context.OnPaking.Broadcast(TEXT("GeneratedPak"),*Dialog.ToString());
-					Context.UnrealPakSlowTask->EnterProgressFrame(1.0, Dialog);
-				}
+			// // Update SlowTask Progress
+			{
+				FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Pak list of Chunk {1}."), FText::FromString(Chunk.ChunkName));
+				Context.OnPaking.Broadcast(TEXT("GeneratedPak"),*Dialog.ToString());
+				Context.UnrealPakSlowTask->EnterProgressFrame(1.0, Dialog);
+			}
 
-				TArray<FString> UnrealPakCommandletOptions = Context.GetSettingObject()->GetUnrealPakSettings().UnrealCommandletOptions;
-				UnrealPakCommandletOptions.Append(Context.GetSettingObject()->GetDefaultCommandletOptions());
+			TArray<FString> UnrealPakCommandletGeneralOptions = Context.GetSettingObject()->GetUnrealPakSettings().UnrealCommandletOptions;
+			UnrealPakCommandletGeneralOptions.Append(Context.GetSettingObject()->GetDefaultCommandletOptions());
+				
+				
+			TArray<FReplaceText> ReplacePakListTexts = Context.GetSettingObject()->GetReplacePakListTexts();
+			TArray<FThreadWorker> PakWorker;
+				
+			// TMap<FString,TArray<FPakFileInfo>>& PakFilesInfoMap = Context.PakFilesInfoMap;
+				
+			// 创建chunk的pak文件
+			for (const auto& PakFileProxy : Chunk.PakFileProxys)
+			{
+				FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(PakFileProxy.Platform);
+				TArray<FString> UnrealPakCommandletOptions = UnrealPakCommandletGeneralOptions;
 				UnrealPakCommandletOptions.Add(Context.GetSettingObject()->GetEncryptSettingsCommandlineOptions(UFlibHotPatcherEditorHelper::Conv2IniPlatform(PlatformName)));
 				
-				TArray<FReplaceText> ReplacePakListTexts = Context.GetSettingObject()->GetReplacePakListTexts();
-				TArray<FThreadWorker> PakWorker;
-				
-				// TMap<FString,TArray<FPakFileInfo>>& PakFilesInfoMap = Context.PakFilesInfoMap;
-				
-				// 创建chunk的pak文件
-				for (const auto& PakFileProxy : Chunk.PakFileProxys)
+				TimeRecorder CookAssetsTR(FString::Printf(TEXT("Create Pak Platform:%s ChunkName:%s."),*PlatformName,*Chunk.ChunkName));
+				// ++PakCounter;
+				uint32 index = PakWorker.Emplace(*PakFileProxy.ChunkStoreName, [/*CurrentPakVersion, */PlatformName, UnrealPakCommandletOptions, ReplacePakListTexts, PakFileProxy, &Chunk,&Context]()
 				{
-					TimeRecorder CookAssetsTR(FString::Printf(TEXT("Create Pak Platform:%s ChunkName:%s."),*PlatformName,*Chunk.ChunkName));
-					// ++PakCounter;
-					uint32 index = PakWorker.Emplace(*PakFileProxy.ChunkStoreName, [/*CurrentPakVersion, */PlatformName, UnrealPakCommandletOptions, ReplacePakListTexts, PakFileProxy, &Chunk,&Context]()
+					FString PakListFile = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s_PakCommands.txt"), *PakFileProxy.ChunkStoreName));
+					FString PakSavePath = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s.pak"), *PakFileProxy.ChunkStoreName));
+					bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(
+						UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands, ReplacePakListTexts,false),
+						*PakListFile,
+						FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+
+					if (PakCommandSaveStatus)
 					{
-						FString PakListFile = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s_PakCommands.txt"), *PakFileProxy.ChunkStoreName));
-						FString PakSavePath = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s.pak"), *PakFileProxy.ChunkStoreName));
-						bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(
-							UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands, ReplacePakListTexts,false),
-							*PakListFile,
-							FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
-
-						if (PakCommandSaveStatus)
+						TArray<FString> UnrealPakCommandletOptionsSinglePak;
+						UnrealPakCommandletOptionsSinglePak.Add(
+							FString::Printf(
+								TEXT("%s -create=%s"),
+								*(TEXT("\"") + PakSavePath + TEXT("\"")),
+								*(TEXT("\"") + PakListFile + TEXT("\""))
+							)
+						);
+						UnrealPakCommandletOptionsSinglePak.Append(UnrealPakCommandletOptions);
+							
+						FString CommandLine;
+						for (const auto& Option : UnrealPakCommandletOptionsSinglePak)
 						{
-							TArray<FString> UnrealPakCommandletOptionsSinglePak;
-							UnrealPakCommandletOptionsSinglePak.Add(
-								FString::Printf(
-									TEXT("%s -create=%s"),
-									*(TEXT("\"") + PakSavePath + TEXT("\"")),
-									*(TEXT("\"") + PakListFile + TEXT("\""))
-								)
-							);
-							UnrealPakCommandletOptionsSinglePak.Append(UnrealPakCommandletOptions);
-							
-							FString CommandLine;
-							for (const auto& Option : UnrealPakCommandletOptionsSinglePak)
-							{
-								CommandLine.Append(FString::Printf(TEXT(" %s"), *Option));
-							}
-							Context.OnPaking.Broadcast(TEXT("Create Pak Commandline: %s"),CommandLine);
-							ExecuteUnrealPak(*CommandLine);
-							// FProcHandle ProcessHandle = UFlibPatchParserHelper::DoUnrealPak(UnrealPakCommandletOptionsSinglePak, true);
-
-							// AsyncTask(ENamedThreads::GameThread, [this,PakFileProxy,&PakFilesInfoMap,PlatformName]()
-							{
-								if (FPaths::FileExists(PakSavePath))
-								{
-	                                if(::IsRunningCommandlet())
-	                                {
-	                                    FString Msg = FString::Printf(TEXT("Successd to Package the patch as %s."),*PakSavePath);
-	                                    Context.OnPaking.Broadcast(TEXT("SavedPakFile"),Msg);
-	                                }else
-	                                {
-	                                    FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
-	                                    UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, PakSavePath);
-	                                }
-	                                FPakFileInfo CurrentPakInfo;
-	                                if (UFlibPatchParserHelper::GetPakFileInfo(PakSavePath, CurrentPakInfo))
-	                                {
-	                                    // CurrentPakInfo.PakVersion = CurrentPakVersion;
-	                                    if (!Context.PakFilesInfoMap.Contains(PlatformName))
-	                                    {
-	                                        Context.PakFilesInfoMap.Add(PlatformName, TArray<FPakFileInfo>{CurrentPakInfo});
-	                                    }
-	                                    else
-	                                    {
-	                                        Context.PakFilesInfoMap.Find(PlatformName)->Add(CurrentPakInfo);
-	                                    }
-	                                }
-	                            }
-							}//);
-							
-							if (!Chunk.bStorageUnrealPakList)
-							{
-								IFileManager::Get().Delete(*PakListFile);
-							}
+							CommandLine.Append(FString::Printf(TEXT(" %s"), *Option));
 						}
-					});
-					PakWorker[index].Run();
-				}
+						Context.OnPaking.Broadcast(TEXT("Create Pak Commandline: %s"),CommandLine);
+						ExecuteUnrealPak(*CommandLine);
+						// FProcHandle ProcessHandle = UFlibPatchParserHelper::DoUnrealPak(UnrealPakCommandletOptionsSinglePak, true);
+
+						// AsyncTask(ENamedThreads::GameThread, [this,PakFileProxy,&PakFilesInfoMap,PlatformName]()
+						{
+							if (FPaths::FileExists(PakSavePath))
+							{
+								if(::IsRunningCommandlet())
+								{
+									FString Msg = FString::Printf(TEXT("Successed to Package the patch as %s."),*PakSavePath);
+									Context.OnPaking.Broadcast(TEXT("SavedPakFile"),Msg);
+								}else
+								{
+									FText Msg = LOCTEXT("SavedPakFileMsg", "Successed to Package the patch as Pak.");
+									UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, PakSavePath);
+								}
+								FPakFileInfo CurrentPakInfo;
+								if (UFlibPatchParserHelper::GetPakFileInfo(PakSavePath, CurrentPakInfo))
+								{
+									// CurrentPakInfo.PakVersion = CurrentPakVersion;
+									if (!Context.PakFilesInfoMap.Contains(PlatformName))
+									{
+										Context.PakFilesInfoMap.Add(PlatformName, TArray<FPakFileInfo>{CurrentPakInfo});
+									}
+									else
+									{
+										Context.PakFilesInfoMap.Find(PlatformName)->Add(CurrentPakInfo);
+									}
+								}
+							}
+						}//);
+							
+						if (!Chunk.bStorageUnrealPakList)
+						{
+							IFileManager::Get().Delete(*PakListFile);
+						}
+					}
+				});
+				PakWorker[index].Run();
 			}
 		}
 		return true;
@@ -728,94 +732,89 @@ namespace PatchWorker
 		AdditionalIoStoreCommandletOptions.Append(Context.GetSettingObject()->GetDefaultCommandletOptions());
 		
 		FIoStoreSettings IoStoreSettings = Context.GetSettingObject()->GetIoStoreSettings();
-		
-		for(const auto& Platform :Context.GetSettingObject()->GetPakTargetPlatforms())
+		// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
+		for (const auto& Chunk : Context.PakChunks)
 		{
-			FString  PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
-
-			FString IoStoreCommandletOptions;
-			for(const auto& Option:AdditionalIoStoreCommandletOptions) { IoStoreCommandletOptions+=FString::Printf(TEXT("%s "),*Option); }
-			IoStoreCommandletOptions += Context.GetSettingObject()->GetEncryptSettingsCommandlineOptions(UFlibHotPatcherEditorHelper::Conv2IniPlatform(PlatformName));
-			
-			// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
-			for (const auto& Chunk : Context.PakChunks)
+			TimeRecorder PakChunkAllIoStoreToralTR(FString::Printf(TEXT("Package ChunkName:%s Io Store Total Time:"),*Chunk.ChunkName));
+				
+			// // Update SlowTask Progress
 			{
-				TimeRecorder PakChunkAllIoStoreToralTR(FString::Printf(TEXT("Package Chunk Platform:%s ChunkName:%s Io Store Total Time:"),*PlatformName,*Chunk.ChunkName));
-				
-				// // Update SlowTask Progress
-				{
-					FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Io Store list of {0} Platform Chunk {1}."), FText::FromString(PlatformName), FText::FromString(Chunk.ChunkName));
-					Context.OnPaking.Broadcast(TEXT("GeneratedIoStore"),*Dialog.ToString());
-					Context.UnrealPakSlowTask->EnterProgressFrame(1.0, Dialog);
-				}
+				FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Io Store list of Chunk {1}."), FText::FromString(Chunk.ChunkName));
+				Context.OnPaking.Broadcast(TEXT("GeneratedIoStore"),*Dialog.ToString());
+				Context.UnrealPakSlowTask->EnterProgressFrame(1.0, Dialog);
+			}
 
-				TArray<FReplaceText> ReplacePakListTexts = Context.GetSettingObject()->GetReplacePakListTexts();
-				
-				if(!IoStoreSettings.PlatformContainers.Contains(Platform))
+			TArray<FReplaceText> ReplacePakListTexts = Context.GetSettingObject()->GetReplacePakListTexts();
+			if(!Chunk.PakFileProxys.Num())
+			{
+				UE_LOG(LogHotPatcher,Error,TEXT("Chunk %s Not Contain Any valid PakFileProxy!!!"),*Chunk.ChunkName);
+				continue;
+			}
+			// 创建chunk的Io Store文件
+			TArray<FString> IoStoreCommands;
+			for (const auto& PakFileProxy : Chunk.PakFileProxys)
+			{
+				if(!IoStoreSettings.PlatformContainers.Contains(PakFileProxy.Platform))
 					return true;
 
-				if(!Chunk.PakFileProxys.Num())
-				{
-					UE_LOG(LogHotPatcher,Error,TEXT("Chunk %s Not Contain Any valid PakFileProxy!!!"),*Chunk.ChunkName);
-					continue;
-				}
-				// 创建chunk的Io Store文件
-				TArray<FString> IoStoreCommands;
-				for (const auto& PakFileProxy : Chunk.PakFileProxys)
-				{
-					TimeRecorder CookAssetsTR(FString::Printf(TEXT("Create Pak Platform:%s ChunkName:%s."),*PlatformName,*Chunk.ChunkName));
-					FString PakListFile = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s_IoStorePakList.txt"), *PakFileProxy.ChunkStoreName));
-					FString PakSavePath = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s.utoc"), *PakFileProxy.ChunkStoreName));
+				FString  PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(PakFileProxy.Platform);
 
-					FString PatchSource;
+				FString IoStoreCommandletOptions;
+				for(const auto& Option:AdditionalIoStoreCommandletOptions) { IoStoreCommandletOptions+=FString::Printf(TEXT("%s "),*Option); }
+				IoStoreCommandletOptions += Context.GetSettingObject()->GetEncryptSettingsCommandlineOptions(UFlibHotPatcherEditorHelper::Conv2IniPlatform(PlatformName));
+					
+				TimeRecorder CookAssetsTR(FString::Printf(TEXT("Create Pak Platform:%s ChunkName:%s."),*PlatformName,*Chunk.ChunkName));
+				FString PakListFile = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s_IoStorePakList.txt"), *PakFileProxy.ChunkStoreName));
+				FString PakSavePath = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s.utoc"), *PakFileProxy.ChunkStoreName));
+
+				FString PatchSource;
 				
-					FString BasePacakgeRootDir = FPaths::ConvertRelativePathToFull(UFlibPatchParserHelper::ReplaceMarkPath(Context.GetSettingObject()->GetIoStoreSettings().PlatformContainers.Find(Platform)->BasePackageStagedRootDir.Path));
-					if(FPaths::DirectoryExists(BasePacakgeRootDir))
-					{
-						PatchSource = FPaths::Combine(BasePacakgeRootDir,FApp::GetProjectName(),FString::Printf(TEXT("Content/Paks/%s*.utoc"),FApp::GetProjectName()));
-					}
-					
-					FString PatchSoruceSetting = UFlibPatchParserHelper::ReplaceMarkPath(IoStoreSettings.PlatformContainers.Find(Platform)->PatchSourceOverride.FilePath);
-					if(FPaths::FileExists(PatchSoruceSetting))
-					{
-						PatchSource = PatchSoruceSetting;
-					}
-					
-					bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(
-						UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands, ReplacePakListTexts,true),
-						*PakListFile,
-						FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
-					FString PatchDiffCommand = IoStoreSettings.PlatformContainers.Find(Platform)->bGenerateDiffPatch ?
-						FString::Printf(TEXT("-PatchSource=\"%s\" -GenerateDiffPatch"),*PatchSource):TEXT("");
-					
-					IoStoreCommands.Emplace(
-						FString::Printf(TEXT("-Output=\"%s\" -ContainerName=\"%s\" -ResponseFile=\"%s\" %s"),
-							*PakSavePath,
-							*PakFileProxy.ChunkStoreName,
-							*PakListFile,
-							*PatchDiffCommand
-						)
-					);
+				FString BasePacakgeRootDir = FPaths::ConvertRelativePathToFull(UFlibPatchParserHelper::ReplaceMarkPath(Context.GetSettingObject()->GetIoStoreSettings().PlatformContainers.Find(PakFileProxy.Platform)->BasePackageStagedRootDir.Path));
+				if(FPaths::DirectoryExists(BasePacakgeRootDir))
+				{
+					PatchSource = FPaths::Combine(BasePacakgeRootDir,FApp::GetProjectName(),FString::Printf(TEXT("Content/Paks/%s*.utoc"),FApp::GetProjectName()));
 				}
+					
+				FString PatchSoruceSetting = UFlibPatchParserHelper::ReplaceMarkPath(IoStoreSettings.PlatformContainers.Find(PakFileProxy.Platform)->PatchSourceOverride.FilePath);
+				if(FPaths::FileExists(PatchSoruceSetting))
+				{
+					PatchSource = PatchSoruceSetting;
+				}
+					
+				bool PakCommandSaveStatus = FFileHelper::SaveStringArrayToFile(
+					UFlibPatchParserHelper::GetPakCommandStrByCommands(PakFileProxy.PakCommands, ReplacePakListTexts,true),
+					*PakListFile,
+					FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+				FString PatchDiffCommand = IoStoreSettings.PlatformContainers.Find(PakFileProxy.Platform)->bGenerateDiffPatch ?
+					FString::Printf(TEXT("-PatchSource=\"%s\" -GenerateDiffPatch"),*PatchSource):TEXT("");
+					
+				IoStoreCommands.Emplace(
+					FString::Printf(TEXT("-Output=\"%s\" -ContainerName=\"%s\" -ResponseFile=\"%s\" %s"),
+						*PakSavePath,
+						*PakFileProxy.ChunkStoreName,
+						*PakListFile,
+						*PatchDiffCommand
+					)
+				);
 #if ENGINE_MAJOR_VERSION < 5 && ENGINE_MINOR_VERSION < 26
 				FString OutputDirectoryCmd = FString::Printf(TEXT("-OutputDirectory=%s"),*FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath()));
 #else
 				FString OutputDirectoryCmd = TEXT("");
 #endif
 				FString IoStoreCommandsFile = FPaths::Combine(Chunk.PakFileProxys[0].StorageDirectory,FString::Printf(TEXT("%s_IoStoreCommands.txt"),*Chunk.ChunkName));
-				
+					
 				FString PlatformGlocalContainers;
-				FString BasePacakgeRootDir = FPaths::ConvertRelativePathToFull(UFlibPatchParserHelper::ReplaceMarkPath(Context.GetSettingObject()->GetIoStoreSettings().PlatformContainers.Find(Platform)->BasePackageStagedRootDir.Path));
+				// FString BasePacakgeRootDir = FPaths::ConvertRelativePathToFull(UFlibPatchParserHelper::ReplaceMarkPath(Context.GetSettingObject()->GetIoStoreSettings().PlatformContainers.Find(PakFileProxy.Platform)->BasePackageStagedRootDir.Path));
 				if(FPaths::DirectoryExists(BasePacakgeRootDir))
 				{
 					PlatformGlocalContainers = FPaths::Combine(BasePacakgeRootDir,FApp::GetProjectName(),TEXT("Content/Paks/global.utoc"));
 				}
-				FString GlobalUtocFile = UFlibPatchParserHelper::ReplaceMarkPath(IoStoreSettings.PlatformContainers.Find(Platform)->GlobalContainersOverride.FilePath);
+				FString GlobalUtocFile = UFlibPatchParserHelper::ReplaceMarkPath(IoStoreSettings.PlatformContainers.Find(PakFileProxy.Platform)->GlobalContainersOverride.FilePath);
 				if(FPaths::FileExists(GlobalUtocFile))
 				{
 					PlatformGlocalContainers = GlobalUtocFile;
 				}
-				
+					
 				FString PlatformCookDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),TEXT("Saved/Cooked/"),PlatformName));
 
 				if(FPaths::FileExists(PlatformGlocalContainers))
@@ -840,7 +839,7 @@ namespace PatchWorker
 						*UFlibPatchParserHelper::GetProjectFilePath(),
 						*IoStoreCommandlet
 					);
-					
+						
 					// FCommandLine::Set(*IoStoreCommandlet);
 					UE_LOG(LogHotPatcher,Log,TEXT("%s"),*IoStoreNativeCommandlet);
 					// CreateIoStoreContainerFiles(*IoStoreCommandlet);
@@ -1033,11 +1032,11 @@ namespace PatchWorker
 				{
 					if(::IsRunningCommandlet())
 					{
-						FString Msg = FString::Printf(TEXT("Successd to Export the Pak File info to ."),*SavePakFilesPath);
+						FString Msg = FString::Printf(TEXT("Successed to Export the Pak File info to ."),*SavePakFilesPath);
 						Context.OnPaking.Broadcast(TEXT("SavedPakFileMsg"),Msg);
 					}else
 					{
-						FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Export the Pak File info.");
+						FText Msg = LOCTEXT("SavedPakFileMsg", "Successed to Export the Pak File info.");
 						UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SavePakFilesPath);
 					}
 				}
@@ -1075,11 +1074,11 @@ namespace PatchWorker
 				{
 					if(::IsRunningCommandlet())
 					{
-						FString Msg = FString::Printf(TEXT("Successd to Export the Patch Config to %s."),*SaveConfigPath);
+						FString Msg = FString::Printf(TEXT("Successed to Export the Patch Config to %s."),*SaveConfigPath);
 						Context.OnPaking.Broadcast(TEXT("SavedPatchConfig"),Msg);
 					}else
 					{
-						FText Msg = LOCTEXT("SavedPatchConfig", "Successd to Export the Patch Config.");
+						FText Msg = LOCTEXT("SavedPatchConfig", "Successed to Export the Patch Config.");
 						UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveConfigPath);
 					}
 				}

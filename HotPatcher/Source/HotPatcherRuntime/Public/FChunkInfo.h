@@ -87,6 +87,8 @@ public:
 	UPROPERTY(EditAnywhere)
 	FString ChunkStoreName;
 	UPROPERTY(EditAnywhere)
+	ETargetPlatform Platform;
+	UPROPERTY(EditAnywhere)
 	FString StorageDirectory;
 	// UPROPERTY(EditAnywhere)
 	// FString PakCommandSavePath;

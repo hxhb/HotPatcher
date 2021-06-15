@@ -782,15 +782,36 @@ bool UFlibHotPatcherEditorHelper::CheckPatchRequire(const FPatchVersionDiff& InD
 FString UFlibHotPatcherEditorHelper::Conv2IniPlatform(const FString& Platform)
 {
 	FString Result;
+	static TMap<FString,FString> PlatformMaps;
+	static bool bInit = false;
+	if(!bInit)
+	{
+		ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
+		const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
+		TArray<ITargetPlatform*> CookPlatforms; 
+		for (ITargetPlatform *TargetPlatform : TargetPlatforms)
+		{
+			PlatformMaps.Add(TargetPlatform->PlatformName(),TargetPlatform->IniPlatformName());
+		}
+		bInit = true;
+	}
+	
+	if(PlatformMaps.Contains(Platform))
+	{
+		Result = *PlatformMaps.Find(Platform);
+	}
+	return Result;
+}
+
+TArray<FString> UFlibHotPatcherEditorHelper::GetSupportPlatforms()
+{
+	TArray<FString> Result;
 	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
 	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
 	TArray<ITargetPlatform*> CookPlatforms; 
 	for (ITargetPlatform *TargetPlatform : TargetPlatforms)
 	{
-		if (TargetPlatform->PlatformName().Equals(Platform))
-		{
-			Result = TargetPlatform->IniPlatformName();
-		}
+		Result.AddUnique(TargetPlatform->PlatformName());
 	}
 	return Result;
 }
