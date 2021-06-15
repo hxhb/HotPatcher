@@ -80,9 +80,8 @@ namespace PatchWorker
 	bool GeneratePakProxysWorker(FHotPatcherPatchContext& Context);
 	// setup 9
 	bool CreatePakWorker(FHotPatcherPatchContext& Context);
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
+	// io store
 	bool CreateIoStoreWorker(FHotPatcherPatchContext& Context);
-#endif
 	// setup 10
 	bool SaveAssetDependenciesWorker(FHotPatcherPatchContext& Context);
 	// setup 11 save difference to file
@@ -129,9 +128,7 @@ bool UPatcherProxy::DoExport()
 	PatchWorkers.Emplace(&PatchWorker::CookPatchAssetsWorker);
 	PatchWorkers.Emplace(&PatchWorker::GeneratePakProxysWorker);
 	PatchWorkers.Emplace(&PatchWorker::CreatePakWorker);
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25 
 	PatchWorkers.Emplace(&PatchWorker::CreateIoStoreWorker);
-#endif
 	PatchWorkers.Emplace(&PatchWorker::SaveAssetDependenciesWorker);
 	PatchWorkers.Emplace(&PatchWorker::SaveDifferenceWorker);
 	PatchWorkers.Emplace(&PatchWorker::SaveNewReleaseWorker);
@@ -719,11 +716,11 @@ namespace PatchWorker
 		}
 		return true;
 	};
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 24
 
 	// setup 9
 	bool CreateIoStoreWorker(FHotPatcherPatchContext& Context)
 	{
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 		if(!Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
 			return true;
 		TimeRecorder CreateAllIoStoreToralTR(FString::Printf(TEXT("Generate all platform Io Store of all chunks Total Time:")));
@@ -857,9 +854,10 @@ namespace PatchWorker
 				}
 			}
 		}
+#endif
 		return true;
 	};
-#endif
+
 	// delete pakversion.json
 	//{
 	//	FString PakVersionSavedPath = FExportPatchSettingsEx::GetSavePakVersionPath(CurrentVersionSavePath,CurrentVersion);
