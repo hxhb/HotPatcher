@@ -98,4 +98,6 @@ public:
 	// WindowsNoEditor to Windows
 	static FString Conv2IniPlatform(const FString& Platform);
 	static TArray<FString> GetSupportPlatforms();
+
+	static FString GetEncryptSettingsCommandlineOptions(const FPakEncryptSettings& EncryptSettings,const FString& PlatformName);
 };

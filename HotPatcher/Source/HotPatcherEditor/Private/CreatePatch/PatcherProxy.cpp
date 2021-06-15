@@ -642,7 +642,7 @@ namespace PatchWorker
 			{
 				FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(PakFileProxy.Platform);
 				TArray<FString> UnrealPakCommandletOptions = UnrealPakCommandletGeneralOptions;
-				UnrealPakCommandletOptions.Add(Context.GetSettingObject()->GetEncryptSettingsCommandlineOptions(UFlibHotPatcherEditorHelper::Conv2IniPlatform(PlatformName)));
+				UnrealPakCommandletOptions.Add(UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(Context.GetSettingObject()->GetEncryptSettings(),UFlibHotPatcherEditorHelper::Conv2IniPlatform(PlatformName)));
 				
 				TimeRecorder CookAssetsTR(FString::Printf(TEXT("Create Pak Platform:%s ChunkName:%s."),*PlatformName,*Chunk.ChunkName));
 				// ++PakCounter;
@@ -758,7 +758,7 @@ namespace PatchWorker
 
 				FString IoStoreCommandletOptions;
 				for(const auto& Option:AdditionalIoStoreCommandletOptions) { IoStoreCommandletOptions+=FString::Printf(TEXT("%s "),*Option); }
-				IoStoreCommandletOptions += Context.GetSettingObject()->GetEncryptSettingsCommandlineOptions(UFlibHotPatcherEditorHelper::Conv2IniPlatform(PlatformName));
+				IoStoreCommandletOptions += UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(Context.GetSettingObject()->GetEncryptSettings(),UFlibHotPatcherEditorHelper::Conv2IniPlatform(PlatformName));
 					
 				TimeRecorder CookAssetsTR(FString::Printf(TEXT("Create Pak Platform:%s ChunkName:%s."),*PlatformName,*Chunk.ChunkName));
 				FString PakListFile = FPaths::Combine(PakFileProxy.StorageDirectory, FString::Printf(TEXT("%s_IoStorePakList.txt"), *PakFileProxy.ChunkStoreName));

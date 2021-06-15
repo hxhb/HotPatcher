@@ -139,23 +139,12 @@ public:
 	FORCEINLINE FUnrealPakSettings GetUnrealPakSettings()const {return UnrealPakSettings;}
 	FORCEINLINE TArray<FString> GetDefaultPakListOptions()const {return DefaultPakListOptions;}
 	FORCEINLINE TArray<FString> GetDefaultCommandletOptions()const {return DefaultCommandletOptions;}
-	FORCEINLINE FString GetCryptoKeys()const{ return UFlibPatchParserHelper::ReplaceMarkPath(GetEncryptSettings().CryptoKeys.FilePath);}
-	FORCEINLINE FString GetCryptoCommandOptions()const
-	{
-		FString Result;
-		if(FPaths::FileExists(GetCryptoKeys()))
-		{
-			Result = FString::Printf(TEXT("-crypto=\"%s\" "),*GetCryptoKeys());
-		}
-		return Result;
-	}
 	
 	FORCEINLINE TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
 	FORCEINLINE bool IsCreateDefaultChunk()const { return bCreateDefaultChunk; }
 	FORCEINLINE bool IsEnableMultiThread()const{ return bEnableMultiThread; }
 
 	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
-	FString GetEncryptSettingsCommandlineOptions(const FString& PlatformName)const;
 	bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")

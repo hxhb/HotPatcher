@@ -400,24 +400,26 @@ void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
 	}
 	if(!!FinalCookCommands.Num())
 	{
-		FString TempPakCommandsSavePath =  FPaths::Combine(AbsProjectPath,Settings->TempPakDir,FDateTime::UtcNow().ToString()+TEXT("_")+CookForPlatform+TEXT(".txt"));
-		FString TempPakSavePath =  FPaths::Combine(AbsProjectPath,Settings->TempPakDir,FDateTime::UtcNow().ToString()+TEXT("_")+CookForPlatform+TEXT(".pak"));
+		FString TempPakCommandsSavePath =  FPaths::Combine(AbsProjectPath,Settings->TempPakDir,FDateTime::Now().ToString()+TEXT("_")+CookForPlatform+TEXT("_01_P.txt"));
+		FString TempPakSavePath =  FPaths::Combine(AbsProjectPath,Settings->TempPakDir,FDateTime::Now().ToString()+TEXT("_")+CookForPlatform+TEXT("_01_P.pak"));
 		FFileHelper::SaveStringArrayToFile(FinalCookCommands,*TempPakCommandsSavePath);
 		if(FPaths::FileExists(TempPakCommandsSavePath))
 		{
 			FString UnrealPakCommandletOptionsSinglePak(
                             FString::Printf(
-                                TEXT("%s -create=%s"),
+                                TEXT("%s -create=%s %s"),
                                 *(TEXT("\"") + TempPakSavePath + TEXT("\"")),
-                                *(TEXT("\"") + TempPakCommandsSavePath + TEXT("\""))
+                                *(TEXT("\"") + TempPakCommandsSavePath + TEXT("\"")),
+                                *UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(Settings->EncryptSettings,UFlibHotPatcherEditorHelper::Conv2IniPlatform(CookForPlatform))
                             )
                         );
+			UE_LOG(LogHotPatcher,Log,TEXT("CookAndPak Command:%s"),*UnrealPakCommandletOptionsSinglePak);
 			ExecuteUnrealPak(*UnrealPakCommandletOptionsSinglePak);
 			if (FPaths::FileExists(TempPakSavePath))
 			{
 				FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
 				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, TempPakSavePath);
-			}	
+			}
 		}
 	}
 }
