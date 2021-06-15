@@ -824,18 +824,20 @@ FString UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(const 
 	{
 		Result += EncryptSettings.bEncrypt? TEXT("-encrypt "):TEXT("");
 		Result += EncryptSettings.bEncryptIndex? TEXT("-encryptindex "):TEXT("");
-		Result += EncryptSettings.bUseDefaultCryptoIni? TEXT("-encryptionini "):TEXT("");
-		Result += EncryptSettings.bSign? TEXT("-sign "):TEXT("");
-
+		
 		FString CryptoKey = UFlibPatchParserHelper::ReplaceMarkPath(EncryptSettings.CryptoKeys.FilePath);
 		if(FPaths::FileExists(CryptoKey))
 		{
 			Result += FString::Printf(TEXT("-crypto=\"%s\" "),*CryptoKey);
 		}
-		
-		Result += FString::Printf(TEXT("-projectdir=\"%s\" "),*FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()));
-		Result += FString::Printf(TEXT("-enginedir=\"%s\" "),*FPaths::ConvertRelativePathToFull(FPaths::EngineDir()));
-		Result += FString::Printf(TEXT("-platform=%s"),*PlatformName);
 	}
+	if(EncryptSettings.bUseDefaultCryptoIni)
+		Result += EncryptSettings.bUseDefaultCryptoIni? TEXT("-encryptionini "):TEXT("");
+	if(EncryptSettings.bSign)
+		Result += EncryptSettings.bSign? TEXT("-sign "):TEXT("");
+	
+	Result += FString::Printf(TEXT("-projectdir=\"%s\" "),*FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()));
+	Result += FString::Printf(TEXT("-enginedir=\"%s\" "),*FPaths::ConvertRelativePathToFull(FPaths::EngineDir()));
+	Result += FString::Printf(TEXT("-platform=%s"),*PlatformName);
 	return Result;
 }

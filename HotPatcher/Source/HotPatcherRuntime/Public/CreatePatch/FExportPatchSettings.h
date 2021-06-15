@@ -39,13 +39,13 @@ struct HOTPATCHERRUNTIME_API FPakEncryptSettings
 	UPROPERTY(EditAnywhere,meta=(EditCondition="bEncrypt"))
     bool bEncryptIndex = false;
 	// Use DefaultCrypto.ini
-	UPROPERTY(EditAnywhere,meta=(EditCondition="bEncrypt"))
+	UPROPERTY(EditAnywhere)
 	bool bUseDefaultCryptoIni = false;
 	// sign pak
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere,meta=(EditCondition="bUseDefaultCryptoIni"))
 	bool bSign = false;
 	// crypto.json (option)
-	UPROPERTY(EditAnywhere,meta=(EditCondition="bEncrypt && !bUseDefaultCryptoIni"))
+	UPROPERTY(EditAnywhere,meta=(EditCondition="!bUseDefaultCryptoIni"))
 	FFilePath CryptoKeys;
 };
 
