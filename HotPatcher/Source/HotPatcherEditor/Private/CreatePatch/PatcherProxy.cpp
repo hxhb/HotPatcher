@@ -626,7 +626,7 @@ namespace PatchWorker
 				
 			// // Update SlowTask Progress
 			{
-				FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Pak list of Chunk {1}."), FText::FromString(Chunk.ChunkName));
+				FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Pak list of Chunk {0}."), FText::FromString(Chunk.ChunkName));
 				Context.OnPaking.Broadcast(TEXT("GeneratedPak"),*Dialog.ToString());
 				Context.UnrealPakSlowTask->EnterProgressFrame(1.0, Dialog);
 			}
@@ -739,7 +739,7 @@ namespace PatchWorker
 				
 			// // Update SlowTask Progress
 			{
-				FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Io Store list of Chunk {1}."), FText::FromString(Chunk.ChunkName));
+				FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Io Store list of Chunk {0}."), FText::FromString(Chunk.ChunkName));
 				Context.OnPaking.Broadcast(TEXT("GeneratedIoStore"),*Dialog.ToString());
 				Context.UnrealPakSlowTask->EnterProgressFrame(1.0, Dialog);
 			}
