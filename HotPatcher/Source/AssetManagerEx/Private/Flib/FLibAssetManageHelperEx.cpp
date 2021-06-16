@@ -459,6 +459,39 @@ void UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(const FAss
 		}
 }
 
+FAssetDetail UFLibAssetManageHelperEx::GetAssetDetailByPackageName(const FString& InPackageName)
+{
+	FAssetDetail AssetDetail;
+	UAssetManager& AssetManager = UAssetManager::Get();
+	if (AssetManager.IsValid())
+	{
+		FString PackagePath;
+		if (UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InPackageName, PackagePath))
+		{
+			FAssetData OutAssetData;
+			if (AssetManager.GetAssetDataForPath(FSoftObjectPath{ PackagePath }, OutAssetData) && OutAssetData.IsValid())
+			{
+				AssetDetail.mPackagePath = OutAssetData.ObjectPath.ToString();
+				AssetDetail.mAssetType = OutAssetData.AssetClass.ToString();
+				UFLibAssetManageHelperEx::GetAssetPackageGUID(PackagePath, AssetDetail.mGuid);
+			}
+		}
+	}
+	return AssetDetail;
+}
+
+bool UFLibAssetManageHelperEx::HasAssetInDependenciesInfo(const FAssetDependenciesInfo& AssetDependencies,
+	const FString& InAssetPackageName)
+{
+	bool bHas = false;
+	FString BelongModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(InAssetPackageName);
+	if (AssetDependencies.AssetsDependenciesMap.Contains(BelongModuleName))
+	{
+		bHas = AssetDependencies.AssetsDependenciesMap.Find(BelongModuleName)->AssetDependencyDetails.Contains(InAssetPackageName);
+	}
+	return bHas;
+}
+
 TArray<FString> UFLibAssetManageHelperEx::GetAssetLongPackageNameByAssetDependenciesInfo(const FAssetDependenciesInfo& InAssetDependencies)
 {
 	TArray<FString> OutAssetLongPackageName;
@@ -482,9 +515,11 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 	const TArray<EAssetRegistryDependencyTypeEx>& InAssetDependencyTypes,
 	FAssetDependenciesInfo& OutDependencies,
 	TMap<FString, FAssetDependenciesInfo>& ScanedCaches,
-	bool bRecursively
+	bool bRecursively,
+	TSet<FString> IgnoreAssetsPackageNames
 )
 {
+	IgnoreAssetsPackageNames.Add(InTargetLongPackageName);
 	TArray<FName> local_Dependencies;
 	// TArray<EAssetRegistryDependencyType::Type> AssetTypes;
 	
@@ -502,107 +537,64 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 #else
 	bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(FName(*InTargetLongPackageName), local_Dependencies, TotalType);
 #endif
-	if (bGetDependenciesSuccess)
-	{
-		for (auto &DependItem : local_Dependencies)
-		{
-			FString LongDependentPackageName = DependItem.ToString();
-			// ignore /Script/WeatherSystem and self
-			if(LongDependentPackageName.StartsWith(TEXT("/Script/")) || LongDependentPackageName.Equals(InTargetLongPackageName))
-				continue;
-			
-			// add a new asset to module category
-			auto AddNewAssetItemLambda = [bRecursively,&InAssetRegistryModule, &OutDependencies,&InAssetDependencyTypes,&ScanedCaches](
-				FAssetDependenciesDetail& InModuleAssetDependDetail,
-				const FString& InAssetPackageName,
-				TFunction<bool(const FString&)> CheckEndlessRecursively
-				)
-			{
-				if (!InModuleAssetDependDetail.AssetDependencyDetails.Contains(InAssetPackageName))
-				{
-				 	// FAssetData* AssetPackageData = InAssetRegistryModule.Get().GetAssetPackageData(*InAssetPackageName);
-					UAssetManager& AssetManager = UAssetManager::Get();
-					if (AssetManager.IsValid())
-					{
-						FString PackagePath;
-						if (UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InAssetPackageName, PackagePath))
-						{
-							FAssetData OutAssetData;
-							if (AssetManager.GetAssetDataForPath(FSoftObjectPath{ PackagePath }, OutAssetData) && OutAssetData.IsValid())
-							{
-								FAssetDetail AssetDetail;
-								AssetDetail.mPackagePath = OutAssetData.ObjectPath.ToString();
-								AssetDetail.mAssetType = OutAssetData.AssetClass.ToString();
-								UFLibAssetManageHelperEx::GetAssetPackageGUID(PackagePath, AssetDetail.mGuid);
-								FString CurrentLongPackageName;
-								UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(AssetDetail.mPackagePath, CurrentLongPackageName);
-								InModuleAssetDependDetail.AssetDependencyDetails.Add(CurrentLongPackageName, AssetDetail);
-							}
-						}
-					}
-					
-					if (bRecursively)
-					{
-						if(!GScanCacheOptimize)
-						{
-							UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(InAssetRegistryModule, InAssetPackageName, InAssetDependencyTypes,OutDependencies, ScanedCaches,true);
-						}
-						else
-						{
-							FAssetDependenciesInfo CurrentDependencies;
-							// search cached
-							if(ScanedCaches.Find(InAssetPackageName))
-							{
-								// UE_LOG(LogAssetManagerEx, Display, TEXT("Search Asset %s dependencies is cached"), *InAssetPackageName);
-								CurrentDependencies = *ScanedCaches.Find(InAssetPackageName);
-							}
-							else
-							{
-								if(CheckEndlessRecursively(InAssetPackageName))
-								{
-									UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(InAssetRegistryModule, InAssetPackageName, InAssetDependencyTypes,CurrentDependencies, ScanedCaches,true);
-									// Add to ScanedCaches
-									ScanedCaches.Add(InAssetPackageName,CurrentDependencies);
-								}
-							}
-						}
-						
-					}
-				}
-			};
+	if (!bGetDependenciesSuccess)
+		return;
 
-			
-			// 检查资源在OutDependencies中是否存在，处理循环引用的情况
-			auto HasAssetsLambda = [](const FAssetDependenciesInfo& AssetDependencies,const FString& InAssetPackageName)->bool
+	TMap<FString,FAssetDetail> AssetDependenciesDetailMap;
+		
+	for (auto &DependItem : local_Dependencies)
+	{
+		FString LongDependentPackageName = DependItem.ToString();
+
+		// ignore /Script/WeatherSystem and self
+		if(LongDependentPackageName.StartsWith(TEXT("/Script/")) || LongDependentPackageName.Equals(InTargetLongPackageName))
+			continue;
+
+		FAssetDetail AssetDetail = UFLibAssetManageHelperEx::GetAssetDetailByPackageName(LongDependentPackageName);
+		AssetDependenciesDetailMap.Add(LongDependentPackageName,AssetDetail);
+	}
+
+	for(const auto& AssetDetail:AssetDependenciesDetailMap)
+	{
+		FString BelongModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(AssetDetail.Key);
+		FAssetDependenciesDetail* ModuleCategory;
+		if (OutDependencies.AssetsDependenciesMap.Contains(BelongModuleName))
+		{
+			// UE_LOG(LogAssetManagerEx, Log, TEXT("Belong Module is %s,Asset is %s"), *BelongModuleName, *LongDependentPackageName);
+			ModuleCategory = OutDependencies.AssetsDependenciesMap.Find(BelongModuleName);
+		}
+		else
+		{
+			// UE_LOG(LogAssetManagerEx, Log, TEXT("New Belong Module is %s,Asset is %s"), *BelongModuleName,*LongDependentPackageName);
+			FAssetDependenciesDetail& NewModuleCategory = OutDependencies.AssetsDependenciesMap.Add(BelongModuleName, FAssetDependenciesDetail{});
+			NewModuleCategory.ModuleCategory = BelongModuleName;
+			ModuleCategory = OutDependencies.AssetsDependenciesMap.Find(BelongModuleName);
+		}
+		
+		ModuleCategory->AssetDependencyDetails.Add(AssetDetail.Key, AssetDetail.Value);
+		
+		if (bRecursively && !IgnoreAssetsPackageNames.Contains(AssetDetail.Key))
+		{
+			if(!GScanCacheOptimize)
 			{
-				bool bHas = false;
-				FString BelongModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(InAssetPackageName);
-				if (AssetDependencies.AssetsDependenciesMap.Contains(BelongModuleName))
-				{
-					bHas = AssetDependencies.AssetsDependenciesMap.Find(BelongModuleName)->AssetDependencyDetails.Contains(InAssetPackageName);
-				}
-				return bHas;
-			};
-			
-			// 检查在递归层级中资源是否存在，消除无限递归
-			auto CheckEndlessRecursively = [&OutDependencies,&HasAssetsLambda](const FString& InAssetPath)
-			{
-				return !HasAssetsLambda(OutDependencies,InAssetPath);
-			};
-			
-			FString BelongModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(LongDependentPackageName);
-			if (OutDependencies.AssetsDependenciesMap.Contains(BelongModuleName))
-			{
-				// UE_LOG(LogAssetManagerEx, Log, TEXT("Belong Module is %s,Asset is %s"), *BelongModuleName, *LongDependentPackageName);
-				FAssetDependenciesDetail* ModuleCategory = OutDependencies.AssetsDependenciesMap.Find(BelongModuleName);
-				AddNewAssetItemLambda(*ModuleCategory, LongDependentPackageName,CheckEndlessRecursively);
+				UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(InAssetRegistryModule, AssetDetail.Key, InAssetDependencyTypes,OutDependencies, ScanedCaches,true,IgnoreAssetsPackageNames);
 			}
 			else
 			{
-				// UE_LOG(LogAssetManagerEx, Log, TEXT("New Belong Module is %s,Asset is %s"), *BelongModuleName,*LongDependentPackageName);
-				FAssetDependenciesDetail& NewModuleCategory = OutDependencies.AssetsDependenciesMap.Add(BelongModuleName, FAssetDependenciesDetail{});
-				NewModuleCategory.ModuleCategory = BelongModuleName;
-				AddNewAssetItemLambda(NewModuleCategory, LongDependentPackageName,CheckEndlessRecursively);
+				FAssetDependenciesInfo CurrentDependencies;
+				// search cached
+				if(!ScanedCaches.Find(AssetDetail.Key))
+				{
+					UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(InAssetRegistryModule, AssetDetail.Key, InAssetDependencyTypes,CurrentDependencies, ScanedCaches,true,IgnoreAssetsPackageNames);
+					// Add to ScanedCaches
+					ScanedCaches.Add(AssetDetail.Key,CurrentDependencies);
+				}
+				else
+				{
+					CurrentDependencies = *ScanedCaches.Find(AssetDetail.Key);
+				}
+				
+				OutDependencies = UFLibAssetManageHelperEx::CombineAssetDependencies(OutDependencies,CurrentDependencies);
 			}
 		}
 	}

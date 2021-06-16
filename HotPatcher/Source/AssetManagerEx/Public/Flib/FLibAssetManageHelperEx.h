@@ -156,7 +156,10 @@ public:
 
 	// 获取FAssetDependenciesInfo中所有的FAssetDetail
 	static void GetAssetDetailsByAssetDependenciesInfo(const FAssetDependenciesInfo& InAssetDependencies,TArray<FAssetDetail>& OutAssetDetails);
-
+	static FAssetDetail GetAssetDetailByPackageName(const FString& InPackageName);
+	// 检查资源在OutDependencies中是否存在，处理循环引用的情况
+	static bool HasAssetInDependenciesInfo(const FAssetDependenciesInfo& AssetDependencies,const FString& InAssetPackageName);
+	
 	static TArray<FString> GetAssetLongPackageNameByAssetDependenciesInfo(const FAssetDependenciesInfo& InAssetDependencies);
 
 	// recursive scan assets
@@ -166,7 +169,8 @@ public:
 		const TArray<EAssetRegistryDependencyTypeEx>& InAssetDependencyTypes,
 		FAssetDependenciesInfo& OutDependencies,
 		TMap<FString,FAssetDependenciesInfo>& ScanedCaches,
-		bool bRecursively=true
+		bool bRecursively=true,
+		TSet<FString> IgnoreAssetsPackageNames=TSet<FString>{}
 	);
 
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager",meta=(AutoCreateRefTerm="InExFilterPackagePaths",AdvancedDisplay="InExFilterPackagePaths"))
