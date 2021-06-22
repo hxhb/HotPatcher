@@ -181,7 +181,7 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPacther"),TEXT("ReleaseConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
-		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotRelease -config=\"%s\""),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo);
+		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotRelease -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs());
 		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
 		RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand);
 	}

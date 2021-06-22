@@ -181,18 +181,21 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchVerison(const FHotPatc
 
 FString ConvertToFullSandboxPath( const FString &FileName, bool bForWrite )
 {
+	FString Result;
 	FString ProjectContentAbsir = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
 	if(FileName.StartsWith(ProjectContentAbsir))
 	{
 		FString GameFileName = FileName;
 		GameFileName.RemoveFromStart(ProjectContentAbsir);
-		return FPaths::Combine(FApp::GetProjectName(),TEXT("Content"),GameFileName);
+		Result = FPaths::Combine(FApp::GetProjectName(),TEXT("Content"),GameFileName);
+		return Result;
 	}
 	if(FileName.StartsWith(FPaths::EngineContentDir()))
 	{
 		FString EngineFileName = FileName;
 		EngineFileName.RemoveFromStart(FPaths::EngineContentDir());
-		return FPaths::Combine(TEXT("Engine/Content"),EngineFileName);;
+		Result = FPaths::Combine(TEXT("Engine/Content"),EngineFileName);
+		return Result;
 	}
 	TArray<TSharedRef<IPlugin> > PluginsToRemap = IPluginManager::Get().GetEnabledPlugins();
 	// Ideally this would be in the Sandbox File but it can't access the project or plugin
@@ -209,34 +212,33 @@ FString ConvertToFullSandboxPath( const FString &FileName, bool bForWrite )
 			// UE_LOG(LogHotPatcherEditorHelper,Log,TEXT("Plugin Content:%s"),*PluginContentDir);
 			if (FileName.StartsWith(PluginContentDir))
 			{
-				FString SearchFor;
-				SearchFor /= Plugin->GetName() / TEXT("Content");
-				int32 FoundAt = FileName.Find(SearchFor, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
-				check(FoundAt != -1);
-				// Strip off everything but <PluginName/Content/<remaing path to file>
-				FString SnippedOffPath = FileName.RightChop(FoundAt);
-
 				FString LoadingFrom;
+				FString BasePath;
 				switch(Plugin->GetLoadedFrom())
 				{
 				case EPluginLoadedFrom::Engine:
 					{
-						LoadingFrom = TEXT("Engine/Plugins");
+						BasePath = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());//TEXT("Engine/Plugins");
+						LoadingFrom = TEXT("Engine");
 						break;
 					}
 				case EPluginLoadedFrom::Project:
 					{
-						LoadingFrom = FPaths::Combine(FApp::GetProjectName(),TEXT("Plugins"));
+						BasePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());//FPaths::Combine(FApp::GetProjectName(),TEXT("Plugins"));
+						LoadingFrom = FApp::GetProjectName();
 						break;
 					}
 				}
-					
-				return FPaths::Combine(LoadingFrom,SnippedOffPath);
+				FString AssetAbsPath = FPaths::ConvertRelativePathToFull(FileName);
+				if(AssetAbsPath.StartsWith(BasePath))
+				{
+					Result = LoadingFrom / AssetAbsPath.RightChop(BasePath.Len());
+				}
 			}
 		}
 	}
 
-	return TEXT("");
+	return Result;
 }
 
 FString UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(const FString& BaseDir, const FString PacakgeName, const FString& Platform)

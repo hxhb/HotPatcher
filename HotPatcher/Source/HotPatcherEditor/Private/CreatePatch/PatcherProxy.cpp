@@ -207,14 +207,15 @@ namespace PatchWorker
 	// setup 4
 	bool PatchRequireChekerWorker(FHotPatcherPatchContext& Context)
 	{
+		bool result = true;
 		TimeRecorder CheckRequireTR(TEXT("Check Patch Require"));
 		FString ReceiveMsg;
 		if (!Context.GetSettingObject()->IsCookPatchAssets() && !UFlibHotPatcherEditorHelper::CheckPatchRequire(Context.VersionDiff,Context.GetSettingObject()->GetPakTargetPlatformNames(), ReceiveMsg))
 		{
 			Context.OnShowMsg.Broadcast(ReceiveMsg);
-			return false;
+			result = false;
 		}
-		return true;
+		return result;
 	};
 
 	// setup 5

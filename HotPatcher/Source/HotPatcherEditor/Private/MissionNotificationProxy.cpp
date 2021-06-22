@@ -49,7 +49,7 @@ void UMissionNotificationProxy::ReceiveOutputMsg(const FString& InMsg)
 	}
 	else
 	{
-		UE_LOG(LogMissionNotificationProxy, Log, TEXT("%s"), *InMsg);
+		UE_LOG(LogMissionNotificationProxy, Display, TEXT("%s"), *InMsg);
 	}
 }
 

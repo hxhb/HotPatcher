@@ -30,6 +30,17 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase
     FORCEINLINE virtual bool IsStandaloneMode()const {return bStandaloneMode;}
     FORCEINLINE virtual bool IsBackupMetadata()const {return bBackupMetadata;}
     FORCEINLINE virtual bool IsSaveConfig()const {return bStorageConfig;}
+    FORCEINLINE virtual TArray<FString> GetAdditionalCommandletArgs()const{return AdditionalCommandletArgs;}
+    FORCEINLINE virtual FString GetCombinedAdditionalCommandletArgs()const
+    {
+        FString Result;
+        for(const auto& Option:GetAdditionalCommandletArgs())
+        {
+            Result+=FString::Printf(TEXT("%s "),*Option);
+        }
+        return Result;
+    }
+    
     virtual ~FHotPatcherSettingBase(){}
 public:
     // backup current project Cooked/PLATFORM/PROJECTNAME/Metadata directory
@@ -42,6 +53,8 @@ public:
     // create a UE4Editor-cmd.exe process execute patch mission.
     UPROPERTY(EditAnywhere, Category = "Advanced")
     bool bStandaloneMode = true;
+    UPROPERTY(EditAnywhere, Category = "Advanced")
+    TArray<FString> AdditionalCommandletArgs;
     UPROPERTY(EditAnywhere, Category = "Advanced")
     bool bScanCacheOptimize=true;
 protected:
