@@ -49,21 +49,21 @@ public:
 	static bool CookAssets(
 			const TArray<FSoftObjectPath>& Assets,
 			const TArray<ETargetPlatform>& Platforms,
-			const FString& SavePath = TEXT(""),
+			TFunction<void(const FString&)> PackageSavedCallback = [](const FString&){},
 			class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext = TMap<ETargetPlatform,FSavePackageContext*>{}
 		);
 	static bool CookPackages(
 		const TArray<FAssetData>& AssetDatas,
-		TArray<UPackage*>& Packages,
+		const TArray<UPackage*>& Packages,
 		const TArray<FString>& Platforms,
-		const FString& SavePath,
+		TFunction<void(const FString&)> PackageSavedCallback = [](const FString&){},
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{}
 	);
 	static bool CookPackage(
 		const FAssetData& AssetData,
 		UPackage* Package,
 		const TArray<FString>& Platforms,
-		const FString& SavePath,
+		TFunction<void(const FString&)> PackageSavedCallback = [](const FString&){},
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{}
 	);
 

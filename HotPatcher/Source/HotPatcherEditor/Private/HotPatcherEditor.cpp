@@ -5,6 +5,7 @@
 #include "HotPatcherCommands.h"
 #include "SHotPatcher.h"
 #include "HotPatcherSettings.h"
+#include "CookManager.h"
 
 // ENGINE HEADER
 #include "ContentBrowserModule.h"
@@ -69,6 +70,7 @@ void MakeProjectSettingsForHotPatcher()
 void FHotPatcherEditorModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+	FCookManager::Get().Init();
 	
 	FHotPatcherStyle::Initialize();
 	FHotPatcherStyle::ReloadTextures();
@@ -112,7 +114,7 @@ void FHotPatcherEditorModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
-	
+	FCookManager::Get().Shutdown();
 	if(DockTab.IsValid())
 	{
 		DockTab->RequestCloseTab();
@@ -353,75 +355,102 @@ TArray<ETargetPlatform> FHotPatcherEditorModule::GetAllCookPlatforms() const
 void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 {
 	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
-
-	FString CookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
-	FString CookForPlatform = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
-	TArray<FString> CookForPlatforms{CookForPlatform};
+	
+	FCookManager::FCookMission CookMission;
+	
+	auto CookNotifyLambda = [](ETargetPlatform Platform,const FString& PackageName,const FString& CookedSavePath)
+	{
+		bool bSuccessed = true;
+		auto Msg = FText::Format(
+			LOCTEXT("CookAssetsNotify", "Cook Platform {1} for {0} {2}!"),
+			UKismetTextLibrary::Conv_StringToText(PackageName),
+			UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
+			bSuccessed ? UKismetTextLibrary::Conv_StringToText(TEXT("Successfuly")):UKismetTextLibrary::Conv_StringToText(TEXT("Faild"))
+			);
+		SNotificationItem::ECompletionState CookStatus = bSuccessed ? SNotificationItem::CS_Success:SNotificationItem::CS_Fail;
+		UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,CookedSavePath,CookStatus);
+	};
 	
 	for(int32 index=0;index < AssetsData.Num();++index)
 	{
-		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookedDir,AssetsData[index].PackageName.ToString(), CookForPlatform);
+		FCookManager::FCookPackageInfo CurrentPackage;
+		CurrentPackage.AssetData = AssetsData[index];
+		CurrentPackage.PackageName = AssetsData[index].PackageName.ToString();
+		CurrentPackage.CookPlatforms = TArray<ETargetPlatform>{Platform};
+		CurrentPackage.Callback = CookNotifyLambda;
+		CookMission.MissionPackages.Add(CurrentPackage);
 		UE_LOG(LogHotPatcher,Log,TEXT("Cook Package %s Platform %s"),*AssetsData[index].PackagePath.ToString(),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
-		
-    	bool bCookStatus = UFlibHotPatcherEditorHelper::CookPackage(AssetsData[index],AssetsData[index].GetPackage(),CookForPlatforms,CookedDir);
-		auto Msg = FText::Format(
-            LOCTEXT("CookAssetsNotify", "Cook Platform {1} for {0} {2}!"),
-            UKismetTextLibrary::Conv_StringToText(AssetsData[index].PackageName.ToString()),
-            UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
-            bCookStatus ? UKismetTextLibrary::Conv_StringToText(TEXT("Successfuly")):UKismetTextLibrary::Conv_StringToText(TEXT("Faild"))
-            );
-		SNotificationItem::ECompletionState CookStatus = bCookStatus ? SNotificationItem::CS_Success:SNotificationItem::CS_Fail;
-		UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,CookedSavePath,CookStatus);
 	}
-	
+	CookMission.Callback = [](bool){};
+	FCookManager::Get().AddCookMission(CookMission);
+
 }
 
 void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
 {
 	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
-	TArray<UPackage*> AssetsPackage;
-	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
-	OnCookPlatform(Platform);
-	FString CookForPlatform = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
-	FString AbsProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-	TArray<FString> FinalCookCommands;
-	for(const auto& AssetData:AssetsData)
+
+	FCookManager::FCookMission CookMission;
+	
+	for(int32 index=0;index < AssetsData.Num();++index)
 	{
-		TArray<FString> CookCommands;
-		UFLibAssetManageHelperEx::MakePakCommandFromLongPackageName(
-			AbsProjectPath,
-			CookForPlatform,
-			AssetData.PackageName.ToString(),
-			// Settings->CookParams,
-			CookCommands//,
-			//[](const TArray<FString>&, const FString&, const FString&){}
-			);
-		FinalCookCommands.Append(CookCommands);
+		FCookManager::FCookPackageInfo CurrentPackage;
+		CurrentPackage.AssetData = AssetsData[index];
+		CurrentPackage.PackageName = AssetsData[index].PackageName.ToString();
+		CurrentPackage.CookPlatforms = TArray<ETargetPlatform>{Platform};
+		CookMission.MissionPackages.Add(CurrentPackage);
+		UE_LOG(LogHotPatcher,Log,TEXT("Cook Package %s Platform %s"),*AssetsData[index].PackagePath.ToString(),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
 	}
-	if(!!FinalCookCommands.Num())
+	CookMission.Callback = [AssetsData,Platform](bool bSuccessed)
 	{
-		FString TempPakCommandsSavePath =  FPaths::Combine(AbsProjectPath,Settings->TempPakDir,FDateTime::Now().ToString()+TEXT("_")+CookForPlatform+TEXT("_01_P.txt"));
-		FString TempPakSavePath =  FPaths::Combine(AbsProjectPath,Settings->TempPakDir,FDateTime::Now().ToString()+TEXT("_")+CookForPlatform+TEXT("_01_P.pak"));
-		FFileHelper::SaveStringArrayToFile(FinalCookCommands,*TempPakCommandsSavePath);
-		if(FPaths::FileExists(TempPakCommandsSavePath))
+		if(!bSuccessed)
 		{
-			FString UnrealPakCommandletOptionsSinglePak(
-                            FString::Printf(
-                                TEXT("%s -create=%s %s"),
-                                *(TEXT("\"") + TempPakSavePath + TEXT("\"")),
-                                *(TEXT("\"") + TempPakCommandsSavePath + TEXT("\"")),
-                                *UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(Settings->EncryptSettings,UFlibHotPatcherEditorHelper::Conv2IniPlatform(CookForPlatform))
-                            )
-                        );
-			UE_LOG(LogHotPatcher,Log,TEXT("CookAndPak Command:%s"),*UnrealPakCommandletOptionsSinglePak);
-			ExecuteUnrealPak(*UnrealPakCommandletOptionsSinglePak);
-			if (FPaths::FileExists(TempPakSavePath))
+			UE_LOG(LogHotPatcher,Error,TEXT("Cook And Pak Mission is Faild!"));
+			return;
+		}
+		UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+		FString CookForPlatform = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+		FString AbsProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+		TArray<FString> FinalCookCommands;
+		for(const auto& AssetData:AssetsData)
+		{
+			TArray<FString> CookCommands;
+			UFLibAssetManageHelperEx::MakePakCommandFromLongPackageName(
+				AbsProjectPath,
+				CookForPlatform,
+				AssetData.PackageName.ToString(),
+				// Settings->CookParams,
+				CookCommands//,
+				//[](const TArray<FString>&, const FString&, const FString&){}
+				);
+			FinalCookCommands.Append(CookCommands);
+		}
+		if(!!FinalCookCommands.Num())
+		{
+			FString TempPakCommandsSavePath =  FPaths::Combine(AbsProjectPath,Settings->TempPakDir,FDateTime::Now().ToString()+TEXT("_")+CookForPlatform+TEXT("_01_P.txt"));
+			FString TempPakSavePath =  FPaths::Combine(AbsProjectPath,Settings->TempPakDir,FDateTime::Now().ToString()+TEXT("_")+CookForPlatform+TEXT("_01_P.pak"));
+			FFileHelper::SaveStringArrayToFile(FinalCookCommands,*TempPakCommandsSavePath);
+			if(FPaths::FileExists(TempPakCommandsSavePath))
 			{
-				FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
-				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, TempPakSavePath);
+				FString UnrealPakCommandletOptionsSinglePak(
+	                            FString::Printf(
+	                                TEXT("%s -create=%s %s"),
+	                                *(TEXT("\"") + TempPakSavePath + TEXT("\"")),
+	                                *(TEXT("\"") + TempPakCommandsSavePath + TEXT("\"")),
+	                                *UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(Settings->EncryptSettings,UFlibHotPatcherEditorHelper::Conv2IniPlatform(CookForPlatform))
+	                            )
+	                        );
+				UE_LOG(LogHotPatcher,Log,TEXT("CookAndPak Command:%s"),*UnrealPakCommandletOptionsSinglePak);
+				ExecuteUnrealPak(*UnrealPakCommandletOptionsSinglePak);
+				if (FPaths::FileExists(TempPakSavePath))
+				{
+					FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
+					UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, TempPakSavePath);
+				}
 			}
 		}
-	}
+	};
+	FCookManager::Get().AddCookMission(CookMission);
 }
 
 void FHotPatcherEditorModule::OnObjectSaved(UObject* ObjectSaved)

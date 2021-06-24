@@ -9,6 +9,7 @@
 
 #include "CoreMinimal.h"
 #include "ETargetPlatform.h"
+#include "FlibHotPatcherEditorHelper.h"
 #include "Modules/ModuleManager.h"
 #include "CreatePatch/FExportPatchSettings.h"
 #include "CreatePatch/FExportReleaseSettings.h"
@@ -53,6 +54,7 @@ public:
 	void OnCookAndPakPlatform(ETargetPlatform Platform);
 
 	void OnObjectSaved( UObject* ObjectSaved );
+
 private:
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& InSpawnTabArgs);
 	void OnTabClosed(TSharedRef<SDockTab> InTab);
