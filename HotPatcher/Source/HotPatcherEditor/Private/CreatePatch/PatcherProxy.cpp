@@ -964,6 +964,8 @@ namespace PatchWorker
 	// setup 12
 	bool SaveNewReleaseWorker(FHotPatcherPatchContext& Context)
 	{
+		if(!Context.GetSettingObject()->IsStorageNewRelease())
+			return true;
 		// save Patch Tracked asset info to file
 		if(Context.GetPakFileNum())
 		{
@@ -1006,6 +1008,8 @@ namespace PatchWorker
 	// setup 13 serialize all pak file info
 	bool SavePakFileInfoWorker(FHotPatcherPatchContext& Context)
 	{
+		if(!Context.GetSettingObject()->IsStoragePakFileInfo())
+			return true;
 		if(Context.GetSettingObject())
 		{
 			TimeRecorder TR(FString::Printf(TEXT("Save All Pak file info")));

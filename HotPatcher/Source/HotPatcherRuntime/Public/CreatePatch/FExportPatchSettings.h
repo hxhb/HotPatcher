@@ -144,6 +144,9 @@ public:
 	FORCEINLINE bool IsCreateDefaultChunk()const { return bCreateDefaultChunk; }
 	FORCEINLINE bool IsEnableMultiThread()const{ return bEnableMultiThread; }
 
+	FORCEINLINE bool IsStorageNewRelease()const{return bStorageNewRelease;}
+	FORCEINLINE bool IsStoragePakFileInfo()const{return bStoragePakFileInfo;}
+	
 	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
 	bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
 public:
@@ -252,6 +255,11 @@ public:
 	// Can use value: {VERSION} {BASEVERSION} {CHUNKNAME} {PLATFORM} 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options",meta=(EditCondition = "bCustomPakNameRegular"))
 		FString PakNameRegular = TEXT("{VERSION}_{CHUNKNAME}_{PLATFORM}_001_P");
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+		bool bStorageNewRelease = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+		bool bStoragePakFileInfo = true;
 	// dont display deleted asset info in patcher
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bIgnoreDeleatedAssetsInfo = false;

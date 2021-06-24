@@ -7,12 +7,15 @@
 	#include "ToolMenu.h"
 #endif
 
-#include "CoreMinimal.h"
+#include "HotPatcherSettings.h"
 #include "ETargetPlatform.h"
 #include "FlibHotPatcherEditorHelper.h"
+#include "HotPatcherSettings.h"
 #include "Modules/ModuleManager.h"
 #include "CreatePatch/FExportPatchSettings.h"
 #include "CreatePatch/FExportReleaseSettings.h"
+// engine header
+#include "CoreMinimal.h"
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION>=26
 	#define InvokeTab TryInvokeTab
@@ -46,13 +49,14 @@ public:
 	void OnAddToPatchSettings(const FToolMenuContext& MenuContent);
 	void MakeCookActionsSubMenu(UToolMenu* Menu);
 	void MakeCookAndPakActionsSubMenu(UToolMenu* Menu);
+	void MakePakExternalActionsSubMenu(UToolMenu* Menu);
 	void AddFolderContentMenu();
 	void OnFolderAddToPatchSettings(const FToolMenuContext& MenuContent);
 #endif
 	TArray<ETargetPlatform> GetAllCookPlatforms()const;
 	void OnCookPlatform(ETargetPlatform Platform);
 	void OnCookAndPakPlatform(ETargetPlatform Platform);
-
+	void OnPakExternal(FPakExternalInfo Config);
 	void OnObjectSaved( UObject* ObjectSaved );
 
 private:

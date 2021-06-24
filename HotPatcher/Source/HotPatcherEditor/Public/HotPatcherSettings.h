@@ -1,12 +1,25 @@
 #pragma once
 #include "ETargetPlatform.h"
-#include "HotPatcherEditor.h"
 #include "CreatePatch/FExportPatchSettings.h"
 
 #include "CoreMinimal.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "HotPatcherSettings.generated.h"
 #define LOCTEXT_NAMESPACE "UHotPatcherSettings"
+
+USTRUCT()
+struct FPakExternalInfo
+{
+    GENERATED_BODY()
+    FPakExternalInfo()=default;
+    FPakExternalInfo(const FPakExternalInfo&)=default;
+    UPROPERTY(EditAnywhere)
+    FString PakName;
+    UPROPERTY(EditAnywhere)
+    TArray<ETargetPlatform> TargetPlatforms;
+    UPROPERTY(EditAnywhere)
+    FPlatformExternAssets AddExternAssetsToPlatform;
+};
 
 UCLASS(config = Game, defaultconfig)
 class HOTPATCHEREDITOR_API UHotPatcherSettings:public UObject
@@ -40,7 +53,8 @@ public:
     
     UPROPERTY(EditAnywhere, config, Category = "Editor|Encrypt")
     FPakEncryptSettings EncryptSettings;
-    
+    UPROPERTY(EditAnywhere, config, Category = "Editor")
+    TArray<FPakExternalInfo> PakExternalConfigs;
 };
 
 

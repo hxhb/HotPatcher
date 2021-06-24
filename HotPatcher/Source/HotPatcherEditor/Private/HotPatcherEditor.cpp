@@ -21,6 +21,7 @@
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "PakFileUtilities.h"
+#include "CreatePatch/PatcherProxy.h"
 
 #if ENGINE_MAJOR_VERSION < 5
 #include "Widgets/Docking/SDockableTab.h"
@@ -231,6 +232,21 @@ void FHotPatcherEditorModule::AddAssetContentMenu()
 	
            InSection.AddMenuEntry("CookUtilities_AddToPatchSettgins", Label, ToolTip, Icon, UIAction);
        }));
+	
+	UToolMenu* RootMenu = UToolMenus::Get()->ExtendMenu("ContentBrowser.AddNewContextMenu");
+	FToolMenuSection& RootSection = RootMenu->AddSection("HotPactherUtilities", LOCTEXT("HotPactherUtilities", "HotPactherUtilities"));;
+	RootSection.AddSubMenu(
+		"PakExternalFilesActionsSubMenu",
+		LOCTEXT("PakExternalFilesActionsSubMenuLabel", "Pak External Actions"),
+		LOCTEXT("PakExternalFilesActionsSubMenuToolTip", "Pak External Actions"),
+		FNewToolMenuDelegate::CreateRaw(this, &FHotPatcherEditorModule::MakePakExternalActionsSubMenu),
+		FUIAction(
+			FExecuteAction()
+			),
+		EUserInterfaceActionType::Button,
+		false, 
+		FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.SaveAllCurrentFolder")
+		);
 }
 
 void FHotPatcherEditorModule::OnAddToPatchSettings(const FToolMenuContext& MenuContent)
@@ -257,6 +273,8 @@ void FHotPatcherEditorModule::MakeCookActionsSubMenu(UToolMenu* Menu)
 {
 	FToolMenuSection& Section = Menu->AddSection("CookActionsSection");
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	Settings->ReloadConfig();
+	
 	for (auto Platform : GetAllCookPlatforms())
 	{
 		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
@@ -277,6 +295,7 @@ void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
 {
 	FToolMenuSection& Section = Menu->AddSection("CookAndPakActionsSection");
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	Settings->ReloadConfig();
 	for (auto Platform : GetAllCookPlatforms())
 	{
 		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
@@ -290,6 +309,33 @@ void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
                 FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookAndPakPlatform, Platform)
             )
         );
+	}
+}
+
+
+void FHotPatcherEditorModule::MakePakExternalActionsSubMenu(UToolMenu* Menu)
+{
+	FToolMenuSection& Section = Menu->AddSection("PakExternalActionsSection");
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	Settings->ReloadConfig();
+	for (FPakExternalInfo PakExternalConfig : Settings->PakExternalConfigs)
+	{
+		FString AppendPlatformName;
+		for(const auto& Platform:PakExternalConfig.TargetPlatforms)
+		{
+			AppendPlatformName += FString::Printf(TEXT("%s/"),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+		}
+		AppendPlatformName.RemoveFromEnd(TEXT("/"));
+		
+		Section.AddMenuEntry(
+			FName(PakExternalConfig.PakName),
+			FText::Format(LOCTEXT("PakExternal", "{0} ({1})"), UKismetTextLibrary::Conv_StringToText(PakExternalConfig.PakName),UKismetTextLibrary::Conv_StringToText(AppendPlatformName)),
+			FText(),
+			FSlateIcon(),
+			FUIAction(
+				FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnPakExternal,PakExternalConfig)
+			)
+		);
 	}
 }
 
@@ -354,6 +400,8 @@ TArray<ETargetPlatform> FHotPatcherEditorModule::GetAllCookPlatforms() const
 
 void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 {
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	Settings->ReloadConfig();
 	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
 	
 	FCookManager::FCookMission CookMission;
@@ -386,8 +434,34 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 
 }
 
+void FHotPatcherEditorModule::OnPakExternal(FPakExternalInfo PakExternConfig)
+{
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	Settings->ReloadConfig();
+	
+	FExportPatchSettings TempSettings;
+	TempSettings.bByBaseVersion=false;
+	TempSettings.VersionId = PakExternConfig.PakName;
+	TempSettings.AddExternAssetsToPlatform.Add(PakExternConfig.AddExternAssetsToPlatform);
+	TempSettings.PakTargetPlatforms = PakExternConfig.TargetPlatforms;
+	TempSettings.bStorageAssetDependencies = false;
+	TempSettings.bStorageDiffAnalysisResults=false;
+	TempSettings.bStorageDeletedAssetsToNewReleaseJson = false;
+	TempSettings.bStorageConfig = false;
+	TempSettings.bStorageNewRelease = false;
+	TempSettings.bStoragePakFileInfo = false;
+	TempSettings.SavePath.Path = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),Settings->TempPakDir));
+	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
+	PatcherProxy->SetProxySettings(&TempSettings);
+
+	bool bExportStatus = PatcherProxy->DoExport();
+}
+
 void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
 {
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	Settings->ReloadConfig();
+	
 	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
 
 	FCookManager::FCookMission CookMission;
