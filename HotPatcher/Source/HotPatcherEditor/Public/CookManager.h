@@ -1,9 +1,10 @@
+#pragma once
 
 #include "CoreMinimal.h"
 #include "AssetData.h"
 #include "ETargetPlatform.h"
 
-struct FCookManager
+struct HOTPATCHEREDITOR_API FCookManager
 {
 	FCookManager()=default;
 	virtual ~FCookManager()=default;
