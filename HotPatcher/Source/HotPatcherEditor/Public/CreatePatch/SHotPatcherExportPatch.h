@@ -54,6 +54,7 @@ protected:
 	bool CanPreviewPatch()const;
 	FReply DoPreviewPatch();
 	
+	FReply DoAddToPreset()const;
 	FReply DoDiff()const;
 	bool CanDiff()const;
 	FReply DoClearDiff()const;

@@ -36,7 +36,6 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 	GPatchSettings = ExportPatchSetting.Get();
 	CreateExportFilterListView();
 	mCreatePatchModel = InCreatePatchModel;
-	InitMissionNotificationProxy();
 
 	ChildSlot
 		[
@@ -58,6 +57,15 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 			.Padding(4, 4, 10, 4)
 			[
 				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Right)
+				.AutoWidth()
+				.Padding(0, 0, 4, 0)
+				[
+					SNew(SButton)
+					.Text(LOCTEXT("AddToPreset", "AddToPreset"))
+					.OnClicked(this, &SHotPatcherExportPatch::DoAddToPreset)
+				]
 				+ SHorizontalBox::Slot()
 				.HAlign(HAlign_Right)
 				.AutoWidth()
@@ -491,11 +499,11 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	{
 		FString CurrentConfig;
 		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
-		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPacther"),TEXT("PatchConfig.json")));
+		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("PatchConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs());
 		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
-		RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand);
+		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
 	}
 	return FReply::Handled();
 }
@@ -642,6 +650,15 @@ FReply SHotPatcherExportPatch::DoPreviewPatch()
 		return FReply::Handled();
 	}
 
+	return FReply::Handled();
+}
+
+FReply SHotPatcherExportPatch::DoAddToPreset() const
+{
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	Settings->PresetConfigs.Add(*const_cast<SHotPatcherExportPatch*>(this)->GetConfigSettings());
+	Settings->ReloadConfig();
+	Settings->SaveConfig();
 	return FReply::Handled();
 }
 

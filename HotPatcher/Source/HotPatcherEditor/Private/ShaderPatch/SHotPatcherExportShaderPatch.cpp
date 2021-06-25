@@ -1,6 +1,7 @@
 #include "ShaderPatch/SHotPatcherExportShaderPatch.h"
 #include "FlibPatchParserHelper.h"
 #include "FlibHotPatcherEditorHelper.h"
+#include "HotPatcherEditor.h"
 #include "ShaderPatch/FExportShaderPatchSettings.h"
 #include "ShaderPatch/FlibShaderPatchHelper.h"
 #include "RHI.h"
@@ -14,7 +15,6 @@ void SHotPatcherExportShaderPatch::Construct(const FArguments& InArgs,
 {
 	ExportShaderPatchSettings = MakeShareable(new FExportShaderPatchSettings);
 	CreateExportFilterListView();
-	InitMissionNotificationProxy();
 	
 	mCreatePatchModel = InCreateModel;
 	
@@ -111,11 +111,11 @@ void SHotPatcherExportShaderPatch::DoGenerate()
 	{
 		FString CurrentConfig;
 		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
-		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPacther"),TEXT("ShaderPatchConfig.json")));
+		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("ShaderPatchConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotShaderPatch -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs());
 		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
-		RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand);
+		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
 	}
 }
 

@@ -17,6 +17,10 @@
 // engine header
 #include "CoreMinimal.h"
 
+#include "ContentBrowserDelegates.h"
+#include "MissionNotificationProxy.h"
+#include "ThreadUtils/FProcWorkerThread.hpp"
+
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION>=26
 	#define InvokeTab TryInvokeTab
 #endif
@@ -28,10 +32,18 @@ class FMenuBuilder;
 extern FExportPatchSettings* GPatchSettings;
 extern FExportReleaseSettings* GReleaseSettings;
 
+
+struct FContentBrowserSelectedInfo
+{
+	TArray<FAssetData> SelectedAssets;
+	TArray<FString> SelectedPaths;
+	TArray<FName> OutAllAssetPackages;
+};
+
 class FHotPatcherEditorModule : public IModuleInterface
 {
 public:
-
+	static FHotPatcherEditorModule& Get();
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
@@ -40,23 +52,28 @@ public:
 	void PluginButtonClicked();
 	
 public:
-
 	void AddToolbarExtension(FToolBarBuilder& Builder);
 	void AddMenuExtension(FMenuBuilder& Builder);
+	
+	void RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName);
 
+	void CreateRootMenu();
+	void CreateAssetContextMenu(FToolMenuSection& InSection);
+	void ExtendContentBrowserAssetSelectionMenu();
+	void ExtendContentBrowserPathSelectionMenu();
+	
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >23
-	void AddAssetContentMenu();
-	void OnAddToPatchSettings(const FToolMenuContext& MenuContent);
 	void MakeCookActionsSubMenu(UToolMenu* Menu);
 	void MakeCookAndPakActionsSubMenu(UToolMenu* Menu);
 	void MakePakExternalActionsSubMenu(UToolMenu* Menu);
-	void AddFolderContentMenu();
-	void OnFolderAddToPatchSettings(const FToolMenuContext& MenuContent);
+	void MakeHotPatcherPresetsActionsSubMenu(UToolMenu* Menu);
+	void OnAddToPatchSettings(const FToolMenuContext& MenuContent);
 #endif
 	TArray<ETargetPlatform> GetAllCookPlatforms()const;
 	void OnCookPlatform(ETargetPlatform Platform);
 	void OnCookAndPakPlatform(ETargetPlatform Platform);
 	void OnPakExternal(FPakExternalInfo Config);
+	void OnPakPreset(FExportPatchSettings Config);
 	void OnObjectSaved( UObject* ObjectSaved );
 
 private:
@@ -67,4 +84,7 @@ private:
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
 	TSharedPtr<SDockTab> DockTab;
+
+	mutable TSharedPtr<FProcWorkerThread> mProcWorkingThread;
+	UMissionNotificationProxy* MissionNotifyProay;
 };

@@ -25,7 +25,10 @@ struct ASSETMANAGEREX_API FAssetDetail
 
 		return bSamePackageName && bSameAssetType && bSameGUID;
 	}
-
+	FORCEINLINE bool IsValid()const
+	{
+		return !mPackagePath.IsEmpty() && !mAssetType.IsEmpty() && !mGuid.IsEmpty();
+	}
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		FString mPackagePath;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

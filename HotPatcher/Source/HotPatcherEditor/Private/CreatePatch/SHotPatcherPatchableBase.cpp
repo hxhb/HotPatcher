@@ -27,7 +27,7 @@
 void SHotPatcherPatchableBase::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCreatePatchModel> InCreatePatchModel)
 {
 	mCreatePatchModel = InCreatePatchModel;
-	InitMissionNotificationProxy();
+	// InitMissionNotificationProxy();
 }
 
 void SHotPatcherPatchableBase::ImportProjectConfig()
@@ -109,46 +109,6 @@ void SHotPatcherPatchableBase::ImportProjectConfig()
 		GetConfigSettings()->GetAddExternAssetsToPlatform().Empty();
 		GetConfigSettings()->GetAddExternAssetsToPlatform().Add(AddToAllPlatform);
 	}
-}
-
-void SHotPatcherPatchableBase::RunProcMission(const FString& Bin, const FString& Command)
-{
-	if (mProcWorkingThread.IsValid() && mProcWorkingThread->GetThreadStatus()==EThreadStatus::Busy)
-	{
-		mProcWorkingThread->Cancel();
-	}
-	else
-	{
-		mProcWorkingThread = MakeShareable(new FProcWorkerThread(*FString::Printf(TEXT("%sThread"),*GetMissionName()), Bin, Command));
-		mProcWorkingThread->ProcOutputMsgDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::ReceiveOutputMsg);
-		mProcWorkingThread->ProcBeginDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnRuningMissionNotification);
-		mProcWorkingThread->ProcSuccessedDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnMissionSuccessedNotification);
-		mProcWorkingThread->ProcFaildDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnMissionFaildNotification);
-		MissionNotifyProay->MissionCanceled.AddRaw(this,&SHotPatcherPatchableBase::CancelProcMission);
-		mProcWorkingThread->Execute();
-	}
-}
-
-void SHotPatcherPatchableBase::CancelProcMission()
-{
-	if (mProcWorkingThread.IsValid() && mProcWorkingThread->GetThreadStatus() == EThreadStatus::Busy)
-	{
-		mProcWorkingThread->Cancel();
-	}
-}
-
-void SHotPatcherPatchableBase::InitMissionNotificationProxy()
-{
-	MissionNotifyProay = NewObject<UMissionNotificationProxy>();
-	MissionNotifyProay->AddToRoot();
-	MissionNotifyProay->SetMissionName(*FString::Printf(TEXT("%s"),*GetMissionName()));
-	
-	MissionNotifyProay->SetMissionNotifyText(
-        FText::FromString(FString::Printf(TEXT("%s in progress"),*GetMissionName())),
-        LOCTEXT("RunningCookNotificationCancelButton", "Cancel"),
-        FText::FromString(FString::Printf(TEXT("%s Mission Finished!"),*GetMissionName())),
-        FText::FromString(FString::Printf(TEXT("%s Failed!"),*GetMissionName()))
-    );
 }
 
 FText SHotPatcherPatchableBase::GetGenerateTooltipText() const

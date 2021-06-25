@@ -108,6 +108,9 @@ bool UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(const FString& I
 {
 	OutPackagePath.Empty();
 	bool runState = false;
+	if(InLongPackageName.IsEmpty())
+		return runState;
+	
 	if (FPackageName::DoesPackageExist(InLongPackageName))
 	{
 		FString AssetName;
@@ -551,11 +554,16 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 			continue;
 
 		FAssetDetail AssetDetail = UFLibAssetManageHelperEx::GetAssetDetailByPackageName(LongDependentPackageName);
-		AssetDependenciesDetailMap.Add(LongDependentPackageName,AssetDetail);
+		if(AssetDetail.IsValid())
+		{
+			AssetDependenciesDetailMap.Add(LongDependentPackageName,AssetDetail);
+		}
 	}
 
 	for(const auto& AssetDetail:AssetDependenciesDetailMap)
 	{
+		if(AssetDetail.Value.mPackagePath.IsEmpty())
+			continue;
 		FString BelongModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(AssetDetail.Key);
 		FAssetDependenciesDetail* ModuleCategory;
 		if (OutDependencies.AssetsDependenciesMap.Contains(BelongModuleName))
@@ -646,11 +654,16 @@ bool UFLibAssetManageHelperEx::GetAssetsList(
 			{
 				TArray<FAssetDetail> TargetAssets;
 				FString RedirectorLongPackageName;
-				UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(AssetDataIndex.PackageName.ToString(), RedirectorLongPackageName);
-				UFLibAssetManageHelperEx::GetAssetDependency(RedirectorLongPackageName, AssetRegistryDependencyTypes, TargetAssets, ScanedCaches,false);
-				if (!!TargetAssets.Num())
+				if(UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(AssetDataIndex.PackageName.ToString(), RedirectorLongPackageName))
 				{
-					AssetDetail = TargetAssets[0];
+					if(!RedirectorLongPackageName.IsEmpty())
+					{
+						UFLibAssetManageHelperEx::GetAssetDependency(RedirectorLongPackageName, AssetRegistryDependencyTypes, TargetAssets, ScanedCaches,false);
+						if (!!TargetAssets.Num())
+						{
+							AssetDetail = TargetAssets[0];
+						}
+					}
 				}
 			}
 			else
@@ -943,7 +956,8 @@ bool UFLibAssetManageHelperEx::ConvLongPackageNameToCookedPath(const FString& In
 	FString CookedRootDir = FPaths::Combine(InProjectAbsDir, TEXT("Saved/Cooked"), InPlatformName);
 	FString ProjectName = FApp::GetProjectName();
 	FString AssetPackagePath;
-	UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InLongPackageName,AssetPackagePath);
+	if(!UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InLongPackageName,AssetPackagePath))
+		return false;
 	FString AssetAbsPath = UFLibAssetManageHelperEx::ConvVirtualToAbsPath(AssetPackagePath);
 
 	FString AssetModuleName;
@@ -1591,4 +1605,18 @@ FString UFLibAssetManageHelperEx::ConvPath_BackSlash2Slash(const FString& InPath
 EAssetRegistryDependencyType::Type UFLibAssetManageHelperEx::ConvAssetRegistryDependencyToInternal(const EAssetRegistryDependencyTypeEx& InType)
 {
 	return static_cast<EAssetRegistryDependencyType::Type>((uint8)(InType));
+}
+
+void UFLibAssetManageHelperEx::GetAssetDataInPaths(const TArray<FString>& Paths, TArray<FAssetData>& OutAssetData)
+{
+	// Form a filter from the paths
+	FARFilter Filter;
+	Filter.bRecursivePaths = true;
+	for (const FString& Path : Paths)
+	{
+		new (Filter.PackagePaths) FName(*Path);
+	}
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	
+	AssetRegistryModule.Get().GetAssets(Filter, OutAssetData);
 }

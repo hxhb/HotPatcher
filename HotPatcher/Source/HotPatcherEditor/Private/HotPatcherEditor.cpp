@@ -8,6 +8,7 @@
 #include "CookManager.h"
 
 // ENGINE HEADER
+#include "ContentBrowserMenuContexts.h"
 #include "ContentBrowserModule.h"
 #include "IContentBrowserSingleton.h"
 #include "Misc/MessageDialog.h"
@@ -68,48 +69,161 @@ void MakeProjectSettingsForHotPatcher()
 	}
 }
 
+FHotPatcherEditorModule& FHotPatcherEditorModule::Get()
+{
+	FHotPatcherEditorModule& Module = FModuleManager::GetModuleChecked<FHotPatcherEditorModule>("HotPatcherEditor");
+	return Module;
+}
+
 void FHotPatcherEditorModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-	FCookManager::Get().Init();
-	
+
 	FHotPatcherStyle::Initialize();
 	FHotPatcherStyle::ReloadTextures();
-
 	FHotPatcherCommands::Register();
 	
-	PluginCommands = MakeShareable(new FUICommandList);
+	if(::IsRunningCommandlet())
+		return;
 
+	FCoreUObjectDelegates::OnObjectSaved.AddRaw(this,&FHotPatcherEditorModule::OnObjectSaved);
+	FCookManager::Get().Init();
+	MakeProjectSettingsForHotPatcher();
+
+	MissionNotifyProay = NewObject<UMissionNotificationProxy>();
+	MissionNotifyProay->AddToRoot();
+	
+	PluginCommands = MakeShareable(new FUICommandList);
 	PluginCommands->MapAction(
 		FHotPatcherCommands::Get().PluginAction,
 		FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::PluginButtonClicked),
 		FCanExecuteAction());
-
-	
 	
 	FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
-
 	{
 		TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());
 		MenuExtender->AddMenuExtension("WindowLayout", EExtensionHook::After, PluginCommands, FMenuExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddMenuExtension));
 
 		LevelEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
-	}
-	
-	 {
+
+		// settings
 	 	TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
 	 	ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddToolbarExtension));
 
 	 	LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
-	 }
-	MakeProjectSettingsForHotPatcher();
-#if ENGINE_MAJOR_VERSION > 4 ||  ENGINE_MINOR_VERSION >23
-	AddAssetContentMenu();
-	AddFolderContentMenu();
-#endif
-	FCoreUObjectDelegates::OnObjectSaved.AddRaw(this,&FHotPatcherEditorModule::OnObjectSaved);
+	}
+
+	TSharedRef<FUICommandList> CommandList = LevelEditorModule.GetGlobalLevelEditorActions();
+	CommandList->UnmapAction(FHotPatcherCommands::Get().CookSelectedAction);
+	CommandList->UnmapAction(FHotPatcherCommands::Get().CookAndPakSelectedAction);
+	CommandList->UnmapAction(FHotPatcherCommands::Get().AddToPakSettingsAction);
+
+	ExtendContentBrowserAssetSelectionMenu();
+	ExtendContentBrowserPathSelectionMenu();
+
+	CreateRootMenu();
+}
+
+void FHotPatcherEditorModule::CreateRootMenu()
+{
+	UToolMenu* RootMenu = UToolMenus::Get()->ExtendMenu("ContentBrowser.AddNewContextMenu");
+	FToolMenuSection& RootSection = RootMenu->AddSection("HotPatcherUtilities", LOCTEXT("HotPatcherUtilities", "HotPatcherUtilities"));;
+	RootSection.AddSubMenu(
+		"PatcherPresetsActionsSubMenu",
+		LOCTEXT("PatcherPresetsActionsSubMenuLabel", "HotPatcher Preset Actions"),
+		LOCTEXT("PatcherPresetsActionsSubMenuToolTip", "HotPatcher Preset Actions"),
+		FNewToolMenuDelegate::CreateRaw(this, &FHotPatcherEditorModule::MakeHotPatcherPresetsActionsSubMenu),
+		FUIAction(
+			FExecuteAction()
+			),
+		EUserInterfaceActionType::Button,
+		false, 
+		FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.SaveAllCurrentFolder")
+		);
+	
+	RootSection.AddSubMenu(
+		"PakExternalFilesActionsSubMenu",
+		LOCTEXT("PakExternalFilesActionsSubMenuLabel", "Pak External Actions"),
+		LOCTEXT("PakExternalFilesActionsSubMenuToolTip", "Pak External Actions"),
+		FNewToolMenuDelegate::CreateRaw(this, &FHotPatcherEditorModule::MakePakExternalActionsSubMenu),
+		FUIAction(
+			FExecuteAction()
+			),
+		EUserInterfaceActionType::Button,
+		false, 
+		FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.SaveAllCurrentFolder")
+		);
+}
+
+void FHotPatcherEditorModule::CreateAssetContextMenu(FToolMenuSection& InSection)
+{
+	InSection.AddSubMenu(
+		"CookActionsSubMenu",
+		LOCTEXT("CookActionsSubMenuLabel", "Cook Actions"),
+		LOCTEXT("CookActionsSubMenuToolTip", "Cook actions"),
+		FNewToolMenuDelegate::CreateRaw(this, &FHotPatcherEditorModule::MakeCookActionsSubMenu),
+		FUIAction(
+			FExecuteAction()
+			),
+		EUserInterfaceActionType::Button,
+		false, 
+		FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions")
+		);
+	InSection.AddSubMenu(
+		"CookAndPakActionsSubMenu",
+		LOCTEXT("CookAndPakActionsSubMenuLabel", "Cook And Pak Actions"),
+		LOCTEXT("CookAndPakActionsSubMenuToolTip", "Cook And Pak actions"),
+		FNewToolMenuDelegate::CreateRaw(this, &FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu),
+		FUIAction(
+			FExecuteAction()
+			),
+		EUserInterfaceActionType::Button,
+		false, 
+		FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.SaveAllCurrentFolder")
+		);
+	
+	// InSection.AddMenuEntry(FHotPatcherCommands::Get().AddToPakSettingsAction);
+	InSection.AddDynamicEntry("AddToPatchSettgins", FNewToolMenuSectionDelegate::CreateLambda([this](FToolMenuSection& InSection)
+	{
+		const TAttribute<FText> Label = LOCTEXT("CookUtilities_AddToPatchSettgins", "Add To Patch Settgins");
+		const TAttribute<FText> ToolTip = LOCTEXT("CookUtilities_AddToPatchSettginsTooltip", "Add Selected Assets To HotPatcher Patch Settgins");
+		const FSlateIcon Icon = FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions.Duplicate");
+		const FToolMenuExecuteAction UIAction = FToolMenuExecuteAction::CreateRaw(this,&FHotPatcherEditorModule::OnAddToPatchSettings);
+	
+		InSection.AddMenuEntry("CookUtilities_AddToPatchSettgins", Label, ToolTip, Icon, UIAction);
+	}));
 	
 }
+
+
+void FHotPatcherEditorModule::ExtendContentBrowserAssetSelectionMenu()
+{
+	UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("ContentBrowser.AssetContextMenu");
+	FToolMenuSection& Section = Menu->FindOrAddSection(TEXT("AssetContextCookUtilities"));//Menu->FindOrAddSection("AssetContextReferences");
+	FToolMenuEntry& Entry = Section.AddDynamicEntry("AssetManagerEditorViewCommands", FNewToolMenuSectionDelegate::CreateLambda([this](FToolMenuSection& InSection)
+	{
+		UContentBrowserAssetContextMenuContext* Context = InSection.FindContext<UContentBrowserAssetContextMenuContext>();
+		if (Context && Context->bCanBeModified)
+		{
+			CreateAssetContextMenu(InSection);
+		}
+	}));
+}
+
+void FHotPatcherEditorModule::ExtendContentBrowserPathSelectionMenu()
+{
+	UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("ContentBrowser.FolderContextMenu");
+	FToolMenuSection& Section = Menu->FindOrAddSection("PathContextCookUtilities");
+	FToolMenuEntry& Entry = Section.AddDynamicEntry("AssetManagerEditorViewCommands", FNewToolMenuSectionDelegate::CreateLambda([this](FToolMenuSection& InSection)
+	{
+		UContentBrowserFolderContext* Context = InSection.FindContext<UContentBrowserFolderContext>();
+		if (Context && Context->bCanBeModified && Context->NumAssetPaths > 0)
+		{
+			CreateAssetContextMenu(InSection);
+		}
+	}));
+}
+
 
 void FHotPatcherEditorModule::ShutdownModule()
 {
@@ -137,19 +251,22 @@ void FHotPatcherEditorModule::PluginButtonClicked()
 	FGlobalTabmanager::Get()->InvokeTab(HotPatcherTabName);
 }
 
-// void FHotPatcherEditorModule::PrintUsageMsg()
-// {
-// 	UWorld* World = GEditor->GetEditorWorldContext().World();
-// 	FText DialogText = FText::FromString(
-// 		TEXT("This is a Test Message!")
-// 	);
-// 	FMessageDialog::Open(EAppMsgType::Ok, DialogText);
-// }
-
 void FHotPatcherEditorModule::OnTabClosed(TSharedRef<SDockTab> InTab)
 {
 	DockTab.Reset();
 }
+
+void FHotPatcherEditorModule::AddMenuExtension(FMenuBuilder& Builder)
+{
+	Builder.AddMenuEntry(FHotPatcherCommands::Get().PluginAction);
+}
+
+void FHotPatcherEditorModule::AddToolbarExtension(FToolBarBuilder& Builder)
+{
+	Builder.AddToolBarButton(FHotPatcherCommands::Get().PluginAction);
+}
+
+
 
 TArray<FAssetData> FHotPatcherEditorModule::GetSelectedAssetsInBrowserContent()
 {
@@ -181,93 +298,9 @@ TSharedRef<class SDockTab> FHotPatcherEditorModule::OnSpawnPluginTab(const class
 		];
 }
 
-void FHotPatcherEditorModule::AddMenuExtension(FMenuBuilder& Builder)
-{
-	Builder.AddMenuEntry(FHotPatcherCommands::Get().PluginAction);
-}
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >23
-void FHotPatcherEditorModule::AddAssetContentMenu()
-{
-	if (!UToolMenus::IsToolMenuUIEnabled())
-	{
-		return;
-	}
- 
-	FToolMenuOwnerScoped MenuOwner("CookUtilities");
-	UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("ContentBrowser.AssetContextMenu");
-	FToolMenuSection& Section = Menu->AddSection("AssetContextCookUtilities", LOCTEXT("CookUtilitiesMenuHeading", "CookUtilities"));;
-	
-	// Asset Actions sub-menu
-	Section.AddSubMenu(
-        "CookActionsSubMenu",
-        LOCTEXT("CookActionsSubMenuLabel", "Cook Actions"),
-        LOCTEXT("CookActionsSubMenuToolTip", "Cook actions"),
-        FNewToolMenuDelegate::CreateRaw(this, &FHotPatcherEditorModule::MakeCookActionsSubMenu),
-        FUIAction(
-            FExecuteAction()
-            ),
-        EUserInterfaceActionType::Button,
-        false, 
-        FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions")
-        );
-	Section.AddSubMenu(
-        "CookAndPakActionsSubMenu",
-        LOCTEXT("CookAndPakActionsSubMenuLabel", "Cook And Pak Actions"),
-        LOCTEXT("CookAndPakActionsSubMenuToolTip", "Cook And Pak actions"),
-        FNewToolMenuDelegate::CreateRaw(this, &FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu),
-        FUIAction(
-            FExecuteAction()
-            ),
-        EUserInterfaceActionType::Button,
-        false, 
-        FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.SaveAllCurrentFolder")
-        );
-	Section.AddDynamicEntry("AddToPatchSettgins", FNewToolMenuSectionDelegate::CreateLambda([this](FToolMenuSection& InSection)
-       {
-           const TAttribute<FText> Label = LOCTEXT("CookUtilities_AddToPatchSettgins", "Add To Patch Settgins");
-           const TAttribute<FText> ToolTip = LOCTEXT("CookUtilities_AddToPatchSettginsTooltip", "Add Selected Assets To HotPatcher Patch Settgins");
-           const FSlateIcon Icon = FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions.Duplicate");
-           const FToolMenuExecuteAction UIAction = FToolMenuExecuteAction::CreateRaw(this,&FHotPatcherEditorModule::OnAddToPatchSettings);
-	
-           InSection.AddMenuEntry("CookUtilities_AddToPatchSettgins", Label, ToolTip, Icon, UIAction);
-       }));
-	
-	UToolMenu* RootMenu = UToolMenus::Get()->ExtendMenu("ContentBrowser.AddNewContextMenu");
-	FToolMenuSection& RootSection = RootMenu->AddSection("HotPactherUtilities", LOCTEXT("HotPactherUtilities", "HotPactherUtilities"));;
-	RootSection.AddSubMenu(
-		"PakExternalFilesActionsSubMenu",
-		LOCTEXT("PakExternalFilesActionsSubMenuLabel", "Pak External Actions"),
-		LOCTEXT("PakExternalFilesActionsSubMenuToolTip", "Pak External Actions"),
-		FNewToolMenuDelegate::CreateRaw(this, &FHotPatcherEditorModule::MakePakExternalActionsSubMenu),
-		FUIAction(
-			FExecuteAction()
-			),
-		EUserInterfaceActionType::Button,
-		false, 
-		FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.SaveAllCurrentFolder")
-		);
-}
 
-void FHotPatcherEditorModule::OnAddToPatchSettings(const FToolMenuContext& MenuContent)
-{
-	if(!DockTab.IsValid() || !GPatchSettings)
-	{
-		PluginButtonClicked();
-	}
-	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
-	TArray<FPatcherSpecifyAsset> AssetsSoftPath;
-
-	for(const auto& AssetData:AssetsData)
-	{
-		FPatcherSpecifyAsset PatchSettingAssetElement;
-		FSoftObjectPath AssetObjectPath;
-		AssetObjectPath.SetPath(AssetData.ObjectPath.ToString());
-		PatchSettingAssetElement.Asset = AssetObjectPath;
-		AssetsSoftPath.AddUnique(PatchSettingAssetElement);
-	}
-	GPatchSettings->IncludeSpecifyAssets.Append(AssetsSoftPath);
-}
 
 void FHotPatcherEditorModule::MakeCookActionsSubMenu(UToolMenu* Menu)
 {
@@ -312,7 +345,6 @@ void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
 	}
 }
 
-
 void FHotPatcherEditorModule::MakePakExternalActionsSubMenu(UToolMenu* Menu)
 {
 	FToolMenuSection& Section = Menu->AddSection("PakExternalActionsSection");
@@ -339,70 +371,91 @@ void FHotPatcherEditorModule::MakePakExternalActionsSubMenu(UToolMenu* Menu)
 	}
 }
 
-void FHotPatcherEditorModule::AddFolderContentMenu()
+void FHotPatcherEditorModule::MakeHotPatcherPresetsActionsSubMenu(UToolMenu* Menu)
 {
-	if (!UToolMenus::IsToolMenuUIEnabled())
+	FToolMenuSection& Section = Menu->AddSection("HotPatcherPresetsActionsSection");
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	Settings->ReloadConfig();
+	for (FExportPatchSettings PakConfig : Settings->PresetConfigs)
 	{
-		return;
+		Section.AddMenuEntry(
+			FName(PakConfig.VersionId),
+			FText::Format(LOCTEXT("PakExternal", "VersionID: {0}"), UKismetTextLibrary::Conv_StringToText(PakConfig.VersionId)),
+			FText(),
+			FSlateIcon(),
+			FUIAction(
+				FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnPakPreset,PakConfig)
+			)
+		);
 	}
- 
-	FToolMenuOwnerScoped MenuOwner("PatchUtilities");
-	UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("ContentBrowser.FolderContextMenu");
-	FToolMenuSection& Section = Menu->AddSection("FolderContextCookUtilities", LOCTEXT("PatchUtilitiesMenuHeading", "PatchUtilities"));;
-	
-	Section.AddDynamicEntry("AddToPatchSettgins", FNewToolMenuSectionDelegate::CreateLambda([this](FToolMenuSection& InSection)
-       {
-           const TAttribute<FText> Label = LOCTEXT("PatchUtilities_AddFolderToPatchSettgins", "Add Folder To Patch Settgins");
-           const TAttribute<FText> ToolTip = LOCTEXT("PatchUtilities_AddFolderToPatchSettginsTooltip", "Add Selected Folder To HotPatcher Patch Settgins");
-           const FSlateIcon Icon = FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions.Duplicate");
-           const FToolMenuExecuteAction UIAction = FToolMenuExecuteAction::CreateRaw(this,&FHotPatcherEditorModule::OnFolderAddToPatchSettings);
-	
-           InSection.AddMenuEntry("CookUtilities_AddFolderToPatchSettgins", Label, ToolTip, Icon, UIAction);
-       }));
 }
 
-void FHotPatcherEditorModule::OnFolderAddToPatchSettings(const FToolMenuContext& MenuContent)
+void FHotPatcherEditorModule::OnAddToPatchSettings(const FToolMenuContext& MenuContent)
 {
 	if(!DockTab.IsValid() || !GPatchSettings)
 	{
 		PluginButtonClicked();
 	}
-	TArray<FString> Folders = GetSelectedFolderInBrowserContent();
+	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
+	TArray<FString> FolderList = GetSelectedFolderInBrowserContent();
+	TArray<FDirectoryPath> FolderDirectorys;
 
-	for(const auto& folder:Folders)
+	for(const auto& Folder:FolderList)
 	{
 		FDirectoryPath Path;
-		Path.Path = folder;
-		GPatchSettings->AssetIncludeFilters.Add(Path);
+		Path.Path = Folder;
+		FolderDirectorys.Add(Path);
 	}
-}
-#endif
+	TArray<FPatcherSpecifyAsset> AssetsSoftPath;
 
-TArray<ETargetPlatform> FHotPatcherEditorModule::GetAllCookPlatforms() const
-{
-	TArray<ETargetPlatform> TargetPlatforms;//{ETargetPlatform::Android_ASTC,ETargetPlatform::IOS,ETargetPlatform::WindowsNoEditor};
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 21
-	UEnum* FoundEnum = StaticEnum<ETargetPlatform>();
-#else
-	FString EnumTypeName = ANSI_TO_TCHAR(UFlibPatchParserHelper::GetCPPTypeName<ETargetPlatform>().c_str());
-	UEnum* FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true); 
-#endif
-	if (FoundEnum)
+	for(const auto& AssetData:AssetsData)
 	{
-		for(int32 index =1;index < FoundEnum->GetMaxEnumValue();++index)
-		{
-			TargetPlatforms.AddUnique((ETargetPlatform)(index));
-		}
-			
+		FPatcherSpecifyAsset PatchSettingAssetElement;
+		FSoftObjectPath AssetObjectPath;
+		AssetObjectPath.SetPath(AssetData.ObjectPath.ToString());
+		PatchSettingAssetElement.Asset = AssetObjectPath;
+		AssetsSoftPath.AddUnique(PatchSettingAssetElement);
 	}
-	return TargetPlatforms;
+	GPatchSettings->IncludeSpecifyAssets.Append(AssetsSoftPath);
+	GPatchSettings->AssetIncludeFilters.Append(FolderDirectorys);
 }
+
+void FHotPatcherEditorModule::OnPakPreset(FExportPatchSettings Config)
+{
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	Settings->ReloadConfig();
+	
+	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
+	PatcherProxy->SetProxySettings(&Config);
+
+	if(!Config.IsStandaloneMode())
+	{
+		PatcherProxy->DoExport();
+	}
+	else
+	{
+		FString CurrentConfig;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(Config,CurrentConfig);
+		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("PatchConfig.json")));
+		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
+		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*Config.GetCombinedAdditionalCommandletArgs());
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*Config.VersionId,*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
+		RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,FString::Printf(TEXT("Mission: %s"),*Config.VersionId));
+	}
+}
+
+#endif
 
 void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 {
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
 	Settings->ReloadConfig();
 	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
+	TArray<FString> SelectedFolder = GetSelectedFolderInBrowserContent();
+	TArray<FAssetData> FolderAssetDatas;
+	
+	UFLibAssetManageHelperEx::GetAssetDataInPaths(SelectedFolder,FolderAssetDatas);
+	AssetsData.Append(FolderAssetDatas);
 	
 	FCookManager::FCookMission CookMission;
 	
@@ -463,7 +516,12 @@ void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
 	Settings->ReloadConfig();
 	
 	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
-
+	TArray<FString> SelectedFolder = GetSelectedFolderInBrowserContent();
+	TArray<FAssetData> FolderAssetDatas;
+	
+	UFLibAssetManageHelperEx::GetAssetDataInPaths(SelectedFolder,FolderAssetDatas);
+	AssetsData.Append(FolderAssetDatas);
+	
 	FCookManager::FCookMission CookMission;
 	
 	for(int32 index=0;index < AssetsData.Num();++index)
@@ -548,11 +606,58 @@ void FHotPatcherEditorModule::OnObjectSaved(UObject* ObjectSaved)
 	AssetRegistryModule.Get().ScanFilesSynchronous(TArray<FString>{PackageFilename},false);
 }
 
-void FHotPatcherEditorModule::AddToolbarExtension(FToolBarBuilder& Builder)
+
+TArray<ETargetPlatform> FHotPatcherEditorModule::GetAllCookPlatforms() const
 {
-	Builder.AddToolBarButton(FHotPatcherCommands::Get().PluginAction);
+	TArray<ETargetPlatform> TargetPlatforms;//{ETargetPlatform::Android_ASTC,ETargetPlatform::IOS,ETargetPlatform::WindowsNoEditor};
+	#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 21
+	UEnum* FoundEnum = StaticEnum<ETargetPlatform>();
+#else
+	FString EnumTypeName = ANSI_TO_TCHAR(UFlibPatchParserHelper::GetCPPTypeName<ETargetPlatform>().c_str());
+	UEnum* FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true); 
+#endif
+	if (FoundEnum)
+	{
+		for(int32 index =1;index < FoundEnum->GetMaxEnumValue();++index)
+		{
+			TargetPlatforms.AddUnique((ETargetPlatform)(index));
+		}
+			
+	}
+	return TargetPlatforms;
 }
 
+void FHotPatcherEditorModule::RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName)
+{
+	if (mProcWorkingThread.IsValid() && mProcWorkingThread->GetThreadStatus()==EThreadStatus::Busy)
+	{
+		mProcWorkingThread->Cancel();
+	}
+	else
+	{
+		mProcWorkingThread = MakeShareable(new FProcWorkerThread(*FString::Printf(TEXT("PakPresetThread_%s"),*MissionName), Bin, Command));
+		mProcWorkingThread->ProcOutputMsgDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::ReceiveOutputMsg);
+		mProcWorkingThread->ProcBeginDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnRuningMissionNotification);
+		mProcWorkingThread->ProcSuccessedDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnMissionSuccessedNotification);
+		mProcWorkingThread->ProcFaildDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnMissionFaildNotification);
+		MissionNotifyProay->SetMissionName(*FString::Printf(TEXT("%s"),*MissionName));
+		MissionNotifyProay->SetMissionNotifyText(
+			FText::FromString(FString::Printf(TEXT("%s in progress"),*MissionName)),
+			LOCTEXT("RunningCookNotificationCancelButton", "Cancel"),
+			FText::FromString(FString::Printf(TEXT("%s Mission Finished!"),*MissionName)),
+			FText::FromString(FString::Printf(TEXT("%s Failed!"),*MissionName))
+		);
+		MissionNotifyProay->MissionCanceled.AddLambda([this]()
+		{
+			if (mProcWorkingThread.IsValid() && mProcWorkingThread->GetThreadStatus() == EThreadStatus::Busy)
+			{
+				mProcWorkingThread->Cancel();
+			}
+		});
+		
+		mProcWorkingThread->Execute();
+	}
+}
 #undef LOCTEXT_NAMESPACE
 	
 IMPLEMENT_MODULE(FHotPatcherEditorModule, HotPatcherEditor)

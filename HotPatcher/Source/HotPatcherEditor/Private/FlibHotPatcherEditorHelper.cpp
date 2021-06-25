@@ -68,7 +68,8 @@ void UFlibHotPatcherEditorHelper::CheckInvalidCookFilesByAssetDependenciesInfo(
 		TArray<FString> CookedAssetPath;
 		TArray<FString> CookedAssetRelativePath;
 		FString AssetLongPackageName;
-		UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(AssetDetail.mPackagePath, AssetLongPackageName);
+		if(!UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(AssetDetail.mPackagePath, AssetLongPackageName))
+			continue;
 		if (UFLibAssetManageHelperEx::ConvLongPackageNameToCookedPath(
 			InProjectAbsDir,
 			InPlatformName,
@@ -335,7 +336,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 	bool bSuccessed = false;
 	const bool bStorageConcurrent = FParse::Param(FCommandLine::Get(), TEXT("ConcurrentSave"));
 	bool bUnversioned = true;
-	uint32 SaveFlags = SAVE_KeepGUID | SAVE_ComputeHash | (bUnversioned ? SAVE_Unversioned : 0);//SAVE_Async
+	uint32 SaveFlags = SAVE_KeepGUID | SAVE_Async| SAVE_ComputeHash | (bUnversioned ? SAVE_Unversioned : 0);
 
 #if ENGINE_MAJOR_VERSION >4 || ENGINE_MINOR_VERSION >25
 	bool CookLinkerDiff = false;

@@ -27,34 +27,37 @@ class HOTPATCHEREDITOR_API UHotPatcherSettings:public UObject
     GENERATED_BODY()
 
 public:
-    UPROPERTY(EditAnywhere, config, Category = "Editor")
+    UPROPERTY(EditAnywhere, config, Category = "Global")
     bool bWhiteListCookInEditor;
-    UPROPERTY(EditAnywhere, config, Category = "Editor")
+    UPROPERTY(EditAnywhere, config, Category = "Global")
     TArray<ETargetPlatform> PlatformWhitelists;
-    UPROPERTY(EditAnywhere, config, Category = "Editor")
+    UPROPERTY(EditAnywhere, config, Category = "Global")
     FString TempPakDir = TEXT("Saved/HotPatcher/Paks");
     
-    UPROPERTY(EditAnywhere, config, Category = "Editor|IoStore")
+    UPROPERTY(EditAnywhere, config, Category = "IoStore")
     bool bIoStore = false;
-    UPROPERTY(EditAnywhere, config, Category = "Editor|IoStore")
+    UPROPERTY(EditAnywhere, config, Category = "IoStore")
     bool bAllowBulkDataInIoStore = false;
-    UPROPERTY(EditAnywhere, config, Category = "Editor|IoStore")
+    UPROPERTY(EditAnywhere, config, Category = "IoStore")
     bool bStorageIoStorePakList = false;
-    UPROPERTY(EditAnywhere, config, Category = "Editor|IoStore")
+    UPROPERTY(EditAnywhere, config, Category = "IoStore")
     TArray<FString> IoStorePakListOptions;
-    UPROPERTY(EditAnywhere, config, Category = "Editor|IoStore")
+    UPROPERTY(EditAnywhere, config, Category = "IoStore")
     TArray<FString> IoStoreCommandletOptions;
-    UPROPERTY(EditAnywhere, config, Category = "Editor|UnrealPak")
+    UPROPERTY(EditAnywhere, config, Category = "UnrealPak")
     bool bStorageUnrealPakList = false;
-    UPROPERTY(EditAnywhere, config, Category = "Editor|UnrealPak")
+    UPROPERTY(EditAnywhere, config, Category = "UnrealPak")
     TArray<FString> UnrealPakListOptions;
-    UPROPERTY(EditAnywhere, config, Category = "Editor|UnrealPak")
+    UPROPERTY(EditAnywhere, config, Category = "UnrealPak")
     TArray<FString> UnrealPakCommandletOptions;
     
-    UPROPERTY(EditAnywhere, config, Category = "Editor|Encrypt")
+    UPROPERTY(EditAnywhere, config, Category = "Encrypt")
     FPakEncryptSettings EncryptSettings;
-    UPROPERTY(EditAnywhere, config, Category = "Editor")
+
+    UPROPERTY(EditAnywhere, config, Category = "Preset")
     TArray<FPakExternalInfo> PakExternalConfigs;
+    UPROPERTY(EditAnywhere, config, Category = "Preset")
+    TArray<FExportPatchSettings> PresetConfigs;
 };
 
 

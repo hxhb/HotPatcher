@@ -15,5 +15,4 @@ public:
 	virtual void ResetConfig() = 0;
 	virtual void DoGenerate()=0;
 	virtual FString GetMissionName()=0;
-	virtual void InitMissionNotificationProxy()=0;
 };
