@@ -7,7 +7,7 @@
 #include "ScopedSlowTaskContext.generated.h"
 
 UCLASS()
-class HOTPATCHEREDITOR_API UScopedSlowTaskContext:public UObject
+class HOTPATCHERRUNTIME_API UScopedSlowTaskContext:public UObject
 {
 public:
     GENERATED_BODY()

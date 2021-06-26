@@ -76,6 +76,15 @@ public:
 	void OnPakPreset(FExportPatchSettings Config);
 	void OnObjectSaved( UObject* ObjectSaved );
 
+
+	FExportPatchSettings MakeTempPatchSettings(
+		const FString& Name,
+		const TArray<FDirectoryPath>& AssetIncludeFilters,
+		const TArray<FPatcherSpecifyAsset>& IncludeSpecifyAssets,
+		const TArray<FPlatformExternAssets>& ExternFiles,
+		const TArray<ETargetPlatform>& PakTargetPlatforms,
+		bool bCook
+	);
 private:
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& InSpawnTabArgs);
 	void OnTabClosed(TSharedRef<SDockTab> InTab);
@@ -87,4 +96,6 @@ private:
 
 	mutable TSharedPtr<FProcWorkerThread> mProcWorkingThread;
 	UMissionNotificationProxy* MissionNotifyProay;
+	TSharedPtr<FExportPatchSettings> PatchSettings;
+	TArray<class UPatcherProxy*> Proxys;
 };

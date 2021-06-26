@@ -7,6 +7,7 @@
 #include "SHotPatcherPatchableBase.h"
 #include "FPatchVersionDiff.h"
 #include "HotPatcherProxyBase.h"
+#include "ThreadUtils/FThreadUtils.hpp"
 
 // engine header
 #include "Interfaces/ITargetPlatformManagerModule.h"
@@ -27,4 +28,10 @@ public:
     bool CanExportPatch() const;
     virtual bool DoExport()override;
     virtual FExportPatchSettings* GetSettingObject()override{ return (FExportPatchSettings*)Setting; }
+
+private:
+    UPROPERTY()
+    FHotPatcherPatchContext PatchContext;
+
+    TSharedPtr<FThreadWorker> ThreadWorker;
 };

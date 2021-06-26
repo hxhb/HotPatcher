@@ -23,8 +23,11 @@ public class HotPatcherRuntime : ModuleRules
 				// ... add other private include paths required here ...
 			}
 			);
-			
-		
+
+		if (Target.bBuildEditor)
+		{
+			PublicDependencyModuleNames.Add("TargetPlatform");
+		}
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{

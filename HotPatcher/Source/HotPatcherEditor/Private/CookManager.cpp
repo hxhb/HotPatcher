@@ -14,6 +14,8 @@ FString FCookManager::GetCookedAssetPath(const FString& PackageName,ETargetPlatf
 	return UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookedDir,PackageName, UFlibPatchParserHelper::GetEnumNameByValue(Platform));
 }
 
+#define WAIT_TIME 0.1f
+#define MAX_WAIT_TIME 10.0f
 void FCookManager::OnPackageSavedEvent(const FString& InFilePath,UObject* Object)
 {
 	TArray<int32> RemoveMissionIndexs;
@@ -28,12 +30,12 @@ void FCookManager::OnPackageSavedEvent(const FString& InFilePath,UObject* Object
 					CookMissions[index].CookedCount++;
 					if(CookInfo.Callback)
 						CookInfo.Callback(CookedItem.Key,CookInfo.PackageName,InFilePath);
-					if(CookMissions[index].CookedCount == CookMissions[index].MissionPackages.Num())
-					{
-						if(CookMissions[index].Callback)
-							CookMissions[index].Callback(true);
-						RemoveMissionIndexs.AddUnique(index);
-					}
+					// if(CookMissions[index].CookedCount == CookMissions[index].MissionPackages.Num())
+					// {
+					// 	if(CookMissions[index].Callback)
+					// 		CookMissions[index].Callback(true);
+					// 	RemoveMissionIndexs.AddUnique(index);
+					// }
 				}
 			}
 		}
@@ -43,7 +45,7 @@ void FCookManager::OnPackageSavedEvent(const FString& InFilePath,UObject* Object
 		CookMissions.RemoveAt(removeIndex);
 	}
 }
-	
+#include "Async/Async.h"
 int32 FCookManager::AddCookMission(const FCookMission& InCookMission,TFunction<void(TArray<FCookManager::FCookPackageInfo>)> FaildPackagesCallback)
 {
 	int32 index=-1;
@@ -65,6 +67,20 @@ int32 FCookManager::AddCookMission(const FCookMission& InCookMission,TFunction<v
 		}
 		CookMissions.RemoveAt(index);
 		index = -1;
+	}
+	else
+	{
+		int32 NewWorkerIndex = ThreadWorker.Emplace(MakeShareable(new FThreadWorker(TEXT("CookMission"),[InCookMission]()
+		{
+			UPackage::WaitForAsyncFileWrites();
+			AsyncTask(ENamedThreads::GameThread,[&InCookMission]()
+			{
+				InCookMission.Callback(true);
+			});
+		})));
+		ThreadWorker[NewWorkerIndex]->Execute();
+		ThreadWorker[NewWorkerIndex]->Join();
+		
 	}
 	return index;
 }

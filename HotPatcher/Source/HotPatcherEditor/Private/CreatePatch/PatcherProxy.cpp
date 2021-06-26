@@ -107,10 +107,9 @@ bool UPatcherProxy::DoExport()
 {
 	UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(true);
 	GetSettingObject()->Init();
-	bool bRet = true;
 	
-	FHotPatcherPatchContext PatchContext;;
-
+	PatchContext = FHotPatcherPatchContext{};
+	
 	PatchContext.OnPaking.AddLambda([this](const FString& One,const FString& Msg){this->OnPaking.Broadcast(One,Msg);});
 	PatchContext.OnShowMsg.AddLambda([this](const FString& Msg){ this->OnShowMsg.Broadcast(Msg);});
 	PatchContext.UnrealPakSlowTask = NewObject<UScopedSlowTaskContext>();
@@ -118,29 +117,34 @@ bool UPatcherProxy::DoExport()
 	PatchContext.ContextSetting = GetSettingObject();
 	TimeRecorder TotalTimeTR(TEXT("Generate the patch total time"));
 
-	TArray<TFunction<bool(FHotPatcherPatchContext&)>> PatchWorkers;
-	PatchWorkers.Emplace(&PatchWorker::BaseVersionReader);
-	PatchWorkers.Emplace(&PatchWorker::MakeCurrentVersionWorker);
-	PatchWorkers.Emplace(&PatchWorker::ParseVersionDiffWorker);
-	PatchWorkers.Emplace(&PatchWorker::PatchRequireChekerWorker);
-	PatchWorkers.Emplace(&PatchWorker::SavePakVersionWorker);
-	PatchWorkers.Emplace(&PatchWorker::ParserChunkWorker);
-	PatchWorkers.Emplace(&PatchWorker::CookPatchAssetsWorker);
-	PatchWorkers.Emplace(&PatchWorker::GeneratePakProxysWorker);
-	PatchWorkers.Emplace(&PatchWorker::CreatePakWorker);
-	PatchWorkers.Emplace(&PatchWorker::CreateIoStoreWorker);
-	PatchWorkers.Emplace(&PatchWorker::SaveAssetDependenciesWorker);
-	PatchWorkers.Emplace(&PatchWorker::SaveDifferenceWorker);
-	PatchWorkers.Emplace(&PatchWorker::SaveNewReleaseWorker);
-	PatchWorkers.Emplace(&PatchWorker::SavePakFileInfoWorker);
-	PatchWorkers.Emplace(&PatchWorker::SavePatchConfigWorker);
-	PatchWorkers.Emplace(&PatchWorker::BackupMetadataWorker);
-	PatchWorkers.Emplace(&PatchWorker::ShowSummaryWorker);
-	PatchWorkers.Emplace(&PatchWorker::OnFaildDispatchWorker);
-	float AmountOfWorkProgress =  (float)PatchWorkers.Num() + (float)(GetSettingObject()->GetPakTargetPlatforms().Num() * PatchContext.PakChunks.Num());
+	TArray<TFunction<bool(FHotPatcherPatchContext&)>> PreCookPatchWorkers;
+	TArray<TFunction<bool(FHotPatcherPatchContext&)>> PostCookPatchWorkers;
+	PreCookPatchWorkers.Emplace(&PatchWorker::BaseVersionReader);
+	PreCookPatchWorkers.Emplace(&PatchWorker::MakeCurrentVersionWorker);
+	PreCookPatchWorkers.Emplace(&PatchWorker::ParseVersionDiffWorker);
+	PreCookPatchWorkers.Emplace(&PatchWorker::PatchRequireChekerWorker);
+	PreCookPatchWorkers.Emplace(&PatchWorker::SavePakVersionWorker);
+	PreCookPatchWorkers.Emplace(&PatchWorker::ParserChunkWorker);
+	PreCookPatchWorkers.Emplace(&PatchWorker::CookPatchAssetsWorker);
+
+	// wait cook complete
+	PostCookPatchWorkers.Emplace(&PatchWorker::GeneratePakProxysWorker);
+	PostCookPatchWorkers.Emplace(&PatchWorker::CreatePakWorker);
+	PostCookPatchWorkers.Emplace(&PatchWorker::CreateIoStoreWorker);
+	PostCookPatchWorkers.Emplace(&PatchWorker::SaveAssetDependenciesWorker);
+	PostCookPatchWorkers.Emplace(&PatchWorker::SaveDifferenceWorker);
+	PostCookPatchWorkers.Emplace(&PatchWorker::SaveNewReleaseWorker);
+	PostCookPatchWorkers.Emplace(&PatchWorker::SavePakFileInfoWorker);
+	PostCookPatchWorkers.Emplace(&PatchWorker::SavePatchConfigWorker);
+	PostCookPatchWorkers.Emplace(&PatchWorker::BackupMetadataWorker);
+	PostCookPatchWorkers.Emplace(&PatchWorker::ShowSummaryWorker);
+	PostCookPatchWorkers.Emplace(&PatchWorker::OnFaildDispatchWorker);
+	
+	float AmountOfWorkProgress =  (float)PreCookPatchWorkers.Num() + (float)PostCookPatchWorkers.Num() + (float)(GetSettingObject()->GetPakTargetPlatforms().Num() * FMath::Max(PatchContext.PakChunks.Num(),1));
 	PatchContext.UnrealPakSlowTask->init(AmountOfWorkProgress);
 
-	for(TFunction<bool(FHotPatcherPatchContext&)> Worker:PatchWorkers)
+	bool bRet = true;
+	for(TFunction<bool(FHotPatcherPatchContext&)> Worker:PreCookPatchWorkers)
 	{
 		if(!Worker(PatchContext))
 		{
@@ -148,8 +152,31 @@ bool UPatcherProxy::DoExport()
 			break;
 		}
 	}
-	PatchContext.UnrealPakSlowTask->Final();
-	return bRet;
+	
+	if(bRet)
+	{
+		ThreadWorker = MakeShareable(new FThreadWorker(TEXT("PatchProxy_WaitCook"),[this,PostCookPatchWorkers]()
+		{
+			UPackage::WaitForAsyncFileWrites();
+
+			AsyncTask(ENamedThreads::GameThread,[this,PostCookPatchWorkers]()
+			{
+				for(TFunction<bool(FHotPatcherPatchContext&)> Worker:PostCookPatchWorkers)
+				{
+					if(!Worker(PatchContext))
+					{
+						// bRet = false;
+						break;
+					}
+				}
+				PatchContext.UnrealPakSlowTask->Final();
+			});
+		}));
+		ThreadWorker->Execute();
+		ThreadWorker->Join();
+	}
+
+	return true;
 }
 
 

@@ -7,6 +7,7 @@
 #include "FPakFileInfo.h"
 #include "FExportReleaseSettings.h"
 #include "HotPatcherSettingBase.h"
+#include "CreatePatch/ScopedSlowTaskContext.h"
 
 // engine
 #include "CoreMinimal.h"
@@ -20,6 +21,7 @@ struct FHotPatcherVersion;
 DECLARE_MULTICAST_DELEGATE_TwoParams(FExportPakProcess,const FString&,const FString&);
 DECLARE_MULTICAST_DELEGATE_OneParam(FExportPakShowMsg,const FString&);
 
+
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FHotPatcherContext
 {
@@ -31,8 +33,9 @@ struct HOTPATCHERRUNTIME_API FHotPatcherContext
 public:
     FExportPakProcess OnPaking;
     FExportPakShowMsg OnShowMsg;
-    struct FHotPatcherSettingBase* ContextSetting = nullptr;
-    class UScopedSlowTaskContext* UnrealPakSlowTask = nullptr;
+    FHotPatcherSettingBase* ContextSetting;
+    UPROPERTY()
+    UScopedSlowTaskContext* UnrealPakSlowTask;
 };
 
 USTRUCT(BlueprintType)

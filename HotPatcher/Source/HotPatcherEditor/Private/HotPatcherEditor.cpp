@@ -426,6 +426,9 @@ void FHotPatcherEditorModule::OnPakPreset(FExportPatchSettings Config)
 	Settings->ReloadConfig();
 	
 	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
+	PatcherProxy->AddToRoot();
+	Proxys.Add(PatcherProxy);
+	
 	PatcherProxy->SetProxySettings(&Config);
 
 	if(!Config.IsStandaloneMode())
@@ -489,25 +492,20 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 
 void FHotPatcherEditorModule::OnPakExternal(FPakExternalInfo PakExternConfig)
 {
-	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
-	Settings->ReloadConfig();
-	
-	FExportPatchSettings TempSettings;
-	TempSettings.bByBaseVersion=false;
-	TempSettings.VersionId = PakExternConfig.PakName;
-	TempSettings.AddExternAssetsToPlatform.Add(PakExternConfig.AddExternAssetsToPlatform);
-	TempSettings.PakTargetPlatforms = PakExternConfig.TargetPlatforms;
-	TempSettings.bStorageAssetDependencies = false;
-	TempSettings.bStorageDiffAnalysisResults=false;
-	TempSettings.bStorageDeletedAssetsToNewReleaseJson = false;
-	TempSettings.bStorageConfig = false;
-	TempSettings.bStorageNewRelease = false;
-	TempSettings.bStoragePakFileInfo = false;
-	TempSettings.SavePath.Path = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),Settings->TempPakDir));
-	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-	PatcherProxy->SetProxySettings(&TempSettings);
+	PatchSettings = MakeShareable(new FExportPatchSettings);
+	*PatchSettings = MakeTempPatchSettings(
+		PakExternConfig.PakName,
+		TArray<FDirectoryPath>{},
+		TArray<FPatcherSpecifyAsset>{},
+		TArray<FPlatformExternAssets>{PakExternConfig.AddExternAssetsToPlatform},
+		PakExternConfig.TargetPlatforms,
+		false
+	);
 
-	bool bExportStatus = PatcherProxy->DoExport();
+	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
+	PatcherProxy->SetProxySettings(PatchSettings.Get());
+
+	PatcherProxy->DoExport();
 }
 
 void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
@@ -515,74 +513,49 @@ void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
 	Settings->ReloadConfig();
 	
-	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
+	TArray<FAssetData> AssetsDatas = GetSelectedAssetsInBrowserContent();
 	TArray<FString> SelectedFolder = GetSelectedFolderInBrowserContent();
-	TArray<FAssetData> FolderAssetDatas;
+	TArray<FDirectoryPath> IncludePaths;
+	TArray<FPatcherSpecifyAsset> IncludeAssets;
 	
-	UFLibAssetManageHelperEx::GetAssetDataInPaths(SelectedFolder,FolderAssetDatas);
-	AssetsData.Append(FolderAssetDatas);
-	
-	FCookManager::FCookMission CookMission;
-	
-	for(int32 index=0;index < AssetsData.Num();++index)
+	for(const auto& Folder:SelectedFolder)
 	{
-		FCookManager::FCookPackageInfo CurrentPackage;
-		CurrentPackage.AssetData = AssetsData[index];
-		CurrentPackage.PackageName = AssetsData[index].PackageName.ToString();
-		CurrentPackage.CookPlatforms = TArray<ETargetPlatform>{Platform};
-		CookMission.MissionPackages.Add(CurrentPackage);
-		UE_LOG(LogHotPatcher,Log,TEXT("Cook Package %s Platform %s"),*AssetsData[index].PackagePath.ToString(),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+		FDirectoryPath CurrentPath;
+		CurrentPath.Path = Folder;
+		IncludePaths.Add(CurrentPath);
 	}
-	CookMission.Callback = [AssetsData,Platform](bool bSuccessed)
+
+	for(const auto& Asset:AssetsDatas)
 	{
-		if(!bSuccessed)
-		{
-			UE_LOG(LogHotPatcher,Error,TEXT("Cook And Pak Mission is Faild!"));
-			return;
-		}
-		UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
-		FString CookForPlatform = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
-		FString AbsProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-		TArray<FString> FinalCookCommands;
-		for(const auto& AssetData:AssetsData)
-		{
-			TArray<FString> CookCommands;
-			UFLibAssetManageHelperEx::MakePakCommandFromLongPackageName(
-				AbsProjectPath,
-				CookForPlatform,
-				AssetData.PackageName.ToString(),
-				// Settings->CookParams,
-				CookCommands//,
-				//[](const TArray<FString>&, const FString&, const FString&){}
-				);
-			FinalCookCommands.Append(CookCommands);
-		}
-		if(!!FinalCookCommands.Num())
-		{
-			FString TempPakCommandsSavePath =  FPaths::Combine(AbsProjectPath,Settings->TempPakDir,FDateTime::Now().ToString()+TEXT("_")+CookForPlatform+TEXT("_01_P.txt"));
-			FString TempPakSavePath =  FPaths::Combine(AbsProjectPath,Settings->TempPakDir,FDateTime::Now().ToString()+TEXT("_")+CookForPlatform+TEXT("_01_P.pak"));
-			FFileHelper::SaveStringArrayToFile(FinalCookCommands,*TempPakCommandsSavePath);
-			if(FPaths::FileExists(TempPakCommandsSavePath))
-			{
-				FString UnrealPakCommandletOptionsSinglePak(
-	                            FString::Printf(
-	                                TEXT("%s -create=%s %s"),
-	                                *(TEXT("\"") + TempPakSavePath + TEXT("\"")),
-	                                *(TEXT("\"") + TempPakCommandsSavePath + TEXT("\"")),
-	                                *UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(Settings->EncryptSettings,UFlibHotPatcherEditorHelper::Conv2IniPlatform(CookForPlatform))
-	                            )
-	                        );
-				UE_LOG(LogHotPatcher,Log,TEXT("CookAndPak Command:%s"),*UnrealPakCommandletOptionsSinglePak);
-				ExecuteUnrealPak(*UnrealPakCommandletOptionsSinglePak);
-				if (FPaths::FileExists(TempPakSavePath))
-				{
-					FText Msg = LOCTEXT("SavedPakFileMsg", "Successd to Package the patch as Pak.");
-					UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, TempPakSavePath);
-				}
-			}
-		}
-	};
-	FCookManager::Get().AddCookMission(CookMission);
+		FPatcherSpecifyAsset CurrentAsset;
+		CurrentAsset.Asset = Asset.ToSoftObjectPath();
+		CurrentAsset.bAnalysisAssetDependencies = false;
+		CurrentAsset.AssetRegistryDependencyTypes.AddUnique(EAssetRegistryDependencyTypeEx::Packages);
+		IncludeAssets.AddUnique(CurrentAsset);
+	}
+	FString Name = FDateTime::Now().ToString();
+	PatchSettings = MakeShareable(new FExportPatchSettings);
+	*PatchSettings = MakeTempPatchSettings(Name,IncludePaths,IncludeAssets,TArray<FPlatformExternAssets>{},TArray<ETargetPlatform>{Platform},true);
+
+	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
+	PatcherProxy->AddToRoot();
+	Proxys.Add(PatcherProxy);
+	PatcherProxy->SetProxySettings(PatchSettings.Get());
+
+	if(!PatchSettings->IsStandaloneMode())
+	{
+		PatcherProxy->DoExport();
+	}
+	else
+	{
+		FString CurrentConfig;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(*PatchSettings,CurrentConfig);
+		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("PatchConfig.json")));
+		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
+		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*PatchSettings->GetCombinedAdditionalCommandletArgs());
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*PatchSettings->VersionId,*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
+		RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,FString::Printf(TEXT("Mission: %s"),*PatchSettings->VersionId));
+	}
 }
 
 void FHotPatcherEditorModule::OnObjectSaved(UObject* ObjectSaved)
@@ -604,6 +577,39 @@ void FHotPatcherEditorModule::OnObjectSaved(UObject* ObjectSaved)
 	const FString PackageFilename = FPackageName::LongPackageNameToFilename(Package->GetName(), Package->ContainsMap() ? FPackageName::GetMapPackageExtension() : FPackageName::GetAssetPackageExtension());
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 	AssetRegistryModule.Get().ScanFilesSynchronous(TArray<FString>{PackageFilename},false);
+}
+
+FExportPatchSettings FHotPatcherEditorModule::MakeTempPatchSettings(
+	const FString& Name,
+	const TArray<FDirectoryPath>& AssetIncludeFilters,
+	const TArray<FPatcherSpecifyAsset>& IncludeSpecifyAssets,
+	const TArray<FPlatformExternAssets>& ExternFiles,
+	const TArray<ETargetPlatform>& PakTargetPlatforms,
+	bool bCook
+)
+{
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	Settings->ReloadConfig();
+	FExportPatchSettings TempSettings;
+	TempSettings.bByBaseVersion=false;
+	TempSettings.VersionId = Name;
+	TempSettings.AssetIncludeFilters = AssetIncludeFilters;
+	TempSettings.IncludeSpecifyAssets = IncludeSpecifyAssets;
+	TempSettings.AddExternAssetsToPlatform = ExternFiles;
+	TempSettings.bCookPatchAssets = bCook;
+	TempSettings.PakTargetPlatforms = PakTargetPlatforms;
+	TempSettings.bStorageAssetDependencies = false;
+	TempSettings.bStorageDiffAnalysisResults=false;
+	TempSettings.bStorageDeletedAssetsToNewReleaseJson = false;
+	TempSettings.bStorageConfig = false;
+	TempSettings.bStorageNewRelease = false;
+	TempSettings.bStoragePakFileInfo = false;
+	TempSettings.EncryptSettings  = Settings->EncryptSettings;
+	TempSettings.IoStoreSettings = Settings->IoStoreSettings;
+	TempSettings.UnrealPakSettings = Settings->UnreakPakSettings;
+	TempSettings.SavePath.Path = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),Settings->TempPakDir));
+	TempSettings.bStandaloneMode = Settings->bUseStandaloneMode;
+	return TempSettings;
 }
 
 

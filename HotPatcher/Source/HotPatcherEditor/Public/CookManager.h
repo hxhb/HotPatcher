@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "AssetData.h"
 #include "ETargetPlatform.h"
+#include "ThreadUtils/FThreadUtils.hpp"
 
 struct HOTPATCHEREDITOR_API FCookManager
 {
@@ -41,4 +42,6 @@ struct HOTPATCHEREDITOR_API FCookManager
 	int32 AddCookMission(const FCookMission& InCookMission,TFunction<void(TArray<FCookManager::FCookPackageInfo>)> FaildPackagesCallback = [](TArray<FCookManager::FCookPackageInfo>){});
 private:
 	TArray<FCookMission> CookMissions;
+
+	TArray<TSharedPtr<FThreadWorker>> ThreadWorker;
 };

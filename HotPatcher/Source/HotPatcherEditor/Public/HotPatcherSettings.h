@@ -27,30 +27,19 @@ class HOTPATCHEREDITOR_API UHotPatcherSettings:public UObject
     GENERATED_BODY()
 
 public:
-    UPROPERTY(EditAnywhere, config, Category = "Global")
+    UPROPERTY(EditAnywhere, config, Category = "Editor")
     bool bWhiteListCookInEditor;
-    UPROPERTY(EditAnywhere, config, Category = "Global")
+    UPROPERTY(EditAnywhere, config, Category = "Editor")
     TArray<ETargetPlatform> PlatformWhitelists;
-    UPROPERTY(EditAnywhere, config, Category = "Global")
+    UPROPERTY(EditAnywhere, config, Category = "Editor")
     FString TempPakDir = TEXT("Saved/HotPatcher/Paks");
+    UPROPERTY(EditAnywhere, config, Category = "Editor")
+    bool bUseStandaloneMode;
     
-    UPROPERTY(EditAnywhere, config, Category = "IoStore")
-    bool bIoStore = false;
-    UPROPERTY(EditAnywhere, config, Category = "IoStore")
-    bool bAllowBulkDataInIoStore = false;
-    UPROPERTY(EditAnywhere, config, Category = "IoStore")
-    bool bStorageIoStorePakList = false;
-    UPROPERTY(EditAnywhere, config, Category = "IoStore")
-    TArray<FString> IoStorePakListOptions;
-    UPROPERTY(EditAnywhere, config, Category = "IoStore")
-    TArray<FString> IoStoreCommandletOptions;
     UPROPERTY(EditAnywhere, config, Category = "UnrealPak")
-    bool bStorageUnrealPakList = false;
-    UPROPERTY(EditAnywhere, config, Category = "UnrealPak")
-    TArray<FString> UnrealPakListOptions;
-    UPROPERTY(EditAnywhere, config, Category = "UnrealPak")
-    TArray<FString> UnrealPakCommandletOptions;
-    
+    FUnrealPakSettings UnreakPakSettings;
+    UPROPERTY(EditAnywhere, config, Category = "IoStore")
+    FIoStoreSettings IoStoreSettings;
     UPROPERTY(EditAnywhere, config, Category = "Encrypt")
     FPakEncryptSettings EncryptSettings;
 

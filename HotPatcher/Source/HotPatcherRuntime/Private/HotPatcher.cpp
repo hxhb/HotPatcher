@@ -3,7 +3,12 @@
 #include "HotPatcherRuntime.h"
 #include "FlibPatchParserHelper.h"
 #include "ETargetPlatform.h"
+#include "Interfaces/ITargetPlatform.h"
 #include "Misc/EnumRange.h"
+
+#if WITH_EDITOR
+#include "Interfaces/ITargetPlatformManagerModule.h"
+#endif
 
 #define LOCTEXT_NAMESPACE "FHotPatcherRuntimeModule"
 
@@ -14,7 +19,19 @@ void FHotPatcherRuntimeModule::StartupModule()
 	uint64 MaxEnumValue = TargetPlatform->GetMaxEnumValue();
 	FString EnumName = TargetPlatform->GetName();
 	TArray<TPair<FName, int64>> EnumNames;
-
+	
+	TArray<FString> AppendPlatformEnums;
+	
+#if WITH_EDITOR
+	TArray<FString> RealPlatformEnums;
+	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
+	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
+	for (ITargetPlatform *TargetPlatformIns : TargetPlatforms)
+	{
+		RealPlatformEnums.AddUnique(TargetPlatformIns->PlatformName());
+	}
+	AppendPlatformEnums = RealPlatformEnums;
+#endif
 	for (ETargetPlatform Platform:TEnumRange<ETargetPlatform>())
 	{
 		EnumNames.Emplace(TargetPlatform->GetNameByValue((int64)Platform),(int64)Platform);

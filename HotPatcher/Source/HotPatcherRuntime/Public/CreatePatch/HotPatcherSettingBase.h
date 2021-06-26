@@ -55,7 +55,7 @@ public:
     bool bStandaloneMode = true;
     UPROPERTY(EditAnywhere, Category = "Advanced")
     TArray<FString> AdditionalCommandletArgs;
-    UPROPERTY(EditAnywhere, Category = "Advanced")
+    // UPROPERTY(EditAnywhere, Category = "Advanced")
     bool bScanCacheOptimize=true;
 protected:
     TMap<FString,FAssetDependenciesInfo> ScanedCaches;
