@@ -33,13 +33,14 @@ namespace ReleaseWorker
 
 bool UReleaseProxy::DoExport()
 {
-	TimeRecorder TotalTimeTR(TEXT("Generate the release total time"));
+	// TimeRecorder TotalTimeTR(TEXT("Generate the release total time"));
 	GetSettingObject()->Init();
 	bool bRet = true;
 	FHotPatcherReleaseContext ReleaseContext;
-	ReleaseContext.ContextSetting = GetSettingObject();
+	ReleaseContext.ContextSetting = MakeShareable(new FExportReleaseSettings(*GetSettingObject()));
 	ReleaseContext.UnrealPakSlowTask = NewObject<UScopedSlowTaskContext>();
 	ReleaseContext.UnrealPakSlowTask->AddToRoot();
+	ReleaseContext.Init();
 	TArray<TFunction<bool(FHotPatcherReleaseContext&)>> ReleaseWorker;
 	
 	ReleaseWorker.Emplace(&::ReleaseWorker::ImportPakListWorker);
@@ -64,6 +65,7 @@ bool UReleaseProxy::DoExport()
 		}
 	}
 	ReleaseContext.UnrealPakSlowTask->Final();
+	ReleaseContext.Shurdown();
 	return bRet;
 }
 

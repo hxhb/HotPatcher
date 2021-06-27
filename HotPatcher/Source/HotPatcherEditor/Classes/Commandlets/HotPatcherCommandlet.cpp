@@ -99,6 +99,7 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 
 		
 		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
+		PatcherProxy->AddToRoot();
 		PatcherProxy->SetProxySettings(ExportPatchSetting.Get());
 		PatcherProxy->OnPaking.AddStatic(&::NSPatch::ReceiveMsg);
 		PatcherProxy->OnShowMsg.AddStatic(&::NSPatch::ReceiveShowMsg);

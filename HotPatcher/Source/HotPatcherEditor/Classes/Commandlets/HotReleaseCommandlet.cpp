@@ -117,6 +117,7 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 	UE_LOG(LogHotReleaseCommandlet, Display, TEXT("%s"), *FinalConfig);
 		
 	UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
+	ReleaseProxy->AddToRoot();
 	ReleaseProxy->SetProxySettings(ExportReleaseSetting.Get());
 	ReleaseProxy->OnPaking.AddStatic(&::NSRelease::ReceiveMsg);
 	ReleaseProxy->OnShowMsg.AddStatic(&::NSRelease::ReceiveShowMsg);

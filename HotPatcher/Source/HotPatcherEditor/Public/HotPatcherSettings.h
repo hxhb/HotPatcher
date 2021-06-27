@@ -35,7 +35,8 @@ public:
     FString TempPakDir = TEXT("Saved/HotPatcher/Paks");
     UPROPERTY(EditAnywhere, config, Category = "Editor")
     bool bUseStandaloneMode;
-    
+    UPROPERTY(EditAnywhere, config, Category = "Editor")
+    bool bSavePatchConfig;
     UPROPERTY(EditAnywhere, config, Category = "UnrealPak")
     FUnrealPakSettings UnreakPakSettings;
     UPROPERTY(EditAnywhere, config, Category = "IoStore")

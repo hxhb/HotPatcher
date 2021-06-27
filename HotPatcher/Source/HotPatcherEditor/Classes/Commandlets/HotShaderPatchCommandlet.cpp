@@ -53,6 +53,7 @@ int32 UHotShaderPatchCommandlet::Main(const FString& Params)
 	UE_LOG(LogHotShaderPatchCommandlet, Display, TEXT("%s"), *FinalConfig);
 		
 	UShaderPatchProxy* ShaderPatchProxy = NewObject<UShaderPatchProxy>();
+	ShaderPatchProxy->AddToRoot();
 	ShaderPatchProxy->SetProxySettings(ExportShaderPatchSetting.Get());
 	bool bExportStatus = ShaderPatchProxy->DoExport();
 

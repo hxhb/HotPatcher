@@ -601,7 +601,7 @@ FExportPatchSettings FHotPatcherEditorModule::MakeTempPatchSettings(
 	TempSettings.bStorageAssetDependencies = false;
 	TempSettings.bStorageDiffAnalysisResults=false;
 	TempSettings.bStorageDeletedAssetsToNewReleaseJson = false;
-	TempSettings.bStorageConfig = false;
+	TempSettings.bStorageConfig = Settings->bSavePatchConfig;
 	TempSettings.bStorageNewRelease = false;
 	TempSettings.bStoragePakFileInfo = false;
 	TempSettings.EncryptSettings  = Settings->EncryptSettings;

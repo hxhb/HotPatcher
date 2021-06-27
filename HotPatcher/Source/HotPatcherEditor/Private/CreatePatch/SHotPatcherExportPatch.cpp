@@ -657,7 +657,6 @@ FReply SHotPatcherExportPatch::DoAddToPreset() const
 {
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
 	Settings->PresetConfigs.Add(*const_cast<SHotPatcherExportPatch*>(this)->GetConfigSettings());
-	Settings->ReloadConfig();
 	Settings->SaveConfig();
 	return FReply::Handled();
 }

@@ -108,14 +108,15 @@ bool UPatcherProxy::DoExport()
 	UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(true);
 	GetSettingObject()->Init();
 	
-	PatchContext = FHotPatcherPatchContext{};
+	PatchContext = MakeShareable(new FHotPatcherPatchContext);
 	
-	PatchContext.OnPaking.AddLambda([this](const FString& One,const FString& Msg){this->OnPaking.Broadcast(One,Msg);});
-	PatchContext.OnShowMsg.AddLambda([this](const FString& Msg){ this->OnShowMsg.Broadcast(Msg);});
-	PatchContext.UnrealPakSlowTask = NewObject<UScopedSlowTaskContext>();
-	PatchContext.UnrealPakSlowTask->AddToRoot();
-	PatchContext.ContextSetting = GetSettingObject();
-	TimeRecorder TotalTimeTR(TEXT("Generate the patch total time"));
+	PatchContext->OnPaking.AddLambda([this](const FString& One,const FString& Msg){this->OnPaking.Broadcast(One,Msg);});
+	PatchContext->OnShowMsg.AddLambda([this](const FString& Msg){ this->OnShowMsg.Broadcast(Msg);});
+	PatchContext->UnrealPakSlowTask = NewObject<UScopedSlowTaskContext>();
+	PatchContext->UnrealPakSlowTask->AddToRoot();
+	PatchContext->ContextSetting = MakeShareable(new FExportPatchSettings(*GetSettingObject()));
+	PatchContext->Init();
+	// TimeRecorder TotalTimeTR(TEXT("Generate the patch total time"));
 
 	TArray<TFunction<bool(FHotPatcherPatchContext&)>> PreCookPatchWorkers;
 	TArray<TFunction<bool(FHotPatcherPatchContext&)>> PostCookPatchWorkers;
@@ -140,13 +141,13 @@ bool UPatcherProxy::DoExport()
 	PostCookPatchWorkers.Emplace(&PatchWorker::ShowSummaryWorker);
 	PostCookPatchWorkers.Emplace(&PatchWorker::OnFaildDispatchWorker);
 	
-	float AmountOfWorkProgress =  (float)PreCookPatchWorkers.Num() + (float)PostCookPatchWorkers.Num() + (float)(GetSettingObject()->GetPakTargetPlatforms().Num() * FMath::Max(PatchContext.PakChunks.Num(),1));
-	PatchContext.UnrealPakSlowTask->init(AmountOfWorkProgress);
+	float AmountOfWorkProgress =  (float)PreCookPatchWorkers.Num() + (float)PostCookPatchWorkers.Num() + (float)(GetSettingObject()->GetPakTargetPlatforms().Num() * FMath::Max(PatchContext->PakChunks.Num(),1));
+	PatchContext->UnrealPakSlowTask->init(AmountOfWorkProgress);
 
 	bool bRet = true;
 	for(TFunction<bool(FHotPatcherPatchContext&)> Worker:PreCookPatchWorkers)
 	{
-		if(!Worker(PatchContext))
+		if(!Worker(*PatchContext))
 		{
 			bRet = false;
 			break;
@@ -163,13 +164,14 @@ bool UPatcherProxy::DoExport()
 			{
 				for(TFunction<bool(FHotPatcherPatchContext&)> Worker:PostCookPatchWorkers)
 				{
-					if(!Worker(PatchContext))
+					if(!Worker(*PatchContext))
 					{
 						// bRet = false;
 						break;
 					}
 				}
-				PatchContext.UnrealPakSlowTask->Final();
+				PatchContext->UnrealPakSlowTask->Final();
+				PatchContext->Shurdown();
 			});
 		}));
 		ThreadWorker->Execute();

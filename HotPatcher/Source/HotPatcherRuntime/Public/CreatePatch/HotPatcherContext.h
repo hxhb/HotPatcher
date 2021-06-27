@@ -11,6 +11,8 @@
 
 // engine
 #include "CoreMinimal.h"
+
+#include "TimeRecorder.h"
 #include "Engine/EngineTypes.h"
 #include "HotPatcherContext.generated.h"
 
@@ -28,14 +30,25 @@ struct HOTPATCHERRUNTIME_API FHotPatcherContext
     GENERATED_USTRUCT_BODY()
     FHotPatcherContext()=default;
     virtual ~FHotPatcherContext(){}
+    virtual void Init()
+    {
+        TotalTimeRecorder = MakeShareable(new TimeRecorder(GetTotalTimeRecorderName(),false));
+        TotalTimeRecorder->Begin(GetTotalTimeRecorderName());
+    }
+    virtual void Shurdown()
+    {
+        TotalTimeRecorder->End();
+    }
+    virtual FString GetTotalTimeRecorderName()const{return TEXT("");}
     //virtual FHotPatcherSettingBase* GetSettingObject() { return (FHotPatcherSettingBase*)ContextSetting; }
 
 public:
     FExportPakProcess OnPaking;
     FExportPakShowMsg OnShowMsg;
-    FHotPatcherSettingBase* ContextSetting;
+    TSharedPtr<FHotPatcherSettingBase> ContextSetting;
     UPROPERTY()
     UScopedSlowTaskContext* UnrealPakSlowTask;
+    TSharedPtr<TimeRecorder> TotalTimeRecorder;
 };
 
 USTRUCT(BlueprintType)
@@ -43,7 +56,8 @@ struct HOTPATCHERRUNTIME_API FHotPatcherPatchContext:public FHotPatcherContext
 {
     GENERATED_USTRUCT_BODY()
     FHotPatcherPatchContext()=default;
-    virtual FExportPatchSettings* GetSettingObject() { return (FExportPatchSettings*)ContextSetting; }
+    virtual FExportPatchSettings* GetSettingObject() { return (FExportPatchSettings*)ContextSetting.Get(); }
+    virtual FString GetTotalTimeRecorderName()const{return TEXT("Generate the patch total time");}
     
     // base version content
     UPROPERTY(EditAnywhere)
@@ -88,8 +102,8 @@ struct HOTPATCHERRUNTIME_API FHotPatcherReleaseContext:public FHotPatcherContext
 {
     GENERATED_USTRUCT_BODY()
     FHotPatcherReleaseContext()=default;
-    virtual FExportReleaseSettings* GetSettingObject() { return (FExportReleaseSettings*)ContextSetting; }
-
+    virtual FExportReleaseSettings* GetSettingObject() { return (FExportReleaseSettings*)ContextSetting.Get(); }
+    virtual FString GetTotalTimeRecorderName()const{return TEXT("Generate the release total time");}
     UPROPERTY(BlueprintReadOnly)
     FHotPatcherVersion NewReleaseVersion;
     

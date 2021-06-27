@@ -30,8 +30,7 @@ public:
     virtual FExportPatchSettings* GetSettingObject()override{ return (FExportPatchSettings*)Setting; }
 
 private:
-    UPROPERTY()
-    FHotPatcherPatchContext PatchContext;
+    TSharedPtr<FHotPatcherPatchContext> PatchContext;
 
     TSharedPtr<FThreadWorker> ThreadWorker;
 };
