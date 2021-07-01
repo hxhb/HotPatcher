@@ -509,7 +509,8 @@ namespace PatchWorker
 	bool GeneratePakProxysWorker(FHotPatcherPatchContext& Context)
 	{
 		TimeRecorder PakChunkToralTR(FString::Printf(TEXT("Generate all platform pakproxys of all chunks Total Time:")));
-		for(const auto& Platform :Context.GetSettingObject()->GetPakTargetPlatforms())
+		TArray<ETargetPlatform> PakPlatforms = Context.GetSettingObject()->GetPakTargetPlatforms();
+		for(const auto& Platform :PakPlatforms)
 		{
 			FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
 			// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
