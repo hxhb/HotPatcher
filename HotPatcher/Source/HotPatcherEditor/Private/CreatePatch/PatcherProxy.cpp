@@ -425,7 +425,7 @@ namespace PatchWorker
 		{
 			if(Context.GetSettingObject()->IsCookPatchAssets() || Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
 			{
-				TimeRecorder CookAssetsTR(FString::Printf(TEXT("Cook Platform %s Assets."),*PlatformName));
+				TimeRecorder CookAssetsTR(FString::Printf(TEXT("Cook %s assets in the patch."),*PlatformName));
 
 				ETargetPlatform Platform;
 				UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);

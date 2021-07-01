@@ -120,7 +120,7 @@ void FHotPatcherEditorModule::StartupModule()
 
 	ExtendContentBrowserAssetSelectionMenu();
 	ExtendContentBrowserPathSelectionMenu();
-
+	
 	CreateRootMenu();
 }
 
@@ -466,7 +466,7 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 	{
 		bool bSuccessed = true;
 		auto Msg = FText::Format(
-			LOCTEXT("CookAssetsNotify", "Cook Platform {1} for {0} {2}!"),
+			LOCTEXT("CookAssetsNotify", "Cook {1} for {0} {2}!"),
 			UKismetTextLibrary::Conv_StringToText(PackageName),
 			UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
 			bSuccessed ? UKismetTextLibrary::Conv_StringToText(TEXT("Successfuly")):UKismetTextLibrary::Conv_StringToText(TEXT("Faild"))
@@ -483,10 +483,29 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 		CurrentPackage.CookPlatforms = TArray<ETargetPlatform>{Platform};
 		CurrentPackage.Callback = CookNotifyLambda;
 		CookMission.MissionPackages.Add(CurrentPackage);
-		UE_LOG(LogHotPatcher,Log,TEXT("Cook Package %s Platform %s"),*AssetsData[index].PackagePath.ToString(),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+		UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*AssetsData[index].PackagePath.ToString(),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
 	}
 	CookMission.Callback = [](bool){};
-	FCookManager::Get().AddCookMission(CookMission);
+	TFunction<void(TArray<FCookManager::FCookPackageInfo>)> OnCookFaildLambda = [](TArray<FCookManager::FCookPackageInfo> FaildPackages)
+	{
+		for(const auto& Package:FaildPackages)
+		{
+			FString PlatformsStr;
+			for(const auto& Platform:Package.CookPlatforms)
+			{
+				PlatformsStr += FString::Printf(TEXT("%s/"),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+			}
+			PlatformsStr.RemoveFromEnd(TEXT("/"));
+			auto Msg = FText::Format(
+						LOCTEXT("CookAssetsNotify", "Cook {1} for {0} {2}!"),
+						UKismetTextLibrary::Conv_StringToText(Package.PackageName),
+						UKismetTextLibrary::Conv_StringToText(PlatformsStr),
+						UKismetTextLibrary::Conv_StringToText(TEXT("Faild"))
+						);
+			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,Package.PackageName,SNotificationItem::ECompletionState::CS_Fail);
+		}
+	};
+	FCookManager::Get().AddCookMission(CookMission,OnCookFaildLambda);
 
 }
 

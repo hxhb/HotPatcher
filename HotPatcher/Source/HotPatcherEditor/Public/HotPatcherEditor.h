@@ -32,7 +32,6 @@ class FMenuBuilder;
 extern FExportPatchSettings* GPatchSettings;
 extern FExportReleaseSettings* GReleaseSettings;
 
-
 struct FContentBrowserSelectedInfo
 {
 	TArray<FAssetData> SelectedAssets;
