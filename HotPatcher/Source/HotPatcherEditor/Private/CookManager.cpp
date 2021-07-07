@@ -55,6 +55,10 @@ int32 FCookManager::AddCookMission(const FCookMission& InCookMission,TFunction<v
 	{
 		if(!UFlibHotPatcherEditorHelper::CookPackage(Package.AssetData,Package.AssetData.GetPackage(),Package.GetCookPlatformsString()))
 		{
+			if(Package.AssetData.GetAsset()->HasAnyMarks(OBJECTMARK_EditorOnly))
+			{	
+				UE_LOG(LogHotPatcherEditorHelper,Error,TEXT("%s is EditorOnly Assets!"),*Package.PackageName);
+			}
 			FaildPackages.Add(Package);
 		}
 	}

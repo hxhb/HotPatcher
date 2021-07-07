@@ -100,4 +100,7 @@ public:
 	static TArray<FString> GetSupportPlatforms();
 
 	static FString GetEncryptSettingsCommandlineOptions(const FPakEncryptSettings& EncryptSettings,const FString& PlatformName);
+
+	static ITargetPlatform* GetPlatformByName(const FString& Name);
+
 };

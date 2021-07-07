@@ -77,6 +77,7 @@ public:
 	
 	TArray<FString> GetAssetIgnoreFiltersPaths()const;
 	FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
+	FORCEINLINE bool IsAnalysisDiffAssetDependenciesOnly()const {return bAnalysisDiffAssetDependenciesOnly;}
 	FORCEINLINE bool IsRecursiveWidgetTree()const {return bRecursiveWidgetTree;}
 	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
 	
@@ -172,11 +173,14 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
 		bool bIncludeHasRefAssetsOnly = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter",meta = (EditCondition = "!bAnalysisDiffAssetDependenciesOnly"))
 		bool bAnalysisFilterDependencies=true;
+	// 只对与基础包有差异的资源进行依赖分析，提高依赖分析的速度
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter",meta = (EditCondition = "!bAnalysisFilterDependencies"))
+		bool bAnalysisDiffAssetDependenciesOnly=false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
 		bool bRecursiveWidgetTree = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter",meta = (EditCondition="bAnalysisFilterDependencies"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter",meta = (EditCondition="bAnalysisFilterDependencies || bAnalysisDiffAssetDependenciesOnly"))
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Specify Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;

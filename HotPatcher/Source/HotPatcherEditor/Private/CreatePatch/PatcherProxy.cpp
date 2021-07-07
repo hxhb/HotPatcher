@@ -68,6 +68,8 @@ namespace PatchWorker
 	bool MakeCurrentVersionWorker(FHotPatcherPatchContext& Context);
 	// setup 3
 	bool ParseVersionDiffWorker(FHotPatcherPatchContext& Context);
+	bool ParseDiffAssetOnlyWorker(FHotPatcherPatchContext& Context);
+
 	// setup 4
 	bool PatchRequireChekerWorker(FHotPatcherPatchContext& Context);
 	// setup 5
@@ -123,6 +125,7 @@ bool UPatcherProxy::DoExport()
 	PreCookPatchWorkers.Emplace(&PatchWorker::BaseVersionReader);
 	PreCookPatchWorkers.Emplace(&PatchWorker::MakeCurrentVersionWorker);
 	PreCookPatchWorkers.Emplace(&PatchWorker::ParseVersionDiffWorker);
+	PreCookPatchWorkers.Emplace(&PatchWorker::ParseDiffAssetOnlyWorker);
 	PreCookPatchWorkers.Emplace(&PatchWorker::PatchRequireChekerWorker);
 	PreCookPatchWorkers.Emplace(&PatchWorker::SavePakVersionWorker);
 	PreCookPatchWorkers.Emplace(&PatchWorker::ParserChunkWorker);
@@ -150,6 +153,7 @@ bool UPatcherProxy::DoExport()
 		if(!Worker(*PatchContext))
 		{
 			bRet = false;
+			PatchContext->UnrealPakSlowTask->Final();
 			break;
 		}
 	}
@@ -233,6 +237,40 @@ namespace PatchWorker
 		return true;
 	};
 
+	bool ParseDiffAssetOnlyWorker(FHotPatcherPatchContext& Context)
+	{
+		TimeRecorder DiffVersionAssetOnlyTR(TEXT("Parse Diff Asset Dependencies Only Worker"));
+		if(Context.GetSettingObject()->IsAnalysisDiffAssetDependenciesOnly())
+		{
+			TArray<FAssetDetail> DiffAssetDetails;
+			UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(Context.VersionDiff.AssetDiffInfo.AddAssetDependInfo,DiffAssetDetails);
+
+			FChunkInfo DiffChunk;
+			for(const auto& AssetDetail:DiffAssetDetails)
+			{
+				FPatcherSpecifyAsset CurrentAsets;
+				CurrentAsets.Asset = FSoftObjectPath(AssetDetail.mPackagePath);
+				CurrentAsets.bAnalysisAssetDependencies = true;
+				CurrentAsets.AssetRegistryDependencyTypes.AddUnique(EAssetRegistryDependencyTypeEx::Packages);
+				DiffChunk.IncludeSpecifyAssets.Add(CurrentAsets);
+			}
+			
+			FHotPatcherVersion DiffVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
+				Context.GetSettingObject()->GetVersionId(),
+				Context.BaseVersion.VersionId,
+				FDateTime::UtcNow().ToString(),
+				DiffChunk,
+				Context.GetSettingObject()->GetAssetsDependenciesScanedCaches(),
+				Context.GetSettingObject()->IsIncludeHasRefAssetsOnly(),
+				Context.GetSettingObject()->IsAnalysisFilterDependencies()
+			);
+			{
+				TimeRecorder DiffTR(TEXT("Base Version And Diff Version total time"));
+				Context.VersionDiff = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*Context.GetSettingObject(), Context.BaseVersion, DiffVersion);
+			}
+		}
+		return true;
+	}
 	// setup 4
 	bool PatchRequireChekerWorker(FHotPatcherPatchContext& Context)
 	{

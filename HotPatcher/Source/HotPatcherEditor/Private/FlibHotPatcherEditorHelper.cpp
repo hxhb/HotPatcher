@@ -70,6 +70,14 @@ void UFlibHotPatcherEditorHelper::CheckInvalidCookFilesByAssetDependenciesInfo(
 		FString AssetLongPackageName;
 		if(!UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(AssetDetail.mPackagePath, AssetLongPackageName))
 			continue;
+		FAssetData CurrentAssetData;
+		UFLibAssetManageHelperEx::GetSingleAssetsData(AssetDetail.mPackagePath,CurrentAssetData);
+		if (CurrentAssetData.GetAsset()->HasAnyMarks(OBJECTMARK_EditorOnly))
+		{
+			UE_LOG(LogHotPatcherEditorHelper,Warning,TEXT("Miss %s it's EditorOnly Assets!"),*CurrentAssetData.PackageName.ToString());
+			continue;
+		}
+		
 		if (UFLibAssetManageHelperEx::ConvLongPackageNameToCookedPath(
 			InProjectAbsDir,
 			InPlatformName,
@@ -355,14 +363,13 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 	{
 		SaveFlags |= SAVE_Concurrent;
 	}
-	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
-	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
 	TArray<ITargetPlatform*> CookPlatforms; 
-	for (ITargetPlatform *TargetPlatform : TargetPlatforms)
+	for (auto const& PlatformName : Platforms)
 	{
-		if (Platforms.Contains(TargetPlatform->PlatformName()))
+		ITargetPlatform* Platform = GetPlatformByName(PlatformName);
+		if(Platform)
 		{
-			CookPlatforms.AddUnique(TargetPlatform);
+			CookPlatforms.Add(Platform);
 		}
 	}
 	FString SavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
@@ -841,4 +848,26 @@ FString UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(const 
 	Result += FString::Printf(TEXT("-enginedir=\"%s\" "),*FPaths::ConvertRelativePathToFull(FPaths::EngineDir()));
 	Result += FString::Printf(TEXT("-platform=%s"),*PlatformName);
 	return Result;
+}
+
+ITargetPlatform* UFlibHotPatcherEditorHelper::GetPlatformByName(const FString& Name)
+{
+	static TMap<FString,ITargetPlatform*> PlatformNameMap;
+
+	if(PlatformNameMap.Contains(Name))
+		return *PlatformNameMap.Find(Name);
+	
+	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
+	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
+	ITargetPlatform* result = NULL;
+	for (ITargetPlatform *TargetPlatform : TargetPlatforms)
+	{
+		if (Name.Equals(TargetPlatform->PlatformName()))
+		{
+			result = TargetPlatform;
+			PlatformNameMap.Add(Name,TargetPlatform);
+			break;
+		}
+	}
+	return result;
 }
