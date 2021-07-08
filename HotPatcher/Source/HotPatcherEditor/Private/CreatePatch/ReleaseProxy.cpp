@@ -37,7 +37,7 @@ bool UReleaseProxy::DoExport()
 	GetSettingObject()->Init();
 	bool bRet = true;
 	FHotPatcherReleaseContext ReleaseContext;
-	ReleaseContext.ContextSetting = MakeShareable(new FExportReleaseSettings(*GetSettingObject()));
+	ReleaseContext.ContextSetting = GetSettingObject();
 	ReleaseContext.UnrealPakSlowTask = NewObject<UScopedSlowTaskContext>();
 	ReleaseContext.UnrealPakSlowTask->AddToRoot();
 	ReleaseContext.Init();

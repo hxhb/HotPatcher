@@ -116,7 +116,7 @@ bool UPatcherProxy::DoExport()
 	PatchContext->OnShowMsg.AddLambda([this](const FString& Msg){ this->OnShowMsg.Broadcast(Msg);});
 	PatchContext->UnrealPakSlowTask = NewObject<UScopedSlowTaskContext>();
 	PatchContext->UnrealPakSlowTask->AddToRoot();
-	PatchContext->ContextSetting = MakeShareable(new FExportPatchSettings(*GetSettingObject()));
+	PatchContext->ContextSetting = GetSettingObject();
 	PatchContext->Init();
 	// TimeRecorder TotalTimeTR(TEXT("Generate the patch total time"));
 
@@ -163,28 +163,22 @@ bool UPatcherProxy::DoExport()
 		ThreadWorker = MakeShareable(new FThreadWorker(TEXT("PatchProxy_WaitCook"),[this,PostCookPatchWorkers]()
 		{
 			UPackage::WaitForAsyncFileWrites();
-
-			AsyncTask(ENamedThreads::GameThread,[this,PostCookPatchWorkers]()
-			{
-				for(TFunction<bool(FHotPatcherPatchContext&)> Worker:PostCookPatchWorkers)
-				{
-					if(!Worker(*PatchContext))
-					{
-						// bRet = false;
-						break;
-					}
-				}
-				PatchContext->UnrealPakSlowTask->Final();
-				PatchContext->Shurdown();
-			});
 		}));
 		ThreadWorker->Execute();
 		ThreadWorker->Join();
+		for(TFunction<bool(FHotPatcherPatchContext&)> Worker:PostCookPatchWorkers)
+		{
+			if(!Worker(*PatchContext))
+			{
+				bRet = false;
+				break;
+			}
+		}
 	}
-
-	return true;
+	PatchContext->UnrealPakSlowTask->Final();
+	PatchContext->Shurdown();
+	return bRet;
 }
-
 
 namespace PatchWorker
 {
