@@ -58,7 +58,7 @@ bool UFlibShaderPipelineCacheHelper::IsEnabledUsePSO()
 	auto Var =  IConsoleManager::Get().FindConsoleVariable(TEXT("r.ShaderPipelineCache.Enabled"));
 	if(Var)
 	{
-		ret = Var->GetBool();
+		ret = !!Var->GetInt();
 	}
 	return ret;
 }
@@ -69,7 +69,7 @@ bool UFlibShaderPipelineCacheHelper::IsEnabledLogPSO()
 	auto Var =  IConsoleManager::Get().FindConsoleVariable(TEXT("r.ShaderPipelineCache.LogPSO"));
 	if(Var)
 	{
-		ret = Var->GetBool();
+		ret = !!Var->GetInt();
 	}
 	return ret;
 }
@@ -80,7 +80,7 @@ bool UFlibShaderPipelineCacheHelper::IsEnabledSaveBoundPSOLog()
 	auto Var =  IConsoleManager::Get().FindConsoleVariable(TEXT("r.ShaderPipelineCache.SaveBoundPSOLog"));
 	if(Var)
 	{
-		ret = Var->GetBool();
+		ret = !!Var->GetInt();
 	}
 	return ret;
 }

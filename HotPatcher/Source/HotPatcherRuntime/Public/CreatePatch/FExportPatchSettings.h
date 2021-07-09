@@ -17,6 +17,11 @@
 #include "CreatePatch/HotPatcherSettingBase.h"
 
 // engine header
+#if WITH_PACKAGE_CONTEXT
+	#include "UObject/SavePackage.h"
+	#include "Serialization/BulkDataManifest.h"
+#endif
+
 #include "CoreMinimal.h"
 #include "FPlatformExternAssets.h"
 #include "UObject/ObjectMacros.h"
@@ -58,7 +63,7 @@ public:
 
 	FExportPatchSettings();
 	virtual void Init() override;
-	virtual void InitPlatformPackageContexts();
+
 	
 	FORCEINLINE static FExportPatchSettings* Get()
 	{
@@ -140,8 +145,11 @@ public:
 	FORCEINLINE FUnrealPakSettings GetUnrealPakSettings()const {return UnrealPakSettings;}
 	FORCEINLINE TArray<FString> GetDefaultPakListOptions()const {return DefaultPakListOptions;}
 	FORCEINLINE TArray<FString> GetDefaultCommandletOptions()const {return DefaultCommandletOptions;}
-	
+#if WITH_PACKAGE_CONTEXT
+	virtual void InitPlatformPackageContexts();
 	FORCEINLINE TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
+	bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
+#endif
 	FORCEINLINE bool IsCreateDefaultChunk()const { return bCreateDefaultChunk; }
 	FORCEINLINE bool IsEnableMultiThread()const{ return bEnableMultiThread; }
 
@@ -149,7 +157,7 @@ public:
 	FORCEINLINE bool IsStoragePakFileInfo()const{return bStoragePakFileInfo;}
 	
 	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
-	bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = true;

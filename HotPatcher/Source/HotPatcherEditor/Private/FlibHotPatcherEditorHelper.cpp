@@ -7,6 +7,9 @@
 #include "HotPatcherLog.h"
 
 // engine header
+#include "Interfaces/ITargetPlatform.h"
+#include "HAL/PlatformFilemanager.h"
+#include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Editor.h"
 #include "IPlatformFileSandboxWrapper.h"
 #include "Async/Async.h"
@@ -438,18 +441,22 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 		// 		}
 		// 	}
 		// }
-
+#if WITH_PACKAGE_CONTEXT
 		FSavePackageContext* CurrentPlatformPackageContext = nullptr;
 		if(PlatformSavePackageContext.Contains(Platform->PlatformName()))
 			CurrentPlatformPackageContext = *PlatformSavePackageContext.Find(Platform->PlatformName());
-		
+#endif
 		GIsCookerLoadingPackage = true;
 		UPackage::PackageSavedEvent.AddLambda([PackageSavedCallback](const FString& InFilePath,UObject* Object){PackageSavedCallback(InFilePath);});
 		
 		// UE_LOG(LogHotPatcherEditorHelper,Display,TEXT("Cook Assets:%s save to %s"),*Package->GetName(),*CookedSavePath);
 		FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, CookedFlags, *CookedSavePath, 
                                                 GError, nullptr, false, false, SaveFlags, Platform, 
-                                                FDateTime::MinValue(), false, /*DiffMap*/ nullptr,CurrentPlatformPackageContext);
+                                                FDateTime::MinValue(), false, /*DiffMap*/ nullptr
+#if WITH_PACKAGE_CONTEXT
+                                                ,CurrentPlatformPackageContext
+#endif
+                                                );
 		GIsCookerLoadingPackage = false;
 		bSuccessed = Result == ESavePackageResult::Success;
 	}

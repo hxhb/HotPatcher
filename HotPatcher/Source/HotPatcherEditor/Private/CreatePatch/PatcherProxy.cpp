@@ -476,12 +476,16 @@ namespace PatchWorker
 				{
 					UFlibHotPatcherEditorHelper::CookChunkAssets(
 						ChunkAssets,
-						TArray<ETargetPlatform>{Platform},
-						Context.GetSettingObject()->GetPlatformSavePackageContexts()
+						TArray<ETargetPlatform>{Platform}
+#if WITH_PACKAGE_CONTEXT
+						,Context.GetSettingObject()->GetPlatformSavePackageContexts()
+#endif
 					);
 					if(Context.GetSettingObject()->GetIoStoreSettings().bStorageBulkDataInfo)
 					{
+#if WITH_PACKAGE_CONTEXT
 						Context.GetSettingObject()->SavePlatformBulkDataManifest(Platform);
+#endif
 					}
 				}
 

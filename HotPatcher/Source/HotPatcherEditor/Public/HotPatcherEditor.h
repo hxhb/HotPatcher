@@ -56,12 +56,13 @@ public:
 	
 	void RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName);
 
+
+	
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >23
 	void CreateRootMenu();
 	void CreateAssetContextMenu(FToolMenuSection& InSection);
 	void ExtendContentBrowserAssetSelectionMenu();
 	void ExtendContentBrowserPathSelectionMenu();
-	
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >23
 	void MakeCookActionsSubMenu(UToolMenu* Menu);
 	void MakeCookAndPakActionsSubMenu(UToolMenu* Menu);
 	void MakePakExternalActionsSubMenu(UToolMenu* Menu);

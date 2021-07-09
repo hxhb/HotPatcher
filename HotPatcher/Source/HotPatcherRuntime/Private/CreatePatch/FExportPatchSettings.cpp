@@ -3,12 +3,11 @@
 #include "HotPatcherLog.h"
 
 // engine header
-#include "UObject/SavePackage.h"
+
 #include "Dom/JsonValue.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "Serialization/BulkDataManifest.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Interfaces/ITargetPlatformManagerModule.h"
 
@@ -38,9 +37,12 @@ FExportPatchSettings::FExportPatchSettings()
 void FExportPatchSettings::Init()
 {
 	Super::Init();
+#if WITH_PACKAGE_CONTEXT
 	InitPlatformPackageContexts();
+#endif
 }
 
+#if WITH_PACKAGE_CONTEXT
 void FExportPatchSettings::InitPlatformPackageContexts()
 {
 	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
@@ -75,7 +77,9 @@ void FExportPatchSettings::InitPlatformPackageContexts()
 			PlatformSavePackageContexts.Add(Platform,SavePackageContext);
 		}
 	}
+
 }
+#endif
 
 FString FExportPatchSettings::GetBaseVersion() const
 {
@@ -231,7 +235,7 @@ TArray<FString> FExportPatchSettings::GetAssetIncludeFiltersPaths()const
 	}
 	return Result;
 }
-
+#if WITH_PACKAGE_CONTEXT
 bool FExportPatchSettings::SavePlatformBulkDataManifest(ETargetPlatform Platform)
 {
 	bool bRet = false;
@@ -245,7 +249,7 @@ bool FExportPatchSettings::SavePlatformBulkDataManifest(ETargetPlatform Platform
 	}
 	return bRet;
 }
-
+#endif
 TArray<FString> FExportPatchSettings::GetForceSkipContentStrRules()const
 {
 	TArray<FString> Path;

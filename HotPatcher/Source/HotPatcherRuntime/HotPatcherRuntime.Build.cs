@@ -42,7 +42,25 @@ public class HotPatcherRuntime : ModuleRules
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
-			
+
+		// PackageContext
+		{
+			bool bEnablePackageContext = false;
+			BuildVersion Version;
+			if (BuildVersion.TryRead(BuildVersion.GetDefaultFileName(), out Version))
+			{
+				if (Version.MajorVersion > 4 || Version.MinorVersion > 24)
+				{
+					PublicDefinitions.Add("WITH_PACKAGE_CONTEXT=1");
+					bEnablePackageContext = true;
+				}
+			}
+		
+			if(!bEnablePackageContext)
+			{
+				PublicDefinitions.Add("WITH_PACKAGE_CONTEXT=0");
+			}
+		}
 		
 		PrivateDependencyModuleNames.AddRange(
 			new string[]

@@ -10,6 +10,7 @@
 #include "CreatePatch/FExportPatchSettings.h"
 
 // engine header
+#include "Misc/App.h"
 #include "Misc/SecureHash.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetStringLibrary.h"

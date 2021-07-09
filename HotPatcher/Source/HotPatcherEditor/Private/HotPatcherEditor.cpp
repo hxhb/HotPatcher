@@ -8,7 +8,7 @@
 #include "CookManager.h"
 
 // ENGINE HEADER
-#include "ContentBrowserMenuContexts.h"
+
 #include "ContentBrowserModule.h"
 #include "IContentBrowserSingleton.h"
 #include "Misc/MessageDialog.h"
@@ -31,6 +31,7 @@
 #if ENGINE_MAJOR_VERSION >4 || ENGINE_MINOR_VERSION >23
 #include "ToolMenus.h"
 #include "ToolMenuDelegates.h"
+#include "ContentBrowserMenuContexts.h"
 #endif
 
 FExportPatchSettings* GPatchSettings = nullptr;
@@ -118,11 +119,91 @@ void FHotPatcherEditorModule::StartupModule()
 	CommandList->UnmapAction(FHotPatcherCommands::Get().CookAndPakSelectedAction);
 	CommandList->UnmapAction(FHotPatcherCommands::Get().AddToPakSettingsAction);
 
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >23
 	ExtendContentBrowserAssetSelectionMenu();
 	ExtendContentBrowserPathSelectionMenu();
 	
 	CreateRootMenu();
+#endif
 }
+
+
+
+void FHotPatcherEditorModule::ShutdownModule()
+{
+	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
+	// we call this function before unloading the module.
+	FCookManager::Get().Shutdown();
+	if(DockTab.IsValid())
+	{
+		DockTab->RequestCloseTab();
+	}
+	
+	FHotPatcherCommands::Unregister();
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(HotPatcherTabName);
+	FHotPatcherStyle::Shutdown();
+}
+
+void FHotPatcherEditorModule::PluginButtonClicked()
+{
+	if(!DockTab.IsValid())
+	{
+		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateRaw(this, &FHotPatcherEditorModule::OnSpawnPluginTab))
+	    .SetDisplayName(LOCTEXT("FHotPatcherTabTitle", "HotPatcher"))
+	    .SetMenuType(ETabSpawnerMenuType::Hidden);
+	}
+	FGlobalTabmanager::Get()->InvokeTab(HotPatcherTabName);
+}
+
+void FHotPatcherEditorModule::OnTabClosed(TSharedRef<SDockTab> InTab)
+{
+	DockTab.Reset();
+}
+
+void FHotPatcherEditorModule::AddMenuExtension(FMenuBuilder& Builder)
+{
+	Builder.AddMenuEntry(FHotPatcherCommands::Get().PluginAction);
+}
+
+void FHotPatcherEditorModule::AddToolbarExtension(FToolBarBuilder& Builder)
+{
+	Builder.AddToolBarButton(FHotPatcherCommands::Get().PluginAction);
+}
+
+
+
+TArray<FAssetData> FHotPatcherEditorModule::GetSelectedAssetsInBrowserContent()
+{
+	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
+	TArray<FAssetData> AssetsData;
+	ContentBrowserModule.Get().GetSelectedAssets(AssetsData);
+	return AssetsData;
+}
+
+TArray<FString> FHotPatcherEditorModule::GetSelectedFolderInBrowserContent()
+{
+	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
+	TArray<FString> Folders;
+	ContentBrowserModule.Get().GetSelectedFolders(Folders);
+	return Folders;
+}
+
+
+TSharedRef<class SDockTab> FHotPatcherEditorModule::OnSpawnPluginTab(const class FSpawnTabArgs& InSpawnTabArgs)
+{
+	return SAssignNew(DockTab,SDockTab)
+		.TabRole(ETabRole::NomadTab)
+		.Label(LOCTEXT("HotPatcherTab", "Hot Patcher"))
+		.ToolTipText(LOCTEXT("HotPatcherTabTextToolTip", "Hot Patcher"))
+		.OnTabClosed(SDockTab::FOnTabClosedCallback::CreateRaw(this,&FHotPatcherEditorModule::OnTabClosed))
+		.Clipping(EWidgetClipping::ClipToBounds)
+		[
+			SNew(SHotPatcher)
+		];
+}
+
+
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >23
 
 void FHotPatcherEditorModule::CreateRootMenu()
 {
@@ -223,84 +304,6 @@ void FHotPatcherEditorModule::ExtendContentBrowserPathSelectionMenu()
 		}
 	}));
 }
-
-
-void FHotPatcherEditorModule::ShutdownModule()
-{
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
-	FCookManager::Get().Shutdown();
-	if(DockTab.IsValid())
-	{
-		DockTab->RequestCloseTab();
-	}
-	
-	FHotPatcherCommands::Unregister();
-	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(HotPatcherTabName);
-	FHotPatcherStyle::Shutdown();
-}
-
-void FHotPatcherEditorModule::PluginButtonClicked()
-{
-	if(!DockTab.IsValid())
-	{
-		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateRaw(this, &FHotPatcherEditorModule::OnSpawnPluginTab))
-	    .SetDisplayName(LOCTEXT("FHotPatcherTabTitle", "HotPatcher"))
-	    .SetMenuType(ETabSpawnerMenuType::Hidden);
-	}
-	FGlobalTabmanager::Get()->InvokeTab(HotPatcherTabName);
-}
-
-void FHotPatcherEditorModule::OnTabClosed(TSharedRef<SDockTab> InTab)
-{
-	DockTab.Reset();
-}
-
-void FHotPatcherEditorModule::AddMenuExtension(FMenuBuilder& Builder)
-{
-	Builder.AddMenuEntry(FHotPatcherCommands::Get().PluginAction);
-}
-
-void FHotPatcherEditorModule::AddToolbarExtension(FToolBarBuilder& Builder)
-{
-	Builder.AddToolBarButton(FHotPatcherCommands::Get().PluginAction);
-}
-
-
-
-TArray<FAssetData> FHotPatcherEditorModule::GetSelectedAssetsInBrowserContent()
-{
-	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
-	TArray<FAssetData> AssetsData;
-	ContentBrowserModule.Get().GetSelectedAssets(AssetsData);
-	return AssetsData;
-}
-
-TArray<FString> FHotPatcherEditorModule::GetSelectedFolderInBrowserContent()
-{
-	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
-	TArray<FString> Folders;
-	ContentBrowserModule.Get().GetSelectedFolders(Folders);
-	return Folders;
-}
-
-
-TSharedRef<class SDockTab> FHotPatcherEditorModule::OnSpawnPluginTab(const class FSpawnTabArgs& InSpawnTabArgs)
-{
-	return SAssignNew(DockTab,SDockTab)
-		.TabRole(ETabRole::NomadTab)
-		.Label(LOCTEXT("HotPatcherTab", "Hot Patcher"))
-		.ToolTipText(LOCTEXT("HotPatcherTabTextToolTip", "Hot Patcher"))
-		.OnTabClosed(SDockTab::FOnTabClosedCallback::CreateRaw(this,&FHotPatcherEditorModule::OnTabClosed))
-		.Clipping(EWidgetClipping::ClipToBounds)
-		[
-			SNew(SHotPatcher)
-		];
-}
-
-
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >23
-
 
 void FHotPatcherEditorModule::MakeCookActionsSubMenu(UToolMenu* Menu)
 {
