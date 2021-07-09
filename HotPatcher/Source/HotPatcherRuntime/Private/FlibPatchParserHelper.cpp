@@ -556,7 +556,7 @@ TArray<FString> UFlibPatchParserHelper::GetIniConfigs(const FString& InSearchDir
 
 	if (FPaths::DirectoryExists(SearchConfigAbsDir))
 	{
-		FFillArrayDirectoryVisitor Visitor;
+		FFileArrayDirectoryVisitor Visitor;
 
 		IFileManager::Get().IterateDirectory(*SearchConfigAbsDir, Visitor);
 
@@ -573,7 +573,7 @@ TArray<FString> UFlibPatchParserHelper::GetIniConfigs(const FString& InSearchDir
 			FString DirectoryName = UKismetStringLibrary::GetSubstring(PlatformIniDirectory, PlatformNameBeginIndex, PlatformIniDirectory.Len() - PlatformNameBeginIndex);
 			if (InPlatformName.Contains(DirectoryName))
 			{
-				FFillArrayDirectoryVisitor PlatformVisitor;
+				FFileArrayDirectoryVisitor PlatformVisitor;
 
 				IFileManager::Get().IterateDirectory(*PlatformIniDirectory, PlatformVisitor);
 

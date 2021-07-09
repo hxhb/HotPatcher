@@ -106,7 +106,7 @@ bool UFlibPakHelper::ScanPlatformDirectory(const FString& InRelativePath, bool b
 		TArray<FString> Files;
 		TArray<FString> Dirs;
 
-		FFillArrayDirectoryVisitor FallArrayDirVisitor;
+		FFileArrayDirectoryVisitor FallArrayDirVisitor;
 		if (bRecursively)
 		{
 			PlatformFile.IterateDirectoryRecursively(*InRelativePath, FallArrayDirVisitor);

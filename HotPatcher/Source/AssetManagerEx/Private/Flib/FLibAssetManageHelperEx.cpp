@@ -994,7 +994,7 @@ bool UFLibAssetManageHelperEx::ConvLongPackageNameToCookedPath(const FString& In
 		AssetCookedNotPostfixPath = FPaths::Combine(CookedRootDir, AssetCookedRelativePath);
 	}
 
-	FFillArrayDirectoryVisitor FileVisitor;
+	FFileArrayDirectoryVisitor FileVisitor;
 	FString SearchDir;
 	{
 		int32 lastSlashIndex;
@@ -1520,7 +1520,7 @@ bool UFLibAssetManageHelperEx::FindFilesRecursive(const FString& InStartDir, TAr
 	if (!FPaths::DirectoryExists(InStartDir))
 		return false;
 
-	FFillArrayDirectoryVisitor FileVisitor;
+	FFileArrayDirectoryVisitor FileVisitor;
 	IFileManager::Get().IterateDirectoryRecursively(*InStartDir, FileVisitor);
 
 	OutFileList.Append(FileVisitor.Files);

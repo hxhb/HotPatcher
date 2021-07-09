@@ -2,7 +2,7 @@
 #include "CoreMinimal.h"
 #include "GenericPlatform/GenericPlatformFile.h"
 
-class ASSETMANAGEREX_API FFillArrayDirectoryVisitor : public IPlatformFile::FDirectoryVisitor
+class ASSETMANAGEREX_API FFileArrayDirectoryVisitor : public IPlatformFile::FDirectoryVisitor
 {
 public:
 	virtual bool Visit(const TCHAR* FilenameOrDirectory, bool bIsDirectory) override
