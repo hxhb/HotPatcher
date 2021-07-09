@@ -236,8 +236,9 @@ namespace PatchWorker
 		TimeRecorder DiffVersionAssetOnlyTR(TEXT("Parse Diff Asset Dependencies Only Worker"));
 		if(Context.GetSettingObject()->IsAnalysisDiffAssetDependenciesOnly())
 		{
+			FAssetDependenciesInfo AddAndModifyInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(Context.VersionDiff.AssetDiffInfo.AddAssetDependInfo,Context.VersionDiff.AssetDiffInfo.ModifyAssetDependInfo);
 			TArray<FAssetDetail> DiffAssetDetails;
-			UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(Context.VersionDiff.AssetDiffInfo.AddAssetDependInfo,DiffAssetDetails);
+			UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(AddAndModifyInfo,DiffAssetDetails);
 
 			FChunkInfo DiffChunk;
 			for(const auto& AssetDetail:DiffAssetDetails)
