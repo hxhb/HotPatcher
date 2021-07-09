@@ -37,7 +37,6 @@ public class HotPatcherEditor : ModuleRules
                 "Settings",
                 "AssetManagerEx",
                 "PakFileUtilities",
-                "IoStoreUtilities",
                 "HotPatcherRuntime"
 				// ... add other public dependencies that you statically link with here ...
 			}
@@ -45,6 +44,14 @@ public class HotPatcherEditor : ModuleRules
 		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 23)
 		{
 			PublicDependencyModuleNames.Add("ToolMenus");
+		}
+
+		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 25)
+		{
+			PublicDependencyModuleNames.AddRange(new string[]
+			{
+				"IoStoreUtilities"
+			});
 		}
 
 		PrivateDependencyModuleNames.AddRange(

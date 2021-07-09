@@ -20,7 +20,7 @@
 
 #include "Async/ParallelFor.h"
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >24
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 #include "IoStoreUtilities.h"
 #endif
 
