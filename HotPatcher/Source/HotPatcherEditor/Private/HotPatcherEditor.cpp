@@ -284,7 +284,7 @@ void FHotPatcherEditorModule::ExtendContentBrowserAssetSelectionMenu()
 	FToolMenuEntry& Entry = Section.AddDynamicEntry("AssetManagerEditorViewCommands", FNewToolMenuSectionDelegate::CreateLambda([this](FToolMenuSection& InSection)
 	{
 		UContentBrowserAssetContextMenuContext* Context = InSection.FindContext<UContentBrowserAssetContextMenuContext>();
-		if (Context && Context->bCanBeModified)
+		if (Context)
 		{
 			CreateAssetContextMenu(InSection);
 		}
@@ -297,8 +297,8 @@ void FHotPatcherEditorModule::ExtendContentBrowserPathSelectionMenu()
 	FToolMenuSection& Section = Menu->FindOrAddSection("PathContextCookUtilities");
 	FToolMenuEntry& Entry = Section.AddDynamicEntry("AssetManagerEditorViewCommands", FNewToolMenuSectionDelegate::CreateLambda([this](FToolMenuSection& InSection)
 	{
-		UContentBrowserFolderContext* Context = InSection.FindContext<UContentBrowserFolderContext>();
-		if (Context && Context->bCanBeModified && Context->NumAssetPaths > 0)
+		UContentBrowserAssetContextMenuContext* Context = InSection.FindContext<UContentBrowserAssetContextMenuContext>();
+		if (Context)
 		{
 			CreateAssetContextMenu(InSection);
 		}
@@ -316,7 +316,7 @@ void FHotPatcherEditorModule::MakeCookActionsSubMenu(UToolMenu* Menu)
 		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
 			continue;
 		Section.AddMenuEntry(
-            FName(UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
+            FName(*UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
             FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))),
             FText(),
             FSlateIcon(),
@@ -337,7 +337,7 @@ void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
 		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
 			continue;
 		Section.AddMenuEntry(
-            FName(UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
+            FName(*UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
             FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))),
             FText(),
             FSlateIcon(),
@@ -363,7 +363,7 @@ void FHotPatcherEditorModule::MakePakExternalActionsSubMenu(UToolMenu* Menu)
 		AppendPlatformName.RemoveFromEnd(TEXT("/"));
 		
 		Section.AddMenuEntry(
-			FName(PakExternalConfig.PakName),
+			FName(*PakExternalConfig.PakName),
 			FText::Format(LOCTEXT("PakExternal", "{0} ({1})"), UKismetTextLibrary::Conv_StringToText(PakExternalConfig.PakName),UKismetTextLibrary::Conv_StringToText(AppendPlatformName)),
 			FText(),
 			FSlateIcon(),
@@ -382,7 +382,7 @@ void FHotPatcherEditorModule::MakeHotPatcherPresetsActionsSubMenu(UToolMenu* Men
 	for (FExportPatchSettings PakConfig : Settings->PresetConfigs)
 	{
 		Section.AddMenuEntry(
-			FName(PakConfig.VersionId),
+			FName(*PakConfig.VersionId),
 			FText::Format(LOCTEXT("PakExternal", "VersionID: {0}"), UKismetTextLibrary::Conv_StringToText(PakConfig.VersionId)),
 			FText(),
 			FSlateIcon(),
