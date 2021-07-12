@@ -18,11 +18,11 @@ void UMountListener::Init()
     	FCoreDelegates::OnPakFileMounted2.AddLambda([this](const IPakFile& PakFile){this->OnMountPak(*PakFile.PakGetPakFilename(),0);});
 #endif
 
-#if ENGINE_MINOR_VERSION <=25 && ENGINE_MINOR_VERSION > 22
+#if ENGINE_MINOR_VERSION <=25 && ENGINE_MINOR_VERSION > 24
         FCoreDelegates::OnPakFileMounted.AddLambda([this](const TCHAR* Pak, const int32 ChunkID){this->OnMountPak(Pak,ChunkID);});
 #endif
     	
-#if ENGINE_MAJOR_VERSION <=4 && ENGINE_MINOR_VERSION <= 22
+#if ENGINE_MAJOR_VERSION <=4 && ENGINE_MINOR_VERSION <= 24
     	FCoreDelegates::PakFileMountedCallback.AddLambda([this](const TCHAR* Pak){this->OnMountPak(Pak,0);});
 #endif
         FCoreDelegates::OnUnmountPak.BindUObject(this,&UMountListener::OnUnMountPak);
