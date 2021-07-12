@@ -28,7 +28,7 @@
 #include "Widgets/Docking/SDockableTab.h"
 #endif
 
-#if ENGINE_MAJOR_VERSION >4 || ENGINE_MINOR_VERSION >23
+#if WITH_EDITOR_SECTION
 #include "ToolMenus.h"
 #include "ToolMenuDelegates.h"
 #include "ContentBrowserMenuContexts.h"
@@ -119,7 +119,7 @@ void FHotPatcherEditorModule::StartupModule()
 	CommandList->UnmapAction(FHotPatcherCommands::Get().CookAndPakSelectedAction);
 	CommandList->UnmapAction(FHotPatcherCommands::Get().AddToPakSettingsAction);
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >23
+#if WITH_EDITOR_SECTION
 	ExtendContentBrowserAssetSelectionMenu();
 	ExtendContentBrowserPathSelectionMenu();
 	
@@ -203,7 +203,7 @@ TSharedRef<class SDockTab> FHotPatcherEditorModule::OnSpawnPluginTab(const class
 }
 
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >23
+#if WITH_EDITOR_SECTION 
 
 void FHotPatcherEditorModule::CreateRootMenu()
 {

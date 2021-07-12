@@ -103,6 +103,17 @@ public class HotPatcherEditor : ModuleRules
 		{
 			bUseRTTI = true;
 		}
+		
+		BuildVersion Version;
+		BuildVersion.TryRead(BuildVersion.GetDefaultFileName(), out Version);
+		// PackageContext
+		System.Func<string, bool,bool> AddPublicDefinitions = (string MacroName,bool bEnable) =>
+		{
+			PublicDefinitions.Add(string.Format("{0}={1}",MacroName, bEnable ? 1 : 0));
+			return true;
+		};
+		AddPublicDefinitions("WITH_EDITOR_SECTION", Version.MajorVersion > 4 || Version.MinorVersion > 24);
+		
 		System.Console.WriteLine("MajorVersion {0} MinorVersion: {1} PatchVersion {2}",Target.Version.MajorVersion,Target.Version.MinorVersion,Target.Version.PatchVersion);
 		bLegacyPublicIncludePaths = false;
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;

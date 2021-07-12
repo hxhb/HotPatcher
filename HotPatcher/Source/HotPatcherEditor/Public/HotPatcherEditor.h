@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >23
+#if WITH_EDITOR_SECTION
 	#include "ToolMenuContext.h"
 	#include "ToolMenu.h"
 #endif
@@ -58,7 +58,7 @@ public:
 
 
 	
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >23
+#if WITH_EDITOR_SECTION
 	void CreateRootMenu();
 	void CreateAssetContextMenu(FToolMenuSection& InSection);
 	void ExtendContentBrowserAssetSelectionMenu();

@@ -1,5 +1,6 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
+using System;
 using System.IO;
 using UnrealBuildTool;
 
@@ -43,25 +44,17 @@ public class HotPatcherRuntime : ModuleRules
 			}
 			);
 
+		BuildVersion Version;
+		BuildVersion.TryRead(BuildVersion.GetDefaultFileName(), out Version);
 		// PackageContext
+		System.Func<string, bool,bool> AddPublicDefinitions = (string MacroName,bool bEnable) =>
 		{
-			bool bEnablePackageContext = false;
-			BuildVersion Version;
-			if (BuildVersion.TryRead(BuildVersion.GetDefaultFileName(), out Version))
-			{
-				if (Version.MajorVersion > 4 || Version.MinorVersion > 24)
-				{
-					PublicDefinitions.Add("WITH_PACKAGE_CONTEXT=1");
-					bEnablePackageContext = true;
-				}
-			}
-		
-			if(!bEnablePackageContext)
-			{
-				PublicDefinitions.Add("WITH_PACKAGE_CONTEXT=0");
-			}
-		}
-		
+			PublicDefinitions.Add(string.Format("{0}={1}",MacroName, bEnable ? 1 : 0));
+			return true;
+		};
+		AddPublicDefinitions("WITH_PACKAGE_CONTEXT", Version.MajorVersion > 4 || Version.MinorVersion > 24);
+		AddPublicDefinitions("WITH_EDITOR_SECTION", Version.MajorVersion > 4 || Version.MinorVersion > 24);
+
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
