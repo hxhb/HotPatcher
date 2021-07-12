@@ -293,16 +293,18 @@ void FHotPatcherEditorModule::ExtendContentBrowserAssetSelectionMenu()
 
 void FHotPatcherEditorModule::ExtendContentBrowserPathSelectionMenu()
 {
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 24
 	UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("ContentBrowser.FolderContextMenu");
 	FToolMenuSection& Section = Menu->FindOrAddSection("PathContextCookUtilities");
 	FToolMenuEntry& Entry = Section.AddDynamicEntry("AssetManagerEditorViewCommands", FNewToolMenuSectionDelegate::CreateLambda([this](FToolMenuSection& InSection)
 	{
-		UContentBrowserAssetContextMenuContext* Context = InSection.FindContext<UContentBrowserAssetContextMenuContext>();
+		UContentBrowserFolderContext* Context = InSection.FindContext<UContentBrowserFolderContext>();
 		if (Context)
 		{
 			CreateAssetContextMenu(InSection);
 		}
 	}));
+#endif
 }
 
 void FHotPatcherEditorModule::MakeCookActionsSubMenu(UToolMenu* Menu)
