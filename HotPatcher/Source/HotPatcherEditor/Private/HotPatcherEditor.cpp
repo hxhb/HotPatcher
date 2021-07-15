@@ -9,6 +9,7 @@
 
 // ENGINE HEADER
 
+#include "AssetToolsModule.h"
 #include "ContentBrowserModule.h"
 #include "IContentBrowserSingleton.h"
 #include "Misc/MessageDialog.h"
@@ -32,6 +33,7 @@
 #include "ToolMenus.h"
 #include "ToolMenuDelegates.h"
 #include "ContentBrowserMenuContexts.h"
+#include "CreatePatch/AssetActions/AssetTypeActions_PrimaryAssetLabel.h"
 #endif
 
 FExportPatchSettings* GPatchSettings = nullptr;
@@ -124,6 +126,8 @@ void FHotPatcherEditorModule::StartupModule()
 	ExtendContentBrowserPathSelectionMenu();
 	
 	CreateRootMenu();
+
+	FAssetToolsModule::GetModule().Get().RegisterAssetTypeActions(MakeShareable(new FAssetTypeActions_PrimaryAssetLabel));
 #endif
 }
 
@@ -142,6 +146,14 @@ void FHotPatcherEditorModule::ShutdownModule()
 	FHotPatcherCommands::Unregister();
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(HotPatcherTabName);
 	FHotPatcherStyle::Shutdown();
+}
+
+void FHotPatcherEditorModule::OpenDockTab()
+{
+	if(!DockTab.IsValid() || !GPatchSettings)
+	{
+		PluginButtonClicked();
+	}
 }
 
 void FHotPatcherEditorModule::PluginButtonClicked()
@@ -397,10 +409,8 @@ void FHotPatcherEditorModule::MakeHotPatcherPresetsActionsSubMenu(UToolMenu* Men
 
 void FHotPatcherEditorModule::OnAddToPatchSettings(const FToolMenuContext& MenuContent)
 {
-	if(!DockTab.IsValid() || !GPatchSettings)
-	{
-		PluginButtonClicked();
-	}
+	OpenDockTab();
+	
 	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
 	TArray<FString> FolderList = GetSelectedFolderInBrowserContent();
 	TArray<FDirectoryPath> FolderDirectorys;

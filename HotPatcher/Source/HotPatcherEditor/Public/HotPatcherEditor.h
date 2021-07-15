@@ -46,7 +46,7 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
-	
+	void OpenDockTab();
 	/** This function will be bound to Command. */
 	void PluginButtonClicked();
 	
