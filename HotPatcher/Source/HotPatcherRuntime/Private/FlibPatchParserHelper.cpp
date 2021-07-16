@@ -1092,7 +1092,7 @@ TArray<FString> UFlibPatchParserHelper::CollectPakCommandsStringsByChunk(
 	TArray<FString> ChunkPakCommands;
 	{
 		TArray<FPakCommand> ChunkPakCommands_r = UFlibPatchParserHelper::CollectPakCommandByChunk(DiffInfo, Chunk, PlatformName,/* PakOptions,*/ScanedCaches,PatcheSettings);
-		for (const auto PakCommand : ChunkPakCommands_r)
+		for (const auto& PakCommand : ChunkPakCommands_r)
 		{
 			ChunkPakCommands.Append(PakCommand.GetPakCommands());
 		}
@@ -1511,7 +1511,7 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<
 {
 	TArray<FString> ResultPakCommands;
 	{
-		for (const auto PakCommand : PakCommands)
+		for (const auto& PakCommand : PakCommands)
 		{
 			const TArray<FString>& PakCommandOriginTexts = bIoStore?PakCommand.GetIoStoreCommands():PakCommand.GetPakCommands();
 			if (!!InReplaceTexts.Num())
