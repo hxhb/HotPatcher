@@ -1,6 +1,7 @@
 #pragma once
 
 #if WITH_EDITOR_SECTION
+#include "ETargetPlatform.h"
 #include "CoreMinimal.h"
 #include "Engine/StaticMesh.h"
 #include "Toolkits/IToolkitHost.h"
@@ -29,7 +30,8 @@ public:
 private:
 	void ExecuteAddToPatchIncludeFilter(TArray<TWeakObjectPtr<UPrimaryAssetLabel>> Objects);
 	void ExecuteAddToChunkConfig(TArray<TWeakObjectPtr<UPrimaryAssetLabel>> Objects);
-	
+	void MakeCookAndPakActionsSubMenu(class UToolMenu* Menu,TArray<TWeakObjectPtr<UPrimaryAssetLabel>> Objects);
+	void OnCookAndPakPlatform(ETargetPlatform Platform,TArray<TWeakObjectPtr<UPrimaryAssetLabel>> Objects);
 };
 #endif
 

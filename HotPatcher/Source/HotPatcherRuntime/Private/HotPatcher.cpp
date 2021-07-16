@@ -16,7 +16,7 @@
 void FHotPatcherRuntimeModule::StartupModule()
 {
 	UEnum* TargetPlatform = UFlibPatchParserHelper::GetUEnum<ETargetPlatform>();
-	uint64 MaxEnumValue = TargetPlatform->GetMaxEnumValue();
+	uint64 MaxEnumValue = TargetPlatform->GetMaxEnumValue()-2;
 	FString EnumName = TargetPlatform->GetName();
 	TArray<TPair<FName, int64>> EnumNames;
 	
@@ -28,13 +28,19 @@ void FHotPatcherRuntimeModule::StartupModule()
 	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
 	for (ITargetPlatform *TargetPlatformIns : TargetPlatforms)
 	{
-		RealPlatformEnums.AddUnique(TargetPlatformIns->PlatformName());
+		FString PlatformName = TargetPlatformIns->PlatformName();
+		if(!PlatformName.IsEmpty())
+		{
+			RealPlatformEnums.AddUnique(PlatformName);
+		}
 	}
 	AppendPlatformEnums = RealPlatformEnums;
 #endif
 	for (ETargetPlatform Platform:TEnumRange<ETargetPlatform>())
 	{
-		EnumNames.Emplace(TargetPlatform->GetNameByValue((int64)Platform),(int64)Platform);
+		FName EnumtorName = TargetPlatform->GetNameByValue((int64)Platform);
+		EnumNames.Emplace(EnumtorName,(int64)Platform);
+		AppendPlatformEnums.Remove(EnumtorName.ToString());
 	}
 	for(const auto& AppendEnumItem:AppendPlatformEnums)
 	{

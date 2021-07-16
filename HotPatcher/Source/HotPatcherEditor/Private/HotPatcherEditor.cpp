@@ -542,6 +542,33 @@ void FHotPatcherEditorModule::OnPakExternal(FPakExternalInfo PakExternConfig)
 	PatcherProxy->DoExport();
 }
 
+void FHotPatcherEditorModule::CookAndPakByAssetsAndFilters(TArray<FPatcherSpecifyAsset> IncludeAssets,TArray<FDirectoryPath> IncludePaths,TArray<ETargetPlatform> Platforms,bool bForceStandalone)
+{
+	FString Name = FDateTime::Now().ToString();
+	PatchSettings = MakeShareable(new FExportPatchSettings);
+	*PatchSettings = MakeTempPatchSettings(Name,IncludePaths,IncludeAssets,TArray<FPlatformExternAssets>{},Platforms,true);
+
+	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
+	PatcherProxy->AddToRoot();
+	Proxys.Add(PatcherProxy);
+	PatcherProxy->SetProxySettings(PatchSettings.Get());
+
+	if(bForceStandalone || PatchSettings->IsStandaloneMode())
+	{
+		FString CurrentConfig;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(*PatchSettings,CurrentConfig);
+		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("PatchConfig.json")));
+		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
+		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*PatchSettings->GetCombinedAdditionalCommandletArgs());
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*PatchSettings->VersionId,*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
+		RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,FString::Printf(TEXT("Mission: %s"),*PatchSettings->VersionId));
+	}
+	else
+	{
+		PatcherProxy->DoExport();
+	}
+}
+
 void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
 {
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
@@ -567,29 +594,7 @@ void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
 		CurrentAsset.AssetRegistryDependencyTypes.AddUnique(EAssetRegistryDependencyTypeEx::Packages);
 		IncludeAssets.AddUnique(CurrentAsset);
 	}
-	FString Name = FDateTime::Now().ToString();
-	PatchSettings = MakeShareable(new FExportPatchSettings);
-	*PatchSettings = MakeTempPatchSettings(Name,IncludePaths,IncludeAssets,TArray<FPlatformExternAssets>{},TArray<ETargetPlatform>{Platform},true);
-
-	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-	PatcherProxy->AddToRoot();
-	Proxys.Add(PatcherProxy);
-	PatcherProxy->SetProxySettings(PatchSettings.Get());
-
-	if(!PatchSettings->IsStandaloneMode())
-	{
-		PatcherProxy->DoExport();
-	}
-	else
-	{
-		FString CurrentConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*PatchSettings,CurrentConfig);
-		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("PatchConfig.json")));
-		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
-		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*PatchSettings->GetCombinedAdditionalCommandletArgs());
-		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*PatchSettings->VersionId,*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
-		RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,FString::Printf(TEXT("Mission: %s"),*PatchSettings->VersionId));
-	}
+	CookAndPakByAssetsAndFilters(IncludeAssets,IncludePaths,TArray<ETargetPlatform>{Platform});
 }
 
 void FHotPatcherEditorModule::OnObjectSaved(UObject* ObjectSaved)

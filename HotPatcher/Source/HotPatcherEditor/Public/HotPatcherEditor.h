@@ -72,6 +72,7 @@ public:
 	TArray<ETargetPlatform> GetAllCookPlatforms()const;
 	void OnCookPlatform(ETargetPlatform Platform);
 	void OnCookAndPakPlatform(ETargetPlatform Platform);
+	void CookAndPakByAssetsAndFilters(TArray<FPatcherSpecifyAsset> IncludeAssets,TArray<FDirectoryPath> IncludePaths,TArray<ETargetPlatform> Platforms,bool bForceStandalone = false);
 	void OnPakExternal(FPakExternalInfo Config);
 	void OnPakPreset(FExportPatchSettings Config);
 	void OnObjectSaved( UObject* ObjectSaved );

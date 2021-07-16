@@ -9,11 +9,12 @@ void FAssetTypeActions_PrimaryAssetLabel::GetActions(const TArray<UObject*>& InO
 	FToolMenuSection& Section)
 {
 	auto Labels = GetTypedWeakObjectPtrs<UPrimaryAssetLabel>(InObjects);
+	const FSlateIcon Icon = FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions.Duplicate");
 	Section.AddMenuEntry(
 	"ObjectContext_AddToPatchIncludeFilters",
 	NSLOCTEXT("AssetTypeActions_PrimaryAssetLabel", "ObjectContext_AddToPatchIncludeFilters", "Add To Patch Include Filters"),
 	NSLOCTEXT("AssetTypeActions_PrimaryAssetLabel", "ObjectContext_AddToPatchIncludeFiltersTooltip", "Add the label to HotPatcher Include Filters."),
-	FSlateIcon(),
+	Icon,
 	FUIAction(
 		FExecuteAction::CreateSP(this, &FAssetTypeActions_PrimaryAssetLabel::ExecuteAddToPatchIncludeFilter, Labels)
 	));
@@ -21,10 +22,23 @@ void FAssetTypeActions_PrimaryAssetLabel::GetActions(const TArray<UObject*>& InO
 			"ObjectContext_AddToChunkConfig",
 			NSLOCTEXT("AssetTypeActions_PrimaryAssetLabel", "ObjectContext_AddToChunkConfig", "Add To Chunk Config"),
 			NSLOCTEXT("AssetTypeActions_PrimaryAssetLabel", "ObjectContext_AddToChunkConfigTooltip", "Add Label To Chunk Config"),
-			FSlateIcon(),
+			Icon,
 			FUIAction(
 				FExecuteAction::CreateSP(this, &FAssetTypeActions_PrimaryAssetLabel::ExecuteAddToChunkConfig, Labels)
 			));
+	Section.AddSubMenu(
+		"ObjectContext_CookAndPakActionsSubMenu",
+		NSLOCTEXT("AssetTypeActions_PrimaryAssetLabel", "ObjectContext_CookAndPakActionsSubMenu","Cook And Pak Label Actions"),
+		NSLOCTEXT("AssetTypeActions_PrimaryAssetLabel", "ObjectContext_CookAndPakActionsSubMenu","Cook And Pak Label Actions"),
+		FNewToolMenuDelegate::CreateRaw(this, &FAssetTypeActions_PrimaryAssetLabel::MakeCookAndPakActionsSubMenu,Labels),
+		FUIAction(
+			FExecuteAction()
+			),
+		EUserInterfaceActionType::Button,
+		false, 
+		FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.SaveAllCurrentFolder")
+		);
+	
 }
 TArray<FPatcherSpecifyAsset> GetLabelsAssets(TArray<TWeakObjectPtr<UPrimaryAssetLabel>> Objects)
 {
@@ -108,6 +122,32 @@ void FAssetTypeActions_PrimaryAssetLabel::ExecuteAddToChunkConfig(TArray<TWeakOb
 		GPatchSettings->bEnableChunk = true;
 		GPatchSettings->ChunkInfos.Append(GetChunksByAssetLabels(Objects));
 	}
+}
+
+void FAssetTypeActions_PrimaryAssetLabel::MakeCookAndPakActionsSubMenu(UToolMenu* Menu,TArray<TWeakObjectPtr<UPrimaryAssetLabel>> Objects)
+{
+	FToolMenuSection& Section = Menu->AddSection("CookAndPakActionsSection");
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	Settings->ReloadConfig();
+	for (auto Platform : FHotPatcherEditorModule::Get().GetAllCookPlatforms())
+	{
+		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
+			continue;
+		Section.AddMenuEntry(
+			FName(*UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
+			FText::Format(NSLOCTEXT("Platform","Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))),
+			FText(),
+			FSlateIcon(),
+			FUIAction(
+				FExecuteAction::CreateRaw(this, &FAssetTypeActions_PrimaryAssetLabel::OnCookAndPakPlatform, Platform,Objects)
+			)
+		);
+	}
+}
+
+void FAssetTypeActions_PrimaryAssetLabel::OnCookAndPakPlatform(ETargetPlatform Platform,TArray<TWeakObjectPtr<UPrimaryAssetLabel>> Objects)
+{
+	FHotPatcherEditorModule::Get().CookAndPakByAssetsAndFilters(GetLabelsAssets(Objects),GetLabelsDirs(Objects),TArray<ETargetPlatform>{Platform},true);
 }
 
 #endif
