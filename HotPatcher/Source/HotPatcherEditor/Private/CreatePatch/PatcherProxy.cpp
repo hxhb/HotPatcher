@@ -5,6 +5,7 @@
 #include "CreatePatch/ScopedSlowTaskContext.h"
 #include "CreatePatch/HotPatcherContext.h"
 #include "HotPatcherEditor.h"
+#include "FlibHDiffPatchHelper.h"
 
 // engine header
 #include "Async/Async.h"
@@ -78,6 +79,7 @@ namespace PatchWorker
 	bool ParserChunkWorker(FHotPatcherPatchContext& Context);
 	// setup 7
 	bool CookPatchAssetsWorker(FHotPatcherPatchContext& Context);
+
 	// setup 8
 	bool GeneratePakProxysWorker(FHotPatcherPatchContext& Context);
 	// setup 9
@@ -102,6 +104,8 @@ namespace PatchWorker
 	bool OnFaildDispatchWorker(FHotPatcherPatchContext& Context);
 	// setup 18
 	bool NotifyOperatorsWorker(FHotPatcherPatchContext& Context);
+
+	void GenerateBinariesPatch(FHotPatcherPatchContext& Context,FChunkInfo& Chunk,ETargetPlatform Platform,TArray<FPakCommand>& PakCommands);
 }
 
 
@@ -111,7 +115,7 @@ bool UPatcherProxy::DoExport()
 	GetSettingObject()->Init();
 	
 	PatchContext = MakeShareable(new FHotPatcherPatchContext);
-	
+	PatchContext->PatchProxy = this;
 	PatchContext->OnPaking.AddLambda([this](const FString& One,const FString& Msg){this->OnPaking.Broadcast(One,Msg);});
 	PatchContext->OnShowMsg.AddLambda([this](const FString& Msg){ this->OnShowMsg.Broadcast(Msg);});
 	PatchContext->UnrealPakSlowTask = NewObject<UScopedSlowTaskContext>();
@@ -132,6 +136,10 @@ bool UPatcherProxy::DoExport()
 	PreCookPatchWorkers.Emplace(&PatchWorker::CookPatchAssetsWorker);
 
 	// wait cook complete
+	if(PatchContext->GetSettingObject()->IsBinariesPatch())
+	{
+		this->OnPakListGenerated.AddStatic(&PatchWorker::GenerateBinariesPatch);
+	}
 	PostCookPatchWorkers.Emplace(&PatchWorker::GeneratePakProxysWorker);
 	PostCookPatchWorkers.Emplace(&PatchWorker::CreatePakWorker);
 	PostCookPatchWorkers.Emplace(&PatchWorker::CreateIoStoreWorker);
@@ -542,6 +550,80 @@ namespace PatchWorker
 		}
 		return true;
 	};
+
+	void GenerateBinariesPatch(FHotPatcherPatchContext& Context,FChunkInfo& Chunk,ETargetPlatform Platform,TArray<FPakCommand>& PakCommands)
+	{
+		TimeRecorder BinariesPatchToralTR(FString::Printf(TEXT("Generate Binaries Patch of all chunks Total Time:")));
+		FString OldCookedDir = Context.GetSettingObject()->GetOldCookedDir();
+		for(auto& PakCommand:PakCommands)
+		{
+			TArray<FString> PatchedPakCommand;
+			for(const auto& PakAssetPath: PakCommand.PakCommands)
+			{
+				auto RemoveDoubleQuoteLambda = [](const FString& InStr)->FString
+				{
+					FString resultStr = InStr;
+					if(resultStr.StartsWith(TEXT("\"")))
+					{
+						resultStr.RemoveAt(0);
+					}
+					if(resultStr.EndsWith(TEXT("\"")))
+					{
+						resultStr.RemoveAt(resultStr.Len() - 1);
+					}
+					return resultStr;
+				};
+				struct FPakCommandItem
+				{
+					FString AssetAbsPath;
+					FString AssetMountPath;
+				};
+				auto ParseUassetLambda = [&RemoveDoubleQuoteLambda](const FString& InAsset)->FPakCommandItem
+				{
+					FPakCommandItem result;
+					TArray<FString> AssetPakCmd = UKismetStringLibrary::ParseIntoArray(InAsset,TEXT("\" "));
+
+					FString AssetAbsPath = AssetPakCmd[0];
+					FString AssetMountPath = AssetPakCmd[1];
+					result.AssetAbsPath = RemoveDoubleQuoteLambda(AssetAbsPath);
+					result.AssetMountPath = RemoveDoubleQuoteLambda(AssetMountPath);
+					return result;
+				};
+
+				FPakCommandItem PakAssetInfo = ParseUassetLambda(PakAssetPath);
+				FString OldAsset = PakAssetInfo.AssetAbsPath.Replace(*FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() + TEXT("/Cooked")),*OldCookedDir,ESearchCase::CaseSensitive);
+				FString PatchSaveToPath = PakAssetInfo.AssetAbsPath.Replace(
+					*FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() + TEXT("/Cooked")),
+					*FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("BinariesPatch")))
+				) + TEXT(".patch");
+				FString PatchSaveToMountPath = PakAssetInfo.AssetMountPath + TEXT(".patch");
+				if(FPaths::FileExists(PakAssetInfo.AssetAbsPath) && FPaths::FileExists(OldAsset))
+				{
+					TArray<uint8> OldAssetData;
+					TArray<uint8> NewAssetData;
+					TArray<uint8> PatchData;
+					bool bLoadOld = FFileHelper::LoadFileToArray(OldAssetData,*OldAsset);
+					bool bLoadNew = FFileHelper::LoadFileToArray(NewAssetData,*PakAssetInfo.AssetAbsPath);
+					bool bPatch = false;
+					if(UFlibHDiffPatchHelper::CreateCompressedDiff(NewAssetData,OldAssetData,PatchData))
+					{
+						if(FFileHelper::SaveArrayToFile(PatchData,*PatchSaveToPath))
+						{
+							PatchedPakCommand.AddUnique(FString::Printf(TEXT("\"%s\" \"%s\""),*PatchSaveToPath,*PatchSaveToMountPath));
+							
+							bPatch = true;
+						}
+					}
+					if(!bPatch)
+					{
+						PatchedPakCommand.AddUnique(PakAssetPath);
+					}
+				}
+			}
+			PakCommand.PakCommands = PatchedPakCommand;
+		}
+	}
+
 	// setup 8
 	bool GeneratePakProxysWorker(FHotPatcherPatchContext& Context)
 	{
@@ -574,6 +656,9 @@ namespace PatchWorker
 						Context.GetSettingObject()
 					);
 				}
+				if(Context.PatchProxy)
+					Context.PatchProxy->OnPakListGenerated.Broadcast(Context,Chunk,Platform,ChunkPakListCommands);
+				
 				auto AppendOptionsLambda = [](TArray<FString>& OriginCommands,const TArray<FString>& Options)
 				{
 					// [Pak]

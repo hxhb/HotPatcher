@@ -158,6 +158,9 @@ public:
 	
 	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
 
+	FORCEINLINE bool IsBinariesPatch()const{ return bBinariesPatch; }
+	FORCEINLINE FString GetOldCookedDir()const;
+	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = true;
@@ -281,6 +284,11 @@ public:
 		bool bStorageDiffAnalysisResults = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bStorageAssetDependencies = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
+		bool bBinariesPatch;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
+		FDirectoryPath OldCookedDir;
 	
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
 		bool bEnableMultiThread = false;

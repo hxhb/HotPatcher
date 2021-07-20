@@ -249,6 +249,12 @@ bool FExportPatchSettings::SavePlatformBulkDataManifest(ETargetPlatform Platform
 	}
 	return bRet;
 }
+
+FString FExportPatchSettings::GetOldCookedDir() const
+{
+	return UFlibPatchParserHelper::ReplaceMarkPath(OldCookedDir.Path);
+}
+
 #endif
 TArray<FString> FExportPatchSettings::GetForceSkipContentStrRules()const
 {

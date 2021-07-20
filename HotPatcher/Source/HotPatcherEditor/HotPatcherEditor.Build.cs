@@ -37,7 +37,9 @@ public class HotPatcherEditor : ModuleRules
                 "Settings",
                 "AssetManagerEx",
                 "PakFileUtilities",
-                "HotPatcherRuntime"
+                "HotPatcherRuntime",
+                "HDiffPatch",
+                "PatchPakFile"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);

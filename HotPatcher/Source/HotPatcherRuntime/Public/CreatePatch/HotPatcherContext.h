@@ -59,6 +59,8 @@ struct HOTPATCHERRUNTIME_API FHotPatcherPatchContext:public FHotPatcherContext
     virtual FExportPatchSettings* GetSettingObject(){ return (FExportPatchSettings*)ContextSetting; }
     
     virtual FString GetTotalTimeRecorderName()const{return TEXT("Generate the patch total time");}
+    // UPROPERTY(EditAnywhere)
+    class UPatcherProxy* PatchProxy;
     
     // base version content
     UPROPERTY(EditAnywhere)
