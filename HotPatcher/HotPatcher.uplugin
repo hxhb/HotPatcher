@@ -28,6 +28,11 @@
 			"Name": "AssetManagerEx",
 			"Type": "Runtime",
 			"LoadingPhase": "PreDefault"
+		},
+		{
+			"Name": "BinariesPatchFeature",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault"
 		}
 	]
 }

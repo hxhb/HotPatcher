@@ -3,6 +3,7 @@
 using UnrealBuildTool;
 using System;
 using System.IO;
+using System.Linq;
 
 public class HotPatcherEditor : ModuleRules
 {
@@ -38,11 +39,11 @@ public class HotPatcherEditor : ModuleRules
                 "AssetManagerEx",
                 "PakFileUtilities",
                 "HotPatcherRuntime",
-                "HDiffPatch",
-                "PatchPakFile"
+                "BinariesPatchFeature"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
+
 		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 23)
 		{
 			PublicDependencyModuleNames.Add("ToolMenus");

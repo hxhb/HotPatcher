@@ -5,7 +5,6 @@
 #include "CreatePatch/ScopedSlowTaskContext.h"
 #include "CreatePatch/HotPatcherContext.h"
 #include "HotPatcherEditor.h"
-#include "FlibHDiffPatchHelper.h"
 
 // engine header
 #include "Async/Async.h"
@@ -19,6 +18,7 @@
 #include "Misc/FileHelper.h"
 #include <Templates/Function.h>
 
+#include "BinariesPatchFeature.h"
 #include "Async/ParallelFor.h"
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
@@ -553,6 +553,20 @@ namespace PatchWorker
 
 	void GenerateBinariesPatch(FHotPatcherPatchContext& Context,FChunkInfo& Chunk,ETargetPlatform Platform,TArray<FPakCommand>& PakCommands)
 	{
+		TArray<IBinariesDiffPatchFeature*> ModularFeatures = IModularFeatures::Get().GetModularFeatureImplementations<IBinariesDiffPatchFeature>(BINARIES_DIFF_PATCH_FEATURE_NAME);
+		if(!ModularFeatures.Num())
+			return;
+		IBinariesDiffPatchFeature* UseFeature = ModularFeatures[0];
+		for(const auto& Feature: ModularFeatures)
+		{
+			if(!Context.GetSettingObject()->GetBinariesPatchFeatureName().IsEmpty() &&
+				Feature->GetFeatureName().Equals(Context.GetSettingObject()->GetBinariesPatchFeatureName(),ESearchCase::IgnoreCase))
+			{
+				UseFeature = Feature;
+				break;
+			}
+		}
+		UE_LOG(LogHotPatcher,Log,TEXT("Use BinariesPatchFeature %s"),*UseFeature->GetFeatureName());
 		TimeRecorder BinariesPatchToralTR(FString::Printf(TEXT("Generate Binaries Patch of all chunks Total Time:")));
 		FString OldCookedDir = Context.GetSettingObject()->GetOldCookedDir();
 		for(auto& PakCommand:PakCommands)
@@ -593,8 +607,8 @@ namespace PatchWorker
 				FPakCommandItem PakAssetInfo = ParseUassetLambda(PakAssetPath);
 				FString OldAsset = PakAssetInfo.AssetAbsPath.Replace(*FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() + TEXT("/Cooked")),*OldCookedDir,ESearchCase::CaseSensitive);
 				FString PatchSaveToPath = PakAssetInfo.AssetAbsPath.Replace(
-					*FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() + TEXT("/Cooked")),
-					*FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("BinariesPatch")))
+					*FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir() + TEXT("Cooked"))),
+					*FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher/BinariesPatch")))
 				) + TEXT(".patch");
 				FString PatchSaveToMountPath = PakAssetInfo.AssetMountPath + TEXT(".patch");
 				if(FPaths::FileExists(PakAssetInfo.AssetAbsPath) && FPaths::FileExists(OldAsset))
@@ -605,7 +619,7 @@ namespace PatchWorker
 					bool bLoadOld = FFileHelper::LoadFileToArray(OldAssetData,*OldAsset);
 					bool bLoadNew = FFileHelper::LoadFileToArray(NewAssetData,*PakAssetInfo.AssetAbsPath);
 					bool bPatch = false;
-					if(UFlibHDiffPatchHelper::CreateCompressedDiff(NewAssetData,OldAssetData,PatchData))
+					if(UseFeature->CreateDiff(NewAssetData,OldAssetData,PatchData))
 					{
 						if(FFileHelper::SaveArrayToFile(PatchData,*PatchSaveToPath))
 						{

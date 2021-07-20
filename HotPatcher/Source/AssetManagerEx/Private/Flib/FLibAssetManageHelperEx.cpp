@@ -1104,6 +1104,8 @@ bool UFLibAssetManageHelperEx::CombineCookedAssetCommand(
 	int32 AssetNum = InAbsPath.Num();
 	for (int32 index = 0; index < AssetNum; ++index)
 	{
+		if(InAbsPath[index].EndsWith(TEXT(".patch")))
+			continue;;
 		FString CurrentCommand = TEXT("\"") + InAbsPath[index] + TEXT("\" \"") + InRelativePath[index] + TEXT("\"");
 		// for (const auto& Param : InParams)
 		// {

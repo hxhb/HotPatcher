@@ -159,6 +159,7 @@ public:
 	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
 
 	FORCEINLINE bool IsBinariesPatch()const{ return bBinariesPatch; }
+	FORCEINLINE FString GetBinariesPatchFeatureName()const { return BinariesPatchFeatureName; }
 	FORCEINLINE FString GetOldCookedDir()const;
 	
 public:
@@ -168,6 +169,14 @@ public:
 		FFilePath BaseVersion;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchBaseSettings")
 		FString VersionId;
+
+	// require HDiffPatchUE plugin
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
+		bool bBinariesPatch;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition = "bBinariesPatch"))
+		FString BinariesPatchFeatureName;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition = "bBinariesPatch"))
+		FDirectoryPath OldCookedDir;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Asset Filter",meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
@@ -285,11 +294,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bStorageAssetDependencies = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
-		bool bBinariesPatch;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
-		FDirectoryPath OldCookedDir;
-	
+
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
 		bool bEnableMultiThread = false;
 private:
