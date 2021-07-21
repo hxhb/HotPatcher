@@ -79,10 +79,6 @@ namespace PatchWorker
 	bool ParserChunkWorker(FHotPatcherPatchContext& Context);
 	// setup 7
 	bool CookPatchAssetsWorker(FHotPatcherPatchContext& Context);
-	
-	bool ExtractBaseVersionAssetsWorker(FHotPatcherPatchContext& Context);
-
-
 	// setup 8
 	bool GeneratePakProxysWorker(FHotPatcherPatchContext& Context);
 	// setup 9
@@ -143,7 +139,6 @@ bool UPatcherProxy::DoExport()
 	{
 		this->OnPakListGenerated.AddStatic(&PatchWorker::GenerateBinariesPatch);
 	}
-	PostCookPatchWorkers.Emplace(&PatchWorker::ExtractBaseVersionAssetsWorker);
 	PostCookPatchWorkers.Emplace(&PatchWorker::GeneratePakProxysWorker);
 	PostCookPatchWorkers.Emplace(&PatchWorker::CreatePakWorker);
 	PostCookPatchWorkers.Emplace(&PatchWorker::CreateIoStoreWorker);
@@ -554,33 +549,6 @@ namespace PatchWorker
 		}
 		return true;
 	};
-	
-	bool ExtractBaseVersionAssetsWorker(FHotPatcherPatchContext& Context)
-	{
-		// if(!Context.GetSettingObject()->IsBinariesPatch())
-		// 	return true;
-		// UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
-		// TimeRecorder ExtractBaseVersionToralTR(FString::Printf(TEXT("Extract Base Version pak of all platforms Total Time:")));
-		// for(const auto& Platform:Context.GetSettingObject()->PakTargetPlatforms)
-		// {
-		// 	FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
-		// 	TimeRecorder ExtractBaseVersionToralPlatformTR(FString::Printf(TEXT("Extract Base Version pak of %s Total Time:"),*PlatformName));
-		// 	FString ExtractKey = Context.GetSettingObject()->GetBasePakExtractKey();
-		// 	FString ExtractKeyCmd = FPaths::FileExists(ExtractKey) ? FString::Printf(TEXT("-cryptokeys=\"%s\""),*ExtractKey) : TEXT("");
-		// 	FString ExtractBaseCommand = TEXT("-Extract");
-		// 	
-		// 	FString ExtractDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),Settings->TempPakDir,Context.BaseVersion.VersionId,PlatformName));
-		// 	
-		// 	TArray<FString> CurrentPlatformPaks = Context.GetSettingObject()->GetBaseVersionPakByPlatform(Platform);
-		// 	for(const auto& Pak:CurrentPlatformPaks)
-		// 	{
-		// 		FString FinalCommand = FString::Printf(TEXT("%s \"%s\" \"%s\" %s"),*ExtractBaseCommand,*Pak,*ExtractDir,*ExtractKeyCmd);
-		// 		UE_LOG(LogHotPatcher,Log,TEXT("Extract Base Version Pak Command: %s"),*FinalCommand);
-		// 		ExecuteUnrealPak(*FinalCommand);
-		// 	}
-		// }
-		return true;
-	}
 	
 	void GenerateBinariesPatch(FHotPatcherPatchContext& Context,FChunkInfo& Chunk,ETargetPlatform Platform,TArray<FPakCommand>& PakCommands)
 	{
