@@ -250,9 +250,37 @@ bool FExportPatchSettings::SavePlatformBulkDataManifest(ETargetPlatform Platform
 	return bRet;
 }
 
+FString FExportPatchSettings::GetBinariesPatchFeatureName() const
+{
+	return UFlibPatchParserHelper::GetEnumNameByValue(BinariesPatchType);
+}
+
 FString FExportPatchSettings::GetOldCookedDir() const
 {
 	return UFlibPatchParserHelper::ReplaceMarkPath(OldCookedDir.Path);
+}
+
+TArray<FString> FExportPatchSettings::GetBaseVersionPakByPlatform(ETargetPlatform Platform)
+{
+	TArray<FString> result;
+	TArray<FFilePath> FoundFilePaths;
+	for(const auto& BaseVersionPak:GetBaseVersionPaks())
+	{
+		if(BaseVersionPak.Platform == Platform)
+		{
+			FoundFilePaths = BaseVersionPak.Paks;
+		}
+	}
+	for(const auto& Path:FoundFilePaths)
+	{
+		result.Emplace(UFlibPatchParserHelper::ReplaceMarkPath(Path.FilePath));
+	}
+	return result;
+}
+
+FString FExportPatchSettings::GetBasePakExtractKey() const
+{
+	return UFlibPatchParserHelper::ReplaceMarkPath(ExtractKey.FilePath);
 }
 
 #endif

@@ -56,8 +56,6 @@ public:
 	
 	void RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName);
 
-
-	
 #if WITH_EDITOR_SECTION
 	void CreateRootMenu();
 	void CreateAssetContextMenu(FToolMenuSection& InSection);

@@ -15,6 +15,8 @@
 #include "FPatcherSpecifyAsset.h"
 #include "FlibPatchParserHelper.h"
 #include "CreatePatch/HotPatcherSettingBase.h"
+#include "BinariesPatchFeature.h"
+#include "FPlatformBasePak.h"
 
 // engine header
 #if WITH_PACKAGE_CONTEXT
@@ -53,7 +55,6 @@ struct HOTPATCHERRUNTIME_API FPakEncryptSettings
 	UPROPERTY(EditAnywhere,meta=(EditCondition="!bUseDefaultCryptoIni"))
 	FFilePath CryptoKeys;
 };
-
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FExportPatchSettings:public FHotPatcherSettingBase
@@ -159,9 +160,12 @@ public:
 	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
 
 	FORCEINLINE bool IsBinariesPatch()const{ return bBinariesPatch; }
-	FORCEINLINE FString GetBinariesPatchFeatureName()const { return BinariesPatchFeatureName; }
+	FORCEINLINE FString GetBinariesPatchFeatureName()const;
 	FORCEINLINE FString GetOldCookedDir()const;
-	
+	FORCEINLINE TArray<FString> GetBinariesPatchIgnoreFileRules()const {return IgnoreFileRules;}
+	FORCEINLINE TArray<FString> GetBaseVersionPakByPlatform(ETargetPlatform Platform);
+	FORCEINLINE TArray<FPlatformBasePak> GetBaseVersionPaks()const {return BaseVersionPaks;};
+	FORCEINLINE FString GetBasePakExtractKey()const;
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = true;
@@ -174,10 +178,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
 		bool bBinariesPatch;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition = "bBinariesPatch"))
-		FString BinariesPatchFeatureName;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition = "bBinariesPatch"))
+		EBinariesPatchFeature BinariesPatchType;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition = "bBinariesPatch"))
 		FDirectoryPath OldCookedDir;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition = "bBinariesPatch"))
+		FFilePath ExtractKey;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition = "bBinariesPatch"))
+		TArray<FPlatformBasePak> BaseVersionPaks;
+	// etc .ini/.lua
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition = "bBinariesPatch"))
+		TArray<FString> IgnoreFileRules;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Asset Filter",meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
 	// Ignore directories in AssetIncludeFilters 

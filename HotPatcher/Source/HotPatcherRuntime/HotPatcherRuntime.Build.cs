@@ -39,7 +39,8 @@ public class HotPatcherRuntime : ModuleRules
                 "JsonUtilities",
                 "PakFile",
                 "AssetRegistry",
-                "AssetManagerEx"
+                "AssetManagerEx",
+                "BinariesPatchFeature"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
