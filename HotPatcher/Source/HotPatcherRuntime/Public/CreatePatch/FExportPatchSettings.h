@@ -158,14 +158,15 @@ public:
 	FORCEINLINE bool IsStoragePakFileInfo()const{return bStoragePakFileInfo;}
 	
 	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
-
 	FORCEINLINE bool IsBinariesPatch()const{ return bBinariesPatch; }
-	FORCEINLINE FString GetBinariesPatchFeatureName()const;
-	FORCEINLINE FString GetOldCookedDir()const;
+
 	FORCEINLINE TArray<FString> GetBinariesPatchIgnoreFileRules()const {return IgnoreFileRules;}
-	FORCEINLINE TArray<FString> GetBaseVersionPakByPlatform(ETargetPlatform Platform);
-	FORCEINLINE TArray<FPlatformBasePak> GetBaseVersionPaks()const {return BaseVersionPaks;};
-	FORCEINLINE FString GetBasePakExtractKey()const;
+	TArray<FString> GetBaseVersionPakByPlatform(ETargetPlatform Platform);
+	TArray<FPlatformBasePak> GetBaseVersionPaks()const {return BaseVersionPaks;};
+	FString GetBasePakExtractKey()const;
+	FString GetBinariesPatchFeatureName()const;
+	FString GetOldCookedDir()const;
+	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = true;
