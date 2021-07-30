@@ -85,6 +85,9 @@ void FHotPatcherEditorModule::StartupModule()
 	FHotPatcherStyle::Initialize();
 	FHotPatcherStyle::ReloadTextures();
 	FHotPatcherCommands::Register();
+
+	FParse::Bool(FCommandLine::Get(),TEXT("-cooklog"),GCookLog);
+	UE_LOG(LogHotPatcher,Log,TEXT("GCookLog is %s!!!"),GCookLog ? TEXT("TRUE"): TEXT("FALSE"));
 	
 	if(::IsRunningCommandlet())
 		return;
@@ -498,7 +501,10 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 		CurrentPackage.CookPlatforms = TArray<ETargetPlatform>{Platform};
 		CurrentPackage.Callback = CookNotifyLambda;
 		CookMission.MissionPackages.Add(CurrentPackage);
-		UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*AssetsData[index].PackagePath.ToString(),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+		if(!GCookLog)
+		{
+			UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*AssetsData[index].PackagePath.ToString(),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+		}
 	}
 	CookMission.Callback = [](bool){};
 	TFunction<void(TArray<FCookManager::FCookPackageInfo>)> OnCookFaildLambda = [](TArray<FCookManager::FCookPackageInfo> FaildPackages)

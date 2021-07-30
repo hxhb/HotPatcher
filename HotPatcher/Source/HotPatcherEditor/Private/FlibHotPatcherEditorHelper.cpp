@@ -11,6 +11,7 @@
 #include "HAL/PlatformFilemanager.h"
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Editor.h"
+#include "HotPatcherEditor.h"
 #include "IPlatformFileSandboxWrapper.h"
 #include "Async/Async.h"
 #include "Interfaces/IPluginManager.h"
@@ -441,6 +442,10 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 		// 		}
 		// 	}
 		// }
+		if(GCookLog)
+		{
+			UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*Package->GetName(),*Platform->PlatformName());
+		}
 #if WITH_PACKAGE_CONTEXT
 		FSavePackageContext* CurrentPlatformPackageContext = nullptr;
 		if(PlatformSavePackageContext.Contains(Platform->PlatformName()))
