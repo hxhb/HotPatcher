@@ -33,7 +33,11 @@ struct HOTPATCHERRUNTIME_API FPlatformPakListFiles
 	UPROPERTY(EditAnywhere)
 	ETargetPlatform TargetPlatform = ETargetPlatform::None;
 	UPROPERTY(EditAnywhere)
-	TArray<FFilePath> PakLists;
+	TArray<FFilePath> PakResponseFiles;
+	UPROPERTY(EditAnywhere)
+	TArray<FFilePath> PakFiles;
+	UPROPERTY(EditAnywhere)
+	FString AESKey;
 };
 
 USTRUCT(BlueprintType)
@@ -62,7 +66,9 @@ public:
 	void OnFinishedChangingProperties(const FPropertyChangedEvent& PropertyChangedEvent);
 	virtual void PostEditChangeProperty(const FPropertyChangedEvent& PropertyChangedEvent);
 	virtual bool ParseByPaklist(FExportReleaseSettings* InReleaseSetting,const TArray<FString>& InPaklistFile);
-	virtual FPlatformPakAssets PlatformPakListParser(const ETargetPlatform Platform, const TArray<FString>& );
+	virtual bool PlatformPakListParser(const ETargetPlatform Platform, const TArray<FString>& ,FPlatformPakAssets& Out);
+	virtual bool PlatformPakFileParser(const ETargetPlatform Platform, const TArray<FString>& ,FPlatformPakAssets& Out);
+
 	static FExportReleaseSettings* Get();
 	FString GetVersionId()const;
 	TArray<FString> GetAssetIncludeFiltersPaths()const;
@@ -70,17 +76,12 @@ public:
 	TArray<FExternFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const;
 	
 	TArray<FPlatformExternAssets> GetAddExternAssetsToPlatform()const{return AddExternAssetsToPlatform;}
-
 	FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bStorageAssetDependencies; }
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 	FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
 	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
 	FORCEINLINE TArray<FPatcherSpecifyAsset> GetSpecifyAssets()const { return IncludeSpecifyAssets; }
-	FORCEINLINE bool AddSpecifyAsset(FPatcherSpecifyAsset const& InAsset)
-	{
-		IncludeSpecifyAssets.AddUnique(InAsset);
-		return true;
-	}
+	FORCEINLINE bool AddSpecifyAsset(FPatcherSpecifyAsset const& InAsset){ return IncludeSpecifyAssets.AddUnique(InAsset) != INDEX_NONE; }
 
 	FORCEINLINE TArray<FExternFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
 	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
@@ -101,7 +102,6 @@ public:
 		FString VersionId;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version")
 		bool ByPakList = false;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version", meta = (RelativeToGameContentDir, EditCondition = "ByPakList"))
 		TArray<FPlatformPakListFiles> PlatformsPakListFiles;
 	

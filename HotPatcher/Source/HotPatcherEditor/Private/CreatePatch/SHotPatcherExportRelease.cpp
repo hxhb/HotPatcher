@@ -159,8 +159,8 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFiltersPaths().Num();
 		bool bHasSpecifyAssets = !!ExportReleaseSettings->GetSpecifyAssets().Num();
 		bool bHasSavePath = !(ExportReleaseSettings->GetSaveAbsPath().IsEmpty());
-
-		bCanExport = bHasVersion && (bHasFilter||bHasSpecifyAssets) && bHasSavePath;
+		bool bHasPakInfo = !!ExportReleaseSettings->GetPlatformsPakListFiles().Num();
+		bCanExport = bHasVersion && (bHasFilter || bHasSpecifyAssets || bHasPakInfo) && bHasSavePath;
 	}
 	return bCanExport;
 }
@@ -196,6 +196,7 @@ FText SHotPatcherExportRelease::GetGenerateTooltipText() const
 		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFiltersPaths().Num();
 		bool bHasSpecifyAssets = !!ExportReleaseSettings->GetSpecifyAssets().Num();
 		bool bHasExternFiles = !!ExportReleaseSettings->GetAddExternAssetsToPlatform().Num();
+		bool bHasPakInfo = !!ExportReleaseSettings->GetPlatformsPakListFiles().Num();
 		bool bHasSavePath = !(ExportReleaseSettings->GetSaveAbsPath().IsEmpty());
 
 		struct FStatus
@@ -210,7 +211,7 @@ FText SHotPatcherExportRelease::GetGenerateTooltipText() const
 		};
 		TArray<FStatus> AllStatus;
 		AllStatus.Emplace(bHasVersion,TEXT("HasVersion"));
-		AllStatus.Emplace((bHasFilter||bHasSpecifyAssets||bHasExternFiles),TEXT("HasFilter or HasSpecifyAssets or bHasExternFiles"));
+		AllStatus.Emplace((bHasFilter||bHasSpecifyAssets||bHasExternFiles||bHasPakInfo),TEXT("HasFilter or HasSpecifyAssets or bHasExternFiles or bHasPakInfo"));
 		AllStatus.Emplace(bHasSavePath,TEXT("HasSavePath"));
 		
 		for(const auto& Status:AllStatus)

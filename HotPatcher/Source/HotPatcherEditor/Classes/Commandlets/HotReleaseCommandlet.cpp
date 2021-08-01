@@ -52,7 +52,7 @@ TArray<FPlatformPakListFiles> ParserPlatformPakList(const FString& Commandline)
 					{
 						FFilePath PakFilePath;
 						PakFilePath.FilePath = PakListPath;
-						PlatformPakListItem.PakLists.Add(PakFilePath);
+						PlatformPakListItem.PakResponseFiles.Add(PakFilePath);
 					}
 				}
 				result.Add(PlatformPakListItem);

@@ -2046,3 +2046,88 @@ FHotPatcherVersion UFlibPatchParserHelper::MakeNewReleaseByDiff(const FHotPatche
 }
 
 
+
+bool UFlibPatchParserHelper::IsUasset(const FString& InAsset)
+{
+	TArray<FString> UAssetFormats = { TEXT(".uasset"),TEXT(".ubulk"),TEXT(".uexp"),TEXT(".umap"),TEXT(".ufont") };
+	auto IsUAssetLambda = [&UAssetFormats](const FString& InStr)->bool
+	{
+		bool bResult = false;
+		for (const auto& Format:UAssetFormats)
+		{
+			if (InStr.Contains(Format))
+			{
+				bResult = true;
+				break;
+			}
+		}
+		return bResult;
+	};
+	return IsUAssetLambda(InAsset);
+}
+
+FString UFlibPatchParserHelper::UAssetMountPathToPackagePath(const FString& InAssetMountPath)
+{
+	TMap<FString, FString> ReceiveModuleMap;
+	UFLibAssetManageHelperEx::GetAllEnabledModuleName(ReceiveModuleMap);
+
+	FString LongPackageName = InAssetMountPath;
+
+	LongPackageName.RemoveFromStart(TEXT("../../.."));
+	LongPackageName.RemoveFromEnd(TEXT(".uasset"));
+							
+	// LongPackageName = LongPackageName.Replace(TEXT("/Content"), TEXT(""));
+							
+	FString ModuleName = LongPackageName;
+	{
+		ModuleName.RemoveAt(0);
+		int32 Index;
+		if (ModuleName.FindChar('/', Index))
+		{
+			ModuleName = ModuleName.Left(Index);
+		}
+	}
+
+	if (ModuleName.Equals(FApp::GetProjectName()))
+	{
+		LongPackageName.RemoveFromStart(TEXT("/") + ModuleName);
+		LongPackageName = TEXT("/Game") + LongPackageName;
+	}
+
+	if (LongPackageName.Contains(TEXT("/Plugins/")))
+	{
+		TArray<FString> ModuleKeys;
+		ReceiveModuleMap.GetKeys(ModuleKeys);
+
+		TArray<FString> IgnoreModules = { TEXT("Game"),TEXT("Engine") };
+
+		for (const auto& IgnoreModule : IgnoreModules)
+		{
+			ModuleKeys.Remove(IgnoreModule);
+		}
+
+		for (const auto& Module : ModuleKeys)
+		{
+			FString FindStr = TEXT("/") + Module + TEXT("/");
+			if (LongPackageName.Contains(FindStr,ESearchCase::IgnoreCase))
+			{
+				int32 PluginModuleIndex = LongPackageName.Find(FindStr,ESearchCase::IgnoreCase,ESearchDir::FromEnd);
+
+				LongPackageName = LongPackageName.Right(LongPackageName.Len()- PluginModuleIndex-FindStr.Len());
+				LongPackageName = TEXT("/") + Module + TEXT("/") + LongPackageName;
+				break;
+			}
+		}
+	}
+
+	int32 ContentPoint = LongPackageName.Find(TEXT("/Content"));
+	if(ContentPoint != INDEX_NONE)
+	{
+		LongPackageName = FPaths::Combine(LongPackageName.Left(ContentPoint), LongPackageName.Right(LongPackageName.Len() - ContentPoint - 8));
+	}
+
+	FString LongPackagePath;
+	UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(LongPackageName, LongPackagePath);
+	return LongPackagePath;
+}
+

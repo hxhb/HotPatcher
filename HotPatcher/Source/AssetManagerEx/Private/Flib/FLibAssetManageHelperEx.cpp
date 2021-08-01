@@ -1400,13 +1400,12 @@ bool UFLibAssetManageHelperEx::GetEnableModuleAbsDir(const FString& InModuleName
 		OutPath = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
 		return true;
 	}
-	if (InModuleName.Equals(TEXT("Game")))
+	if (InModuleName.Equals(TEXT("Game")) || InModuleName.Equals(FApp::GetProjectName()))
 	{
 		OutPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 		return true;
 	}
 	return UFLibAssetManageHelperEx::GetPluginModuleAbsDir(InModuleName, OutPath);
-
 }
 
 FString UFLibAssetManageHelperEx::GetAssetBelongModuleName(const FString& InAssetRelativePath)

@@ -419,6 +419,151 @@ bool UFlibPakHelper::OpenPSO(const FString& Name)
 {
 	return FShaderPipelineCache::OpenPipelineFileCache(Name,GMaxRHIShaderPlatform);
 }
+FAES::FAESKey CachedAESKey;
+
+bool ValidateEncryptionKey(TArray<uint8>& IndexData, const FSHAHash& InExpectedHash, const FAES::FAESKey& InAESKey)
+{
+	FAES::DecryptData(IndexData.GetData(), IndexData.Num(), InAESKey);
+
+	// Check SHA1 value.
+	FSHAHash ActualHash;
+	FSHA1::HashBuffer(IndexData.GetData(), IndexData.Num(), ActualHash.Hash);
+	return InExpectedHash == ActualHash;
+}
+
+bool PreLoadPak(const FString& InPakPath,const FString& AesKey)
+{
+	UE_LOG(LogHotPatcher, Log, TEXT("Pre load pak file: %s and check file hash."), *InPakPath);
+
+	FArchive* Reader = IFileManager::Get().CreateFileReader(*InPakPath);
+	if (!Reader)
+	{
+		return false;
+	}
+
+	FPakInfo Info;
+	const int64 CachedTotalSize = Reader->TotalSize();
+	bool bShouldLoad = false;
+	int32 CompatibleVersion = FPakInfo::PakFile_Version_Latest;
+
+	// Serialize trailer and check if everything is as expected.
+	// start up one to offset the -- below
+	CompatibleVersion++;
+	int64 FileInfoPos = -1;
+	do
+	{
+		// try the next version down
+		CompatibleVersion--;
+
+		FileInfoPos = CachedTotalSize - Info.GetSerializedSize(CompatibleVersion);
+		if (FileInfoPos >= 0)
+		{
+			Reader->Seek(FileInfoPos);
+
+			// Serialize trailer and check if everything is as expected.
+			Info.Serialize(*Reader, CompatibleVersion);
+			if (Info.Magic == FPakInfo::PakFile_Magic)
+			{
+				bShouldLoad = true;
+			}
+		}
+	} while (!bShouldLoad && CompatibleVersion >= FPakInfo::PakFile_Version_Initial);
+
+	if (!bShouldLoad)
+	{
+		Reader->Close();
+		delete Reader;
+		return false;
+	}
+
+	if (Info.EncryptionKeyGuid.IsValid() || Info.bEncryptedIndex)
+	{
+		const FString KeyString = AesKey;
+		
+		FAES::FAESKey AESKey;
+
+		TArray<uint8> DecodedBuffer;
+		if (!FBase64::Decode(KeyString, DecodedBuffer))
+		{
+			UE_LOG(LogHotPatcher, Error, TEXT("AES encryption key base64[%s] is not base64 format!"), *KeyString);
+			bShouldLoad = false;
+		}
+
+		// Error checking
+		if (bShouldLoad && DecodedBuffer.Num() != FAES::FAESKey::KeySize)
+		{
+			UE_LOG(LogHotPatcher, Error, TEXT("AES encryption key base64[%s] can not decode to %d bytes long!"), *KeyString, FAES::FAESKey::KeySize);
+			bShouldLoad = false;
+		}
+
+		if (bShouldLoad)
+		{
+			FMemory::Memcpy(AESKey.Key, DecodedBuffer.GetData(), FAES::FAESKey::KeySize);
+
+			TArray<uint8> PrimaryIndexData;
+			Reader->Seek(Info.IndexOffset);
+			PrimaryIndexData.SetNum(Info.IndexSize);
+			Reader->Serialize(PrimaryIndexData.GetData(), Info.IndexSize);
+
+			if (!ValidateEncryptionKey(PrimaryIndexData, Info.IndexHash, AESKey))
+			{
+				UE_LOG(LogHotPatcher, Error, TEXT("AES encryption key base64[%s] is not correct!"), *KeyString);
+				bShouldLoad = false;
+			}
+			else
+			{
+				CachedAESKey = AESKey;
+
+				UE_LOG(LogHotPatcher, Log, TEXT("Use AES encryption key base64[%s] for %s."), *KeyString, *InPakPath);
+				FCoreDelegates::GetPakEncryptionKeyDelegate().BindLambda(
+					[AESKey](uint8 OutKey[32])
+					{
+						FMemory::Memcpy(OutKey, AESKey.Key, 32);
+					});
+
+				if (Info.EncryptionKeyGuid.IsValid())
+				{
+#if ENGINE_MINOR_VERSION >= 26
+					FCoreDelegates::GetRegisterEncryptionKeyMulticastDelegate().Broadcast(Info.EncryptionKeyGuid, AESKey);
+#else
+					FCoreDelegates::GetRegisterEncryptionKeyDelegate().ExecuteIfBound(Info.EncryptionKeyGuid, AESKey);
+#endif
+				}
+			}
+		}
+	}
+
+	Reader->Close();
+	delete Reader;
+	return bShouldLoad;
+}
+
+TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FString& AESKey)
+{
+	IPlatformFile* PlatformIns = &FPlatformFileManager::Get().GetPlatformFile();
+	
+	FString StandardFileName = InPak;
+	FPaths::MakeStandardFilename(StandardFileName);
+	TArray<FString> Records;
+	if(PreLoadPak(StandardFileName,AESKey))
+	{
+		TSharedPtr<FPakFile> PakFile = MakeShareable(new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false));
+		FString MountPoint = PakFile->GetMountPoint();
+		
+		for (FPakFile::FFileIterator It(*PakFile, true); It; ++It)
+		{
+#if ENGINE_MINOR_VERSION >= 26
+			const FString& Filename = *It.TryGetFilename();
+#else
+			const FString& Filename = It.Filename();
+#endif
+
+			Records.Emplace(MountPoint + Filename);
+		}
+	}
+
+	return Records;
+}
 
 TArray<FString> UFlibPakHelper::GetAllMountedPaks()
 {

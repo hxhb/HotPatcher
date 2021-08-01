@@ -461,5 +461,7 @@ public:
 	static FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings);
 	static FHotPatcherVersion MakeNewReleaseByDiff(const FHotPatcherVersion& InBaseVersion, const FPatchVersionDiff& InDiff, FExportPatchSettings* InPatchSettings);
 
-
+	static bool IsUasset(const FString& InAsset);
+	// ../../../Content/xxxx.uasset to /Game/xxxx
+	static FString UAssetMountPathToPackagePath(const FString& InAssetMountPath);
 };
