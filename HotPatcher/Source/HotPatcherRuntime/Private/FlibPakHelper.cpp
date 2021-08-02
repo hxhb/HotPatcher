@@ -549,7 +549,11 @@ TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FStri
 	TArray<FString> Records;
 	if(PreLoadPak(StandardFileName,AESKey))
 	{
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+		TRefCountPtr<FPakFile> PakFile = new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false);
+#else
 		TSharedPtr<FPakFile> PakFile = MakeShareable(new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false));
+#endif
 		FString MountPoint = PakFile->GetMountPoint();
 		
 		for (FPakFile::FFileIterator It(*PakFile, true); It; ++It)
