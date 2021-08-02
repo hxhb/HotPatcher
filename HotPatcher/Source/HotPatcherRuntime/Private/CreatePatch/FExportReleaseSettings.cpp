@@ -30,6 +30,7 @@ FExportReleaseSettings::FExportReleaseSettings()
 			}
 			FPlatformPakAssets currentPak;
 			PlatformPakListParser(PlatformPakList.TargetPlatform,PakFilesInResponse,currentPak);
+#if WITH_EDITOR
 			TArray<FString> PakFiles;
 			for(const auto& pakFile:PlatformPakList.PakFiles)
 			{
@@ -37,9 +38,10 @@ FExportReleaseSettings::FExportReleaseSettings()
 			}
 			
 			PlatformPakFileParser(PlatformPakList.TargetPlatform,PakFiles,currentPak);
+#endif
 			PlatformAssets.Add(currentPak);
 		}
-		
+
 		PlatformAssets.Sort([](const FPlatformPakAssets& l,const FPlatformPakAssets& r)->bool{return l.Assets.Num()<r.Assets.Num();});
 		
 		for(const auto& Asset:PlatformAssets[0].Assets)

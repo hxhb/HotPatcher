@@ -9,9 +9,6 @@
 #include "Templates/SharedPointer.h"
 #include "Dom/JsonObject.h"
 #include "IPlatformFilePak.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-
 #include "FlibPakHelper.generated.h"
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >=26
@@ -79,7 +76,5 @@ public:
 	UFUNCTION(BlueprintCallable)
 		static bool OpenPSO(const FString& Name);
 
-	UFUNCTION(BlueprintCallable)
 	static TArray<FString> GetPakFileList(const FString& InPak, const FString& AESKey);
-	
 };

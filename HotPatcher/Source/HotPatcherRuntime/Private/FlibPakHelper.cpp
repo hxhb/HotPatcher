@@ -19,7 +19,8 @@
 #include "IPlatformFilePak.h"
 #include "ShaderPipelineCache.h"
 #include "RHI.h"
-
+#include "Misc/Base64.h"
+#include "Resources/Version.h"
 
 void UFlibPakHelper::ExecMountPak(FString InPakPath, int32 InPakOrder, FString InMountPoint)
 {
@@ -419,8 +420,9 @@ bool UFlibPakHelper::OpenPSO(const FString& Name)
 {
 	return FShaderPipelineCache::OpenPipelineFileCache(Name,GMaxRHIShaderPlatform);
 }
-FAES::FAESKey CachedAESKey;
 
+FAES::FAESKey CachedAESKey;
+#define AES_KEY_SIZE 32
 bool ValidateEncryptionKey(TArray<uint8>& IndexData, const FSHAHash& InExpectedHash, const FAES::FAESKey& InAESKey)
 {
 	FAES::DecryptData(IndexData.GetData(), IndexData.Num(), InAESKey);
@@ -490,15 +492,15 @@ bool PreLoadPak(const FString& InPakPath,const FString& AesKey)
 		}
 
 		// Error checking
-		if (bShouldLoad && DecodedBuffer.Num() != FAES::FAESKey::KeySize)
+		if (bShouldLoad && DecodedBuffer.Num() != AES_KEY_SIZE)
 		{
-			UE_LOG(LogHotPatcher, Error, TEXT("AES encryption key base64[%s] can not decode to %d bytes long!"), *KeyString, FAES::FAESKey::KeySize);
+			UE_LOG(LogHotPatcher, Error, TEXT("AES encryption key base64[%s] can not decode to %d bytes long!"), *KeyString, AES_KEY_SIZE);
 			bShouldLoad = false;
 		}
 
 		if (bShouldLoad)
 		{
-			FMemory::Memcpy(AESKey.Key, DecodedBuffer.GetData(), FAES::FAESKey::KeySize);
+			FMemory::Memcpy(AESKey.Key, DecodedBuffer.GetData(), AES_KEY_SIZE);
 
 			TArray<uint8> PrimaryIndexData;
 			Reader->Seek(Info.IndexOffset);
@@ -512,7 +514,7 @@ bool PreLoadPak(const FString& InPakPath,const FString& AesKey)
 			}
 			else
 			{
-				CachedAESKey = AESKey;
+ 				CachedAESKey = AESKey;
 
 				UE_LOG(LogHotPatcher, Log, TEXT("Use AES encryption key base64[%s] for %s."), *KeyString, *InPakPath);
 				FCoreDelegates::GetPakEncryptionKeyDelegate().BindLambda(
