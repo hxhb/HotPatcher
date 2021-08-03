@@ -20,7 +20,6 @@
 #include "ShaderPipelineCache.h"
 #include "RHI.h"
 #include "Misc/Base64.h"
-#include "Resources/Version.h"
 
 void UFlibPakHelper::ExecMountPak(FString InPakPath, int32 InPakOrder, FString InMountPoint)
 {
@@ -558,7 +557,7 @@ TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FStri
 		
 		for (FPakFile::FFileIterator It(*PakFile, true); It; ++It)
 		{
-#if ENGINE_MINOR_VERSION >= 26
+#if ENGINE_MINOR_VERSION > 26
 			const FString& Filename = *It.TryGetFilename();
 #else
 			const FString& Filename = It.Filename();

@@ -4,6 +4,7 @@
 #include "FPakVersion.h"
 
 // Engine Header
+#include "Resources/Version.h"
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Templates/SharedPointer.h"
