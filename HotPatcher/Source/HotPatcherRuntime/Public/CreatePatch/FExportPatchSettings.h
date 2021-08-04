@@ -25,6 +25,8 @@
 #endif
 
 #include "CoreMinimal.h"
+
+#include "FBinariesPatchConfig.h"
 #include "FPlatformExternAssets.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
@@ -159,13 +161,7 @@ public:
 	
 	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
 	FORCEINLINE bool IsBinariesPatch()const{ return bBinariesPatch; }
-
-	FORCEINLINE TArray<FString> GetBinariesPatchIgnoreFileRules()const {return IgnoreFileRules;}
-	TArray<FString> GetBaseVersionPakByPlatform(ETargetPlatform Platform);
-	TArray<FPlatformBasePak> GetBaseVersionPaks()const {return BaseVersionPaks;};
-	FString GetBasePakExtractKey()const;
-	FString GetBinariesPatchFeatureName()const;
-	FString GetOldCookedDir()const;
+	FORCEINLINE FBinariesPatchConfig GetBinariesPatchConfig()const{ return BinariesPatchConfig; }
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
@@ -178,17 +174,8 @@ public:
 	// require HDiffPatchUE plugin
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
 		bool bBinariesPatch;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition = "bBinariesPatch"))
-		EBinariesPatchFeature BinariesPatchType;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition = "bBinariesPatch"))
-		FDirectoryPath OldCookedDir;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition = "bBinariesPatch"))
-		FFilePath ExtractKey;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition = "bBinariesPatch"))
-		TArray<FPlatformBasePak> BaseVersionPaks;
-	// etc .ini/.lua
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition = "bBinariesPatch"))
-		TArray<FString> IgnoreFileRules;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition="bBinariesPatch"))
+		FBinariesPatchConfig BinariesPatchConfig;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Asset Filter",meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;

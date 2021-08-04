@@ -558,8 +558,8 @@ namespace PatchWorker
 		IBinariesDiffPatchFeature* UseFeature = ModularFeatures[0];
 		for(const auto& Feature: ModularFeatures)
 		{
-			if(!Context.GetSettingObject()->GetBinariesPatchFeatureName().IsEmpty() &&
-				Feature->GetFeatureName().Equals(Context.GetSettingObject()->GetBinariesPatchFeatureName(),ESearchCase::IgnoreCase))
+			if(!Context.GetSettingObject()->GetBinariesPatchConfig().GetBinariesPatchFeatureName().IsEmpty() &&
+				Feature->GetFeatureName().Equals(Context.GetSettingObject()->GetBinariesPatchConfig().GetBinariesPatchFeatureName(),ESearchCase::IgnoreCase))
 			{
 				UseFeature = Feature;
 				break;
@@ -569,13 +569,13 @@ namespace PatchWorker
 		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
 		UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
 		TimeRecorder BinariesPatchToralTR(FString::Printf(TEXT("Generate Binaries Patch of %s all chunks  Total Time:"),*PlatformName));
-		FString OldCookedDir = Context.GetSettingObject()->GetOldCookedDir();
+		FString OldCookedDir = Context.GetSettingObject()->GetBinariesPatchConfig().GetOldCookedDir();
 		if(!FPaths::FileExists(OldCookedDir))
 		{
 			OldCookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),Settings->TempPakDir,Context.BaseVersion.VersionId));
 		}
 
-		FString ExtractKey = Context.GetSettingObject()->GetBasePakExtractKey();
+		FString ExtractKey = Context.GetSettingObject()->GetBinariesPatchConfig().GetBasePakExtractKey();
 		FString ExtractKeyCmd = FPaths::FileExists(ExtractKey) ? FString::Printf(TEXT("-cryptokeys=\"%s\""),*ExtractKey) : TEXT("");
 		FString ExtractDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),Settings->TempPakDir,Context.BaseVersion.VersionId,PlatformName));
 		// Extract Asset by Base Version Paks
@@ -590,7 +590,7 @@ namespace PatchWorker
 			}
 			
 			FString ExtractFilter = FString::Printf(TEXT("-Filter=\"%s.*\""),*PakCommandMountOnlyPath);
-			TArray<FString> CurrentPlatformPaks = Context.GetSettingObject()->GetBaseVersionPakByPlatform(Platform);
+			TArray<FString> CurrentPlatformPaks = Context.GetSettingObject()->GetBinariesPatchConfig().GetBaseVersionPakByPlatform(Platform);
 			bool bExtraced = false;
 			for(const auto& Pak:CurrentPlatformPaks)
 			{
@@ -626,11 +626,7 @@ namespace PatchWorker
 					}
 					return resultStr;
 				};
-				struct FPakCommandItem
-				{
-					FString AssetAbsPath;
-					FString AssetMountPath;
-				};
+
 				auto ParseUassetLambda = [&RemoveDoubleQuoteLambda](const FString& InAsset)->FPakCommandItem
 				{
 					FPakCommandItem result;
@@ -644,16 +640,7 @@ namespace PatchWorker
 				};
 
 				FPakCommandItem PakAssetInfo = ParseUassetLambda(PakAssetPath);
-				bool bIsIgnore = false;
-				for(const auto& IgnoreRule:Context.GetSettingObject()->GetBinariesPatchIgnoreFileRules())
-				{
-					if(PakAssetPath.EndsWith(IgnoreRule,ESearchCase::CaseSensitive))
-					{
-						bIsIgnore = true;
-						break;
-					}
-				}
-				if(bIsIgnore)
+				if(Context.GetSettingObject()->GetBinariesPatchConfig().IsMatchIgnoreRules(PakAssetInfo))
 					continue;
 				FString ProjectCookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
 				FString OldAsset = PakAssetInfo.AssetAbsPath.Replace(

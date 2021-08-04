@@ -538,6 +538,9 @@ bool PreLoadPak(const FString& InPakPath,const FString& AesKey)
 	delete Reader;
 	return bShouldLoad;
 }
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+#define FFileIterator FFilenameIterator
+#endif
 
 TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FString& AESKey)
 {
