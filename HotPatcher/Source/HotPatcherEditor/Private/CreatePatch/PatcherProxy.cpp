@@ -21,7 +21,7 @@
 #include "BinariesPatchFeature.h"
 #include "Async/ParallelFor.h"
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+#if WITH_IO_STORE_SUPPORT
 #include "IoStoreUtilities.h"
 #endif
 
@@ -837,8 +837,8 @@ namespace PatchWorker
 
 			TArray<FString> UnrealPakCommandletGeneralOptions = Context.GetSettingObject()->GetUnrealPakSettings().UnrealCommandletOptions;
 			UnrealPakCommandletGeneralOptions.Append(Context.GetSettingObject()->GetDefaultCommandletOptions());
-				
-				
+			
+			
 			TArray<FReplaceText> ReplacePakListTexts = Context.GetSettingObject()->GetReplacePakListTexts();
 			TArray<FThreadWorker> PakWorker;
 				
@@ -848,9 +848,11 @@ namespace PatchWorker
 			for (const auto& PakFileProxy : Chunk.PakFileProxys)
 			{
 				FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(PakFileProxy.Platform);
-				TArray<FString> UnrealPakCommandletOptions = UnrealPakCommandletGeneralOptions;
+				TArray<FString> UnrealPakCommandletOptions;
+				UnrealPakCommandletOptions.Add(FString::Printf(TEXT("-AlignForMemoryMapping=%d"),UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName)->GetMemoryMappingAlignment()));
+				// can override
+				UnrealPakCommandletOptions.Append(UnrealPakCommandletGeneralOptions);
 				UnrealPakCommandletOptions.Add(UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(Context.GetSettingObject()->GetEncryptSettings(),UFlibHotPatcherEditorHelper::Conv2IniPlatform(PlatformName)));
-				
 				TimeRecorder CookAssetsTR(FString::Printf(TEXT("Create Pak Platform:%s ChunkName:%s."),*PlatformName,*Chunk.ChunkName));
 				// ++PakCounter;
 				uint32 index = PakWorker.Emplace(*PakFileProxy.ChunkStoreName, [/*CurrentPakVersion, */PlatformName, UnrealPakCommandletOptions, ReplacePakListTexts, PakFileProxy, &Chunk,&Context]()
@@ -880,6 +882,7 @@ namespace PatchWorker
 							CommandLine.Append(FString::Printf(TEXT(" %s"), *Option));
 						}
 						Context.OnPaking.Broadcast(TEXT("Create Pak Commandline: %s"),CommandLine);
+						UE_LOG(LogHotPatcher,Log,TEXT("Create Pak Commandline: %s"),*CommandLine);
 						ExecuteUnrealPak(*CommandLine);
 						// FProcHandle ProcessHandle = UFlibPatchParserHelper::DoUnrealPak(UnrealPakCommandletOptionsSinglePak, true);
 
@@ -927,13 +930,14 @@ namespace PatchWorker
 	// setup 9
 	bool CreateIoStoreWorker(FHotPatcherPatchContext& Context)
 	{
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+#if WITH_IO_STORE_SUPPORT
 		if(!Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
 			return true;
 		TimeRecorder CreateAllIoStoreToralTR(FString::Printf(TEXT("Generate all platform Io Store of all chunks Total Time:")));
 
-		TArray<FString> AdditionalIoStoreCommandletOptions = Context.GetSettingObject()->GetIoStoreSettings().IoStoreCommandletOptions;
+		TArray<FString> AdditionalIoStoreCommandletOptions;
 		AdditionalIoStoreCommandletOptions.Append(Context.GetSettingObject()->GetDefaultCommandletOptions());
+		AdditionalIoStoreCommandletOptions.Append(Context.GetSettingObject()->GetIoStoreSettings().IoStoreCommandletOptions);
 		
 		FIoStoreSettings IoStoreSettings = Context.GetSettingObject()->GetIoStoreSettings();
 		// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
@@ -960,11 +964,12 @@ namespace PatchWorker
 			{
 				if(!IoStoreSettings.PlatformContainers.Contains(PakFileProxy.Platform))
 					return true;
-
+				TArray<FString> FinalIoStoreCommandletOptions;
 				FString  PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(PakFileProxy.Platform);
-
+				FinalIoStoreCommandletOptions.Add(FString::Printf(TEXT("-AlignForMemoryMapping=%d"),UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName)->GetMemoryMappingAlignment()));
+				FinalIoStoreCommandletOptions.Append(AdditionalIoStoreCommandletOptions);
 				FString IoStoreCommandletOptions;
-				for(const auto& Option:AdditionalIoStoreCommandletOptions) { IoStoreCommandletOptions+=FString::Printf(TEXT("%s "),*Option); }
+				for(const auto& Option:FinalIoStoreCommandletOptions) { IoStoreCommandletOptions+=FString::Printf(TEXT("%s "),*Option); }
 				IoStoreCommandletOptions += UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(Context.GetSettingObject()->GetEncryptSettings(),UFlibHotPatcherEditorHelper::Conv2IniPlatform(PlatformName));
 					
 				TimeRecorder CookAssetsTR(FString::Printf(TEXT("Create Pak Platform:%s ChunkName:%s."),*PlatformName,*Chunk.ChunkName));

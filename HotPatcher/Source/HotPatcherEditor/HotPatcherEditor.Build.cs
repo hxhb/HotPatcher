@@ -49,14 +49,22 @@ public class HotPatcherEditor : ModuleRules
 			PublicDependencyModuleNames.Add("ToolMenus");
 		}
 
-		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 25)
+		System.Func<string, bool,bool> AddPublicDefinitions = (string MacroName,bool bEnable) =>
+		{
+			PublicDefinitions.Add(string.Format("{0}={1}",MacroName, bEnable ? 1 : 0));
+			return true;
+		};
+		
+		bool bIOStoreSupport = Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 25;
+		if (bIOStoreSupport)
 		{
 			PublicDependencyModuleNames.AddRange(new string[]
 			{
 				"IoStoreUtilities"
 			});
 		}
-
+		AddPublicDefinitions("WITH_IO_STORE_SUPPORT", bIOStoreSupport);
+		
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
@@ -110,11 +118,7 @@ public class HotPatcherEditor : ModuleRules
 		BuildVersion Version;
 		BuildVersion.TryRead(BuildVersion.GetDefaultFileName(), out Version);
 		// PackageContext
-		System.Func<string, bool,bool> AddPublicDefinitions = (string MacroName,bool bEnable) =>
-		{
-			PublicDefinitions.Add(string.Format("{0}={1}",MacroName, bEnable ? 1 : 0));
-			return true;
-		};
+
 		AddPublicDefinitions("WITH_EDITOR_SECTION", Version.MajorVersion > 4 || Version.MinorVersion > 24);
 		
 		System.Console.WriteLine("MajorVersion {0} MinorVersion: {1} PatchVersion {2}",Target.Version.MajorVersion,Target.Version.MinorVersion,Target.Version.PatchVersion);

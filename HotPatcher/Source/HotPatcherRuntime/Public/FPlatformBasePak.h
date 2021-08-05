@@ -5,7 +5,7 @@
 // engine header
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"
-
+#include "Engine/EngineTypes.h"
 #include "FPlatformBasePak.generated.h"
 
 USTRUCT(BlueprintType)

@@ -52,17 +52,15 @@ struct HOTPATCHERRUNTIME_API FBinariesPatchConfig
 	FORCEINLINE TArray<FString> GetBaseVersionPakByPlatform(ETargetPlatform Platform)
 	{
 		TArray<FString> result;
-		TArray<FFilePath> FoundFilePaths;
 		for(const auto& BaseVersionPak:GetBaseVersionPaks())
 		{
 			if(BaseVersionPak.Platform == Platform)
 			{
-				FoundFilePaths = BaseVersionPak.Paks;
+				for(const auto& Path:BaseVersionPak.Paks)
+				{
+					result.Emplace(UFlibPatchParserHelper::ReplaceMarkPath(Path.FilePath));
+				}
 			}
-		}
-		for(const auto& Path:FoundFilePaths)
-		{
-			result.Emplace(UFlibPatchParserHelper::ReplaceMarkPath(Path.FilePath));
 		}
 		return result;
 	}
