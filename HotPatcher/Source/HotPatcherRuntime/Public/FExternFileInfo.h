@@ -1,5 +1,6 @@
 #pragma once
-
+#include "HotPatcherBaseTypes.h"
+// engine header
 #include "Misc/Paths.h"
 #include "Misc/SecureHash.h"
 #include "CoreMinimal.h"
@@ -40,6 +41,8 @@ public:
 		FString MountPath = TEXT("../../../");
 	UPROPERTY()
 		FString FileHash;
+
+		EPatchAssetType Type = EPatchAssetType::None;
 
 	bool operator==(const FExternFileInfo& Right)const
 	{

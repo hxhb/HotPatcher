@@ -1013,8 +1013,9 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 			}
 			return ResultAssetDependInfos;
 		};
-
-		ChunkAssetDescribe.Assets = UFLibAssetManageHelperEx::CombineAssetDependencies(CollectChunkAssets(AddAssetsRef, AssetFilterPaths), CollectChunkAssets(ModifyAssetsRef, AssetFilterPaths));
+		ChunkAssetDescribe.AddAssets = CollectChunkAssets(AddAssetsRef, AssetFilterPaths);
+		ChunkAssetDescribe.ModifyAssets = CollectChunkAssets(ModifyAssetsRef, AssetFilterPaths);
+		ChunkAssetDescribe.Assets = UFLibAssetManageHelperEx::CombineAssetDependencies(ChunkAssetDescribe.AddAssets, ChunkAssetDescribe.ModifyAssets);
 	}
 
 	auto CoolectPlatformExFiles = [](const FPatchVersionDiff& DiffInfo,const auto& Chunk,ETargetPlatform Platform)->TArray<FExternFileInfo>
@@ -1049,7 +1050,7 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 		}
 
 		// TArray<FString>
-		auto CollectExtenFilesLambda = [&AllFiles](const TArray<FExternFileInfo>& SearchBase, const TSet<FString>& Filters)
+		auto CollectExtenFilesLambda = [&AllFiles](const TArray<FExternFileInfo>& SearchBase, const TSet<FString>& Filters,EPatchAssetType Type)
 		{
 			for (const auto& Filter : Filters)
 			{
@@ -1057,13 +1058,15 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 				{
 					if (SearchItem.FilePath.FilePath.StartsWith(Filter))
 					{
-						AllFiles.Add(SearchItem);
+						FExternFileInfo FileItem = SearchItem;
+						FileItem.Type = Type;
+						AllFiles.Add(FileItem);
 					}
 				}
 			}
 		};
-		CollectExtenFilesLambda(AddFilesRef, AllSearchFileFilter);
-		CollectExtenFilesLambda(ModifyFilesRef, AllSearchFileFilter);
+		CollectExtenFilesLambda(AddFilesRef, AllSearchFileFilter,EPatchAssetType::NEW);
+		CollectExtenFilesLambda(ModifyFilesRef, AllSearchFileFilter,EPatchAssetType::MODIFY);
 		return AllFiles;
 	};
 
@@ -1154,36 +1157,53 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 			return Matched;
 		};
 		
-		auto ReceivePakCommandAssetLambda = [&PakCommands](const TArray<FString>& InPakCommand,const TArray<FString>& InIoStoreCommand, const FString& InMountPath,const FString& InLongPackageName)
-		{
-			FPakCommand CurrentPakCommand;
-			CurrentPakCommand.PakCommands = InPakCommand;
-			CurrentPakCommand.IoStoreCommands = InIoStoreCommand;
-			CurrentPakCommand.MountPath = InMountPath;
-			CurrentPakCommand.AssetPackage = InLongPackageName;
-			PakCommands.Add(CurrentPakCommand);
-		};
-		
+
 		// Collect Chunk Assets
 		{
+			struct PakCommandReceiver
+			{
+				PakCommandReceiver(TArray<FPakCommand>& InPakCommandsRef,EPatchAssetType InType):PakCommands(InPakCommandsRef),Type(InType){}
+				void operator()(const TArray<FString>& InPakCommand,const TArray<FString>& InIoStoreCommand, const FString& InMountPath,const FString& InLongPackageName)
+				{
+					FPakCommand CurrentPakCommand;
+					CurrentPakCommand.PakCommands = InPakCommand;
+					CurrentPakCommand.IoStoreCommands = InIoStoreCommand;
+					CurrentPakCommand.MountPath = InMountPath;
+					CurrentPakCommand.AssetPackage = InLongPackageName;
+					CurrentPakCommand.Type = Type;
+					PakCommands.Add(CurrentPakCommand);
+				}
+				TArray<FPakCommand>& PakCommands;
+				EPatchAssetType Type;
+			};
+			// auto ReceivePakCommandAssetLambda = [&PakCommands](const TArray<FString>& InPakCommand,const TArray<FString>& InIoStoreCommand, const FString& InMountPath,const FString& InLongPackageName)
+			// {
+			// 	
+			// };
+			PakCommandReceiver AddReceiver(PakCommands,EPatchAssetType::NEW);
+			PakCommandReceiver ModifyReceiver(PakCommands,EPatchAssetType::MODIFY);
 			FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 			TArray<FString> AssetsPakCommands;
 			UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(
 				ProjectDir,
 				PlatformName,
-				ChunkAssetsDescrible.Assets,
+				ChunkAssetsDescrible.AddAssets,
 				// PakOptions,
 				AssetsPakCommands,
-				ReceivePakCommandAssetLambda,
+				AddReceiver,
 				IsIoStoreAssetsLambda
 			);
-			
+			AssetsPakCommands.Empty();
+			UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(
+				ProjectDir,
+				PlatformName,
+				ChunkAssetsDescrible.ModifyAssets,
+				// PakOptions,
+				AssetsPakCommands,
+				ModifyReceiver,
+				IsIoStoreAssetsLambda
+			);
 		}
-
-		auto ReceivePakCommandExFilesLambda = [&PakCommands](const FPakCommand& InCommand)
-		{
-			PakCommands.Emplace(InCommand);
-		};
 		
 		// Collect Extern Files
 		for(const auto& PlatformItenm:CollectPlatforms)
@@ -1206,7 +1226,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 				// }
 				
 				CurrentPakCommand.PakCommands = TArray<FString>{ FString::Printf(TEXT("\"%s\" \"%s\""), *CollectFile.FilePath.FilePath, *CollectFile.MountPath/*,*PakOptionsStr*/) };
-
+				CurrentPakCommand.Type = CollectFile.Type;
 				PakCommands.Add(CurrentPakCommand);
 			}
 		}
@@ -1214,6 +1234,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 		// TArray<FString> NotCompressOptions = PakOptions;
 		// if(NotCompressOptions.Contains(TEXT("-compress")))
 		// 	NotCompressOptions.Remove(TEXT("-compress"));
+		auto ReceivePakCommandExFilesLambda = [&PakCommands](const FPakCommand& InCommand){ PakCommands.Emplace(InCommand); };
 		UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(ChunkAssetsDescrible.InternalFiles, PlatformName,/* NotCompressOptions,*/ ReceivePakCommandExFilesLambda);
 		return PakCommands;
 	};

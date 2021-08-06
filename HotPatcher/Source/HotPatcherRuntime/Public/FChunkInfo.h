@@ -1,5 +1,5 @@
 #pragma once
-
+#include "HotPatcherBaseTypes.h"
 #include "FExternFileInfo.h"
 #include "FExternDirectoryInfo.h"
 #include "FPatcherSpecifyAsset.h"
@@ -77,6 +77,8 @@ public:
 	TArray<FString> PakCommands;
 	UPROPERTY(EditAnywhere)
 	TArray<FString> IoStoreCommands;
+
+	EPatchAssetType Type = EPatchAssetType::None;
 };
 
 USTRUCT(BlueprintType)
@@ -158,6 +160,8 @@ struct FChunkAssetDescribe
 	GENERATED_USTRUCT_BODY()
 public:
 	FAssetDependenciesInfo Assets;
+	FAssetDependenciesInfo AddAssets;
+	FAssetDependenciesInfo ModifyAssets;
 	// TArray<FExternFileInfo> AllExFiles;
 	TMap<ETargetPlatform,FPlatformExternFiles> AllPlatformExFiles;
 	FPakInternalInfo InternalFiles; // general platform

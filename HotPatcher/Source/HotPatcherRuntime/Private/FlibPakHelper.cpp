@@ -544,23 +544,15 @@ bool PreLoadPak(const FString& InPakPath,const FString& AesKey)
 
 TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FString& AESKey)
 {
-	IPlatformFile* PlatformIns = &FPlatformFileManager::Get().GetPlatformFile();
-	
-	FString StandardFileName = InPak;
-	FPaths::MakeStandardFilename(StandardFileName);
 	TArray<FString> Records;
-	if(PreLoadPak(StandardFileName,AESKey))
+	
+	auto PakFile = UFlibPakHelper::GetPakFileIns(InPak,AESKey);
+	if(PakFile.IsValid())
 	{
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
-		TRefCountPtr<FPakFile> PakFile = new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false);
-#else
-		TSharedPtr<FPakFile> PakFile = MakeShareable(new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false));
-#endif
 		FString MountPoint = PakFile->GetMountPoint();
-		
 		for (FPakFile::FFileIterator It(*PakFile, true); It; ++It)
 		{
-#if ENGINE_MINOR_VERSION > 26
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 			const FString& Filename = *It.TryGetFilename();
 #else
 			const FString& Filename = It.Filename();
@@ -571,6 +563,39 @@ TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FStri
 	}
 
 	return Records;
+}
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+TRefCountPtr<FPakFile> UFlibPakHelper::GetPakFileIns(const FString& InPak, const FString& AESKey)
+#else
+TSharedPtr<FPakFile> UFlibPakHelper::GetPakFileIns(const FString& InPak, const FString& AESKey)
+#endif
+{
+	IPlatformFile* PlatformIns = &FPlatformFileManager::Get().GetPlatformFile();
+
+	FString StandardFileName = InPak;
+	FPaths::MakeStandardFilename(StandardFileName);
+	TArray<FString> Records;
+	if(PreLoadPak(StandardFileName,AESKey))
+	{
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+		TRefCountPtr<FPakFile> PakFile = new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false);
+#else
+		TSharedPtr<FPakFile> PakFile = MakeShareable(new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false));
+#endif
+		return PakFile;
+	}
+	return NULL;
+}
+
+FString UFlibPakHelper::GetPakFileMountPoint(const FString& InPak, const FString& AESKey)
+{
+	FString result;
+	auto PakFile = UFlibPakHelper::GetPakFileIns(InPak,AESKey);
+	if(PakFile.IsValid())
+	{
+		result = PakFile->GetMountPoint();
+	}
+	return result;
 }
 
 TArray<FString> UFlibPakHelper::GetAllMountedPaks()

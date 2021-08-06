@@ -579,24 +579,36 @@ namespace PatchWorker
 		FString ExtractKeyCmd = FPaths::FileExists(ExtractKey) ? FString::Printf(TEXT("-cryptokeys=\"%s\""),*ExtractKey) : TEXT("");
 		FString ExtractDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),Settings->TempPakDir,Context.BaseVersion.VersionId,PlatformName));
 		// Extract Asset by Base Version Paks
-		auto ExtractByPak = [&Context,Platform,ExtractDir,ExtractKeyCmd](const FPakCommand& PakCommand)->bool
+		auto ExtractByPak = [&Context,Platform,ExtractDir,ExtractKeyCmd,ExtractKey](const FPakCommand& PakCommand)->bool
 		{
-			FString PakCommandMountPath = PakCommand.MountPath;
-			while(PakCommandMountPath.RemoveFromStart(TEXT("../"))){}
 			FString PakCommandMountOnlyPath;
 			{
 				FString postfix;
-				PakCommandMountPath.Split(TEXT("."),&PakCommandMountOnlyPath,&postfix);
+				PakCommand.MountPath.Split(TEXT("."),&PakCommandMountOnlyPath,&postfix,ESearchCase::IgnoreCase,ESearchDir::FromEnd);
 			}
 			
-			FString ExtractFilter = FString::Printf(TEXT("-Filter=\"%s.*\""),*PakCommandMountOnlyPath);
 			TArray<FString> CurrentPlatformPaks = Context.GetSettingObject()->GetBinariesPatchConfig().GetBaseVersionPakByPlatform(Platform);
 			bool bExtraced = false;
 			for(const auto& Pak:CurrentPlatformPaks)
 			{
 				if(!FPaths::FileExists(Pak))
 					continue;
-				FString FinalCommand = FString::Printf(TEXT("-Extract \"%s\" \"%s\" %s %s"),*Pak,*ExtractDir,*ExtractKeyCmd,*ExtractFilter);
+				FString PakMountPoint = UFlibPakHelper::GetPakFileMountPoint(Pak,ExtractKey);
+				if(!(!PakMountPoint.IsEmpty() && PakCommand.MountPath.StartsWith(PakMountPoint)))
+				{
+					// file not in the pak
+					continue;
+				}
+				
+				FString ExtractFilter = FString::Printf(
+					TEXT("-Filter=\"%s.*\""),
+					*UKismetStringLibrary::GetSubstring(PakCommandMountOnlyPath,PakMountPoint.Len(),PakCommandMountOnlyPath.Len() - PakMountPoint.Len())
+				);
+				FString RelativeMountPoint = PakMountPoint;
+				while(RelativeMountPoint.RemoveFromStart(TEXT("../"))){}
+				FString FinalExtractDir = FPaths::Combine(ExtractDir,RelativeMountPoint);
+				FPaths::NormalizeFilename(FinalExtractDir);
+				FString FinalCommand = FString::Printf(TEXT("-Extract \"%s\" \"%s\" %s %s"),*Pak,*FinalExtractDir,*ExtractKeyCmd,*ExtractFilter);
 				UE_LOG(LogHotPatcher,Log,TEXT("Extract Base Version Pak Command: %s"),*FinalCommand);
 				if(ExecuteUnrealPak(*FinalCommand))
 				{
@@ -608,6 +620,8 @@ namespace PatchWorker
 		
 		for(auto& PakCommand:PakCommands)
 		{
+			if(PakCommand.Type == EPatchAssetType::NEW || PakCommand.Type == EPatchAssetType::None)
+				continue;
 			if(!ExtractByPak(PakCommand))
 				continue;
 			TArray<FString> PatchedPakCommand;
@@ -641,7 +655,10 @@ namespace PatchWorker
 
 				FPakCommandItem PakAssetInfo = ParseUassetLambda(PakAssetPath);
 				if(Context.GetSettingObject()->GetBinariesPatchConfig().IsMatchIgnoreRules(PakAssetInfo))
+				{
+					PatchedPakCommand.AddUnique(PakAssetPath);
 					continue;
+				}
 				FString ProjectCookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
 				FString OldAsset = PakAssetInfo.AssetAbsPath.Replace(
 					*ProjectCookedDir,
@@ -651,6 +668,7 @@ namespace PatchWorker
 					*FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),Settings->TempPakDir,TEXT("BinariesPatch")))
 				) + TEXT(".patch");
 				FString PatchSaveToMountPath = PakAssetInfo.AssetMountPath + TEXT(".patch");
+				bool bPatch = false;
 				if(FPaths::FileExists(PakAssetInfo.AssetAbsPath) && FPaths::FileExists(OldAsset))
 				{
 					TArray<uint8> OldAssetData;
@@ -658,23 +676,25 @@ namespace PatchWorker
 					TArray<uint8> PatchData;
 					bool bLoadOld = FFileHelper::LoadFileToArray(OldAssetData,*OldAsset);
 					bool bLoadNew = FFileHelper::LoadFileToArray(NewAssetData,*PakAssetInfo.AssetAbsPath);
-					bool bPatch = false;
+					
 					if(UseFeature->CreateDiff(NewAssetData,OldAssetData,PatchData))
 					{
 						if(FFileHelper::SaveArrayToFile(PatchData,*PatchSaveToPath))
 						{
 							PatchedPakCommand.AddUnique(FString::Printf(TEXT("\"%s\" \"%s\""),*PatchSaveToPath,*PatchSaveToMountPath));
-							
 							bPatch = true;
 						}
 					}
-					if(!bPatch)
-					{
-						PatchedPakCommand.AddUnique(PakAssetPath);
-					}
+				}
+				if(!bPatch)
+				{
+					PatchedPakCommand.AddUnique(PakAssetPath);
 				}
 			}
-			PakCommand.PakCommands = PatchedPakCommand;
+			if(!!PatchedPakCommand.Num())
+			{
+				PakCommand.PakCommands = PatchedPakCommand;
+			}
 		}
 	}
 

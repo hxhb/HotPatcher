@@ -78,4 +78,11 @@ public:
 		static bool OpenPSO(const FString& Name);
 
 	static TArray<FString> GetPakFileList(const FString& InPak, const FString& AESKey);
+	static FString GetPakFileMountPoint(const FString& InPak, const FString& AESKey);
+
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+	static TRefCountPtr<FPakFile> UFlibPakHelper::GetPakFileIns(const FString& InPak, const FString& AESKey);
+#else
+	static TSharedPtr<FPakFile> GetPakFileIns(const FString& InPak, const FString& AESKey);
+#endif
 };

@@ -13,6 +13,41 @@ struct FPakCommandItem
 	FString AssetAbsPath;
 	FString AssetMountPath;
 };
+UENUM(BlueprintType)
+enum class EMatchRule:uint8
+{
+	MATCH,
+	IGNORE
+};
+
+UENUM(BlueprintType)
+enum class EMatchOperator:uint8
+{
+	None,
+	GREAT_THAN,
+	LESS_THAN,
+	EQUAL
+};
+
+USTRUCT(BlueprintType)
+struct FMatchRule
+{
+	GENERATED_BODY()
+	// match or ignore
+	UPROPERTY(EditAnywhere)
+	EMatchRule Rule;
+
+	// grate/less/equal
+	UPROPERTY(EditAnywhere)
+	EMatchOperator Operator;
+
+	// uint kb
+	UPROPERTY(EditAnywhere,meta=(EditCondition="Operator!=EMatchOperator::None"))
+	float Size = 100;
+	// match file Formats. etc .ini/.lua, if it is empty match everything
+	UPROPERTY(EditAnywhere)
+	TArray<FString> Formaters;
+};
 
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FBinariesPatchConfig
@@ -26,24 +61,74 @@ struct HOTPATCHERRUNTIME_API FBinariesPatchConfig
 	FFilePath ExtractKey;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
 	TArray<FPlatformBasePak> BaseVersionPaks;
-	// etc .ini/.lua
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
-	TArray<FString> IgnoreFileRules;
+	TArray<FMatchRule> MatchRules;
+	// etc .ini/.lua
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
+	// TArray<FString> IgnoreFileRules;
 
 	bool IsMatchIgnoreRules(const FPakCommandItem& File)
 	{
 		bool bIsIgnore = false;
-		for(const auto& IgnoreRule:GetBinariesPatchIgnoreFileRules())
+		if(!FPaths::FileExists(File.AssetAbsPath))
+			return false;
+		uint64 FileSize = IFileManager::Get().FileSize(*File.AssetAbsPath);
+
+		auto FormatMatcher = [](const FString& File,const TArray<FString>& Formaters)->bool
 		{
-			if(File.AssetAbsPath.EndsWith(IgnoreRule,ESearchCase::CaseSensitive))
+			bool bFormatMatch = !Formaters.Num();
+			for(const auto& FileFormat:Formaters)
 			{
-				bIsIgnore = true;
-				break;
+				if(!FileFormat.IsEmpty() && File.EndsWith(FileFormat,ESearchCase::CaseSensitive))
+				{
+					bFormatMatch = true;
+					break;
+				}
 			}
-		}				
+			return bFormatMatch;
+		};
+		
+		auto SizeMatcher = [](uint64 FileSize,const FMatchRule& MatchRule)->bool
+		{
+			bool bMatch = false;
+			uint64 RuleSize = MatchRule.Size * 1024; // kb to byte
+			switch (MatchRule.Operator)
+			{
+				case EMatchOperator::GREAT_THAN:
+					{
+						bMatch = FileSize > RuleSize;
+						break;
+					}
+				case EMatchOperator::LESS_THAN:
+					{
+						bMatch = FileSize < RuleSize;
+						break;
+					}
+				case EMatchOperator::EQUAL:
+					{
+						bMatch = FileSize == RuleSize;
+						break;
+					}
+				case EMatchOperator::None:
+					{
+						bMatch = true;
+						break;
+					}
+			}
+			return bMatch;
+		};
+		
+		for(const auto& Rule:GetMatchRules())
+		{
+			bool bSizeMatch = SizeMatcher(FileSize,Rule);
+			bool bFormatMatch = FormatMatcher(File.AssetAbsPath,Rule.Formaters);
+			bool bMatched = bSizeMatch && bFormatMatch;
+			bIsIgnore = Rule.Rule == EMatchRule::MATCH ? !bMatched : bMatched;
+		}
 		return bIsIgnore;
 	}
-	FORCEINLINE TArray<FString> GetBinariesPatchIgnoreFileRules()const {return IgnoreFileRules;}
+	// FORCEINLINE TArray<FString> GetBinariesPatchIgnoreFileRules()const {return IgnoreFileRules;}
+	FORCEINLINE TArray<FMatchRule> GetMatchRules()const{ return MatchRules; }
 	FORCEINLINE TArray<FPlatformBasePak> GetBaseVersionPaks()const {return BaseVersionPaks;};
 	FORCEINLINE FString GetBinariesPatchFeatureName() const { return UFlibPatchParserHelper::GetEnumNameByValue(BinariesPatchType); }
 	FORCEINLINE FString GetOldCookedDir() const { return UFlibPatchParserHelper::ReplaceMarkPath(OldCookedDir.Path); }
