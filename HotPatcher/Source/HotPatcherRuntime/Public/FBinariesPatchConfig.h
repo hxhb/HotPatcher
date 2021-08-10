@@ -58,7 +58,7 @@ struct HOTPATCHERRUNTIME_API FBinariesPatchConfig
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
 	FDirectoryPath OldCookedDir;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
-	FFilePath ExtractKey;
+	FFilePath ExtractCryptoJson;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
 	TArray<FPlatformBasePak> BaseVersionPaks;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
@@ -132,7 +132,7 @@ struct HOTPATCHERRUNTIME_API FBinariesPatchConfig
 	FORCEINLINE TArray<FPlatformBasePak> GetBaseVersionPaks()const {return BaseVersionPaks;};
 	FORCEINLINE FString GetBinariesPatchFeatureName() const { return UFlibPatchParserHelper::GetEnumNameByValue(BinariesPatchType); }
 	FORCEINLINE FString GetOldCookedDir() const { return UFlibPatchParserHelper::ReplaceMarkPath(OldCookedDir.Path); }
-	FORCEINLINE FString GetBasePakExtractKey() const { return UFlibPatchParserHelper::ReplaceMarkPath(ExtractKey.FilePath); }
+	FORCEINLINE FString GetBasePakExtractCryptoJson() const { return UFlibPatchParserHelper::ReplaceMarkPath(ExtractCryptoJson.FilePath); }
 	
 	FORCEINLINE TArray<FString> GetBaseVersionPakByPlatform(ETargetPlatform Platform)
 	{

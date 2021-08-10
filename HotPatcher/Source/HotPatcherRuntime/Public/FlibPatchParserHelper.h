@@ -461,7 +461,15 @@ public:
 	static FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings);
 	static FHotPatcherVersion MakeNewReleaseByDiff(const FHotPatcherVersion& InBaseVersion, const FPatchVersionDiff& InDiff, FExportPatchSettings* InPatchSettings);
 
-	static bool IsUasset(const FString& InAsset);
+	static TArray<FString> GetUnCookUassetExtensions();
+	static TArray<FString> GetCookedUassetExtensions();
+	static bool IsCookedUassetExtensions(const FString& InAsset);
+	static bool IsUnCookUassetExtension(const FString& InAsset);
 	// ../../../Content/xxxx.uasset to /Game/xxxx
 	static FString UAssetMountPathToPackagePath(const FString& InAssetMountPath);
+
+	static bool MatchStrInArray(const FString& InStr,const TArray<FString>& InArray);
+	static FString LoadAESKeyStringFromCryptoFile(const FString& InCryptoJson);
+	static FAES::FAESKey LoadAESKeyFromCryptoFile(const FString& InCryptoJson);
 };
+

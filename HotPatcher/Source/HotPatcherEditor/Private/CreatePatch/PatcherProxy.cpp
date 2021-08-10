@@ -575,11 +575,11 @@ namespace PatchWorker
 			OldCookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),Settings->TempPakDir,Context.BaseVersion.VersionId));
 		}
 
-		FString ExtractKey = Context.GetSettingObject()->GetBinariesPatchConfig().GetBasePakExtractKey();
-		FString ExtractKeyCmd = FPaths::FileExists(ExtractKey) ? FString::Printf(TEXT("-cryptokeys=\"%s\""),*ExtractKey) : TEXT("");
+		FString ExtractCryptoFile = Context.GetSettingObject()->GetBinariesPatchConfig().GetBasePakExtractCryptoJson();
+		FString ExtractCryptoCmd = FPaths::FileExists(ExtractCryptoFile) ? FString::Printf(TEXT("-cryptokeys=\"%s\""),*ExtractCryptoFile) : TEXT("");
 		FString ExtractDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),Settings->TempPakDir,Context.BaseVersion.VersionId,PlatformName));
 		// Extract Asset by Base Version Paks
-		auto ExtractByPak = [&Context,Platform,ExtractDir,ExtractKeyCmd,ExtractKey](const FPakCommand& PakCommand)->bool
+		auto ExtractByPak = [&Context,Platform,ExtractDir,ExtractCryptoCmd,ExtractCryptoFile](const FPakCommand& PakCommand)->bool
 		{
 			FString PakCommandMountOnlyPath;
 			{
@@ -593,7 +593,8 @@ namespace PatchWorker
 			{
 				if(!FPaths::FileExists(Pak))
 					continue;
-				FString PakMountPoint = UFlibPakHelper::GetPakFileMountPoint(Pak,ExtractKey);
+				FString AESKeyString = UFlibPatchParserHelper::LoadAESKeyStringFromCryptoFile(ExtractCryptoFile);
+				FString PakMountPoint = UFlibPakHelper::GetPakFileMountPoint(Pak,AESKeyString);
 				if(!(!PakMountPoint.IsEmpty() && PakCommand.MountPath.StartsWith(PakMountPoint)))
 				{
 					// file not in the pak
@@ -608,7 +609,7 @@ namespace PatchWorker
 				while(RelativeMountPoint.RemoveFromStart(TEXT("../"))){}
 				FString FinalExtractDir = FPaths::Combine(ExtractDir,RelativeMountPoint);
 				FPaths::NormalizeFilename(FinalExtractDir);
-				FString FinalCommand = FString::Printf(TEXT("-Extract \"%s\" \"%s\" %s %s"),*Pak,*FinalExtractDir,*ExtractKeyCmd,*ExtractFilter);
+				FString FinalCommand = FString::Printf(TEXT("-Extract \"%s\" \"%s\" %s %s"),*Pak,*FinalExtractDir,*ExtractCryptoCmd,*ExtractFilter);
 				UE_LOG(LogHotPatcher,Log,TEXT("Extract Base Version Pak Command: %s"),*FinalCommand);
 				if(ExecuteUnrealPak(*FinalCommand))
 				{

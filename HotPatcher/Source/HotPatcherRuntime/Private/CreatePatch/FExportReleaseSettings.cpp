@@ -226,9 +226,9 @@ FExportReleaseSettings::FExportReleaseSettings()
 
 					for (const auto& FileItem : PakListContent)
 					{
-						if (UFlibPatchParserHelper::IsUasset(FileItem))
+						if (UFlibPatchParserHelper::IsCookedUassetExtensions(FileItem))
 						{
-							if (FileItem.Contains(TEXT(".uasset")))
+							if (UFlibPatchParserHelper::IsUnCookUassetExtension(FileItem))
 							{
 								FPatcherSpecifyAsset Asset = ParseUassetLambda(FileItem);
 								if(Asset.Asset.IsValid())
@@ -258,9 +258,11 @@ bool FExportReleaseSettings::PlatformPakFileParser(const ETargetPlatform Platfor
 
 	for(const auto& MountFile:InMountFilePaths)
 	{
-		if(UFlibPatchParserHelper::IsUasset(MountFile))
+		if(UFlibPatchParserHelper::IsCookedUassetExtensions(MountFile))
 		{
-			// is uasset
+			if (!UFlibPatchParserHelper::IsUnCookUassetExtension(MountFile))
+				continue;
+			// is uasset or umap
 			FString LongPacakgePath = UFlibPatchParserHelper::UAssetMountPathToPackagePath(MountFile);
 			FPatcherSpecifyAsset currentAsset;
 			currentAsset.Asset = FSoftObjectPath(LongPacakgePath);

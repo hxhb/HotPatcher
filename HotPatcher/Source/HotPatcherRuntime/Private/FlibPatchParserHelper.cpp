@@ -2066,25 +2066,84 @@ FHotPatcherVersion UFlibPatchParserHelper::MakeNewReleaseByDiff(const FHotPatche
 	return NewRelease;
 }
 
+TArray<FString> UFlibPatchParserHelper::GetUnCookUassetExtensions()
+{
+	TArray<FString> UAssetFormats = { TEXT(".uasset"),TEXT(".umap")};
+	return UAssetFormats;
+}
 
-
-bool UFlibPatchParserHelper::IsUasset(const FString& InAsset)
+TArray<FString> UFlibPatchParserHelper::GetCookedUassetExtensions()
 {
 	TArray<FString> UAssetFormats = { TEXT(".uasset"),TEXT(".ubulk"),TEXT(".uexp"),TEXT(".umap"),TEXT(".ufont") };
-	auto IsUAssetLambda = [&UAssetFormats](const FString& InStr)->bool
+	return UAssetFormats;
+}
+
+bool UFlibPatchParserHelper::IsCookedUassetExtensions(const FString& InAsset)
+{
+	return UFlibPatchParserHelper::MatchStrInArray(InAsset,UFlibPatchParserHelper::GetCookedUassetExtensions());
+}
+bool UFlibPatchParserHelper::IsUnCookUassetExtension(const FString& InAsset)
+{
+	return UFlibPatchParserHelper::MatchStrInArray(InAsset,UFlibPatchParserHelper::GetUnCookUassetExtensions());
+}
+
+bool UFlibPatchParserHelper::MatchStrInArray(const FString& InStr, const TArray<FString>& InArray)
+{
+	bool bResult = false;
+	for (const auto& Format:InArray)
 	{
-		bool bResult = false;
-		for (const auto& Format:UAssetFormats)
+		if (InStr.Contains(Format))
 		{
-			if (InStr.Contains(Format))
+			bResult = true;
+			break;
+		}
+	}
+	return bResult;
+}
+
+FString UFlibPatchParserHelper::LoadAESKeyStringFromCryptoFile(const FString& InCryptoJson)
+{
+	FString result;
+	if(FPaths::FileExists(InCryptoJson))
+	{
+		FString Content;
+		FFileHelper::LoadFileToString(Content,*InCryptoJson);
+		if (!Content.IsEmpty())
+		{
+			TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(Content);
+			TSharedPtr<FJsonObject> DeserializeJsonObject;
+			if (FJsonSerializer::Deserialize(JsonReader, DeserializeJsonObject))
 			{
-				bResult = true;
-				break;
+				const TSharedPtr<FJsonObject>* EncryptionKeyObject;
+				DeserializeJsonObject->TryGetObjectField(TEXT("EncryptionKey"),EncryptionKeyObject);
+				if(EncryptionKeyObject->IsValid())
+				{
+					FString Key;
+					EncryptionKeyObject->Get()->TryGetStringField(TEXT("Key"),Key);
+					if(!Key.IsEmpty())
+					{
+						result = Key;
+					}
+				}
 			}
 		}
-		return bResult;
-	};
-	return IsUAssetLambda(InAsset);
+	}
+	return result;
+}
+
+FAES::FAESKey UFlibPatchParserHelper::LoadAESKeyFromCryptoFile(const FString& InCryptoJson)
+{
+	FAES::FAESKey AESKey;
+	FString AESKeyString = UFlibPatchParserHelper::LoadAESKeyStringFromCryptoFile(InCryptoJson);
+	if(!AESKeyString.IsEmpty())
+	{
+		TArray<uint8> DecodedBuffer;
+		if (!FBase64::Decode(AESKeyString, DecodedBuffer))
+		{
+			FMemory::Memcpy(AESKey.Key, DecodedBuffer.GetData(), 32);
+		}
+	}
+	return AESKey;
 }
 
 FString UFlibPatchParserHelper::UAssetMountPathToPackagePath(const FString& InAssetMountPath)
@@ -2095,8 +2154,12 @@ FString UFlibPatchParserHelper::UAssetMountPathToPackagePath(const FString& InAs
 	FString LongPackageName = InAssetMountPath;
 
 	LongPackageName.RemoveFromStart(TEXT("../../.."));
-	LongPackageName.RemoveFromEnd(TEXT(".uasset"));
-							
+
+	for(const auto& UnCookAssetExtension:UFlibPatchParserHelper::GetUnCookUassetExtensions())
+	{
+		LongPackageName.RemoveFromEnd(UnCookAssetExtension);
+	}
+	
 	// LongPackageName = LongPackageName.Replace(TEXT("/Content"), TEXT(""));
 							
 	FString ModuleName = LongPackageName;
@@ -2148,7 +2211,10 @@ FString UFlibPatchParserHelper::UAssetMountPathToPackagePath(const FString& InAs
 	}
 
 	FString LongPackagePath;
-	UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(LongPackageName, LongPackagePath);
+	if(!UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(LongPackageName, LongPackagePath))
+	{
+		UE_LOG(LogHotPatcher,Warning,TEXT("UAssetMountPathToPackagePath ConvLongPackageNameToPackagePath %s faild!"),*LongPackageName);
+	}
 	return LongPackagePath;
 }
 
