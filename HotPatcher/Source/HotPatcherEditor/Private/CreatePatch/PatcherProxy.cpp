@@ -79,6 +79,8 @@ namespace PatchWorker
 	bool ParserChunkWorker(FHotPatcherPatchContext& Context);
 	// setup 7
 	bool CookPatchAssetsWorker(FHotPatcherPatchContext& Context);
+	// setup 7/1
+	bool GenerateAssetRegistryData(FHotPatcherPatchContext& Context);
 	// setup 8
 	bool GeneratePakProxysWorker(FHotPatcherPatchContext& Context);
 	// setup 9
@@ -139,6 +141,7 @@ bool UPatcherProxy::DoExport()
 	{
 		this->OnPakListGenerated.AddStatic(&PatchWorker::GenerateBinariesPatch);
 	}
+	PostCookPatchWorkers.Emplace(&PatchWorker::GenerateAssetRegistryData);
 	PostCookPatchWorkers.Emplace(&PatchWorker::GeneratePakProxysWorker);
 	PostCookPatchWorkers.Emplace(&PatchWorker::CreatePakWorker);
 	PostCookPatchWorkers.Emplace(&PatchWorker::CreateIoStoreWorker);
@@ -549,7 +552,30 @@ namespace PatchWorker
 		}
 		return true;
 	};
-	
+	bool GenerateAssetRegistryData(FHotPatcherPatchContext& Context)
+	{
+		FAssetDependenciesInfo TotalDiffAssets = UFLibAssetManageHelperEx::CombineAssetDependencies(Context.VersionDiff.AssetDiffInfo.AddAssetDependInfo,Context.VersionDiff.AssetDiffInfo.ModifyAssetDependInfo);
+		TArray<FAssetDetail> AllAssets;
+		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(TotalDiffAssets,AllAssets);
+
+		TSet<FName> PackageAssetsSet;
+		for(const auto& Asset:AllAssets)
+		{
+			FString LongPackageName;
+			if(UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath,LongPackageName))
+			{
+				PackageAssetsSet.Add(*LongPackageName);
+			}
+		}
+		for(const auto& PlatformName:Context.GetSettingObject()->GetPakTargetPlatformNames())
+		{
+			ITargetPlatform* PlatformIns = UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
+			
+			UFlibHotPatcherEditorHelper::GeneratorAssetRegistryData(PlatformIns,PackageAssetsSet,TSet<FName>{},true);
+		}
+		return true;
+	}
+
 	void GenerateBinariesPatch(FHotPatcherPatchContext& Context,FChunkInfo& Chunk,ETargetPlatform Platform,TArray<FPakCommand>& PakCommands)
 	{
 		TArray<IBinariesDiffPatchFeature*> ModularFeatures = IModularFeatures::Get().GetModularFeatureImplementations<IBinariesDiffPatchFeature>(BINARIES_DIFF_PATCH_FEATURE_NAME);

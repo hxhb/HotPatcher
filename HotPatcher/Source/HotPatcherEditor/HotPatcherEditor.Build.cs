@@ -28,6 +28,7 @@ public class HotPatcherEditor : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"UnrealEd",
 				"Core",
                 "Json",
                 "ContentBrowser",
@@ -55,6 +56,8 @@ public class HotPatcherEditor : ModuleRules
 			return true;
 		};
 		
+		AddPublicDefinitions("GENERATE_ASSET_REGISTRY_DATA", false);
+		
 		bool bIOStoreSupport = Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 25;
 		if (bIOStoreSupport)
 		{
@@ -64,7 +67,7 @@ public class HotPatcherEditor : ModuleRules
 			});
 		}
 		AddPublicDefinitions("WITH_IO_STORE_SUPPORT", bIOStoreSupport);
-		
+
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{

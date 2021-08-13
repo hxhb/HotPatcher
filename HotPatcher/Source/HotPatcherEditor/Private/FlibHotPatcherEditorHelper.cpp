@@ -883,3 +883,20 @@ ITargetPlatform* UFlibHotPatcherEditorHelper::GetPlatformByName(const FString& N
 	}
 	return result;
 }
+#include "Commandlets/AssetRegistryGenerator.h"
+
+bool UFlibHotPatcherEditorHelper::GeneratorAssetRegistryData(ITargetPlatform* TargetPlatform, const TSet<FName>& CookedPackageNames, const TSet<FName>& IgnorePackageNames, bool
+                                                             bGenerateStreamingInstallManifest)
+{
+	bool bresult = true;
+#if GENERATE_ASSET_REGISTRY_DATA
+	TUniquePtr<class FSandboxPlatformFile> TempSandboxFile = MakeUnique<FSandboxPlatformFile>(false);
+	TUniquePtr<FAssetRegistryGenerator> RegistryGenerator = MakeUnique<FAssetRegistryGenerator>(TargetPlatform);
+	RegistryGenerator->CleanManifestDirectories();
+	RegistryGenerator->Initialize(TArray<FName>());
+	RegistryGenerator->PreSave(CookedPackageNames);
+	RegistryGenerator->BuildChunkManifest(CookedPackageNames, IgnorePackageNames, TempSandboxFile.Get(), bGenerateStreamingInstallManifest);
+	bresult = RegistryGenerator->SaveManifests(TempSandboxFile.Get());
+#endif
+	return bresult;
+}
