@@ -81,7 +81,7 @@ public:
 	static FString GetPakFileMountPoint(const FString& InPak, const FString& AESKey);
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
-	static TRefCountPtr<FPakFile> UFlibPakHelper::GetPakFileIns(const FString& InPak, const FString& AESKey);
+	static TRefCountPtr<FPakFile> GetPakFileIns(const FString& InPak, const FString& AESKey);
 #else
 	static TSharedPtr<FPakFile> GetPakFileIns(const FString& InPak, const FString& AESKey);
 #endif
