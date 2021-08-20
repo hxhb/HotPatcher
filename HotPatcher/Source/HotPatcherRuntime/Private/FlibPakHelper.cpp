@@ -524,7 +524,7 @@ bool PreLoadPak(const FString& InPakPath,const FString& AesKey)
 
 				if (Info.EncryptionKeyGuid.IsValid())
 				{
-#if ENGINE_MINOR_VERSION >= 26
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >= 26
 					FCoreDelegates::GetRegisterEncryptionKeyMulticastDelegate().Broadcast(Info.EncryptionKeyGuid, AESKey);
 #else
 					FCoreDelegates::GetRegisterEncryptionKeyDelegate().ExecuteIfBound(Info.EncryptionKeyGuid, AESKey);
@@ -552,12 +552,7 @@ TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FStri
 		FString MountPoint = PakFile->GetMountPoint();
 		for (FPakFile::FFileIterator It(*PakFile, true); It; ++It)
 		{
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
-			const FString& Filename = *It.TryGetFilename();
-#else
 			const FString& Filename = It.Filename();
-#endif
-
 			Records.Emplace(MountPoint + Filename);
 		}
 	}
