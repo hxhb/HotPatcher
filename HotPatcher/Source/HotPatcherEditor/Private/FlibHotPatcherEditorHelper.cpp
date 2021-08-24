@@ -76,6 +76,11 @@ void UFlibHotPatcherEditorHelper::CheckInvalidCookFilesByAssetDependenciesInfo(
 			continue;
 		FAssetData CurrentAssetData;
 		UFLibAssetManageHelperEx::GetSingleAssetsData(AssetDetail.mPackagePath,CurrentAssetData);
+		if(!CurrentAssetData.GetAsset()->IsValidLowLevelFast())
+		{
+			UE_LOG(LogHotPatcherEditorHelper,Warning,TEXT("%s is invalid Asset Uobject"),*CurrentAssetData.PackageName.ToString());
+			continue;
+		}
 		if (CurrentAssetData.GetAsset()->HasAnyMarks(OBJECTMARK_EditorOnly))
 		{
 			UE_LOG(LogHotPatcherEditorHelper,Warning,TEXT("Miss %s it's EditorOnly Assets!"),*CurrentAssetData.PackageName.ToString());
