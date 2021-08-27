@@ -845,17 +845,20 @@ TArray<FString> UFlibHotPatcherEditorHelper::GetSupportPlatforms()
 FString UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(const FPakEncryptSettings& EncryptSettings,const FString& PlatformName)
 {
 	FString Result; 
-	if(EncryptSettings.bEncrypt)
+	if(EncryptSettings.bEncryptAllAssetFiles)
 	{
-		Result += EncryptSettings.bEncrypt? TEXT("-encrypt "):TEXT("");
-		Result += EncryptSettings.bEncryptIndex? TEXT("-encryptindex "):TEXT("");
-		
-		FString CryptoKey = UFlibPatchParserHelper::ReplaceMarkPath(EncryptSettings.CryptoKeys.FilePath);
-		if(FPaths::FileExists(CryptoKey))
-		{
-			Result += FString::Printf(TEXT("-crypto=\"%s\" "),*CryptoKey);
-		}
+		Result += EncryptSettings.bEncryptAllAssetFiles? TEXT("-encrypt "):TEXT("");
 	}
+	if(EncryptSettings.bEncryptIndex)
+	{
+		Result += EncryptSettings.bEncryptIndex? TEXT("-encryptindex "):TEXT("");
+	}
+	FString CryptoKey = UFlibPatchParserHelper::ReplaceMarkPath(EncryptSettings.CryptoKeys.FilePath);
+	if(FPaths::FileExists(CryptoKey))
+	{
+		Result += FString::Printf(TEXT("-crypto=\"%s\" "),*CryptoKey);
+	}
+	
 	if(EncryptSettings.bUseDefaultCryptoIni)
 		Result += EncryptSettings.bUseDefaultCryptoIni? TEXT("-encryptionini "):TEXT("");
 	if(EncryptSettings.bSign)

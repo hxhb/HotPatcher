@@ -43,9 +43,9 @@ struct HOTPATCHERRUNTIME_API FPakEncryptSettings
 	GENERATED_BODY()
 	// -encrypt
 	UPROPERTY(EditAnywhere)
-	bool bEncrypt = false;
+	bool bEncryptAllAssetFiles = false;
 	// -encryptindex
-	UPROPERTY(EditAnywhere,meta=(EditCondition="bEncrypt"))
+	UPROPERTY(EditAnywhere)
     bool bEncryptIndex = false;
 	// Use DefaultCrypto.ini
 	UPROPERTY(EditAnywhere)

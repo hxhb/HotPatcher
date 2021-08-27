@@ -53,7 +53,8 @@ public class HotPatcherRuntime : ModuleRules
 			PublicDefinitions.Add(string.Format("{0}={1}",MacroName, bEnable ? 1 : 0));
 			return true;
 		};
-		AddPublicDefinitions("WITH_PACKAGE_CONTEXT", Version.MajorVersion > 4 || Version.MinorVersion > 24);
+		bool bEnablePackageContext = false;
+		AddPublicDefinitions("WITH_PACKAGE_CONTEXT", (Version.MajorVersion > 4 || Version.MinorVersion > 24) && bEnablePackageContext);
 		AddPublicDefinitions("WITH_EDITOR_SECTION", Version.MajorVersion > 4 || Version.MinorVersion > 24);
 
 		PrivateDependencyModuleNames.AddRange(
