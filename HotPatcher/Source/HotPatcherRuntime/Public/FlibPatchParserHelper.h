@@ -382,7 +382,7 @@ public:
 			SwitchItem.ParseIntoArray(SwitchArray,TEXT("="),true);
 			if(SwitchArray.Num()>1)
 			{
-				resault.Add(SwitchArray[0],SwitchArray[1]);
+				resault.Add(SwitchArray[0],SwitchArray[1].TrimQuotes());
 			}
 			else
 			{
