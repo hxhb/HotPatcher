@@ -64,7 +64,7 @@ TArray<FPlatformPakListFiles> ParserPlatformPakList(const FString& Commandline)
 
 int32 UHotReleaseCommandlet::Main(const FString& Params)
 {
-	UE_LOG(LogHotReleaseCommandlet, Display, TEXT("UHotReleaseCommandlet::Main"));
+	UE_LOG(LogHotReleaseCommandlet, Display, TEXT("UHotReleaseCommandlet::Main:%s"), *Params);
 
 	FString config_path;
 	bool bStatus = FParse::Value(*Params, *FString(PATCHER_CONFIG_PARAM_NAME).ToLower(), config_path);
@@ -76,7 +76,7 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 
 	if (bStatus && !FPaths::FileExists(config_path))
 	{
-		UE_LOG(LogHotReleaseCommandlet, Error, TEXT("cofnig file %s not exists."), *config_path);
+		UE_LOG(LogHotReleaseCommandlet, Error, TEXT("config file %s not exists."), *config_path);
 		return -1;
 	}
 	if(IsRunningCommandlet())
