@@ -3,6 +3,8 @@
 #include "CreatePatch/FExportPatchSettings.h"
 
 #include "CoreMinimal.h"
+
+#include "GraphColor/Private/appconst.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "HotPatcherSettings.generated.h"
 #define LOCTEXT_NAMESPACE "UHotPatcherSettings"
@@ -48,6 +50,9 @@ public:
     TArray<FPakExternalInfo> PakExternalConfigs;
     UPROPERTY(EditAnywhere, config, Category = "Preset")
     TArray<FExportPatchSettings> PresetConfigs;
+
+    UPROPERTY(EditAnywhere, config, Category = "Others")
+    bool bPreviewTooltips = false;
 };
 
 

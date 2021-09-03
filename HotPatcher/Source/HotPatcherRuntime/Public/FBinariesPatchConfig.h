@@ -47,6 +47,8 @@ struct FMatchRule
 	// match file Formats. etc .ini/.lua, if it is empty match everything
 	UPROPERTY(EditAnywhere)
 	TArray<FString> Formaters;
+	UPROPERTY(EditAnywhere)
+    TArray<FString> AssetTypes;
 };
 
 USTRUCT(BlueprintType)

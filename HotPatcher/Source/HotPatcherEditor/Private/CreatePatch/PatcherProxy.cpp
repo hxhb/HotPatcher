@@ -243,6 +243,7 @@ namespace PatchWorker
 
 	bool ParseDiffAssetOnlyWorker(FHotPatcherPatchContext& Context)
 	{
+		
 		TimeRecorder DiffVersionAssetOnlyTR(TEXT("Parse Diff Asset Dependencies Only Worker"));
 		if(Context.GetSettingObject()->IsAnalysisDiffAssetDependenciesOnly())
 		{
@@ -271,7 +272,9 @@ namespace PatchWorker
 			);
 			{
 				TimeRecorder DiffTR(TEXT("Base Version And Diff Version total time"));
+				TMap<ETargetPlatform,FPatchVersionExternDiff> BackupExternalFiles = Context.VersionDiff.PlatformExternDiffInfo;
 				Context.VersionDiff = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*Context.GetSettingObject(), Context.BaseVersion, DiffVersion);
+				Context.VersionDiff.PlatformExternDiffInfo = BackupExternalFiles;
 			}
 		}
 		return true;

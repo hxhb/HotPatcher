@@ -511,7 +511,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 FText SHotPatcherExportPatch::GetGenerateTooltipText() const
 {
 	FString FinalString;
-	if (ExportPatchSetting)
+	if (GetMutableDefault<UHotPatcherSettings>()->bPreviewTooltips && ExportPatchSetting)
 	{
 		bool bHasBase = false;
 		if (ExportPatchSetting->IsByBaseVersion())

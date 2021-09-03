@@ -190,7 +190,7 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 FText SHotPatcherExportRelease::GetGenerateTooltipText() const
 {
 	FString FinalString;
-	if (ExportReleaseSettings)
+	if (GetMutableDefault<UHotPatcherSettings>()->bPreviewTooltips && ExportReleaseSettings)
 	{
 		bool bHasVersion = !ExportReleaseSettings->GetVersionId().IsEmpty();
 		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFiltersPaths().Num();
