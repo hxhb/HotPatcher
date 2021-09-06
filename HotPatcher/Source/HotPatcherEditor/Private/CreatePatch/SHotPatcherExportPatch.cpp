@@ -469,7 +469,12 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
 		// bool bHasExternFiles = !!ExportPatchSetting->GetAddExternFiles().Num();
 		// bool bHasExDirs = !!ExportPatchSetting->GetAddExternDirectory().Num();
-		bool bHasExternFiles = !!ExportPatchSetting->GetAllPlatfotmExternFiles().Num();
+		bool bHasExternFiles = true;
+		if(GetDefault<UHotPatcherSettings>()->bExternalFilesCheck)
+		{
+			bHasExternFiles = !!ExportPatchSetting->GetAllPlatfotmExternFiles().Num();
+		}
+		
 		bool bHasExDirs = !!ExportPatchSetting->GetAddExternAssetsToPlatform().Num();
 		bool bHasSavePath = !ExportPatchSetting->GetSaveAbsPath().IsEmpty();
 		bool bHasPakPlatfotm = !!ExportPatchSetting->GetPakTargetPlatforms().Num();
@@ -523,7 +528,12 @@ FText SHotPatcherExportPatch::GetGenerateTooltipText() const
 		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
 		// bool bHasExternFiles = !!ExportPatchSetting->GetAddExternFiles().Num();
 		// bool bHasExDirs = !!ExportPatchSetting->GetAddExternDirectory().Num();
-		bool bHasExternFiles = !!ExportPatchSetting->GetAllPlatfotmExternFiles().Num();
+		
+		bool bHasExternFiles = true;
+		if(GetDefault<UHotPatcherSettings>()->bExternalFilesCheck)
+		{
+			bHasExternFiles = !!ExportPatchSetting->GetAllPlatfotmExternFiles().Num();
+		}
 		bool bHasExDirs = !!ExportPatchSetting->GetAddExternAssetsToPlatform().Num();
 		bool bHasSavePath = !ExportPatchSetting->GetSaveAbsPath().IsEmpty();
 		bool bHasPakPlatfotm = !!ExportPatchSetting->GetPakTargetPlatforms().Num();
@@ -583,7 +593,11 @@ bool SHotPatcherExportPatch::CanPreviewPatch() const
 		}
 		return result;
 	};
-	bool bHasExternFiles = HasExFilesLambda();
+	bool bHasExternFiles = true;
+	if(GetDefault<UHotPatcherSettings>()->bExternalFilesCheck)
+	{
+		bHasExternFiles = HasExFilesLambda();		
+	}
 	
 	bool bHasAnyPakFiles = (
 		bHasFilter || bHasSpecifyAssets || bHasExternFiles ||
