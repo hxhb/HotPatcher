@@ -908,3 +908,297 @@ bool UFlibHotPatcherEditorHelper::GeneratorAssetRegistryData(ITargetPlatform* Ta
 #endif
 	return bresult;
 }
+
+FPatchVersionDiff UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(const FExportPatchSettings& PatchSetting, const FHotPatcherVersion& Base, const FHotPatcherVersion& New)
+{
+	FPatchVersionDiff VersionDiffInfo;
+	FAssetDependenciesInfo BaseVersionAssetDependInfo = Base.AssetInfo;
+	FAssetDependenciesInfo CurrentVersionAssetDependInfo = New.AssetInfo;
+
+	UFlibPatchParserHelper::DiffVersionAssets(
+		CurrentVersionAssetDependInfo,
+		BaseVersionAssetDependInfo,
+		VersionDiffInfo.AssetDiffInfo.AddAssetDependInfo,
+		VersionDiffInfo.AssetDiffInfo.ModifyAssetDependInfo,
+		VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo
+	);
+
+	UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(Base,New,VersionDiffInfo.PlatformExternDiffInfo);
+
+	if(PatchSetting.GetIgnoreDeletionModulesAsset().Num())
+	{
+		for(const auto& ModuleName:PatchSetting.GetIgnoreDeletionModulesAsset())
+		{
+			VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap.Remove(ModuleName);
+		}
+	}
+	
+	if(PatchSetting.IsRecursiveWidgetTree())
+	{
+		UFlibHotPatcherEditorHelper::AnalysisWidgetTree(VersionDiffInfo);
+	}
+	
+	if(PatchSetting.IsForceSkipContent())
+	{
+		TArray<FString> AllSkipContents;
+		AllSkipContents.Append(PatchSetting.GetForceSkipContentStrRules());
+		AllSkipContents.Append(PatchSetting.GetForceSkipAssetsStr());
+		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipContents);
+	}
+	// clean deleted asset info in patch
+	if(PatchSetting.IsIgnoreDeleatedAssetsInfo())
+	{
+		UE_LOG(LogHotPatcher,Display,TEXT("ignore deleted assets info in patch..."));
+		VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap.Empty();
+		if(VersionDiffInfo.PlatformExternDiffInfo.Contains(ETargetPlatform::AllPlatforms))
+		{
+			VersionDiffInfo.PlatformExternDiffInfo.Find(ETargetPlatform::AllPlatforms)->DeleteExternalFiles.Empty();
+		}
+		for(const auto& Platform:PatchSetting.GetPakTargetPlatforms())
+		{
+			VersionDiffInfo.PlatformExternDiffInfo.Find(Platform)->DeleteExternalFiles.Empty();
+		}
+	}
+	
+	return VersionDiffInfo;
+}
+
+#include "BaseWidgetBlueprint.h"
+#include "Blueprint/UserWidget.h"
+#include "Blueprint/WidgetTree.h"
+#include "WidgetBlueprint.h"
+
+void UFlibHotPatcherEditorHelper::AnalysisWidgetTree(FPatchVersionDiff& PakDiff,int32 flags)
+{
+	TArray<FAssetDetail> AnalysisAssets;
+	if(flags & 0x1)
+	{
+		TArray<FAssetDetail> AddAssets;
+		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(PakDiff.AssetDiffInfo.AddAssetDependInfo,AddAssets);
+		AnalysisAssets.Append(AddAssets);
+		
+	}
+	if(flags & 0x2)
+	{
+		TArray<FAssetDetail> ModifyAssets;
+		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(PakDiff.AssetDiffInfo.ModifyAssetDependInfo,ModifyAssets);
+		AnalysisAssets.Append(ModifyAssets);
+	}
+	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDepTypes {EAssetRegistryDependencyTypeEx::Hard};
+	FString AssetType = TEXT("WidgetBlueprint");
+
+	auto AssetsIsExist = [&PakDiff](const FAssetDetail& Asset)->bool
+	{
+		bool result = false;
+		FString ModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(Asset.mPackagePath);
+		FString LongPackageName;
+		UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath,LongPackageName);
+		if(PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName))
+		{
+			if(PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName)->AssetDependencyDetails.Find(LongPackageName))
+			{
+				result = true;
+			}
+		}
+		return result;
+	};
+	TArray<EAssetRegistryDependencyType::Type> SearchType{EAssetRegistryDependencyType::Hard};
+	
+	for(const auto& OriginAsset:AnalysisAssets)
+	{
+		if(OriginAsset.mAssetType.Equals(AssetType))
+		{
+			// if asset is existed
+			if(AssetsIsExist(OriginAsset))
+			{
+				continue;
+			}
+			TArray<FAssetDetail> CurrentAssetsRef;
+			UFLibAssetManageHelperEx::GetAssetReferenceRecursively(OriginAsset, SearchType, TArray<FString>{AssetType}, CurrentAssetsRef);
+			UE_LOG(LogHotPatcher,Display,TEXT("Reference %s Widgets:"),*OriginAsset.mPackagePath);
+			// TArray<FAssetDetail> CurrentAssetDeps = UFlibPatchParserHelper::GetAllAssetDependencyDetails(OriginAsset,AssetRegistryDepTypes,AssetType);
+			for(const auto& Asset:CurrentAssetsRef)
+			{
+				if(!Asset.mAssetType.Equals(AssetType))
+				{
+					continue;
+				}
+				
+				UE_LOG(LogHotPatcher,Display,TEXT("Widget: %s"),*Asset.mPackagePath);
+				FString ModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(Asset.mPackagePath);
+				FString LongPackageName;
+				UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath,LongPackageName);
+				if(PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName))
+				{
+					PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName)->AssetDependencyDetails.Add(LongPackageName,Asset);
+				}
+				else
+				{
+					FAssetDependenciesDetail AssetModuleDetail;
+					AssetModuleDetail.ModuleCategory = ModuleName;
+					AssetModuleDetail.AssetDependencyDetails.Add(LongPackageName,Asset);
+					PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Add(ModuleName,AssetModuleDetail);
+				}
+			}
+		}
+	}
+}
+FChunkAssetDescribe UFlibHotPatcherEditorHelper::DiffChunkWithPatchSetting(
+	const FExportPatchSettings& PatchSetting,
+	const FChunkInfo& CurrentVersionChunk,
+	const FChunkInfo& TotalChunk,
+	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+)
+{
+	FHotPatcherVersion TotalChunkVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
+		TEXT(""),
+		TEXT(""),
+		TEXT(""),
+		TotalChunk,
+		ScanedCaches,
+		PatchSetting.IsIncludeHasRefAssetsOnly(),
+		TotalChunk.bAnalysisFilterDependencies
+	);
+
+	return UFlibHotPatcherEditorHelper::DiffChunkByBaseVersionWithPatchSetting(PatchSetting, CurrentVersionChunk ,TotalChunk, TotalChunkVersion,ScanedCaches);
+}
+
+FChunkAssetDescribe UFlibHotPatcherEditorHelper::DiffChunkByBaseVersionWithPatchSetting(
+	const FExportPatchSettings& PatchSetting,
+	const FChunkInfo& CurrentVersionChunk,
+	const FChunkInfo& TotalChunk,
+	const FHotPatcherVersion& BaseVersion,
+	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+)
+{
+	FChunkAssetDescribe result;
+	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
+		TEXT(""),
+		TEXT(""),
+		TEXT(""),
+		CurrentVersionChunk,
+		ScanedCaches,
+		PatchSetting.IsIncludeHasRefAssetsOnly(),
+		CurrentVersionChunk.bAnalysisFilterDependencies
+	);
+	FPatchVersionDiff ChunkDiffInfo = UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(PatchSetting, BaseVersion, CurrentVersion);
+	
+	result.Assets = UFLibAssetManageHelperEx::CombineAssetDependencies(ChunkDiffInfo.AssetDiffInfo.AddAssetDependInfo, ChunkDiffInfo.AssetDiffInfo.ModifyAssetDependInfo);
+
+	TArray<ETargetPlatform> Platforms;
+	ChunkDiffInfo.PlatformExternDiffInfo.GetKeys(Platforms);
+	for(auto Platform:Platforms)
+	{
+		FPlatformExternFiles PlatformFiles;
+		PlatformFiles.Platform = Platform;
+		PlatformFiles.ExternFiles = ChunkDiffInfo.PlatformExternDiffInfo.Find(Platform)->AddExternalFiles;
+		PlatformFiles.ExternFiles.Append(ChunkDiffInfo.PlatformExternDiffInfo.Find(Platform)->ModifyExternalFiles);
+		result.AllPlatformExFiles.Add(Platform,PlatformFiles);	
+	}
+	
+	result.InternalFiles.bIncludeAssetRegistry = CurrentVersionChunk.InternalFiles.bIncludeAssetRegistry != TotalChunk.InternalFiles.bIncludeAssetRegistry;
+	result.InternalFiles.bIncludeGlobalShaderCache = CurrentVersionChunk.InternalFiles.bIncludeGlobalShaderCache != TotalChunk.InternalFiles.bIncludeGlobalShaderCache;
+	result.InternalFiles.bIncludeShaderBytecode = CurrentVersionChunk.InternalFiles.bIncludeShaderBytecode != TotalChunk.InternalFiles.bIncludeShaderBytecode;
+	result.InternalFiles.bIncludeEngineIni = CurrentVersionChunk.InternalFiles.bIncludeEngineIni != TotalChunk.InternalFiles.bIncludeEngineIni;
+	result.InternalFiles.bIncludePluginIni = CurrentVersionChunk.InternalFiles.bIncludePluginIni != TotalChunk.InternalFiles.bIncludePluginIni;
+	result.InternalFiles.bIncludeProjectIni = CurrentVersionChunk.InternalFiles.bIncludeProjectIni != TotalChunk.InternalFiles.bIncludeProjectIni;
+
+	return result;
+}
+
+
+
+
+FHotPatcherVersion UFlibHotPatcherEditorHelper::MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings)
+{
+	FHotPatcherVersion BaseVersion = InBaseVersion;
+	
+	FPatchVersionDiff DiffInfo = UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(*InPatchSettings,BaseVersion, InCurrentVersion);
+	return UFlibHotPatcherEditorHelper::MakeNewReleaseByDiff(InBaseVersion,DiffInfo, InPatchSettings);
+}
+
+FHotPatcherVersion UFlibHotPatcherEditorHelper::MakeNewReleaseByDiff(const FHotPatcherVersion& InBaseVersion,
+	const FPatchVersionDiff& InDiff, FExportPatchSettings* InPatchSettings)
+{
+	FHotPatcherVersion BaseVersion = InBaseVersion;
+	FHotPatcherVersion NewRelease;
+
+	NewRelease.BaseVersionId = InBaseVersion.VersionId;
+	NewRelease.Date = FDateTime::UtcNow().ToString();
+	NewRelease.VersionId = InPatchSettings->VersionId;
+	
+	FAssetDependenciesInfo& BaseAssetInfoRef = BaseVersion.AssetInfo;
+	// TMap<FString, FExternFileInfo>& BaseExternalFilesRef = BaseVersion.ExternalFiles;
+	TMap<ETargetPlatform,FPlatformExternAssets>& BasePlatformAssetsRef = BaseVersion.PlatformAssets;
+
+	// Modify Asset
+	auto DeleteOldAssetLambda = [&BaseAssetInfoRef](const FAssetDependenciesInfo& InAssetDependenciesInfo)
+	{
+		for (const auto& AssetsModulePair : InAssetDependenciesInfo.AssetsDependenciesMap)
+		{
+			FAssetDependenciesDetail* NewReleaseModuleAssets = BaseAssetInfoRef.AssetsDependenciesMap.Find(AssetsModulePair.Key);
+
+			for (const auto& NeedDeleteAsset : AssetsModulePair.Value.AssetDependencyDetails)
+			{
+				if (NewReleaseModuleAssets && NewReleaseModuleAssets->AssetDependencyDetails.Contains(NeedDeleteAsset.Key))
+				{
+					NewReleaseModuleAssets->AssetDependencyDetails.Remove(NeedDeleteAsset.Key);
+				}
+			}
+		}
+	};
+	
+	DeleteOldAssetLambda(InDiff.AssetDiffInfo.ModifyAssetDependInfo);
+	if(InPatchSettings && !InPatchSettings->IsSaveDeletedAssetsToNewReleaseJson())
+	{
+		DeleteOldAssetLambda(InDiff.AssetDiffInfo.DeleteAssetDependInfo);
+	}
+
+	// Add Asset
+	BaseAssetInfoRef = UFLibAssetManageHelperEx::CombineAssetDependencies(BaseAssetInfoRef, InDiff.AssetDiffInfo.AddAssetDependInfo);
+	// modify Asset
+	BaseAssetInfoRef = UFLibAssetManageHelperEx::CombineAssetDependencies(BaseAssetInfoRef, InDiff.AssetDiffInfo.ModifyAssetDependInfo);
+	NewRelease.AssetInfo = BaseAssetInfoRef;
+
+	// // external files
+	// auto RemoveOldExternalFilesLambda = [&BaseExternalFilesRef](const TArray<FExternFileInfo>& InFiles)
+	// {
+	// 	for (const auto& File : InFiles)
+	// 	{
+	// 		if (BaseExternalFilesRef.Contains(File.FilePath.FilePath))
+	// 		{
+	// 			BaseExternalFilesRef.Remove(File.FilePath.FilePath);
+	// 		}
+	// 	}
+	// };
+
+	TArray<ETargetPlatform> DiffPlatforms;
+	InDiff.PlatformExternDiffInfo.GetKeys(DiffPlatforms);
+
+	for(auto Platform:DiffPlatforms)
+	{
+		FPlatformExternAssets AddPlatformFiles;
+		AddPlatformFiles.TargetPlatform = Platform;
+		AddPlatformFiles.AddExternFileToPak = InDiff.PlatformExternDiffInfo[Platform].AddExternalFiles;
+		AddPlatformFiles.AddExternFileToPak.Append(InDiff.PlatformExternDiffInfo[Platform].ModifyExternalFiles);
+		if(BasePlatformAssetsRef.Contains(Platform))
+		{
+			for(const auto& File:AddPlatformFiles.AddExternFileToPak)
+			{
+				if(BasePlatformAssetsRef[Platform].AddExternFileToPak.Contains(File))
+				{
+					BasePlatformAssetsRef[Platform].AddExternFileToPak.Remove(File);
+				}
+				BasePlatformAssetsRef[Platform].AddExternFileToPak.Add(File);
+			}
+		}else
+		{
+			BasePlatformAssetsRef.Add(Platform,AddPlatformFiles);
+		}
+	}
+	// RemoveOldExternalFilesLambda(DiffInfo.ExternDiffInfo.ModifyExternalFiles);
+	// DeleteOldExternalFilesLambda(DiffInfo.DeleteExternalFiles);
+
+	NewRelease.PlatformAssets = BasePlatformAssetsRef;
+	return NewRelease;
+}

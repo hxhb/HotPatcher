@@ -311,7 +311,7 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
 	);
 
-	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
+	FPatchVersionDiff VersionDiffInfo = UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
 	
 	bool bShowDeleteAsset = false;
 	FString SerializeDiffInfo;
@@ -381,7 +381,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 	);
 
 	FString CurrentVersionSavePath = ExportPatchSetting->GetCurrentVersionSavePath();
-	FPatchVersionDiff VersionDiffInfo = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
+	FPatchVersionDiff VersionDiffInfo = UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
 
 	TArray<FChunkInfo> PatchChunks = ExportPatchSetting->GetChunkInfos();
 	
@@ -390,7 +390,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 	{
 		FChunkInfo TotalChunk = UFlibPatchParserHelper::CombineChunkInfos(ExportPatchSetting->GetChunkInfos());
 
-		FChunkAssetDescribe ChunkDiffInfo = UFlibPatchParserHelper::DiffChunkWithPatchSetting(
+		FChunkAssetDescribe ChunkDiffInfo = UFlibHotPatcherEditorHelper::DiffChunkWithPatchSetting(
 			*ExportPatchSetting,
 			NewVersionChunk,
 			TotalChunk,
@@ -628,7 +628,7 @@ FReply SHotPatcherExportPatch::DoPreviewPatch()
 
 	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
 	
-	FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::DiffChunkByBaseVersionWithPatchSetting(*ExportPatchSetting.Get(),NewVersionChunk, DefaultChunk, BaseVersion,ExportPatchSetting->GetAssetsDependenciesScanedCaches());
+	FChunkAssetDescribe ChunkAssetsDescrible = UFlibHotPatcherEditorHelper::DiffChunkByBaseVersionWithPatchSetting(*ExportPatchSetting.Get(),NewVersionChunk, DefaultChunk, BaseVersion,ExportPatchSetting->GetAssetsDependenciesScanedCaches());
 
 	TArray<FString> AllUnselectedAssets = ChunkAssetsDescrible.GetAssetsStrings();
 	TArray<FString> UnSelectedInternalFiles = ChunkAssetsDescrible.GetInternalFileStrings();

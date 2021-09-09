@@ -37,6 +37,7 @@
 #define FProperty UProperty
 #endif
 
+struct FExportPatchSettings;
 /**
  * 
  */
@@ -166,7 +167,6 @@ public:
 	
 	// static TArray<FExternFileInfo> GetExternFilesFromChunk(const FChunkInfo& InChunk, TArray<ETargetPlatform> InTargetPlatforms, bool bCalcHash = false);
 	TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatformExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash);
-	static FPatchVersionDiff DiffPatchVersionWithPatchSetting(const struct FExportPatchSettings& PatchSetting, const FHotPatcherVersion& Base, const FHotPatcherVersion& New);
 
 	static FChunkAssetDescribe CollectFChunkAssetsDescribeByChunk(
 		const FPatchVersionDiff& DiffInfo,
@@ -191,20 +191,7 @@ public:
 		TMap<FString, FAssetDependenciesInfo>& ScanedCaches,
 		const FExportPatchSettings* PatcheSettings=nullptr
 	);
-	// CurrenrVersionChunk中的过滤器会进行依赖分析，TotalChunk的不会，目的是让用户可以自己控制某个文件夹打包到哪个Pak里，而不会对该文件夹下的资源进行依赖分析
-	static FChunkAssetDescribe DiffChunkWithPatchSetting(
-		const struct FExportPatchSettings& PatchSetting,
-		const FChunkInfo& CurrentVersionChunk,
-		const FChunkInfo& TotalChunk,
-		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
-	);
-	static FChunkAssetDescribe DiffChunkByBaseVersionWithPatchSetting(
-		const struct FExportPatchSettings& PatchSetting,
-		const FChunkInfo& CurrentVersionChunk,
-		const FChunkInfo& TotalChunk,
-		const FHotPatcherVersion& BaseVersion,
-		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
-	);
+
 	static TArray<FString> GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands, const TArray<FReplaceText>& InReplaceTexts = TArray<FReplaceText>{},bool bIoStore=false);
 
 	static FHotPatcherAssetDependency GetAssetRelatedInfo(
@@ -447,19 +434,12 @@ public:
 		const FString& AssetType,
 		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
 	);
-	/*
-	 * 0x1 Add
-	 * 0x2 Modyfy
-	 */
-	static void AnalysisWidgetTree(FPatchVersionDiff& PakDiff,int32 flags = 0x1|0x2);
+
 	static TMap<FString,FString> GetReplacePathMarkMap();
 	static FString ReplaceMarkPath(const FString& Src);
 	// [PORJECTDIR] to real path
 	static void ReplacePatherSettingProjectDir(TArray<FPlatformExternAssets>& PlatformAssets);
 
-
-	static FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings);
-	static FHotPatcherVersion MakeNewReleaseByDiff(const FHotPatcherVersion& InBaseVersion, const FPatchVersionDiff& InDiff, FExportPatchSettings* InPatchSettings);
 
 	static TArray<FString> GetUnCookUassetExtensions();
 	static TArray<FString> GetCookedUassetExtensions();

@@ -29,6 +29,8 @@ public class HotPatcherEditor : ModuleRules
 			new string[]
 			{
 				"UnrealEd",
+				"UMG",
+				"UMGEditor",
 				"Core",
                 "Json",
                 "ContentBrowser",

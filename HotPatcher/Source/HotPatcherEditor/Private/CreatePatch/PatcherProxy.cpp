@@ -237,7 +237,7 @@ namespace PatchWorker
 	bool ParseVersionDiffWorker(FHotPatcherPatchContext& Context)
 	{
 		TimeRecorder DiffVersionTR(TEXT("Diff Base Version And Current Project Version"));
-		Context.VersionDiff = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*Context.GetSettingObject(), Context.BaseVersion, Context.CurrentVersion);
+		Context.VersionDiff = UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(*Context.GetSettingObject(), Context.BaseVersion, Context.CurrentVersion);
 		return true;
 	};
 
@@ -273,7 +273,7 @@ namespace PatchWorker
 			{
 				TimeRecorder DiffTR(TEXT("Base Version And Diff Version total time"));
 				TMap<ETargetPlatform,FPatchVersionExternDiff> BackupExternalFiles = Context.VersionDiff.PlatformExternDiffInfo;
-				Context.VersionDiff = UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(*Context.GetSettingObject(), Context.BaseVersion, DiffVersion);
+				Context.VersionDiff = UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(*Context.GetSettingObject(), Context.BaseVersion, DiffVersion);
 				Context.VersionDiff.PlatformExternDiffInfo = BackupExternalFiles;
 			}
 		}
@@ -345,7 +345,7 @@ namespace PatchWorker
 			FString TotalMsg;
 			FChunkInfo TotalChunk = UFlibPatchParserHelper::CombineChunkInfos(Context.GetSettingObject()->GetChunkInfos());
 
-			FChunkAssetDescribe ChunkDiffInfo = UFlibPatchParserHelper::DiffChunkWithPatchSetting(
+			FChunkAssetDescribe ChunkDiffInfo = UFlibHotPatcherEditorHelper::DiffChunkWithPatchSetting(
 				*Context.GetSettingObject(),
 				Context.NewVersionChunk,
 				TotalChunk,
@@ -1243,7 +1243,7 @@ namespace PatchWorker
 			}
 		
 			FString SerializeReleaseVersionInfo;
-			Context.NewReleaseVersion = UFlibPatchParserHelper::MakeNewReleaseByDiff(Context.BaseVersion, Context.VersionDiff,Context.GetSettingObject());
+			Context.NewReleaseVersion = UFlibHotPatcherEditorHelper::MakeNewReleaseByDiff(Context.BaseVersion, Context.VersionDiff,Context.GetSettingObject());
 			UFlibPatchParserHelper::TSerializeStructAsJsonString(Context.NewReleaseVersion, SerializeReleaseVersionInfo);
 
 			FString SaveCurrentVersionToFile = FPaths::Combine(

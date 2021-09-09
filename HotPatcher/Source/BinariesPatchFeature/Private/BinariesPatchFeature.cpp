@@ -2,6 +2,7 @@
 
 #include "BinariesPatchFeature.h"
 
+#include "Resources/Version.h"
 #include "Features/IModularFeatures.h"
 #include "Misc/EnumRange.h"
 #include "Modules/ModuleManager.h"

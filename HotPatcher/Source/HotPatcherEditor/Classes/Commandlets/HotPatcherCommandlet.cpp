@@ -25,28 +25,45 @@ namespace NSPatch
 	}
 }
 
+TArray<FString> ParserPatchConfigByCommandline(const FString& Commandline,const FString& Token)
+{
+	TArray<FString> result;
+	TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Commandline);
+	if(KeyValues.Find(Token))
+	{
+		FString AddPakListInfo = *KeyValues.Find(Token);
+		AddPakListInfo.ParseIntoArray(result,TEXT(","));
+	}
+	return result;
+}
+
+
 #define ADD_PATCH_PLATFORMS TEXT("AddPatchPlatforms")
 TArray<ETargetPlatform> ParserPatchPlatforms(const FString& Commandline)
 {
 	TArray<ETargetPlatform> result;
-	TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Commandline);
-	if(KeyValues.Find(ADD_PATCH_PLATFORMS))
+	for(auto& PlatformName:ParserPatchConfigByCommandline(Commandline,ADD_PATCH_PLATFORMS))
 	{
-		FString AddPakListInfo = *KeyValues.Find(ADD_PATCH_PLATFORMS);
-		TArray<FString> PlatformLists;
-		AddPakListInfo.ParseIntoArray(PlatformLists,TEXT(","));
-
-		for(auto& PlatformName:PlatformLists)
+		ETargetPlatform Platform = ETargetPlatform::None;
+		UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
+		if(Platform != ETargetPlatform::None)
 		{
-			ETargetPlatform Platform = ETargetPlatform::None;
-			UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
-			if(Platform != ETargetPlatform::None)
-			{
-				result.AddUnique(Platform);
-			}
+			result.AddUnique(Platform);
 		}
 	}
 	return result;
+}
+
+TArray<FDirectoryPath> ParserPatchFilters(const FString& Commandline,const FString& FilterName)
+{
+	TArray<FDirectoryPath> Result;
+	for(auto& FilterPath:ParserPatchConfigByCommandline(Commandline,FString::Printf(TEXT("Add%s"),*FilterName)))
+	{
+		FDirectoryPath Path;
+		Path.Path = FilterPath;
+		Result.Add(Path);
+	}
+	return Result;
 }
 
 int32 UHotPatcherCommandlet::Main(const FString& Params)
@@ -84,7 +101,7 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 		TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
 		UFlibPatchParserHelper::ReplaceProperty(*ExportPatchSetting, KeyValues);
 		TArray<ETargetPlatform> AddPlatforms = ParserPatchPlatforms(Params);
-
+	
 		if(AddPlatforms.Num())
 		{
 			for(auto& Platform:AddPlatforms)
@@ -92,6 +109,8 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 				ExportPatchSetting->PakTargetPlatforms.AddUnique(Platform);
 			}
 		}
+		ExportPatchSetting->AssetIncludeFilters.Append(ParserPatchFilters(Params,TEXT("AssetIncludeFilters")));
+		ExportPatchSetting->AssetIgnoreFilters.Append(ParserPatchFilters(Params,TEXT("AssetIgnoreFilters")));
 		
 		FString FinalConfig;
 		UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportPatchSetting,FinalConfig);

@@ -106,4 +106,32 @@ public:
 	// need add UNREALED_API to FAssetRegistryGenerator
 	// all chunksinfo.csv / pakchunklist.txt / assetregistry.bin
 	static bool GeneratorAssetRegistryData(ITargetPlatform* TargetPlatform, const TSet<FName>&, const TSet<FName>&, bool bGenerateStreamingInstallManifest = true);
+
+	/*
+	* 0x1 Add
+	* 0x2 Modyfy
+	*/
+	static void AnalysisWidgetTree(FPatchVersionDiff& PakDiff,int32 flags = 0x1|0x2);
+	
+	static FPatchVersionDiff DiffPatchVersionWithPatchSetting(const struct FExportPatchSettings& PatchSetting, const FHotPatcherVersion& Base, const FHotPatcherVersion& New);
+
+	// CurrenrVersionChunk中的过滤器会进行依赖分析，TotalChunk的不会，目的是让用户可以自己控制某个文件夹打包到哪个Pak里，而不会对该文件夹下的资源进行依赖分析
+	static FChunkAssetDescribe DiffChunkWithPatchSetting(
+		const struct FExportPatchSettings& PatchSetting,
+		const FChunkInfo& CurrentVersionChunk,
+		const FChunkInfo& TotalChunk,
+		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+	);
+	static FChunkAssetDescribe DiffChunkByBaseVersionWithPatchSetting(
+		const struct FExportPatchSettings& PatchSetting,
+		const FChunkInfo& CurrentVersionChunk,
+		const FChunkInfo& TotalChunk,
+		const FHotPatcherVersion& BaseVersion,
+		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+	);
+	
+	
+	static FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings);
+	static FHotPatcherVersion MakeNewReleaseByDiff(const FHotPatcherVersion& InBaseVersion, const FPatchVersionDiff& InDiff, FExportPatchSettings* InPatchSettings);
+
 };
