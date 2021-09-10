@@ -21,3 +21,4 @@ The series of UE4 hot update articles I wrote can be used as a reference for eng
 - [UE4 Hot Update: Asset Management and Audit Tool](https://imzlp.com/posts/3675)
 - [UE4 Hot Update: Create Shader Patch](https://imzlp.com/posts/5867/)
 - [UE4 Hot Update: Questions & Answers](https://imzlp.com/posts/16895/)
+- [UE Hot Update: Binary Patch Solution for Resources](https://imzlp.com/posts/25136/)
