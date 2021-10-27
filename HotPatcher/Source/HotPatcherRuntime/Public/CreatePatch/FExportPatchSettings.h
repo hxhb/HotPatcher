@@ -162,6 +162,7 @@ public:
 	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
 	FORCEINLINE bool IsBinariesPatch()const{ return bBinariesPatch; }
 	FORCEINLINE FBinariesPatchConfig GetBinariesPatchConfig()const{ return BinariesPatchConfig; }
+	FORCEINLINE bool IsSharedShaderLibrary()const { return bSharedShaderLibrary; }
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
@@ -243,7 +244,7 @@ public:
 		bool bCreateDefaultChunk = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options", meta = (EditCondition = "bEnableChunk"))
 		TArray<FChunkInfo> ChunkInfos;
-
+	
 	/*
 	 * Cook Asset in current patch
 	 * shader code gets saved inline inside material assets
@@ -251,6 +252,8 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		bool bCookPatchAssets = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+		bool bSharedShaderLibrary = false;
 	// support UE4.26 later
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "!bCookPatchAssets"))
 		FIoStoreSettings IoStoreSettings;

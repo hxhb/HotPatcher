@@ -463,32 +463,33 @@ namespace PatchWorker
 		}
 		return !!Context.PakChunks.Num();
 	};
-	
+
 	struct CookAssetShaderManager
 	{
-		CookAssetShaderManager(const FString& InPlatformName,const FString& InLibraryName)
-			:PlatformName(InPlatformName),LibraryName(InLibraryName)
+		CookAssetShaderManager(const FString& InPlatformName,const FString& InLibraryName,const FString& InSaveBaseDir)
+			:PlatformName(InPlatformName),LibraryName(InLibraryName),SaveBaseDir(InSaveBaseDir)
 		{
-			FShaderCodeLibrary::InitForCooking(true);
+			SHADER_COOKER_CLASS::InitForCooking(true);
 			TargetPlatform =  UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
 			TArray<FName> ShaderFormats = UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(TargetPlatform);
-			TArray<FShaderCodeLibrary::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(ShaderFormats);
-			FShaderCodeLibrary::OpenLibrary(LibraryName,TEXT(""));
+			TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(ShaderFormats);
 			if (ShaderFormats.Num() > 0)
 			{
-				FShaderCodeLibrary::CookShaderFormats(ShaderFormatsWithStableKeys);
+				SHADER_COOKER_CLASS::CookShaderFormats(ShaderFormatsWithStableKeys);
 			}
+			FShaderCodeLibrary::OpenLibrary(LibraryName,TEXT(""));
 		}
 		~CookAssetShaderManager()
 		{
-			UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,LibraryName, NULL);
-			FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
-			FShaderCodeLibrary::CloseLibrary(ActualLibraryName);
+			UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,NULL, LibraryName,SaveBaseDir);
+
+			FShaderCodeLibrary::CloseLibrary(LibraryName);
 			FShaderCodeLibrary::Shutdown();
 		}
 		ITargetPlatform* TargetPlatform;
 		FString PlatformName;
 		FString LibraryName;
+		FString SaveBaseDir;
 	};
 	// setup 7
 	bool CookPatchAssetsWorker(FHotPatcherPatchContext& Context)
@@ -496,7 +497,13 @@ namespace PatchWorker
 		TimeRecorder CookAssetsTotalTR(FString::Printf(TEXT("Cook All Assets in Patch Total time:")));
 		for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
 		{
-			CookAssetShaderManager CookShaderManager(PlatformName,Context.CurrentVersion.VersionId);
+			TSharedPtr<CookAssetShaderManager> CookShaderManager;
+			if(Context.GetSettingObject()->bSharedShaderLibrary)
+			{
+				FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId);
+				FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
+				CookShaderManager = MakeShareable(new CookAssetShaderManager(PlatformName,Context.CurrentVersion.VersionId,SavePath));
+			}
 			
 			if(Context.GetSettingObject()->IsCookPatchAssets() || Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
 			{

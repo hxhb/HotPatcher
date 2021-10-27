@@ -7,13 +7,13 @@
 
 #define REMAPPED_PLUGINS TEXT("RemappedPlugins")
 
-TArray<FShaderCodeLibrary::FShaderFormatDescriptor> UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(
+TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(
 	const TArray<FName>& ShaderFormats,bool bNeedShaderStableKeys/* = true*/,bool bNeedsDeterministicOrder/* = true*/)
 {
-	TArray<FShaderCodeLibrary::FShaderFormatDescriptor> ShaderFormatsWithStableKeys;
+	TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> ShaderFormatsWithStableKeys;
 	for (const FName& Format : ShaderFormats)
 	{
-		FShaderCodeLibrary::FShaderFormatDescriptor NewDesc;
+		SHADER_COOKER_CLASS::FShaderFormatDescriptor NewDesc;
 		NewDesc.ShaderFormat = Format;
 		NewDesc.bNeedsStableKeys = bNeedShaderStableKeys;
 		NewDesc.bNeedsDeterministicOrder = bNeedsDeterministicOrder;
@@ -88,16 +88,15 @@ FString UFlibShaderCodeLibraryHelper::ConvertToFullSandboxPath( const FString &F
 	return Result;
 }
 
-void UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* TargetPlatform, FString const& Name, const TArray<TSet<FName>>* ChunkAssignments)
+void UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* TargetPlatform, const TArray<TSet<FName>>* ChunkAssignments, FString const& Name, const FString&
+                                                     SaveBaseDir)
 {
 	FString ActualName = GenerateShaderCodeLibraryName(Name, false);
 	FString BasePath = FPaths::ProjectContentDir();
+	
+	FString ShaderCodeDir = FPaths::Combine(SaveBaseDir,TargetPlatform->PlatformName());
 
-	FString ShaderCodeDir = ConvertToFullSandboxPath(*BasePath, true, TargetPlatform->PlatformName());
-
-	const FString RootMetaDataPath = FPaths::ProjectDir() / TEXT("Metadata") / TEXT("PipelineCaches");
-	const FString MetaDataPathSB = ConvertToFullSandboxPath(*RootMetaDataPath, true);
-	const FString MetaDataPath = MetaDataPathSB.Replace(TEXT("[Platform]"), *TargetPlatform->PlatformName());
+	const FString RootMetaDataPath = ShaderCodeDir / TEXT("Metadata") / TEXT("PipelineCaches");
 
 	// note that shader formats can be shared across the target platforms
 	TArray<FName> ShaderFormats;
@@ -106,7 +105,7 @@ void UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* Targ
 	{
 		FString TargetPlatformName = TargetPlatform->PlatformName();
 		TArray<FString> PlatformSCLCSVPaths;// = OutSCLCSVPaths.FindOrAdd(FName(TargetPlatformName));
-		bool bSaved = FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, MetaDataPath, ShaderFormats, PlatformSCLCSVPaths, ChunkAssignments);
+		bool bSaved = FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths, ChunkAssignments);
 	}
 }
 
