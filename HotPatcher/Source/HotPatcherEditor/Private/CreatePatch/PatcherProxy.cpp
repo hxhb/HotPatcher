@@ -20,6 +20,7 @@
 
 #include "BinariesPatchFeature.h"
 #include "Async/ParallelFor.h"
+#include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
 
 #if WITH_IO_STORE_SUPPORT
 #include "IoStoreUtilities.h"
@@ -462,13 +463,41 @@ namespace PatchWorker
 		}
 		return !!Context.PakChunks.Num();
 	};
-
+	
+	struct CookAssetShaderManager
+	{
+		CookAssetShaderManager(const FString& InPlatformName,const FString& InLibraryName)
+			:PlatformName(InPlatformName),LibraryName(InLibraryName)
+		{
+			FShaderCodeLibrary::InitForCooking(true);
+			TargetPlatform =  UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
+			TArray<FName> ShaderFormats = UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(TargetPlatform);
+			TArray<FShaderCodeLibrary::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(ShaderFormats);
+			FShaderCodeLibrary::OpenLibrary(LibraryName,TEXT(""));
+			if (ShaderFormats.Num() > 0)
+			{
+				FShaderCodeLibrary::CookShaderFormats(ShaderFormatsWithStableKeys);
+			}
+		}
+		~CookAssetShaderManager()
+		{
+			UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,LibraryName, NULL);
+			FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
+			FShaderCodeLibrary::CloseLibrary(ActualLibraryName);
+			FShaderCodeLibrary::Shutdown();
+		}
+		ITargetPlatform* TargetPlatform;
+		FString PlatformName;
+		FString LibraryName;
+	};
 	// setup 7
 	bool CookPatchAssetsWorker(FHotPatcherPatchContext& Context)
 	{
 		TimeRecorder CookAssetsTotalTR(FString::Printf(TEXT("Cook All Assets in Patch Total time:")));
 		for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
 		{
+			CookAssetShaderManager CookShaderManager(PlatformName,Context.CurrentVersion.VersionId);
+			
 			if(Context.GetSettingObject()->IsCookPatchAssets() || Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
 			{
 				TimeRecorder CookAssetsTR(FString::Printf(TEXT("Cook %s assets in the patch."),*PlatformName));
