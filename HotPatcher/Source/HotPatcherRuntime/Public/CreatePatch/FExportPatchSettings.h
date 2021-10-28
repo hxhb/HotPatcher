@@ -78,6 +78,8 @@ struct FCookShaderOptions
 	bool bSharedShaderLibrary = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bNativeShader = false;
+	// metallib and metalmap to pak?
+	bool bNativeShaderToPak = false;
 	// if name is StartContent to ShaderArchive-StarterContent-PCD3D_SM5.ushaderbytecode
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EShaderLibNameRule ShaderNameRule = EShaderLibNameRule::VERSION_ID;

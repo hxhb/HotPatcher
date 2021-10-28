@@ -610,6 +610,12 @@ namespace PatchWorker
 					}
 					for(const auto& FilePath:FoundShaderLibs)
 					{
+						if(!Context.GetSettingObject()->GetCookShaderOptions().bNativeShaderToPak &&
+							(FilePath.EndsWith(TEXT("metallib")) || FilePath.EndsWith(TEXT("metalmap"))))
+						{
+							// don't add metalib and metalmap to pak
+							continue;
+						}
 						FString FileName = FPaths::GetBaseFilename(FilePath,true);
 						FString FileExtersion = FPaths::GetExtension(FilePath,false);
 						FExternFileInfo AddShaderLib;

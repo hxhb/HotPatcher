@@ -10,9 +10,9 @@
 #include "FlibShaderCodeLibraryHelper.generated.h"
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
-#define SHADER_COOKER_CLASS FShaderLibraryCooker
+	#define SHADER_COOKER_CLASS FShaderLibraryCooker
 #else
-#define SHADER_COOKER_CLASS FShaderCodeLibrary
+	#define SHADER_COOKER_CLASS FShaderCodeLibrary
 #endif
 
 struct FCookShaderCollectionProxy

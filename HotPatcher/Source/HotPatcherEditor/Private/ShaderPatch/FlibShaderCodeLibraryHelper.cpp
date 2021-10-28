@@ -90,10 +90,16 @@ void UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* Targ
 	{
 		FString TargetPlatformName = TargetPlatform->PlatformName();
 		TArray<FString> PlatformSCLCSVPaths;// = OutSCLCSVPaths.FindOrAdd(FName(TargetPlatformName));
+		bool bSaved = false;
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
-		bool bSaved = FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths, ChunkAssignments);
+	#if ENGINE_MINOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+		FString ErrorString;
+		bSaved = SHADER_COOKER_CLASS::SaveShaderLibraryWithoutChunking(TargetPlatform, FApp::GetProjectName(), ShaderCodeDir, RootMetaDataPath, PlatformSCLCSVPaths, ErrorString);
+	#else
+		bSaved = FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths, ChunkAssignments);
+	#endif
 #else
-		bool bSaved = FShaderCodeLibrary::SaveShaderCodeMaster(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths);
+		bSaved = FShaderCodeLibrary::SaveShaderCodeMaster(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths);
 #endif	
 	}
 }
@@ -104,7 +110,14 @@ TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(cons
 	
 	if(PlatfomName.StartsWith(TEXT("IOS"),ESearchCase::IgnoreCase) || PlatfomName.StartsWith(TEXT("Mac"),ESearchCase::IgnoreCase))
 	{
-		IFileManager::Get().FindFiles(FoundFiles,*Directory,TEXT("metallib"));
+		auto GetMetalShaderFormatLambda = [](const FString& Directory,const FString& Extersion)
+		{
+			TArray<FString> FoundMetallibFiles;
+			IFileManager::Get().FindFiles(FoundMetallibFiles,*Directory,*Extersion);
+			return FoundMetallibFiles;
+		};
+		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("metallib")));
+		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("metalmap")));
 	}
 	
 	if(!FoundFiles.Num())
