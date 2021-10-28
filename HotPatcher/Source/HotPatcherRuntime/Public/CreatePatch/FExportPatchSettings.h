@@ -58,18 +58,35 @@ struct HOTPATCHERRUNTIME_API FPakEncryptSettings
 	FFilePath CryptoKeys;
 };
 
+UENUM(BlueprintType)
+enum class EShaderLibNameRule : uint8
+{
+	VERSION_ID,
+	PROJECT_NAME,
+	CUSTOM
+};
 
 USTRUCT(BlueprintType)
 struct FCookShaderOptions
 {
 	GENERATED_BODY()
-	
+	FCookShaderOptions()
+	{
+		ShderLibMountPoint = FString::Printf(TEXT("../../../%s/ShaderLib"),FApp::GetProjectName());
+	}
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bSharedShaderLibrary = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bNativeShader = false;
-	
+	// if name is StartContent to ShaderArchive-StarterContent-PCD3D_SM5.ushaderbytecode
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EShaderLibNameRule ShaderNameRule;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="ShaderNameRule==EShaderLibNameRule::CUSTOM"))
+	FString CustomShaderName;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString ShderLibMountPoint;
 };
+
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FExportPatchSettings:public FHotPatcherSettingBase
@@ -177,7 +194,7 @@ public:
 	FORCEINLINE FBinariesPatchConfig GetBinariesPatchConfig()const{ return BinariesPatchConfig; }
 	FORCEINLINE bool IsSharedShaderLibrary()const { return GetCookShaderOptions().bSharedShaderLibrary; }
 	FORCEINLINE FCookShaderOptions GetCookShaderOptions()const {return CookShaderOptions;}
-	
+	FString GetShaderLibraryName()const;
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = true;

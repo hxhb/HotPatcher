@@ -9,11 +9,26 @@
 #include "Misc/AES.h"
 #include "FlibShaderCodeLibraryHelper.generated.h"
 
-#if ENGINE_MINOR_VERSION > 26
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 #define SHADER_COOKER_CLASS FShaderLibraryCooker
 #else
 #define SHADER_COOKER_CLASS FShaderCodeLibrary
 #endif
+
+struct FCookShaderCollectionProxy
+{
+	FCookShaderCollectionProxy(const FString& InPlatformName,const FString& InLibraryName,bool InIsNative,const FString& InSaveBaseDir);
+	virtual ~FCookShaderCollectionProxy();
+	virtual void Init();
+	virtual void Shutdown();
+private:
+	ITargetPlatform* TargetPlatform;
+	FString PlatformName;
+	FString LibraryName;
+	bool bIsNative;
+	FString SaveBaseDir;
+};
+
 /**
  * 
  */
@@ -27,7 +42,5 @@ public:
 	static FString GenerateShaderCodeLibraryName(FString const& Name, bool bIsIterateSharedBuild);
 	static void SaveShaderLibrary(const ITargetPlatform* TargetPlatform, const TArray<TSet<FName>>* ChunkAssignments, FString const& Name, const FString&
 	                              SaveBaseDir);
-
-	static FString ConvertToFullSandboxPath( const FString &FileName, bool bForWrite = false );
-	static FString ConvertToFullSandboxPath( const FString &FileName, bool bForWrite, const FString& PlatformName );
+	static TArray<FString> FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory);
 };

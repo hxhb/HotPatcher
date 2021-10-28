@@ -464,52 +464,27 @@ namespace PatchWorker
 		return !!Context.PakChunks.Num();
 	};
 
-	struct CookAssetShaderManager
-	{
-		CookAssetShaderManager(const FString& InPlatformName,const FString& InLibraryName,bool InIsNative,const FString& InSaveBaseDir)
-			:PlatformName(InPlatformName),LibraryName(InLibraryName),bIsNative(InIsNative),SaveBaseDir(InSaveBaseDir)
-		{
-			SHADER_COOKER_CLASS::InitForCooking(bIsNative);
-			TargetPlatform =  UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
-			TArray<FName> ShaderFormats = UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(TargetPlatform);
-			TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(ShaderFormats);
-			if (ShaderFormats.Num() > 0)
-			{
-				SHADER_COOKER_CLASS::CookShaderFormats(ShaderFormatsWithStableKeys);
-			}
-			FShaderCodeLibrary::OpenLibrary(LibraryName,TEXT(""));
-		}
-		~CookAssetShaderManager()
-		{
-			UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,NULL, LibraryName,SaveBaseDir);
 
-			FShaderCodeLibrary::CloseLibrary(LibraryName);
-			FShaderCodeLibrary::Shutdown();
-		}
-		ITargetPlatform* TargetPlatform;
-		FString PlatformName;
-		FString LibraryName;
-		bool bIsNative;
-		FString SaveBaseDir;
-	};
 	// setup 7
 	bool CookPatchAssetsWorker(FHotPatcherPatchContext& Context)
 	{
 		TimeRecorder CookAssetsTotalTR(FString::Printf(TEXT("Cook All Assets in Patch Total time:")));
 		for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
 		{
-			TSharedPtr<CookAssetShaderManager> CookShaderManager;
+			TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
 			if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
 			{
 				FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId);
 				FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
-				CookShaderManager = MakeShareable(
-					new CookAssetShaderManager(
+				FString ShaderLibraryName = Context.GetSettingObject()->GetShaderLibraryName();
+				CookShaderCollection = MakeShareable(
+					new FCookShaderCollectionProxy(
 						PlatformName,
-						Context.CurrentVersion.VersionId,
+						ShaderLibraryName,
 						Context.GetSettingObject()->GetCookShaderOptions().bNativeShader,
 						SavePath
 						));
+				CookShaderCollection->Init();
 			}
 			
 			if(Context.GetSettingObject()->IsCookPatchAssets() || Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
@@ -594,6 +569,58 @@ namespace PatchWorker
 					};
 					SaveCookOpenOrder(CookOpenOrders,FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.NewVersionChunk.ChunkName,PlatformName,TEXT("CookOpenOrder.txt")));
 				}
+			}
+			
+			if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
+			{
+				CookShaderCollection->Shutdown();
+				FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,PlatformName);
+				TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath);
+
+				ETargetPlatform Platform;
+				UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
+				if(Context.PakChunks.Num())
+				{
+					// add new file to diff
+					FPatchVersionExternDiff* PatchVersionExternDiff = NULL;
+					{
+						if(!Context.VersionDiff.PlatformExternDiffInfo.Contains(Platform))
+						{
+							FPatchVersionExternDiff AdditionalFiles;
+							Context.VersionDiff.PlatformExternDiffInfo.Add(Platform,AdditionalFiles);
+						}
+						PatchVersionExternDiff = Context.VersionDiff.PlatformExternDiffInfo.Find(Platform);
+					}
+					
+					FPlatformExternAssets* PlatformExternAssetsPtr = NULL;
+					{
+						for(auto& PlatfromExternAssetsRef:Context.PakChunks[0].AddExternAssetsToPlatform)
+						{
+							if(PlatfromExternAssetsRef.TargetPlatform == Platform)
+							{
+								PlatformExternAssetsPtr = &PlatfromExternAssetsRef;
+							}
+						}
+						if(!PlatformExternAssetsPtr)
+						{
+							FPlatformExternAssets PlatformExternAssets;
+							PlatformExternAssets.TargetPlatform = Platform;
+							PlatformExternAssetsPtr = &(Context.PakChunks[0].AddExternAssetsToPlatform.Add_GetRef(PlatformExternAssets));
+						}
+					}
+					for(const auto& FilePath:FoundShaderLibs)
+					{
+						FString FileName = FPaths::GetBaseFilename(FilePath,true);
+						FString FileExtersion = FPaths::GetExtension(FilePath,false);
+						FExternFileInfo AddShaderLib;
+						AddShaderLib.Type = EPatchAssetType::NEW;
+						AddShaderLib.FilePath.FilePath = FPaths::ConvertRelativePathToFull(FilePath);
+						AddShaderLib.MountPath = FPaths::Combine(Context.GetSettingObject()->CookShaderOptions.ShderLibMountPoint,FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion));
+						PatchVersionExternDiff->AddExternalFiles.Add(AddShaderLib);
+						PlatformExternAssetsPtr->AddExternFileToPak.Add(AddShaderLib);
+					}
+				}
+				
 			}
 		}
 		return true;
@@ -803,6 +830,7 @@ namespace PatchWorker
 						Context.GetSettingObject()
 					);
 				}
+				
 				if(Context.PatchProxy)
 					Context.PatchProxy->OnPakListGenerated.Broadcast(Context,Chunk,Platform,ChunkPakListCommands);
 				

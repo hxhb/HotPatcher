@@ -299,7 +299,7 @@ public:
 	// reload Global&Project shaderbytecode
 	UFUNCTION(BlueprintCallable)
 		static void ReloadShaderbytecode();
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable,Exec)
         static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir);	
 
 	static FString SerializeAssetsDependencyAsJsonString(const TArray<FHotPatcherAssetDependency>& InAssetsDependency);

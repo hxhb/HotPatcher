@@ -235,6 +235,31 @@ TArray<FString> FExportPatchSettings::GetAssetIncludeFiltersPaths()const
 	}
 	return Result;
 }
+
+FString FExportPatchSettings::GetShaderLibraryName() const
+{
+	FString ShaderLibraryName;
+	switch (GetCookShaderOptions().ShaderNameRule)
+	{
+	case EShaderLibNameRule::VERSION_ID:
+		{
+			ShaderLibraryName = VersionId;
+			break;
+		}
+	case EShaderLibNameRule::PROJECT_NAME:
+		{
+			ShaderLibraryName = FApp::GetProjectName();
+			break;
+		}
+	case EShaderLibNameRule::CUSTOM:
+		{
+			ShaderLibraryName = GetCookShaderOptions().CustomShaderName;
+			break;
+		}
+	}
+	return ShaderLibraryName;
+}
+
 #if WITH_PACKAGE_CONTEXT
 bool FExportPatchSettings::SavePlatformBulkDataManifest(ETargetPlatform Platform)
 {

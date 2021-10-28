@@ -2,10 +2,39 @@
 
 
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
+
+#include "FlibHotPatcherEditorHelper.h"
 #include "IPlatformFileSandboxWrapper.h"
 #include "Interfaces/IPluginManager.h"
 
 #define REMAPPED_PLUGINS TEXT("RemappedPlugins")
+
+FCookShaderCollectionProxy::FCookShaderCollectionProxy(const FString& InPlatformName,const FString& InLibraryName,bool InIsNative,const FString& InSaveBaseDir)
+:PlatformName(InPlatformName),LibraryName(InLibraryName),bIsNative(InIsNative),SaveBaseDir(InSaveBaseDir){}
+
+FCookShaderCollectionProxy::~FCookShaderCollectionProxy(){}
+
+void FCookShaderCollectionProxy::Init()
+{
+	SHADER_COOKER_CLASS::InitForCooking(bIsNative);
+	TargetPlatform =  UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
+	TArray<FName> ShaderFormats = UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(TargetPlatform);
+	TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(ShaderFormats);
+	if (ShaderFormats.Num() > 0)
+	{
+		SHADER_COOKER_CLASS::CookShaderFormats(ShaderFormatsWithStableKeys);
+	}
+	FShaderCodeLibrary::OpenLibrary(LibraryName,TEXT(""));
+}
+
+void FCookShaderCollectionProxy::Shutdown()
+{
+	UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,NULL, LibraryName,SaveBaseDir);
+
+	FShaderCodeLibrary::CloseLibrary(LibraryName);
+	FShaderCodeLibrary::Shutdown();
+}
+
 
 TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(
 	const TArray<FName>& ShaderFormats,bool bNeedShaderStableKeys/* = true*/,bool bNeedsDeterministicOrder/* = true*/)
@@ -35,59 +64,6 @@ FString UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FString cons
 	return ActualName;
 }
 
-FString UFlibShaderCodeLibraryHelper::ConvertToFullSandboxPath(const FString& FileName, bool bForWrite)
-{
-	TUniquePtr<FSandboxPlatformFile> SandboxFileIns = FSandboxPlatformFile::Create(false);
-
-	FString Result;
-	if (bForWrite)
-	{
-		TArray<TSharedRef<IPlugin>> PluginsToRemap = IPluginManager::Get().GetEnabledPlugins();
-		// Ideally this would be in the Sandbox File but it can't access the project or plugin
-		if (PluginsToRemap.Num() > 0)
-		{
-			// Handle remapping of plugins
-			for (TSharedRef<IPlugin> Plugin : PluginsToRemap)
-			{
-				// If these match, then this content is part of plugin that gets remapped when packaged/staged
-				if (FileName.StartsWith(Plugin->GetContentDir()))
-				{
-					FString SearchFor;
-					SearchFor /= Plugin->GetName() / TEXT("Content");
-					int32 FoundAt = FileName.Find(SearchFor, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
-					check(FoundAt != -1);
-					// Strip off everything but <PluginName/Content/<remaing path to file>
-					FString SnippedOffPath = FileName.RightChop(FoundAt);
-					// Put this is in <sandbox path>/RemappedPlugins/<PluginName>/Content/<remaing path to file>
-					FString RemappedPath = SandboxFileIns->GetSandboxDirectory();
-					RemappedPath /= REMAPPED_PLUGINS;
-					Result = RemappedPath / SnippedOffPath;
-					return Result;
-				}
-			}
-		}
-		Result = SandboxFileIns->ConvertToAbsolutePathForExternalAppForWrite(*FileName);
-	}
-	else
-	{
-		Result = SandboxFileIns->ConvertToAbsolutePathForExternalAppForRead(*FileName);
-	}
-
-	/*if ( IsCookingDLC() )
-	{
-		check( IsCookByTheBookRunning() );
-		Result.ReplaceInline(TEXT("/Cooked/"), *FString::Printf(TEXT("/CookedDLC_%s/"), *CookByTheBookOptions->DlcName) );
-	}*/
-	return Result;
-}
-
-FString UFlibShaderCodeLibraryHelper::ConvertToFullSandboxPath( const FString &FileName, bool bForWrite, const FString& PlatformName )
-{
-	FString Result = ConvertToFullSandboxPath( FileName, bForWrite );
-	Result.ReplaceInline(TEXT("[Platform]"), *PlatformName);
-	return Result;
-}
-
 void UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* TargetPlatform, const TArray<TSet<FName>>* ChunkAssignments, FString const& Name, const FString&
                                                      SaveBaseDir)
 {
@@ -107,6 +83,26 @@ void UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* Targ
 		TArray<FString> PlatformSCLCSVPaths;// = OutSCLCSVPaths.FindOrAdd(FName(TargetPlatformName));
 		bool bSaved = FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths, ChunkAssignments);
 	}
+}
+
+TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory)
+{
+	TArray<FString> FoundFiles;
+	
+	if(PlatfomName.StartsWith(TEXT("IOS"),ESearchCase::IgnoreCase) || PlatfomName.StartsWith(TEXT("Mac"),ESearchCase::IgnoreCase))
+	{
+		IFileManager::Get().FindFiles(FoundFiles,*Directory,TEXT("metallib"));
+	}
+	
+	if(!FoundFiles.Num())
+	{
+		IFileManager::Get().FindFiles(FoundFiles,*Directory,TEXT("ushaderbytecode"));
+	}
+	for(auto& File:FoundFiles)
+	{
+		File = FPaths::Combine(Directory,File);
+	}
+	return FoundFiles;
 }
 
 
