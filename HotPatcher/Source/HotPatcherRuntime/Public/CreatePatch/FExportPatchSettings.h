@@ -57,6 +57,19 @@ struct HOTPATCHERRUNTIME_API FPakEncryptSettings
 	UPROPERTY(EditAnywhere,meta=(EditCondition="!bUseDefaultCryptoIni"))
 	FFilePath CryptoKeys;
 };
+
+
+USTRUCT(BlueprintType)
+struct FCookShaderOptions
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bSharedShaderLibrary = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bNativeShader = false;
+	
+};
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FExportPatchSettings:public FHotPatcherSettingBase
@@ -162,7 +175,8 @@ public:
 	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
 	FORCEINLINE bool IsBinariesPatch()const{ return bBinariesPatch; }
 	FORCEINLINE FBinariesPatchConfig GetBinariesPatchConfig()const{ return BinariesPatchConfig; }
-	FORCEINLINE bool IsSharedShaderLibrary()const { return bSharedShaderLibrary; }
+	FORCEINLINE bool IsSharedShaderLibrary()const { return GetCookShaderOptions().bSharedShaderLibrary; }
+	FORCEINLINE FCookShaderOptions GetCookShaderOptions()const {return CookShaderOptions;}
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
@@ -252,8 +266,8 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		bool bCookPatchAssets = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-		bool bSharedShaderLibrary = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "bCookPatchAssets"))
+		FCookShaderOptions CookShaderOptions;
 	// support UE4.26 later
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "!bCookPatchAssets"))
 		FIoStoreSettings IoStoreSettings;

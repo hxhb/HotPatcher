@@ -466,10 +466,10 @@ namespace PatchWorker
 
 	struct CookAssetShaderManager
 	{
-		CookAssetShaderManager(const FString& InPlatformName,const FString& InLibraryName,const FString& InSaveBaseDir)
-			:PlatformName(InPlatformName),LibraryName(InLibraryName),SaveBaseDir(InSaveBaseDir)
+		CookAssetShaderManager(const FString& InPlatformName,const FString& InLibraryName,bool InIsNative,const FString& InSaveBaseDir)
+			:PlatformName(InPlatformName),LibraryName(InLibraryName),bIsNative(InIsNative),SaveBaseDir(InSaveBaseDir)
 		{
-			SHADER_COOKER_CLASS::InitForCooking(true);
+			SHADER_COOKER_CLASS::InitForCooking(bIsNative);
 			TargetPlatform =  UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
 			TArray<FName> ShaderFormats = UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(TargetPlatform);
 			TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(ShaderFormats);
@@ -489,6 +489,7 @@ namespace PatchWorker
 		ITargetPlatform* TargetPlatform;
 		FString PlatformName;
 		FString LibraryName;
+		bool bIsNative;
 		FString SaveBaseDir;
 	};
 	// setup 7
@@ -498,11 +499,17 @@ namespace PatchWorker
 		for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
 		{
 			TSharedPtr<CookAssetShaderManager> CookShaderManager;
-			if(Context.GetSettingObject()->bSharedShaderLibrary)
+			if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
 			{
 				FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId);
 				FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
-				CookShaderManager = MakeShareable(new CookAssetShaderManager(PlatformName,Context.CurrentVersion.VersionId,SavePath));
+				CookShaderManager = MakeShareable(
+					new CookAssetShaderManager(
+						PlatformName,
+						Context.CurrentVersion.VersionId,
+						Context.GetSettingObject()->GetCookShaderOptions().bNativeShader,
+						SavePath
+						));
 			}
 			
 			if(Context.GetSettingObject()->IsCookPatchAssets() || Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
