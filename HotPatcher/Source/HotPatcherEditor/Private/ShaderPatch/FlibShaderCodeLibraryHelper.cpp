@@ -19,9 +19,17 @@ void FCookShaderCollectionProxy::Init()
 	SHADER_COOKER_CLASS::InitForCooking(bIsNative);
 	TargetPlatform =  UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
 	TArray<FName> ShaderFormats = UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(TargetPlatform);
-	TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(ShaderFormats);
 	if (ShaderFormats.Num() > 0)
 	{
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+		TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(ShaderFormats);
+#else
+		TArray<TPair<FName, bool>> ShaderFormatsWithStableKeys;
+		for (FName& Format : ShaderFormats)
+		{
+			ShaderFormatsWithStableKeys.Push(MakeTuple(Format, true));
+		}
+#endif
 		SHADER_COOKER_CLASS::CookShaderFormats(ShaderFormatsWithStableKeys);
 	}
 	FShaderCodeLibrary::OpenLibrary(LibraryName,TEXT(""));
@@ -35,7 +43,7 @@ void FCookShaderCollectionProxy::Shutdown()
 	FShaderCodeLibrary::Shutdown();
 }
 
-
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(
 	const TArray<FName>& ShaderFormats,bool bNeedShaderStableKeys/* = true*/,bool bNeedsDeterministicOrder/* = true*/)
 {
@@ -50,6 +58,7 @@ TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> UFlibShaderCodeLibraryHelpe
 	}
 	return ShaderFormatsWithStableKeys;
 }
+#endif
 
 TArray<FName> UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(ITargetPlatform* TargetPlatform)
 {
@@ -81,7 +90,11 @@ void UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* Targ
 	{
 		FString TargetPlatformName = TargetPlatform->PlatformName();
 		TArray<FString> PlatformSCLCSVPaths;// = OutSCLCSVPaths.FindOrAdd(FName(TargetPlatformName));
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 		bool bSaved = FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths, ChunkAssignments);
+#else
+		bool bSaved = FShaderCodeLibrary::SaveShaderCodeMaster(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths);
+#endif	
 	}
 }
 

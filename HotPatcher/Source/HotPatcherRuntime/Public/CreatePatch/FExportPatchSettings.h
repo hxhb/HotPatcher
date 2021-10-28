@@ -80,7 +80,7 @@ struct FCookShaderOptions
 	bool bNativeShader = false;
 	// if name is StartContent to ShaderArchive-StarterContent-PCD3D_SM5.ushaderbytecode
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EShaderLibNameRule ShaderNameRule;
+	EShaderLibNameRule ShaderNameRule = EShaderLibNameRule::VERSION_ID;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="ShaderNameRule==EShaderLibNameRule::CUSTOM"))
 	FString CustomShaderName;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
