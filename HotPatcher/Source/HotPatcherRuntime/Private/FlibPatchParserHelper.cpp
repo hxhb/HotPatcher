@@ -1725,13 +1725,19 @@ TArray<FAssetDetail> UFlibPatchParserHelper::GetAllAssetDependencyDetails(
 
 TMap<FString, FString> UFlibPatchParserHelper::GetReplacePathMarkMap()
 {
-	TMap<FString,FString> MarkMap;
-	MarkMap.Add(ENGINEDIR_MARK,FPaths::EngineDir());
-	MarkMap.Add(ENGINE_CONTENT_DIR_MARK,FPaths::EngineContentDir());
-	MarkMap.Add(PROJECTDIR_MARK,FPaths::ProjectDir());
-	MarkMap.Add(PROJECT_CONTENT_DIR_MARK,FPaths::ProjectContentDir());
-	MarkMap.Add(PROJECT_SAVED_DIR_MARK,FPaths::ProjectSavedDir());
-	MarkMap.Add(PROJECT_CONFIG_DIR_MARK,FPaths::ProjectConfigDir());
+	static TMap<FString,FString> MarkMap;
+	static bool bInited = false;
+	if(!bInited)
+	{
+		MarkMap.Add(ENGINEDIR_MARK,FPaths::EngineDir());
+		MarkMap.Add(ENGINE_CONTENT_DIR_MARK,FPaths::EngineContentDir());
+		MarkMap.Add(PROJECTDIR_MARK,FPaths::ProjectDir());
+		MarkMap.Add(PROJECT_CONTENT_DIR_MARK,FPaths::ProjectContentDir());
+		MarkMap.Add(PROJECT_SAVED_DIR_MARK,FPaths::ProjectSavedDir());
+		MarkMap.Add(PROJECT_CONFIG_DIR_MARK,FPaths::ProjectConfigDir());
+		bInited = true;
+	}
+	
 	return MarkMap;
 }
 

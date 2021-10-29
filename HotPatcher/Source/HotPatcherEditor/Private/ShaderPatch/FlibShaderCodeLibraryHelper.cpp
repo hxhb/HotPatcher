@@ -38,7 +38,11 @@ void FCookShaderCollectionProxy::Init()
 void FCookShaderCollectionProxy::Shutdown()
 {
 	bSuccessed = UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,NULL, LibraryName,SaveBaseDir);
-
+	if(bIsNative)
+	{
+		FString ShaderCodeDir = FPaths::Combine(SaveBaseDir,PlatformName);
+		bSuccessed = bSuccessed && FShaderCodeLibrary::PackageNativeShaderLibrary(ShaderCodeDir,UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(TargetPlatform));
+	}
 	FShaderCodeLibrary::CloseLibrary(LibraryName);
 	FShaderCodeLibrary::Shutdown();
 }
