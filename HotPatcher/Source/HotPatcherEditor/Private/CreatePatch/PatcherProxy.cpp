@@ -574,59 +574,65 @@ namespace PatchWorker
 			if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
 			{
 				CookShaderCollection->Shutdown();
-				FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,PlatformName);
-				TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath);
-
-				ETargetPlatform Platform;
-				UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
-				if(Context.PakChunks.Num())
+				if(CookShaderCollection->IsSuccessed())
 				{
-					// add new file to diff
-					FPatchVersionExternDiff* PatchVersionExternDiff = NULL;
+					FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,PlatformName);
+					TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath);
+
+					ETargetPlatform Platform;
+					UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
+					if(Context.PakChunks.Num())
 					{
-						if(!Context.VersionDiff.PlatformExternDiffInfo.Contains(Platform))
+						// add new file to diff
+						FPatchVersionExternDiff* PatchVersionExternDiff = NULL;
 						{
-							FPatchVersionExternDiff AdditionalFiles;
-							Context.VersionDiff.PlatformExternDiffInfo.Add(Platform,AdditionalFiles);
-						}
-						PatchVersionExternDiff = Context.VersionDiff.PlatformExternDiffInfo.Find(Platform);
-					}
-					
-					FPlatformExternAssets* PlatformExternAssetsPtr = NULL;
-					{
-						for(auto& PlatfromExternAssetsRef:Context.PakChunks[0].AddExternAssetsToPlatform)
-						{
-							if(PlatfromExternAssetsRef.TargetPlatform == Platform)
+							if(!Context.VersionDiff.PlatformExternDiffInfo.Contains(Platform))
 							{
-								PlatformExternAssetsPtr = &PlatfromExternAssetsRef;
+								FPatchVersionExternDiff AdditionalFiles;
+								Context.VersionDiff.PlatformExternDiffInfo.Add(Platform,AdditionalFiles);
+							}
+							PatchVersionExternDiff = Context.VersionDiff.PlatformExternDiffInfo.Find(Platform);
+						}
+						
+						FPlatformExternAssets* PlatformExternAssetsPtr = NULL;
+						{
+							for(auto& PlatfromExternAssetsRef:Context.PakChunks[0].AddExternAssetsToPlatform)
+							{
+								if(PlatfromExternAssetsRef.TargetPlatform == Platform)
+								{
+									PlatformExternAssetsPtr = &PlatfromExternAssetsRef;
+								}
+							}
+							if(!PlatformExternAssetsPtr)
+							{
+								FPlatformExternAssets PlatformExternAssets;
+								PlatformExternAssets.TargetPlatform = Platform;
+								PlatformExternAssetsPtr = &(Context.PakChunks[0].AddExternAssetsToPlatform.Add_GetRef(PlatformExternAssets));
 							}
 						}
-						if(!PlatformExternAssetsPtr)
+						for(const auto& FilePath:FoundShaderLibs)
 						{
-							FPlatformExternAssets PlatformExternAssets;
-							PlatformExternAssets.TargetPlatform = Platform;
-							PlatformExternAssetsPtr = &(Context.PakChunks[0].AddExternAssetsToPlatform.Add_GetRef(PlatformExternAssets));
+							if(!Context.GetSettingObject()->GetCookShaderOptions().bNativeShaderToPak &&
+								(FilePath.EndsWith(TEXT("metallib")) || FilePath.EndsWith(TEXT("metalmap"))))
+							{
+								// don't add metalib and metalmap to pak
+								continue;
+							}
+							FString FileName = FPaths::GetBaseFilename(FilePath,true);
+							FString FileExtersion = FPaths::GetExtension(FilePath,false);
+							FExternFileInfo AddShaderLib;
+							AddShaderLib.Type = EPatchAssetType::NEW;
+							AddShaderLib.FilePath.FilePath = FPaths::ConvertRelativePathToFull(FilePath);
+							AddShaderLib.MountPath = FPaths::Combine(Context.GetSettingObject()->CookShaderOptions.ShderLibMountPoint,FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion));
+							PatchVersionExternDiff->AddExternalFiles.Add(AddShaderLib);
+							PlatformExternAssetsPtr->AddExternFileToPak.Add(AddShaderLib);
 						}
-					}
-					for(const auto& FilePath:FoundShaderLibs)
-					{
-						if(!Context.GetSettingObject()->GetCookShaderOptions().bNativeShaderToPak &&
-							(FilePath.EndsWith(TEXT("metallib")) || FilePath.EndsWith(TEXT("metalmap"))))
-						{
-							// don't add metalib and metalmap to pak
-							continue;
-						}
-						FString FileName = FPaths::GetBaseFilename(FilePath,true);
-						FString FileExtersion = FPaths::GetExtension(FilePath,false);
-						FExternFileInfo AddShaderLib;
-						AddShaderLib.Type = EPatchAssetType::NEW;
-						AddShaderLib.FilePath.FilePath = FPaths::ConvertRelativePathToFull(FilePath);
-						AddShaderLib.MountPath = FPaths::Combine(Context.GetSettingObject()->CookShaderOptions.ShderLibMountPoint,FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion));
-						PatchVersionExternDiff->AddExternalFiles.Add(AddShaderLib);
-						PlatformExternAssetsPtr->AddExternFileToPak.Add(AddShaderLib);
 					}
 				}
-				
+				else
+				{
+					UE_LOG(LogHotPatcher,Error,TEXT("This mission generate shader library faild!"));
+				}
 			}
 		}
 		return true;

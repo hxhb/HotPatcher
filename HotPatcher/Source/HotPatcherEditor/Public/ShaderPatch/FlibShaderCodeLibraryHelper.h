@@ -21,12 +21,14 @@ struct FCookShaderCollectionProxy
 	virtual ~FCookShaderCollectionProxy();
 	virtual void Init();
 	virtual void Shutdown();
+	virtual bool IsSuccessed()const { return bSuccessed; }
 private:
 	ITargetPlatform* TargetPlatform;
 	FString PlatformName;
 	FString LibraryName;
 	bool bIsNative;
 	FString SaveBaseDir;
+	bool bSuccessed = false;
 };
 
 /**
@@ -42,7 +44,7 @@ public:
 #endif
 	static TArray<FName> GetShaderFormatsByTargetPlatform(ITargetPlatform* TargetPlatform);
 	static FString GenerateShaderCodeLibraryName(FString const& Name, bool bIsIterateSharedBuild);
-	static void SaveShaderLibrary(const ITargetPlatform* TargetPlatform, const TArray<TSet<FName>>* ChunkAssignments, FString const& Name, const FString&
+	static bool SaveShaderLibrary(const ITargetPlatform* TargetPlatform, const TArray<TSet<FName>>* ChunkAssignments, FString const& Name, const FString&
 	                              SaveBaseDir);
 	static TArray<FString> FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory);
 };

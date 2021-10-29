@@ -37,7 +37,7 @@ void FCookShaderCollectionProxy::Init()
 
 void FCookShaderCollectionProxy::Shutdown()
 {
-	UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,NULL, LibraryName,SaveBaseDir);
+	bSuccessed = UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,NULL, LibraryName,SaveBaseDir);
 
 	FShaderCodeLibrary::CloseLibrary(LibraryName);
 	FShaderCodeLibrary::Shutdown();
@@ -73,9 +73,10 @@ FString UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FString cons
 	return ActualName;
 }
 
-void UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* TargetPlatform, const TArray<TSet<FName>>* ChunkAssignments, FString const& Name, const FString&
+bool UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* TargetPlatform, const TArray<TSet<FName>>* ChunkAssignments, FString const& Name, const FString&
                                                      SaveBaseDir)
 {
+	bool bSaved = false;
 	FString ActualName = GenerateShaderCodeLibraryName(Name, false);
 	FString BasePath = FPaths::ProjectContentDir();
 	
@@ -90,9 +91,9 @@ void UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* Targ
 	{
 		FString TargetPlatformName = TargetPlatform->PlatformName();
 		TArray<FString> PlatformSCLCSVPaths;// = OutSCLCSVPaths.FindOrAdd(FName(TargetPlatformName));
-		bool bSaved = false;
+		
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
-	#if ENGINE_MINOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+	#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 		FString ErrorString;
 		bSaved = SHADER_COOKER_CLASS::SaveShaderLibraryWithoutChunking(TargetPlatform, FApp::GetProjectName(), ShaderCodeDir, RootMetaDataPath, PlatformSCLCSVPaths, ErrorString);
 	#else
@@ -102,6 +103,7 @@ void UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* Targ
 		bSaved = FShaderCodeLibrary::SaveShaderCodeMaster(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths);
 #endif	
 	}
+	return bSaved;
 }
 
 TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory)
