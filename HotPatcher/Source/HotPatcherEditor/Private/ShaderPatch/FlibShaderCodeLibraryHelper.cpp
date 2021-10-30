@@ -38,11 +38,14 @@ void FCookShaderCollectionProxy::Init()
 void FCookShaderCollectionProxy::Shutdown()
 {
 	bSuccessed = UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,NULL, LibraryName,SaveBaseDir);
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 26
+	// UE 4.27 and later,FShaderCodeLibrary::SaveShaderCode will call PackageNativeShaderLibrary
 	if(bIsNative)
 	{
 		FString ShaderCodeDir = FPaths::Combine(SaveBaseDir,PlatformName);
 		bSuccessed = bSuccessed && FShaderCodeLibrary::PackageNativeShaderLibrary(ShaderCodeDir,UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(TargetPlatform));
 	}
+#endif
 	FShaderCodeLibrary::CloseLibrary(LibraryName);
 	FShaderCodeLibrary::Shutdown();
 }
@@ -135,6 +138,19 @@ TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(cons
 		File = FPaths::Combine(Directory,File);
 	}
 	return FoundFiles;
+}
+
+bool UFlibShaderCodeLibraryHelper::PackageNativeShaderLibrary(const FString& ShaderCodeDir,
+	const TArray<FName>& ShaderFormats)
+{
+	return FShaderCodeLibrary::PackageNativeShaderLibrary(ShaderCodeDir,ShaderFormats);
+}
+
+TArray<FName> UFlibShaderCodeLibraryHelper::GetShaderFormatsByPlatformName(const FString& PlatfornName)
+{
+	ITargetPlatform* TargetPlatform =  UFlibHotPatcherEditorHelper::GetPlatformByName(PlatfornName);
+	TArray<FName> ShaderFormats = UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(TargetPlatform);
+	return ShaderFormats;
 }
 
 

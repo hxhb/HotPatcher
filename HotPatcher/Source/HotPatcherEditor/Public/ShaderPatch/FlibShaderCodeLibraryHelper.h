@@ -47,4 +47,8 @@ public:
 	static bool SaveShaderLibrary(const ITargetPlatform* TargetPlatform, const TArray<TSet<FName>>* ChunkAssignments, FString const& Name, const FString&
 	                              SaveBaseDir);
 	static TArray<FString> FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory);
+	UFUNCTION(BlueprintCallable)
+	static bool PackageNativeShaderLibrary(const FString& ShaderCodeDir, const TArray<FName>& ShaderFormats);
+	UFUNCTION(BlueprintCallable)
+	static TArray<FName> GetShaderFormatsByPlatformName(const FString& PlatfornName);
 };
