@@ -35,6 +35,21 @@ void FCookShaderCollectionProxy::Init()
 	FShaderCodeLibrary::OpenLibrary(LibraryName,TEXT(""));
 }
 
+bool IsAppleMetalPlatform(ITargetPlatform* TargetPlatform)
+{
+	bool bIsMatched = false;
+	TArray<FString> ApplePlatforms = {TEXT("IOS"),TEXT("Mac"),TEXT("TVOS")};
+	for(const auto& Platform:ApplePlatforms)
+	{
+		if(TargetPlatform->PlatformName().StartsWith(Platform,ESearchCase::IgnoreCase))
+		{
+			bIsMatched = true;
+			break;
+		}
+	}
+	return bIsMatched;
+}
+
 void FCookShaderCollectionProxy::Shutdown()
 {
 	bSuccessed = UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,NULL, LibraryName,SaveBaseDir);
@@ -45,6 +60,26 @@ void FCookShaderCollectionProxy::Shutdown()
 		bSuccessed = bSuccessed && FShaderCodeLibrary::PackageNativeShaderLibrary(ShaderCodeDir,UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(TargetPlatform));
 	}
 #endif
+	// rename StarterContent_SF_METAL.0.metallib to startercontent_sf_metal.0.metallib
+	if(bSuccessed && bIsNative && IsAppleMetalPlatform(TargetPlatform))
+	{
+		TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,FPaths::Combine(SaveBaseDir,TargetPlatform->PlatformName()));
+		for(const auto& Shaderlib:FoundShaderLibs)
+		{
+			if(Shaderlib.EndsWith(TEXT("metallib"),ESearchCase::IgnoreCase) || Shaderlib.EndsWith(TEXT("metalmap"),ESearchCase::IgnoreCase))
+			{
+				FString Path = FPaths::GetPath(Shaderlib);
+				FString Name = FPaths::GetBaseFilename(Shaderlib,true);
+				FString Extersion = FPaths::GetExtension(Shaderlib,true);
+				Name = FString::Printf(TEXT("%s%s"),*Name,*Extersion);
+				Name.ToLowerInline();
+				if(!Shaderlib.EndsWith(Name,ESearchCase::CaseSensitive))
+				{
+					IFileManager::Get().Move(*FPaths::Combine(Path,Name),*Shaderlib,false);
+				}
+			}
+		}
+	}
 	FShaderCodeLibrary::CloseLibrary(LibraryName);
 	FShaderCodeLibrary::Shutdown();
 }
@@ -112,25 +147,32 @@ bool UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* Targ
 	return bSaved;
 }
 
-TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory)
+TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory, bool bRecursive)
 {
 	TArray<FString> FoundFiles;
+	auto GetMetalShaderFormatLambda = [](const FString& Directory,const FString& Extersion, bool bRecursive)
+	{
+		TArray<FString> FoundMetallibFiles;
+		if(bRecursive)
+		{
+			IFileManager::Get().FindFilesRecursive(FoundMetallibFiles,*Directory,*Extersion,true,false, false);
+		}
+		else
+		{
+			IFileManager::Get().FindFiles(FoundMetallibFiles,*Directory,*Extersion);
+		}
+		return FoundMetallibFiles;
+	};
 	
 	if(PlatfomName.StartsWith(TEXT("IOS"),ESearchCase::IgnoreCase) || PlatfomName.StartsWith(TEXT("Mac"),ESearchCase::IgnoreCase))
 	{
-		auto GetMetalShaderFormatLambda = [](const FString& Directory,const FString& Extersion)
-		{
-			TArray<FString> FoundMetallibFiles;
-			IFileManager::Get().FindFiles(FoundMetallibFiles,*Directory,*Extersion);
-			return FoundMetallibFiles;
-		};
-		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("metallib")));
-		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("metalmap")));
+		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("metallib"),bRecursive));
+		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("metalmap"),bRecursive));
 	}
 	
 	if(!FoundFiles.Num())
 	{
-		IFileManager::Get().FindFiles(FoundFiles,*Directory,TEXT("ushaderbytecode"));
+		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("ushaderbytecode"),bRecursive));
 	}
 	for(auto& File:FoundFiles)
 	{

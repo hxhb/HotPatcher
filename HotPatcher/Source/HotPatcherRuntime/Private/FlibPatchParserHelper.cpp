@@ -1608,11 +1608,16 @@ void UFlibPatchParserHelper::ReloadShaderbytecode()
 bool UFlibPatchParserHelper::LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir)
 {
 	bool result = true;
+	FString FinalLibraryDir = LibraryDir;
+#if PLATFORM_IOS
+	FinalLibraryDir = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*LibraryDir);;
+#endif
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >= 23
 	result = FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
 #else
 	FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
 #endif
+	UE_LOG(LogHotPatcher,Log,TEXT("Load Shader bytecode %s,Dir: %s, status: %s"),*LibraryName,*FinalLibraryDir,result?TEXT("True"):TEXT("False"));
 	return result;
 }
 

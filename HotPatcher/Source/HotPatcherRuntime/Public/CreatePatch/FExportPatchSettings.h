@@ -72,7 +72,7 @@ struct FCookShaderOptions
 	GENERATED_BODY()
 	FCookShaderOptions()
 	{
-		ShderLibMountPoint = FString::Printf(TEXT("../../../%s/ShaderLib"),FApp::GetProjectName());
+		ShderLibMountPoint = FString::Printf(TEXT("../../../%s/ShaderLibs"),FApp::GetProjectName());
 	}
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bSharedShaderLibrary = false;

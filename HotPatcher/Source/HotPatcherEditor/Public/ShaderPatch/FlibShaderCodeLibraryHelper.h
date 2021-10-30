@@ -46,5 +46,5 @@ public:
 	static FString GenerateShaderCodeLibraryName(FString const& Name, bool bIsIterateSharedBuild);
 	static bool SaveShaderLibrary(const ITargetPlatform* TargetPlatform, const TArray<TSet<FName>>* ChunkAssignments, FString const& Name, const FString&
 	                              SaveBaseDir);
-	static TArray<FString> FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory);
+	static TArray<FString> FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory,bool bRecursive = false);
 };
