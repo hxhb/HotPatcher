@@ -4,9 +4,10 @@
 #include "Features/IModularFeature.h"
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
-#define BINARIES_DIFF_PATCH_FEATURE_NAME TEXT("BinariesDiffPatchFeatures")
-
+#include "Misc/EnumRange.h"
 #include "BinariesPatchFeature.generated.h"
+
+#define BINARIES_DIFF_PATCH_FEATURE_NAME TEXT("BinariesDiffPatchFeatures")
 
 UENUM(BlueprintType)
 enum class EBinariesPatchFeature:uint8

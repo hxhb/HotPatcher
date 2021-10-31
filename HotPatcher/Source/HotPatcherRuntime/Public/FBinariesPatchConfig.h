@@ -6,6 +6,7 @@
 // engine header
 #include "CoreMinimal.h"
 #include "Engine/EngineTypes.h"
+#include "HAL/FileManager.h"
 #include "FBinariesPatchConfig.generated.h"
 
 struct FPakCommandItem

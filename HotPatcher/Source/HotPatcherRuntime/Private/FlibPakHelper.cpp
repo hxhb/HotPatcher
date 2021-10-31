@@ -20,6 +20,7 @@
 #include "ShaderPipelineCache.h"
 #include "RHI.h"
 #include "Misc/Base64.h"
+#include "Misc/CoreDelegates.h"
 
 void UFlibPakHelper::ExecMountPak(FString InPakPath, int32 InPakOrder, FString InMountPoint)
 {

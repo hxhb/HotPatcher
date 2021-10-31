@@ -1,6 +1,7 @@
 #pragma once
 #include "HotPatcherBaseTypes.h"
 // engine header
+#include "Misc/App.h"
 #include "Misc/Paths.h"
 #include "Misc/SecureHash.h"
 #include "CoreMinimal.h"
