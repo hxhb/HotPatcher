@@ -27,7 +27,7 @@
 #include "HAL/PlatformFilemanager.h"
 #include "HAL/FileManager.h"
 #include "Misc/FileHelper.h"
-#include "json.h"
+#include "Json.h"
 #include "Misc/SecureHash.h"
 #include "Misc/PackageName.h"
 
