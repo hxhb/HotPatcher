@@ -11,25 +11,25 @@
 #include "Styling/SlateTypes.h"
 #include "Widgets/Views/STableRow.h"
 #include "Widgets/Text/STextBlock.h"
-#include "Widgets/Views/SListView.h"
 #include "Widgets/Input/SCheckBox.h"
-#include "Model/FHotPatcherCookModel.h"
-#include "Templates/SharedPointer.h"
+#include "Widgets/Views/SListView.h"
 
-#define LOCTEXT_NAMESPACE "SHotPatcherPlatformListRow"
+#include "Model/FHotPatcherOriginalCookerModel.h"
+
+#define LOCTEXT_NAMESPACE "SProjectCookMapListRow"
 
 /**
  * Implements a row widget for map list.
  */
-class SHotPatcherPlatformListRow
+class SProjectCookMapListRow
 	: public SMultiColumnTableRow<TSharedPtr<FString> >
 {
 public:
 
-	SLATE_BEGIN_ARGS(SHotPatcherPlatformListRow) { }
+	SLATE_BEGIN_ARGS(SProjectCookMapListRow) { }
 		SLATE_ATTRIBUTE(FString, HighlightString)
 		SLATE_ARGUMENT(TSharedPtr<STableViewBase>, OwnerTableView)
-		SLATE_ARGUMENT(TSharedPtr<FString>, PlatformName)
+		SLATE_ARGUMENT(TSharedPtr<FString>, MapName)
 	SLATE_END_ARGS()
 
 public:
@@ -40,12 +40,12 @@ public:
 	 * @param InArgs The construction arguments.
 	 * @param InProfileManager The profile manager to use.
 	 */
-	void Construct( const FArguments& InArgs, TSharedPtr<FHotPatcherCookModel> InCookModel)
+	void Construct( const FArguments& InArgs, const TSharedRef<FHotPatcherOriginalCookerModel>& InModel )
 	{
 		HighlightString = InArgs._HighlightString;
-		PlatformName = InArgs._PlatformName;
+		MapName = InArgs._MapName;
+		Model = InModel;
 
-		mCookModel = InCookModel;
 		SMultiColumnTableRow<TSharedPtr<FString> >::Construct(FSuperRowType::FArguments(), InArgs._OwnerTableView.ToSharedRef());
 	}
 
@@ -59,15 +59,15 @@ public:
 	 */
 	virtual TSharedRef<SWidget> GenerateWidgetForColumn( const FName& ColumnName ) override
 	{
-		if (ColumnName == "PlatformName")
+		if (ColumnName == "MapName")
 		{
 			return SNew(SCheckBox)
-				.IsChecked(this, &SHotPatcherPlatformListRow::HandleCheckBoxIsChecked)
-				.OnCheckStateChanged(this, &SHotPatcherPlatformListRow::HandleCheckBoxCheckStateChanged)
+				.IsChecked(this, &SProjectCookMapListRow::HandleCheckBoxIsChecked)
+				.OnCheckStateChanged(this, &SProjectCookMapListRow::HandleCheckBoxCheckStateChanged)
 				.Padding(FMargin(6.0, 2.0))
 				[
 					SNew(STextBlock)
-						.Text(FText::FromString(*PlatformName))
+						.Text(FText::FromString(*MapName))
 				];
 		}
 
@@ -79,25 +79,29 @@ private:
 	// Callback for changing the checked state of the check box.
 	void HandleCheckBoxCheckStateChanged( ECheckBoxState NewState )
 	{
-		if (NewState == ECheckBoxState::Checked)
+
+		if (Model.IsValid())
 		{
-			mCookModel->AddSelectedCookPlatform(*PlatformName);
-		}
-		else {
-			mCookModel->RemoveSelectedCookPlatform(*PlatformName);
+			if (NewState == ECheckBoxState::Checked)
+			{
+				Model->AddSelectedCookMap(*MapName);
+			}
+			else
+			{
+				Model->RemoveSelectedCookMap(*MapName);
+			}
 		}
 	}
 
 	// Callback for determining the checked state of the check box.
 	ECheckBoxState HandleCheckBoxIsChecked( ) const
 	{
-		if (mCookModel.IsValid())
+
+		if (Model.IsValid() && Model->GetAllSelectedCookMap().Contains(*MapName))
 		{
-			if (mCookModel->GetAllSelectedPlatform().Contains(*PlatformName))
-			{
-				return ECheckBoxState::Checked;
-			}
+			return ECheckBoxState::Checked;
 		}
+
 		return ECheckBoxState::Unchecked;
 	}
 
@@ -106,10 +110,11 @@ private:
 	// Holds the highlight string for the log message.
 	TAttribute<FString> HighlightString;
 
-	// Holds the platform's name.
-	TSharedPtr<FString> PlatformName;
+	// Holds the map's name.
+	TSharedPtr<FString> MapName;
 
-	TSharedPtr<FHotPatcherCookModel> mCookModel;
+	// Holds a pointer to the data model.
+	TSharedPtr<FHotPatcherOriginalCookerModel> Model;
 };
 
 

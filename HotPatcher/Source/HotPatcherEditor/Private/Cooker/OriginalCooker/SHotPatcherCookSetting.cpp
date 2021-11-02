@@ -11,7 +11,7 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCookSetting"
 
-void SHotPatcherCookSetting::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCookModel> InCookModel)
+void SHotPatcherCookSetting::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherOriginalCookerModel> InCookModel)
 {
 
 	mCookModel = InCookModel;

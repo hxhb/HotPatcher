@@ -10,7 +10,7 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCookMaps"
 
-void SHotPatcherCookMaps::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCookModel> InCookModel)
+void SHotPatcherCookMaps::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherOriginalCookerModel> InCookModel)
 {
 
 	mCookModel = InCookModel;

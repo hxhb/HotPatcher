@@ -6,7 +6,8 @@
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Input/Reply.h"
 #include "Widgets/SCompoundWidget.h"
-#include "Model/FHotPatcherCookModel.h"
+//#include "Model/FHotPatcherOriginalCookerModel.h"
+#include "Model/FHotPatcherCookerModel.h"
 #include "Model/FHotPatcherCreatePatchModel.h"
 class SHotPatcher : public SCompoundWidget
 {
@@ -30,7 +31,8 @@ private:
 	/** The list of active system messages */
 	TSharedPtr<SNotificationList> NotificationListPtr;
 
-	TSharedPtr<FHotPatcherCookModel> CookModel;
+	// TSharedPtr<FHotPatcherOriginalCookerModel> CookModel;
+	TSharedPtr<FHotPatcherCookerModel> CookerModel;
 	TSharedPtr<FHotPatcherCreatePatchModel> CreatePatchModel;
 };
 

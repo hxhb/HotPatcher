@@ -1,5 +1,5 @@
 #include "SHotPatcher.h"
-#include "Cook/SProjectCookPage.h"
+#include "Cooker/OriginalCooker/SProjectCookPage.h"
 #include "CreatePatch/SProjectCreatePatchPage.h"
 
 // engine header
@@ -30,12 +30,14 @@
 #include "Json.h"
 #include "Misc/SecureHash.h"
 #include "Misc/PackageName.h"
+#include "Cooker/SProjectCookerPage.h"
 
 #define LOCTEXT_NAMESPACE "FExportPakModule"
 
 void SHotPatcher::Construct(const FArguments& InArgs)
 {
-	CookModel = MakeShareable(new FHotPatcherCookModel);
+	// CookModel = MakeShareable(new FHotPatcherOriginalCookerModel);
+	CookerModel = MakeShareable(new FHotPatcherCookerModel);
 	CreatePatchModel = MakeShareable(new FHotPatcherCreatePatchModel);
 
 	ChildSlot
@@ -63,7 +65,8 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 				+ SGridPanel::Slot(1, 0)
 				.Padding(32.0f, 0.0f, 8.0f, 0.0f)
 				[
-					SNew(SProjectCookPage,CookModel)
+					// SNew(SProjectCookPage,CookModel)
+					SNew(SProjectCookerPage,CookerModel)
 				]
 
 				+ SGridPanel::Slot(0, 1)
