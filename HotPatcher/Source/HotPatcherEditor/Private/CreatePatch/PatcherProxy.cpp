@@ -60,7 +60,20 @@ bool UPatcherProxy::CanExportPatch()const
 	return bCanExport;
 }
 
-
+FString GetShaderLibDeterministicCmdByPlatforms(const TArray<FString>& PlatformNames)
+{
+	FString ShaderLibDeterministicCommand;
+	if(!!PlatformNames.Num())
+	{
+		ShaderLibDeterministicCommand = TEXT("TARGETPLATFORM=");
+		for(const auto& PlatfromName:PlatformNames)
+		{
+			ShaderLibDeterministicCommand += FString::Printf(TEXT("%s+"),*PlatfromName);
+		}
+		ShaderLibDeterministicCommand.RemoveFromEnd(TEXT("+"));
+	}
+	return ShaderLibDeterministicCommand;
+}
 
 namespace PatchWorker
 {

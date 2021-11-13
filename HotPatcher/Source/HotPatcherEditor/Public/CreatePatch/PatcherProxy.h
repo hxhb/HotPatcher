@@ -19,6 +19,7 @@
 #include "Widgets/Text/SMultiLineEditableText.h"
 
 #include "PatcherProxy.generated.h"
+
 DECLARE_MULTICAST_DELEGATE_FourParams(FOnPakListGenerated,FHotPatcherPatchContext&,FChunkInfo&,ETargetPlatform,TArray<FPakCommand>&);
 
 UCLASS()
@@ -27,7 +28,7 @@ class HOTPATCHEREDITOR_API UPatcherProxy:public UHotPatcherProxyBase
     GENERATED_UCLASS_BODY()
 public:
     bool CanExportPatch() const;
-    virtual bool DoExport()override;
+    virtual bool DoExport() override;
     virtual FExportPatchSettings* GetSettingObject()override{ return (FExportPatchSettings*)Setting; }
     FOnPakListGenerated OnPakListGenerated;
 private:

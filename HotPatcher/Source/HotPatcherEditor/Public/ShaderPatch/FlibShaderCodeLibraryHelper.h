@@ -40,7 +40,7 @@ class HOTPATCHEREDITOR_API UFlibShaderCodeLibraryHelper : public UBlueprintFunct
 	GENERATED_BODY()
 public:
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
-	static TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> GetShaderFormatsWithStableKeys(const TArray<FName>& ShaderFormats,bool bNeedShaderStableKeys = true,bool bNeedsDeterministicOrder = true);
+	static TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> GetShaderFormatsWithStableKeys(const TArray<FName>& ShaderFormats,bool bNeedShaderStableKeys = true,bool bNeedsDeterministicOrder = false);
 #endif
 	static TArray<FName> GetShaderFormatsByTargetPlatform(ITargetPlatform* TargetPlatform);
 	static FString GenerateShaderCodeLibraryName(FString const& Name, bool bIsIterateSharedBuild);

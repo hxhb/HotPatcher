@@ -47,7 +47,7 @@ public:
     FExportPakShowMsg OnShowMsg;
     FHotPatcherSettingBase* ContextSetting;
     UPROPERTY()
-    UScopedSlowTaskContext* UnrealPakSlowTask;
+    UScopedSlowTaskContext* UnrealPakSlowTask = nullptr;
     TSharedPtr<TimeRecorder> TotalTimeRecorder;
 };
 
