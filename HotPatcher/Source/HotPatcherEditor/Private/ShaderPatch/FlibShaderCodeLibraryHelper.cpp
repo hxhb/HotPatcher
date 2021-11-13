@@ -53,7 +53,7 @@ bool IsAppleMetalPlatform(ITargetPlatform* TargetPlatform)
 void FCookShaderCollectionProxy::Shutdown()
 {
 	bSuccessed = UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,NULL, LibraryName,SaveBaseDir);
-#if ENGINE_MINOR_VERSION <= 26
+#if  ENGINE_MAJOR_VERSION < 4 && ENGINE_MINOR_VERSION <= 26
 	if(bIsNative)
 	{
 		FString ShaderCodeDir = FPaths::Combine(SaveBaseDir,PlatformName);
