@@ -37,7 +37,7 @@
 		{
 			"Name": "AssetCollector",
 			"Type": "Editor",
-			"LoadingPhase": "PostEngineInit"
+			"LoadingPhase": "PreLoadingScreen"
 		}
 
 	]

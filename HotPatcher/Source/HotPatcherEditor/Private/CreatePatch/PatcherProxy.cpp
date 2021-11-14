@@ -19,7 +19,10 @@
 #include <Templates/Function.h>
 
 #include "BinariesPatchFeature.h"
+#include "AssetRegistry/AssetRegistryState.h"
 #include "Async/ParallelFor.h"
+#include "Misc/DataDrivenPlatformInfoRegistry.h"
+#include "Serialization/ArrayWriter.h"
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
 
 #if WITH_IO_STORE_SUPPORT
@@ -519,7 +522,48 @@ namespace PatchWorker
 #endif
 					}
 				}
+				if(Context.GetSettingObject()->bSerializeAssetRegistry)
+				{
+					ITargetPlatform* TargetPlatform =  UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
+					FAssetRegistryState State;
+					FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+					IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
+					
+					FAssetRegistrySerializationOptions SaveOptions;
+					AssetRegistry.InitializeSerializationOptions(SaveOptions, TargetPlatform->IniPlatformName());
 
+					SaveOptions.bSerializeAssetRegistry = true;
+					
+					AssetRegistry.Tick(-1.0f);
+					AssetRegistry.InitializeTemporaryAssetRegistryState(State, SaveOptions, true);
+					for(const auto& Asset:ChunkAssets)
+					{
+						FAssetData* AssetData = new FAssetData();
+						if(UFLibAssetManageHelperEx::GetSingleAssetsData(Asset.mPackagePath,*AssetData))
+						{
+							State.AddAssetData(AssetData);
+						}
+					}
+					// Create runtime registry data
+					FArrayWriter SerializedAssetRegistry;
+					SerializedAssetRegistry.SetFilterEditorOnly(true);
+					
+					State.Save(SerializedAssetRegistry, SaveOptions);
+
+					// Save the generated registry
+					FString PlatformSandboxPath = FPaths::Combine(
+						Context.GetSettingObject()->GetSaveAbsPath(),
+						Context.NewVersionChunk.ChunkName,
+						PlatformName,
+						FString::Printf(TEXT("%s_AssetRegistry.bin"),*Context.NewVersionChunk.ChunkName))
+					;
+					
+					if(FFileHelper::SaveArrayToFile(SerializedAssetRegistry, *PlatformSandboxPath))
+					{
+						UE_LOG(LogHotPatcher,Log,TEXT("Serialize %s AssetRegistry"),*PlatformSandboxPath);
+					}
+				}
+				
 				if(Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
 				{
 					TimeRecorder StorageCookOpenOrderTR(FString::Printf(TEXT("Storage CookOpenOrder.txt for %s, time:"),*PlatformName));

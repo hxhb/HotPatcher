@@ -328,7 +328,8 @@ public:
 		bool bStorageDiffAnalysisResults = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bStorageAssetDependencies = false;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+	bool bSerializeAssetRegistry = true;
 
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
 		bool bEnableMultiThread = false;

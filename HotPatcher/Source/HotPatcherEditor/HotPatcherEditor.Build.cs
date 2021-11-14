@@ -39,6 +39,7 @@ public class HotPatcherEditor : ModuleRules
                 "TargetPlatform",
                 "PropertyEditor",
                 "Settings",
+                "AssetRegistry",
                 "AssetManagerEx",
                 "PakFileUtilities",
                 "HotPatcherRuntime",

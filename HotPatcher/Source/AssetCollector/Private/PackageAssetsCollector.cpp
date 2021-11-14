@@ -3,10 +3,12 @@
 
 #include "PackageAssetsCollector.h"
 
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Chaos/AABB.h"
 #include "Chaos/AABB.h"
 #include "Chaos/AABB.h"
 #include "Chaos/AABB.h"
+#include "Engine/AssetManager.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Settings/ProjectPackagingSettings.h"
 #include "Interfaces/IPluginManager.h"
@@ -180,9 +182,9 @@ void UPackageAssetsCollector::CollectFilesToCook(TArray<FName>& FilesInPath, con
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UCookOnTheFlyServer::CollectFilesToCook);
 
-#if OUTPUT_TIMING
-	SCOPE_TIMER(CollectFilesToCook);
-#endif
+// #if OUTPUT_TIMING
+// 	SCOPE_TIMER(CollectFilesToCook);
+// #endif
 	UProjectPackagingSettings* PackagingSettings = Cast<UProjectPackagingSettings>(UProjectPackagingSettings::StaticClass()->GetDefaultObject());
 
 	bool bCookAll = (!!(FilesToCookFlags & ECookByTheBookOptions::CookAll)) || PackagingSettings->bCookAll;
@@ -593,7 +595,7 @@ TArray<FString> UPackageAssetsCollector::StartAssetsCollector(const TArray<FStri
 			}
 		}
 	}
-	//StartupOptions.CookOptions = ECookByTheBookOptions::NoAlwaysCookMaps | ECookByTheBookOptions::NoDefaultMaps | ECookByTheBookOptions::NoGameAlwaysCookPackages | ECookByTheBookOptions::NoInputPackages | ECookByTheBookOptions::NoSlatePackages | ECookByTheBookOptions::DisableUnsolicitedPackages | ECookByTheBookOptions::ForceDisableSaveGlobalShaders;
+	StartupOptions.CookOptions = ECookByTheBookOptions::NoAlwaysCookMaps | ECookByTheBookOptions::NoDefaultMaps | ECookByTheBookOptions::NoGameAlwaysCookPackages | ECookByTheBookOptions::NoInputPackages | ECookByTheBookOptions::NoSlatePackages | ECookByTheBookOptions::DisableUnsolicitedPackages | ECookByTheBookOptions::ForceDisableSaveGlobalShaders;
 	
 	return AssetsCollector(StartupOptions,CollectorPlatforms);
 }

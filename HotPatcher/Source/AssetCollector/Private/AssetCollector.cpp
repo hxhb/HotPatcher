@@ -7,10 +7,12 @@
 #include "Misc/EnumRange.h"
 #include "Modules/ModuleManager.h"
 #include "UObject/Class.h"
+#include "PackageAssetsCollector.h"
 
 void FAssetCollectorModule::StartupModule()
 {
-
+	UPackageAssetsCollector* AssetsCollector = NewObject<UPackageAssetsCollector>();
+	TArray<FString> Assets = AssetsCollector->StartAssetsCollector(TArray<FString>{TEXT("WindowsNoEditor")});
 }
 
 void FAssetCollectorModule::ShutdownModule()
