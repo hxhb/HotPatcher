@@ -1145,9 +1145,12 @@ bool UFlibHotPatcherEditorHelper::SerializeAssetRegistry(const FString& Platform
 	// Create runtime registry data
 	FArrayWriter SerializedAssetRegistry;
 	SerializedAssetRegistry.SetFilterEditorOnly(true);
-					
-	bool bStateSave = State.Save(SerializedAssetRegistry, SaveOptions);
 
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+	bool bStateSave = State.Save(SerializedAssetRegistry, SaveOptions);
+#else
+	bool bStateSave = State.Serialize(SerializedAssetRegistry, SaveOptions);
+#endif
 	bool result = false;
 	// Save the generated registry
 	if(bStateSave && FFileHelper::SaveArrayToFile(SerializedAssetRegistry, *SavePath))

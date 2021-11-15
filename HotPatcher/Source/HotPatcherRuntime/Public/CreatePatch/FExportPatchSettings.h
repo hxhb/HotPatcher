@@ -89,6 +89,22 @@ struct FCookShaderOptions
 	FString ShderLibMountPoint;
 };
 
+USTRUCT(BlueprintType)
+struct FAssetRegistryOptions
+{
+	GENERATED_BODY()
+	FAssetRegistryOptions()
+	{
+		AssetRegistryMountPoint = FString::Printf(TEXT("../../../%s/AssetRegistry"),FApp::GetProjectName());
+	}
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bSerializeAssetRegistry = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString AssetRegistryMountPoint;
+};
+
+
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FExportPatchSettings:public FHotPatcherSettingBase
@@ -196,7 +212,7 @@ public:
 	FORCEINLINE FBinariesPatchConfig GetBinariesPatchConfig()const{ return BinariesPatchConfig; }
 	FORCEINLINE bool IsSharedShaderLibrary()const { return GetCookShaderOptions().bSharedShaderLibrary; }
 	FORCEINLINE FCookShaderOptions GetCookShaderOptions()const {return CookShaderOptions;}
-	FORCEINLINE bool IsSerializeAssetRegistry()const{return bSerializeAssetRegistry;}
+	FORCEINLINE FAssetRegistryOptions GetSerializeAssetRegistryOptions()const{return SerializeAssetRegistryOptions;}
 	FString GetShaderLibraryName()const;
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
@@ -289,7 +305,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "bCookPatchAssets"))
 		FCookShaderOptions CookShaderOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "bCookPatchAssets"))
-		bool bSerializeAssetRegistry = true;
+		FAssetRegistryOptions SerializeAssetRegistryOptions;
 	// support UE4.26 later
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "!bCookPatchAssets"))
 		FIoStoreSettings IoStoreSettings;

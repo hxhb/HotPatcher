@@ -474,194 +474,164 @@ namespace PatchWorker
 		TimeRecorder CookAssetsTotalTR(FString::Printf(TEXT("Cook All Assets in Patch Total time:")));
 		for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
 		{
-			TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
-			if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
+			for(auto& Chunk:Context.PakChunks)
 			{
-				FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId);
-				FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
-				FString ShaderLibraryName = Context.GetSettingObject()->GetShaderLibraryName();
-				CookShaderCollection = MakeShareable(
-					new FCookShaderCollectionProxy(
-						PlatformName,
-						ShaderLibraryName,
-						Context.GetSettingObject()->GetCookShaderOptions().bNativeShader,
-						SavePath
-						));
-				CookShaderCollection->Init();
-			}
-			
-			if(Context.GetSettingObject()->IsCookPatchAssets() || Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
-			{
-				TimeRecorder CookAssetsTR(FString::Printf(TEXT("Cook %s assets in the patch."),*PlatformName));
-
-				ETargetPlatform Platform;
-				UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
-
-				FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
-					Context.VersionDiff,
-					Context.NewVersionChunk ,
-					TArray<ETargetPlatform>{Platform},
-					Context.GetSettingObject()->GetAssetsDependenciesScanedCaches()
-				);
-				TArray<FAssetDetail> ChunkAssets;
-				UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(ChunkAssetsDescrible.Assets,ChunkAssets);
-
-				if(Context.GetSettingObject()->IsCookPatchAssets())
+				TimeRecorder CookPlatformChunkAssetsTotalTR(FString::Printf(TEXT("Cook Chunk %s as %s Total time:"),*Chunk.ChunkName,*PlatformName));
+				TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
+				if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
 				{
-					UFlibHotPatcherEditorHelper::CookChunkAssets(
-						ChunkAssets,
-						TArray<ETargetPlatform>{Platform}
-#if WITH_PACKAGE_CONTEXT
-						,Context.GetSettingObject()->GetPlatformSavePackageContexts()
-#endif
+					FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId);
+					FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
+					FString ShaderLibraryName = Context.GetSettingObject()->GetShaderLibraryName();
+					CookShaderCollection = MakeShareable(
+						new FCookShaderCollectionProxy(
+							PlatformName,
+							ShaderLibraryName,
+							Context.GetSettingObject()->GetCookShaderOptions().bNativeShader,
+							SavePath
+							));
+					CookShaderCollection->Init();
+				}
+			
+				if(Context.GetSettingObject()->IsCookPatchAssets() || Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
+				{
+					TimeRecorder CookAssetsTR(FString::Printf(TEXT("Cook %s assets in the patch."),*PlatformName));
+
+					ETargetPlatform Platform;
+					UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
+
+					FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
+						Context.VersionDiff,
+						//Context.NewVersionChunk ,
+						Chunk,
+						TArray<ETargetPlatform>{Platform},
+						Context.GetSettingObject()->GetAssetsDependenciesScanedCaches()
 					);
-					if(Context.GetSettingObject()->GetIoStoreSettings().bStorageBulkDataInfo)
+					TArray<FAssetDetail> ChunkAssets;
+					UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(ChunkAssetsDescrible.Assets,ChunkAssets);
+
+					if(Context.GetSettingObject()->IsCookPatchAssets())
 					{
+						UFlibHotPatcherEditorHelper::CookChunkAssets(
+							ChunkAssets,
+							TArray<ETargetPlatform>{Platform}
+	#if WITH_PACKAGE_CONTEXT
+							,Context.GetSettingObject()->GetPlatformSavePackageContexts()
+	#endif
+						);
+						if(Context.GetSettingObject()->GetIoStoreSettings().bStorageBulkDataInfo)
+						{
 #if WITH_PACKAGE_CONTEXT
-						Context.GetSettingObject()->SavePlatformBulkDataManifest(Platform);
+							Context.GetSettingObject()->SavePlatformBulkDataManifest(Platform);
 #endif
-					}
-				}
-				if(Context.GetSettingObject()->IsSerializeAssetRegistry())
-				{
-					// // Save the generated registry
-					FString AssetRegistryPath = FPaths::Combine(
-						Context.GetSettingObject()->GetSaveAbsPath(),
-						Context.NewVersionChunk.ChunkName,
-						PlatformName,
-						FString::Printf(TEXT("%s_AssetRegistry.bin"),*Context.NewVersionChunk.ChunkName))
-					;
-					UFlibHotPatcherEditorHelper::SerializeAssetRegistryByDetails(PlatformName,ChunkAssets,AssetRegistryPath);
-				}
-				
-				if(Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
-				{
-					TimeRecorder StorageCookOpenOrderTR(FString::Printf(TEXT("Storage CookOpenOrder.txt for %s, time:"),*PlatformName));
-					struct CookOpenOrder
-					{
-						CookOpenOrder()=default;
-						CookOpenOrder(const FString& InPath,int32 InOrder):uasset_relative_path(InPath),order(InOrder){}
-						FString uasset_relative_path;
-						int32 order;
-					};
-					auto MakeCookOpenOrder = [](const TArray<FAssetDetail>& Assets)->TArray<CookOpenOrder>
-					{
-						TArray<CookOpenOrder> result;
-						TArray<FAssetData> AssetsData;
-						TArray<FString> AssetPackagePaths;
-						for (auto Asset : Assets)
-						{
-							FSoftObjectPath ObjectPath;
-							ObjectPath.SetPath(Asset.mPackagePath);
-							TArray<FAssetData> AssetData;
-							UFLibAssetManageHelperEx::GetSpecifyAssetData(ObjectPath.GetLongPackageName(),AssetData,true);
-							AssetsData.Append(AssetData);
 						}
-
-						// UFLibAssetManageHelperEx::GetAssetsData(AssetPackagePaths,AssetsData);
+					}
 					
-						for(int32 index=0;index<AssetsData.Num();++index)
-						{
-							UPackage* Package = AssetsData[index].GetPackage();
-							FString LocalPath;
-							const FString* PackageExtension = Package->ContainsMap() ? &FPackageName::GetMapPackageExtension() : &FPackageName::GetAssetPackageExtension();
-							FPackageName::TryConvertLongPackageNameToFilename(AssetsData[index].PackageName.ToString(), LocalPath, *PackageExtension);
-							result.Emplace(LocalPath,index);
-						}
-						return result;
-					};
-					TArray<CookOpenOrder> CookOpenOrders = MakeCookOpenOrder(ChunkAssets);
-
-					auto SaveCookOpenOrder = [](const TArray<CookOpenOrder>& CookOpenOrders,const FString& File)
+					if(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry)
 					{
-						TArray<FString> result;
-						for(const auto& OrderFile:CookOpenOrders)
+						FString ChunkAssetRegistryName = FString::Printf(TEXT("%s_AssetRegistry.bin"),*Chunk.ChunkName);
+						// // Save the generated registry
+						FString AssetRegistryPath = FPaths::Combine(
+							Context.GetSettingObject()->GetSaveAbsPath(),
+							Context.NewVersionChunk.ChunkName,
+							PlatformName,
+							ChunkAssetRegistryName)
+						;
+						if(UFlibHotPatcherEditorHelper::SerializeAssetRegistryByDetails(PlatformName,ChunkAssets,AssetRegistryPath))
 						{
-							result.Emplace(FString::Printf(TEXT("\"%s\" %d"),*OrderFile.uasset_relative_path,OrderFile.order));
-						}
-						FFileHelper::SaveStringArrayToFile(result,*FPaths::ConvertRelativePathToFull(File));
-					};
-					SaveCookOpenOrder(CookOpenOrders,FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.NewVersionChunk.ChunkName,PlatformName,TEXT("CookOpenOrder.txt")));
-				}
-			}
-			
-			if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
-			{
-				CookShaderCollection->Shutdown();
-				if(CookShaderCollection->IsSuccessed())
-				{
-					FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,PlatformName);
-					TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath);
-
-					if(Context.PakChunks.Num())
-					{
-						auto GetPatcherDiffInfoByName = [](FHotPatcherPatchContext& Context,const FString& PlatformName)
-						{
-							ETargetPlatform Platform;
-							UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
-							// add new file to diff
-							FPatchVersionExternDiff* PatchVersionExternDiff = NULL;
-							{
-								if(!Context.VersionDiff.PlatformExternDiffInfo.Contains(Platform))
-								{
-									FPatchVersionExternDiff AdditionalFiles;
-									Context.VersionDiff.PlatformExternDiffInfo.Add(Platform,AdditionalFiles);
-								}
-								PatchVersionExternDiff = Context.VersionDiff.PlatformExternDiffInfo.Find(Platform);
-							}
-							return PatchVersionExternDiff;
-						};
-						auto GetPatcherChunkInfoByName = [](FHotPatcherPatchContext& Context,const FString& PlatformName,const FString& ChunkName)
-						{
-							ETargetPlatform Platform;
-							UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
-							FPlatformExternAssets* PlatformExternAssetsPtr = NULL;
-							{
-								for(auto& PakChunk:Context.PakChunks)
-								{
-									if(PakChunk.ChunkName.Equals(ChunkName))
-									{
-										for(auto& PlatfromExternAssetsRef:PakChunk.AddExternAssetsToPlatform)
-										{
-											if(PlatfromExternAssetsRef.TargetPlatform == Platform)
-											{
-												PlatformExternAssetsPtr = &PlatfromExternAssetsRef;
-											}
-										}
-										if(!PlatformExternAssetsPtr)
-										{
-											FPlatformExternAssets PlatformExternAssets;
-											PlatformExternAssets.TargetPlatform = Platform;
-											PlatformExternAssetsPtr = &(Context.PakChunks[0].AddExternAssetsToPlatform.Add_GetRef(PlatformExternAssets));
-										}
-									}
-								}
-								return PlatformExternAssetsPtr;
-							}
-						};
-						
-						for(const auto& FilePath:FoundShaderLibs)
-						{
-							if(!Context.GetSettingObject()->GetCookShaderOptions().bNativeShaderToPak &&
-								(FilePath.EndsWith(TEXT("metallib")) || FilePath.EndsWith(TEXT("metalmap"))))
-							{
-								// don't add metalib and metalmap to pak
-								continue;
-							}
-							FString FileName = FPaths::GetBaseFilename(FilePath,true);
-							FString FileExtersion = FPaths::GetExtension(FilePath,false);
-							FExternFileInfo AddShaderLib;
-							AddShaderLib.Type = EPatchAssetType::NEW;
-							AddShaderLib.FilePath.FilePath = FPaths::ConvertRelativePathToFull(FilePath);
-							AddShaderLib.MountPath = FPaths::Combine(Context.GetSettingObject()->CookShaderOptions.ShderLibMountPoint,FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion));
-							GetPatcherDiffInfoByName(Context,PlatformName)->AddExternalFiles.Add(AddShaderLib);
-							GetPatcherChunkInfoByName(Context,PlatformName,Context.CurrentVersion.VersionId)->AddExternFileToPak.Add(AddShaderLib);
+							FExternFileInfo AssetRegistryFileInfo;
+							AssetRegistryFileInfo.Type = EPatchAssetType::NEW;
+							AssetRegistryFileInfo.FilePath.FilePath = AssetRegistryPath;
+							AssetRegistryFileInfo.MountPath = FPaths::Combine(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().AssetRegistryMountPoint,ChunkAssetRegistryName);
+							Context.GetPatcherDiffInfoByName(PlatformName)->AddExternalFiles.Add(AssetRegistryFileInfo);
+							Context.GetPatcherChunkInfoByName(PlatformName,Chunk.ChunkName)->AddExternFileToPak.Add(AssetRegistryFileInfo);
 						}
 					}
+				
+					if(Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
+					{
+						TimeRecorder StorageCookOpenOrderTR(FString::Printf(TEXT("Storage CookOpenOrder.txt for %s, time:"),*PlatformName));
+						struct CookOpenOrder
+						{
+							CookOpenOrder()=default;
+							CookOpenOrder(const FString& InPath,int32 InOrder):uasset_relative_path(InPath),order(InOrder){}
+							FString uasset_relative_path;
+							int32 order;
+						};
+						auto MakeCookOpenOrder = [](const TArray<FAssetDetail>& Assets)->TArray<CookOpenOrder>
+						{
+							TArray<CookOpenOrder> result;
+							TArray<FAssetData> AssetsData;
+							TArray<FString> AssetPackagePaths;
+							for (auto Asset : Assets)
+							{
+								FSoftObjectPath ObjectPath;
+								ObjectPath.SetPath(Asset.mPackagePath);
+								TArray<FAssetData> AssetData;
+								UFLibAssetManageHelperEx::GetSpecifyAssetData(ObjectPath.GetLongPackageName(),AssetData,true);
+								AssetsData.Append(AssetData);
+							}
+
+							// UFLibAssetManageHelperEx::GetAssetsData(AssetPackagePaths,AssetsData);
+					
+							for(int32 index=0;index<AssetsData.Num();++index)
+							{
+								UPackage* Package = AssetsData[index].GetPackage();
+								FString LocalPath;
+								const FString* PackageExtension = Package->ContainsMap() ? &FPackageName::GetMapPackageExtension() : &FPackageName::GetAssetPackageExtension();
+								FPackageName::TryConvertLongPackageNameToFilename(AssetsData[index].PackageName.ToString(), LocalPath, *PackageExtension);
+								result.Emplace(LocalPath,index);
+							}
+							return result;
+						};
+						TArray<CookOpenOrder> CookOpenOrders = MakeCookOpenOrder(ChunkAssets);
+
+						auto SaveCookOpenOrder = [](const TArray<CookOpenOrder>& CookOpenOrders,const FString& File)
+						{
+							TArray<FString> result;
+							for(const auto& OrderFile:CookOpenOrders)
+							{
+								result.Emplace(FString::Printf(TEXT("\"%s\" %d"),*OrderFile.uasset_relative_path,OrderFile.order));
+							}
+							FFileHelper::SaveStringArrayToFile(result,*FPaths::ConvertRelativePathToFull(File));
+						};
+						SaveCookOpenOrder(CookOpenOrders,FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.NewVersionChunk.ChunkName,PlatformName,TEXT("CookOpenOrder.txt")));
+					}
 				}
-				else
+			
+				if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
 				{
-					UE_LOG(LogHotPatcher,Error,TEXT("This mission generate shader library faild!"));
+					CookShaderCollection->Shutdown();
+					if(CookShaderCollection->IsSuccessed())
+					{
+						FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,PlatformName);
+						TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath);
+
+						if(Context.PakChunks.Num())
+						{
+							for(const auto& FilePath:FoundShaderLibs)
+							{
+								if(!Context.GetSettingObject()->GetCookShaderOptions().bNativeShaderToPak &&
+									(FilePath.EndsWith(TEXT("metallib")) || FilePath.EndsWith(TEXT("metalmap"))))
+								{
+									// don't add metalib and metalmap to pak
+									continue;
+								}
+								FString FileName = FPaths::GetBaseFilename(FilePath,true);
+								FString FileExtersion = FPaths::GetExtension(FilePath,false);
+								FExternFileInfo AddShaderLib;
+								AddShaderLib.Type = EPatchAssetType::NEW;
+								AddShaderLib.FilePath.FilePath = FPaths::ConvertRelativePathToFull(FilePath);
+								AddShaderLib.MountPath = FPaths::Combine(Context.GetSettingObject()->CookShaderOptions.ShderLibMountPoint,FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion));
+								Context.GetPatcherDiffInfoByName(PlatformName)->AddExternalFiles.Add(AddShaderLib);
+								Context.GetPatcherChunkInfoByName(PlatformName,Chunk.ChunkName)->AddExternFileToPak.Add(AddShaderLib);
+							}
+						}
+					}
+					else
+					{
+						UE_LOG(LogHotPatcher,Error,TEXT("This mission generate shader library faild!"));
+					}
 				}
 			}
 		}
