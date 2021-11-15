@@ -73,8 +73,8 @@ namespace PatchWorker
 	bool MakeCurrentVersionWorker(FHotPatcherPatchContext& Context);
 	// setup 3
 	bool ParseVersionDiffWorker(FHotPatcherPatchContext& Context);
+	// setup 3.1
 	bool ParseDiffAssetOnlyWorker(FHotPatcherPatchContext& Context);
-
 	// setup 4
 	bool PatchRequireChekerWorker(FHotPatcherPatchContext& Context);
 	// setup 5
@@ -85,9 +85,8 @@ namespace PatchWorker
 	bool CookPatchAssetsWorker(FHotPatcherPatchContext& Context);
 	// setup 7.1
 	bool PatchAssetRegistryWorker(FHotPatcherPatchContext& Context);
-
-	// setup 7/1
-	bool GenerateAssetRegistryData(FHotPatcherPatchContext& Context);
+	// setup 7.2
+	bool GenerateGlobalAssetRegistryData(FHotPatcherPatchContext& Context);
 	// setup 8
 	bool GeneratePakProxysWorker(FHotPatcherPatchContext& Context);
 	// setup 9
@@ -149,7 +148,7 @@ bool UPatcherProxy::DoExport()
 		this->OnPakListGenerated.AddStatic(&PatchWorker::GenerateBinariesPatch);
 	}
 	PostCookPatchWorkers.Emplace(&PatchWorker::PatchAssetRegistryWorker);
-	PostCookPatchWorkers.Emplace(&PatchWorker::GenerateAssetRegistryData);
+	PostCookPatchWorkers.Emplace(&PatchWorker::GenerateGlobalAssetRegistryData);
 	PostCookPatchWorkers.Emplace(&PatchWorker::GeneratePakProxysWorker);
 	PostCookPatchWorkers.Emplace(&PatchWorker::CreatePakWorker);
 	PostCookPatchWorkers.Emplace(&PatchWorker::CreateIoStoreWorker);
@@ -684,7 +683,7 @@ namespace PatchWorker
 		}
 		return true;
 	};
-	bool GenerateAssetRegistryData(FHotPatcherPatchContext& Context)
+	bool GenerateGlobalAssetRegistryData(FHotPatcherPatchContext& Context)
 	{
 		FAssetDependenciesInfo TotalDiffAssets = UFLibAssetManageHelperEx::CombineAssetDependencies(Context.VersionDiff.AssetDiffInfo.AddAssetDependInfo,Context.VersionDiff.AssetDiffInfo.ModifyAssetDependInfo);
 		TArray<FAssetDetail> AllAssets;
@@ -703,7 +702,7 @@ namespace PatchWorker
 		{
 			ITargetPlatform* PlatformIns = UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
 			
-			UFlibHotPatcherEditorHelper::GeneratorAssetRegistryData(PlatformIns,PackageAssetsSet,TSet<FName>{},true);
+			UFlibHotPatcherEditorHelper::GeneratorGlobalAssetRegistryData(PlatformIns,PackageAssetsSet,TSet<FName>{},true);
 		}
 		return true;
 	}

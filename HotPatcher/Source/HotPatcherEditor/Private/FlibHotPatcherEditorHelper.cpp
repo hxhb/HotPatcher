@@ -894,7 +894,7 @@ ITargetPlatform* UFlibHotPatcherEditorHelper::GetPlatformByName(const FString& N
 }
 #include "Commandlets/AssetRegistryGenerator.h"
 
-bool UFlibHotPatcherEditorHelper::GeneratorAssetRegistryData(ITargetPlatform* TargetPlatform, const TSet<FName>& CookedPackageNames, const TSet<FName>& IgnorePackageNames, bool
+bool UFlibHotPatcherEditorHelper::GeneratorGlobalAssetRegistryData(ITargetPlatform* TargetPlatform, const TSet<FName>& CookedPackageNames, const TSet<FName>& IgnorePackageNames, bool
                                                              bGenerateStreamingInstallManifest)
 {
 	bool bresult = true;

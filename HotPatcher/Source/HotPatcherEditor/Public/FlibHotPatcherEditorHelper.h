@@ -105,7 +105,7 @@ public:
 
 	// need add UNREALED_API to FAssetRegistryGenerator
 	// all chunksinfo.csv / pakchunklist.txt / assetregistry.bin
-	static bool GeneratorAssetRegistryData(ITargetPlatform* TargetPlatform, const TSet<FName>&, const TSet<FName>&, bool bGenerateStreamingInstallManifest = true);
+	static bool GeneratorGlobalAssetRegistryData(ITargetPlatform* TargetPlatform, const TSet<FName>&, const TSet<FName>&, bool bGenerateStreamingInstallManifest = true);
 
 	/*
 	* 0x1 Add
