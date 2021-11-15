@@ -44,17 +44,20 @@ public:
 	FText GetUpdateWebsite() const {return FText::FromString(UpdateWebsite);};
 	FText GetDeveloperWebsite() const {return FText::FromString(DeveloperWebsite);};
 	FText GetDeveloperDescrible() const {return FText::FromString(FString::Printf(TEXT("Developed by %s"),*GetDeveloperName().ToString()));};
+	FText GetLatstVersionText() const {return FText::FromString(FString::Printf(TEXT("A new version v%d is avaliable"),LatstVersion));};
 	virtual void SetToolUpdateInfo(const FString& ToolName,const FString& DeveloperName,const FString& DeveloperWebsite,const FString& UpdateWebsite);
 	int32 GetCurrentVersion()const { return CurrentVersion; }
 
 	void OnRequestComplete(FHttpRequestPtr RequestPtr, FHttpResponsePtr ResponsePtr, bool bConnectedSuccessfully);
 	void RequestVersion(const FString& URL);
 private:
-	int32 CurrentVersion;
+	int32 CurrentVersion = 0;
 	FString ToolName;
 	FString UpdateWebsite;
 	FString DeveloperWebsite;
 	FString DeveloperName;
 	TSharedPtr<SHorizontalBox> UpdateInfoWidget;
+	int32 LatstVersion = 0;
+	TSharedPtr<IHttpRequest,ESPMode::ThreadSafe> HttpHeadRequest;
 };
 

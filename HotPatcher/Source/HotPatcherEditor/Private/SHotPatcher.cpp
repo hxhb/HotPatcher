@@ -112,7 +112,6 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 			]
 		]
 	];
-	VersionUpdaterWidget->RequestVersion(REMOTE_VERSION_FILE);
 }
 
 TSharedPtr<SNotificationList> SHotPatcher::GetNotificationListPtr() const

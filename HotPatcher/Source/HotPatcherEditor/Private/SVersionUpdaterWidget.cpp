@@ -108,7 +108,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 								.AutoWidth()
 								[
 									SNew(SHyperlink)
-									.Text(LOCTEXT("ToolsUpdaterInfo", "A new version is avaliable"))
+									.Text_Raw(this,&SVersionUpdaterWidget::GetLatstVersionText)
 									.OnNavigate(this, &SVersionUpdaterWidget::HyLinkClickEventOpenUpdateWebsite)
 								]
 							]
@@ -132,6 +132,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 			]
 		]
 	];
+	RequestVersion(REMOTE_VERSION_FILE);
 }
 
 void SVersionUpdaterWidget::HyLinkClickEventOpenUpdateWebsite()
@@ -157,8 +158,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogVersionUpdater,All,All);
 
 void SVersionUpdaterWidget::OnRequestComplete(FHttpRequestPtr RequestPtr, FHttpResponsePtr ResponsePtr, bool bConnectedSuccessfully)
 {
-	TArray<uint8> Array = ResponsePtr->GetContent();
-	FString Result = FString::Printf(TEXT("%s"), UTF8_TO_TCHAR(reinterpret_cast<const char*>(Array.GetData())));
+	FString Result = ResponsePtr->GetContentAsString();;
 	// UE_LOG(LogVersionUpdater, Log, TEXT("%s"),*Result);
 	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(Result);
 	TSharedPtr<FJsonObject> JsonObject;
@@ -172,12 +172,13 @@ void SVersionUpdaterWidget::OnRequestComplete(FHttpRequestPtr RequestPtr, FHttpR
 				const TSharedPtr<FJsonObject>* ToolJsonObject;
 				if(JsonObject->TryGetObjectField(GetToolName().ToString(),ToolJsonObject))
 				{
-					int32 latstVersion = ToolJsonObject->Get()->GetIntegerField(TEXT("Version"));
+					int32 Version = ToolJsonObject->Get()->GetIntegerField(TEXT("Version"));
 					FString Developer = ToolJsonObject->Get()->GetStringField(TEXT("Author"));
 					FString UpdateURL = ToolJsonObject->Get()->GetStringField(TEXT("URL"));
 					FString Website = ToolJsonObject->Get()->GetStringField(TEXT("Website"));
 					SetToolUpdateInfo(GetToolName().ToString(),Developer,Website,UpdateURL);
-					if(CurrentVersion < latstVersion)
+					LatstVersion = Version;
+					if(CurrentVersion < LatstVersion)
 					{
 						UpdateInfoWidget->SetVisibility(EVisibility::Visible);
 					}
@@ -189,7 +190,12 @@ void SVersionUpdaterWidget::OnRequestComplete(FHttpRequestPtr RequestPtr, FHttpR
 
 void SVersionUpdaterWidget::RequestVersion(const FString& URL)
 {
-	TSharedRef<IHttpRequest,ESPMode::ThreadSafe> HttpHeadRequest = FHttpModule::Get().CreateRequest();
+	if(HttpHeadRequest.IsValid())
+	{
+		HttpHeadRequest->CancelRequest();
+		HttpHeadRequest.Reset();
+	}
+	HttpHeadRequest = FHttpModule::Get().CreateRequest();
 	HttpHeadRequest->SetURL(URL);
 	HttpHeadRequest->SetVerb(TEXT("GET"));
 	HttpHeadRequest->OnProcessRequestComplete().BindRaw(this,&SVersionUpdaterWidget::OnRequestComplete);
