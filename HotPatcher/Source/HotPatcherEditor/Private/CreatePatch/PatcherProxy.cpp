@@ -16,14 +16,14 @@
 #include "PakFileUtilities.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Misc/FileHelper.h"
-#include <Templates/Function.h>
-
+#include "Templates/Function.h"
 #include "BinariesPatchFeature.h"
-#include "AssetRegistry/AssetRegistryState.h"
 #include "Async/ParallelFor.h"
 #include "Misc/DataDrivenPlatformInfoRegistry.h"
 #include "Serialization/ArrayWriter.h"
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
+#include "AssetRegistryState.h"
+
 
 #if WITH_IO_STORE_SUPPORT
 #include "IoStoreUtilities.h"

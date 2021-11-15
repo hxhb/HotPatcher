@@ -252,7 +252,7 @@ struct FPackageTracker : public FUObjectArray::FUObjectCreateListener, public FU
  * 
  */
 UCLASS(Blueprintable,BlueprintType)
-class ASSETCOLLECTOR_API UPackageAssetsCollector : public UObject
+class HOTPATCHEREDITOR_API UPackageAssetsCollector : public UObject
 {
 	GENERATED_BODY()
 public:

@@ -1,17 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "PackageAssetsCollector.h"
-
-#include "AssetRegistry/AssetRegistryModule.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
 #include "Engine/AssetManager.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Settings/ProjectPackagingSettings.h"
 #include "Interfaces/IPluginManager.h"
+#include "AssetRegistryModule.h"
 
 IAssetRegistry* GetAssetRegistry()
 {
@@ -758,7 +751,11 @@ inline TArray<FString> UPackageAssetsCollector::AssetsCollector(
 		for (const ITargetPlatform* Platform : TargetPlatforms)
 		{
 			FString UBTPlatformName;
+#if ENGINE_MAJOR_VERSION > 4
+			UBTPlatformName = Platform->GetPlatformInfo().UBTPlatformName.ToString();
+#else
 			Platform->GetPlatformInfo().UBTTargetId.ToString(UBTPlatformName);
+#endif
 			UBTPlatformStrings.Emplace(MoveTemp(UBTPlatformName));
 		}
 

@@ -38,6 +38,8 @@ public class HotPatcherEditor : ModuleRules
                 "JsonUtilities",
                 "TargetPlatform",
                 "PropertyEditor",
+                "DesktopPlatform",
+                "Projects",
                 "Settings",
                 "AssetRegistry",
                 "AssetManagerEx",
@@ -47,7 +49,16 @@ public class HotPatcherEditor : ModuleRules
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
-
+		
+		// only in UE5
+		if (Target.Version.MajorVersion > 4)
+		{
+			PublicDependencyModuleNames.AddRange(new string[]
+			{
+				"DeveloperToolSettings"
+			});
+		}
+		
 		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 23)
 		{
 			PublicDependencyModuleNames.Add("ToolMenus");
@@ -120,7 +131,8 @@ public class HotPatcherEditor : ModuleRules
 		{
 			bUseRTTI = true;
 		}
-		
+
+
 		BuildVersion Version;
 		BuildVersion.TryRead(BuildVersion.GetDefaultFileName(), out Version);
 		// PackageContext
@@ -130,6 +142,10 @@ public class HotPatcherEditor : ModuleRules
 		System.Console.WriteLine("MajorVersion {0} MinorVersion: {1} PatchVersion {2}",Target.Version.MajorVersion,Target.Version.MinorVersion,Target.Version.PatchVersion);
 		bLegacyPublicIncludePaths = false;
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
-        
+		
+		PublicDefinitions.AddRange(new string[]
+		{
+			"CURRENT_VERSION_ID=69"
+		});
 	}
 }

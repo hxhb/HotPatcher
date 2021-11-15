@@ -1,7 +1,8 @@
 #include "SHotPatcher.h"
 #include "Cooker/OriginalCooker/SProjectCookPage.h"
 #include "CreatePatch/SProjectCreatePatchPage.h"
-
+#include "SVersionUpdaterWidget.h"
+#include "Cooker/SProjectCookerPage.h"
 // engine header
 #include "Styling/SlateTypes.h"
 #include "Widgets/Layout/SBorder.h"
@@ -28,9 +29,10 @@
 #include "HAL/FileManager.h"
 #include "Misc/FileHelper.h"
 #include "Json.h"
+
 #include "Misc/SecureHash.h"
 #include "Misc/PackageName.h"
-#include "Cooker/SProjectCookerPage.h"
+
 
 #define LOCTEXT_NAMESPACE "FExportPakModule"
 
@@ -50,26 +52,40 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 			+ SScrollBox::Slot()
 			.Padding(0.0f, 10.0f, 8.0f, 0.0f)
 			[
-				SNew(SGridPanel)
-				.FillColumn(1, 1.0f)
-
-				// cook section
-				+ SGridPanel::Slot(0, 0)
-				.Padding(8.0f, 10.0f, 0.0f, 0.0f)
-				.VAlign(VAlign_Top)
+				SNew(SVerticalBox)
+				+SVerticalBox::Slot()
+				.AutoHeight()
 				[
+					SAssignNew(VersionUpdaterWidget,SVersionUpdaterWidget)
+					.ToolName(FText::FromString(TEXT("HotPatcher")))
+					.DeveloperName(FText::FromString(TEXT("lipengzha")))
+					.DeveloperWebsite(FText::FromString(TEXT("https://imzlp.com")))
+					.UpdateWebsite(FText::FromString(TEXT("https://imzlp.com/posts/17590/")))
+					.CurrentVersion(CURRENT_VERSION_ID)
+				]
+				+SVerticalBox::Slot()
+				.Padding(0,10,0,0)
+				.AutoHeight()
+				[
+					SNew(SGridPanel)
+					.FillColumn(1, 1.0f)
+					// cook section
+					+ SGridPanel::Slot(0, 0)
+					.Padding(8.0f, 10.0f, 0.0f, 0.0f)
+					.VAlign(VAlign_Top)
+					[
 					SNew(STextBlock)
 					.Font(FCoreStyle::GetDefaultFontStyle("Cook", 13))
 					.Text(LOCTEXT("ProjectCookSectionHeader", "Cook"))
-				]
-				+ SGridPanel::Slot(1, 0)
-				.Padding(32.0f, 0.0f, 8.0f, 0.0f)
-				[
+					]
+					+ SGridPanel::Slot(1, 0)
+					.Padding(32.0f, 0.0f, 8.0f, 0.0f)
+					[
 					// SNew(SProjectCookPage,CookModel)
 					SNew(SProjectCookerPage,CookerModel)
-				]
+					]
 
-				+ SGridPanel::Slot(0, 1)
+					+ SGridPanel::Slot(0, 1)
 					.ColumnSpan(3)
 					.Padding(0.0f, 16.0f)
 					[
@@ -77,8 +93,8 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 						.Orientation(Orient_Horizontal)
 					]
 
-				// Patch Version Control section
-				+ SGridPanel::Slot(0, 2)
+					// Patch Version Control section
+					+ SGridPanel::Slot(0, 2)
 					.Padding(8.0f, 0.0f, 0.0f, 0.0f)
 					.VAlign(VAlign_Top)
 					[
@@ -86,11 +102,13 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 						.Font(FCoreStyle::GetDefaultFontStyle("Patch", 13))
 					.Text(LOCTEXT("ProjectPatchSectionHeader", "Patch"))
 					]
-				+ SGridPanel::Slot(1, 2)
+					+ SGridPanel::Slot(1, 2)
 					.Padding(32.0f, 0.0f, 8.0f, 0.0f)
 					[
 						SNew(SProjectCreatePatchPage, CreatePatchModel)
 					]
+				]
+
 			]
 		]
 	];

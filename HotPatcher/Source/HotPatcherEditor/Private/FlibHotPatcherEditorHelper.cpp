@@ -365,7 +365,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 #endif
 	
 	EObjectFlags CookedFlags = RF_Public;
-	if(Cast<UWorld>(Package))
+	if(UWorld::FindWorldInPackage(Package))
 	{
 		CookedFlags = RF_NoFlags;
 	}
