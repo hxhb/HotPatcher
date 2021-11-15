@@ -89,6 +89,13 @@ struct FCookShaderOptions
 	FString ShderLibMountPoint;
 };
 
+UENUM(BlueprintType)
+enum class EAssetRegistryRule : uint8
+{
+	PATCH,
+	PER_CHUNK
+};
+
 USTRUCT(BlueprintType)
 struct FAssetRegistryOptions
 {
@@ -96,12 +103,24 @@ struct FAssetRegistryOptions
 	FAssetRegistryOptions()
 	{
 		AssetRegistryMountPoint = FString::Printf(TEXT("../../../%s/AssetRegistry"),FApp::GetProjectName());
+		AssetRegistryNameRegular = FString::Printf(TEXT("[CHUNK_NAME]_AssetRegistry.bin"));
 	}
+	FString GetAssetRegistryNameRegular(const FString& ChunkName)const
+	{
+		return AssetRegistryNameRegular.Replace(TEXT("[CHUNK_NAME]"),*ChunkName);
+	}
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bSerializeAssetRegistry = false;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString AssetRegistryMountPoint;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EAssetRegistryRule AssetRegistryRule = EAssetRegistryRule::PATCH;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bCustomAssetRegistryName = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bCustomAssetRegistryName"))
+	FString AssetRegistryNameRegular;
 };
 
 
@@ -282,9 +301,9 @@ public:
 		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		bool bIncludePakVersionFile = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))
 		FString PakVersionFileMountPoint;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options")
 		bool bEnableChunk = false;

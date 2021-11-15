@@ -83,6 +83,9 @@ namespace PatchWorker
 	bool ParserChunkWorker(FHotPatcherPatchContext& Context);
 	// setup 7
 	bool CookPatchAssetsWorker(FHotPatcherPatchContext& Context);
+	// setup 7.1
+	bool PatchAssetRegistryWorker(FHotPatcherPatchContext& Context);
+
 	// setup 7/1
 	bool GenerateAssetRegistryData(FHotPatcherPatchContext& Context);
 	// setup 8
@@ -145,6 +148,7 @@ bool UPatcherProxy::DoExport()
 	{
 		this->OnPakListGenerated.AddStatic(&PatchWorker::GenerateBinariesPatch);
 	}
+	PostCookPatchWorkers.Emplace(&PatchWorker::PatchAssetRegistryWorker);
 	PostCookPatchWorkers.Emplace(&PatchWorker::GenerateAssetRegistryData);
 	PostCookPatchWorkers.Emplace(&PatchWorker::GeneratePakProxysWorker);
 	PostCookPatchWorkers.Emplace(&PatchWorker::CreatePakWorker);
@@ -502,7 +506,6 @@ namespace PatchWorker
 
 					FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 						Context.VersionDiff,
-						//Context.NewVersionChunk ,
 						Chunk,
 						TArray<ETargetPlatform>{Platform},
 						Context.GetSettingObject()->GetAssetsDependenciesScanedCaches()
@@ -524,27 +527,6 @@ namespace PatchWorker
 #if WITH_PACKAGE_CONTEXT
 							Context.GetSettingObject()->SavePlatformBulkDataManifest(Platform);
 #endif
-						}
-					}
-					
-					if(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry)
-					{
-						FString ChunkAssetRegistryName = FString::Printf(TEXT("%s_AssetRegistry.bin"),*Chunk.ChunkName);
-						// // Save the generated registry
-						FString AssetRegistryPath = FPaths::Combine(
-							Context.GetSettingObject()->GetSaveAbsPath(),
-							Context.NewVersionChunk.ChunkName,
-							PlatformName,
-							ChunkAssetRegistryName)
-						;
-						if(UFlibHotPatcherEditorHelper::SerializeAssetRegistryByDetails(PlatformName,ChunkAssets,AssetRegistryPath))
-						{
-							FExternFileInfo AssetRegistryFileInfo;
-							AssetRegistryFileInfo.Type = EPatchAssetType::NEW;
-							AssetRegistryFileInfo.FilePath.FilePath = AssetRegistryPath;
-							AssetRegistryFileInfo.MountPath = FPaths::Combine(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().AssetRegistryMountPoint,ChunkAssetRegistryName);
-							Context.GetPatcherDiffInfoByName(PlatformName)->AddExternalFiles.Add(AssetRegistryFileInfo);
-							Context.GetPatcherChunkInfoByName(PlatformName,Chunk.ChunkName)->AddExternFileToPak.Add(AssetRegistryFileInfo);
 						}
 					}
 				
@@ -634,6 +616,71 @@ namespace PatchWorker
 					}
 				}
 			}
+		}
+		return true;
+	};
+	
+	bool PatchAssetRegistryWorker(FHotPatcherPatchContext& Context)
+	{
+		if(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry)
+		{
+			auto SerializeAssetRegistry = [](FHotPatcherPatchContext& Context,const FChunkInfo& Chunk,const FString& PlatformName)
+			{
+				ETargetPlatform Platform;
+				UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
+				FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
+						Context.VersionDiff,
+						Chunk,
+						TArray<ETargetPlatform>{Platform},
+						Context.GetSettingObject()->GetAssetsDependenciesScanedCaches()
+					);
+				TArray<FAssetDetail> ChunkAssets;
+				UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(ChunkAssetsDescrible.Assets,ChunkAssets);
+				
+				if(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry)
+				{
+					FString ChunkAssetRegistryName = Context.GetSettingObject()->GetSerializeAssetRegistryOptions().GetAssetRegistryNameRegular(Chunk.ChunkName);
+					// // Save the generated registry
+					FString AssetRegistryPath = FPaths::Combine(
+						Context.GetSettingObject()->GetSaveAbsPath(),
+						Context.NewVersionChunk.ChunkName,
+						PlatformName,
+						ChunkAssetRegistryName)
+					;
+					if(UFlibHotPatcherEditorHelper::SerializeAssetRegistryByDetails(PlatformName,ChunkAssets,AssetRegistryPath))
+					{
+						FExternFileInfo AssetRegistryFileInfo;
+						AssetRegistryFileInfo.Type = EPatchAssetType::NEW;
+						AssetRegistryFileInfo.FilePath.FilePath = AssetRegistryPath;
+						AssetRegistryFileInfo.MountPath = FPaths::Combine(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().AssetRegistryMountPoint,ChunkAssetRegistryName);
+						Context.GetPatcherDiffInfoByName(PlatformName)->AddExternalFiles.Add(AssetRegistryFileInfo);
+						Context.GetPatcherChunkInfoByName(PlatformName,Chunk.ChunkName)->AddExternFileToPak.Add(AssetRegistryFileInfo);
+					}
+				}
+			};
+			
+			switch(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().AssetRegistryRule)
+			{
+			case EAssetRegistryRule::PATCH:
+				{
+					for(const auto& PlatformName:Context.GetSettingObject()->GetPakTargetPlatformNames())
+					{
+						SerializeAssetRegistry(Context,Context.NewVersionChunk,PlatformName);
+					}
+					break;
+				}
+			case EAssetRegistryRule::PER_CHUNK:
+				{
+					for(const auto& PlatformName:Context.GetSettingObject()->GetPakTargetPlatformNames())
+					{
+						for(const auto& Chunk:Context.PakChunks)
+						{
+							SerializeAssetRegistry(Context,Chunk,PlatformName);
+						}
+					}
+					break;
+				}
+			};
 		}
 		return true;
 	};

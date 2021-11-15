@@ -59,11 +59,10 @@ struct HOTPATCHERRUNTIME_API FHotPatcherPatchContext:public FHotPatcherContext
     GENERATED_USTRUCT_BODY()
     FHotPatcherPatchContext()=default;
     virtual FExportPatchSettings* GetSettingObject(){ return (FExportPatchSettings*)ContextSetting; }
-    
     virtual FString GetTotalTimeRecorderName()const{return TEXT("Generate the patch total time");}
 
-    FORCEINLINE FPatchVersionExternDiff* GetPatcherDiffInfoByName(const FString& PlatformName);
-    FORCEINLINE FPlatformExternAssets* GetPatcherChunkInfoByName(const FString& PlatformName,const FString& ChunkName);
+    FPatchVersionExternDiff* GetPatcherDiffInfoByName(const FString& PlatformName);
+    FPlatformExternAssets* GetPatcherChunkInfoByName(const FString& PlatformName,const FString& ChunkName);
     
     // UPROPERTY(EditAnywhere)
     class UPatcherProxy* PatchProxy;
@@ -106,51 +105,6 @@ struct HOTPATCHERRUNTIME_API FHotPatcherPatchContext:public FHotPatcherContext
 
 
 };
-
-FPatchVersionExternDiff* FHotPatcherPatchContext::GetPatcherDiffInfoByName(const FString& PlatformName)
-{
-    ETargetPlatform Platform;
-    UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
-    // add new file to diff
-    FPatchVersionExternDiff* PatchVersionExternDiff = NULL;
-    {
-        if(!VersionDiff.PlatformExternDiffInfo.Contains(Platform))
-        {
-            FPatchVersionExternDiff AdditionalFiles;
-            VersionDiff.PlatformExternDiffInfo.Add(Platform,AdditionalFiles);
-        }
-        PatchVersionExternDiff = VersionDiff.PlatformExternDiffInfo.Find(Platform);
-    }
-    return PatchVersionExternDiff;
-};
-FPlatformExternAssets* FHotPatcherPatchContext::GetPatcherChunkInfoByName(const FString& PlatformName,const FString& ChunkName)
-{
-    ETargetPlatform Platform;
-    UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
-    FPlatformExternAssets* PlatformExternAssetsPtr = NULL;
-    {
-        for(auto& PakChunk:PakChunks)
-        {
-            if(PakChunk.ChunkName.Equals(ChunkName))
-            {
-                for(auto& PlatfromExternAssetsRef:PakChunk.AddExternAssetsToPlatform)
-                {
-                    if(PlatfromExternAssetsRef.TargetPlatform == Platform)
-                    {
-                        PlatformExternAssetsPtr = &PlatfromExternAssetsRef;
-                    }
-                }
-                if(!PlatformExternAssetsPtr)
-                {
-                    FPlatformExternAssets PlatformExternAssets;
-                    PlatformExternAssets.TargetPlatform = Platform;
-                    PlatformExternAssetsPtr = &(PakChunk.AddExternAssetsToPlatform.Add_GetRef(PlatformExternAssets));
-                }
-            }
-        }
-        return PlatformExternAssetsPtr;
-    }
-}
 
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FHotPatcherReleaseContext:public FHotPatcherContext
