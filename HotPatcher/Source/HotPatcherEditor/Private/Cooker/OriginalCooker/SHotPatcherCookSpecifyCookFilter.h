@@ -1,7 +1,7 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
-#include "Model/FHotPatcherCookModel.h"
+#include "Model/FHotPatcherOriginalCookerModel.h"
 #include "Templates/SharedPointer.h"
 #include "FlibPatchParserHelper.h"
 #include "SpecifyCookFilterSetting.h"
@@ -33,7 +33,7 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCookModel> InCookModel);
+	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherOriginalCookerModel> InCookModel);
 public:
 	virtual TSharedPtr<FJsonObject> SerializeAsJson()const override;
 	virtual void DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)override;
@@ -55,6 +55,6 @@ private:
 
 	USpecifyCookFilterSetting* SpecifyCookFilterSetting;
 
-	TSharedPtr<FHotPatcherCookModel> mCookModel;
+	TSharedPtr<FHotPatcherOriginalCookerModel> mCookModel;
 };
 

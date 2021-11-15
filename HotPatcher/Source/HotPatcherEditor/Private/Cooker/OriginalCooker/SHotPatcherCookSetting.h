@@ -3,7 +3,7 @@
 #pragma once
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Interfaces/ITargetPlatform.h"
-#include "Model/FHotPatcherCookModel.h"
+#include "Model/FHotPatcherOriginalCookerModel.h"
 #include "Templates/SharedPointer.h"
 #include "Widgets/Input/SEditableTextBox.h"
 // project header
@@ -27,7 +27,7 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCookModel> InCookModel);
+	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherOriginalCookerModel> InCookModel);
 public:
 	virtual TSharedPtr<FJsonObject> SerializeAsJson()const override;
 	virtual void DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)override;
@@ -54,7 +54,7 @@ private:
 	/** Holds the map list view. */
 	TSharedPtr<SListView<TSharedPtr<FString> > > SettingListView;
 
-	TSharedPtr<FHotPatcherCookModel> mCookModel;
+	TSharedPtr<FHotPatcherOriginalCookerModel> mCookModel;
 
 	// Extern Cook Setting Param
 	TSharedPtr<SEditableTextBox> ExternSettingTextBox;

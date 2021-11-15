@@ -16,6 +16,7 @@
 #include "Async/Async.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/SecureHash.h"
+#include "Serialization/ArrayWriter.h"
 
 DEFINE_LOG_CATEGORY(LogHotPatcherEditorHelper);
 
@@ -364,7 +365,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 #endif
 	
 	EObjectFlags CookedFlags = RF_Public;
-	if(Cast<UWorld>(Package))
+	if(UWorld::FindWorldInPackage(Package))
 	{
 		CookedFlags = RF_NoFlags;
 	}
@@ -893,7 +894,7 @@ ITargetPlatform* UFlibHotPatcherEditorHelper::GetPlatformByName(const FString& N
 }
 #include "Commandlets/AssetRegistryGenerator.h"
 
-bool UFlibHotPatcherEditorHelper::GeneratorAssetRegistryData(ITargetPlatform* TargetPlatform, const TSet<FName>& CookedPackageNames, const TSet<FName>& IgnorePackageNames, bool
+bool UFlibHotPatcherEditorHelper::GeneratorGlobalAssetRegistryData(ITargetPlatform* TargetPlatform, const TSet<FName>& CookedPackageNames, const TSet<FName>& IgnorePackageNames, bool
                                                              bGenerateStreamingInstallManifest)
 {
 	bool bresult = true;
@@ -1106,7 +1107,59 @@ FChunkAssetDescribe UFlibHotPatcherEditorHelper::DiffChunkByBaseVersionWithPatch
 	return result;
 }
 
+bool UFlibHotPatcherEditorHelper::SerializeAssetRegistryByDetails(const FString& PlatformName,
+	const TArray<FAssetDetail>& AssetDetails, const FString& SavePath)
+{
+	TArray<FString> PackagePaths;
 
+	for(const auto& Detail:AssetDetails)
+	{
+		PackagePaths.AddUnique(Detail.mPackagePath);
+	}
+	return UFlibHotPatcherEditorHelper::SerializeAssetRegistry(PlatformName,PackagePaths,SavePath);
+}
+
+bool UFlibHotPatcherEditorHelper::SerializeAssetRegistry(const FString& PlatformName,
+                                                         const TArray<FString>& PackagePaths, const FString& SavePath)
+{
+	ITargetPlatform* TargetPlatform =  UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
+	FAssetRegistryState State;
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
+					
+	FAssetRegistrySerializationOptions SaveOptions;
+	AssetRegistry.InitializeSerializationOptions(SaveOptions, TargetPlatform->IniPlatformName());
+
+	SaveOptions.bSerializeAssetRegistry = true;
+					
+	AssetRegistry.Tick(-1.0f);
+	AssetRegistry.InitializeTemporaryAssetRegistryState(State, SaveOptions, true);
+	for(const auto& AssetPackagePath:PackagePaths)
+	{
+		FAssetData* AssetData = new FAssetData();
+		if(UFLibAssetManageHelperEx::GetSingleAssetsData(AssetPackagePath,*AssetData))
+		{
+			State.AddAssetData(AssetData);
+		}
+	}
+	// Create runtime registry data
+	FArrayWriter SerializedAssetRegistry;
+	SerializedAssetRegistry.SetFilterEditorOnly(true);
+
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+	bool bStateSave = State.Save(SerializedAssetRegistry, SaveOptions);
+#else
+	bool bStateSave = State.Serialize(SerializedAssetRegistry, SaveOptions);
+#endif
+	bool result = false;
+	// Save the generated registry
+	if(bStateSave && FFileHelper::SaveArrayToFile(SerializedAssetRegistry, *SavePath))
+	{
+		result = true;
+		UE_LOG(LogHotPatcher,Log,TEXT("Serialize %s AssetRegistry"),*SavePath);
+	}
+	return result;
+}
 
 
 FHotPatcherVersion UFlibHotPatcherEditorHelper::MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings)

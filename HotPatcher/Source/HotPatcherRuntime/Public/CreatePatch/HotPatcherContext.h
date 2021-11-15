@@ -7,8 +7,8 @@
 #include "FPakFileInfo.h"
 #include "FExportReleaseSettings.h"
 #include "HotPatcherSettingBase.h"
+#include "Misc/ScopedSlowTask.h"
 #include "CreatePatch/ScopedSlowTaskContext.h"
-
 // engine
 #include "CoreMinimal.h"
 
@@ -51,14 +51,19 @@ public:
     TSharedPtr<TimeRecorder> TotalTimeRecorder;
 };
 
+
+
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FHotPatcherPatchContext:public FHotPatcherContext
 {
     GENERATED_USTRUCT_BODY()
     FHotPatcherPatchContext()=default;
     virtual FExportPatchSettings* GetSettingObject(){ return (FExportPatchSettings*)ContextSetting; }
-    
     virtual FString GetTotalTimeRecorderName()const{return TEXT("Generate the patch total time");}
+
+    FPatchVersionExternDiff* GetPatcherDiffInfoByName(const FString& PlatformName);
+    FPlatformExternAssets* GetPatcherChunkInfoByName(const FString& PlatformName,const FString& ChunkName);
+    
     // UPROPERTY(EditAnywhere)
     class UPatcherProxy* PatchProxy;
     
@@ -97,6 +102,7 @@ struct HOTPATCHERRUNTIME_API FHotPatcherPatchContext:public FHotPatcherContext
         return Keys.Num();
     }
     TMap<FString,TArray<FPakFileInfo>> PakFilesInfoMap;
+
 
 };
 

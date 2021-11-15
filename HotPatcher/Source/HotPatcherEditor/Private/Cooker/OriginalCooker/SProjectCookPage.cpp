@@ -27,7 +27,7 @@ DEFINE_LOG_CATEGORY(LogCookPage);
 /* SProjectCookPage interface
  *****************************************************************************/
 
-void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCookModel> InCookModel)
+void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherOriginalCookerModel> InCookModel)
 {
 	mCookModel = InCookModel;
 	MissionNotifyProay = NewObject<UMissionNotificationProxy>();
@@ -45,42 +45,42 @@ void SProjectCookPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatche
 		SNew(SVerticalBox)
 
 		+ SVerticalBox::Slot()
-		.AutoHeight()
-		[
-			SNew(SHorizontalBox)
-
-			+ SHorizontalBox::Slot()
-			.FillWidth(1.0)
-			.VAlign(VAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(LOCTEXT("WhichProjectToUseText", "How would you like to cook the content?"))
-			]
-			+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.Padding(8.0, 0.0, 0.0, 0.0)
-				[
-					SNew(SButton)
-					.Text(LOCTEXT("ImportConfig", "Import"))
-					.OnClicked(this, &SProjectCookPage::DoImportConfig)
-				]
-			+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.Padding(5.0, 0.0, 0.0, 0.0)
-				[
-					SNew(SButton)
-					.Text(LOCTEXT("ExportConfig", "Export"))
-					.OnClicked(this, &SProjectCookPage::DoExportConfig)
-				]
-			+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.Padding(5.0, 0.0, 0.0, 0.0)
-				[
-					SNew(SButton)
-					.Text(LOCTEXT("ResetConfig", "Reset"))
-					.OnClicked(this, &SProjectCookPage::DoResetConfig)
-				]
-		]
+		// .AutoHeight()
+		// [
+		// 	SNew(SHorizontalBox)
+		//
+		// 	+ SHorizontalBox::Slot()
+		// 	.FillWidth(1.0)
+		// 	.VAlign(VAlign_Center)
+		// 	[
+		// 		SNew(STextBlock)
+		// 		.Text(LOCTEXT("WhichProjectToUseText", "How would you like to cook the content?"))
+		// 	]
+		// 	+ SHorizontalBox::Slot()
+		// 		.AutoWidth()
+		// 		.Padding(8.0, 0.0, 0.0, 0.0)
+		// 		[
+		// 			SNew(SButton)
+		// 			.Text(LOCTEXT("ImportConfig", "Import"))
+		// 			.OnClicked(this, &SProjectCookPage::DoImportConfig)
+		// 		]
+		// 	+ SHorizontalBox::Slot()
+		// 		.AutoWidth()
+		// 		.Padding(5.0, 0.0, 0.0, 0.0)
+		// 		[
+		// 			SNew(SButton)
+		// 			.Text(LOCTEXT("ExportConfig", "Export"))
+		// 			.OnClicked(this, &SProjectCookPage::DoExportConfig)
+		// 		]
+		// 	+ SHorizontalBox::Slot()
+		// 		.AutoWidth()
+		// 		.Padding(5.0, 0.0, 0.0, 0.0)
+		// 		[
+		// 			SNew(SButton)
+		// 			.Text(LOCTEXT("ResetConfig", "Reset"))
+		// 			.OnClicked(this, &SProjectCookPage::DoResetConfig)
+		// 		]
+		// ]
 		+ SVerticalBox::Slot()
 			.AutoHeight()
 			.Padding(0.0, 8.0, 0.0, 0.0)
@@ -231,44 +231,21 @@ namespace FPlatformUtils
 
 FReply SProjectCookPage::DoImportConfig()
 {
-	TArray<FString> SelectedFiles = FPlatformUtils::OpenFileDialog();
-
-	if (!!SelectedFiles.Num())
-	{
-		FString LoadFile = SelectedFiles[0];
-		if (FPaths::FileExists(LoadFile))
-		{
-			FString ReadContent;
-			if (FFileHelper::LoadFileToString(ReadContent, *LoadFile))
-			{
-				DeSerializeFromJsonObj(FPlatformUtils::DeserializeAsJsonObject(ReadContent));
-			}
-		}
-		
-	}
+	ImportConfig();
 	return FReply::Handled();
 }
 
 FReply SProjectCookPage::DoExportConfig() const
 {
-	TArray<FString> SaveFiles = FPlatformUtils::SaveFileDialog();
-	if (!!SaveFiles.Num())
-	{
-		FString SaveToFile = SaveFiles[0].EndsWith(TEXT(".json")) ? SaveFiles[0] : SaveFiles[0].Append(TEXT(".json"));
+	ExportConfig();
 
-		if (FFileHelper::SaveStringToFile(SerializeAsString(), *SaveToFile))
-		{
-			FText Msg = LOCTEXT("SavedCookerConfig", "Successd to Export the Cooker Config.");
-			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveToFile);
-		}
-	}
 
 	return FReply::Handled();
 }
 
 FReply SProjectCookPage::DoResetConfig()
 {
-	Reset();
+	ResetConfig();
 	return FReply::Handled();
 }
 bool SProjectCookPage::CanExecuteCook()const
@@ -363,5 +340,50 @@ void SProjectCookPage::Reset()
 	{
 		SerializableItem->Reset();
 	}
+}
+
+void SProjectCookPage::ImportConfig()
+{
+	SHotPatcherCookerBase::ImportConfig();
+	TArray<FString> SelectedFiles = FPlatformUtils::OpenFileDialog();
+
+	if (!!SelectedFiles.Num())
+	{
+		FString LoadFile = SelectedFiles[0];
+		if (FPaths::FileExists(LoadFile))
+		{
+			FString ReadContent;
+			if (FFileHelper::LoadFileToString(ReadContent, *LoadFile))
+			{
+				DeSerializeFromJsonObj(FPlatformUtils::DeserializeAsJsonObject(ReadContent));
+			}
+		}
+		
+	}
+}
+
+void SProjectCookPage::ExportConfig() const
+{
+	SHotPatcherCookerBase::ExportConfig();
+	TArray<FString> SaveFiles = FPlatformUtils::SaveFileDialog();
+	if (!!SaveFiles.Num())
+	{
+		FString SaveToFile = SaveFiles[0].EndsWith(TEXT(".json")) ? SaveFiles[0] : SaveFiles[0].Append(TEXT(".json"));
+
+		if (FFileHelper::SaveStringToFile(SerializeAsString(), *SaveToFile))
+		{
+			FText Msg = LOCTEXT("SavedCookerConfig", "Successd to Export the Cooker Config.");
+			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveToFile);
+		}
+	}
+}
+
+void SProjectCookPage::ResetConfig()
+{
+	for (const auto& SerializableItem : GetSerializableItems())
+	{
+		SerializableItem->Reset();
+	}
+	SHotPatcherCookerBase::ResetConfig();
 }
 #undef LOCTEXT_NAMESPACE

@@ -105,7 +105,7 @@ public:
 
 	// need add UNREALED_API to FAssetRegistryGenerator
 	// all chunksinfo.csv / pakchunklist.txt / assetregistry.bin
-	static bool GeneratorAssetRegistryData(ITargetPlatform* TargetPlatform, const TSet<FName>&, const TSet<FName>&, bool bGenerateStreamingInstallManifest = true);
+	static bool GeneratorGlobalAssetRegistryData(ITargetPlatform* TargetPlatform, const TSet<FName>&, const TSet<FName>&, bool bGenerateStreamingInstallManifest = true);
 
 	/*
 	* 0x1 Add
@@ -130,6 +130,8 @@ public:
 		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
 	);
 	
+	static bool SerializeAssetRegistryByDetails(const FString& PlatformName,const TArray<FAssetDetail>& AssetDetails,const FString& SavePath);
+	static bool SerializeAssetRegistry(const FString& PlatformName,const TArray<FString>& PackagePaths,const FString& SavePath);
 	
 	static FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings);
 	static FHotPatcherVersion MakeNewReleaseByDiff(const FHotPatcherVersion& InBaseVersion, const FPatchVersionDiff& InDiff, FExportPatchSettings* InPatchSettings);

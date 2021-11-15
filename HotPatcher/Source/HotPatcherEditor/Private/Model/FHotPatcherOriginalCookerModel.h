@@ -16,7 +16,7 @@
 DECLARE_DELEGATE_OneParam(FRequestExSettingsDlg, TArray<FString>&);
 DECLARE_DELEGATE_OneParam(FRequestSpecifyCookFilterDlg, TArray<FDirectoryPath>&);
 
-class FHotPatcherCookModel
+class FHotPatcherOriginalCookerModel
 {
 public:
 
