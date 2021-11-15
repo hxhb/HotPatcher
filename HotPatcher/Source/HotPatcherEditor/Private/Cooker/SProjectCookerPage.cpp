@@ -26,8 +26,8 @@ void SProjectCookerPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatc
 	{
 		FUIAction ByOriginalAction(FExecuteAction::CreateSP(this, &SProjectCookerPage::HandleHotPatcherMenuEntryClicked, EHotPatcherCookActionMode::ByOriginal));
 		PatchModeMenuBuilder.AddMenuEntry(LOCTEXT("ByOriginal", "ByOriginal"), LOCTEXT("OriginalCookerActionHint", "Use single-process Cook Content(UE Default)"), FSlateIcon(), ByOriginalAction);
-		FUIAction ByMultiProcessAction(FExecuteAction::CreateSP(this, &SProjectCookerPage::HandleHotPatcherMenuEntryClicked, EHotPatcherCookActionMode::ByMultiProcess));
-		PatchModeMenuBuilder.AddMenuEntry(LOCTEXT("ByMultiProcess", "ByMultiProcess"), LOCTEXT("MultiCookerActionHint", "Use multi-process Cook Content"), FSlateIcon(), ByMultiProcessAction);
+		// FUIAction ByMultiProcessAction(FExecuteAction::CreateSP(this, &SProjectCookerPage::HandleHotPatcherMenuEntryClicked, EHotPatcherCookActionMode::ByMultiProcess));
+		// PatchModeMenuBuilder.AddMenuEntry(LOCTEXT("ByMultiProcess", "ByMultiProcess"), LOCTEXT("MultiCookerActionHint", "Use multi-process Cook Content"), FSlateIcon(), ByMultiProcessAction);
 	}
 
 	ChildSlot

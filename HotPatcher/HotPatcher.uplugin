@@ -33,11 +33,6 @@
 			"Name": "BinariesPatchFeature",
 			"Type": "Runtime",
 			"LoadingPhase": "PreDefault"
-		},
-		{
-			"Name": "AssetCollector",
-			"Type": "Editor",
-			"LoadingPhase": "PreLoadingScreen"
 		}
 
 	]

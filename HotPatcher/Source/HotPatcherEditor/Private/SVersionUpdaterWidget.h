@@ -4,7 +4,11 @@
 #include "IDetailsView.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Input/Reply.h"
+#include "Interfaces/IHttpRequest.h"
 #include "Widgets/SCompoundWidget.h"
+
+// #define CURRENT_VERSION_ID 68
+// #define REMOTE_VERSION_FILE TEXT("https://imzlp.com/opensource/version.json")
 
 class SVersionUpdaterWidget : public SCompoundWidget
 {
@@ -34,7 +38,7 @@ public:
 	void HyLinkClickEventOpenUpdateWebsite();
 	void HyLinkClickEventOpenDeveloperWebsite();
 
-	FText GetCurrentVersionText() const {return FText::FromString(FString::Printf(TEXT("Current Version: v%d."),GetCurrentVersion()));};
+	FText GetCurrentVersionText() const {return FText::FromString(FString::Printf(TEXT("Current Version v%d."),GetCurrentVersion()));};
 	FText GetToolName() const {return FText::FromString(ToolName);};
 	FText GetDeveloperName() const {return FText::FromString(DeveloperName);};
 	FText GetUpdateWebsite() const {return FText::FromString(UpdateWebsite);};
@@ -42,11 +46,15 @@ public:
 	FText GetDeveloperDescrible() const {return FText::FromString(FString::Printf(TEXT("Developed by %s"),*GetDeveloperName().ToString()));};
 	virtual void SetToolUpdateInfo(const FString& ToolName,const FString& DeveloperName,const FString& DeveloperWebsite,const FString& UpdateWebsite);
 	int32 GetCurrentVersion()const { return CurrentVersion; }
+
+	void OnRequestComplete(FHttpRequestPtr RequestPtr, FHttpResponsePtr ResponsePtr, bool bConnectedSuccessfully);
+	void RequestVersion(const FString& URL);
 private:
 	int32 CurrentVersion;
 	FString ToolName;
 	FString UpdateWebsite;
 	FString DeveloperWebsite;
 	FString DeveloperName;
+	TSharedPtr<SHorizontalBox> UpdateInfoWidget;
 };
 

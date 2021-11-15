@@ -41,6 +41,7 @@ public class HotPatcherEditor : ModuleRules
                 "DesktopPlatform",
                 "Projects",
                 "Settings",
+                "HTTP",
                 "AssetRegistry",
                 "AssetManagerEx",
                 "PakFileUtilities",
@@ -145,7 +146,8 @@ public class HotPatcherEditor : ModuleRules
 		
 		PublicDefinitions.AddRange(new string[]
 		{
-			"CURRENT_VERSION_ID=69"
+			"CURRENT_VERSION_ID=69",
+			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
 		});
 	}
 }

@@ -8,8 +8,11 @@
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "EditorStyleSet.h"
+#include "HttpModule.h"
 #include "Misc/FileHelper.h"
 #include "Json.h"
+#include "Interfaces/IHttpRequest.h"
+#include "Interfaces/IHttpResponse.h"
 
 #define LOCTEXT_NAMESPACE "VersionUpdaterWidget"
 
@@ -22,6 +25,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 		InArgs._UpdateWebsite.Get().ToString()
 		);
 	CurrentVersion = InArgs._CurrentVersion.Get();
+	
 	ChildSlot
 	[
 		SNew(SBorder)
@@ -57,8 +61,19 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 					.AutoHeight()
 					.Padding(2, 4, 2, 4)
 					[
-						SNew(STextBlock)
-						.Text_Raw(this,&SVersionUpdaterWidget::GetToolName)
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						[
+							SNew(SHyperlink)
+							.Text_Raw(this,&SVersionUpdaterWidget::GetToolName)
+							.OnNavigate(this, &SVersionUpdaterWidget::HyLinkClickEventOpenUpdateWebsite)
+						]
+						+ SHorizontalBox::Slot()
+						.FillWidth(1.0)
+						[
+							SNew(SOverlay)
+						]
 					]
 					+ SVerticalBox::Slot()
 						.AutoHeight()
@@ -75,11 +90,28 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 							+ SHorizontalBox::Slot()
 							.AutoWidth()
 							[
-								SNew(SHyperlink)
-								.Text(LOCTEXT("ToolsUpdaterInfo", "A new version is avaliable"))
-								.OnNavigate(this, &SVersionUpdaterWidget::HyLinkClickEventOpenUpdateWebsite)
+								SAssignNew(UpdateInfoWidget,SHorizontalBox)
+								.Visibility(EVisibility::Collapsed)
+								+ SHorizontalBox::Slot()
+								.AutoWidth()
+								[
+									SNew(SBox)
+									.WidthOverride(18)
+									.HeightOverride(18)
+									[
+										SNew(SImage)
+										.Image(FEditorStyle::GetBrush("Sequencer.SpawnableIconOverlay"))
+									]
+								]
+								+ SHorizontalBox::Slot()
+								.Padding(2,0,0,0)
+								.AutoWidth()
+								[
+									SNew(SHyperlink)
+									.Text(LOCTEXT("ToolsUpdaterInfo", "A new version is avaliable"))
+									.OnNavigate(this, &SVersionUpdaterWidget::HyLinkClickEventOpenUpdateWebsite)
+								]
 							]
-							
 						]
 				]
 			]
@@ -119,6 +151,52 @@ void SVersionUpdaterWidget::SetToolUpdateInfo(const FString& InToolName, const F
 	DeveloperName = InDeveloperName;
 	DeveloperWebsite = InDeveloperWebsite;
 	UpdateWebsite = InUpdateWebsite;
+}
+
+DEFINE_LOG_CATEGORY_STATIC(LogVersionUpdater,All,All);
+
+void SVersionUpdaterWidget::OnRequestComplete(FHttpRequestPtr RequestPtr, FHttpResponsePtr ResponsePtr, bool bConnectedSuccessfully)
+{
+	TArray<uint8> Array = ResponsePtr->GetContent();
+	FString Result = FString::Printf(TEXT("%s"), UTF8_TO_TCHAR(reinterpret_cast<const char*>(Array.GetData())));
+	// UE_LOG(LogVersionUpdater, Log, TEXT("%s"),*Result);
+	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(Result);
+	TSharedPtr<FJsonObject> JsonObject;
+	if (FJsonSerializer::Deserialize(JsonReader, JsonObject))
+	{
+		TArray<FString> ToolNames;
+		if(JsonObject->TryGetStringArrayField(TEXT("Tools"),ToolNames))
+		{
+			if(ToolNames.Contains(GetToolName().ToString()))
+			{
+				const TSharedPtr<FJsonObject>* ToolJsonObject;
+				if(JsonObject->TryGetObjectField(GetToolName().ToString(),ToolJsonObject))
+				{
+					int32 latstVersion = ToolJsonObject->Get()->GetIntegerField(TEXT("Version"));
+					FString Developer = ToolJsonObject->Get()->GetStringField(TEXT("Author"));
+					FString UpdateURL = ToolJsonObject->Get()->GetStringField(TEXT("URL"));
+					FString Website = ToolJsonObject->Get()->GetStringField(TEXT("Website"));
+					SetToolUpdateInfo(GetToolName().ToString(),Developer,Website,UpdateURL);
+					if(CurrentVersion < latstVersion)
+					{
+						UpdateInfoWidget->SetVisibility(EVisibility::Visible);
+					}
+				}
+			}
+		}
+	}
+}
+
+void SVersionUpdaterWidget::RequestVersion(const FString& URL)
+{
+	TSharedRef<IHttpRequest,ESPMode::ThreadSafe> HttpHeadRequest = FHttpModule::Get().CreateRequest();
+	HttpHeadRequest->SetURL(URL);
+	HttpHeadRequest->SetVerb(TEXT("GET"));
+	HttpHeadRequest->OnProcessRequestComplete().BindRaw(this,&SVersionUpdaterWidget::OnRequestComplete);
+	if (HttpHeadRequest->ProcessRequest())
+	{
+		UE_LOG(LogVersionUpdater, Log, TEXT("Request %s Version."),*GetToolName().ToString());
+	}
 }
 
 #undef LOCTEXT_NAMESPACE
