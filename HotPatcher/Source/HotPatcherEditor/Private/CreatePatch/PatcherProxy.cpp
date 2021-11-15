@@ -522,46 +522,16 @@ namespace PatchWorker
 #endif
 					}
 				}
-				if(Context.GetSettingObject()->bSerializeAssetRegistry)
+				if(Context.GetSettingObject()->IsSerializeAssetRegistry())
 				{
-					ITargetPlatform* TargetPlatform =  UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
-					FAssetRegistryState State;
-					FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-					IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
-					
-					FAssetRegistrySerializationOptions SaveOptions;
-					AssetRegistry.InitializeSerializationOptions(SaveOptions, TargetPlatform->IniPlatformName());
-
-					SaveOptions.bSerializeAssetRegistry = true;
-					
-					AssetRegistry.Tick(-1.0f);
-					AssetRegistry.InitializeTemporaryAssetRegistryState(State, SaveOptions, true);
-					for(const auto& Asset:ChunkAssets)
-					{
-						FAssetData* AssetData = new FAssetData();
-						if(UFLibAssetManageHelperEx::GetSingleAssetsData(Asset.mPackagePath,*AssetData))
-						{
-							State.AddAssetData(AssetData);
-						}
-					}
-					// Create runtime registry data
-					FArrayWriter SerializedAssetRegistry;
-					SerializedAssetRegistry.SetFilterEditorOnly(true);
-					
-					State.Save(SerializedAssetRegistry, SaveOptions);
-
-					// Save the generated registry
-					FString PlatformSandboxPath = FPaths::Combine(
+					// // Save the generated registry
+					FString AssetRegistryPath = FPaths::Combine(
 						Context.GetSettingObject()->GetSaveAbsPath(),
 						Context.NewVersionChunk.ChunkName,
 						PlatformName,
 						FString::Printf(TEXT("%s_AssetRegistry.bin"),*Context.NewVersionChunk.ChunkName))
 					;
-					
-					if(FFileHelper::SaveArrayToFile(SerializedAssetRegistry, *PlatformSandboxPath))
-					{
-						UE_LOG(LogHotPatcher,Log,TEXT("Serialize %s AssetRegistry"),*PlatformSandboxPath);
-					}
+					UFlibHotPatcherEditorHelper::SerializeAssetRegistryByDetails(PlatformName,ChunkAssets,AssetRegistryPath);
 				}
 				
 				if(Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
@@ -623,37 +593,53 @@ namespace PatchWorker
 					FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,PlatformName);
 					TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath);
 
-					ETargetPlatform Platform;
-					UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
 					if(Context.PakChunks.Num())
 					{
-						// add new file to diff
-						FPatchVersionExternDiff* PatchVersionExternDiff = NULL;
+						auto GetPatcherDiffInfoByName = [](FHotPatcherPatchContext& Context,const FString& PlatformName)
 						{
-							if(!Context.VersionDiff.PlatformExternDiffInfo.Contains(Platform))
+							ETargetPlatform Platform;
+							UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
+							// add new file to diff
+							FPatchVersionExternDiff* PatchVersionExternDiff = NULL;
 							{
-								FPatchVersionExternDiff AdditionalFiles;
-								Context.VersionDiff.PlatformExternDiffInfo.Add(Platform,AdditionalFiles);
-							}
-							PatchVersionExternDiff = Context.VersionDiff.PlatformExternDiffInfo.Find(Platform);
-						}
-						
-						FPlatformExternAssets* PlatformExternAssetsPtr = NULL;
-						{
-							for(auto& PlatfromExternAssetsRef:Context.PakChunks[0].AddExternAssetsToPlatform)
-							{
-								if(PlatfromExternAssetsRef.TargetPlatform == Platform)
+								if(!Context.VersionDiff.PlatformExternDiffInfo.Contains(Platform))
 								{
-									PlatformExternAssetsPtr = &PlatfromExternAssetsRef;
+									FPatchVersionExternDiff AdditionalFiles;
+									Context.VersionDiff.PlatformExternDiffInfo.Add(Platform,AdditionalFiles);
 								}
+								PatchVersionExternDiff = Context.VersionDiff.PlatformExternDiffInfo.Find(Platform);
 							}
-							if(!PlatformExternAssetsPtr)
+							return PatchVersionExternDiff;
+						};
+						auto GetPatcherChunkInfoByName = [](FHotPatcherPatchContext& Context,const FString& PlatformName,const FString& ChunkName)
+						{
+							ETargetPlatform Platform;
+							UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
+							FPlatformExternAssets* PlatformExternAssetsPtr = NULL;
 							{
-								FPlatformExternAssets PlatformExternAssets;
-								PlatformExternAssets.TargetPlatform = Platform;
-								PlatformExternAssetsPtr = &(Context.PakChunks[0].AddExternAssetsToPlatform.Add_GetRef(PlatformExternAssets));
+								for(auto& PakChunk:Context.PakChunks)
+								{
+									if(PakChunk.ChunkName.Equals(ChunkName))
+									{
+										for(auto& PlatfromExternAssetsRef:PakChunk.AddExternAssetsToPlatform)
+										{
+											if(PlatfromExternAssetsRef.TargetPlatform == Platform)
+											{
+												PlatformExternAssetsPtr = &PlatfromExternAssetsRef;
+											}
+										}
+										if(!PlatformExternAssetsPtr)
+										{
+											FPlatformExternAssets PlatformExternAssets;
+											PlatformExternAssets.TargetPlatform = Platform;
+											PlatformExternAssetsPtr = &(Context.PakChunks[0].AddExternAssetsToPlatform.Add_GetRef(PlatformExternAssets));
+										}
+									}
+								}
+								return PlatformExternAssetsPtr;
 							}
-						}
+						};
+						
 						for(const auto& FilePath:FoundShaderLibs)
 						{
 							if(!Context.GetSettingObject()->GetCookShaderOptions().bNativeShaderToPak &&
@@ -668,8 +654,8 @@ namespace PatchWorker
 							AddShaderLib.Type = EPatchAssetType::NEW;
 							AddShaderLib.FilePath.FilePath = FPaths::ConvertRelativePathToFull(FilePath);
 							AddShaderLib.MountPath = FPaths::Combine(Context.GetSettingObject()->CookShaderOptions.ShderLibMountPoint,FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion));
-							PatchVersionExternDiff->AddExternalFiles.Add(AddShaderLib);
-							PlatformExternAssetsPtr->AddExternFileToPak.Add(AddShaderLib);
+							GetPatcherDiffInfoByName(Context,PlatformName)->AddExternalFiles.Add(AddShaderLib);
+							GetPatcherChunkInfoByName(Context,PlatformName,Context.CurrentVersion.VersionId)->AddExternFileToPak.Add(AddShaderLib);
 						}
 					}
 				}

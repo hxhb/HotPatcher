@@ -130,6 +130,8 @@ public:
 		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
 	);
 	
+	static bool SerializeAssetRegistryByDetails(const FString& PlatformName,const TArray<FAssetDetail>& AssetDetails,const FString& SavePath);
+	static bool SerializeAssetRegistry(const FString& PlatformName,const TArray<FString>& PackagePaths,const FString& SavePath);
 	
 	static FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings);
 	static FHotPatcherVersion MakeNewReleaseByDiff(const FHotPatcherVersion& InBaseVersion, const FPatchVersionDiff& InDiff, FExportPatchSettings* InPatchSettings);

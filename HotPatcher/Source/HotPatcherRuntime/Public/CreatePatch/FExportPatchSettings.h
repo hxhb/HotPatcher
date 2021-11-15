@@ -196,6 +196,7 @@ public:
 	FORCEINLINE FBinariesPatchConfig GetBinariesPatchConfig()const{ return BinariesPatchConfig; }
 	FORCEINLINE bool IsSharedShaderLibrary()const { return GetCookShaderOptions().bSharedShaderLibrary; }
 	FORCEINLINE FCookShaderOptions GetCookShaderOptions()const {return CookShaderOptions;}
+	FORCEINLINE bool IsSerializeAssetRegistry()const{return bSerializeAssetRegistry;}
 	FString GetShaderLibraryName()const;
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
@@ -287,6 +288,8 @@ public:
 		bool bCookPatchAssets = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "bCookPatchAssets"))
 		FCookShaderOptions CookShaderOptions;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "bCookPatchAssets"))
+		bool bSerializeAssetRegistry = true;
 	// support UE4.26 later
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "!bCookPatchAssets"))
 		FIoStoreSettings IoStoreSettings;
@@ -328,8 +331,7 @@ public:
 		bool bStorageDiffAnalysisResults = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bStorageAssetDependencies = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-	bool bSerializeAssetRegistry = true;
+
 
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
 		bool bEnableMultiThread = false;
