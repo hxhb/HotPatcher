@@ -57,7 +57,7 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 				.AutoHeight()
 				[
 					SAssignNew(VersionUpdaterWidget,SVersionUpdaterWidget)
-					.ToolName(FText::FromString(TEXT("HotPatcher")))
+					.ToolName(FText::FromString(TOOL_NAME))
 					.DeveloperName(FText::FromString(TEXT("lipengzha")))
 					.DeveloperWebsite(FText::FromString(TEXT("https://imzlp.com")))
 					.UpdateWebsite(FText::FromString(TEXT("https://imzlp.com/posts/17590/")))
