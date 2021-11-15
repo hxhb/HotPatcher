@@ -19,6 +19,8 @@ public:
     {
         Setting = InSetting;
     }
+    virtual void Init(){};
+    virtual void Shutdown(){};
     FORCEINLINE virtual bool DoExport(){return false;};
     FORCEINLINE virtual FHotPatcherSettingBase* GetSettingObject(){return Setting;};
     

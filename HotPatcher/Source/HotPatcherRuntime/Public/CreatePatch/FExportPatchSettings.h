@@ -243,7 +243,7 @@ public:
 
 	// require HDiffPatchUE plugin
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
-		bool bBinariesPatch;
+		bool bBinariesPatch = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition="bBinariesPatch"))
 		FBinariesPatchConfig BinariesPatchConfig;
 	

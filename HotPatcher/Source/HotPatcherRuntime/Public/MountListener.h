@@ -32,7 +32,7 @@ public:
     UFUNCTION(BlueprintCallable)
     void Init();   
 
-    void OnMountPak(const TCHAR* PakFileName, int32 ChunkID);
+    void OnMountPak(const TCHAR* PakFileName, int32 ChunkID = 0);
 
     virtual bool OnUnMountPak(const FString& Pak);
 
