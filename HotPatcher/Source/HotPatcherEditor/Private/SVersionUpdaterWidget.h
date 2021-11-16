@@ -58,6 +58,6 @@ private:
 	FString DeveloperName;
 	TSharedPtr<SHorizontalBox> UpdateInfoWidget;
 	int32 LatstVersion = 0;
-	TSharedPtr<IHttpRequest,ESPMode::ThreadSafe> HttpHeadRequest;
+	FHttpRequestPtr HttpHeadRequest;
 };
 
