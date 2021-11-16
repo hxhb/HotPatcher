@@ -143,6 +143,18 @@ public class HotPatcherEditor : ModuleRules
 		System.Console.WriteLine("MajorVersion {0} MinorVersion: {1} PatchVersion {2}",Target.Version.MajorVersion,Target.Version.MinorVersion,Target.Version.PatchVersion);
 		bLegacyPublicIncludePaths = false;
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
+
+		// Game feature
+		bool bEnableGameFeature = true;
+		if (bEnableGameFeature && (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 26))
+		{
+			PublicDefinitions.Add("ENGINE_GAME_FEATURE");
+			PublicDependencyModuleNames.AddRange(new string[]
+			{
+				// "GameFeatures",
+				// "ModularGameplay",
+			});
+		}
 		
 		PublicDefinitions.AddRange(new string[]
 		{

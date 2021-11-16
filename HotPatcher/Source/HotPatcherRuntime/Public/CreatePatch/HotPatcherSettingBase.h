@@ -44,7 +44,7 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase
     virtual ~FHotPatcherSettingBase(){}
 public:
     // backup current project Cooked/PLATFORM/PROJECTNAME/Metadata directory
-    UPROPERTY(EditAnywhere, Category = "SaveTo")
+    // UPROPERTY(EditAnywhere, Category = "SaveTo")
     bool bBackupMetadata = false;
     UPROPERTY(EditAnywhere, Category = "SaveTo")
     bool bStorageConfig = true;

@@ -28,6 +28,7 @@
 #include "JsonObjectConverter.h"
 #include "Misc/CommandLine.h"
 #include "FPlatformExternAssets.h"
+#include "AssetRegistry/AssetRegistryState.h"
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -295,12 +296,6 @@ public:
 	}
 #endif
 	static FString MountPathToRelativePath(const FString& InMountPath);
-
-	// reload Global&Project shaderbytecode
-	UFUNCTION(BlueprintCallable)
-		static void ReloadShaderbytecode();
-	UFUNCTION(BlueprintCallable,Exec)
-        static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir);	
 
 	static FString SerializeAssetsDependencyAsJsonString(const TArray<FHotPatcherAssetDependency>& InAssetsDependency);
 	static bool SerializePlatformPakInfoToString(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, FString& OutString);

@@ -19,8 +19,10 @@
 #include "HAL/FileManager.h"
 #include "Engine/EngineTypes.h"
 #include "JsonObjectConverter.h"
+#include "AssetRegistry/AssetRegistryState.h"
 #include "Misc/Paths.h"
 #include "Kismet/KismetStringLibrary.h"
+#include "Serialization/LargeMemoryReader.h"
 
 TArray<FString> UFlibPatchParserHelper::GetAvailableMaps(FString GameName, bool IncludeEngineMaps, bool IncludePluginMaps, bool Sorted)
 {
@@ -1594,31 +1596,6 @@ FString UFlibPatchParserHelper::MountPathToRelativePath(const FString& InMountPa
 	FString extersion;
 	FPaths::Split(RelativePath, Path, filename, extersion);
 	return Path/filename;
-}
-
-
-#include "ShaderCodeLibrary.h"
-
-void UFlibPatchParserHelper::ReloadShaderbytecode()
-{
-	FShaderCodeLibrary::OpenLibrary("Global", FPaths::ProjectContentDir());
-	FShaderCodeLibrary::OpenLibrary(FApp::GetProjectName(), FPaths::ProjectContentDir());
-}
-
-bool UFlibPatchParserHelper::LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir)
-{
-	bool result = true;
-	FString FinalLibraryDir = LibraryDir;
-#if PLATFORM_IOS
-	FinalLibraryDir = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*LibraryDir);;
-#endif
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >= 23
-	result = FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
-#else
-	FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
-#endif
-	UE_LOG(LogHotPatcher,Log,TEXT("Load Shader bytecode %s,Dir: %s, status: %s"),*LibraryName,*FinalLibraryDir,result?TEXT("True"):TEXT("False"));
-	return result;
 }
 
 FString UFlibPatchParserHelper::SerializeAssetsDependencyAsJsonString(
