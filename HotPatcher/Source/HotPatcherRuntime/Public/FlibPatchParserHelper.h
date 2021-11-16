@@ -28,7 +28,7 @@
 #include "JsonObjectConverter.h"
 #include "Misc/CommandLine.h"
 #include "FPlatformExternAssets.h"
-#include "AssetRegistry/AssetRegistryState.h"
+#include "AssetRegistryState.h"
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"

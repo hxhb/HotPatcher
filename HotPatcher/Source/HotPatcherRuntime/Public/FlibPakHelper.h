@@ -10,7 +10,7 @@
 #include "Templates/SharedPointer.h"
 #include "Dom/JsonObject.h"
 #include "IPlatformFilePak.h"
-#include "AssetRegistry/AssetRegistryState.h"
+#include "AssetRegistryState.h"
 #include "FlibPakHelper.generated.h"
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >=26
@@ -92,8 +92,8 @@ public:
 		static void ReloadShaderbytecode();
 	UFUNCTION(BlueprintCallable,Exec)
 		static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir);	
-	
-	static bool LoadAssetRegistryToState(const TCHAR* Path, const FAssetRegistryLoadOptions& Options, FAssetRegistryState& Out);
+
+	static bool LoadAssetRegistryToState(const TCHAR* Path,FAssetRegistryState& Out);
 	UFUNCTION(BlueprintCallable,Exec)
 		static bool LoadAssetRegistry(const FString& LibraryName, const FString& LibraryDir);
 	

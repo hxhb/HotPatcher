@@ -19,7 +19,7 @@
 #include "HAL/FileManager.h"
 #include "Engine/EngineTypes.h"
 #include "JsonObjectConverter.h"
-#include "AssetRegistry/AssetRegistryState.h"
+#include "AssetRegistryState.h"
 #include "Misc/Paths.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "Serialization/LargeMemoryReader.h"
