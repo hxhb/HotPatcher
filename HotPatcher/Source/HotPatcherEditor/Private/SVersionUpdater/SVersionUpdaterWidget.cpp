@@ -21,7 +21,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 	static bool GBrushInited = false;
 	if(!GBrushInited)
 	{
-		FVersionUpdaterStyle::Initialize();
+		FVersionUpdaterStyle::Initialize(FString::Printf(TEXT("%s_UpdaterStyle"),TOOL_NAME));
 		FVersionUpdaterStyle::ReloadTextures();
 		GBrushInited = true;
 	}

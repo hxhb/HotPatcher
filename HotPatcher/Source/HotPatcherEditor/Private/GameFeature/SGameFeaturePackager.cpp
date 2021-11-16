@@ -104,6 +104,7 @@ void SHotPatcherGameFeaturePackager::ResetConfig()
 // #endif
 void SHotPatcherGameFeaturePackager::DoGenerate()
 {
+
 #if ENGINE_GAME_FEATURE
 	if(GetConfigSettings()->bAutoLoadFeature)
 	{
@@ -116,8 +117,17 @@ void SHotPatcherGameFeaturePackager::DoGenerate()
 			FString uPluginFile = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),FString::Printf(TEXT("Plugins/GameFeatures/%s/%s.uplugin"),*FeatureName,*FeatureName)));
 			if(FPaths::FileExists(uPluginFile))
 			{
-				UKismetSystemLibrary::ExecuteConsoleCommand(World,FString::Printf(TEXT("LoadGameFeaturePlugin %s"),*FeatureName));
-				UKismetSystemLibrary::ExecuteConsoleCommand(World,FString::Printf(TEXT("DeactivateGameFeaturePlugin %s"),*FeatureName));
+				if(IPluginManager::Get().FindPlugin(TEXT("GameFeatures")).IsValid() &&
+				IPluginManager::Get().FindPlugin(TEXT("ModularGameplay")).IsValid() 
+					)
+				{
+					UKismetSystemLibrary::ExecuteConsoleCommand(World,FString::Printf(TEXT("LoadGameFeaturePlugin %s"),*FeatureName));
+					UKismetSystemLibrary::ExecuteConsoleCommand(World,FString::Printf(TEXT("DeactivateGameFeaturePlugin %s"),*FeatureName));
+				}
+				else
+				{
+					UE_LOG(LogHotPatcher,Warning,TEXT("GameFeatures or ModularGameplay is not Enabled!"));
+				}
 				if(IPluginManager::Get().FindPlugin(FeatureName))
 				{
 					FeaturePackager();
