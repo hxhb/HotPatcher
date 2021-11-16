@@ -7,11 +7,11 @@
 
 TSharedPtr< FSlateStyleSet > FVersionUpdaterStyle::StyleInstance = NULL;
 
-void FVersionUpdaterStyle::Initialize()
+void FVersionUpdaterStyle::Initialize(const FString& Name)
 {
 	if (!StyleInstance.IsValid())
 	{
-		StyleInstance = Create();
+		StyleInstance = Create(Name);
 		FSlateStyleRegistry::RegisterSlateStyle(*StyleInstance);
 	}
 }
@@ -40,9 +40,9 @@ const FVector2D Updater_Icon16x16(16.0f, 16.0f);
 const FVector2D Updater_Icon20x20(20.0f, 20.0f);
 const FVector2D Updater_Icon40x40(40.0f, 40.0f);
 
-TSharedRef< FSlateStyleSet > FVersionUpdaterStyle::Create()
+TSharedRef< FSlateStyleSet > FVersionUpdaterStyle::Create(const FString& Name)
 {
-	TSharedRef< FSlateStyleSet > Style = MakeShareable(new FSlateStyleSet("VersionUpdaterStyle"));
+	TSharedRef< FSlateStyleSet > Style = MakeShareable(new FSlateStyleSet(*Name));
 	Style->SetContentRoot( FPaths::EngineContentDir() / TEXT("Editor/Slate") );
 	Style->SetCoreContentRoot(FPaths::EngineContentDir() / TEXT("Slate"));
 

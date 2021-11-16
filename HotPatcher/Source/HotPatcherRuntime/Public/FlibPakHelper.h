@@ -10,6 +10,7 @@
 #include "Templates/SharedPointer.h"
 #include "Dom/JsonObject.h"
 #include "IPlatformFilePak.h"
+#include "AssetRegistryState.h"
 #include "FlibPakHelper.generated.h"
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >=26
@@ -70,8 +71,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 		static int32 GetPakOrderByPakPath(const FString& PakFile);
 
-	UFUNCTION(BlueprintCallable)
-		static bool LoadAssetRegistry(const FString& InAssetRegistryBin);
 
 	// Default Load FApp::GetProjectName() on Enging launching
 	UFUNCTION(BlueprintCallable)
@@ -85,4 +84,19 @@ public:
 #else
 	static TSharedPtr<FPakFile> GetPakFileIns(const FString& InPak, const FString& AESKey);
 #endif
+
+public:
+		
+	// reload Global&Project shaderbytecode
+	UFUNCTION(BlueprintCallable)
+		static void ReloadShaderbytecode();
+	UFUNCTION(BlueprintCallable,Exec)
+		static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir);	
+	UFUNCTION(BlueprintCallable,Exec)
+		static void CloseShaderbytecode(const FString& LibraryName);
+	
+	static bool LoadAssetRegistryToState(const TCHAR* Path,FAssetRegistryState& Out);
+	UFUNCTION(BlueprintCallable,Exec)
+		static bool LoadAssetRegistry(const FString& LibraryName, const FString& LibraryDir);
+	
 };

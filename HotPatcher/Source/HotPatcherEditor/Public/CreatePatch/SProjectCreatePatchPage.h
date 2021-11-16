@@ -40,6 +40,7 @@ public:
 	EVisibility HandleExportPatchVisibility() const;
 	EVisibility HandleExportReleaseVisibility() const;
 	EVisibility HandleExportShaderPatchVisibility() const;
+	EVisibility HandleExportGameFeatureVisibility() const;
 
 	EVisibility HandleOperatorConfigVisibility()const;
 	EVisibility HandleImportProjectConfigVisibility()const;
@@ -55,4 +56,5 @@ private:
 	TSharedPtr<SHotPatcherPatchableBase> mPatch;
 	TSharedPtr<SHotPatcherPatchableBase> mRelease;
 	TSharedPtr<SHotPatcherPatchableBase> mShaderPatch;
+	TSharedPtr<SHotPatcherPatchableBase> mGameFeature;
 };

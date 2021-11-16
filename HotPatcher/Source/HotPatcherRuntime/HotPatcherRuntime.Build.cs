@@ -76,6 +76,7 @@ public class HotPatcherRuntime : ModuleRules
 			PrivateDependencyModuleNames.Add("ShaderCore");
 		}
 		bLegacyPublicIncludePaths = false;
+
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
 	}
 }

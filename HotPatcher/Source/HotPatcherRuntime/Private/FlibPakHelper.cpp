@@ -19,8 +19,11 @@
 #include "IPlatformFilePak.h"
 #include "ShaderPipelineCache.h"
 #include "RHI.h"
+#include "AssetRegistryState.h"
 #include "Misc/Base64.h"
 #include "Misc/CoreDelegates.h"
+#include "Serialization/LargeMemoryReader.h"
+#include "ShaderCodeLibrary.h"
 
 void UFlibPakHelper::ExecMountPak(FString InPakPath, int32 InPakOrder, FString InMountPoint)
 {
@@ -399,22 +402,92 @@ int32 UFlibPakHelper::GetPakOrderByPakPath(const FString& PakFile)
 	return PakOrder;
 }
 
-bool UFlibPakHelper::LoadAssetRegistry(const FString& InAssetRegistryBin)
+void UFlibPakHelper::ReloadShaderbytecode()
 {
-	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
-	bool bSuccess = false;
-	FArrayReader SerializedAssetData;
-	FString AssetRegistryBinPath = InAssetRegistryBin;
-	UE_LOG(LogHotPatcher,Log,TEXT("Load AssetRegistry %s"),*AssetRegistryBinPath);
-	if (IFileManager::Get().FileExists(*AssetRegistryBinPath) && FFileHelper::LoadFileToArray(SerializedAssetData, *AssetRegistryBinPath))
-	{
-		SerializedAssetData.Seek(0);
-		AssetRegistry.Serialize(SerializedAssetData);
-		bSuccess = true;
-	}
-	return bSuccess;
+	FShaderCodeLibrary::OpenLibrary("Global", FPaths::ProjectContentDir());
+	FShaderCodeLibrary::OpenLibrary(FApp::GetProjectName(), FPaths::ProjectContentDir());
 }
+
+
+bool UFlibPakHelper::LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir)
+{
+	bool result = true;
+	FString FinalLibraryDir = LibraryDir;
+#if PLATFORM_IOS
+	FinalLibraryDir = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*LibraryDir);;
+#endif
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >= 23
+	result = FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
+#else
+	FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
+#endif
+	UE_LOG(LogHotPatcher,Log,TEXT("Load Shader bytecode %s,Dir: %s, status: %s"),*LibraryName,*FinalLibraryDir,result?TEXT("True"):TEXT("False"));
+	return result;
+}
+
+void UFlibPakHelper::CloseShaderbytecode(const FString& LibraryName)
+{
+	FShaderCodeLibrary::CloseLibrary(LibraryName);
+}
+
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+bool UFlibPakHelper::LoadAssetRegistryToState(const TCHAR* Path,FAssetRegistryState& Out)
+{
+	check(Path);
+
+	TUniquePtr<FArchive> FileReader(IFileManager::Get().CreateFileReader(Path));
+	if (FileReader)
+	{
+		// It's faster to load the whole file into memory on a Gen5 console
+		TArray64<uint8> Data;
+		Data.SetNumUninitialized(FileReader->TotalSize());
+		FileReader->Serialize(Data.GetData(), Data.Num());
+		check(!FileReader->IsError());
+		
+		FLargeMemoryReader MemoryReader(Data.GetData(), Data.Num());
+		return Out.Load(MemoryReader, FAssetRegistryLoadOptions{});
+	}
+
+	return false;
+}
+#else
+bool UFlibPakHelper::LoadAssetRegistryToState(const TCHAR* Path, FAssetRegistryState& Out)
+{
+	bool bStatus = false;
+	FString AssetRegistryPath = Path;
+	FArrayReader SerializedAssetData;
+	// FString AssetRegistryBinPath = InAssetRegistryBin;
+	// UE_LOG(LogHotPatcher,Log,TEXT("Load AssetRegistry %s"),*AssetRegistryBinPath);
+	if (IFileManager::Get().FileExists(*AssetRegistryPath) && FFileHelper::LoadFileToArray(SerializedAssetData, *AssetRegistryPath))
+	{
+		FAssetRegistryState State;
+		FAssetRegistrySerializationOptions SerializationOptions;
+		SerializationOptions.bSerializeAssetRegistry = true;
+		bStatus = State.Serialize(SerializedAssetData, SerializationOptions);
+	}
+	return bStatus;
+}
+#endif
+
+bool UFlibPakHelper::LoadAssetRegistry(const FString& LibraryName, const FString& LibraryDir)
+{
+	bool bStatus = false;
+	FString AssetRegistryPath = FPaths::Combine(LibraryDir,FString::Printf(TEXT("%s.bin"),*LibraryName));
+	UE_LOG(LogHotPatcher,Log,TEXT("Load Asset Registry %s"),*AssetRegistryPath);
+	if(FPaths::FileExists(AssetRegistryPath))
+	{
+		FAssetRegistryState State;
+		if(LoadAssetRegistryToState(*AssetRegistryPath,State))
+		{
+			FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+			AssetRegistryModule.Get().AppendState(State);
+			bStatus = true;
+		}
+	}
+	return bStatus;
+}
+
+
 
 bool UFlibPakHelper::OpenPSO(const FString& Name)
 {

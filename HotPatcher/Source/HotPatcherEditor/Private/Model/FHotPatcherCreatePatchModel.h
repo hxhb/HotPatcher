@@ -8,7 +8,8 @@ namespace EHotPatcherActionModes
 	{
 		ByPatch,
 		ByRelease,
-		ByShaderPatch
+		ByShaderPatch,
+		ByGameFeature
 	};
 }
 

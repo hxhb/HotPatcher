@@ -1,6 +1,6 @@
 #include "HotShaderPatchCommandlet.h"
 #include "ShaderPatch/FExportShaderPatchSettings.h"
-
+#include "CommandletHelper.hpp"
 // engine header
 #include "CoreMinimal.h"
 #include "Misc/FileHelper.h"
@@ -10,8 +10,6 @@
 #include "ShaderPatch/ShaderPatchProxy.h"
 
 DEFINE_LOG_CATEGORY(LogHotShaderPatchCommandlet);
-
-#define PATCHER_CONFIG_PARAM_NAME TEXT("-config=")
 
 int32 UHotShaderPatchCommandlet::Main(const FString& Params)
 {

@@ -28,6 +28,7 @@
 #include "JsonObjectConverter.h"
 #include "Misc/CommandLine.h"
 #include "FPlatformExternAssets.h"
+#include "AssetRegistryState.h"
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -296,12 +297,6 @@ public:
 #endif
 	static FString MountPathToRelativePath(const FString& InMountPath);
 
-	// reload Global&Project shaderbytecode
-	UFUNCTION(BlueprintCallable)
-		static void ReloadShaderbytecode();
-	UFUNCTION(BlueprintCallable,Exec)
-        static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir);	
-
 	static FString SerializeAssetsDependencyAsJsonString(const TArray<FHotPatcherAssetDependency>& InAssetsDependency);
 	static bool SerializePlatformPakInfoToString(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, FString& OutString);
 	static bool SerializePlatformPakInfoToJsonObject(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject);
@@ -436,6 +431,7 @@ public:
 	);
 
 	static TMap<FString,FString> GetReplacePathMarkMap();
+	static FString ReplaceMark(const FString& Src);
 	static FString ReplaceMarkPath(const FString& Src);
 	// [PORJECTDIR] to real path
 	static void ReplacePatherSettingProjectDir(TArray<FPlatformExternAssets>& PlatformAssets);
@@ -451,5 +447,19 @@ public:
 	static bool MatchStrInArray(const FString& InStr,const TArray<FString>& InArray);
 	static FString LoadAESKeyStringFromCryptoFile(const FString& InCryptoJson);
 	static FAES::FAESKey LoadAESKeyFromCryptoFile(const FString& InCryptoJson);
+public:
+	static bool GetPluginPakPathByName(const FString& PluginName,FString& uPluginAbsPath,FString& uPluginMountPath);
+	// ../../../Example/Plugin/XXXX/
+	static FString GetPluginMountPoint(const FString& PluginName);
+	// [PRIJECTDIR]/AssetRegistry to ../../../Example/AssetRegistry
+	static FString ParserMountPointRegular(const FString& Src);
+
+public:
+	UFUNCTION(BlueprintCallable)
+	static void ReloadShaderbytecode();
+	UFUNCTION(BlueprintCallable,Exec)
+		static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir);	
+	UFUNCTION(BlueprintCallable,Exec)
+		static void CloseShaderbytecode(const FString& LibraryName);
 };
 

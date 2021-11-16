@@ -3,13 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
 #include "Styling/SlateStyle.h"
 
 class FVersionUpdaterStyle
 {
 public:
 
-	static void Initialize();
+	static void Initialize(const FString& Name);
 
 	static void Shutdown();
 
@@ -24,7 +26,7 @@ public:
 	static const FSlateBrush* GetBrush( FName PropertyName, const ANSICHAR* Specifier = NULL );
 private:
 
-	static TSharedRef< class FSlateStyleSet > Create();
+	static TSharedRef< class FSlateStyleSet > Create(const FString& Name);
 
 private:
 

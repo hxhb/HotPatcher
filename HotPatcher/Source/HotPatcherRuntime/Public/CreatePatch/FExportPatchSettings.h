@@ -36,25 +36,26 @@
 #include "Serialization/JsonSerializer.h"
 #include "FExportPatchSettings.generated.h"
 
+struct FEncryptSetting
+{
+	// -encryptindex
+	bool bEncryptIndex = false;
+	bool bEncryptAllAssetFiles = false;
+	bool bEncryptUAssetFiles = false;
+	bool bEncryptIniFiles = false;
+	// sign pak
+	bool bSign = false;
+};
 
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FPakEncryptSettings
 {
 	GENERATED_BODY()
-	// -encrypt
-	UPROPERTY(EditAnywhere)
-	bool bEncryptAllAssetFiles = false;
-	// -encryptindex
-	UPROPERTY(EditAnywhere)
-    bool bEncryptIndex = false;
 	// Use DefaultCrypto.ini
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	bool bUseDefaultCryptoIni = false;
-	// sign pak
-	UPROPERTY(EditAnywhere,meta=(EditCondition="bUseDefaultCryptoIni"))
-	bool bSign = false;
 	// crypto.json (option)
-	UPROPERTY(EditAnywhere,meta=(EditCondition="!bUseDefaultCryptoIni"))
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,meta=(EditCondition="!bUseDefaultCryptoIni"))
 	FFilePath CryptoKeys;
 };
 
@@ -66,14 +67,20 @@ enum class EShaderLibNameRule : uint8
 	CUSTOM
 };
 
+
+#define AS_PROJECTDIR_MARK TEXT("[PROJECTDIR]")
+#define AS_PLUGINDIR_MARK TEXT("[PLUGINDIR]")
+
 USTRUCT(BlueprintType)
 struct FCookShaderOptions
 {
 	GENERATED_BODY()
 	FCookShaderOptions()
 	{
-		ShderLibMountPoint = FString::Printf(TEXT("../../../%s/ShaderLibs"),FApp::GetProjectName());
+		ShderLibMountPointRegular = FString::Printf(TEXT("%s/ShaderLibs"),AS_PROJECTDIR_MARK);
 	}
+	FString GetShaderLibMountPointRegular()const { return ShderLibMountPointRegular; }
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bSharedShaderLibrary = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -86,7 +93,7 @@ struct FCookShaderOptions
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="ShaderNameRule==EShaderLibNameRule::CUSTOM"))
 	FString CustomShaderName;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString ShderLibMountPoint;
+	FString ShderLibMountPointRegular;
 };
 
 UENUM(BlueprintType)
@@ -96,25 +103,27 @@ enum class EAssetRegistryRule : uint8
 	PER_CHUNK
 };
 
+
 USTRUCT(BlueprintType)
-struct FAssetRegistryOptions
+struct HOTPATCHERRUNTIME_API FAssetRegistryOptions
 {
 	GENERATED_BODY()
 	FAssetRegistryOptions()
 	{
-		AssetRegistryMountPoint = FString::Printf(TEXT("../../../%s/AssetRegistry"),FApp::GetProjectName());
+		AssetRegistryMountPointRegular = FString::Printf(TEXT("%s/AssetRegistry"),AS_PROJECTDIR_MARK);
 		AssetRegistryNameRegular = FString::Printf(TEXT("[CHUNK_NAME]_AssetRegistry.bin"));
 	}
 	FString GetAssetRegistryNameRegular(const FString& ChunkName)const
 	{
 		return AssetRegistryNameRegular.Replace(TEXT("[CHUNK_NAME]"),*ChunkName);
 	}
-	
+	FString GetAssetRegistryMountPointRegular()const { return AssetRegistryMountPointRegular; }
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bSerializeAssetRegistry = false;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString AssetRegistryMountPoint;
+	FString AssetRegistryMountPointRegular;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EAssetRegistryRule AssetRegistryRule = EAssetRegistryRule::PATCH;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -225,6 +234,7 @@ public:
 
 	FORCEINLINE bool IsStorageNewRelease()const{return bStorageNewRelease;}
 	FORCEINLINE bool IsStoragePakFileInfo()const{return bStoragePakFileInfo;}
+	FORCEINLINE bool IsBackupMetadata()const {return bBackupMetadata;}
 	
 	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
 	FORCEINLINE bool IsBinariesPatch()const{ return bBinariesPatch; }
@@ -340,9 +350,7 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		FPakEncryptSettings EncryptSettings;
-	// // crypto.json
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-	// 	FFilePath CryptoKeys;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<FReplaceText> ReplacePakListTexts;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
@@ -366,7 +374,8 @@ public:
 		bool bStorageDiffAnalysisResults = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bStorageAssetDependencies = false;
-
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "SaveTo")
+		bool bBackupMetadata = false;
 
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
 		bool bEnableMultiThread = false;

@@ -1,0 +1,271 @@
+#include "SGameFeaturePackager.h"
+#include "FlibPatchParserHelper.h"
+#include "FlibHotPatcherEditorHelper.h"
+#include "HotPatcherEditor.h"
+#include "GameFeature/FGameFeaturePackagerSettings.h"
+#include "CreatePatch/PatcherProxy.h"
+#include "CreatePatch/SHotPatcherExportPatch.h"
+#include "GameFeature/GameFeatureProxy.h"
+#include "Interfaces/IPluginManager.h"
+#include "Kismet/KismetSystemLibrary.h"
+
+#include "Kismet/KismetTextLibrary.h"
+
+#define LOCTEXT_NAMESPACE "SHotPatcherGameFeaturePackager"
+
+void SHotPatcherGameFeaturePackager::Construct(const FArguments& InArgs,
+	TSharedPtr<FHotPatcherCreatePatchModel> InCreateModel)
+{
+	GameFeaturePackagerSettings = MakeShareable(new FGameFeaturePackagerSettings);
+	CreateExportFilterListView();
+	
+	mCreatePatchModel = InCreateModel;
+	
+	ChildSlot
+        [
+            SNew(SVerticalBox)
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .Padding(FEditorStyle::GetMargin("StandardDialog.ContentPadding"))
+            [
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot()
+                .VAlign(VAlign_Center)
+                [
+                    SettingsView->GetWidget()->AsShared()
+                ]
+            ]
+
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .Padding(0.0, 8.0, 0.0, 0.0)
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .HAlign(HAlign_Right)
+            .Padding(4, 4, 10, 4)
+            [
+                SNew(SButton)
+                .Text(LOCTEXT("GenerateGameFeature", "Generate GameFeature"))
+                .OnClicked(this,&SHotPatcherGameFeaturePackager::DoGameFeaturePackager)
+                .IsEnabled(this,&SHotPatcherGameFeaturePackager::CanGameFeaturePackager)
+                .ToolTipText(this,&SHotPatcherGameFeaturePackager::GetGenerateTooltipText)
+            ]
+        ];
+}
+
+void SHotPatcherGameFeaturePackager::ImportConfig()
+{
+	UE_LOG(LogHotPatcher, Log, TEXT("Import Game Feature Packager Config"));
+	TArray<FString> Files = this->OpenFileDialog();
+	if (!Files.Num()) return;
+
+	FString LoadFile = Files[0];
+
+	FString JsonContent;
+	if (UFLibAssetManageHelperEx::LoadFileToString(LoadFile, JsonContent))
+	{
+		// UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
+		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*GameFeaturePackagerSettings);
+		SettingsView->GetDetailsView()->ForceRefresh();
+	}
+}
+
+void SHotPatcherGameFeaturePackager::ExportConfig() const
+{
+	UE_LOG(LogHotPatcher, Log, TEXT("Export Game Feature Packager Config"));
+	TArray<FString> Files = this->SaveFileDialog();
+
+	if (!Files.Num()) return;
+
+	FString SaveToFile = Files[0].EndsWith(TEXT(".json")) ? Files[0] : Files[0].Append(TEXT(".json"));
+
+	if (GameFeaturePackagerSettings)
+	{
+			FString SerializedJsonStr;
+			UFlibPatchParserHelper::TSerializeStructAsJsonString(*GameFeaturePackagerSettings,SerializedJsonStr);
+			if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile))
+			{
+				FText Msg = LOCTEXT("SavedGameFeatureConfigMas", "Successd to Export the Game Feature Packager Config.");
+				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveToFile);
+			}
+	}
+}
+
+void SHotPatcherGameFeaturePackager::ResetConfig()
+{
+	UE_LOG(LogHotPatcher, Log, TEXT("Reset Game Feature Packager Config"));
+	FString DefaultSettingJson;
+	UFlibPatchParserHelper::TSerializeStructAsJsonString(*FGameFeaturePackagerSettings::Get(),DefaultSettingJson);
+	UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*GameFeaturePackagerSettings);
+	SettingsView->GetDetailsView()->ForceRefresh();
+}
+
+// #if ENGINE_GAME_FEATURE
+// #include "GameFeaturesSubsystem.h"
+// #endif
+void SHotPatcherGameFeaturePackager::DoGenerate()
+{
+#if ENGINE_GAME_FEATURE
+	if(GetConfigSettings()->bAutoLoadFeaturePlugin)
+	{
+		FString FeatureName = GetConfigSettings()->FeatureName;
+		FString OutPluginURL;
+		UWorld* World = GEditor->GetEditorWorldContext().World();
+
+		if(World)
+		{
+			auto GameFeatureFounder = [](const FString& FeatureName)
+			{
+				bool bFound = false;
+				FString FeaturePluginDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectPluginsDir(),TEXT("GameFeatures"),FeatureName));
+				FString FeatureUPluginPath = FPaths::Combine(FeaturePluginDir,FString::Printf(TEXT("%s.uplugin"),*FeatureName));
+				
+				if(FPaths::DirectoryExists(FeaturePluginDir) && FPaths::FileExists(FeatureUPluginPath))
+				{
+					bFound = true;
+				}
+				return bFound;
+			};
+			
+			if(IPluginManager::Get().FindPlugin(TEXT("GameFeatures")).IsValid() &&
+				IPluginManager::Get().FindPlugin(TEXT("ModularGameplay")).IsValid()
+					)
+			{
+				if(GameFeatureFounder(FeatureName))
+				{
+					UKismetSystemLibrary::ExecuteConsoleCommand(World,FString::Printf(TEXT("LoadGameFeaturePlugin %s"),*FeatureName));
+					UKismetSystemLibrary::ExecuteConsoleCommand(World,FString::Printf(TEXT("DeactivateGameFeaturePlugin %s"),*FeatureName));
+				}
+			}
+			else
+			{
+				UE_LOG(LogHotPatcher,Warning,TEXT("GameFeatures or ModularGameplay is not Enabled!"));
+			}
+			
+			if(IPluginManager::Get().FindPlugin(FeatureName))
+			{
+				FeaturePackager();
+			}
+			else
+			{
+				UE_LOG(LogHotPatcher,Error,TEXT("%s load faild, %s"),*GetConfigSettings()->FeatureName);
+			}
+		}
+		// UGameFeaturesSubsystem::Get().GetPluginURLForBuiltInPluginByName(FeatureName,OutPluginURL);
+		// UGameFeaturesSubsystem::Get().LoadGameFeaturePlugin(OutPluginURL,FGameFeaturePluginDeactivateComplete::CreateLambda([this](const UE::GameFeatures::FResult& InStatus)
+		// {
+		// 	if(InStatus.IsValid() && !InStatus.HasError())
+		// 	{
+		// 		FeaturePackager();
+		// 	}
+		// 	else
+		// 	{
+		// 		UE_LOG(LogHotPatcher,Error,TEXT("Package Feature %s faild, %s"),*GetConfigSettings()->FeatureName,**InStatus.TryGetError());
+		// 	}
+		// }));
+	}
+#endif
+}
+
+void SHotPatcherGameFeaturePackager::FeaturePackager()
+{
+	if(!GetConfigSettings()->IsStandaloneMode())
+	{
+		UGameFeatureProxy* GameFeatureProxy = NewObject<UGameFeatureProxy>();
+		GameFeatureProxy->AddToRoot();
+		GameFeatureProxy->SetProxySettings(GetConfigSettings());
+		GameFeatureProxy->DoExport();
+	}
+	else
+	{
+		FString CurrentConfig;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
+		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),FString::Printf(TEXT("%s_GameFeatureConfig.json"),*GetConfigSettings()->FeatureName)));
+		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
+		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPlugin -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs());
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
+		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
+	}
+}
+
+FText SHotPatcherGameFeaturePackager::GetGenerateTooltipText() const
+{
+	FString FinalString;
+	struct FStatus
+	{
+		FStatus(bool InMatch,const FString& InDisplay):bMatch(InMatch)
+		{
+			Display = FString::Printf(TEXT("%s:%s"),*InDisplay,InMatch?TEXT("true"):TEXT("false"));
+		}
+		FString GetDisplay()const{return Display;}
+		bool bMatch;
+		FString Display;
+	};
+	TArray<FStatus> AllStatus;
+	AllStatus.Emplace(HasValidConfig(),TEXT("HasValidGameFeatureConfig"));
+	bool bHasSavePath = GameFeaturePackagerSettings->GetSaveAbsPath().IsEmpty()?false:FPaths::DirectoryExists(GameFeaturePackagerSettings->GetSaveAbsPath());
+	AllStatus.Emplace(bHasSavePath,TEXT("HasSavePath"));
+	
+	for(const auto& Status:AllStatus)
+	{
+		FinalString+=FString::Printf(TEXT("%s\n"),*Status.GetDisplay());
+	}
+	return UKismetTextLibrary::Conv_StringToText(FinalString);
+}
+
+void SHotPatcherGameFeaturePackager::CreateExportFilterListView()
+{
+	// Create a property view
+	FPropertyEditorModule& EditModule = FModuleManager::Get().GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+
+	FDetailsViewArgs DetailsViewArgs;
+	{
+		DetailsViewArgs.bAllowSearch = true;
+		DetailsViewArgs.bHideSelectionTip = true;
+		DetailsViewArgs.bLockable = false;
+		DetailsViewArgs.bSearchInitialKeyFocus = true;
+		DetailsViewArgs.bUpdatesFromSelection = false;
+		DetailsViewArgs.NotifyHook = nullptr;
+		DetailsViewArgs.bShowOptions = true;
+		DetailsViewArgs.bShowModifiedPropertiesOption = false;
+		DetailsViewArgs.bShowScrollBar = false;
+		DetailsViewArgs.bShowOptions = true;
+		DetailsViewArgs.bUpdatesFromSelection= true;
+	}
+
+	FStructureDetailsViewArgs StructureViewArgs;
+	{
+		StructureViewArgs.bShowObjects = true;
+		StructureViewArgs.bShowAssets = true;
+		StructureViewArgs.bShowClasses = true;
+		StructureViewArgs.bShowInterfaces = true;
+	}
+
+	SettingsView = EditModule.CreateStructureDetailView(DetailsViewArgs, StructureViewArgs, nullptr);
+	FStructOnScope* Struct = new FStructOnScope(FGameFeaturePackagerSettings::StaticStruct(), (uint8*)GameFeaturePackagerSettings.Get());
+	// SettingsView->GetOnFinishedChangingPropertiesDelegate().AddRaw(ExportReleaseSettings.Get(),&FGameFeaturePackagerSettings::OnFinishedChangingProperties);
+	// SettingsView->GetDetailsView()->RegisterInstancedCustomPropertyLayout(FGameFeaturePackagerSettings::StaticStruct(),FOnGetDetailCustomizationInstance::CreateStatic(&FReleaseSettingsDetails::MakeInstance));
+	SettingsView->SetStructureData(MakeShareable(Struct));
+}
+
+bool SHotPatcherGameFeaturePackager::CanGameFeaturePackager() const
+{
+	bool bHasSavePath = GameFeaturePackagerSettings->GetSaveAbsPath().IsEmpty()?false:FPaths::DirectoryExists(GameFeaturePackagerSettings->GetSaveAbsPath());
+	return HasValidConfig() && bHasSavePath;
+}
+
+bool SHotPatcherGameFeaturePackager::HasValidConfig() const
+{
+	bool bHasTarget = !!GetConfigSettings()->TargetPlatforms.Num();
+	return bHasTarget;
+}
+
+FReply SHotPatcherGameFeaturePackager::DoGameFeaturePackager()
+{
+	DoGenerate();
+	return FReply::Handled();
+}
+
+
+
+#undef LOCTEXT_NAMESPACE
