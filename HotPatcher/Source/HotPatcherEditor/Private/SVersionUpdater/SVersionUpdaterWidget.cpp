@@ -1,5 +1,4 @@
 #include "SVersionUpdaterWidget.h"
-
 // engine header
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SBorder.h"
@@ -7,17 +6,26 @@
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/SBoxPanel.h"
-#include "EditorStyleSet.h"
 #include "HttpModule.h"
 #include "Misc/FileHelper.h"
 #include "Json.h"
+#include "VersionUpdaterStyle.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 
 #define LOCTEXT_NAMESPACE "VersionUpdaterWidget"
 
+
 void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 {
+	static bool GBrushInited = false;
+	if(!GBrushInited)
+	{
+		FVersionUpdaterStyle::Initialize();
+		FVersionUpdaterStyle::ReloadTextures();
+		GBrushInited = true;
+	}
+	
 	SetToolUpdateInfo(
 		InArgs._ToolName.Get().ToString(),
 		InArgs._DeveloperName.Get().ToString(),
@@ -30,7 +38,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 	[
 		SNew(SBorder)
 		.Padding(2)
-		.BorderImage(FEditorStyle::GetBrush("ToolPanel.GroupBorder"))
+		.BorderImage(FVersionUpdaterStyle::GetBrush("Updater.GroupBorder"))
 		[
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
@@ -48,7 +56,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 					.HeightOverride(40)
 					[
 						SNew(SImage)
-						.Image(FEditorStyle::GetBrush("LauncherCommand.QuickLaunch"))
+						.Image(FVersionUpdaterStyle::GetBrush("Updater.QuickLaunch"))
 					]
 				]
 				+ SHorizontalBox::Slot()
@@ -100,7 +108,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 									.HeightOverride(18)
 									[
 										SNew(SImage)
-										.Image(FEditorStyle::GetBrush("Sequencer.SpawnableIconOverlay"))
+										.Image(FVersionUpdaterStyle::GetBrush("Updater.SpawnableIconOverlay"))
 									]
 								]
 								+ SHorizontalBox::Slot()

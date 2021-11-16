@@ -7,7 +7,7 @@
 #include "Input/Reply.h"
 #include "Widgets/SCompoundWidget.h"
 //#include "Model/FHotPatcherOriginalCookerModel.h"
-#include "SVersionUpdaterWidget.h"
+#include "SVersionUpdater/SVersionUpdaterWidget.h"
 #include "Model/FHotPatcherCookerModel.h"
 #include "Model/FHotPatcherCreatePatchModel.h"
 class SHotPatcher : public SCompoundWidget

@@ -1,7 +1,7 @@
 #include "SHotPatcher.h"
 #include "Cooker/OriginalCooker/SProjectCookPage.h"
 #include "CreatePatch/SProjectCreatePatchPage.h"
-#include "SVersionUpdaterWidget.h"
+#include "SVersionUpdater/SVersionUpdaterWidget.h"
 #include "Cooker/SProjectCookerPage.h"
 // engine header
 #include "Styling/SlateTypes.h"
