@@ -56,6 +56,10 @@ public:
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(EditCondition = "bCookPatchAssets"))
 	FAssetRegistryOptions SerializeAssetRegistryOptions;
 
+	// support UE4.26 later
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FIoStoreSettings IoStoreSettings;
+	
 	UPROPERTY(EditAnywhere)
 	TArray<ETargetPlatform> TargetPlatforms;
 };
