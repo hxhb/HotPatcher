@@ -25,7 +25,10 @@ struct HOTPATCHEREDITOR_API FGameFeaturePackagerSettings:public FHotPatcherSetti
 {
 	GENERATED_USTRUCT_BODY()
 public:
-	FGameFeaturePackagerSettings(){}
+	FGameFeaturePackagerSettings()
+	{
+		SerializeAssetRegistryOptions.bSerializeAssetRegistry = true;
+	}
 	virtual ~FGameFeaturePackagerSettings(){};
 
 	FORCEINLINE static FGameFeaturePackagerSettings* Get()
@@ -39,7 +42,7 @@ public:
 	FString FeatureName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bAutoLoadFeature = true;
+	bool bAutoLoadFeaturePlugin = true;
 	/*
 	 * Cook Asset in current patch
 	 * shader code gets saved inline inside material assets
@@ -48,13 +51,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bCookPatchAssets = true;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(EditCondition = "bCookPatchAssets"))
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(EditCondition = "bCookPatchAssets"))
 	FCookShaderOptions CookShaderOptions;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(EditCondition = "bCookPatchAssets"))
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(EditCondition = "bCookPatchAssets"))
 	FAssetRegistryOptions SerializeAssetRegistryOptions;
-	
+
 	UPROPERTY(EditAnywhere)
 	TArray<ETargetPlatform> TargetPlatforms;
 };
-
 

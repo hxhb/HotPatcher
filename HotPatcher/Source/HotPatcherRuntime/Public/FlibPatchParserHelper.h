@@ -431,6 +431,7 @@ public:
 	);
 
 	static TMap<FString,FString> GetReplacePathMarkMap();
+	static FString ReplaceMark(const FString& Src);
 	static FString ReplaceMarkPath(const FString& Src);
 	// [PORJECTDIR] to real path
 	static void ReplacePatherSettingProjectDir(TArray<FPlatformExternAssets>& PlatformAssets);
@@ -446,5 +447,11 @@ public:
 	static bool MatchStrInArray(const FString& InStr,const TArray<FString>& InArray);
 	static FString LoadAESKeyStringFromCryptoFile(const FString& InCryptoJson);
 	static FAES::FAESKey LoadAESKeyFromCryptoFile(const FString& InCryptoJson);
+public:
+	static bool GetPluginPakPathByName(const FString& PluginName,FString& uPluginAbsPath,FString& uPluginMountPath);
+	// ../../../Example/Plugin/XXXX/
+	static FString GetPluginMountPoint(const FString& PluginName);
+	// [PRIJECTDIR]/AssetRegistry to ../../../Example/AssetRegistry
+	static FString ParserMountPointRegular(const FString& Src);
 };
 

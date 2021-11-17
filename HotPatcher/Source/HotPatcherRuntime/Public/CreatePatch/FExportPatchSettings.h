@@ -66,14 +66,20 @@ enum class EShaderLibNameRule : uint8
 	CUSTOM
 };
 
+
+#define AS_PROJECTDIR_MARK TEXT("[PROJECTDIR]")
+#define AS_PLUGINDIR_MARK TEXT("[PLUGINDIR]")
+
 USTRUCT(BlueprintType)
 struct FCookShaderOptions
 {
 	GENERATED_BODY()
 	FCookShaderOptions()
 	{
-		ShderLibMountPoint = FString::Printf(TEXT("../../../%s/ShaderLibs"),FApp::GetProjectName());
+		ShderLibMountPointRegular = FString::Printf(TEXT("%s/ShaderLibs"),AS_PROJECTDIR_MARK);
 	}
+	FString GetShaderLibMountPointRegular()const { return ShderLibMountPointRegular; }
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bSharedShaderLibrary = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -86,7 +92,7 @@ struct FCookShaderOptions
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="ShaderNameRule==EShaderLibNameRule::CUSTOM"))
 	FString CustomShaderName;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString ShderLibMountPoint;
+	FString ShderLibMountPointRegular;
 };
 
 UENUM(BlueprintType)
@@ -96,25 +102,27 @@ enum class EAssetRegistryRule : uint8
 	PER_CHUNK
 };
 
+
 USTRUCT(BlueprintType)
-struct FAssetRegistryOptions
+struct HOTPATCHERRUNTIME_API FAssetRegistryOptions
 {
 	GENERATED_BODY()
 	FAssetRegistryOptions()
 	{
-		AssetRegistryMountPoint = FString::Printf(TEXT("../../../%s/AssetRegistry"),FApp::GetProjectName());
+		AssetRegistryMountPointRegular = FString::Printf(TEXT("%s/AssetRegistry"),AS_PROJECTDIR_MARK);
 		AssetRegistryNameRegular = FString::Printf(TEXT("[CHUNK_NAME]_AssetRegistry.bin"));
 	}
 	FString GetAssetRegistryNameRegular(const FString& ChunkName)const
 	{
 		return AssetRegistryNameRegular.Replace(TEXT("[CHUNK_NAME]"),*ChunkName);
 	}
-	
+	FString GetAssetRegistryMountPointRegular()const { return AssetRegistryMountPointRegular; }
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bSerializeAssetRegistry = false;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString AssetRegistryMountPoint;
+	FString AssetRegistryMountPointRegular;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EAssetRegistryRule AssetRegistryRule = EAssetRegistryRule::PATCH;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

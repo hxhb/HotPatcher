@@ -616,7 +616,10 @@ namespace PatchWorker
 								FExternFileInfo AddShaderLib;
 								AddShaderLib.Type = EPatchAssetType::NEW;
 								AddShaderLib.FilePath.FilePath = FPaths::ConvertRelativePathToFull(FilePath);
-								AddShaderLib.MountPath = FPaths::Combine(Context.GetSettingObject()->CookShaderOptions.ShderLibMountPoint,FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion));
+								AddShaderLib.MountPath = FPaths::Combine(
+									UFlibPatchParserHelper::ParserMountPointRegular(Context.GetSettingObject()->CookShaderOptions.GetShaderLibMountPointRegular()),
+									FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion)
+									);
 								Context.GetPatcherDiffInfoByName(PlatformName)->AddExternalFiles.Add(AddShaderLib);
 								Context.GetPatcherChunkInfoByName(PlatformName,Chunk.ChunkName)->AddExternFileToPak.Add(AddShaderLib);
 							}
@@ -664,7 +667,10 @@ namespace PatchWorker
 						FExternFileInfo AssetRegistryFileInfo;
 						AssetRegistryFileInfo.Type = EPatchAssetType::NEW;
 						AssetRegistryFileInfo.FilePath.FilePath = AssetRegistryPath;
-						AssetRegistryFileInfo.MountPath = FPaths::Combine(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().AssetRegistryMountPoint,ChunkAssetRegistryName);
+						AssetRegistryFileInfo.MountPath = FPaths::Combine(
+							UFlibPatchParserHelper::ParserMountPointRegular(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().GetAssetRegistryMountPointRegular())
+							,ChunkAssetRegistryName
+							);
 						Context.GetPatcherDiffInfoByName(PlatformName)->AddExternalFiles.Add(AssetRegistryFileInfo);
 						Context.GetPatcherChunkInfoByName(PlatformName,Chunk.ChunkName)->AddExternFileToPak.Add(AssetRegistryFileInfo);
 					}

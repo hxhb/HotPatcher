@@ -146,7 +146,7 @@ public class HotPatcherEditor : ModuleRules
 
 		// Game feature
 		bool bEnableGameFeature = true;
-		if (bEnableGameFeature && (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 26))
+		if (bEnableGameFeature || (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 26))
 		{
 			PublicDefinitions.Add("ENGINE_GAME_FEATURE");
 			PublicDependencyModuleNames.AddRange(new string[]

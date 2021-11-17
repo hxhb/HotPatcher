@@ -104,9 +104,8 @@ void SHotPatcherGameFeaturePackager::ResetConfig()
 // #endif
 void SHotPatcherGameFeaturePackager::DoGenerate()
 {
-
 #if ENGINE_GAME_FEATURE
-	if(GetConfigSettings()->bAutoLoadFeature)
+	if(GetConfigSettings()->bAutoLoadFeaturePlugin)
 	{
 		FString FeatureName = GetConfigSettings()->FeatureName;
 		FString OutPluginURL;
@@ -114,32 +113,41 @@ void SHotPatcherGameFeaturePackager::DoGenerate()
 
 		if(World)
 		{
-			FString uPluginFile = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),FString::Printf(TEXT("Plugins/GameFeatures/%s/%s.uplugin"),*FeatureName,*FeatureName)));
-			if(FPaths::FileExists(uPluginFile))
+			auto GameFeatureFounder = [](const FString& FeatureName)
 			{
-				if(IPluginManager::Get().FindPlugin(TEXT("GameFeatures")).IsValid() &&
-				IPluginManager::Get().FindPlugin(TEXT("ModularGameplay")).IsValid() 
+				bool bFound = false;
+				FString FeaturePluginDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectPluginsDir(),TEXT("GameFeatures"),FeatureName));
+				FString FeatureUPluginPath = FPaths::Combine(FeaturePluginDir,FString::Printf(TEXT("%s.uplugin"),*FeatureName));
+				
+				if(FPaths::DirectoryExists(FeaturePluginDir) && FPaths::FileExists(FeatureUPluginPath))
+				{
+					bFound = true;
+				}
+				return bFound;
+			};
+			
+			if(IPluginManager::Get().FindPlugin(TEXT("GameFeatures")).IsValid() &&
+				IPluginManager::Get().FindPlugin(TEXT("ModularGameplay")).IsValid()
 					)
+			{
+				if(GameFeatureFounder(FeatureName))
 				{
 					UKismetSystemLibrary::ExecuteConsoleCommand(World,FString::Printf(TEXT("LoadGameFeaturePlugin %s"),*FeatureName));
 					UKismetSystemLibrary::ExecuteConsoleCommand(World,FString::Printf(TEXT("DeactivateGameFeaturePlugin %s"),*FeatureName));
 				}
-				else
-				{
-					UE_LOG(LogHotPatcher,Warning,TEXT("GameFeatures or ModularGameplay is not Enabled!"));
-				}
-				if(IPluginManager::Get().FindPlugin(FeatureName))
-				{
-					FeaturePackager();
-				}
-				else
-				{
-					UE_LOG(LogHotPatcher,Error,TEXT("%s load faild, %s"),*GetConfigSettings()->FeatureName);
-				}
 			}
 			else
 			{
-				UE_LOG(LogHotPatcher,Error,TEXT("%s is not valid uplugin"),*uPluginFile);
+				UE_LOG(LogHotPatcher,Warning,TEXT("GameFeatures or ModularGameplay is not Enabled!"));
+			}
+			
+			if(IPluginManager::Get().FindPlugin(FeatureName))
+			{
+				FeaturePackager();
+			}
+			else
+			{
+				UE_LOG(LogHotPatcher,Error,TEXT("%s load faild, %s"),*GetConfigSettings()->FeatureName);
 			}
 		}
 		// UGameFeaturesSubsystem::Get().GetPluginURLForBuiltInPluginByName(FeatureName,OutPluginURL);
@@ -174,22 +182,27 @@ void SHotPatcherGameFeaturePackager::FeaturePackager()
 		{
 			PlatformExternAssets.TargetPlatform = ETargetPlatform::AllPlatforms;
 			FExternFileInfo FeaturePlugin;
-			FeaturePlugin.Type = EPatchAssetType::NEW;
-			FeaturePlugin.MountPath = FString::Printf(TEXT("%s/Plugins/GameFeatures/%s/GF_Feature.uplugin"),*FeaturePlugin.MountPath,*PatchSettings->VersionId);
-			FeaturePlugin.FilePath.FilePath = FPaths::ConvertRelativePathToFull(
-				FPaths::Combine(
-					FPaths::ProjectPluginsDir(),
-					TEXT("GameFeatures"),
-					PatchSettings->VersionId,
-					FString::Printf(TEXT("%s.uplugin"),
-						*PatchSettings->VersionId)
-						));
-			PlatformExternAssets.AddExternFileToPak.Add(FeaturePlugin);
+			
+			if(UFlibPatchParserHelper::GetPluginPakPathByName(PatchSettings->VersionId,FeaturePlugin.FilePath.FilePath,FeaturePlugin.MountPath))
+			{
+				FeaturePlugin.Type = EPatchAssetType::NEW;
+				PlatformExternAssets.AddExternFileToPak.Add(FeaturePlugin);
+			}
 		}
 		PatchSettings->AddExternAssetsToPlatform.Add(PlatformExternAssets);
 		PatchSettings->bCookPatchAssets = GetConfigSettings()->bCookPatchAssets;
-		PatchSettings->SerializeAssetRegistryOptions = GetConfigSettings()->SerializeAssetRegistryOptions;
-		PatchSettings->CookShaderOptions = GetConfigSettings()->CookShaderOptions;
+		
+		{
+			PatchSettings->SerializeAssetRegistryOptions = GetConfigSettings()->SerializeAssetRegistryOptions;
+			PatchSettings->SerializeAssetRegistryOptions.AssetRegistryMountPointRegular = FString::Printf(TEXT("%s[%s]"),AS_PLUGINDIR_MARK,*GetConfigSettings()->FeatureName);
+			PatchSettings->SerializeAssetRegistryOptions.AssetRegistryNameRegular = FString::Printf(TEXT("AssetRegistry.bin"));
+		}
+		{
+			PatchSettings->CookShaderOptions = GetConfigSettings()->CookShaderOptions;
+			PatchSettings->CookShaderOptions.bSharedShaderLibrary = true;
+			PatchSettings->CookShaderOptions.bNativeShader = true;
+			PatchSettings->CookShaderOptions.ShderLibMountPointRegular = FString::Printf(TEXT("%s[%s]"),AS_PLUGINDIR_MARK,*GetConfigSettings()->FeatureName);
+		}
 		PatchSettings->PakTargetPlatforms.Append(GetConfigSettings()->TargetPlatforms);
 		PatchSettings->SavePath.Path = GetConfigSettings()->GetSaveAbsPath();
 		PatchSettings->bStorageConfig = true;

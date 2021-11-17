@@ -1255,3 +1255,4 @@ FHotPatcherVersion UFlibHotPatcherEditorHelper::MakeNewReleaseByDiff(const FHotP
 	NewRelease.PlatformAssets = BasePlatformAssetsRef;
 	return NewRelease;
 }
+

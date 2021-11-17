@@ -1723,10 +1723,10 @@ TMap<FString, FString> UFlibPatchParserHelper::GetReplacePathMarkMap()
 	return MarkMap;
 }
 
-FString UFlibPatchParserHelper::ReplaceMarkPath(const FString& Src)
+FString UFlibPatchParserHelper::ReplaceMark(const FString& Src)
 {
 	TMap<FString,FString> MarkMap = UFlibPatchParserHelper::GetReplacePathMarkMap();
-	auto ReplaceProjectDir = [&MarkMap](const FString& OriginDir)->FString
+	auto ReplaceStringMark = [&MarkMap](const FString& OriginDir)->FString
 	{
 		TArray<FString> MarkKeys;
 		MarkMap.GetKeys(MarkKeys);
@@ -1742,14 +1742,17 @@ FString UFlibPatchParserHelper::ReplaceMarkPath(const FString& Src)
 				break;
 			}
 		}
-
-		FPaths::MakeStandardFilename(result);
-		result = FPaths::ConvertRelativePathToFull(result);
 		return result;
 	};
-	return ReplaceProjectDir(Src);
+	return ReplaceStringMark(Src);
 }
-
+FString UFlibPatchParserHelper::ReplaceMarkPath(const FString& Src)
+{
+	FString result = UFlibPatchParserHelper::ReplaceMark(Src);
+	FPaths::MakeStandardFilename(result);
+	result = FPaths::ConvertRelativePathToFull(result);
+	return result;
+}
 
 void UFlibPatchParserHelper::ReplacePatherSettingProjectDir(TArray<FPlatformExternAssets>& PlatformAssets)
 {
@@ -1918,3 +1921,69 @@ FString UFlibPatchParserHelper::UAssetMountPathToPackagePath(const FString& InAs
 	return LongPackagePath;
 }
 
+bool UFlibPatchParserHelper::GetPluginPakPathByName(const FString& PluginName,FString& uPluginAbsPath,FString& uPluginMountPath)
+{
+	bool bStatus = false;
+	TSharedPtr<IPlugin> FoundPlugin = IPluginManager::Get().FindPlugin(PluginName);
+	FString uPluginFileAbsPath;
+	FString uPluginFileMountPath;
+	if(FoundPlugin.IsValid())
+	{
+		uPluginFileAbsPath = FPaths::ConvertRelativePathToFull(FPaths::Combine(FoundPlugin->GetBaseDir(),FString::Printf(TEXT("%s.uplugin"),*FoundPlugin->GetName())));
+		FPaths::NormalizeFilename(uPluginFileAbsPath);
+				
+		uPluginFileMountPath = uPluginFileAbsPath;
+				
+		if(FPaths::FileExists(uPluginFileAbsPath))
+		{
+			FString EnginePluginPath = FPaths::ConvertRelativePathToFull(FPaths::EnginePluginsDir());
+			FString ProjectPluginPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectPluginsDir());
+			if(uPluginFileMountPath.StartsWith(EnginePluginPath))
+			{
+				uPluginFileMountPath.RemoveFromStart(EnginePluginPath);
+				uPluginFileMountPath = FString::Printf(TEXT("../../../Engine/Plugins/%s"),*uPluginFileMountPath);
+			}
+			if(uPluginFileMountPath.StartsWith(ProjectPluginPath))
+			{
+				uPluginFileMountPath.RemoveFromStart(ProjectPluginPath);
+				uPluginFileMountPath = FString::Printf(TEXT("../../../%s/Plugins/%s"),FApp::GetProjectName(),*uPluginFileMountPath);
+			}
+			uPluginAbsPath = uPluginFileAbsPath;
+			uPluginMountPath = uPluginFileMountPath;
+			bStatus = true;
+		}
+	}
+	return bStatus;
+}
+
+FString UFlibPatchParserHelper::GetPluginMountPoint(const FString& PluginName)
+{
+	FString uPluginAbsPath;
+	FString uPluginMountPath;
+	if(UFlibPatchParserHelper::GetPluginPakPathByName(PluginName,uPluginAbsPath,uPluginMountPath))
+	{
+		uPluginMountPath.RemoveFromEnd(FString::Printf(TEXT("/%s.uplugin"),*PluginName));
+	}
+	return uPluginMountPath;
+}
+
+FString UFlibPatchParserHelper::ParserMountPointRegular(const FString& Src)
+{
+	FString result;
+	if(Src.MatchesWildcard(FString::Printf(TEXT("*%s*"),AS_PROJECTDIR_MARK)))
+	{
+		result = Src.Replace(AS_PROJECTDIR_MARK,*FString::Printf(TEXT("../../../%s"),FApp::GetProjectName()));
+	}
+	if(Src.MatchesWildcard(FString::Printf(TEXT("*%s*"),AS_PLUGINDIR_MARK)))
+	{
+		int32 index = Src.Find(AS_PLUGINDIR_MARK);
+		index += strlen(TCHAR_TO_ANSI(AS_PLUGINDIR_MARK));
+		int32 BeginIndex = index + 1; 
+		int32 EndIndex;
+		Src.FindLastChar(']',EndIndex);
+		FString PluginName = UKismetStringLibrary::GetSubstring(Src,BeginIndex,EndIndex-BeginIndex);
+		result = Src.Replace(AS_PLUGINDIR_MARK,TEXT(""));
+		result = result.Replace(*FString::Printf(TEXT("[%s]"),*PluginName),*UFlibPatchParserHelper::GetPluginMountPoint(PluginName));
+	}
+	return result;
+}
