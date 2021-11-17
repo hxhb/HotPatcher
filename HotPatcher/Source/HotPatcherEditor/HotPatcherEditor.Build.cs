@@ -159,7 +159,7 @@ public class HotPatcherEditor : ModuleRules
 		PublicDefinitions.AddRange(new string[]
 		{
 			"TOOL_NAME=\"HotPatcher\"",
-			"CURRENT_VERSION_ID=69",
+			"CURRENT_VERSION_ID=70",
 			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
 		});
 	}
