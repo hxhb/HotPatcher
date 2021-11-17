@@ -84,7 +84,7 @@ void SHotPatcherGameFeaturePackager::ExportConfig() const
 			UFlibPatchParserHelper::TSerializeStructAsJsonString(*GameFeaturePackagerSettings,SerializedJsonStr);
 			if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile))
 			{
-				FText Msg = LOCTEXT("SavedShaderPatchConfigMas", "Successd to Export the Game Feature Packager Config.");
+				FText Msg = LOCTEXT("SavedGameFeatureConfigMas", "Successd to Export the Game Feature Packager Config.");
 				UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg, SaveToFile);
 			}
 	}
@@ -205,6 +205,7 @@ void SHotPatcherGameFeaturePackager::FeaturePackager()
 		}
 		PatchSettings->PakTargetPlatforms.Append(GetConfigSettings()->TargetPlatforms);
 		PatchSettings->SavePath.Path = GetConfigSettings()->GetSaveAbsPath();
+		PatchSettings->bStorageNewRelease = false;
 		PatchSettings->bStorageConfig = true;
 	}
 	if(!GetConfigSettings()->IsStandaloneMode())
@@ -234,6 +235,7 @@ void SHotPatcherGameFeaturePackager::FeaturePackager()
 		FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile);
 	}
 }
+
 FText SHotPatcherGameFeaturePackager::GetGenerateTooltipText() const
 {
 	FString FinalString;
@@ -248,7 +250,7 @@ FText SHotPatcherGameFeaturePackager::GetGenerateTooltipText() const
 		FString Display;
 	};
 	TArray<FStatus> AllStatus;
-	AllStatus.Emplace(HasValidConfig(),TEXT("HasValidShaderPatchConfig"));
+	AllStatus.Emplace(HasValidConfig(),TEXT("HasValidGameFeatureConfig"));
 	bool bHasSavePath = GameFeaturePackagerSettings->GetSaveAbsPath().IsEmpty()?false:FPaths::DirectoryExists(GameFeaturePackagerSettings->GetSaveAbsPath());
 	AllStatus.Emplace(bHasSavePath,TEXT("HasSavePath"));
 	
