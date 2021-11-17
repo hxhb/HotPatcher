@@ -1,6 +1,7 @@
 #include "HotReleaseCommandlet.h"
 #include "CreatePatch/FExportReleaseSettings.h"
 #include "CreatePatch/ReleaseProxy.h"
+#include "CommandletHelper.hpp"
 
 // engine header
 #include "CoreMinimal.h"
@@ -10,20 +11,6 @@
 
 DEFINE_LOG_CATEGORY(LogHotReleaseCommandlet);
 
-#define PATCHER_CONFIG_PARAM_NAME TEXT("-config=")
-
-namespace NSRelease
-{
-	void ReceiveMsg(const FString& InMsgType,const FString& InMsg)
-	{
-		UE_LOG(LogHotReleaseCommandlet,Log,TEXT("%s:%s"),*InMsgType,*InMsg);
-	}
-
-	void ReceiveShowMsg(const FString& InMsg)
-	{
-		UE_LOG(LogHotReleaseCommandlet,Log,TEXT("%s"),*InMsg);
-	}
-}
 
 #define ADD_PLATFORM_PAK_LIST TEXT("AddPlatformPakList")
 TArray<FPlatformPakListFiles> ParserPlatformPakList(const FString& Commandline)
@@ -119,8 +106,8 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 	UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
 	ReleaseProxy->AddToRoot();
 	ReleaseProxy->SetProxySettings(ExportReleaseSetting.Get());
-	ReleaseProxy->OnPaking.AddStatic(&::NSRelease::ReceiveMsg);
-	ReleaseProxy->OnShowMsg.AddStatic(&::NSRelease::ReceiveShowMsg);
+	ReleaseProxy->OnPaking.AddStatic(&::CommandletHelper::NSPatch::ReceiveMsg);
+	ReleaseProxy->OnShowMsg.AddStatic(&::CommandletHelper::NSPatch::ReceiveShowMsg);
 	bool bExportStatus = ReleaseProxy->DoExport();
 		
 	UE_LOG(LogHotReleaseCommandlet,Display,TEXT("Export Release Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));

@@ -2,9 +2,10 @@
 #include "FlibPatchParserHelper.h"
 #include "FlibHotPatcherEditorHelper.h"
 #include "HotPatcherEditor.h"
-#include "FGameFeaturePackagerSettings.h"
+#include "GameFeature/FGameFeaturePackagerSettings.h"
 #include "CreatePatch/PatcherProxy.h"
 #include "CreatePatch/SHotPatcherExportPatch.h"
+#include "GameFeature/GameFeatureProxy.h"
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetSystemLibrary.h"
 
@@ -168,71 +169,22 @@ void SHotPatcherGameFeaturePackager::DoGenerate()
 
 void SHotPatcherGameFeaturePackager::FeaturePackager()
 {
-	PatchSettings = MakeShareable(new FExportPatchSettings);
-	// make patch setting
-	{
-		PatchSettings->bByBaseVersion = false;
-		PatchSettings->VersionId = GetConfigSettings()->FeatureName;
-		FDirectoryPath FeaturePluginPath;
-		FeaturePluginPath.Path = FString::Printf(TEXT("/%s"),*PatchSettings->VersionId);
-		
-		PatchSettings->AssetIncludeFilters.Add(FeaturePluginPath);
-
-		FPlatformExternAssets PlatformExternAssets;
-		{
-			PlatformExternAssets.TargetPlatform = ETargetPlatform::AllPlatforms;
-			FExternFileInfo FeaturePlugin;
-			
-			if(UFlibPatchParserHelper::GetPluginPakPathByName(PatchSettings->VersionId,FeaturePlugin.FilePath.FilePath,FeaturePlugin.MountPath))
-			{
-				FeaturePlugin.Type = EPatchAssetType::NEW;
-				PlatformExternAssets.AddExternFileToPak.Add(FeaturePlugin);
-			}
-		}
-		PatchSettings->AddExternAssetsToPlatform.Add(PlatformExternAssets);
-		PatchSettings->bCookPatchAssets = GetConfigSettings()->bCookPatchAssets;
-		
-		{
-			PatchSettings->SerializeAssetRegistryOptions = GetConfigSettings()->SerializeAssetRegistryOptions;
-			PatchSettings->SerializeAssetRegistryOptions.AssetRegistryMountPointRegular = FString::Printf(TEXT("%s[%s]"),AS_PLUGINDIR_MARK,*GetConfigSettings()->FeatureName);
-			PatchSettings->SerializeAssetRegistryOptions.AssetRegistryNameRegular = FString::Printf(TEXT("AssetRegistry.bin"));
-		}
-		{
-			PatchSettings->CookShaderOptions = GetConfigSettings()->CookShaderOptions;
-			PatchSettings->CookShaderOptions.bSharedShaderLibrary = true;
-			PatchSettings->CookShaderOptions.bNativeShader = true;
-			PatchSettings->CookShaderOptions.ShderLibMountPointRegular = FString::Printf(TEXT("%s[%s]"),AS_PLUGINDIR_MARK,*GetConfigSettings()->FeatureName);
-		}
-		PatchSettings->PakTargetPlatforms.Append(GetConfigSettings()->TargetPlatforms);
-		PatchSettings->SavePath.Path = GetConfigSettings()->GetSaveAbsPath();
-		PatchSettings->bStorageNewRelease = false;
-		PatchSettings->bStorageConfig = true;
-	}
 	if(!GetConfigSettings()->IsStandaloneMode())
 	{
-		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-		PatcherProxy->AddToRoot();
-		PatcherProxy->SetProxySettings(PatchSettings.Get());
-		// PatcherProxy->OnShowMsg.AddRaw(this,&SHotPatcherExportPatch::ShowMsg);
-		PatcherProxy->DoExport();
+		UGameFeatureProxy* GameFeatureProxy = NewObject<UGameFeatureProxy>();
+		GameFeatureProxy->AddToRoot();
+		GameFeatureProxy->SetProxySettings(GetConfigSettings());
+		GameFeatureProxy->DoExport();
 	}
 	else
 	{
 		FString CurrentConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*PatchSettings,CurrentConfig);
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),FString::Printf(TEXT("%s_GameFeatureConfig.json"),*GetConfigSettings()->FeatureName)));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
-		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs());
+		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPlugin -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs());
 		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
 		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
-	}
-
-	if(GetConfigSettings()->IsSaveConfig())
-	{
-		FString SaveToFile = FPaths::Combine(GetConfigSettings()->GetSaveAbsPath(),FString::Printf(TEXT("%s_GameFeatureConfig.json"),*GetConfigSettings()->FeatureName));
-		FString SerializedJsonStr;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GameFeaturePackagerSettings,SerializedJsonStr);
-		FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile);
 	}
 }
 

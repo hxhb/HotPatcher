@@ -4,7 +4,7 @@
 
 #include "Model/FHotPatcherCreatePatchModel.h"
 #include "CreatePatch/SHotPatcherPatchableBase.h"
-#include "FGameFeaturePackagerSettings.h"
+#include "GameFeature/FGameFeaturePackagerSettings.h"
 
 // engine header
 #include "Templates/SharedPointer.h"
