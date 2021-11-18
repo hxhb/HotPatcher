@@ -8,6 +8,7 @@
 bool UGameFeatureProxy::DoExport()
 {
 	PatchSettings = MakeShareable(new FExportPatchSettings);
+	FString FeatureName = GetSettingObject()->FeatureName;
 	// make patch setting
 	{
 		PatchSettings->bByBaseVersion = false;
@@ -26,6 +27,22 @@ bool UGameFeatureProxy::DoExport()
 			{
 				FeaturePlugin.Type = EPatchAssetType::NEW;
 				PlatformExternAssets.AddExternFileToPak.Add(FeaturePlugin);
+
+				TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(FeatureName);
+				if(Plugin)
+				{
+					for(const auto& NonContentDir:GetSettingObject()->NonContentDirs)
+					{
+						FString PluginConfigDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(Plugin->GetBaseDir(),NonContentDir));
+						if(FPaths::DirectoryExists(PluginConfigDir))
+						{
+							FExternDirectoryInfo ConfigDir;
+							ConfigDir.DirectoryPath.Path = PluginConfigDir;
+							ConfigDir.MountPoint = FPaths::Combine(Plugin->GetBaseDir(),NonContentDir);
+							PlatformExternAssets.AddExternDirectoryToPak.Add(ConfigDir);
+						}
+					}
+				}
 			}
 		}
 		PatchSettings->AddExternAssetsToPlatform.Add(PlatformExternAssets);

@@ -146,7 +146,7 @@ public class HotPatcherEditor : ModuleRules
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
 
 		// Game feature
-		bool bEnableGameFeature = true;
+		bool bEnableGameFeature = false;
 		if (bEnableGameFeature || (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 26))
 		{
 			PublicDefinitions.Add("ENGINE_GAME_FEATURE");

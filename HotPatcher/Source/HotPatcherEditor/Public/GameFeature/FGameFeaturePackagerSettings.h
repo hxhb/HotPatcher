@@ -28,6 +28,7 @@ public:
 	FGameFeaturePackagerSettings()
 	{
 		SerializeAssetRegistryOptions.bSerializeAssetRegistry = true;
+		NonContentDirs.AddUnique(TEXT("Config"));
 	}
 	virtual ~FGameFeaturePackagerSettings(){};
 
@@ -43,6 +44,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bAutoLoadFeaturePlugin = true;
+	// Config/ Script/ etc.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FString> NonContentDirs;
 	/*
 	 * Cook Asset in current patch
 	 * shader code gets saved inline inside material assets
