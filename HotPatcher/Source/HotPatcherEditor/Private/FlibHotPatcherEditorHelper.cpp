@@ -842,28 +842,62 @@ TArray<FString> UFlibHotPatcherEditorHelper::GetSupportPlatforms()
 	return Result;
 }
 
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+#define ENCRYPT_CRYPTO_NAME TEXT("cryptokeys")
+#else
+#define ENCRYPT_CRYPTO_NAME TEXT("crypto")
+#endif
+
+
 
 FString UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(const FPakEncryptSettings& EncryptSettings,const FString& PlatformName)
 {
 	FString Result; 
-	if(EncryptSettings.bEncryptAllAssetFiles)
-	{
-		Result += EncryptSettings.bEncryptAllAssetFiles? TEXT("-encrypt "):TEXT("");
-	}
-	if(EncryptSettings.bEncryptIndex)
-	{
-		Result += EncryptSettings.bEncryptIndex? TEXT("-encryptindex "):TEXT("");
-	}
+
 	FString CryptoKey = UFlibPatchParserHelper::ReplaceMarkPath(EncryptSettings.CryptoKeys.FilePath);
-	if(FPaths::FileExists(CryptoKey))
+
+	auto AppendCommandOptions = [&Result](bool bEncryptIndex,bool bbEncrypt,bool bSign)
 	{
-		Result += FString::Printf(TEXT("-crypto=\"%s\" "),*CryptoKey);
+		if(bbEncrypt)
+		{
+			Result += TEXT("-encrypt ");
+		}
+		if(bEncryptIndex)
+		{
+			Result += TEXT("-encryptindex ");
+		}
+		if(bSign)
+		{
+			Result += TEXT("-sign ");
+		}
+	};
+	bool bEncryptIndex = false;
+	bool bEncrypt = false;
+	bool bSign = false;
+	if(EncryptSettings.bUseDefaultCryptoIni)
+	{
+		FString SaveTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Crypto.json")));
+		FPakEncryptionKeys PakEncryptionKeys = UFlibHotPatcherEditorHelper::GetCryptoByProjectSettings();
+		bEncryptIndex = PakEncryptionKeys.bEnablePakIndexEncryption;
+		bEncrypt = PakEncryptionKeys.bEnablePakUAssetEncryption;
+		bSign = PakEncryptionKeys.bEnablePakSigning;
+		UFlibHotPatcherEditorHelper::SerializePakEncryptionKeyToFile(PakEncryptionKeys,SaveTo);
+		CryptoKey = SaveTo;
+	}
+	else
+	{
+		bEncryptIndex= EncryptSettings.bEncryptIndex;
+		bEncrypt = EncryptSettings.bEncryptAllAssetFiles;
+		bSign = EncryptSettings.bSign;
 	}
 	
-	if(EncryptSettings.bUseDefaultCryptoIni)
-		Result += EncryptSettings.bUseDefaultCryptoIni? TEXT("-encryptionini "):TEXT("");
-	if(EncryptSettings.bSign)
-		Result += EncryptSettings.bSign? TEXT("-sign "):TEXT("");
+	AppendCommandOptions(bEncryptIndex,bEncrypt,bSign);
+	
+	if(FPaths::FileExists(CryptoKey))
+	{
+		Result += FString::Printf(TEXT("-%s=\"%s\" "),ENCRYPT_CRYPTO_NAME,*CryptoKey);
+	}
+	
 	
 	Result += FString::Printf(TEXT("-projectdir=\"%s\" "),*FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()));
 	Result += FString::Printf(TEXT("-enginedir=\"%s\" "),*FPaths::ConvertRelativePathToFull(FPaths::EngineDir()));
@@ -1256,3 +1290,81 @@ FHotPatcherVersion UFlibHotPatcherEditorHelper::MakeNewReleaseByDiff(const FHotP
 	return NewRelease;
 }
 
+
+
+#define ENCRYPT_KEY_NAME TEXT("EncryptionKey")
+#define ENCRYPT_PAK_INI_FILES_NAME TEXT("bEncryptPakIniFiles")
+#define ENCRYPT_PAK_INDEX_NAME TEXT("bEncryptPakIndex")
+#define ENCRYPT_UASSET_FILES_NAME TEXT("bEncryptUAssetFiles")
+#define ENCRYPT_ALL_ASSET_FILES_NAME TEXT("bEncryptAllAssetFiles")
+
+#define SIGNING_PAK_SIGNING_NAME TEXT("bEnablePakSigning")
+#define SIGNING_MODULES_NAME TEXT("SigningModulus")
+#define SIGNING_PUBLIC_EXPONENT_NAME TEXT("SigningPublicExponent")
+#define SIGNING_PRIVATE_EXPONENT_NAME TEXT("SigningPrivateExponent")
+
+FPakEncryptionKeys UFlibHotPatcherEditorHelper::GetCryptoByProjectSettings()
+{
+	FPakEncryptionKeys result;
+
+	result.EncryptionKey.Name = TEXT("Embedded");
+	result.EncryptionKey.Guid = FGuid::NewGuid().ToString();
+	
+	UClass* Class = FindObject<UClass>(ANY_PACKAGE, TEXT("/Script/CryptoKeys.CryptoKeysSettings"), true);
+	if(Class)
+	{
+		FString AESKey;
+		for(TFieldIterator<FProperty> PropertyIter(Class);PropertyIter;++PropertyIter)
+		{
+			FProperty* PropertyIns = *PropertyIter;
+			UE_LOG(LogTemp,Log,TEXT("%s"),*PropertyIns->GetName());
+			if(PropertyIns->GetName().Equals(ENCRYPT_KEY_NAME))
+			{
+				result.EncryptionKey.Key = *PropertyIns->ContainerPtrToValuePtr<FString>(Class->GetDefaultObject());
+			}
+			if(PropertyIns->GetName().Equals(ENCRYPT_PAK_INI_FILES_NAME))
+			{
+				result.bEnablePakIniEncryption = *PropertyIns->ContainerPtrToValuePtr<bool>(Class->GetDefaultObject());
+			}
+			if(PropertyIns->GetName().Equals(ENCRYPT_PAK_INDEX_NAME))
+			{
+				result.bEnablePakIndexEncryption = *PropertyIns->ContainerPtrToValuePtr<bool>(Class->GetDefaultObject());
+			}
+			if(PropertyIns->GetName().Equals(ENCRYPT_UASSET_FILES_NAME))
+			{
+				result.bEnablePakUAssetEncryption = *PropertyIns->ContainerPtrToValuePtr<bool>(Class->GetDefaultObject());
+			}
+			if(PropertyIns->GetName().Equals(ENCRYPT_ALL_ASSET_FILES_NAME))
+			{
+				result.bEnablePakFullAssetEncryption = *PropertyIns->ContainerPtrToValuePtr<bool>(Class->GetDefaultObject());
+			}
+			// SIGN
+			if(PropertyIns->GetName().Equals(SIGNING_PAK_SIGNING_NAME))
+			{
+				result.bEnablePakSigning = *PropertyIns->ContainerPtrToValuePtr<bool>(Class->GetDefaultObject());
+			}
+			if(PropertyIns->GetName().Equals(SIGNING_PUBLIC_EXPONENT_NAME))
+			{
+				result.SigningKey.PublicKey.Exponent = *PropertyIns->ContainerPtrToValuePtr<FString>(Class->GetDefaultObject());
+			}
+			if(PropertyIns->GetName().Equals(SIGNING_MODULES_NAME))
+			{
+				result.SigningKey.PublicKey.Modulus = *PropertyIns->ContainerPtrToValuePtr<FString>(Class->GetDefaultObject());
+				result.SigningKey.PrivateKey.Modulus = result.SigningKey.PublicKey.Modulus;
+			}
+			if(PropertyIns->GetName().Equals(SIGNING_PRIVATE_EXPONENT_NAME))
+			{
+				result.SigningKey.PrivateKey.Exponent = *PropertyIns->ContainerPtrToValuePtr<FString>(Class->GetDefaultObject());
+			}
+		}
+	}
+	return result;
+}
+
+bool UFlibHotPatcherEditorHelper::SerializePakEncryptionKeyToFile(const FPakEncryptionKeys& PakEncryptionKeys,
+	const FString& ToFile)
+{
+	FString KeyInfo;
+	UFlibPatchParserHelper::TSerializeStructAsJsonString(PakEncryptionKeys,KeyInfo);
+	return UFLibAssetManageHelperEx::SaveStringToFile(ToFile, KeyInfo);
+}

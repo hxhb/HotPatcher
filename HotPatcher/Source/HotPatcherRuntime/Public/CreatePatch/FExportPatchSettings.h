@@ -41,18 +41,18 @@ USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FPakEncryptSettings
 {
 	GENERATED_BODY()
-	// -encrypt
-	UPROPERTY(EditAnywhere)
-	bool bEncryptAllAssetFiles = false;
-	// -encryptindex
-	UPROPERTY(EditAnywhere)
-    bool bEncryptIndex = false;
 	// Use DefaultCrypto.ini
 	UPROPERTY(EditAnywhere)
 	bool bUseDefaultCryptoIni = false;
 	// sign pak
-	UPROPERTY(EditAnywhere,meta=(EditCondition="bUseDefaultCryptoIni"))
+	UPROPERTY(EditAnywhere,meta=(EditCondition="!bUseDefaultCryptoIni"))
 	bool bSign = false;
+	// -encrypt
+	UPROPERTY(EditAnywhere,meta=(EditCondition="!bUseDefaultCryptoIni"))
+	bool bEncryptAllAssetFiles = false;
+	// -encryptindex
+	UPROPERTY(EditAnywhere,meta=(EditCondition="!bUseDefaultCryptoIni"))
+    bool bEncryptIndex = false;
 	// crypto.json (option)
 	UPROPERTY(EditAnywhere,meta=(EditCondition="!bUseDefaultCryptoIni"))
 	FFilePath CryptoKeys;
@@ -233,6 +233,7 @@ public:
 
 	FORCEINLINE bool IsStorageNewRelease()const{return bStorageNewRelease;}
 	FORCEINLINE bool IsStoragePakFileInfo()const{return bStoragePakFileInfo;}
+	FORCEINLINE bool IsBackupMetadata()const {return bBackupMetadata;}
 	
 	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
 	FORCEINLINE bool IsBinariesPatch()const{ return bBinariesPatch; }
@@ -374,7 +375,8 @@ public:
 		bool bStorageDiffAnalysisResults = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bStorageAssetDependencies = false;
-
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "SaveTo")
+		bool bBackupMetadata = false;
 
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
 		bool bEnableMultiThread = false;

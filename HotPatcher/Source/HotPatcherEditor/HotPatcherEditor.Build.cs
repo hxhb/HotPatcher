@@ -42,12 +42,13 @@ public class HotPatcherEditor : ModuleRules
                 "Projects",
                 "Settings",
                 "HTTP",
+                "CryptoKeys",
                 "AssetRegistry",
                 "AssetManagerEx",
                 "PakFileUtilities",
                 "HotPatcherRuntime",
                 "BinariesPatchFeature"
-				// ... add other public dependencies that you statically link with here ...
+                // ... add other public dependencies that you statically link with here ...
 			}
 			);
 		

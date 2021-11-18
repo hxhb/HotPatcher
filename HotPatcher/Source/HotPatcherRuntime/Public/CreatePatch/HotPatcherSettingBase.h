@@ -28,7 +28,6 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase
 
     virtual FString GetSaveAbsPath()const;
     FORCEINLINE virtual bool IsStandaloneMode()const {return bStandaloneMode;}
-    FORCEINLINE virtual bool IsBackupMetadata()const {return bBackupMetadata;}
     FORCEINLINE virtual bool IsSaveConfig()const {return bStorageConfig;}
     FORCEINLINE virtual TArray<FString> GetAdditionalCommandletArgs()const{return AdditionalCommandletArgs;}
     FORCEINLINE virtual FString GetCombinedAdditionalCommandletArgs()const
@@ -44,8 +43,6 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase
     virtual ~FHotPatcherSettingBase(){}
 public:
     // backup current project Cooked/PLATFORM/PROJECTNAME/Metadata directory
-    // UPROPERTY(EditAnywhere, Category = "SaveTo")
-    bool bBackupMetadata = false;
     UPROPERTY(EditAnywhere, Category = "SaveTo")
     bool bStorageConfig = true;
     UPROPERTY(EditAnywhere, Category = "SaveTo")
