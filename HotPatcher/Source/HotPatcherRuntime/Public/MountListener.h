@@ -15,7 +15,7 @@ struct HOTPATCHERRUNTIME_API FPakMountInfo
     UPROPERTY(EditAnywhere,BlueprintReadWrite)
     FString Pak;
     UPROPERTY(EditAnywhere,BlueprintReadWrite)
-    int32 PakOrder;
+    int32 PakOrder = 0;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnListenerMountPak,FPakMountInfo,PakInfo);

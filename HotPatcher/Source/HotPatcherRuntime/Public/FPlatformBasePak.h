@@ -15,7 +15,7 @@ struct FPlatformBasePak
     FORCEINLINE FPlatformBasePak()=default;
 	
     UPROPERTY(EditAnywhere,BlueprintReadWrite)
-    ETargetPlatform Platform;
+    ETargetPlatform Platform = ETargetPlatform::None;
     UPROPERTY(EditAnywhere,BlueprintReadWrite)
     TArray<FFilePath> Paks;
 };

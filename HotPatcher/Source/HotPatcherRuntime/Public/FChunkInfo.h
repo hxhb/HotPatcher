@@ -89,7 +89,7 @@ public:
 	UPROPERTY(EditAnywhere)
 	FString ChunkStoreName;
 	UPROPERTY(EditAnywhere)
-	ETargetPlatform Platform;
+	ETargetPlatform Platform = ETargetPlatform::None;
 	UPROPERTY(EditAnywhere)
 	FString StorageDirectory;
 	// UPROPERTY(EditAnywhere)
