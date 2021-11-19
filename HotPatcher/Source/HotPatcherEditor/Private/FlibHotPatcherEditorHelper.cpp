@@ -842,12 +842,7 @@ TArray<FString> UFlibHotPatcherEditorHelper::GetSupportPlatforms()
 	return Result;
 }
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 #define ENCRYPT_CRYPTO_NAME TEXT("cryptokeys")
-#else
-#define ENCRYPT_CRYPTO_NAME TEXT("crypto")
-#endif
-
 
 FString UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(const FPakEncryptSettings& PakEncryptSettings,const FString& PlatformName)
 {
