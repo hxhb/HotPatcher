@@ -201,8 +201,33 @@ public:
 	
 	static FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings);
 	static FHotPatcherVersion MakeNewReleaseByDiff(const FHotPatcherVersion& InBaseVersion, const FPatchVersionDiff& InDiff, FExportPatchSettings* InPatchSettings);
-
+public:
+	// Encrypt
 	static FPakEncryptionKeys GetCryptoByProjectSettings();
+	static FEncryptSetting GetCryptoSettingsByJson(const FString& CryptoJson);
 
+	static FEncryptSetting GetCryptoSettingByPakEncryptSettings(const FPakEncryptSettings& Config);
+	
 	static bool SerializePakEncryptionKeyToFile(const FPakEncryptionKeys& PakEncryptionKeys,const FString& ToFile);
+public:
+	// In: "C:\Users\lipengzha\Documents\UnrealProjects\Blank425\Intermediate\Staging\Blank425.upluginmanifest" "../../../Blank425/Plugins/Blank425.upluginmanifest
+	// To: upluginmanifest
+	static FString GetPakCommandExtersion(const FString& InCommand);
+
+	// [Pak]
+	// +ExtensionsToNotUsePluginCompression=uplugin
+	// +ExtensionsToNotUsePluginCompression=upluginmanifest
+	// +ExtensionsToNotUsePluginCompression=uproject
+	// +ExtensionsToNotUsePluginCompression=ini
+	// +ExtensionsToNotUsePluginCompression=icu
+	// +ExtensionsToNotUsePluginCompression=res
+	static TArray<FString> GetExtensionsToNotUsePluginCompressionByGConfig();
+
+	static void AppendPakCommandOptions(
+		TArray<FString>& OriginCommands,
+		const TArray<FString>& Options,
+		bool bAppendAllMatch,
+		const TArray<FString>& AppendFileExtersions,
+		const TArray<FString>& IgnoreFormats,
+		const TArray<FString>& InIgnoreOptions);
 };

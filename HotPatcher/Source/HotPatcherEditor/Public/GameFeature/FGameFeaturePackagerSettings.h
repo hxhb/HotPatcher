@@ -63,6 +63,9 @@ public:
 	// support UE4.26 later
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Base")
 	FIoStoreSettings IoStoreSettings;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Base")
+	FPakEncryptSettings EncryptSettings;
 	
 	UPROPERTY(EditAnywhere, Category="Base")
 	TArray<ETargetPlatform> TargetPlatforms;

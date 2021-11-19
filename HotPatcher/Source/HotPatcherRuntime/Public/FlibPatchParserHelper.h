@@ -453,5 +453,13 @@ public:
 	static FString GetPluginMountPoint(const FString& PluginName);
 	// [PRIJECTDIR]/AssetRegistry to ../../../Example/AssetRegistry
 	static FString ParserMountPointRegular(const FString& Src);
+
+public:
+	UFUNCTION(BlueprintCallable)
+	static void ReloadShaderbytecode();
+	UFUNCTION(BlueprintCallable,Exec)
+		static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir);	
+	UFUNCTION(BlueprintCallable,Exec)
+		static void CloseShaderbytecode(const FString& LibraryName);
 };
 

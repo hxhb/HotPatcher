@@ -92,7 +92,9 @@ public:
 		static void ReloadShaderbytecode();
 	UFUNCTION(BlueprintCallable,Exec)
 		static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir);	
-
+	UFUNCTION(BlueprintCallable,Exec)
+		static void CloseShaderbytecode(const FString& LibraryName);
+	
 	static bool LoadAssetRegistryToState(const TCHAR* Path,FAssetRegistryState& Out);
 	UFUNCTION(BlueprintCallable,Exec)
 		static bool LoadAssetRegistry(const FString& LibraryName, const FString& LibraryDir);
