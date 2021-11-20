@@ -7,6 +7,8 @@
 #include "HotPatcherLog.h"
 
 // engine header
+#include <UObject/SavePackage.h>
+
 #include "Interfaces/ITargetPlatform.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Interfaces/ITargetPlatformManagerModule.h"
@@ -340,7 +342,9 @@ bool UFlibHotPatcherEditorHelper::CookPackages(
 	}
 	return true;
 }
-
+#if WITH_PACKAGE_CONTEXT
+#include "Serialization/PackageWriter.h"
+#endif
 
 bool UFlibHotPatcherEditorHelper::CookPackage(
 	const FAssetData& AssetData,
@@ -455,7 +459,15 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 #if WITH_PACKAGE_CONTEXT
 		FSavePackageContext* CurrentPlatformPackageContext = nullptr;
 		if(PlatformSavePackageContext.Contains(Platform->PlatformName()))
+		{
 			CurrentPlatformPackageContext = *PlatformSavePackageContext.Find(Platform->PlatformName());
+		}
+	#if ENGINE_MAJOR_VERSION > 4
+			IPackageWriter::FBeginPackageInfo BeginInfo;
+			BeginInfo.PackageName = Package->GetFName();
+			BeginInfo.LooseFilePath = CookedSavePath;
+			CurrentPlatformPackageContext->PackageWriter->BeginPackage(BeginInfo);
+	#endif
 #endif
 		GIsCookerLoadingPackage = true;
 		UPackage::PackageSavedEvent.AddLambda([PackageSavedCallback](const FString& InFilePath,UObject* Object){PackageSavedCallback(InFilePath);});
@@ -491,7 +503,7 @@ void UFlibHotPatcherEditorHelper::CookChunkAssets(
 	}
 	if(!!AssetsSoftPath.Num())
 	{
-		UFlibHotPatcherEditorHelper::CookAssets(AssetsSoftPath,Platforms);
+		UFlibHotPatcherEditorHelper::CookAssets(AssetsSoftPath,Platforms,[](const FString&){},PlatformSavePackageContext);
 	}
 }
 

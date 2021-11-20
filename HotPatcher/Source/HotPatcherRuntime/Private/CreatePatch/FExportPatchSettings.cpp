@@ -3,7 +3,6 @@
 #include "HotPatcherLog.h"
 
 // engine header
-
 #include "Dom/JsonValue.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Kismet/KismetStringLibrary.h"
@@ -37,49 +36,7 @@ FExportPatchSettings::FExportPatchSettings()
 void FExportPatchSettings::Init()
 {
 	Super::Init();
-#if WITH_PACKAGE_CONTEXT
-	InitPlatformPackageContexts();
-#endif
 }
-
-#if WITH_PACKAGE_CONTEXT
-void FExportPatchSettings::InitPlatformPackageContexts()
-{
-	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
-	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
-	TArray<ITargetPlatform*> CookPlatforms;
-	const FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-	for (ITargetPlatform *TargetPlatform : TargetPlatforms)
-	{
-		if (GetPakTargetPlatformNames().Contains(TargetPlatform->PlatformName()))
-		{
-			CookPlatforms.AddUnique(TargetPlatform);
-			const FString PlatformString = TargetPlatform->PlatformName();
-
-			// const FString ResolvedRootPath = RootPathSandbox.Replace(TEXT("[Platform]"), *PlatformString);
-			const FString ResolvedProjectPath = FPaths::Combine(ProjectPath,FString::Printf(TEXT("Saved/Cooked/%s/%s"),*TargetPlatform->PlatformName(),FApp::GetProjectName()));
-
-			FPackageStoreBulkDataManifest* BulkDataManifest	= new FPackageStoreBulkDataManifest(ResolvedProjectPath);
-			FLooseFileWriter* LooseFileWriter				= GetIoStoreSettings().bIoStore ? new FLooseFileWriter() : nullptr;
-
-			FConfigFile PlatformEngineIni;
-			FConfigCacheIni::LoadLocalIniFile(PlatformEngineIni, TEXT("Engine"), true, *TargetPlatform->IniPlatformName());
-		
-#if ENGINE_MAJOR_VERSION >4 || ENGINE_MINOR_VERSION > 25
-			bool bLegacyBulkDataOffsets = false;
-			PlatformEngineIni.GetBool(TEXT("Core.System"), TEXT("LegacyBulkDataOffsets"), bLegacyBulkDataOffsets);
-			FSavePackageContext* SavePackageContext	= new FSavePackageContext(LooseFileWriter, BulkDataManifest, bLegacyBulkDataOffsets);
-#else
-			FSavePackageContext* SavePackageContext	= new FSavePackageContext(LooseFileWriter, BulkDataManifest);
-#endif
-			ETargetPlatform Platform;
-			UFlibPatchParserHelper::GetEnumValueByName(TargetPlatform->PlatformName(),Platform);
-			PlatformSavePackageContexts.Add(Platform,SavePackageContext);
-		}
-	}
-
-}
-#endif
 
 FString FExportPatchSettings::GetBaseVersion() const
 {
@@ -260,23 +217,6 @@ FString FExportPatchSettings::GetShaderLibraryName() const
 	return ShaderLibraryName;
 }
 
-#if WITH_PACKAGE_CONTEXT
-bool FExportPatchSettings::SavePlatformBulkDataManifest(ETargetPlatform Platform)
-{
-	bool bRet = false;
-	if(!GetPlatformSavePackageContexts().Contains(Platform))
-		return bRet;
-	FSavePackageContext* PackageContext =* GetPlatformSavePackageContexts().Find(Platform);
-	if (PackageContext != nullptr && PackageContext->BulkDataManifest != nullptr)
-	{
-		PackageContext->BulkDataManifest->Save();
-		bRet = true;
-	}
-	return bRet;
-}
-
-
-#endif
 TArray<FString> FExportPatchSettings::GetForceSkipContentStrRules()const
 {
 	TArray<FString> Path;

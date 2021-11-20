@@ -18,14 +18,8 @@
 #include "BinariesPatchFeature.h"
 #include "FPlatformBasePak.h"
 
-// engine header
-#if WITH_PACKAGE_CONTEXT
-	#include "UObject/SavePackage.h"
-	#include "Serialization/BulkDataManifest.h"
-#endif
 
 #include "CoreMinimal.h"
-
 #include "FBinariesPatchConfig.h"
 #include "FPlatformExternAssets.h"
 #include "UObject/ObjectMacros.h"
@@ -223,11 +217,7 @@ public:
 	FORCEINLINE FUnrealPakSettings GetUnrealPakSettings()const {return UnrealPakSettings;}
 	FORCEINLINE TArray<FString> GetDefaultPakListOptions()const {return DefaultPakListOptions;}
 	FORCEINLINE TArray<FString> GetDefaultCommandletOptions()const {return DefaultCommandletOptions;}
-#if WITH_PACKAGE_CONTEXT
-	virtual void InitPlatformPackageContexts();
-	FORCEINLINE TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
-	bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
-#endif
+
 	FORCEINLINE bool IsCreateDefaultChunk()const { return bCreateDefaultChunk; }
 	FORCEINLINE bool IsEnableMultiThread()const{ return bEnableMultiThread; }
 
@@ -380,6 +370,4 @@ public:
 
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
 		bool bEnableMultiThread = false;
-private:
-	TMap<ETargetPlatform,class FSavePackageContext*> PlatformSavePackageContexts;
 };

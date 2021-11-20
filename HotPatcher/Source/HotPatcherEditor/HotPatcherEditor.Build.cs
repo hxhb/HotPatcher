@@ -2,6 +2,7 @@
 
 using UnrealBuildTool;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -149,7 +150,10 @@ public class HotPatcherEditor : ModuleRules
 		bool bEnableGameFeature = false;
 		if (bEnableGameFeature || (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 26))
 		{
-			PublicDefinitions.Add("ENGINE_GAME_FEATURE");
+			PublicDefinitions.AddRange(new string[]
+			{
+				"ENGINE_GAME_FEATURE"
+			});
 			PublicDependencyModuleNames.AddRange(new string[]
 			{
 				// "GameFeatures",
@@ -163,5 +167,28 @@ public class HotPatcherEditor : ModuleRules
 			"CURRENT_VERSION_ID=70",
 			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
 		});
+
+		bool bEnablePackageContext = true;
+		AddPublicDefinitions("WITH_PACKAGE_CONTEXT", (Version.MajorVersion > 4 || Version.MinorVersion > 24) && bEnablePackageContext);
+		if (Version.MajorVersion > 4 || Version.MajorVersion > 26)
+		{
+			PublicDependencyModuleNames.AddRange(new string[]
+			{
+				"IoStoreUtilities",
+				"UnrealEd"
+			});
+		}
+		
+		if (Version.MajorVersion > 4)
+		{
+			PublicIncludePaths.AddRange(new List<string>()
+			{
+				// Path.Combine(EngineDirectory,"Source/Developer/IoStoreUtilities/Internal"),
+				// Path.Combine(EngineDirectory,"Source/Editor/UnrealEd/Private/Cooker"),
+				// Path.Combine(EngineDirectory,"Source/Editor/UnrealEd/Private"),
+				// Path.Combine(EngineDirectory,"Source/Runtime/CoreUObject/Internal"),
+				Path.Combine(ModuleDirectory,"../CookerWriterForUE5")
+			});
+		}
 	}
 }

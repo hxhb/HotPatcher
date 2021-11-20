@@ -131,6 +131,7 @@ namespace PatchWorker
 
 bool UPatcherProxy::DoExport()
 {
+	InitPlatformPackageContexts();
 	UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(true);
 	GetSettingObject()->Init();
 	
@@ -531,13 +532,13 @@ namespace PatchWorker
 							ChunkAssets,
 							TArray<ETargetPlatform>{Platform}
 	#if WITH_PACKAGE_CONTEXT
-							,Context.GetSettingObject()->GetPlatformSavePackageContexts()
+							,Context.PatchProxy->GetPlatformSavePackageContextsRaw()
 	#endif
 						);
 						if(Context.GetSettingObject()->GetIoStoreSettings().bStorageBulkDataInfo)
 						{
 #if WITH_PACKAGE_CONTEXT
-							Context.GetSettingObject()->SavePlatformBulkDataManifest(Platform);
+							Context.PatchProxy->SavePlatformBulkDataManifest(Platform);
 #endif
 						}
 					}
@@ -1550,4 +1551,102 @@ namespace PatchWorker
 	};
 
 };
+
+
+#if WITH_PACKAGE_CONTEXT
+// engine header
+#include "UObject/SavePackage.h"
+
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
+ #include "Serialization/BulkDataManifest.h"
+#endif
+#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
+	#include "ZenStoreWriter.h"
+	#include "PackageNameCache.h"
+	#include "LooseCookedPackageWriter.h"
+	#include "AsyncIODelete.h"
+	#include "LooseCookedPackageWriter.cpp"
+	#include "CookTypes.cpp"
+	#include "AsyncIODelete.cpp"
+#endif
+
+FSavePackageContext* UPatcherProxy::CreateSaveContext(const ITargetPlatform* TargetPlatform,bool bUseZenLoader)
+{
+	const FString PlatformString = TargetPlatform->PlatformName();
+
+	// const FString ResolvedRootPath = RootPathSandbox.Replace(TEXT("[Platform]"), *PlatformString);
+	const FString ResolvedProjectPath = FPaths::Combine(FPaths::ProjectDir(),FString::Printf(TEXT("Saved/Cooked/%s/%s"),*TargetPlatform->PlatformName(),FApp::GetProjectName()));
+	const FString ResolvedMetadataPath = FPaths::Combine(ResolvedProjectPath,TEXT("Mededata"));
+	
+	FConfigFile PlatformEngineIni;
+	FConfigCacheIni::LoadLocalIniFile(PlatformEngineIni, TEXT("Engine"), true, *TargetPlatform->IniPlatformName());
+	FSavePackageContext* SavePackageContext = NULL;
+	
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
+	FPackageStoreBulkDataManifest* BulkDataManifest	= new FPackageStoreBulkDataManifest(ResolvedProjectPath);
+	FLooseFileWriter* LooseFileWriter				= GetIoStoreSettings().bIoStore ? new FLooseFileWriter() : nullptr;
+	bool bLegacyBulkDataOffsets = false;
+	PlatformEngineIni.GetBool(TEXT("Core.System"), TEXT("LegacyBulkDataOffsets"), bLegacyBulkDataOffsets);
+	SavePackageContext	= new FSavePackageContext(LooseFileWriter, BulkDataManifest, bLegacyBulkDataOffsets);
+#endif
+	
+#if ENGINE_MAJOR_VERSION > 4
+	ICookedPackageWriter* PackageWriter = nullptr;
+	FString WriterDebugName;
+	if (bUseZenLoader)
+	{
+		PackageWriter = new FZenStoreWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform);
+		WriterDebugName = TEXT("ZenStore");
+	}
+	else
+	{
+		FAsyncIODelete AsyncIODelete{ResolvedProjectPath};
+		PackageWriter = new FLooseCookedPackageWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform,AsyncIODelete,FPackageNameCache{},TArray<TSharedRef<IPlugin>>{});
+		WriterDebugName = TEXT("DirectoryWriter");
+	}
+	
+	SavePackageContext	= new FSavePackageContext(TargetPlatform, PackageWriter);
+#endif
+	return SavePackageContext;
+}
+void UPatcherProxy::InitPlatformPackageContexts()
+{
+	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
+	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
+	TArray<ITargetPlatform*> CookPlatforms;
+	const FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+	for (ITargetPlatform *TargetPlatform : TargetPlatforms)
+	{
+		if (GetSettingObject()->GetPakTargetPlatformNames().Contains(TargetPlatform->PlatformName()))
+		{
+			CookPlatforms.AddUnique(TargetPlatform);
+			const FString PlatformString = TargetPlatform->PlatformName();
+			
+			ETargetPlatform Platform;
+			UFlibPatchParserHelper::GetEnumValueByName(TargetPlatform->PlatformName(),Platform);
+			PlatformSavePackageContexts.Add(Platform,MakeShareable(CreateSaveContext(TargetPlatform,GetSettingObject()->IoStoreSettings.bIoStore)));
+		}
+	}
+
+}
+
+bool UPatcherProxy::SavePlatformBulkDataManifest(ETargetPlatform Platform)
+{
+	bool bRet = false;
+	if(!GetPlatformSavePackageContexts().Contains(Platform))
+		return bRet;
+	TSharedPtr<FSavePackageContext> PackageContext = *GetPlatformSavePackageContexts().Find(Platform);
+#if ENGINE_MAJOR_VERSION < 5
+	if (PackageContext != nullptr && PackageContext->BulkDataManifest != nullptr)
+	{
+		PackageContext->BulkDataManifest->Save();
+		bRet = true;
+	}
+#endif
+	return bRet;
+}
+
+
+#endif
+
 #undef LOCTEXT_NAMESPACE
