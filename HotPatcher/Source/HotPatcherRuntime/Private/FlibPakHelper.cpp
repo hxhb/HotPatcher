@@ -425,6 +425,11 @@ bool UFlibPakHelper::LoadShaderbytecode(const FString& LibraryName, const FStrin
 	return result;
 }
 
+void UFlibPakHelper::CloseShaderbytecode(const FString& LibraryName)
+{
+	FShaderCodeLibrary::CloseLibrary(LibraryName);
+}
+
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 bool UFlibPakHelper::LoadAssetRegistryToState(const TCHAR* Path,FAssetRegistryState& Out)
 {

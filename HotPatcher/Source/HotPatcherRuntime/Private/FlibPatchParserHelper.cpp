@@ -1987,3 +1987,18 @@ FString UFlibPatchParserHelper::ParserMountPointRegular(const FString& Src)
 	}
 	return result;
 }
+
+void UFlibPatchParserHelper::ReloadShaderbytecode()
+{
+	UFlibPakHelper::ReloadShaderbytecode();
+}
+
+bool UFlibPatchParserHelper::LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir)
+{
+	return UFlibPakHelper::LoadShaderbytecode(LibraryName,LibraryDir);
+}
+
+void UFlibPatchParserHelper::CloseShaderbytecode(const FString& LibraryName)
+{
+	UFlibPakHelper::CloseShaderbytecode(LibraryName);
+}

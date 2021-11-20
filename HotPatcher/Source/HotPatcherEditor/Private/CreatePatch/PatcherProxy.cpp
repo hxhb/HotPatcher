@@ -911,56 +911,70 @@ namespace PatchWorker
 				
 				if(Context.PatchProxy)
 					Context.PatchProxy->OnPakListGenerated.Broadcast(Context,Chunk,Platform,ChunkPakListCommands);
-				
-				auto AppendOptionsLambda = [](TArray<FString>& OriginCommands,const TArray<FString>& Options)
-				{
-					// [Pak]
-					// +ExtensionsToNotUsePluginCompression=uplugin
-					// +ExtensionsToNotUsePluginCompression=upluginmanifest
-					// +ExtensionsToNotUsePluginCompression=uproject
-					// +ExtensionsToNotUsePluginCompression=ini
-					// +ExtensionsToNotUsePluginCompression=icu
-					// +ExtensionsToNotUsePluginCompression=res
-					TArray<FString> IgnoreCompressFormats;
-					GConfig->GetArray(TEXT("Pak"),TEXT("ExtensionsToNotUsePluginCompression"),IgnoreCompressFormats,GEngineIni);
 
-					auto GetPakCommandFileExtensionLambda = [](const FString& Command)->FString
-					{
-						FString result;
-						int32 DotPos = Command.Find(TEXT("."), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
-						if (DotPos != INDEX_NONE)
-						{
-							result =  Command.Mid(DotPos + 1);
-							if(result.EndsWith(TEXT("\"")))
-							{
-								result.RemoveAt(result.Len()-1,1);
-							}
-						}
-						return result;
-					};
-					
-					for(auto& Command:OriginCommands)
-					{
-						FString PakOptionsStr;
-						for (const auto& Param : Options)
-						{
-							FString FileExtension = GetPakCommandFileExtensionLambda(Command);
-							if(IgnoreCompressFormats.Contains(FileExtension) && Param.Equals(TEXT("-compress"),ESearchCase::IgnoreCase))
-							{
-								continue;
-							}
-							PakOptionsStr += TEXT(" ") + Param;
-						}
-						Command = FString::Printf(TEXT("%s%s"),*Command,*PakOptionsStr);
-					}
-				};
-				
+				TArray<FString> IgnoreCompressFormats = UFlibHotPatcherEditorHelper::GetExtensionsToNotUsePluginCompressionByGConfig();
 				for(auto& PakCommand:ChunkPakListCommands)
 				{
-					AppendOptionsLambda(PakCommand.PakCommands,Context.GetSettingObject()->GetUnrealPakSettings().UnrealPakListOptions);
-					AppendOptionsLambda(PakCommand.PakCommands,Context.GetSettingObject()->GetDefaultPakListOptions());
-					AppendOptionsLambda(PakCommand.IoStoreCommands,Context.GetSettingObject()->GetIoStoreSettings().IoStorePakListOptions);
-					AppendOptionsLambda(PakCommand.IoStoreCommands,Context.GetSettingObject()->GetDefaultPakListOptions());
+					TArray<FString> EmptyArray;
+					TArray<FString> CompressOption{TEXT("-compress")};
+
+					auto AppendPakCommandOptions = [&Context](FPakCommand& PakCommand,
+						const TArray<FString>& Options,
+						bool bAppendAllMatch,
+						const TArray<FString>& AppendFileExtersions,
+						const TArray<FString>& IgnoreFormats, // 忽略追加Option的文件格式
+						const TArray<FString>& InIgnoreFormatsOptions // 给忽略的格式忽略追加哪些option，如-compress不在ini中添加
+						)
+					{
+						UFlibHotPatcherEditorHelper::AppendPakCommandOptions(
+							PakCommand.PakCommands,
+							Options,
+							bAppendAllMatch,
+							AppendFileExtersions,
+							IgnoreFormats,
+							InIgnoreFormatsOptions
+							);
+						UFlibHotPatcherEditorHelper::AppendPakCommandOptions(
+							PakCommand.IoStoreCommands,
+							Options,
+							bAppendAllMatch,
+							AppendFileExtersions,
+							IgnoreFormats,
+							InIgnoreFormatsOptions
+							);
+					};
+					// 给所有的文件添加PakCommand的Option参数，默认只包含-compress，除了ExtensionsToNotUsePluginCompression中配置的文件都会添加
+					UFlibHotPatcherEditorHelper::AppendPakCommandOptions(PakCommand.PakCommands,Context.GetSettingObject()->GetUnrealPakSettings().UnrealPakListOptions,true,EmptyArray,IgnoreCompressFormats,CompressOption);
+					UFlibHotPatcherEditorHelper::AppendPakCommandOptions(PakCommand.PakCommands,Context.GetSettingObject()->GetDefaultPakListOptions(),true,EmptyArray,IgnoreCompressFormats,CompressOption);
+					UFlibHotPatcherEditorHelper::AppendPakCommandOptions(PakCommand.IoStoreCommands,Context.GetSettingObject()->GetIoStoreSettings().IoStorePakListOptions,true,EmptyArray,IgnoreCompressFormats,CompressOption);
+					UFlibHotPatcherEditorHelper::AppendPakCommandOptions(PakCommand.IoStoreCommands,Context.GetSettingObject()->GetDefaultPakListOptions(),true,EmptyArray,IgnoreCompressFormats,CompressOption);
+
+					FEncryptSetting EncryptSettings = UFlibHotPatcherEditorHelper::GetCryptoSettingByPakEncryptSettings(Context.GetSettingObject()->GetEncryptSettings());
+					
+					// 加密所有文件
+					if(EncryptSettings.bEncryptAllAssetFiles)
+					{
+						TArray<FString> EncryptOption{TEXT("-encrypt")};
+						AppendPakCommandOptions(PakCommand,EncryptOption,true,EmptyArray,EmptyArray,EmptyArray);
+					}
+					else
+					{
+						// 加密 uasset
+						if(EncryptSettings.bEncryptUAssetFiles)
+						{
+							TArray<FString> EncryptOption{TEXT("-encrypt")};
+							TArray<FString> EncryptFileExtersion{TEXT("uasset")};
+						
+							AppendPakCommandOptions(PakCommand,EncryptOption,false,EncryptFileExtersion,EmptyArray,EmptyArray);
+						}
+						// 加密 ini
+						if(EncryptSettings.bEncryptIniFiles)
+						{
+							TArray<FString> EncryptOption{TEXT("-encrypt")};
+							TArray<FString> EncryptFileExtersion{TEXT("ini")};
+							AppendPakCommandOptions(PakCommand,EncryptOption,false,EncryptFileExtersion,EmptyArray,EmptyArray);
+						}
+					}
 				}
 				
 				if (!ChunkPakListCommands.Num())

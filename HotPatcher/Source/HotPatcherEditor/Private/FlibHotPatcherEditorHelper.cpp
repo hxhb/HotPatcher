@@ -854,19 +854,13 @@ TArray<FString> UFlibHotPatcherEditorHelper::GetSupportPlatforms()
 	return Result;
 }
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 #define ENCRYPT_CRYPTO_NAME TEXT("cryptokeys")
-#else
-#define ENCRYPT_CRYPTO_NAME TEXT("crypto")
-#endif
 
-
-
-FString UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(const FPakEncryptSettings& EncryptSettings,const FString& PlatformName)
+FString UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(const FPakEncryptSettings& PakEncryptSettings,const FString& PlatformName)
 {
 	FString Result; 
 
-	FString CryptoKey = UFlibPatchParserHelper::ReplaceMarkPath(EncryptSettings.CryptoKeys.FilePath);
+	FString CryptoKey = UFlibPatchParserHelper::ReplaceMarkPath(PakEncryptSettings.CryptoKeys.FilePath);
 
 	auto AppendCommandOptions = [&Result](bool bEncryptIndex,bool bbEncrypt,bool bSign)
 	{
@@ -883,33 +877,26 @@ FString UFlibHotPatcherEditorHelper::GetEncryptSettingsCommandlineOptions(const 
 			Result += TEXT("-sign ");
 		}
 	};
-	bool bEncryptIndex = false;
-	bool bEncrypt = false;
-	bool bSign = false;
-	if(EncryptSettings.bUseDefaultCryptoIni)
+	
+	FEncryptSetting EncryptSettings = UFlibHotPatcherEditorHelper::GetCryptoSettingByPakEncryptSettings(PakEncryptSettings);
+	if(PakEncryptSettings.bUseDefaultCryptoIni)
 	{
-		FString SaveTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Crypto.json")));
+		FString SaveTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("Crypto.json")));
 		FPakEncryptionKeys PakEncryptionKeys = UFlibHotPatcherEditorHelper::GetCryptoByProjectSettings();
-		bEncryptIndex = PakEncryptionKeys.bEnablePakIndexEncryption;
-		bEncrypt = PakEncryptionKeys.bEnablePakUAssetEncryption;
-		bSign = PakEncryptionKeys.bEnablePakSigning;
 		UFlibHotPatcherEditorHelper::SerializePakEncryptionKeyToFile(PakEncryptionKeys,SaveTo);
 		CryptoKey = SaveTo;
 	}
-	else
-	{
-		bEncryptIndex= EncryptSettings.bEncryptIndex;
-		bEncrypt = EncryptSettings.bEncryptAllAssetFiles;
-		bSign = EncryptSettings.bSign;
-	}
 	
-	AppendCommandOptions(bEncryptIndex,bEncrypt,bSign);
+	AppendCommandOptions(
+		EncryptSettings.bEncryptIndex,
+		(EncryptSettings.bEncryptIniFiles || EncryptSettings.bEncryptAllAssetFiles || EncryptSettings.bEncryptUAssetFiles),
+		EncryptSettings.bSign
+		);
 	
 	if(FPaths::FileExists(CryptoKey))
 	{
 		Result += FString::Printf(TEXT("-%s=\"%s\" "),ENCRYPT_CRYPTO_NAME,*CryptoKey);
 	}
-	
 	
 	Result += FString::Printf(TEXT("-projectdir=\"%s\" "),*FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()));
 	Result += FString::Printf(TEXT("-enginedir=\"%s\" "),*FPaths::ConvertRelativePathToFull(FPaths::EngineDir()));
@@ -1373,10 +1360,109 @@ FPakEncryptionKeys UFlibHotPatcherEditorHelper::GetCryptoByProjectSettings()
 	return result;
 }
 
+FEncryptSetting UFlibHotPatcherEditorHelper::GetCryptoSettingsByJson(const FString& CryptoJson)
+{
+	FEncryptSetting result;
+	FArchive* File = IFileManager::Get().CreateFileReader(*CryptoJson);
+	TSharedPtr<FJsonObject> RootObject;
+	TSharedRef<TJsonReader<char>> Reader = TJsonReaderFactory<char>::Create(File);
+	if (FJsonSerializer::Deserialize(Reader, RootObject))
+	{
+		result.bSign = RootObject->GetBoolField(TEXT("bEnablePakSigning"));
+		result.bEncryptIndex = RootObject->GetBoolField(TEXT("bEnablePakIndexEncryption"));
+		result.bEncryptIniFiles = RootObject->GetBoolField(TEXT("bEnablePakIniEncryption"));
+		result.bEncryptUAssetFiles = RootObject->GetBoolField(TEXT("bEnablePakUAssetEncryption"));
+		result.bEncryptAllAssetFiles = RootObject->GetBoolField(TEXT("bEnablePakFullAssetEncryption"));
+	}
+	return result;
+}
+
+FEncryptSetting UFlibHotPatcherEditorHelper::GetCryptoSettingByPakEncryptSettings(const FPakEncryptSettings& Config)
+{
+	FEncryptSetting EncryptSettings;
+	if(Config.bUseDefaultCryptoIni)
+	{
+		FPakEncryptionKeys ProjectCrypt = UFlibHotPatcherEditorHelper::GetCryptoByProjectSettings();
+		EncryptSettings.bEncryptIniFiles = ProjectCrypt.bEnablePakIniEncryption;
+		EncryptSettings.bEncryptUAssetFiles = ProjectCrypt.bEnablePakUAssetEncryption;
+		EncryptSettings.bEncryptAllAssetFiles = ProjectCrypt.bEnablePakFullAssetEncryption;
+		EncryptSettings.bEncryptIndex = ProjectCrypt.bEnablePakIndexEncryption;
+		EncryptSettings.bSign = ProjectCrypt.bEnablePakSigning;
+	}
+	else
+	{
+		FString CryptoKeyFile = FPaths::ConvertRelativePathToFull(Config.CryptoKeys.FilePath);
+		if(FPaths::FileExists(CryptoKeyFile))
+		{
+			FEncryptSetting CryptoJsonSettings = UFlibHotPatcherEditorHelper::GetCryptoSettingsByJson(CryptoKeyFile);
+			EncryptSettings.bEncryptIniFiles = CryptoJsonSettings.bEncryptIniFiles;
+			EncryptSettings.bEncryptUAssetFiles = CryptoJsonSettings.bEncryptUAssetFiles;
+			EncryptSettings.bEncryptAllAssetFiles = CryptoJsonSettings.bEncryptAllAssetFiles;
+			EncryptSettings.bSign = CryptoJsonSettings.bSign;
+			EncryptSettings.bEncryptIndex = CryptoJsonSettings.bEncryptIndex;
+		}
+	}
+	return EncryptSettings;
+}
+
 bool UFlibHotPatcherEditorHelper::SerializePakEncryptionKeyToFile(const FPakEncryptionKeys& PakEncryptionKeys,
-	const FString& ToFile)
+                                                                  const FString& ToFile)
 {
 	FString KeyInfo;
 	UFlibPatchParserHelper::TSerializeStructAsJsonString(PakEncryptionKeys,KeyInfo);
 	return UFLibAssetManageHelperEx::SaveStringToFile(ToFile, KeyInfo);
+}
+
+FString UFlibHotPatcherEditorHelper::GetPakCommandExtersion(const FString& InCommand)
+{
+	auto GetPakCommandFileExtensionLambda = [](const FString& Command)->FString
+	{
+		FString result;
+		int32 DotPos = Command.Find(TEXT("."), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+		if (DotPos != INDEX_NONE)
+		{
+			result =  Command.Mid(DotPos + 1);
+			int32 FirstDoubleQuotesPos = -1;
+			if(result.FindChar('"',FirstDoubleQuotesPos))
+			{
+				result.RemoveAt(FirstDoubleQuotesPos,result.Len()-FirstDoubleQuotesPos);
+			}
+		}
+		return result;
+	};
+	return GetPakCommandFileExtensionLambda(InCommand);
+}
+
+TArray<FString> UFlibHotPatcherEditorHelper::GetExtensionsToNotUsePluginCompressionByGConfig()
+{
+	TArray<FString> IgnoreCompressFormats;
+	GConfig->GetArray(TEXT("Pak"),TEXT("ExtensionsToNotUsePluginCompression"),IgnoreCompressFormats,GEngineIni);
+	return IgnoreCompressFormats;
+}
+
+void UFlibHotPatcherEditorHelper::AppendPakCommandOptions(TArray<FString>& OriginCommands,
+	const TArray<FString>& Options, bool bAppendAllMatch, const TArray<FString>& AppendFileExtersions,
+	const TArray<FString>& IgnoreFormats, const TArray<FString>& InIgnoreOptions)
+{
+	for(auto& Command:OriginCommands)
+	{
+		FString PakOptionsStr;
+		for (const auto& Param : Options)
+		{
+			FString FileExtension = UFlibHotPatcherEditorHelper::GetPakCommandExtersion(Command);
+			if(IgnoreFormats.Contains(FileExtension) && InIgnoreOptions.Contains(Param))
+			{
+				continue;
+			}
+							
+			FString AppendOptionStr = TEXT("");
+			if(bAppendAllMatch || AppendFileExtersions.Contains(FileExtension))
+			{
+				AppendOptionStr += TEXT(" ") + Param;
+			}
+							
+			PakOptionsStr += AppendOptionStr;
+		}
+		Command = FString::Printf(TEXT("%s%s"),*Command,*PakOptionsStr);
+	}
 }

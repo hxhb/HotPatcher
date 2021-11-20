@@ -60,6 +60,7 @@ bool UGameFeatureProxy::DoExport()
 			PatchSettings->CookShaderOptions.ShderLibMountPointRegular = FString::Printf(TEXT("%s[%s]"),AS_PLUGINDIR_MARK,*GetSettingObject()->FeatureName);
 		}
 		PatchSettings->IoStoreSettings = GetSettingObject()->IoStoreSettings;
+		PatchSettings->EncryptSettings = GetSettingObject()->EncryptSettings;
 		PatchSettings->PakTargetPlatforms.Append(GetSettingObject()->TargetPlatforms);
 		PatchSettings->SavePath.Path = GetSettingObject()->GetSaveAbsPath();
 		PatchSettings->bStorageNewRelease = false;

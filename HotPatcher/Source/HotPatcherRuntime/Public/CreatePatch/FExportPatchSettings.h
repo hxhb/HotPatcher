@@ -30,25 +30,26 @@
 #include "Serialization/JsonSerializer.h"
 #include "FExportPatchSettings.generated.h"
 
+struct FEncryptSetting
+{
+	// -encryptindex
+	bool bEncryptIndex = false;
+	bool bEncryptAllAssetFiles = false;
+	bool bEncryptUAssetFiles = false;
+	bool bEncryptIniFiles = false;
+	// sign pak
+	bool bSign = false;
+};
 
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FPakEncryptSettings
 {
 	GENERATED_BODY()
 	// Use DefaultCrypto.ini
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	bool bUseDefaultCryptoIni = false;
-	// sign pak
-	UPROPERTY(EditAnywhere,meta=(EditCondition="!bUseDefaultCryptoIni"))
-	bool bSign = false;
-	// -encrypt
-	UPROPERTY(EditAnywhere,meta=(EditCondition="!bUseDefaultCryptoIni"))
-	bool bEncryptAllAssetFiles = false;
-	// -encryptindex
-	UPROPERTY(EditAnywhere,meta=(EditCondition="!bUseDefaultCryptoIni"))
-    bool bEncryptIndex = false;
 	// crypto.json (option)
-	UPROPERTY(EditAnywhere,meta=(EditCondition="!bUseDefaultCryptoIni"))
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,meta=(EditCondition="!bUseDefaultCryptoIni"))
 	FFilePath CryptoKeys;
 };
 
@@ -339,9 +340,7 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		FPakEncryptSettings EncryptSettings;
-	// // crypto.json
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-	// 	FFilePath CryptoKeys;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<FReplaceText> ReplacePakListTexts;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
