@@ -47,7 +47,7 @@ public:
         return result;
     }
     bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
-    FSavePackageContext* CreateSaveContext(const ITargetPlatform* TargetPlatform,bool bUseZenLoader);
+    // FSavePackageContext* CreateSaveContext(const ITargetPlatform* TargetPlatform,bool bUseZenLoader);
 #endif
     
 private:

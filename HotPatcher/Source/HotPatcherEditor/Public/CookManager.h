@@ -40,7 +40,10 @@ struct HOTPATCHEREDITOR_API FCookManager
 	virtual FString GetCookedAssetPath(const FString& PackageName,ETargetPlatform Platform);
 	void OnPackageSavedEvent(const FString& InFilePath,UObject* Object);
 	int32 AddCookMission(const FCookMission& InCookMission,TFunction<void(TArray<FCookManager::FCookPackageInfo>)> FaildPackagesCallback = [](TArray<FCookManager::FCookPackageInfo>){});
+	FORCEINLINE TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>>& GetPlatformSavePackageContexts() {return PlatformSavePackageContexts;}
+	
 private:
+	TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
 	TArray<FCookMission> CookMissions;
 
 	TArray<TSharedPtr<FThreadWorker>> ThreadWorker;

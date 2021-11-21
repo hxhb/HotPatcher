@@ -51,8 +51,24 @@ int32 FCookManager::AddCookMission(const FCookMission& InCookMission,TFunction<v
 	int32 index=-1;
 	index = CookMissions.Add(InCookMission);
 	TArray<FCookManager::FCookPackageInfo> FaildPackages;
+	
 	for(const auto& Package:InCookMission.MissionPackages)
 	{
+		for(const auto& Platform:Package.CookPlatforms)
+		{
+			if(!GetPlatformSavePackageContexts().Contains(Platform))
+			{
+				ITargetPlatform* TargetPlatform = UFlibHotPatcherEditorHelper::GetPlatformByName(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+				if(TargetPlatform)
+				{
+					FSavePackageContext* Context = UFlibHotPatcherEditorHelper::CreateSaveContext(TargetPlatform,false);
+					if(Context)
+					{
+						GetPlatformSavePackageContexts().Add(Platform,MakeShareable(Context));
+					}
+				}
+			}
+		}
 		if(!UFlibHotPatcherEditorHelper::CookPackage(Package.AssetData,Package.AssetData.GetPackage(),Package.GetCookPlatformsString()))
 		{
 			if(Package.AssetData.GetAsset()->HasAnyMarks(OBJECTMARK_EditorOnly))

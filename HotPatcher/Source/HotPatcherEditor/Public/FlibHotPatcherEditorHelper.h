@@ -111,6 +111,8 @@ public:
 
 	static FString GetProjectCookedDir();
 
+	static FSavePackageContext* CreateSaveContext(const ITargetPlatform* TargetPlatform,bool bUseZenLoader);
+	
 	//UFUNCTION(BlueprintCallable)
 	static bool CookAssets(
 			const TArray<FSoftObjectPath>& Assets,

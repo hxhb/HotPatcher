@@ -1568,55 +1568,13 @@ namespace PatchWorker
 
 
 #if WITH_PACKAGE_CONTEXT
-// engine header
+// // engine header
 #include "UObject/SavePackage.h"
 
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
  #include "Serialization/BulkDataManifest.h"
 #endif
 
-#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0 
-#include "CookerWriterForUE5/CookerWriterForUE5.h"
-#endif
-FSavePackageContext* UPatcherProxy::CreateSaveContext(const ITargetPlatform* TargetPlatform,bool bUseZenLoader)
-{
-	const FString PlatformString = TargetPlatform->PlatformName();
-
-	// const FString ResolvedRootPath = RootPathSandbox.Replace(TEXT("[Platform]"), *PlatformString);
-	const FString ResolvedProjectPath = FPaths::Combine(FPaths::ProjectDir(),FString::Printf(TEXT("Saved/Cooked/%s/%s"),*TargetPlatform->PlatformName(),FApp::GetProjectName()));
-	const FString ResolvedMetadataPath = FPaths::Combine(ResolvedProjectPath,TEXT("Mededata"));
-	
-	FConfigFile PlatformEngineIni;
-	FConfigCacheIni::LoadLocalIniFile(PlatformEngineIni, TEXT("Engine"), true, *TargetPlatform->IniPlatformName());
-	FSavePackageContext* SavePackageContext = NULL;
-	
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
-	FPackageStoreBulkDataManifest* BulkDataManifest	= new FPackageStoreBulkDataManifest(ResolvedProjectPath);
-	FLooseFileWriter* LooseFileWriter				= GetSettingObject()->GetIoStoreSettings().bIoStore ? new FLooseFileWriter() : nullptr;
-	bool bLegacyBulkDataOffsets = false;
-	PlatformEngineIni.GetBool(TEXT("Core.System"), TEXT("LegacyBulkDataOffsets"), bLegacyBulkDataOffsets);
-	SavePackageContext	= new FSavePackageContext(LooseFileWriter, BulkDataManifest, bLegacyBulkDataOffsets);
-#endif
-	
-#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0 
-	ICookedPackageWriter* PackageWriter = nullptr;
-	FString WriterDebugName;
-	if (bUseZenLoader)
-	{
-		PackageWriter = new FZenStoreWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform);
-		WriterDebugName = TEXT("ZenStore");
-	}
-	else
-	{
-		FAsyncIODelete AsyncIODelete{ResolvedProjectPath};
-		PackageWriter = new FLooseCookedPackageWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform,AsyncIODelete,FPackageNameCache{},IPluginManager::Get().GetEnabledPlugins());
-		WriterDebugName = TEXT("DirectoryWriter");
-	}
-	
-	SavePackageContext	= new FSavePackageContext(TargetPlatform, PackageWriter);
-#endif
-	return SavePackageContext;
-}
 void UPatcherProxy::InitPlatformPackageContexts()
 {
 	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
@@ -1632,7 +1590,7 @@ void UPatcherProxy::InitPlatformPackageContexts()
 			
 			ETargetPlatform Platform;
 			UFlibPatchParserHelper::GetEnumValueByName(TargetPlatform->PlatformName(),Platform);
-			PlatformSavePackageContexts.Add(Platform,MakeShareable(CreateSaveContext(TargetPlatform,GetSettingObject()->IoStoreSettings.bIoStore)));
+			PlatformSavePackageContexts.Add(Platform,MakeShareable(UFlibHotPatcherEditorHelper::CreateSaveContext(TargetPlatform,GetSettingObject()->IoStoreSettings.bIoStore)));
 		}
 	}
 
