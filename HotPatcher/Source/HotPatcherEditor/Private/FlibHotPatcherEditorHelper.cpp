@@ -342,9 +342,6 @@ bool UFlibHotPatcherEditorHelper::CookPackages(
 	}
 	return true;
 }
-#if WITH_PACKAGE_CONTEXT
-#include "Serialization/PackageWriter.h"
-#endif
 
 bool UFlibHotPatcherEditorHelper::CookPackage(
 	const FAssetData& AssetData,

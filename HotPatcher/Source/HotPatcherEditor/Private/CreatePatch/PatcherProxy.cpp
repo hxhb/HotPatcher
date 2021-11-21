@@ -1592,7 +1592,7 @@ FSavePackageContext* UPatcherProxy::CreateSaveContext(const ITargetPlatform* Tar
 	
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
 	FPackageStoreBulkDataManifest* BulkDataManifest	= new FPackageStoreBulkDataManifest(ResolvedProjectPath);
-	FLooseFileWriter* LooseFileWriter				= GetIoStoreSettings().bIoStore ? new FLooseFileWriter() : nullptr;
+	FLooseFileWriter* LooseFileWriter				= GetSettingObject()->GetIoStoreSettings().bIoStore ? new FLooseFileWriter() : nullptr;
 	bool bLegacyBulkDataOffsets = false;
 	PlatformEngineIni.GetBool(TEXT("Core.System"), TEXT("LegacyBulkDataOffsets"), bLegacyBulkDataOffsets);
 	SavePackageContext	= new FSavePackageContext(LooseFileWriter, BulkDataManifest, bLegacyBulkDataOffsets);
