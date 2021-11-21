@@ -19,5 +19,5 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 		FString To;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		ESearchCaseMode SearchCase;
+		ESearchCaseMode SearchCase = ESearchCaseMode::CaseSensitive;
 };

@@ -178,7 +178,7 @@ public class HotPatcherEditor : ModuleRules
 			});
 		}
 		
-		if (Version.MajorVersion > 4)
+		if (Version.MajorVersion > 4 && Version.MinorVersion > 0)
 		{
 			PublicIncludePaths.AddRange(new List<string>()
 			{

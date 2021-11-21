@@ -1574,16 +1574,10 @@ namespace PatchWorker
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
  #include "Serialization/BulkDataManifest.h"
 #endif
-#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
-	#include "ZenStoreWriter.h"
-	#include "PackageNameCache.h"
-	#include "LooseCookedPackageWriter.h"
-	#include "AsyncIODelete.h"
-	#include "LooseCookedPackageWriter.cpp"
-	#include "CookTypes.cpp"
-	#include "AsyncIODelete.cpp"
-#endif
 
+#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0 
+#include "CookerWriterForUE5/CookerWriterForUE5.h"
+#endif
 FSavePackageContext* UPatcherProxy::CreateSaveContext(const ITargetPlatform* TargetPlatform,bool bUseZenLoader)
 {
 	const FString PlatformString = TargetPlatform->PlatformName();
@@ -1604,7 +1598,7 @@ FSavePackageContext* UPatcherProxy::CreateSaveContext(const ITargetPlatform* Tar
 	SavePackageContext	= new FSavePackageContext(LooseFileWriter, BulkDataManifest, bLegacyBulkDataOffsets);
 #endif
 	
-#if ENGINE_MAJOR_VERSION > 4
+#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0 
 	ICookedPackageWriter* PackageWriter = nullptr;
 	FString WriterDebugName;
 	if (bUseZenLoader)
@@ -1615,7 +1609,7 @@ FSavePackageContext* UPatcherProxy::CreateSaveContext(const ITargetPlatform* Tar
 	else
 	{
 		FAsyncIODelete AsyncIODelete{ResolvedProjectPath};
-		PackageWriter = new FLooseCookedPackageWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform,AsyncIODelete,FPackageNameCache{},TArray<TSharedRef<IPlugin>>{});
+		PackageWriter = new FLooseCookedPackageWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform,AsyncIODelete,FPackageNameCache{},IPluginManager::Get().GetEnabledPlugins());
 		WriterDebugName = TEXT("DirectoryWriter");
 	}
 	

@@ -20,7 +20,7 @@ struct FPlatformExternFiles
         Platform(InPlatform),ExternFiles(InFiles){}
 	
     UPROPERTY(EditAnywhere,BlueprintReadWrite)
-    ETargetPlatform Platform;
+    ETargetPlatform Platform = ETargetPlatform::None;
     UPROPERTY(EditAnywhere,BlueprintReadWrite)
     TArray<FExternFileInfo> ExternFiles;
 };

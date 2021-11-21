@@ -1,7 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "LooseCookedPackageWriter.h"
-
 #include "AssetRegistry/AssetRegistryState.h"
 #include "Async/Async.h"
 #include "Async/ParallelFor.h"
@@ -250,7 +249,7 @@ TFuture<FMD5Hash> FLooseCookedPackageWriter::AsyncSaveOutputFiles(FRecord& Recor
 
 		FMD5Hash OutputHash;
 		OutputHash.Set(AccumulatedHash);
-		//UE::SavePackageUtilities::DecrementOutstandingAsyncWrites();
+		// UE::SavePackageUtilities::DecrementOutstandingAsyncWrites();
 		return OutputHash;
 	});
 }

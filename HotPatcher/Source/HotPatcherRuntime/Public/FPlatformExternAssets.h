@@ -16,7 +16,7 @@ struct FPlatformExternAssets
     GENERATED_USTRUCT_BODY()
 
     UPROPERTY(EditAnywhere,BlueprintReadWrite)
-    ETargetPlatform TargetPlatform;
+    ETargetPlatform TargetPlatform = ETargetPlatform::None;
 
     UPROPERTY(EditAnywhere,BlueprintReadWrite)
     TArray<FExternFileInfo> AddExternFileToPak;

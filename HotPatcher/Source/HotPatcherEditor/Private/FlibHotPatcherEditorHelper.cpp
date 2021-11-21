@@ -440,18 +440,18 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 			ExportObj->BeginCacheForCookedPlatformData(Platform);
 		}
 
-		// if(!bStorageConcurrent)
-		// {
-		// 	TArray<UObject*> TagExpObjects;
-		// 	GetObjectsWithAnyMarks(TagExpObjects,OBJECTMARK_TagExp);
-		// 	for(const auto& TagExportObj:TagExpObjects)
-		// 	{
-		// 		if(TagExportObj->HasAnyMarks(OBJECTMARK_TagExp))
-		// 		{
-		// 			TagExportObj->BeginCacheForCookedPlatformData(Platform);
-		// 		}
-		// 	}
-		// }
+		if(!bStorageConcurrent)
+		{
+			TArray<UObject*> TagExpObjects;
+			GetObjectsWithAnyMarks(TagExpObjects,OBJECTMARK_TagExp);
+			for(const auto& TagExportObj:TagExpObjects)
+			{
+				if(TagExportObj->HasAnyMarks(OBJECTMARK_TagExp))
+				{
+					TagExportObj->BeginCacheForCookedPlatformData(Platform);
+				}
+			}
+		}
 		if(GCookLog)
 		{
 			UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*Package->GetName(),*Platform->PlatformName());
@@ -462,7 +462,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 		{
 			CurrentPlatformPackageContext = *PlatformSavePackageContext.Find(Platform->PlatformName());
 		}
-	#if ENGINE_MAJOR_VERSION > 4
+	#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
 			IPackageWriter::FBeginPackageInfo BeginInfo;
 			BeginInfo.PackageName = Package->GetFName();
 			BeginInfo.LooseFilePath = CookedSavePath;
@@ -482,6 +482,31 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
                                                 );
 		GIsCookerLoadingPackage = false;
 		bSuccessed = Result == ESavePackageResult::Success;
+#if WITH_PACKAGE_CONTEXT
+		// in UE5.1
+	#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
+			// save cooked file to desk in UE5-main
+			if(bSuccessed)
+			{
+				const FAssetPackageData* AssetPackageData = UFLibAssetManageHelperEx::GetPackageDataByPackagePath(Package->GetFName().ToString());
+				ICookedPackageWriter::FCommitPackageInfo Info;
+				Info.bSucceeded = bSuccessed;
+				Info.PackageName = Package->GetFName();
+				PRAGMA_DISABLE_DEPRECATION_WARNINGS
+				Info.PackageGuid = AssetPackageData->PackageGuid;
+				PRAGMA_ENABLE_DEPRECATION_WARNINGS
+				// Info.Attachments.Add({ "Dependencies", TargetDomainDependencies });
+				// TODO: Reenable BuildDefinitionList once FCbPackage support for empty FCbObjects is in
+				//Info.Attachments.Add({ "BuildDefinitionList", BuildDefinitionList });
+				Info.WriteOptions = IPackageWriter::EWriteOptions::Write;
+				if (!!(SaveFlags & SAVE_ComputeHash))
+				{
+					Info.WriteOptions |= IPackageWriter::EWriteOptions::ComputeHash;
+				}
+				CurrentPlatformPackageContext->PackageWriter->CommitPackage(MoveTemp(Info));
+			}
+	#endif
+#endif
 	}
 	return bSuccessed;
 }

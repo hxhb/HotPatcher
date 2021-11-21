@@ -17,6 +17,7 @@ struct FPakCommandItem
 UENUM(BlueprintType)
 enum class EMatchRule:uint8
 {
+	None,
 	MATCH,
 	IGNORE
 };
@@ -36,11 +37,11 @@ struct FMatchRule
 	GENERATED_BODY()
 	// match or ignore
 	UPROPERTY(EditAnywhere)
-	EMatchRule Rule;
+	EMatchRule Rule = EMatchRule::None;
 
 	// grate/less/equal
 	UPROPERTY(EditAnywhere)
-	EMatchOperator Operator;
+	EMatchOperator Operator = EMatchOperator::None;
 
 	// uint kb
 	UPROPERTY(EditAnywhere,meta=(EditCondition="Operator!=EMatchOperator::None"))
@@ -57,7 +58,7 @@ struct HOTPATCHERRUNTIME_API FBinariesPatchConfig
 {
 	GENERATED_BODY();
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
-	EBinariesPatchFeature BinariesPatchType;
+	EBinariesPatchFeature BinariesPatchType = EBinariesPatchFeature::None;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
 	FDirectoryPath OldCookedDir;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
