@@ -54,22 +54,14 @@ int32 FCookManager::AddCookMission(const FCookMission& InCookMission,TFunction<v
 	
 	for(const auto& Package:InCookMission.MissionPackages)
 	{
-		for(const auto& Platform:Package.CookPlatforms)
-		{
-			if(!GetPlatformSavePackageContexts().Contains(Platform))
-			{
-				ITargetPlatform* TargetPlatform = UFlibHotPatcherEditorHelper::GetPlatformByName(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
-				if(TargetPlatform)
-				{
-					FSavePackageContext* Context = UFlibHotPatcherEditorHelper::CreateSaveContext(TargetPlatform,false);
-					if(Context)
-					{
-						GetPlatformSavePackageContexts().Add(Platform,MakeShareable(Context));
-					}
-				}
-			}
-		}
-		if(!UFlibHotPatcherEditorHelper::CookPackage(Package.AssetData,Package.AssetData.GetPackage(),Package.GetCookPlatformsString()))
+		if(!UFlibHotPatcherEditorHelper::CookPackage(
+			Package.AssetData,
+			Package.AssetData.GetPackage(),
+			Package.GetCookPlatformsString(),
+			[](const FString&){},
+			GetSavePackageContextByPlatforms(Package.CookPlatforms)
+			)
+			)
 		{
 			if(Package.AssetData.GetAsset()->HasAnyMarks(OBJECTMARK_EditorOnly))
 			{	
@@ -103,6 +95,34 @@ int32 FCookManager::AddCookMission(const FCookMission& InCookMission,TFunction<v
 		
 	}
 	return index;
+}
+
+TMap<FString, FSavePackageContext*> FCookManager::GetSavePackageContextByPlatforms(
+	const TArray<ETargetPlatform>& Platforms)
+
+{
+	TMap<FString, FSavePackageContext*> PlatformSavePackageContext;
+	for(const auto& Platform:Platforms)
+	{
+		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+		if(!GetPlatformSavePackageContexts().Contains(Platform))
+		{
+			ITargetPlatform* TargetPlatform = UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
+			if(TargetPlatform)
+			{
+				FSavePackageContext* Context = UFlibHotPatcherEditorHelper::CreateSaveContext(TargetPlatform,false);
+				if(Context)
+				{
+					GetPlatformSavePackageContexts().Add(Platform,MakeShareable(Context));
+				}
+			}
+		}
+		if(GetPlatformSavePackageContexts().Contains(Platform))
+		{
+			PlatformSavePackageContext.Add(PlatformName,GetPlatformSavePackageContexts().Find(Platform)->Get());
+		}
+	}
+	return PlatformSavePackageContext;
 }
 
 

@@ -41,6 +41,8 @@ struct HOTPATCHEREDITOR_API FCookManager
 	void OnPackageSavedEvent(const FString& InFilePath,UObject* Object);
 	int32 AddCookMission(const FCookMission& InCookMission,TFunction<void(TArray<FCookManager::FCookPackageInfo>)> FaildPackagesCallback = [](TArray<FCookManager::FCookPackageInfo>){});
 	FORCEINLINE TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>>& GetPlatformSavePackageContexts() {return PlatformSavePackageContexts;}
+protected:
+	TMap<FString, FSavePackageContext*> GetSavePackageContextByPlatforms(const TArray<ETargetPlatform>& Platforms);
 	
 private:
 	TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;

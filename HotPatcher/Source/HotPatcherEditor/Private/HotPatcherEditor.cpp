@@ -585,9 +585,13 @@ void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
 	TArray<FDirectoryPath> IncludePaths;
 	TArray<FPatcherSpecifyAsset> IncludeAssets;
 	
-	for(const auto& Folder:SelectedFolder)
+	for(auto& Folder:SelectedFolder)
 	{
 		FDirectoryPath CurrentPath;
+		if(Folder.StartsWith(TEXT("/All/")))
+		{
+			Folder.RemoveFromStart(TEXT("/All"));
+		}
 		CurrentPath.Path = Folder;
 		IncludePaths.Add(CurrentPath);
 	}
