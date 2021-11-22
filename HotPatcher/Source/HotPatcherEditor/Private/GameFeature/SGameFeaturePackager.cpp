@@ -5,11 +5,9 @@
 #include "GameFeature/FGameFeaturePackagerSettings.h"
 #include "CreatePatch/PatcherProxy.h"
 #include "CreatePatch/SHotPatcherExportPatch.h"
-#include "DetailsCustomization/CustomGameFeatursDetails.h"
 #include "GameFeature/GameFeatureProxy.h"
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetSystemLibrary.h"
-
 #include "Kismet/KismetTextLibrary.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherGameFeaturePackager"
@@ -218,6 +216,8 @@ FText SHotPatcherGameFeaturePackager::GetGenerateTooltipText() const
 	return UKismetTextLibrary::Conv_StringToText(FinalString);
 }
 
+// #include "DetailsCustomization/CustomGameFeatursDetails.h"
+
 void SHotPatcherGameFeaturePackager::CreateExportFilterListView()
 {
 	// Create a property view
@@ -250,7 +250,7 @@ void SHotPatcherGameFeaturePackager::CreateExportFilterListView()
 	FStructOnScope* Struct = new FStructOnScope(FGameFeaturePackagerSettings::StaticStruct(), (uint8*)GameFeaturePackagerSettings.Get());
 	// SettingsView->GetOnFinishedChangingPropertiesDelegate().AddRaw(ExportReleaseSettings.Get(),&FGameFeaturePackagerSettings::OnFinishedChangingProperties);
 	// SettingsView->GetDetailsView()->RegisterInstancedCustomPropertyLayout(FGameFeaturePackagerSettings::StaticStruct(),FOnGetDetailCustomizationInstance::CreateStatic(&FReleaseSettingsDetails::MakeInstance));
-	SettingsView->GetDetailsView()->RegisterInstancedCustomPropertyTypeLayout(FGameFeaturePackagerSettings::StaticStruct()->GetFName(),FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FCustomGameFeaturePackagerSettingsDetails::MakeInstance));
+	// SettingsView->GetDetailsView()->RegisterInstancedCustomPropertyTypeLayout(FGameFeaturePackagerSettings::StaticStruct()->GetFName(),FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FCustomGameFeaturePackagerSettingsDetails::MakeInstance));
 	SettingsView->SetStructureData(MakeShareable(Struct));
 }
 
