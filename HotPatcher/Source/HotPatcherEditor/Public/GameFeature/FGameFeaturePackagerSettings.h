@@ -40,7 +40,7 @@ public:
 	}
 	
 	UPROPERTY(EditAnywhere)
-	FString FeatureName;
+	TArray<FString> FeatureNames;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bAutoLoadFeaturePlugin = true;
