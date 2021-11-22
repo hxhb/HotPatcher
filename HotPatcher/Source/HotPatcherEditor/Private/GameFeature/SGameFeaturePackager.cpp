@@ -5,6 +5,7 @@
 #include "GameFeature/FGameFeaturePackagerSettings.h"
 #include "CreatePatch/PatcherProxy.h"
 #include "CreatePatch/SHotPatcherExportPatch.h"
+#include "DetailsCustomization/CustomGameFeatursDetails.h"
 #include "GameFeature/GameFeatureProxy.h"
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -108,49 +109,53 @@ void SHotPatcherGameFeaturePackager::DoGenerate()
 #if ENGINE_GAME_FEATURE
 	if(GetConfigSettings()->bAutoLoadFeaturePlugin)
 	{
-		FString FeatureName = GetConfigSettings()->FeatureName;
+		// FString FeatureName = GetConfigSettings()->FeatureName;
 		FString OutPluginURL;
 		UWorld* World = GEditor->GetEditorWorldContext().World();
 
-		if(World)
+		for(const auto& FeatureName:GetConfigSettings()->FeatureNames)
 		{
-			auto GameFeatureFounder = [](const FString& FeatureName)
+			if(World)
 			{
-				bool bFound = false;
-				FString FeaturePluginDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectPluginsDir(),TEXT("GameFeatures"),FeatureName));
-				FString FeatureUPluginPath = FPaths::Combine(FeaturePluginDir,FString::Printf(TEXT("%s.uplugin"),*FeatureName));
+				auto GameFeatureFounder = [](const FString& FeatureName)
+				{
+					bool bFound = false;
+					FString FeaturePluginDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectPluginsDir(),TEXT("GameFeatures"),FeatureName));
+					FString FeatureUPluginPath = FPaths::Combine(FeaturePluginDir,FString::Printf(TEXT("%s.uplugin"),*FeatureName));
 				
-				if(FPaths::DirectoryExists(FeaturePluginDir) && FPaths::FileExists(FeatureUPluginPath))
-				{
-					bFound = true;
-				}
-				return bFound;
-			};
+					if(FPaths::DirectoryExists(FeaturePluginDir) && FPaths::FileExists(FeatureUPluginPath))
+					{
+						bFound = true;
+					}
+					return bFound;
+				};
 			
-			if(IPluginManager::Get().FindPlugin(TEXT("GameFeatures")).IsValid() &&
-				IPluginManager::Get().FindPlugin(TEXT("ModularGameplay")).IsValid()
-					)
-			{
-				if(GameFeatureFounder(FeatureName))
+				if(IPluginManager::Get().FindPlugin(TEXT("GameFeatures")).IsValid() &&
+					IPluginManager::Get().FindPlugin(TEXT("ModularGameplay")).IsValid()
+						)
 				{
-					UKismetSystemLibrary::ExecuteConsoleCommand(World,FString::Printf(TEXT("LoadGameFeaturePlugin %s"),*FeatureName));
-					UKismetSystemLibrary::ExecuteConsoleCommand(World,FString::Printf(TEXT("DeactivateGameFeaturePlugin %s"),*FeatureName));
+					if(GameFeatureFounder(FeatureName))
+					{
+						UKismetSystemLibrary::ExecuteConsoleCommand(World,FString::Printf(TEXT("LoadGameFeaturePlugin %s"),*FeatureName));
+						UKismetSystemLibrary::ExecuteConsoleCommand(World,FString::Printf(TEXT("DeactivateGameFeaturePlugin %s"),*FeatureName));
+					}
 				}
-			}
-			else
-			{
-				UE_LOG(LogHotPatcher,Warning,TEXT("GameFeatures or ModularGameplay is not Enabled!"));
-			}
-			
-			if(IPluginManager::Get().FindPlugin(FeatureName))
-			{
-				FeaturePackager();
-			}
-			else
-			{
-				UE_LOG(LogHotPatcher,Error,TEXT("%s load faild, %s"),*GetConfigSettings()->FeatureName);
+				else
+				{
+					UE_LOG(LogHotPatcher,Warning,TEXT("GameFeatures or ModularGameplay is not Enabled!"));
+				}
 			}
 		}
+		TArray<FString> FeatureNamesTemp = GetConfigSettings()->FeatureNames;
+		for(const auto& FeatureName:FeatureNamesTemp)
+		{
+			if(!IPluginManager::Get().FindPlugin(FeatureName))
+			{
+				GetConfigSettings()->FeatureNames.Remove(FeatureName);
+				UE_LOG(LogHotPatcher,Error,TEXT("%s load faild, %s"),*FeatureName);
+			}
+		}
+		FeaturePackager();
 		// UGameFeaturesSubsystem::Get().GetPluginURLForBuiltInPluginByName(FeatureName,OutPluginURL);
 		// UGameFeaturesSubsystem::Get().LoadGameFeaturePlugin(OutPluginURL,FGameFeaturePluginDeactivateComplete::CreateLambda([this](const UE::GameFeatures::FResult& InStatus)
 		// {
@@ -180,7 +185,7 @@ void SHotPatcherGameFeaturePackager::FeaturePackager()
 	{
 		FString CurrentConfig;
 		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
-		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),FString::Printf(TEXT("%s_GameFeatureConfig.json"),*GetConfigSettings()->FeatureName)));
+		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),FString::Printf(TEXT("GameFeatureConfig.json"))));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPlugin -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs());
 		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
@@ -245,6 +250,7 @@ void SHotPatcherGameFeaturePackager::CreateExportFilterListView()
 	FStructOnScope* Struct = new FStructOnScope(FGameFeaturePackagerSettings::StaticStruct(), (uint8*)GameFeaturePackagerSettings.Get());
 	// SettingsView->GetOnFinishedChangingPropertiesDelegate().AddRaw(ExportReleaseSettings.Get(),&FGameFeaturePackagerSettings::OnFinishedChangingProperties);
 	// SettingsView->GetDetailsView()->RegisterInstancedCustomPropertyLayout(FGameFeaturePackagerSettings::StaticStruct(),FOnGetDetailCustomizationInstance::CreateStatic(&FReleaseSettingsDetails::MakeInstance));
+	SettingsView->GetDetailsView()->RegisterInstancedCustomPropertyTypeLayout(FGameFeaturePackagerSettings::StaticStruct()->GetFName(),FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FCustomGameFeaturePackagerSettingsDetails::MakeInstance));
 	SettingsView->SetStructureData(MakeShareable(Struct));
 }
 

@@ -8,11 +8,12 @@
 bool UGameFeatureProxy::DoExport()
 {
 	PatchSettings = MakeShareable(new FExportPatchSettings);
-	FString FeatureName = GetSettingObject()->FeatureName;
-	// make patch setting
+	for(const auto& FeatureName:GetSettingObject()->FeatureNames)
+	{
+		// make patch setting
 	{
 		PatchSettings->bByBaseVersion = false;
-		PatchSettings->VersionId = GetSettingObject()->FeatureName;
+		PatchSettings->VersionId = FeatureName;
 		FDirectoryPath FeaturePluginPath;
 		FeaturePluginPath.Path = FString::Printf(TEXT("/%s"),*PatchSettings->VersionId);
 		
@@ -50,14 +51,14 @@ bool UGameFeatureProxy::DoExport()
 		
 		{
 			PatchSettings->SerializeAssetRegistryOptions = GetSettingObject()->SerializeAssetRegistryOptions;
-			PatchSettings->SerializeAssetRegistryOptions.AssetRegistryMountPointRegular = FString::Printf(TEXT("%s[%s]"),AS_PLUGINDIR_MARK,*GetSettingObject()->FeatureName);
+			PatchSettings->SerializeAssetRegistryOptions.AssetRegistryMountPointRegular = FString::Printf(TEXT("%s[%s]"),AS_PLUGINDIR_MARK,*FeatureName);
 			PatchSettings->SerializeAssetRegistryOptions.AssetRegistryNameRegular = FString::Printf(TEXT("AssetRegistry.bin"));
 		}
 		{
 			PatchSettings->CookShaderOptions = GetSettingObject()->CookShaderOptions;
 			PatchSettings->CookShaderOptions.bSharedShaderLibrary = true;
 			PatchSettings->CookShaderOptions.bNativeShader = true;
-			PatchSettings->CookShaderOptions.ShderLibMountPointRegular = FString::Printf(TEXT("%s[%s]"),AS_PLUGINDIR_MARK,*GetSettingObject()->FeatureName);
+			PatchSettings->CookShaderOptions.ShderLibMountPointRegular = FString::Printf(TEXT("%s[%s]"),AS_PLUGINDIR_MARK,*FeatureName);
 		}
 		PatchSettings->IoStoreSettings = GetSettingObject()->IoStoreSettings;
 		PatchSettings->EncryptSettings = GetSettingObject()->EncryptSettings;
@@ -73,10 +74,11 @@ bool UGameFeatureProxy::DoExport()
 
 	if(GetSettingObject()->IsSaveConfig())
 	{
-		FString SaveToFile = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),FString::Printf(TEXT("%s_GameFeatureConfig.json"),*GetSettingObject()->FeatureName));
+		FString SaveToFile = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),FString::Printf(TEXT("%s_GameFeatureConfig.json"),*FeatureName));
 		FString SerializedJsonStr;
 		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetSettingObject(),SerializedJsonStr);
 		FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile);
+	}
 	}
 	return Super::DoExport();
 }
