@@ -45,7 +45,7 @@ struct HOTPATCHERRUNTIME_API FPlatformPakAssets
 {
 	GENERATED_USTRUCT_BODY()
 	UPROPERTY(EditAnywhere)
-		ETargetPlatform Platform;
+		ETargetPlatform Platform = ETargetPlatform::None;
 	UPROPERTY(EditAnywhere)
 		TArray<FPatcherSpecifyAsset> Assets;
 	UPROPERTY(EditAnywhere)

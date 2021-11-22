@@ -31,6 +31,28 @@ public:
     virtual bool DoExport() override;
     virtual FExportPatchSettings* GetSettingObject()override{ return (FExportPatchSettings*)Setting; }
     FOnPakListGenerated OnPakListGenerated;
+
+#if WITH_PACKAGE_CONTEXT
+    virtual void InitPlatformPackageContexts();
+    FORCEINLINE TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
+    FORCEINLINE TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContextsRaw()const
+    {
+        TMap<ETargetPlatform,FSavePackageContext*> result;
+        TArray<ETargetPlatform> Keys;
+        GetPlatformSavePackageContexts().GetKeys(Keys);
+        for(const auto& Key:Keys)
+        {
+            result.Add(Key,GetPlatformSavePackageContexts().Find(Key)->Get());
+        }
+        return result;
+    }
+    bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
+    FSavePackageContext* CreateSaveContext(const ITargetPlatform* TargetPlatform,bool bUseZenLoader);
+#endif
+    
+private:
+    TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
+    
 private:
     TSharedPtr<FHotPatcherPatchContext> PatchContext;
 

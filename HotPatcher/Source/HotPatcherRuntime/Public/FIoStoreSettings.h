@@ -26,7 +26,7 @@ struct FIoStorePlatformContainers
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FDirectoryPath BasePackageStagedRootDir;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bGenerateDiffPatch;
+	bool bGenerateDiffPatch = false;
 	
 	// global.utoc file
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

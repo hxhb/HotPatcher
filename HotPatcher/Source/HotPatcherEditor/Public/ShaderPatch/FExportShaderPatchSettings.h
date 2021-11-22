@@ -26,13 +26,13 @@ struct FShaderPatchConf
 	GENERATED_USTRUCT_BODY()
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		ETargetPlatform Platform;
+		ETargetPlatform Platform = ETargetPlatform::None;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
     	TArray<FDirectoryPath> OldMetadataDir;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     	FDirectoryPath NewMetadataDir;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-   		bool bNativeFormat;
+   		bool bNativeFormat = false;
 	// since UE 4.26 (Below 4.26 this parameter has no effect)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool bDeterministicShaderCodeOrder = true;

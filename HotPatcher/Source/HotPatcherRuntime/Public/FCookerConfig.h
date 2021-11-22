@@ -18,7 +18,7 @@ public:
 	UPROPERTY(EditAnywhere)
 	TArray<FString> CookPlatforms;
 	UPROPERTY(EditAnywhere)
-	bool bCookAllMap;
+	bool bCookAllMap = false;
 	UPROPERTY(EditAnywhere)
 	TArray<FString> CookMaps;
 	UPROPERTY(EditAnywhere)

@@ -73,9 +73,9 @@ void UPackageAssetsCollector::DiscoverPlatformSpecificNeverCookPackages(
 	}
 }
 
-bool UPackageAssetsCollector::IsCookFlagSet( const ECookInitializationFlags& InCookFlags ) 
+bool UPackageAssetsCollector::IsCookFlagSet( const ECookInitializationFlagsEx& InCookFlags ) 
 {
-	return (CookFlags & InCookFlags) != ECookInitializationFlags::None;
+	return (CookFlags & InCookFlags) != ECookInitializationFlagsEx::None;
 }
 
 
@@ -171,7 +171,7 @@ bool ContainsRedirector(const FName& PackageName, TMap<FName, FName>& Redirected
 
 #include "Editor.h"
 void UPackageAssetsCollector::CollectFilesToCook(TArray<FName>& FilesInPath, const TArray<FString>& CookMaps, const TArray<FString>& InCookDirectories,
-	const TArray<FString> &IniMapSections, ECookByTheBookOptions FilesToCookFlags, const TArray<ITargetPlatform*>& InTargetPlatforms)
+	const TArray<FString> &IniMapSections, ECookByTheBookOptionsEx FilesToCookFlags, const TArray<ITargetPlatform*>& InTargetPlatforms)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UCookOnTheFlyServer::CollectFilesToCook);
 
@@ -180,16 +180,16 @@ void UPackageAssetsCollector::CollectFilesToCook(TArray<FName>& FilesInPath, con
 // #endif
 	UProjectPackagingSettings* PackagingSettings = Cast<UProjectPackagingSettings>(UProjectPackagingSettings::StaticClass()->GetDefaultObject());
 
-	bool bCookAll = (!!(FilesToCookFlags & ECookByTheBookOptions::CookAll)) || PackagingSettings->bCookAll;
-	bool bMapsOnly = (!!(FilesToCookFlags & ECookByTheBookOptions::MapsOnly)) || PackagingSettings->bCookMapsOnly;
-	bool bNoDev = !!(FilesToCookFlags & ECookByTheBookOptions::NoDevContent);
+	bool bCookAll = (!!(FilesToCookFlags & ECookByTheBookOptionsEx::CookAll)) || PackagingSettings->bCookAll;
+	bool bMapsOnly = (!!(FilesToCookFlags & ECookByTheBookOptionsEx::MapsOnly)) || PackagingSettings->bCookMapsOnly;
+	bool bNoDev = !!(FilesToCookFlags & ECookByTheBookOptionsEx::NoDevContent);
 
 	TArray<FName> InitialPackages = FilesInPath;
 
 
 	TArray<FString> CookDirectories = InCookDirectories;
 	
-	if (!(FilesToCookFlags & ECookByTheBookOptions::NoAlwaysCookMaps))
+	if (!(FilesToCookFlags & ECookByTheBookOptionsEx::NoAlwaysCookMaps))
 	{
 
 		{
@@ -265,7 +265,7 @@ void UPackageAssetsCollector::CollectFilesToCook(TArray<FName>& FilesInPath, con
 			}
 		}
 	}
-	if (!(FilesToCookFlags & ECookByTheBookOptions::NoGameAlwaysCookPackages))
+	if (!(FilesToCookFlags & ECookByTheBookOptionsEx::NoGameAlwaysCookPackages))
 	{
 		// COOK_STAT(FScopedDurationTimer TickTimer(DetailedCookStats::GameCookModificationDelegateTimeSec));
 		// SCOPE_TIMER(CookModificationDelegate);
@@ -371,7 +371,7 @@ void UPackageAssetsCollector::CollectFilesToCook(TArray<FName>& FilesInPath, con
 	// }
 
 
-	if (!(FilesToCookFlags & ECookByTheBookOptions::DisableUnsolicitedPackages))
+	if (!(FilesToCookFlags & ECookByTheBookOptionsEx::DisableUnsolicitedPackages))
 	{
 		for (const FString& CurrEntry : CookDirectories)
 		{
@@ -430,7 +430,7 @@ void UPackageAssetsCollector::CollectFilesToCook(TArray<FName>& FilesInPath, con
 		}
 	}
 
-	if (!(FilesToCookFlags & ECookByTheBookOptions::NoDefaultMaps))
+	if (!(FilesToCookFlags & ECookByTheBookOptionsEx::NoDefaultMaps))
 	{
 		// make sure we cook the default maps
 		// Collect the default maps for all requested platforms.  Our additions are potentially wasteful if different platforms in the requested list have different default maps.
@@ -450,7 +450,7 @@ void UPackageAssetsCollector::CollectFilesToCook(TArray<FName>& FilesInPath, con
 					AddFileToCook(FilesInPath, Obj);
 				}
 			}
-			if (IsCookFlagSet(ECookInitializationFlags::IncludeServerMaps))
+			if (IsCookFlagSet(ECookInitializationFlagsEx::IncludeServerMaps))
 			{
 				if (PlatformEngineIni.GetString(TEXT("/Script/EngineSettings.GameMapsSettings"), TEXT("ServerDefaultMap"), Obj))
 				{
@@ -484,7 +484,7 @@ void UPackageAssetsCollector::CollectFilesToCook(TArray<FName>& FilesInPath, con
 		}
 	}
 
-	if (!(FilesToCookFlags & ECookByTheBookOptions::NoInputPackages))
+	if (!(FilesToCookFlags & ECookByTheBookOptionsEx::NoInputPackages))
 	{
 		// make sure we cook any extra assets for the default touch interface
 		// @todo need a better approach to cooking assets which are dynamically loaded by engine code based on settings
@@ -504,7 +504,7 @@ void UPackageAssetsCollector::CollectFilesToCook(TArray<FName>& FilesInPath, con
 	// Simply jamming everything in a given directory into the cook list is error-prone
 	// on many levels - assets not required getting cooked/shipped; assets not put under 
 	// the correct folder; etc.
-	if ( !(FilesToCookFlags & ECookByTheBookOptions::NoSlatePackages))
+	if ( !(FilesToCookFlags & ECookByTheBookOptionsEx::NoSlatePackages))
 	{
 		TArray<FString> UIContentPaths;
 		TSet <FName> ContentDirectoryAssets; 
@@ -536,7 +536,7 @@ void UPackageAssetsCollector::CollectFilesToCook(TArray<FName>& FilesInPath, con
 		}
 	}
 
-	if (!(FilesToCookFlags & ECookByTheBookOptions::DisableUnsolicitedPackages))
+	if (!(FilesToCookFlags & ECookByTheBookOptionsEx::DisableUnsolicitedPackages))
 	{
 		// Gather initial unsolicited package list, this is needed in iterative mode because all explicitly requested packages may have already been cooked
 		// and so the code inside the TIckCookOnTheSide build loop might never run and never get a chance to call GetUnsolicitedPackages
@@ -588,7 +588,7 @@ TArray<FString> UPackageAssetsCollector::StartAssetsCollector(const TArray<FStri
 			}
 		}
 	}
-	StartupOptions.CookOptions = ECookByTheBookOptions::NoAlwaysCookMaps | ECookByTheBookOptions::NoDefaultMaps | ECookByTheBookOptions::NoGameAlwaysCookPackages | ECookByTheBookOptions::NoInputPackages | ECookByTheBookOptions::NoSlatePackages | ECookByTheBookOptions::DisableUnsolicitedPackages | ECookByTheBookOptions::ForceDisableSaveGlobalShaders;
+	StartupOptions.CookOptions = ECookByTheBookOptionsEx::NoAlwaysCookMaps | ECookByTheBookOptionsEx::NoDefaultMaps | ECookByTheBookOptionsEx::NoGameAlwaysCookPackages | ECookByTheBookOptionsEx::NoInputPackages | ECookByTheBookOptionsEx::NoSlatePackages | ECookByTheBookOptionsEx::DisableUnsolicitedPackages | ECookByTheBookOptionsEx::ForceDisableSaveGlobalShaders;
 	
 	return AssetsCollector(StartupOptions,CollectorPlatforms);
 }
@@ -601,7 +601,7 @@ inline TArray<FString> UPackageAssetsCollector::AssetsCollector(
 	const TArray<FString>& CookMaps = CookByTheBookStartupOptions.CookMaps;
 	const TArray<FString>& CookDirectories = CookByTheBookStartupOptions.CookDirectories;
 	const TArray<FString>& IniMapSections = CookByTheBookStartupOptions.IniMapSections;
-	const ECookByTheBookOptions& CookOptions = CookByTheBookStartupOptions.CookOptions;
+	const ECookByTheBookOptionsEx& CookOptions = CookByTheBookStartupOptions.CookOptions;
 	const FString& DLCName = CookByTheBookStartupOptions.DLCName;
 
 	const FString& CreateReleaseVersion = CookByTheBookStartupOptions.CreateReleaseVersion;

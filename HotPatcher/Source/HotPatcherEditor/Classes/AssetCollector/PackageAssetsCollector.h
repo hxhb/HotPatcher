@@ -10,7 +10,7 @@
 #include "UObject/NoExportTypes.h"
 #include "PackageAssetsCollector.generated.h"
 
-enum class ECookInitializationFlags
+enum class ECookInitializationFlagsEx
 {
 	None =										0x00000000, // No flags
 	//unused =									0x00000001, 
@@ -33,9 +33,9 @@ enum class ECookInitializationFlags
 	IgnoreIniSettingsOutOfDate =				0x00020000, // if the inisettings say the cook is out of date keep using the previously cooked build
 	IgnoreScriptPackagesOutOfDate =				0x00040000, // for incremental cooking, ignore script package changes
 };
-ENUM_CLASS_FLAGS(ECookInitializationFlags);
+ENUM_CLASS_FLAGS(ECookInitializationFlagsEx);
 
-enum class ECookByTheBookOptions
+enum class ECookByTheBookOptionsEx
 {
 	None =								0x00000000, // no flags
 	CookAll	=							0x00000001, // cook all maps and content in the content directory
@@ -53,7 +53,7 @@ enum class ECookByTheBookOptions
 	FullLoadAndSave =					0x00002000, // Load all packages into memory and save them all at once in one tick for speed reasons. This requires a lot of RAM for large games.
 	PackageStore =						0x00004000, // Cook package header information into a global package store
 };
-ENUM_CLASS_FLAGS(ECookByTheBookOptions);
+ENUM_CLASS_FLAGS(ECookByTheBookOptionsEx);
 
 /** Simple thread safe proxy for TSet<FName> */
 template <typename T>
@@ -150,7 +150,7 @@ public:
 	TArray<FString> CookCultures; 
 	TArray<FString> IniMapSections;
 	TArray<FString> CookPackages; // list of packages we should cook, used to specify specific packages to cook
-	ECookByTheBookOptions CookOptions = ECookByTheBookOptions::None;
+	ECookByTheBookOptionsEx CookOptions = ECookByTheBookOptionsEx::None;
 	FString DLCName;
 	FString CreateReleaseVersion;
 	FString BasedOnReleaseVersion;
@@ -262,16 +262,16 @@ protected:
 	TArray<FString> AssetsCollector(const FCookByTheBookStartupOptions& CookByTheBookStartupOptions, const TArray<ITargetPlatform*> InTargetPlatforms);
 	void DiscoverPlatformSpecificNeverCookPackages(const TArrayView<ITargetPlatform*>& TargetPlatforms, const TArray<FString>& UBTPlatformStrings);
 	void CollectFilesToCook(TArray<FName>& FilesInPath, const TArray<FString>& CookMaps, const TArray<FString>& InCookDirectories,
-	const TArray<FString> &IniMapSections, ECookByTheBookOptions FilesToCookFlags, const TArray<ITargetPlatform*>& TargetPlatforms);
+	const TArray<FString> &IniMapSections, ECookByTheBookOptionsEx FilesToCookFlags, const TArray<ITargetPlatform*>& TargetPlatforms);
 
-	bool IsCookFlagSet( const ECookInitializationFlags& InCookFlags );
+	bool IsCookFlagSet( const ECookInitializationFlagsEx& InCookFlags );
 	void AddFileToCook( TArray<FName>& InOutFilesToCook, const FString &InFilename ) const;
 	TArray<UPackage*> GetUnsolicitedPackages(const TArray<ITargetPlatform*>& TargetPlatforms) const;
 
 private:
 	FCookByTheBookOptionsEx CookByTheBookOptions;
 	FCookTrackerEx CookTracker;
-	ECookInitializationFlags CookFlags;
+	ECookInitializationFlagsEx CookFlags;
 	TSharedPtr<FPackageTracker> PackageTracker;
 };
 

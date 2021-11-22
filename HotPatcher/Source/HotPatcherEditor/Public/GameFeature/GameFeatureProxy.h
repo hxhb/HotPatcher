@@ -15,6 +15,9 @@ public:
     virtual bool DoExport() override;
     virtual FGameFeaturePackagerSettings* GetSettingObject()override{ return (FGameFeaturePackagerSettings*)Setting; }
 
+protected:
+    UPROPERTY()
+    UPatcherProxy* PatcherProxy;
 private:
     TSharedPtr<FExportPatchSettings> PatchSettings;
     TSharedPtr<FThreadWorker> ThreadWorker;

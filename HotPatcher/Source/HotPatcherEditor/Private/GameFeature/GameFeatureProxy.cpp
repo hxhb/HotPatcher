@@ -67,7 +67,7 @@ bool UGameFeatureProxy::DoExport()
 		PatchSettings->bStorageNewRelease = false;
 		PatchSettings->bStorageConfig = true;
 	}
-	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
+	PatcherProxy = NewObject<UPatcherProxy>();
 	PatcherProxy->AddToRoot();
 	PatcherProxy->SetProxySettings(PatchSettings.Get());
 	PatcherProxy->DoExport();

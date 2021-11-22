@@ -17,7 +17,7 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString Hash;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	int32 FileSize;
+	int32 FileSize = 0;
 	//UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	//FPakVersion PakVersion;
 };
