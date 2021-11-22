@@ -1603,7 +1603,7 @@ bool UPatcherProxy::SavePlatformBulkDataManifest(ETargetPlatform Platform)
 	if(!GetPlatformSavePackageContexts().Contains(Platform))
 		return bRet;
 	TSharedPtr<FSavePackageContext> PackageContext = *GetPlatformSavePackageContexts().Find(Platform);
-#if ENGINE_MAJOR_VERSION < 5
+#if ENGINE_MAJOR_VERSION < 5 && ENGINE_MINOR_VERSION > 25
 	if (PackageContext != nullptr && PackageContext->BulkDataManifest != nullptr)
 	{
 		PackageContext->BulkDataManifest->Save();
