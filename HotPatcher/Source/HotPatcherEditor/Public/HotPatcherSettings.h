@@ -1,10 +1,8 @@
 #pragma once
 #include "ETargetPlatform.h"
 #include "CreatePatch/FExportPatchSettings.h"
-
+#include "FlibPatchParserHelper.h"
 #include "CoreMinimal.h"
-
-#include "GraphColor/Private/appconst.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "HotPatcherSettings.generated.h"
 #define LOCTEXT_NAMESPACE "UHotPatcherSettings"
@@ -26,26 +24,18 @@ struct FPakExternalInfo
 UCLASS(config = Game, defaultconfig)
 class HOTPATCHEREDITOR_API UHotPatcherSettings:public UObject
 {
-    GENERATED_BODY()
-
+    GENERATED_UCLASS_BODY()
 public:
     UPROPERTY(EditAnywhere, config, Category = "Editor")
-    bool bWhiteListCookInEditor;
+    bool bWhiteListCookInEditor = false;
     UPROPERTY(EditAnywhere, config, Category = "Editor")
     TArray<ETargetPlatform> PlatformWhitelists;
-    UPROPERTY(EditAnywhere, config, Category = "Editor")
-    FString TempPakDir = TEXT("Saved/HotPatcher/Paks");
-    UPROPERTY(EditAnywhere, config, Category = "Editor")
-    bool bUseStandaloneMode;
-    UPROPERTY(EditAnywhere, config, Category = "Editor")
-    bool bSavePatchConfig;
-    UPROPERTY(EditAnywhere, config, Category = "UnrealPak")
-    FUnrealPakSettings UnreakPakSettings;
-    UPROPERTY(EditAnywhere, config, Category = "IoStore")
-    FIoStoreSettings IoStoreSettings;
-    UPROPERTY(EditAnywhere, config, Category = "Encrypt")
-    FPakEncryptSettings EncryptSettings;
 
+    FString GetTempSavedDir()const;
+    
+    UPROPERTY(EditAnywhere, config, Category = "ConfigTemplate")
+    FExportPatchSettings TempPatchSetting;
+    
     UPROPERTY(EditAnywhere, config, Category = "Preset")
     TArray<FPakExternalInfo> PakExternalConfigs;
     UPROPERTY(EditAnywhere, config, Category = "Preset")
@@ -57,5 +47,25 @@ public:
     bool bExternalFilesCheck = true;
 };
 
+FORCEINLINE FString UHotPatcherSettings::GetTempSavedDir()const
+{
+    return UFlibPatchParserHelper::ReplaceMark(TempPatchSetting.SavePath.Path);
+}
+
+FORCEINLINE UHotPatcherSettings::UHotPatcherSettings(const FObjectInitializer& Initializer):Super(Initializer)
+{
+    TempPatchSetting.bByBaseVersion=false;
+    TempPatchSetting.bStorageAssetDependencies = false;
+    TempPatchSetting.bStorageDiffAnalysisResults=false;
+    TempPatchSetting.bStorageDeletedAssetsToNewReleaseJson = false;
+    TempPatchSetting.bStorageConfig = false;
+    TempPatchSetting.bStorageNewRelease = false;
+    TempPatchSetting.bStoragePakFileInfo = false;
+    TempPatchSetting.bCookPatchAssets = true;
+    TempPatchSetting.CookShaderOptions.bSharedShaderLibrary = true;
+    TempPatchSetting.CookShaderOptions.bNativeShader = true;
+    TempPatchSetting.EncryptSettings.bUseDefaultCryptoIni = true;
+    TempPatchSetting.SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/Paks");
+}
 
 #undef LOCTEXT_NAMESPACE

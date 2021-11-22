@@ -745,16 +745,17 @@ namespace PatchWorker
 		UE_LOG(LogHotPatcher,Log,TEXT("Use BinariesPatchFeature %s"),*UseFeature->GetFeatureName());
 		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
 		UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+		FString TempSavedPath = Settings->GetTempSavedDir();
 		TimeRecorder BinariesPatchToralTR(FString::Printf(TEXT("Generate Binaries Patch of %s all chunks  Total Time:"),*PlatformName));
 		FString OldCookedDir = Context.GetSettingObject()->GetBinariesPatchConfig().GetOldCookedDir();
 		if(!FPaths::FileExists(OldCookedDir))
 		{
-			OldCookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),Settings->TempPakDir,Context.BaseVersion.VersionId));
+			OldCookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(TempSavedPath,Context.BaseVersion.VersionId));
 		}
 
 		FString ExtractCryptoFile = Context.GetSettingObject()->GetBinariesPatchConfig().GetBasePakExtractCryptoJson();
 		FString ExtractCryptoCmd = FPaths::FileExists(ExtractCryptoFile) ? FString::Printf(TEXT("-cryptokeys=\"%s\""),*ExtractCryptoFile) : TEXT("");
-		FString ExtractDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),Settings->TempPakDir,Context.BaseVersion.VersionId,PlatformName));
+		FString ExtractDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(TempSavedPath,Context.BaseVersion.VersionId,PlatformName));
 		// Extract Asset by Base Version Paks
 		auto ExtractByPak = [&Context,Platform,ExtractDir,ExtractCryptoCmd,ExtractCryptoFile](const FPakCommand& PakCommand)->bool
 		{
@@ -843,7 +844,7 @@ namespace PatchWorker
 					*OldCookedDir,ESearchCase::CaseSensitive);
 				FString PatchSaveToPath = PakAssetInfo.AssetAbsPath.Replace(
 					*ProjectCookedDir,
-					*FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),Settings->TempPakDir,TEXT("BinariesPatch")))
+					*FPaths::ConvertRelativePathToFull(FPaths::Combine(Settings->GetTempSavedDir(),TEXT("BinariesPatch")))
 				) + TEXT(".patch");
 				FString PatchSaveToMountPath = PakAssetInfo.AssetMountPath + TEXT(".patch");
 				bool bPatch = false;

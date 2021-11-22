@@ -639,25 +639,14 @@ FExportPatchSettings FHotPatcherEditorModule::MakeTempPatchSettings(
 {
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
 	Settings->ReloadConfig();
-	FExportPatchSettings TempSettings;
-	TempSettings.bByBaseVersion=false;
+	FExportPatchSettings TempSettings = Settings->TempPatchSetting;
 	TempSettings.VersionId = Name;
 	TempSettings.AssetIncludeFilters = AssetIncludeFilters;
 	TempSettings.IncludeSpecifyAssets = IncludeSpecifyAssets;
 	TempSettings.AddExternAssetsToPlatform = ExternFiles;
 	TempSettings.bCookPatchAssets = bCook;
 	TempSettings.PakTargetPlatforms = PakTargetPlatforms;
-	TempSettings.bStorageAssetDependencies = false;
-	TempSettings.bStorageDiffAnalysisResults=false;
-	TempSettings.bStorageDeletedAssetsToNewReleaseJson = false;
-	TempSettings.bStorageConfig = Settings->bSavePatchConfig;
-	TempSettings.bStorageNewRelease = false;
-	TempSettings.bStoragePakFileInfo = false;
-	TempSettings.EncryptSettings  = Settings->EncryptSettings;
-	TempSettings.IoStoreSettings = Settings->IoStoreSettings;
-	TempSettings.UnrealPakSettings = Settings->UnreakPakSettings;
-	TempSettings.SavePath.Path = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),Settings->TempPakDir));
-	TempSettings.bStandaloneMode = Settings->bUseStandaloneMode;
+	TempSettings.SavePath.Path = Settings->GetTempSavedDir();
 	return TempSettings;
 }
 
