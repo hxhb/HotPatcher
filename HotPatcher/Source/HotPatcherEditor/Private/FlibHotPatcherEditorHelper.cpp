@@ -496,18 +496,18 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 			ExportObj->BeginCacheForCookedPlatformData(Platform);
 		}
 
-		if(!bStorageConcurrent)
-		{
-			TArray<UObject*> TagExpObjects;
-			GetObjectsWithAnyMarks(TagExpObjects,OBJECTMARK_TagExp);
-			for(const auto& TagExportObj:TagExpObjects)
-			{
-				if(TagExportObj->HasAnyMarks(OBJECTMARK_TagExp))
-				{
-					TagExportObj->BeginCacheForCookedPlatformData(Platform);
-				}
-			}
-		}
+		// if(!bStorageConcurrent)
+		// {
+		// 	TArray<UObject*> TagExpObjects;
+		// 	GetObjectsWithAnyMarks(TagExpObjects,OBJECTMARK_TagExp);
+		// 	for(const auto& TagExportObj:TagExpObjects)
+		// 	{
+		// 		if(TagExportObj->HasAnyMarks(OBJECTMARK_TagExp))
+		// 		{
+		// 			TagExportObj->BeginCacheForCookedPlatformData(Platform);
+		// 		}
+		// 	}
+		// }
 		if(GCookLog)
 		{
 			UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*Package->GetName(),*Platform->PlatformName());
