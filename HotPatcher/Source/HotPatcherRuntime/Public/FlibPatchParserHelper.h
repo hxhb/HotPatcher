@@ -30,6 +30,7 @@
 #include "FPlatformExternAssets.h"
 #include "AssetRegistryState.h"
 #include "Containers/UnrealString.h"
+#include "CreatePatch/FExportPatchSettings.h"
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FlibPatchParserHelper.generated.h"
@@ -461,5 +462,14 @@ public:
 		static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir);	
 	UFUNCTION(BlueprintCallable,Exec)
 		static void CloseShaderbytecode(const FString& LibraryName);
+
+public:
+	// Encrypt
+	static FPakEncryptionKeys GetCryptoByProjectSettings();
+	static FEncryptSetting GetCryptoSettingsByJson(const FString& CryptoJson);
+
+	static FEncryptSetting GetCryptoSettingByPakEncryptSettings(const FPakEncryptSettings& Config);
+	
+	static bool SerializePakEncryptionKeyToFile(const FPakEncryptionKeys& PakEncryptionKeys,const FString& ToFile);
 };
 

@@ -42,7 +42,7 @@ public class HotPatcherRuntime : ModuleRules
                 "AssetRegistry",
                 "AssetManagerEx",
                 "BinariesPatchFeature"
-				// ... add other public dependencies that you statically link with here ...
+                // ... add other public dependencies that you statically link with here ...
 			}
 			);
 

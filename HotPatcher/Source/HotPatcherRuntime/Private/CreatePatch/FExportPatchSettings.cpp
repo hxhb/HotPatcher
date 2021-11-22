@@ -3,6 +3,7 @@
 #include "HotPatcherLog.h"
 
 // engine header
+#include "FlibPatchParserHelper.h"
 #include "Dom/JsonValue.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Kismet/KismetStringLibrary.h"

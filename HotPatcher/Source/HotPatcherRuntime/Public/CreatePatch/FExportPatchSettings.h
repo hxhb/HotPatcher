@@ -13,15 +13,17 @@
 #include "FExternDirectoryInfo.h"
 #include "FPlatformExternAssets.h"
 #include "FPatcherSpecifyAsset.h"
-#include "FlibPatchParserHelper.h"
 #include "CreatePatch/HotPatcherSettingBase.h"
 #include "BinariesPatchFeature.h"
 #include "FPlatformBasePak.h"
-
-
-#include "CoreMinimal.h"
+#include "FPakEncryptionKeys.h"
 #include "FBinariesPatchConfig.h"
+#include "FHotPatcherVersion.h"
+#include "FPakVersion.h"
 #include "FPlatformExternAssets.h"
+
+// engine header
+#include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
 #include "Engine/EngineTypes.h"
@@ -39,18 +41,6 @@ struct FEncryptSetting
 	bool bEncryptIniFiles = false;
 	// sign pak
 	bool bSign = false;
-};
-
-USTRUCT(BlueprintType)
-struct HOTPATCHERRUNTIME_API FPakEncryptSettings
-{
-	GENERATED_BODY()
-	// Use DefaultCrypto.ini
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	bool bUseDefaultCryptoIni = false;
-	// crypto.json (option)
-	UPROPERTY(EditAnywhere,BlueprintReadWrite,meta=(EditCondition="!bUseDefaultCryptoIni"))
-	FFilePath CryptoKeys;
 };
 
 UENUM(BlueprintType)

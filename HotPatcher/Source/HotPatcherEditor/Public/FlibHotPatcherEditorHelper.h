@@ -24,71 +24,6 @@ DECLARE_LOG_CATEGORY_EXTERN(LogHotPatcherEditorHelper, Log, All);
 
 struct FExportPatchSettings;
 
-
-USTRUCT()
-struct FEncryptionKeyEntry
-{
-	GENERATED_BODY()
-	UPROPERTY()
-	FString Name;
-	UPROPERTY()
-	FString Guid;
-	UPROPERTY()
-	FString Key;
-};
-
-USTRUCT()
-struct FSignKeyItem
-{
-	GENERATED_BODY()
-	UPROPERTY()
-	FString Exponent;
-	UPROPERTY()
-	FString Modulus;
-};
-
-USTRUCT()
-struct FSignKeyEntry
-{
-	GENERATED_BODY()
-	UPROPERTY()
-	FSignKeyItem PublicKey;
-	UPROPERTY()
-	FSignKeyItem PrivateKey;
-};
-
-USTRUCT()
-struct FPakEncryptionKeys
-{
-	GENERATED_BODY();
-
-	UPROPERTY()
-	FEncryptionKeyEntry EncryptionKey;
-	UPROPERTY()
-	TArray<FEncryptionKeyEntry> SecondaryEncryptionKeys;
-
-	UPROPERTY()
-	bool bEnablePakIndexEncryption;
-	UPROPERTY()
-	bool bEnablePakIniEncryption;
-	UPROPERTY()
-	bool bEnablePakUAssetEncryption;
-	UPROPERTY()
-	bool bEnablePakFullAssetEncryption;
-	UPROPERTY()
-	bool bDataCryptoRequired;
-	UPROPERTY()
-	bool PakEncryptionRequired;
-	UPROPERTY()
-	bool PakSigningRequired;
-
-	UPROPERTY()
-	bool bEnablePakSigning;
-	UPROPERTY()
-	FSignKeyEntry SigningKey;
-};
-
-
 /**
  * 
  */
@@ -203,14 +138,7 @@ public:
 	
 	static FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings);
 	static FHotPatcherVersion MakeNewReleaseByDiff(const FHotPatcherVersion& InBaseVersion, const FPatchVersionDiff& InDiff, FExportPatchSettings* InPatchSettings);
-public:
-	// Encrypt
-	static FPakEncryptionKeys GetCryptoByProjectSettings();
-	static FEncryptSetting GetCryptoSettingsByJson(const FString& CryptoJson);
 
-	static FEncryptSetting GetCryptoSettingByPakEncryptSettings(const FPakEncryptSettings& Config);
-	
-	static bool SerializePakEncryptionKeyToFile(const FPakEncryptionKeys& PakEncryptionKeys,const FString& ToFile);
 public:
 	// In: "C:\Users\lipengzha\Documents\UnrealProjects\Blank425\Intermediate\Staging\Blank425.upluginmanifest" "../../../Blank425/Plugins/Blank425.upluginmanifest
 	// To: upluginmanifest

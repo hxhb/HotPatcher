@@ -950,7 +950,7 @@ namespace PatchWorker
 					UFlibHotPatcherEditorHelper::AppendPakCommandOptions(PakCommand.IoStoreCommands,Context.GetSettingObject()->GetIoStoreSettings().IoStorePakListOptions,true,EmptyArray,IgnoreCompressFormats,CompressOption);
 					UFlibHotPatcherEditorHelper::AppendPakCommandOptions(PakCommand.IoStoreCommands,Context.GetSettingObject()->GetDefaultPakListOptions(),true,EmptyArray,IgnoreCompressFormats,CompressOption);
 
-					FEncryptSetting EncryptSettings = UFlibHotPatcherEditorHelper::GetCryptoSettingByPakEncryptSettings(Context.GetSettingObject()->GetEncryptSettings());
+					FEncryptSetting EncryptSettings = UFlibPatchParserHelper::GetCryptoSettingByPakEncryptSettings(Context.GetSettingObject()->GetEncryptSettings());
 					
 					// 加密所有文件
 					if(EncryptSettings.bEncryptAllAssetFiles)

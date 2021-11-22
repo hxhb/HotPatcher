@@ -77,8 +77,7 @@ FHotPatcherEditorModule& FHotPatcherEditorModule::Get()
 	FHotPatcherEditorModule& Module = FModuleManager::GetModuleChecked<FHotPatcherEditorModule>("HotPatcherEditor");
 	return Module;
 }
-#include "GameFeature/FGameFeaturePackagerSettings.h"
-#include "GameFeature/DetailsCustomization/CustomGameFeatursDetails.h"
+
 void FHotPatcherEditorModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
@@ -87,11 +86,6 @@ void FHotPatcherEditorModule::StartupModule()
 	FHotPatcherStyle::ReloadTextures();
 	FHotPatcherCommands::Register();
 
-	{
-		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
-		PropertyEditorModule.RegisterCustomPropertyTypeLayout("GameFeaturePackagerSettings", FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FCustomGameFeaturePackagerSettingsDetails::MakeInstance));
-	}
-	
 	FParse::Bool(FCommandLine::Get(),TEXT("-cooklog"),GCookLog);
 	UE_LOG(LogHotPatcher,Log,TEXT("GCookLog is %s!!!"),GCookLog ? TEXT("TRUE"): TEXT("FALSE"));
 	
