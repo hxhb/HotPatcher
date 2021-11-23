@@ -41,7 +41,7 @@ public:
 	FORCEINLINE virtual void ResetConfig() override {};
 	FORCEINLINE virtual void DoGenerate() override {};
 
-	virtual FHotPatcherCookerSettingBase* GetConfigSettings(){return nullptr;};
+	virtual FPatcherEntitySettingBase* GetConfigSettings(){return nullptr;};
 	virtual FString GetMissionName(){return TEXT("");};
 	
 	virtual FText GetGenerateTooltipText() const;

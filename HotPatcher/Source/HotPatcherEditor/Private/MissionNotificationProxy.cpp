@@ -7,6 +7,7 @@
 
 #include "Async/Async.h"
 #include "Framework/Notifications/NotificationManager.h"
+#include "ThreadUtils/FProcWorkerThread.hpp"
 #include "Widgets/Notifications/SNotificationList.h"
 DEFINE_LOG_CATEGORY_STATIC(LogMissionNotificationProxy, All, All);
 
@@ -53,7 +54,7 @@ void UMissionNotificationProxy::ReceiveOutputMsg(const FString& InMsg)
 	}
 }
 
-void UMissionNotificationProxy::SpawnRuningMissionNotification()
+void UMissionNotificationProxy::SpawnRuningMissionNotification(FProcWorkerThread* ProcWorker)
 {
 	UMissionNotificationProxy* MissionProxy=this;
 	AsyncTask(ENamedThreads::GameThread, [MissionProxy]()
@@ -79,7 +80,7 @@ void UMissionNotificationProxy::SpawnRuningMissionNotification()
     });
 }
 
-void UMissionNotificationProxy::SpawnMissionSuccessedNotification()
+void UMissionNotificationProxy::SpawnMissionSuccessedNotification(FProcWorkerThread* ProcWorker)
 {
 	UMissionNotificationProxy* MissionProxy=this;
 	AsyncTask(ENamedThreads::GameThread, [MissionProxy]() {
@@ -99,7 +100,7 @@ void UMissionNotificationProxy::SpawnMissionSuccessedNotification()
 	});
 }
 
-void UMissionNotificationProxy::SpawnMissionFaildNotification()
+void UMissionNotificationProxy::SpawnMissionFaildNotification(FProcWorkerThread* ProcWorker)
 {
 	UMissionNotificationProxy* MissionProxy = this;
 	AsyncTask(ENamedThreads::GameThread, [MissionProxy]() {

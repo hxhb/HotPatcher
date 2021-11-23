@@ -32,20 +32,28 @@ struct HOTPATCHEREDITOR_API FCookerShaderOptions
 };
 /** Singleton wrapper to allow for using the setting structur e in SSettingsView */
 USTRUCT(BlueprintType)
-struct HOTPATCHEREDITOR_API FMultiCookerSettings: public FHotPatcherCookerSettingBase
+struct HOTPATCHEREDITOR_API FMultiCookerSettings: public FHotPatcherSettingBase
 {
 	GENERATED_USTRUCT_BODY()
 public:
+
+	virtual TArray<FDirectoryPath>& GetAssetIncludeFilters()override { return AssetIncludeFilters; };
+	virtual TArray<FDirectoryPath>& GetAssetIgnoreFilters()override { return AssetIgnoreFilters; };
+	virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets() override {return IncludeSpecifyAssets; };
+
+	bool IsValidConfig()const;
+	
+public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Filter",meta = (RelativeToGameContentDir, LongPackageName))
-	TArray<FDirectoryPath> IncludeFilters;
+	TArray<FDirectoryPath> AssetIncludeFilters;
 	// Ignore directories in AssetIncludeFilters 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter", meta = (RelativeToGameContentDir, LongPackageName))
-	TArray<FDirectoryPath> IgnoreFilters;
+	TArray<FDirectoryPath> AssetIgnoreFilters;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter")
 	bool bForceSkipContent = true;
 	// force exclude asset folder e.g. Exclude editor content when cooking in Project Settings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Filter",meta = (RelativeToGameContentDir, LongPackageName, EditCondition="bForceSkipContent"))
-	TArray<FDirectoryPath> ForceSkipFilters;
+	TArray<FDirectoryPath> ForceSkipContentRules;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Filter",meta = (EditCondition="bForceSkipContent"))
 	TArray<FSoftObjectPath> ForceSkipAssets;
 	
@@ -65,7 +73,35 @@ public:
 	TArray<ETargetPlatform> CookTargetPlatforms;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	FCookerShaderOptions ShaderOptions;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	FAssetRegistryOptions SerializeAssetRegistryOptions;
+	// support UE4.26 later
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	FIoStoreSettings IoStoreSettings;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(ClampMin=1,ClampMax=20))
 	int32 ProcessNumber = 1;
+};
+
+inline bool FMultiCookerSettings::IsValidConfig() const
+{
+	return IncludeSpecifyAssets.Num() && AssetIncludeFilters.Num() && CookTargetPlatforms.Num();
+}
+
+USTRUCT()
+struct HOTPATCHEREDITOR_API FSingleCookerSettings:public FHotPatcherCookerSettingBase
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+	FString MissionName;
+	UPROPERTY()
+	int32 MissionID;
+	UPROPERTY()
+	TArray<FAssetDetail> CookAssets;
+	UPROPERTY()
+	TArray<FAssetDetail> FaildAssets;
+
+	UPROPERTY()
+	FMultiCookerSettings MultiCookerSettings;
 };

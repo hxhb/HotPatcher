@@ -3,8 +3,10 @@
 #include "CoreMinimal.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
 
+class FProcWorkerThread;
+
 DECLARE_MULTICAST_DELEGATE_OneParam(FOutputMsgDelegate, const FString&);
-DECLARE_MULTICAST_DELEGATE(FProcStatusDelegate);
+DECLARE_MULTICAST_DELEGATE_OneParam(FProcStatusDelegate,FProcWorkerThread*);
 
 
 class FProcWorkerThread : public FThreadWorker
@@ -25,7 +27,7 @@ public:
 			if (mProcessHandle.IsValid() && FPlatformProcess::IsApplicationRunning(mProcessID))
 			{
 				if (ProcBeginDelegate.IsBound())
-					ProcBeginDelegate.Broadcast();
+					ProcBeginDelegate.Broadcast(this);
 			}
 
 			FString Line;
@@ -63,18 +65,18 @@ public:
 				if (ProcReturnCode == 0)
 				{
 					if(ProcOutputMsgDelegate.IsBound())
-						ProcSuccessedDelegate.Broadcast();
+						ProcSuccessedDelegate.Broadcast(this);
 				}
 				else
 				{
 					if (ProcFaildDelegate.IsBound())
-						ProcFaildDelegate.Broadcast();
+						ProcFaildDelegate.Broadcast(this);
 				}
 			}
 			else
 			{
 				if (ProcFaildDelegate.IsBound())
-					ProcFaildDelegate.Broadcast();
+					ProcFaildDelegate.Broadcast(this);
 
 			}
 			
@@ -101,7 +103,7 @@ public:
 			FPlatformProcess::TerminateProc(mProcessHandle, true);
 
 			if (ProcFaildDelegate.IsBound())
-				ProcFaildDelegate.Broadcast();
+				ProcFaildDelegate.Broadcast(this);
 			mProcessHandle.Reset();
 			mProcessID = 0;
 		}

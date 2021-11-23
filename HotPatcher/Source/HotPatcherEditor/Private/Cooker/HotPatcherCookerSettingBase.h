@@ -5,7 +5,7 @@
 #include "HotPatcherCookerSettingBase.generated.h"
 
 USTRUCT(BlueprintType)
-struct HOTPATCHEREDITOR_API FHotPatcherCookerSettingBase
+struct HOTPATCHEREDITOR_API FHotPatcherCookerSettingBase: public FPatcherEntitySettingBase
 {
     GENERATED_USTRUCT_BODY()
 };

@@ -180,6 +180,7 @@ void FHotPatcherEditorModule::AddMenuExtension(FMenuBuilder& Builder)
 	Builder.AddMenuEntry(FHotPatcherCommands::Get().PluginAction);
 }
 
+
 void FHotPatcherEditorModule::AddToolbarExtension(FToolBarBuilder& Builder)
 {
 	Builder.AddToolBarButton(FHotPatcherCommands::Get().PluginAction);
@@ -671,7 +672,7 @@ TArray<ETargetPlatform> FHotPatcherEditorModule::GetAllCookPlatforms() const
 	return TargetPlatforms;
 }
 
-void FHotPatcherEditorModule::RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName)
+TSharedPtr<FProcWorkerThread> FHotPatcherEditorModule::RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName)
 {
 	if (mProcWorkingThread.IsValid() && mProcWorkingThread->GetThreadStatus()==EThreadStatus::Busy)
 	{
@@ -701,6 +702,7 @@ void FHotPatcherEditorModule::RunProcMission(const FString& Bin, const FString& 
 		
 		mProcWorkingThread->Execute();
 	}
+	return mProcWorkingThread;
 }
 #undef LOCTEXT_NAMESPACE
 	

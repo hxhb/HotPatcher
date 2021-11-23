@@ -6,7 +6,7 @@
 #include "FLibAssetManageHelperEx.h"
 #include "HotPatcherLog.h"
 #include "HotPatcherEditor.h"
-#include "FMultiCookerSettings.h"
+#include "Cooker/MultiCooker/FMultiCookerSettings.h"
 // engine header
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
@@ -146,8 +146,7 @@ void SHotPatcherMultiCookerPage::CreateExportFilterListView()
 
 bool SHotPatcherMultiCookerPage::CanCook()const
 {
-	bool bCanExport=false;
-	return bCanExport;
+	return ((SHotPatcherMultiCookerPage*)(this))->GetConfigSettings()->IsValidConfig();
 }
 
 FReply SHotPatcherMultiCookerPage::RunCook()

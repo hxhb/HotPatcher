@@ -4,14 +4,10 @@
 
 #include "Model/FHotPatcherCreatePatchModel.h"
 #include "Cooker/SHotPatcherCookerBase.h"
-#include "FMultiCookerSettings.h"
+#include "Cooker/MultiCooker/FMultiCookerSettings.h"
 
 // engine header
-#include "Interfaces/ITargetPlatformManagerModule.h"
-#include "Interfaces/ITargetPlatform.h"
 #include "Templates/SharedPointer.h"
-#include "IDetailsView.h"
-#include "PropertyEditorModule.h"
 #include "IStructureDetailsView.h"
 
 /**

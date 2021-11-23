@@ -10,18 +10,18 @@ namespace CommandletHelper
 {
 	namespace NSPatch
 	{
-		void ReceiveMsg(const FString& InMsgType,const FString& InMsg)
+		static void ReceiveMsg(const FString& InMsgType,const FString& InMsg)
 		{
 			UE_LOG(LogHotPatcherCommandlet,Display,TEXT("%s:%s"),*InMsgType,*InMsg);
 		}
 
-		void ReceiveShowMsg(const FString& InMsg)
+		static void ReceiveShowMsg(const FString& InMsg)
 		{
 			UE_LOG(LogHotPatcherCommandlet,Display,TEXT("%s"),*InMsg);
 		}
 	}
 
-	TArray<FString> ParserPatchConfigByCommandline(const FString& Commandline,const FString& Token)
+	static TArray<FString> ParserPatchConfigByCommandline(const FString& Commandline,const FString& Token)
 	{
 		TArray<FString> result;
 		TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Commandline);
@@ -35,7 +35,7 @@ namespace CommandletHelper
 
 
 #define ADD_PATCH_PLATFORMS TEXT("AddPatchPlatforms")
-	TArray<ETargetPlatform> ParserPatchPlatforms(const FString& Commandline)
+	static TArray<ETargetPlatform> ParserPatchPlatforms(const FString& Commandline)
 	{
 		TArray<ETargetPlatform> result;
 		for(auto& PlatformName:ParserPatchConfigByCommandline(Commandline,ADD_PATCH_PLATFORMS))
@@ -50,7 +50,7 @@ namespace CommandletHelper
 		return result;
 	}
 
-	TArray<FDirectoryPath> ParserPatchFilters(const FString& Commandline,const FString& FilterName)
+	static TArray<FDirectoryPath> ParserPatchFilters(const FString& Commandline,const FString& FilterName)
 	{
 		TArray<FDirectoryPath> Result;
 		for(auto& FilterPath:ParserPatchConfigByCommandline(Commandline,FString::Printf(TEXT("Add%s"),*FilterName)))

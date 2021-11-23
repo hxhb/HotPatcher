@@ -54,8 +54,10 @@ public:
 public:
 	void AddToolbarExtension(FToolBarBuilder& Builder);
 	void AddMenuExtension(FMenuBuilder& Builder);
+
+	TSharedPtr<FProcWorkerThread> CreateProcMissionThread(const FString& Bin, const FString& Command, const FString& MissionName);
 	
-	void RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName);
+	TSharedPtr<FProcWorkerThread> RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName);
 
 #if WITH_EDITOR_SECTION
 	void CreateRootMenu();

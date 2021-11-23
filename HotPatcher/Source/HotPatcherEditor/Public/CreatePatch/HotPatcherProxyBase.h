@@ -15,19 +15,19 @@ class HOTPATCHEREDITOR_API UHotPatcherProxyBase : public UObject
 public:
     GENERATED_BODY()
 
-    FORCEINLINE virtual void SetProxySettings(FHotPatcherSettingBase* InSetting)
+    FORCEINLINE virtual void SetProxySettings(FPatcherEntitySettingBase* InSetting)
     {
         Setting = InSetting;
     }
     virtual void Init(){};
     virtual void Shutdown(){};
     FORCEINLINE virtual bool DoExport(){return false;};
-    FORCEINLINE virtual FHotPatcherSettingBase* GetSettingObject(){return Setting;};
+    FORCEINLINE virtual FPatcherEntitySettingBase* GetSettingObject(){return Setting;};
     
 public:
     FExportPakProcess OnPaking;
     FExportPakShowMsg OnShowMsg;
 protected:
-    FHotPatcherSettingBase* Setting;
+    FPatcherEntitySettingBase* Setting;
 };
 

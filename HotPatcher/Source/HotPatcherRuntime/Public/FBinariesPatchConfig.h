@@ -82,6 +82,6 @@ public:
 	FString GetBinariesPatchFeatureName() const;
 	FString GetOldCookedDir() const;
 	FString GetBasePakExtractCryptoJson() const;
-	FORCEINLINE TArray<FString> GetBaseVersionPakByPlatform(ETargetPlatform Platform);
+	TArray<FString> GetBaseVersionPakByPlatform(ETargetPlatform Platform);
 	
 };

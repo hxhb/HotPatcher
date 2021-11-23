@@ -9,7 +9,12 @@
 #include "HotPatcherSettingBase.generated.h"
 
 USTRUCT(BlueprintType)
-struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase
+struct HOTPATCHERRUNTIME_API FPatcherEntitySettingBase
+{
+    GENERATED_BODY();
+};
+USTRUCT(BlueprintType)
+struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase:public FPatcherEntitySettingBase
 {
     GENERATED_USTRUCT_BODY()
 
