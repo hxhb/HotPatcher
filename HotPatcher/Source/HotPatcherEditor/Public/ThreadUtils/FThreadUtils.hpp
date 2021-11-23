@@ -68,6 +68,7 @@ public:
 	}
 public:
 	FThreadWorkerStatusDelegate CancelDelegate;
+	FORCEINLINE FString GetThreadName()const {return mThreadName;}
 protected:
 	FString mThreadName;
 	FCallback mRunFunc;

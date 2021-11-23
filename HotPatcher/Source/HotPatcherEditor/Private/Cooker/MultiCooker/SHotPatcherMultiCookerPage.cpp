@@ -8,6 +8,7 @@
 #include "HotPatcherEditor.h"
 #include "Cooker/MultiCooker/FMultiCookerSettings.h"
 // engine header
+#include "Cooker/MultiCooker/MultiCookerProxy.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
 #include "HAL/FileManager.h"
@@ -151,7 +152,23 @@ bool SHotPatcherMultiCookerPage::CanCook()const
 
 FReply SHotPatcherMultiCookerPage::RunCook()
 {
-	
+	if(!GetConfigSettings()->IsStandaloneMode())
+	{
+		UMultiCookerProxy* MultiCookerProxy = NewObject<UMultiCookerProxy>();
+		MultiCookerProxy->AddToRoot();
+		MultiCookerProxy->SetProxySettings(GetConfigSettings());
+		MultiCookerProxy->DoExport();
+	}
+	else
+	{
+		FString CurrentConfig;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
+		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher/MultiCooker/"),TEXT("MultiCookerConfig.json")));
+		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
+		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotMultiCooker -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs());
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
+		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
+	}
 	return FReply::Handled();
 }
 

@@ -1,10 +1,11 @@
 #pragma once
 
-
 #include "ETargetPlatform.h"
 #include "FlibPatchParserHelper.h"
 
 #define PATCHER_CONFIG_PARAM_NAME TEXT("-config=")
+
+DECLARE_LOG_CATEGORY_EXTERN(LogHotPatcherCommandlet, All, All);
 
 namespace CommandletHelper
 {

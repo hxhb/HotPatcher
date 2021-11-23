@@ -1,6 +1,7 @@
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "FlibHotPatcherEditorHelper.h"
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
+#include "ThreadUtils/FThreadUtils.hpp"
 
 void USingleCookerProxy::Init()
 {
@@ -51,9 +52,14 @@ bool USingleCookerProxy::DoExport()
 		CookShaderCollection->Shutdown();
 	}
 	
+	WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("SingleCooker_WaitCookComplete"),[this]()
+		{
+			UPackage::WaitForAsyncFileWrites();
+		}));
+	WaitThreadWorker->Execute();
+	WaitThreadWorker->Join();
 	
-	
-	return Super::DoExport();
+	return true;
 }
 
 #if WITH_PACKAGE_CONTEXT

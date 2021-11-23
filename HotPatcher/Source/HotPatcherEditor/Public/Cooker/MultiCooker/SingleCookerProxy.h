@@ -11,6 +11,7 @@
 #include "Templates/SharedPointer.h"
 #include "IDetailsView.h"
 #include "PropertyEditorModule.h"
+#include "ThreadUtils/FThreadUtils.hpp"
 #include "Widgets/Text/SMultiLineEditableText.h"
 #include "SingleCookerProxy.generated.h"
 
@@ -35,6 +36,6 @@ private:
     TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContextsRaw()const;
     bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
 #endif
-    
+    TSharedPtr<FThreadWorker> WaitThreadWorker;
     TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
 };

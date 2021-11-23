@@ -85,7 +85,7 @@ public:
 
 inline bool FMultiCookerSettings::IsValidConfig() const
 {
-	return IncludeSpecifyAssets.Num() && AssetIncludeFilters.Num() && CookTargetPlatforms.Num();
+	return (IncludeSpecifyAssets.Num() || AssetIncludeFilters.Num() )&& CookTargetPlatforms.Num();
 }
 
 USTRUCT()

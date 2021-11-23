@@ -25,6 +25,8 @@ public:
     virtual bool DoExport()override;
     virtual FMultiCookerSettings* GetSettingObject()override {return (FMultiCookerSettings*)(Setting);};
 protected:
+    FExportPatchSettings MakePatchSettings();
+protected:
     void OnOutputMsg(const FString& InMsg);
     void OnCookProcBegin(FProcWorkerThread* ProcWorker);
     void OnCookProcSuccessed(FProcWorkerThread* ProcWorker);
