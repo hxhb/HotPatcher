@@ -36,6 +36,7 @@ public:
     bool HasError();
 protected:
     FExportPatchSettings MakePatchSettings();
+    TArray<FSingleCookerSettings> MakeSingleCookerSettings(const TArray<FAssetDetail>& AllDetails);
 protected:
     void UpdateMultiCookerStatus();
     void UpdateSingleCookerStatus(bool bSuccessed,const FAssetsCollection& FailedCollection);

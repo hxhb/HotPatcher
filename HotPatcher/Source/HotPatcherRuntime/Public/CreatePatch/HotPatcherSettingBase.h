@@ -12,6 +12,7 @@ USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FPatcherEntitySettingBase
 {
     GENERATED_BODY();
+    virtual ~FPatcherEntitySettingBase(){}
 };
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase:public FPatcherEntitySettingBase
