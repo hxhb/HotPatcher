@@ -28,14 +28,24 @@ public:
     
     virtual FSingleCookerSettings* GetSettingObject()override {return (FSingleCookerSettings*)(Setting);};
     
+protected:
+    bool HasError();
+    
+    void OnCookAssetFailed(const FString& PackagePath,ETargetPlatform Platform);
+    FCookerFailedCollection& GetCookFailedAssetsCollection(){return CookFailedAssetsCollection;};
+    TSharedPtr<struct FCookShaderCollectionProxy> CreateCookShaderCollectionProxyByPlatform(ETargetPlatform Platform);
 private:
-
 #if WITH_PACKAGE_CONTEXT
     virtual void InitPlatformPackageContexts();
     FORCEINLINE TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
     TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContextsRaw()const;
     bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
 #endif
+
+private:
+    FCookerFailedCollection CookFailedAssetsCollection;
+    
     TSharedPtr<FThreadWorker> WaitThreadWorker;
     TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
+    TMap<ETargetPlatform,TSharedPtr<struct FCookShaderCollectionProxy>> PlatformCookShaderCollectionMap;
 };

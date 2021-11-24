@@ -59,14 +59,14 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter")
 	bool bIncludeHasRefAssetsOnly = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter",meta = (EditCondition = "!bAnalysisDiffAssetDependenciesOnly"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter")
 	bool bAnalysisFilterDependencies=true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter")
 	bool bRecursiveWidgetTree = true;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter",meta = (EditCondition="bAnalysisFilterDependencies || bAnalysisDiffAssetDependenciesOnly"))
-	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter",meta = (EditCondition="bAnalysisFilterDependencies"))
+	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes{ EAssetRegistryDependencyTypeEx::Packages };
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Assets")
 	TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
@@ -99,9 +99,34 @@ public:
 	int32 MissionID;
 	UPROPERTY()
 	TArray<FAssetDetail> CookAssets;
-	UPROPERTY()
-	TArray<FAssetDetail> FaildAssets;
+	// UPROPERTY()
+	// TArray<FAssetDetail> FaildAssets;
 
 	UPROPERTY()
 	FMultiCookerSettings MultiCookerSettings;
+};
+
+
+USTRUCT()
+struct HOTPATCHEREDITOR_API FAssetsCollection
+{
+	GENERATED_BODY()
+	UPROPERTY()
+	ETargetPlatform TargetPlatform;
+	UPROPERTY()
+	TArray<FString> Assets;
+};
+
+USTRUCT()
+struct HOTPATCHEREDITOR_API FCookerFailedCollection
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+	FString MissionName;
+	UPROPERTY()
+	int32 MissionID;
+	UPROPERTY()
+	TMap<ETargetPlatform,FAssetsCollection> CookFailedAssets;
+
 };

@@ -353,6 +353,7 @@ bool UFlibHotPatcherEditorHelper::CookAssets(
 	const TArray<FSoftObjectPath>& Assets,
 	const TArray<ETargetPlatform>&Platforms,
 	TFunction<void(const FString&)> PackageSavedCallback,
+	TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback,
     class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext
 )
 {
@@ -382,7 +383,7 @@ bool UFlibHotPatcherEditorHelper::CookAssets(
 		FinalPlatformSavePackageContext.Add(PlatformName,CurrentPackageContext);
 	}
 	
-	return CookPackages(AssetsData,Packages,StringPlatforms,PackageSavedCallback,FinalPlatformSavePackageContext);
+	return CookPackages(AssetsData,Packages,StringPlatforms,PackageSavedCallback,CookFailedCallback,FinalPlatformSavePackageContext);
 }
 
 bool UFlibHotPatcherEditorHelper::CookPackages(
@@ -390,6 +391,7 @@ bool UFlibHotPatcherEditorHelper::CookPackages(
 	const TArray<UPackage*>& InPackage,
 	const TArray<FString>& Platforms,
 	TFunction<void(const FString&)> PackageSavedCallback,
+	TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback,
 	class TMap<FString,FSavePackageContext*> PlatformSavePackageContext
 )
 {
@@ -397,7 +399,7 @@ bool UFlibHotPatcherEditorHelper::CookPackages(
 		return false;
 	for(int32 index=0;index<InPackage.Num();++index)
 	{
-		CookPackage(AssetDatas[index],InPackage[index],Platforms,PackageSavedCallback,PlatformSavePackageContext);
+		CookPackage(AssetDatas[index],InPackage[index],Platforms,PackageSavedCallback,CookFailedCallback,PlatformSavePackageContext);
 	}
 	return true;
 }
@@ -408,6 +410,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 	const TArray<FString>& Platforms,
 	//const FString& SavePath,
 	TFunction<void(const FString&)> PackageSavedCallback,
+	TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback,
 	class TMap<FString,FSavePackageContext*> PlatformSavePackageContext
 )
 {
@@ -482,6 +485,9 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 
 		FString PackageName = PackageFileName.IsNone()?AssetData.PackageName.ToString():PackageFileName.ToString();
 		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(SavePath,PackageName, Platform->PlatformName());
+		ETargetPlatform TargetPlatform;
+		UFlibPatchParserHelper::GetEnumValueByName(Platform->PlatformName(),TargetPlatform);
+		
 		// delete old cooked assets
 		if(FPaths::FileExists(CookedSavePath))
 		{
@@ -563,14 +569,19 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 			}
 	#endif
 #endif
+
+		if(!bSuccessed && !Package->HasAnyPackageFlags(PKG_FilterEditorOnly))
+		{
+			CookFailedCallback(PackageName,TargetPlatform);
+		}
 	}
 	return bSuccessed;
 }
 
-
 void UFlibHotPatcherEditorHelper::CookChunkAssets(
 	TArray<FAssetDetail> Assets,
 	const TArray<ETargetPlatform>& Platforms,
+	TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback,
 	class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext
 )
 {
@@ -584,7 +595,7 @@ void UFlibHotPatcherEditorHelper::CookChunkAssets(
 	}
 	if(!!AssetsSoftPath.Num())
 	{
-		UFlibHotPatcherEditorHelper::CookAssets(AssetsSoftPath,Platforms,[](const FString&){},PlatformSavePackageContext);
+		UFlibHotPatcherEditorHelper::CookAssets(AssetsSoftPath,Platforms,[](const FString&){},CookFailedCallback,PlatformSavePackageContext);
 	}
 }
 

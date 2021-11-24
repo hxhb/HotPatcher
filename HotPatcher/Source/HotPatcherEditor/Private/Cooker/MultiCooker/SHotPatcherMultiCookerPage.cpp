@@ -23,6 +23,9 @@ void SHotPatcherMultiCookerPage::Construct(const FArguments& InArgs, TSharedPtr<
 	CookerSettings = MakeShareable(new FMultiCookerSettings);
 	CreateExportFilterListView();
 
+	MissionNotifyProay = NewObject<UMissionNotificationProxy>();
+	MissionNotifyProay->AddToRoot();
+	
 	mCreatePatchModel = InCreatePatchModel;
 
 	ChildSlot
@@ -147,16 +150,47 @@ void SHotPatcherMultiCookerPage::CreateExportFilterListView()
 
 bool SHotPatcherMultiCookerPage::CanCook()const
 {
-	return ((SHotPatcherMultiCookerPage*)(this))->GetConfigSettings()->IsValidConfig();
+	return ((SHotPatcherMultiCookerPage*)(this))->GetConfigSettings()->IsValidConfig() && (MultiCookerProxy ? !MultiCookerProxy->IsRunning() : true);
 }
 
 FReply SHotPatcherMultiCookerPage::RunCook()
 {
 	if(!GetConfigSettings()->IsStandaloneMode())
 	{
-		UMultiCookerProxy* MultiCookerProxy = NewObject<UMultiCookerProxy>();
+		MultiCookerProxy = NewObject<UMultiCookerProxy>();
 		MultiCookerProxy->AddToRoot();
 		MultiCookerProxy->SetProxySettings(GetConfigSettings());
+		
+		MultiCookerProxy->OnMultiCookerBegining.AddLambda([this](UMultiCookerProxy*)
+		{
+			MissionNotifyProay->SpawnRuningMissionNotification(NULL);
+		});
+		MultiCookerProxy->OnMultiCookerFinished.AddLambda([this](UMultiCookerProxy* MultiCookerProxy)
+		{
+			if(MultiCookerProxy->HasError())
+			{
+				MissionNotifyProay->SpawnMissionFaildNotification(NULL);
+			}
+			else
+			{
+				MissionNotifyProay->SpawnMissionSuccessedNotification(NULL);
+			}
+		});
+		MissionNotifyProay->MissionCanceled.AddLambda([this]()
+		{
+			if(MultiCookerProxy && MultiCookerProxy->IsRunning())
+			{
+				MultiCookerProxy->Cancel();
+			}
+		});
+		FString MissionName = GetMissionName();
+		MissionNotifyProay->SetMissionName(*FString::Printf(TEXT("%s"),*MissionName));
+		MissionNotifyProay->SetMissionNotifyText(
+			FText::FromString(FString::Printf(TEXT("%s in progress"),*MissionName)),
+			LOCTEXT("RunningCookNotificationCancelButton", "Cancel"),
+			FText::FromString(FString::Printf(TEXT("%s Mission Finished!"),*MissionName)),
+			FText::FromString(FString::Printf(TEXT("%s Failed!"),*MissionName))
+		);
 		MultiCookerProxy->DoExport();
 	}
 	else

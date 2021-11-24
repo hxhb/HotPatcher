@@ -14,6 +14,9 @@
 
 #include "MultiCookerProxy.generated.h"
 
+class UMultiCookerProxy;
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnMultiCookerStatusChanged,UMultiCookerProxy*);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSingleCookerFinished,bool,const FAssetsCollection&);
 
 UCLASS()
 class HOTPATCHEREDITOR_API UMultiCookerProxy:public UHotPatcherProxyBase
@@ -24,9 +27,18 @@ public:
     virtual void Shutdown() override;
     virtual bool DoExport()override;
     virtual FMultiCookerSettings* GetSettingObject()override {return (FMultiCookerSettings*)(Setting);};
+public:
+    FOnMultiCookerStatusChanged OnMultiCookerBegining;
+    FOnMultiCookerStatusChanged OnMultiCookerFinished;
+    FOnSingleCookerFinished OnSingleCookerFinished;
+    bool IsRunning()const;
+    void Cancel();
+    bool HasError();
 protected:
     FExportPatchSettings MakePatchSettings();
 protected:
+    void UpdateMultiCookerStatus();
+    void UpdateSingleCookerStatus(bool bSuccessed,const FAssetsCollection& FailedCollection);
     void OnOutputMsg(const FString& InMsg);
     void OnCookProcBegin(FProcWorkerThread* ProcWorker);
     void OnCookProcSuccessed(FProcWorkerThread* ProcWorker);
@@ -41,4 +53,6 @@ private:
     TMap<FString,FAssetDependenciesInfo> ScanedCaches;
     TMap<FString,TSharedPtr<FProcWorkerThread>> CookerProcessMap;
     TMap<FString,FSingleCookerSettings> CookerConfigMap;
+    TMap<FString,FAssetsCollection> CookerFailedCollectionMap;
+    int32 FinishedCount = 0;
 };

@@ -45,6 +45,7 @@ void FCookManager::OnPackageSavedEvent(const FString& InFilePath,UObject* Object
 		CookMissions.RemoveAt(removeIndex);
 	}
 }
+
 #include "Async/Async.h"
 int32 FCookManager::AddCookMission(const FCookMission& InCookMission,TFunction<void(TArray<FCookManager::FCookPackageInfo>)> FaildPackagesCallback)
 {
@@ -59,6 +60,7 @@ int32 FCookManager::AddCookMission(const FCookMission& InCookMission,TFunction<v
 			Package.AssetData.GetPackage(),
 			Package.GetCookPlatformsString(),
 			[](const FString&){},
+			[](const FString&,ETargetPlatform){},
 			GetSavePackageContextByPlatforms(Package.CookPlatforms)
 			)
 			)
@@ -97,9 +99,7 @@ int32 FCookManager::AddCookMission(const FCookMission& InCookMission,TFunction<v
 	return index;
 }
 
-TMap<FString, FSavePackageContext*> FCookManager::GetSavePackageContextByPlatforms(
-	const TArray<ETargetPlatform>& Platforms)
-
+TMap<FString, FSavePackageContext*> FCookManager::GetSavePackageContextByPlatforms(const TArray<ETargetPlatform>& Platforms)
 {
 	TMap<FString, FSavePackageContext*> PlatformSavePackageContext;
 	for(const auto& Platform:Platforms)

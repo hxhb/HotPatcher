@@ -1,5 +1,6 @@
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "FlibHotPatcherEditorHelper.h"
+#include "FlibMultiCookerHelper.h"
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
 #include "ThreadUtils/FThreadUtils.hpp"
 
@@ -14,30 +15,57 @@ void USingleCookerProxy::Shutdown()
 	Super::Shutdown();
 }
 
+TSharedPtr<FCookShaderCollectionProxy> USingleCookerProxy::CreateCookShaderCollectionProxyByPlatform(ETargetPlatform Platform)
+{
+	TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
+	if(GetSettingObject()->MultiCookerSettings.ShaderOptions.bSharedShaderLibrary)
+	{
+		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+		FString SavePath = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),GetSettingObject()->MissionName);
+		if(FPaths::DirectoryExists(SavePath))
+		{
+			IFileManager::Get().DeleteDirectory(*SavePath);
+		}
+		FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
+		FString ShaderLibraryName = FString::Printf(TEXT("%s_Shader_%d"),*GetSettingObject()->MissionName,GetSettingObject()->MissionID);
+		CookShaderCollection = MakeShareable(
+			new FCookShaderCollectionProxy(
+				PlatformName,
+				ShaderLibraryName,
+				GetSettingObject()->MultiCookerSettings.ShaderOptions.bNativeShader,
+				SavePath
+				));
+		PlatformCookShaderCollectionMap.Add(Platform,CookShaderCollection);
+	}
+	return CookShaderCollection;
+}
+
 bool USingleCookerProxy::DoExport()
 {
+	GetCookFailedAssetsCollection().MissionName = GetSettingObject()->MissionName;
+	GetCookFailedAssetsCollection().MissionID = GetSettingObject()->MissionID;
+	GetCookFailedAssetsCollection().CookFailedAssets.Empty();
+	
 	for(const auto& Platform:GetSettingObject()->MultiCookerSettings.CookTargetPlatforms)
 	{
-		TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
-		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
 		if(GetSettingObject()->MultiCookerSettings.ShaderOptions.bSharedShaderLibrary)
 		{
-			FString SavePath = FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("MultiCookDir"));
-			FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
-			FString ShaderLibraryName = FString::Printf(TEXT("%s_Process_%d"),FApp::GetProjectName(),1);
-			CookShaderCollection = MakeShareable(
-				new FCookShaderCollectionProxy(
-					PlatformName,
-					ShaderLibraryName,
-					GetSettingObject()->MultiCookerSettings.ShaderOptions.bNativeShader,
-					SavePath
-					));
-			CookShaderCollection->Init();
+			TSharedPtr<FCookShaderCollectionProxy> PlatfromCookShaderCollection = CreateCookShaderCollectionProxyByPlatform(Platform);
+			if(PlatfromCookShaderCollection.IsValid())
+			{
+				PlatfromCookShaderCollection->Init();
+			}
 		}
-
+		
+		TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback = [this](const FString& PackagePath,ETargetPlatform Platform)
+		{
+			OnCookAssetFailed(PackagePath,Platform);						
+		};
+		
 		UFlibHotPatcherEditorHelper::CookChunkAssets(
 							GetSettingObject()->CookAssets,
-							TArray<ETargetPlatform>{Platform}
+							TArray<ETargetPlatform>{Platform},
+							CookFailedCallback
 	#if WITH_PACKAGE_CONTEXT
 							,GetPlatformSavePackageContextsRaw()
 	#endif
@@ -48,8 +76,6 @@ bool USingleCookerProxy::DoExport()
 			SavePlatformBulkDataManifest(Platform);
 #endif
 		}
-		
-		CookShaderCollection->Shutdown();
 	}
 	
 	WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("SingleCooker_WaitCookComplete"),[this]()
@@ -58,8 +84,43 @@ bool USingleCookerProxy::DoExport()
 		}));
 	WaitThreadWorker->Execute();
 	WaitThreadWorker->Join();
+
+	if(GetSettingObject()->MultiCookerSettings.ShaderOptions.bSharedShaderLibrary)
+	{
+		for(auto& CookShaderCollection:PlatformCookShaderCollectionMap)
+		{
+			if(CookShaderCollection.Value.IsValid())
+			{
+				CookShaderCollection.Value->Shutdown();
+			}
+		}
+	}
 	
-	return true;
+	if(HasError())
+	{
+		FString FailedJsonString;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(GetCookFailedAssetsCollection(),FailedJsonString);
+		UE_LOG(LogHotPatcher,Warning,TEXT("Single Cooker Proxy %s:\n%s"),*GetSettingObject()->MissionName,*FailedJsonString);
+		FString SaveTo = UFlibMultiCookerHelper::GetCookerProcFailedResultPath(GetSettingObject()->MissionName,GetSettingObject()->MissionID);
+		FFileHelper::SaveStringToFile(FailedJsonString,*SaveTo);
+	}
+	return !HasError();
+}
+
+bool USingleCookerProxy::HasError()
+{
+	TArray<ETargetPlatform> TargetPlatforms;
+	GetCookFailedAssetsCollection().CookFailedAssets.GetKeys(TargetPlatforms);
+	return !!TargetPlatforms.Num();
+}
+
+void USingleCookerProxy::OnCookAssetFailed(const FString& PackagePath, ETargetPlatform Platform)
+{
+	FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+	UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s for %s Failed!"),*PackagePath,*PlatformName);
+	FAssetsCollection& AssetsCollection = GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform);
+	AssetsCollection.TargetPlatform = Platform;
+	AssetsCollection.Assets.AddUnique(PackagePath);
 }
 
 #if WITH_PACKAGE_CONTEXT
@@ -69,6 +130,7 @@ bool USingleCookerProxy::DoExport()
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
 #include "Serialization/BulkDataManifest.h"
 #endif
+
 
 void USingleCookerProxy::InitPlatformPackageContexts()
 {

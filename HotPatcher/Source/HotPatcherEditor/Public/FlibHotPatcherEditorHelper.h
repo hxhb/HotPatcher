@@ -53,6 +53,7 @@ public:
 			const TArray<FSoftObjectPath>& Assets,
 			const TArray<ETargetPlatform>& Platforms,
 			TFunction<void(const FString&)> PackageSavedCallback = [](const FString&){},
+			TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback = [](const FString&,ETargetPlatform){},
 			class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext = TMap<ETargetPlatform,FSavePackageContext*>{}
 		);
 	static bool CookPackages(
@@ -60,6 +61,7 @@ public:
 		const TArray<UPackage*>& Packages,
 		const TArray<FString>& Platforms,
 		TFunction<void(const FString&)> PackageSavedCallback = [](const FString&){},
+		TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback = [](const FString&,ETargetPlatform){},
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{}
 	);
 	static bool CookPackage(
@@ -67,12 +69,14 @@ public:
 		UPackage* Package,
 		const TArray<FString>& Platforms,
 		TFunction<void(const FString&)> PackageSavedCallback = [](const FString&){},
+		TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback = [](const FString&,ETargetPlatform){},
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{}
 	);
 
 	static void CookChunkAssets(
 		TArray<FAssetDetail> Assets,
 		const TArray<ETargetPlatform>& Platforms,
+		TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback = [](const FString&,ETargetPlatform){},
 		class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext = TMap<ETargetPlatform,FSavePackageContext*>{}
 	);
 	

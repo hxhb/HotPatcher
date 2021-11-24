@@ -531,6 +531,7 @@ namespace PatchWorker
 						UFlibHotPatcherEditorHelper::CookChunkAssets(
 							ChunkAssets,
 							TArray<ETargetPlatform>{Platform}
+							,[](const FString&,ETargetPlatform){}
 	#if WITH_PACKAGE_CONTEXT
 							,Context.PatchProxy->GetPlatformSavePackageContextsRaw()
 	#endif

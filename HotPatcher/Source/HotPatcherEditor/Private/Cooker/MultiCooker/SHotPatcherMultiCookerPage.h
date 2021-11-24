@@ -44,6 +44,8 @@ protected:
 	virtual FText GetGenerateTooltipText() const override;
 private:
 
+	class UMultiCookerProxy* MultiCookerProxy;
+	class UMissionNotificationProxy* MissionNotifyProay;
 	// TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
 
 	/** Settings view ui element ptr */
