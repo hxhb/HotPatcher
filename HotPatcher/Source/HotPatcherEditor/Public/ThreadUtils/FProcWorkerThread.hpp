@@ -5,7 +5,7 @@
 
 class FProcWorkerThread;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOutputMsgDelegate, const FString&);
+DECLARE_DELEGATE_TwoParams(FOutputMsgDelegate,FProcWorkerThread*,const FString&);
 DECLARE_MULTICAST_DELEGATE_OneParam(FProcStatusDelegate,FProcWorkerThread*);
 
 
@@ -47,8 +47,7 @@ public:
 						for (int32 Index = 0; Index < count - 1; ++Index)
 						{
 							StringArray[Index].TrimEndInline();
-							if (ProcOutputMsgDelegate.IsBound())
-								ProcOutputMsgDelegate.Broadcast(StringArray[Index]);
+							ProcOutputMsgDelegate.ExecuteIfBound(this,StringArray[Index]);
 						}
 						Line = StringArray[count - 1];
 						if (NewLine.EndsWith(TEXT("\n")))
@@ -57,6 +56,7 @@ public:
 						}
 					}
 				}
+				FPlatformProcess::Sleep(0.0f);
 			}
 
 			int32 ProcReturnCode;
@@ -64,7 +64,7 @@ public:
 			{
 				if (ProcReturnCode == 0)
 				{
-					if(ProcOutputMsgDelegate.IsBound())
+					if(ProcSuccessedDelegate.IsBound())
 						ProcSuccessedDelegate.Broadcast(this);
 				}
 				else

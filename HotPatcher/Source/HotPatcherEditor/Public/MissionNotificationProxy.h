@@ -18,7 +18,7 @@ class HOTPATCHEREDITOR_API UMissionNotificationProxy : public UObject
 	GENERATED_UCLASS_BODY()
 public:
 
-	virtual void ReceiveOutputMsg(const FString& InMsg);
+	virtual void ReceiveOutputMsg(FProcWorkerThread* Worker,const FString& InMsg);
 	virtual void SpawnRuningMissionNotification(FProcWorkerThread* ProcWorker);
 	virtual void SpawnMissionSuccessedNotification(FProcWorkerThread* ProcWorker);
 	virtual void SpawnMissionFaildNotification(FProcWorkerThread* ProcWorker);

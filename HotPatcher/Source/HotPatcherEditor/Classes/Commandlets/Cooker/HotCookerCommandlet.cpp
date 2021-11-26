@@ -56,7 +56,7 @@ int32 UHotCookerCommandlet::Main(const FString& Params)
 		if (FPaths::FileExists(CookConfig.EngineBin) && FPaths::FileExists(CookConfig.ProjectPath))
 		{
 			CookerProc = MakeShareable(new FProcWorkerThread(TEXT("CookThread"), CookConfig.EngineBin, CookCommand));
-			CookerProc->ProcOutputMsgDelegate.AddStatic(&::ReceiveOutputMsg);
+			CookerProc->ProcOutputMsgDelegate.BindStatic(&::ReceiveOutputMsg);
 
 			CookerProc->Execute();
 			CookerProc->Join();

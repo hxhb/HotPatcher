@@ -65,6 +65,7 @@ FExportPatchSettings UMultiCookerProxy::MakePatchSettings()
 	CookPatchSettings.bForceSkipContent = GetSettingObject()->bForceSkipContent;
 	CookPatchSettings.ForceSkipContentRules = GetSettingObject()->ForceSkipContentRules;
 	CookPatchSettings.AssetRegistryDependencyTypes = GetSettingObject()->AssetRegistryDependencyTypes;
+	CookPatchSettings.SavePath = GetSettingObject()->SavePath;
 	return CookPatchSettings;
 }
 
@@ -81,23 +82,24 @@ void UMultiCookerProxy::UpdateSingleCookerStatus(bool bSuccessed, const FAssetsC
 {
 	
 }
-struct FSplitArrayIndex
-{
-	int32 BeginPos;
-	int32 EndPos;
-};
 
 template<typename T>
-TArray<FSplitArrayIndex> SplitArray(const TArray<T>& Array,int32 SplitNum)
+TArray<TArray<T>> SplitArray(const TArray<T>& Array,int32 SplitNum)
 {
-	TArray<FSplitArrayIndex> result;
-	int32 Number = Array.Num() / SplitNum;
-	for(int32 index = 0;index < SplitNum;++index)
+	TArray<TArray<T>> result;
+	result.AddDefaulted(SplitNum);
+
+	for( int32 index=0; index<Array.Num(); ) 
 	{
-		FSplitArrayIndex Item;
-		Item.BeginPos = (index * Number) > (Array.Num() -1) ? (index * Number) : Array.Num() -1;
-		Item.BeginPos = (index * Number + Number -1) > (Array.Num() -1) ? (index * Number + Number -1) : Array.Num() -1;
-		result.Add(Item);
+		for(auto& SplitItem:result)
+		{
+			SplitItem.Add(Array[index]);
+			++index;
+			if(index >= Array.Num())
+			{
+				break;
+			}
+		}
 	}
 	return result;
 }
@@ -110,7 +112,14 @@ TArray<FSingleCookerSettings> UMultiCookerProxy::MakeSingleCookerSettings(const 
 
 	TMap<FString,TArray<FAssetDetail>> TypeAssetDetails;
 
-	AllSingleCookerSettings.AddDefaulted(ProcessNumber);
+	for(int32 index = 0;index<ProcessNumber;++index)
+	{
+		FSingleCookerSettings EmptySetting;
+		EmptySetting.MissionID = index;
+		EmptySetting.MissionName = FString::Printf(TEXT("SingleCooker_Part_%d"),EmptySetting.MissionID);
+		EmptySetting.MultiCookerSettings = *GetSettingObject();
+		AllSingleCookerSettings.Add(EmptySetting);
+	}
 	
 	for(const auto& AssetDetail:AllDetails)
 	{
@@ -119,13 +128,10 @@ TArray<FSingleCookerSettings> UMultiCookerProxy::MakeSingleCookerSettings(const 
 	}
 	for(auto& TypeAssets:TypeAssetDetails)
 	{
-		TArray<FSplitArrayIndex> SplitInfo = SplitArray(TypeAssets.Value,ProcessNumber);
+		TArray<TArray<FAssetDetail>> SplitInfo = SplitArray(TypeAssets.Value,ProcessNumber);
 		for(int32 index = 0;index < ProcessNumber;++index)
 		{
-			for(int32 Pos = SplitInfo[index].BeginPos;Pos <= SplitInfo[index].EndPos; ++Pos)
-			{
-				AllSingleCookerSettings[index].CookAssets.Add(TypeAssets.Value[Pos]);
-			}
+			AllSingleCookerSettings[index].CookAssets.Append(SplitInfo[index]);
 		}
 	}
 	
@@ -134,7 +140,12 @@ TArray<FSingleCookerSettings> UMultiCookerProxy::MakeSingleCookerSettings(const 
 
 bool UMultiCookerProxy::DoExport()
 {
-	FString TempDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher/MultiCooker")));
+	CookerProcessMap.Empty();
+	CookerConfigMap.Empty();
+	CookerFailedCollectionMap.Empty();
+	ScanedCaches.Empty();
+	
+	FString TempDir = UFlibMultiCookerHelper::GetMultiCookerBaseDir();
 	if(FPaths::DirectoryExists(TempDir))
 	{
 		IFileManager::Get().DeleteDirectory(*TempDir);
@@ -154,48 +165,53 @@ bool UMultiCookerProxy::DoExport()
 	);
 	TArray<FAssetDetail> OutAssetDetails;
 	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(CurrentVersion.AssetInfo,OutAssetDetails);
-
-	int32 SingleProcessAssetNum = OutAssetDetails.Num() / GetSettingObject()->ProcessNumber;
-	int32 RemainingAssetNum = 0;
-
 	OnMultiCookerBegining.Broadcast(this);
 	
-	while(RemainingAssetNum < OutAssetDetails.Num())
+	TArray<FSingleCookerSettings> SingleCookerSettings = MakeSingleCookerSettings(OutAssetDetails);
+
+	for(const auto& CookerSetting:SingleCookerSettings)
 	{
-		int32 OldRemainingAssetNum = RemainingAssetNum;
-		FSingleCookerSettings SingleCookerSettings;
-		SingleCookerSettings.MultiCookerSettings = *GetSettingObject();
-		for(int32 index = RemainingAssetNum;index < OutAssetDetails.Num();++index)
-		{
-			if((RemainingAssetNum - OldRemainingAssetNum) > SingleProcessAssetNum)
-			{
-				break;
-			}
-			SingleCookerSettings.CookAssets.Add(OutAssetDetails[index]);
-			++RemainingAssetNum;
-		}
-		SingleCookerSettings.MissionName = FString::Printf(TEXT("%d_%d"),OldRemainingAssetNum,RemainingAssetNum);
-		SingleCookerSettings.MissionID = RemainingAssetNum - OldRemainingAssetNum;
-		TSharedPtr<FThreadWorker> ProcWorker = CreateSingleCookWroker(SingleCookerSettings);
+		TSharedPtr<FThreadWorker> ProcWorker = CreateSingleCookWroker(CookerSetting);
 		ProcWorker->Execute();
 	}
 	
+	if(GetSettingObject()->IsSaveConfig())
+	{
+		FString SaveConfigDir = UFlibPatchParserHelper::ReplaceMark(GetSettingObject()->SavePath.Path);
+
+		FString CurrentConfig;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetSettingObject(),CurrentConfig);
+		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(SaveConfigDir,TEXT("MultiCookerConfig.json"));
+		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
+	}
+	if(IsRunningCommandlet())
+	{
+		TSharedPtr<FThreadWorker> WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("SingleCooker_WaitCookComplete"),[this]()
+		{
+			while (IsRunning())
+			{
+				FPlatformProcess::Sleep(0.0f);
+			}
+		}));
+		WaitThreadWorker->Execute();
+		WaitThreadWorker->Join();
+	}
 	return !HasError();
 }
 
-void UMultiCookerProxy::OnOutputMsg(const FString& InMsg)
+void UMultiCookerProxy::OnOutputMsg(FProcWorkerThread* Worker,const FString& InMsg)
 {
-	UE_LOG(LogHotPatcher,Log,TEXT("%s"),*InMsg);
+	UE_LOG(LogHotPatcher,Display,TEXT("%s: %s"),*Worker->GetThreadName(), *InMsg);
 }
 
 void UMultiCookerProxy::OnCookProcBegin(FProcWorkerThread* ProcWorker)
 {
-	UE_LOG(LogHotPatcher,Log,TEXT("Single Cooker %s Begining"),*ProcWorker->GetThreadName());
+	UE_LOG(LogHotPatcher,Display,TEXT("Single Cooker %s Begining"),*ProcWorker->GetThreadName());
 }
 
 void UMultiCookerProxy::OnCookProcSuccessed(FProcWorkerThread* ProcWorker)
 {
-	UE_LOG(LogHotPatcher,Log,TEXT("Single Cooker Proc %s Successed!"),*ProcWorker->GetThreadName());
+	UE_LOG(LogHotPatcher,Display,TEXT("Single Cooker Proc %s Successed!"),*ProcWorker->GetThreadName());
 	FString CookerProcName = ProcWorker->GetThreadName();
 	UpdateSingleCookerStatus(true,FAssetsCollection{});
 	UpdateMultiCookerStatus();
@@ -214,9 +230,9 @@ void UMultiCookerProxy::OnCookProcFailed(FProcWorkerThread* ProcWorker)
 		if(FFileHelper::LoadFileToString(FailedContent,*CookFailedResultPath))
 		{
 			UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(FailedContent,FailedMissionCollection);
-			CookerFailedCollectionMap.FindOrAdd(ProcWorker->GetThreadName(),FailedMissionCollection);
 		}
 	}
+	CookerFailedCollectionMap.FindOrAdd(ProcWorker->GetThreadName(),FailedMissionCollection);
 	// CookerProcessMap.Remove(CookerProcName);
 	UpdateSingleCookerStatus(false,FailedMissionCollection);
 	UpdateMultiCookerStatus();
@@ -227,7 +243,7 @@ TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateProcMissionThread(const F
 {
 	TSharedPtr<FProcWorkerThread> ProcWorkingThread;
 	ProcWorkingThread = MakeShareable(new FProcWorkerThread(*MissionName, Bin, Command));
-	ProcWorkingThread->ProcOutputMsgDelegate.AddUObject(this,&UMultiCookerProxy::OnOutputMsg);
+	ProcWorkingThread->ProcOutputMsgDelegate.BindUObject(this,&UMultiCookerProxy::OnOutputMsg);
 	ProcWorkingThread->ProcBeginDelegate.AddUObject(this,&UMultiCookerProxy::OnCookProcBegin);
 	ProcWorkingThread->ProcSuccessedDelegate.AddUObject(this,&UMultiCookerProxy::OnCookProcSuccessed);
 	ProcWorkingThread->ProcFaildDelegate.AddUObject(this,&UMultiCookerProxy::OnCookProcFailed);

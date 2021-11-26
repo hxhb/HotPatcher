@@ -77,7 +77,7 @@ bool USingleCookerProxy::DoExport()
 #endif
 		}
 	}
-	
+	 
 	WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("SingleCooker_WaitCookComplete"),[this]()
 		{
 			UPackage::WaitForAsyncFileWrites();

@@ -25,13 +25,13 @@
 	#define InvokeTab TryInvokeTab
 #endif
 
-HOTPATCHEREDITOR_API void ReceiveOutputMsg(const FString& InMsg);
+HOTPATCHEREDITOR_API void ReceiveOutputMsg(FProcWorkerThread* Worker,const FString& InMsg);
 
 class FToolBarBuilder;
 class FMenuBuilder;
 extern FExportPatchSettings* GPatchSettings;
 extern FExportReleaseSettings* GReleaseSettings;
-bool GCookLog = false;
+bool GCookLog = true;
 
 struct FContentBrowserSelectedInfo
 {

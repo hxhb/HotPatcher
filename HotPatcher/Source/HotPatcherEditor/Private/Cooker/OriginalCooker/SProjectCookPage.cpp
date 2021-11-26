@@ -293,7 +293,7 @@ void SProjectCookPage::RunCookProc(const FString& InBinPath, const FString& InCo
 	else
 	{
 		mCookProcWorkingThread = MakeShareable(new FProcWorkerThread(TEXT("CookThread"), InBinPath, InCommand));
-		mCookProcWorkingThread->ProcOutputMsgDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::ReceiveOutputMsg);
+		mCookProcWorkingThread->ProcOutputMsgDelegate.BindUObject(MissionNotifyProay,&UMissionNotificationProxy::ReceiveOutputMsg);
 		mCookProcWorkingThread->ProcBeginDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnRuningMissionNotification);
 		mCookProcWorkingThread->ProcSuccessedDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnMissionSuccessedNotification);
 		mCookProcWorkingThread->ProcFaildDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnMissionFaildNotification);

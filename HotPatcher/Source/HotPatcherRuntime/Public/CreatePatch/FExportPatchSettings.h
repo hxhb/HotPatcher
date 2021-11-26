@@ -84,7 +84,8 @@ UENUM(BlueprintType)
 enum class EAssetRegistryRule : uint8
 {
 	PATCH,
-	PER_CHUNK
+	PER_CHUNK,
+	CUSTOM
 };
 
 

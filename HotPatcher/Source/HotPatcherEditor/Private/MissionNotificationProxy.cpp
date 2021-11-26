@@ -35,7 +35,7 @@ void UMissionNotificationProxy::SetMissionNotifyText(const FText& RunningText, c
 	MissionFailedNotifyText = FaildText; // LOCTEXT("CookFaildNotification", "Cook Faild!");
 }
 
-void UMissionNotificationProxy::ReceiveOutputMsg(const FString& InMsg)
+void UMissionNotificationProxy::ReceiveOutputMsg(FProcWorkerThread* Worker,const FString& InMsg)
 {
 	FString FindItem(TEXT("Display:"));
 	int32 Index = InMsg.Len() - InMsg.Find(FindItem) - FindItem.Len();

@@ -54,7 +54,7 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 	SingleCookerProxy->SetProxySettings(ExportSingleCookerSetting.Get());
 	bool bExportStatus = SingleCookerProxy->DoExport();
 
-	UE_LOG(LogHotSingleCookerCommandlet,Display,TEXT("Single Cook Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));
+	UE_LOG(LogHotSingleCookerCommandlet,Display,TEXT("Single Cook Misstion %s %d is %s!"),*ExportSingleCookerSetting->MissionName,ExportSingleCookerSetting->MissionID,bExportStatus?TEXT("Successed"):TEXT("Failure"));
 	
 	if(FParse::Param(FCommandLine::Get(), TEXT("wait")))
 	{

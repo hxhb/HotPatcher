@@ -40,7 +40,7 @@ protected:
 protected:
     void UpdateMultiCookerStatus();
     void UpdateSingleCookerStatus(bool bSuccessed,const FAssetsCollection& FailedCollection);
-    void OnOutputMsg(const FString& InMsg);
+    void OnOutputMsg(FProcWorkerThread* Worker,const FString& InMsg);
     void OnCookProcBegin(FProcWorkerThread* ProcWorker);
     void OnCookProcSuccessed(FProcWorkerThread* ProcWorker);
     void OnCookProcFailed(FProcWorkerThread* ProcWorker);

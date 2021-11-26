@@ -43,7 +43,7 @@ static const FName HotPatcherTabName("HotPatcher");
 
 #define LOCTEXT_NAMESPACE "FHotPatcherEditorModule"
 
-void ReceiveOutputMsg(const FString& InMsg)
+void ReceiveOutputMsg(FProcWorkerThread* Worker,const FString& InMsg)
 {
 	FString FindItem(TEXT("Display:"));
 	int32 Index= InMsg.Len() - InMsg.Find(FindItem)- FindItem.Len();
@@ -681,7 +681,7 @@ TSharedPtr<FProcWorkerThread> FHotPatcherEditorModule::RunProcMission(const FStr
 	else
 	{
 		mProcWorkingThread = MakeShareable(new FProcWorkerThread(*FString::Printf(TEXT("PakPresetThread_%s"),*MissionName), Bin, Command));
-		mProcWorkingThread->ProcOutputMsgDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::ReceiveOutputMsg);
+		mProcWorkingThread->ProcOutputMsgDelegate.BindUObject(MissionNotifyProay,&UMissionNotificationProxy::ReceiveOutputMsg);
 		mProcWorkingThread->ProcBeginDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnRuningMissionNotification);
 		mProcWorkingThread->ProcSuccessedDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnMissionSuccessedNotification);
 		mProcWorkingThread->ProcFaildDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnMissionFaildNotification);

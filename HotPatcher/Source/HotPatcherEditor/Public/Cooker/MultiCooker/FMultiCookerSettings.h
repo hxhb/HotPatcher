@@ -35,6 +35,16 @@ USTRUCT(BlueprintType)
 struct HOTPATCHEREDITOR_API FMultiCookerSettings: public FHotPatcherSettingBase
 {
 	GENERATED_USTRUCT_BODY()
+
+	FMultiCookerSettings()
+	{
+		ShaderOptions.bSharedShaderLibrary = true;
+		ShaderOptions.bNativeShader = true;
+		bSerializeAssetRegistry = true;
+		bStorageConfig = true;
+		SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/MultiCooker");
+		bStandaloneMode = false;
+	}
 public:
 
 	virtual TArray<FDirectoryPath>& GetAssetIncludeFilters()override { return AssetIncludeFilters; };
@@ -73,14 +83,18 @@ public:
 	TArray<ETargetPlatform> CookTargetPlatforms;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	FCookerShaderOptions ShaderOptions;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
-	FAssetRegistryOptions SerializeAssetRegistryOptions;
+	bool bSerializeAssetRegistry;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	// FAssetRegistryOptions SerializeAssetRegistryOptions;
+	// 
 	// support UE4.26 later
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	FIoStoreSettings IoStoreSettings;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(ClampMin=1,ClampMax=20))
-	int32 ProcessNumber = 1;
+	int32 ProcessNumber = 3;
 };
 
 inline bool FMultiCookerSettings::IsValidConfig() const
