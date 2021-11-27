@@ -118,6 +118,7 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 		while(GShaderCompilingManager->IsCompiling())
 		{
 			GShaderCompilingManager->ProcessAsyncResults(false, false);
+			UE_LOG(LogHotPatcher,Display,TEXT("Remaining Shader %d"),GShaderCompilingManager->GetNumRemainingJobs())
 			FPlatformProcess::Sleep(0.5f);
 		}
 

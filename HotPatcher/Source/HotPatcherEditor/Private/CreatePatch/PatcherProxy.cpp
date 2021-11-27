@@ -1275,7 +1275,7 @@ namespace PatchWorker
 							FString::Printf(TEXT("\"%s\" -run=IoStore %s"), *UFlibPatchParserHelper::GetProjectFilePath(),*IoStoreCommandlet)
 						)
 					);
-					IoStoreProc->ProcOutputMsgDelegate.AddStatic(&::ReceiveOutputMsg);
+					IoStoreProc->ProcOutputMsgDelegate.BindStatic(&::ReceiveOutputMsg);
 					IoStoreProc->Execute();
 					IoStoreProc->Join();
 				}
