@@ -386,6 +386,20 @@ bool UFlibHotPatcherEditorHelper::CookAssets(
 	return CookPackages(AssetsData,Packages,StringPlatforms,PackageSavedCallback,CookFailedCallback,FinalPlatformSavePackageContext);
 }
 
+bool UFlibHotPatcherEditorHelper::CookPackages(const TArray<FAssetData>& AssetDatas, const TArray<UPackage*>& InPackage,
+	const TArray<FString>& Platforms, TFunction<void(const FString&)> PackageSavedCallback,
+	TFunction<void(const FString&, ETargetPlatform)> CookFailedCallback,
+	TMap<ETargetPlatform, FSavePackageContext*> PlatformSavePackageContext)
+{
+	TMap<FString,FSavePackageContext*> PlatformStrSavePackageContext;
+	for(auto& PlatformContext:PlatformSavePackageContext)
+	{
+		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(PlatformContext.Key);
+		PlatformStrSavePackageContext.Add(PlatformName,PlatformContext.Value);
+	}
+	return UFlibHotPatcherEditorHelper::CookPackages(AssetDatas,InPackage,Platforms,PackageSavedCallback,CookFailedCallback,PlatformStrSavePackageContext);
+}
+
 bool UFlibHotPatcherEditorHelper::CookPackages(
 	const TArray<FAssetData>& AssetDatas,
 	const TArray<UPackage*>& InPackage,

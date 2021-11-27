@@ -58,6 +58,14 @@ public:
 		);
 	static bool CookPackages(
 		const TArray<FAssetData>& AssetDatas,
+		const TArray<UPackage*>& InPackage,
+		const TArray<FString>& Platforms,
+		TFunction<void(const FString&)> PackageSavedCallback,
+		TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback,
+		class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext
+	);
+	static bool CookPackages(
+		const TArray<FAssetData>& AssetDatas,
 		const TArray<UPackage*>& Packages,
 		const TArray<FString>& Platforms,
 		TFunction<void(const FString&)> PackageSavedCallback = [](const FString&){},
