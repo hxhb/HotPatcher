@@ -35,18 +35,9 @@ USTRUCT(BlueprintType)
 struct HOTPATCHEREDITOR_API FMultiCookerSettings: public FHotPatcherSettingBase
 {
 	GENERATED_USTRUCT_BODY()
-
-	FMultiCookerSettings()
-	{
-		ShaderOptions.bSharedShaderLibrary = true;
-		ShaderOptions.bNativeShader = true;
-		bSerializeAssetRegistry = true;
-		bStorageConfig = true;
-		SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/MultiCooker");
-		bStandaloneMode = false;
-	}
 public:
-
+	FMultiCookerSettings();
+	
 	virtual TArray<FDirectoryPath>& GetAssetIncludeFilters()override { return AssetIncludeFilters; };
 	virtual TArray<FDirectoryPath>& GetAssetIgnoreFilters()override { return AssetIgnoreFilters; };
 	virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets() override {return IncludeSpecifyAssets; };
@@ -80,11 +71,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Assets")
 	TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	TSubclassOf<class UMultiCookScheduler> CookScheduler;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	TArray<ETargetPlatform> CookTargetPlatforms;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	FCookerShaderOptions ShaderOptions;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
-	bool bMergeShaderCode;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bSerializeAssetRegistry;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
@@ -98,50 +89,47 @@ public:
 	int32 ProcessNumber = 3;
 };
 
-inline bool FMultiCookerSettings::IsValidConfig() const
-{
-	return (IncludeSpecifyAssets.Num() || AssetIncludeFilters.Num() )&& CookTargetPlatforms.Num();
-}
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct HOTPATCHEREDITOR_API FSingleCookerSettings:public FHotPatcherCookerSettingBase
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY()
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString MissionName;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	int32 MissionID;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	FString ShaderLibName;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TArray<FAssetDetail> CookAssets;
 	// UPROPERTY()
 	// TArray<FAssetDetail> FaildAssets;
 
-	UPROPERTY()
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FMultiCookerSettings MultiCookerSettings;
 };
 
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct HOTPATCHEREDITOR_API FAssetsCollection
 {
 	GENERATED_BODY()
-	UPROPERTY()
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	ETargetPlatform TargetPlatform;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TArray<FString> Assets;
 };
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct HOTPATCHEREDITOR_API FCookerFailedCollection
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY()
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString MissionName;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	int32 MissionID;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TMap<ETargetPlatform,FAssetsCollection> CookFailedAssets;
-
 };

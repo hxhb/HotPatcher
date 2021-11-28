@@ -51,7 +51,6 @@ protected:
     };
     void InitShaderLibConllections();
     void ShutdowShaderLibCollections();
-    FString GetCookerShaderName();
 private:
 #if WITH_PACKAGE_CONTEXT
     virtual void InitPlatformPackageContexts();

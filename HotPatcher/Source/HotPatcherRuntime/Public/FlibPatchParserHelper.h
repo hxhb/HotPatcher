@@ -421,8 +421,29 @@ public:
 			}
 			UFlibPatchParserHelper::TDeserializeJsonObjectAsStruct<T>(DeserializeJsonObject,Struct);
 		}
-	}	
+	}
+	
+	template<typename T>
+	static TArray<TArray<T>> SplitArray(const TArray<T>& Array,int32 SplitNum)
+	{
+		TArray<TArray<T>> result;
+		result.AddDefaulted(SplitNum);
 
+		for( int32 index=0; index<Array.Num(); ) 
+		{
+			for(auto& SplitItem:result)
+			{
+				SplitItem.Add(Array[index]);
+				++index;
+				if(index >= Array.Num())
+				{
+					break;
+				}
+			}
+		}
+		return result;
+	}
+	
 	UFUNCTION(BlueprintCallable)
 	static TArray<FAssetDetail> GetAllAssetDependencyDetails(
 		const FAssetDetail& Asset,

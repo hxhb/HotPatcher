@@ -56,7 +56,7 @@ bool UMultiCookerProxy::HasError()
 
 void UMultiCookerProxy::OnCookMissionsFinished(bool bSuccessed)
 {
-	if(bSuccessed && GetSettingObject()->bMergeShaderCode)
+	if(bSuccessed && GetSettingObject()->ShaderOptions.bMergeShaderLibrary)
 	{
 		MergeShader();
 	}
@@ -139,59 +139,11 @@ void UMultiCookerProxy::UpdateSingleCookerStatus(bool bSuccessed, const FAssetsC
 	
 }
 
-template<typename T>
-TArray<TArray<T>> SplitArray(const TArray<T>& Array,int32 SplitNum)
-{
-	TArray<TArray<T>> result;
-	result.AddDefaulted(SplitNum);
-
-	for( int32 index=0; index<Array.Num(); ) 
-	{
-		for(auto& SplitItem:result)
-		{
-			SplitItem.Add(Array[index]);
-			++index;
-			if(index >= Array.Num())
-			{
-				break;
-			}
-		}
-	}
-	return result;
-}
 
 TArray<FSingleCookerSettings> UMultiCookerProxy::MakeSingleCookerSettings(const TArray<FAssetDetail>& AllDetails)
 {
-	int32 ProcessNumber = GetSettingObject()->ProcessNumber;
-	
-	TArray<FSingleCookerSettings> AllSingleCookerSettings;
-
-	TMap<FString,TArray<FAssetDetail>> TypeAssetDetails;
-
-	for(int32 index = 0;index<ProcessNumber;++index)
-	{
-		FSingleCookerSettings EmptySetting;
-		EmptySetting.MissionID = index;
-		EmptySetting.MissionName = FString::Printf(TEXT("SingleCooker_Part_%d"),EmptySetting.MissionID);
-		EmptySetting.MultiCookerSettings = *GetSettingObject();
-		AllSingleCookerSettings.Add(EmptySetting);
-	}
-	
-	for(const auto& AssetDetail:AllDetails)
-	{
-		TArray<FAssetDetail>& Assets = TypeAssetDetails.FindOrAdd(AssetDetail.mAssetType);
-		Assets.AddUnique(AssetDetail);
-	}
-	for(auto& TypeAssets:TypeAssetDetails)
-	{
-		TArray<TArray<FAssetDetail>> SplitInfo = SplitArray(TypeAssets.Value,ProcessNumber);
-		for(int32 index = 0;index < ProcessNumber;++index)
-		{
-			AllSingleCookerSettings[index].CookAssets.Append(SplitInfo[index]);
-		}
-	}
-	
-	return AllSingleCookerSettings;
+	UMultiCookScheduler* DefaultScheduler = Cast<UMultiCookScheduler>(GetSettingObject()->CookScheduler->GetDefaultObject());
+	return DefaultScheduler->MultiCookScheduler(*GetSettingObject(),AllDetails);
 }
 
 bool UMultiCookerProxy::DoExport()
@@ -305,7 +257,6 @@ TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateProcMissionThread(const F
 	ProcWorkingThread->ProcFaildDelegate.AddUObject(this,&UMultiCookerProxy::OnCookProcFailed);
 	return ProcWorkingThread;
 }
-
 
 
 TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateSingleCookWroker(const FSingleCookerSettings& SingleCookerSettings)

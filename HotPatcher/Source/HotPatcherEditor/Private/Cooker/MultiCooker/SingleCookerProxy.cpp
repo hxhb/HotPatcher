@@ -33,7 +33,7 @@ TSharedPtr<FCookShaderCollectionProxy> USingleCookerProxy::CreateCookShaderColle
 			IFileManager::Get().DeleteDirectory(*SavePath);
 		}
 		FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
-		FString ShaderLibraryName = GetCookerShaderName();
+		FString ShaderLibraryName = GetSettingObject()->ShaderLibName;
 		CookShaderCollection = MakeShareable(
 			new FCookShaderCollectionProxy(
 				PlatformNames,
@@ -212,11 +212,6 @@ void USingleCookerProxy::ShutdowShaderLibCollections()
 			PlatformCookShaderCollection->Shutdown();
 		}
 	}
-}
-
-FString USingleCookerProxy::GetCookerShaderName()
-{
-	return FString::Printf(TEXT("%s_Shader_%d"),*GetSettingObject()->MissionName,GetSettingObject()->MissionID);
 }
 
 bool USingleCookerProxy::DoExport()
