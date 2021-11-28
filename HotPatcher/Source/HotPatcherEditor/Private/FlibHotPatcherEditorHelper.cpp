@@ -13,12 +13,14 @@
 #include "HAL/PlatformFilemanager.h"
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Editor.h"
+#include "GameMapsSettings.h"
 #include "HotPatcherEditor.h"
 #include "IPlatformFileSandboxWrapper.h"
 #include "Async/Async.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/SecureHash.h"
 #include "Serialization/ArrayWriter.h"
+#include "Settings/ProjectPackagingSettings.h"
 
 DEFINE_LOG_CATEGORY(LogHotPatcherEditorHelper);
 
@@ -1448,4 +1450,148 @@ void UFlibHotPatcherEditorHelper::AppendPakCommandOptions(TArray<FString>& Origi
 		}
 		Command = FString::Printf(TEXT("%s%s"),*Command,*PakOptionsStr);
 	}
+}
+
+FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSettingsPackages()
+{
+	FProjectPackageAssetCollection result;
+	TArray<FDirectoryPath>& DirectoryPaths = result.DirectoryPaths;
+	TArray<FSoftObjectPath>& SoftObjectPaths = result.SoftObjectPaths;
+	
+	const UProjectPackagingSettings* const PackagingSettings = GetDefault<UProjectPackagingSettings>();
+
+	const UGameMapsSettings* const GameMapsSettings = GetDefault<UGameMapsSettings>();
+
+	{
+		if(GameMapsSettings->GameInstanceClass.IsAsset())
+		{
+			SoftObjectPaths.AddUnique(GameMapsSettings->GameInstanceClass);
+		}
+	
+		FSoftObjectPath GameDefaultMap{
+			UFLibAssetManageHelperEx::LongPackageNameToPackagePath(GameMapsSettings->GetGameDefaultMap())
+		};
+		if(GameDefaultMap.IsAsset())
+		{
+			SoftObjectPaths.AddUnique(GameDefaultMap);
+		}
+	
+		FSoftObjectPath DefaultGameMode{
+			UFLibAssetManageHelperEx::LongPackageNameToPackagePath(GameMapsSettings->GetGlobalDefaultGameMode())
+		};
+		if(DefaultGameMode.IsAsset())
+		{
+			SoftObjectPaths.AddUnique(DefaultGameMode);
+		}
+	
+		if(GameMapsSettings->TransitionMap.IsAsset())
+		{
+			SoftObjectPaths.AddUnique(GameMapsSettings->TransitionMap);
+		}
+	
+	}
+	auto CreateDirectory = [](const FString& Path)
+	{
+		FDirectoryPath DirectoryPath;
+		DirectoryPath.Path = Path;
+		return DirectoryPath;
+	};
+
+	DirectoryPaths.Append(PackagingSettings->DirectoriesToAlwaysCook);
+
+	// DirectoryPaths.AddUnique(CreateDirectory("/Game/UI"));
+	// DirectoryPaths.AddUnique(CreateDirectory("/Game/Widget"));
+	// DirectoryPaths.AddUnique(CreateDirectory("/Game/Widgets"));
+	// DirectoryPaths.AddUnique(CreateDirectory("/Engine/MobileResources"));
+	{
+		TArray<FString> UIContentPaths;
+		TSet <FName> ContentDirectoryAssets; 
+		if (GConfig->GetArray(TEXT("UI"), TEXT("ContentDirectories"), UIContentPaths, GEditorIni) > 0)
+		{
+			for (int32 DirIdx = 0; DirIdx < UIContentPaths.Num(); DirIdx++)
+			{
+				DirectoryPaths.Add(CreateDirectory(UIContentPaths[DirIdx]));
+			}
+		}
+	}
+
+	// AlwaysCookMaps
+	{
+		TArray<FString> MapList;
+		// Add the default map section
+		GEditor->LoadMapListFromIni(TEXT("AlwaysCookMaps"), MapList);
+
+		for (int32 MapIdx = 0; MapIdx < MapList.Num(); MapIdx++)
+		{
+			FName PackageName = FName(*FPackageName::FilenameToLongPackageName(MapList[MapIdx]));
+			SoftObjectPaths.Emplace(PackageName);
+		}
+	}
+
+	// MapsToCook
+	for (const FFilePath& MapToCook : PackagingSettings->MapsToCook)
+	{
+		FString File = MapToCook.FilePath;
+		FName PackageName = FName(*FPackageName::FilenameToLongPackageName(File));
+		SoftObjectPaths.Emplace(PackageName);
+	}
+
+	// Loading default map ini section AllMaps
+	{
+		TArray<FString> AllMapsSection;
+		GEditor->LoadMapListFromIni(TEXT("AllMaps"), AllMapsSection);
+		for (const FString& MapName : AllMapsSection)
+		{
+			SoftObjectPaths.Emplace(MapName);
+		}
+	}
+
+	{
+		FConfigFile InputIni;
+		FString InterfaceFile;
+		FConfigCacheIni::LoadLocalIniFile(InputIni, TEXT("Input"), true);
+		if (InputIni.GetString(TEXT("/Script/Engine.InputSettings"), TEXT("DefaultTouchInterface"), InterfaceFile))
+		{
+			if (InterfaceFile != TEXT("None") && InterfaceFile != TEXT(""))
+			{
+				SoftObjectPaths.Emplace(InterfaceFile);
+			}
+		}
+	}
+
+	{
+		TArray<FString> AllCulturesToCook = PackagingSettings->CulturesToStage;;
+		
+		TArray<FString> RootPaths;
+		FPackageName::QueryRootContentPaths(RootPaths);
+
+		FARFilter Filter;
+		Filter.bRecursivePaths = true;
+		Filter.bIncludeOnlyOnDiskAssets = false;
+		Filter.PackagePaths.Reserve(AllCulturesToCook.Num() * RootPaths.Num());
+		for (const FString& RootPath : RootPaths)
+		{
+			for (const FString& CultureName : AllCulturesToCook)
+			{
+				FString LocalizedPackagePath = RootPath / TEXT("L10N") / CultureName;
+				Filter.PackagePaths.Add(*LocalizedPackagePath);
+			}
+		}
+
+		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+		IAssetRegistry* AssetRegistry = &AssetRegistryModule.Get();
+		
+		TArray<FAssetData> AssetDataForCultures;
+		AssetRegistry->GetAssets(Filter, AssetDataForCultures);
+
+		for (const FAssetData& AssetData : AssetDataForCultures)
+		{
+			const FName LocalizedPackageName = AssetData.PackageName;
+			const FName SourcePackageName = *FPackageName::GetSourcePackagePath(LocalizedPackageName.ToString());
+
+			SoftObjectPaths.Emplace(SourcePackageName);
+		}
+	}
+
+	return result;
 }

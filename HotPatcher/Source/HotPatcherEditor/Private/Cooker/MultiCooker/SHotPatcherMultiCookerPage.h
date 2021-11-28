@@ -35,6 +35,7 @@ public:
 	virtual void ExportConfig()const;
 	virtual void ResetConfig();
 	virtual void DoGenerate();
+	virtual void ImportProjectConfig()override;
 	virtual FString GetMissionName() override{return TEXT("MultiCooker");}
 	virtual FMultiCookerSettings* GetConfigSettings()override{return CookerSettings.Get();};
 protected:

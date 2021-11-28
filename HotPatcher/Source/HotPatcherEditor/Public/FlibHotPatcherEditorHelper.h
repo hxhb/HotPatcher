@@ -24,6 +24,14 @@ DECLARE_LOG_CATEGORY_EXTERN(LogHotPatcherEditorHelper, Log, All);
 
 struct FExportPatchSettings;
 
+
+struct FProjectPackageAssetCollection
+{
+	TArray<FDirectoryPath> DirectoryPaths;
+	TArray<FSoftObjectPath> SoftObjectPaths;
+	
+};
+
 /**
  * 
  */
@@ -172,4 +180,6 @@ public:
 		const TArray<FString>& AppendFileExtersions,
 		const TArray<FString>& IgnoreFormats,
 		const TArray<FString>& InIgnoreOptions);
+
+	static FProjectPackageAssetCollection ImportProjectSettingsPackages();
 };

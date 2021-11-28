@@ -103,6 +103,13 @@ FString UFLibAssetManageHelperEx::GetAssetNameFromPackagePath(const FString& InP
 	return InAssetRef.GetAssetName();
 }
 
+FString UFLibAssetManageHelperEx::LongPackageNameToPackagePath(const FString& InLongPackageName)
+{
+	FString OutPackagePath;
+	UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InLongPackageName,OutPackagePath);
+	return OutPackagePath;
+}
+
 
 bool UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(const FString& InLongPackageName, FString& OutPackagePath)
 {

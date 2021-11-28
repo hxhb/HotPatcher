@@ -1,7 +1,6 @@
 #include "Cooker/MultiCooker/FMultiCookerSettings.h"
 #include "Cooker/MultiCooker/MultiCookScheduler.h"
 
-
 FMultiCookerSettings::FMultiCookerSettings()
 {
 	ShaderOptions.bSharedShaderLibrary = true;

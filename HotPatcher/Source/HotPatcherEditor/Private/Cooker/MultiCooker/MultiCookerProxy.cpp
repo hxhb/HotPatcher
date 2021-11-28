@@ -3,6 +3,7 @@
 #include "FlibHotPatcherEditorHelper.h"
 #include "FlibMultiCookerHelper.h"
 #include "HotPatcherEditor.h"
+#include "Cooker/MultiCooker/MultiCookScheduler.h"
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
 
 void UMultiCookerProxy::Init()
@@ -154,6 +155,8 @@ bool UMultiCookerProxy::DoExport()
 	ScanedCaches.Empty();
 	
 	FString TempDir = UFlibMultiCookerHelper::GetMultiCookerBaseDir();
+	FString SaveConfigDir = UFlibPatchParserHelper::ReplaceMark(GetSettingObject()->SavePath.Path);
+	
 	if(FPaths::DirectoryExists(TempDir))
 	{
 		IFileManager::Get().DeleteDirectory(*TempDir);
@@ -171,11 +174,17 @@ bool UMultiCookerProxy::DoExport()
 		CookPatchSettings.IsIncludeHasRefAssetsOnly(),
 		CookPatchSettings.IsAnalysisFilterDependencies()
 	);
-	TArray<FAssetDetail> OutAssetDetails;
-	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(CurrentVersion.AssetInfo,OutAssetDetails);
+	FMultiCookerAssets MultiCookerAssets;
+	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(CurrentVersion.AssetInfo,MultiCookerAssets.Assets);
+	{
+		FString SaveNeedCookAssets;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(MultiCookerAssets,SaveNeedCookAssets);
+		FString SaveMultiCookerAssetsTo= FPaths::ConvertRelativePathToFull(SaveConfigDir,TEXT("MultiCookerAssets.json"));
+		FFileHelper::SaveStringToFile(SaveNeedCookAssets,*SaveMultiCookerAssetsTo);
+	}
 	OnMultiCookerBegining.Broadcast(this);
 	
-	TArray<FSingleCookerSettings> SingleCookerSettings = MakeSingleCookerSettings(OutAssetDetails);
+	TArray<FSingleCookerSettings> SingleCookerSettings = MakeSingleCookerSettings(MultiCookerAssets.Assets);
 
 	for(const auto& CookerSetting:SingleCookerSettings)
 	{
@@ -185,8 +194,6 @@ bool UMultiCookerProxy::DoExport()
 	
 	if(GetSettingObject()->IsSaveConfig())
 	{
-		FString SaveConfigDir = UFlibPatchParserHelper::ReplaceMark(GetSettingObject()->SavePath.Path);
-
 		FString CurrentConfig;
 		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetSettingObject(),CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(SaveConfigDir,TEXT("MultiCookerConfig.json"));

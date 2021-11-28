@@ -30,6 +30,8 @@ struct HOTPATCHEREDITOR_API FCookerShaderOptions
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bSharedShaderLibrary"))
 	bool bMergeShaderLibrary = false;
 };
+
+
 /** Singleton wrapper to allow for using the setting structur e in SSettingsView */
 USTRUCT(BlueprintType)
 struct HOTPATCHEREDITOR_API FMultiCookerSettings: public FHotPatcherSettingBase
@@ -132,4 +134,14 @@ public:
 	int32 MissionID;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TMap<ETargetPlatform,FAssetsCollection> CookFailedAssets;
+};
+
+
+USTRUCT()
+struct HOTPATCHEREDITOR_API FMultiCookerAssets
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+	TArray<FAssetDetail> Assets;
 };

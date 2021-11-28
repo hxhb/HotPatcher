@@ -113,6 +113,22 @@ void SHotPatcherMultiCookerPage::DoGenerate()
 	UE_LOG(LogHotPatcher, Log, TEXT("Release DoGenerate"));
 }
 
+void SHotPatcherMultiCookerPage::ImportProjectConfig()
+{
+	FProjectPackageAssetCollection AssetCollection = UFlibHotPatcherEditorHelper::ImportProjectSettingsPackages();
+	GetConfigSettings()->AssetIncludeFilters.Append(AssetCollection.DirectoryPaths);
+
+	for(const auto& Asset:AssetCollection.SoftObjectPaths)
+	{
+		FPatcherSpecifyAsset CurrentAsset;
+		CurrentAsset.Asset = Asset;
+		CurrentAsset.bAnalysisAssetDependencies = true;
+		CurrentAsset.AssetRegistryDependencyTypes = {EAssetRegistryDependencyTypeEx::Packages};
+		GetConfigSettings()->IncludeSpecifyAssets.Add(CurrentAsset);
+	}
+	SHotPatcherCookerBase::ImportProjectConfig();
+}
+
 void SHotPatcherMultiCookerPage::CreateExportFilterListView()
 {
 	// Create a property view
