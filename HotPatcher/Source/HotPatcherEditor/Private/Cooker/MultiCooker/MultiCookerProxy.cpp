@@ -142,7 +142,7 @@ void UMultiCookerProxy::UpdateSingleCookerStatus(bool bSuccessed, const FAssetsC
 
 TArray<FSingleCookerSettings> UMultiCookerProxy::MakeSingleCookerSettings(const TArray<FAssetDetail>& AllDetails)
 {
-	UMultiCookScheduler* DefaultScheduler = Cast<UMultiCookScheduler>(GetSettingObject()->CookScheduler->GetDefaultObject());
+	UMultiCookScheduler* DefaultScheduler = Cast<UMultiCookScheduler>(GetSettingObject()->Scheduler->GetDefaultObject());
 	return DefaultScheduler->MultiCookScheduler(*GetSettingObject(),AllDetails);
 }
 

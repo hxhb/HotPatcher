@@ -71,7 +71,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Assets")
 	TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
-	TSubclassOf<class UMultiCookScheduler> CookScheduler;
+	TSubclassOf<class UMultiCookScheduler> Scheduler;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	TArray<ETargetPlatform> CookTargetPlatforms;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")

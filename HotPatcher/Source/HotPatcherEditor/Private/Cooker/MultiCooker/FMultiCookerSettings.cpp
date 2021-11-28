@@ -7,7 +7,7 @@ FMultiCookerSettings::FMultiCookerSettings()
 	ShaderOptions.bSharedShaderLibrary = true;
 	ShaderOptions.bNativeShader = true;
 	bSerializeAssetRegistry = true;
-	CookScheduler = UMultiCookScheduler::StaticClass();
+	Scheduler = UMultiCookScheduler::StaticClass();
 	bStorageConfig = true;
 	SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/MultiCooker");
 	bStandaloneMode = false;
