@@ -54,6 +54,62 @@ bool UMultiCookerProxy::HasError()
 	return !!CookerFailedCollectionMap.Num();
 }
 
+void UMultiCookerProxy::OnCookMissionsFinished(bool bSuccessed)
+{
+	if(bSuccessed && GetSettingObject()->bMergeShaderCode)
+	{
+		MergeShader();
+	}
+	OnMultiCookerFinished.Broadcast(this);
+}
+
+bool UMultiCookerProxy::MergeShader()
+{
+	FString BaseDir = UFlibMultiCookerHelper::GetMultiCookerBaseDir();
+	TArray<FString> PlatformNames;
+	TArray<FShaderCodeFormatMap> ShaderCodeFormatMaps;
+	
+	for(const auto& Platform:GetSettingObject()->CookTargetPlatforms)
+	{
+		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+		ITargetPlatform* TargetPlatform = UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
+		PlatformNames.AddUnique(PlatformName);
+		FShaderCodeFormatMap ShaderCodeFormatMap;
+		ShaderCodeFormatMap.Platform = TargetPlatform;
+		ShaderCodeFormatMap.bIsNative = true;
+		ShaderCodeFormatMap.SaveBaseDir = FPaths::Combine(BaseDir,PlatformName);
+		for(const auto& Cooker:CookerConfigMap)
+		{
+			
+			FString CurrentCookerDir = FPaths::Combine(BaseDir,Cooker.Key,PlatformName,TEXT("Metadata/ShaderLibrarySource"));
+			
+			TArray<FName> ShaderFormats;
+			TargetPlatform->GetAllTargetedShaderFormats(ShaderFormats);
+			for(auto& ShaderFormat:ShaderFormats)
+			{
+				TArray<FString > FoundShaderFiles = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByShaderFrmat(ShaderFormat.ToString(),CurrentCookerDir);
+
+				if(FoundShaderFiles.Num())
+				{
+					FString FormatExtersion = FString::Printf(TEXT("-%s.ushaderbytecode"),*ShaderFormat.ToString());
+					
+					FString ShderName = FoundShaderFiles[0];
+					ShderName.RemoveFromStart(TEXT("ShaderArchive-"));
+					ShderName.RemoveFromEnd(FormatExtersion);
+					FShaderCodeFormatMap::FShaderFormatNameFiles ShaderNameAndFileMap;
+					ShaderNameAndFileMap.ShaderName = ShderName;
+					ShaderNameAndFileMap.Files = FoundShaderFiles;
+					ShaderCodeFormatMap.ShaderCodeTypeFilesMap.Add(ShaderFormat.ToString(),ShaderNameAndFileMap);
+				}
+			}
+		}
+		ShaderCodeFormatMaps.Add(ShaderCodeFormatMap);
+	}
+	
+	TSharedPtr<FMergeShaderCollectionProxy> MergeShaderCollectionProxy = MakeShareable(new FMergeShaderCollectionProxy(ShaderCodeFormatMaps));
+	return true;
+}
+
 FExportPatchSettings UMultiCookerProxy::MakePatchSettings()
 {
 	FExportPatchSettings CookPatchSettings;
@@ -74,7 +130,7 @@ void UMultiCookerProxy::UpdateMultiCookerStatus()
 	++FinishedCount;
 	if(FinishedCount == CookerProcessMap.Num())
 	{
-		OnMultiCookerFinished.Broadcast(this);
+		OnCookMissionsFinished(!HasError());
 	}
 }
 
@@ -190,7 +246,7 @@ bool UMultiCookerProxy::DoExport()
 		{
 			while (IsRunning())
 			{
-				FPlatformProcess::Sleep(0.0f);
+				FPlatformProcess::Sleep(1.f);
 			}
 		}));
 		WaitThreadWorker->Execute();

@@ -489,27 +489,28 @@ namespace PatchWorker
 	bool CookPatchAssetsWorker(FHotPatcherPatchContext& Context)
 	{
 		TimeRecorder CookAssetsTotalTR(FString::Printf(TEXT("Cook All Assets in Patch Total time:")));
+
+		TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
+		if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
+		{
+			FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId);
+			FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
+			FString ShaderLibraryName = Context.GetSettingObject()->GetShaderLibraryName();
+			CookShaderCollection = MakeShareable(
+				new FCookShaderCollectionProxy(
+					Context.GetSettingObject()->GetPakTargetPlatformNames(),
+					ShaderLibraryName,
+					Context.GetSettingObject()->GetCookShaderOptions().bNativeShader,
+					SavePath
+					));
+			CookShaderCollection->Init();
+		}
+		
 		for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
 		{
 			for(auto& Chunk:Context.PakChunks)
 			{
 				TimeRecorder CookPlatformChunkAssetsTotalTR(FString::Printf(TEXT("Cook Chunk %s as %s Total time:"),*Chunk.ChunkName,*PlatformName));
-				TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
-				if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
-				{
-					FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId);
-					FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
-					FString ShaderLibraryName = Context.GetSettingObject()->GetShaderLibraryName();
-					CookShaderCollection = MakeShareable(
-						new FCookShaderCollectionProxy(
-							PlatformName,
-							ShaderLibraryName,
-							Context.GetSettingObject()->GetCookShaderOptions().bNativeShader,
-							SavePath
-							));
-					CookShaderCollection->Init();
-				}
-			
 				if(Context.GetSettingObject()->IsCookPatchAssets() || Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
 				{
 					TimeRecorder CookAssetsTR(FString::Printf(TEXT("Cook %s assets in the patch."),*PlatformName));
@@ -594,11 +595,18 @@ namespace PatchWorker
 						SaveCookOpenOrder(CookOpenOrders,FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.NewVersionChunk.ChunkName,PlatformName,TEXT("CookOpenOrder.txt")));
 					}
 				}
-			
-				if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
+				
+			}
+		}
+
+		if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
+		{
+			CookShaderCollection->Shutdown();
+			if(CookShaderCollection->IsSuccessed())
+			{
+				for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
 				{
-					CookShaderCollection->Shutdown();
-					if(CookShaderCollection->IsSuccessed())
+					for(auto& Chunk:Context.PakChunks)
 					{
 						FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,PlatformName);
 						TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath);
@@ -627,11 +635,11 @@ namespace PatchWorker
 							}
 						}
 					}
-					else
-					{
-						UE_LOG(LogHotPatcher,Error,TEXT("This mission generate shader library faild!"));
-					}
 				}
+			}
+			else
+			{
+				UE_LOG(LogHotPatcher,Error,TEXT("This mission generate shader library faild!"));
 			}
 		}
 		return true;

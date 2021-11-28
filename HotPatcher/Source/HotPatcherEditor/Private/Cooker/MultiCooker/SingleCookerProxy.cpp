@@ -16,27 +16,31 @@ void USingleCookerProxy::Shutdown()
 	Super::Shutdown();
 }
 
-TSharedPtr<FCookShaderCollectionProxy> USingleCookerProxy::CreateCookShaderCollectionProxyByPlatform(ETargetPlatform Platform)
+TSharedPtr<FCookShaderCollectionProxy> USingleCookerProxy::CreateCookShaderCollectionProxyByPlatform(TArray<ETargetPlatform> Platforms)
 {
 	TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
 	if(GetSettingObject()->MultiCookerSettings.ShaderOptions.bSharedShaderLibrary)
 	{
-		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+		TArray<FString> PlatformNames;
+		for(const auto& Platform:Platforms)
+		{
+			PlatformNames.AddUnique(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+		}
+		
 		FString SavePath = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),GetSettingObject()->MissionName);
 		if(FPaths::DirectoryExists(SavePath))
 		{
 			IFileManager::Get().DeleteDirectory(*SavePath);
 		}
 		FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
-		FString ShaderLibraryName = FString::Printf(TEXT("%s_Shader_%d"),*GetSettingObject()->MissionName,GetSettingObject()->MissionID);
+		FString ShaderLibraryName = GetCookerShaderName();
 		CookShaderCollection = MakeShareable(
 			new FCookShaderCollectionProxy(
-				PlatformName,
+				PlatformNames,
 				ShaderLibraryName,
 				GetSettingObject()->MultiCookerSettings.ShaderOptions.bNativeShader,
 				SavePath
 				));
-		PlatformCookShaderCollectionMap.Add(Platform,CookShaderCollection);
 	}
 	return CookShaderCollection;
 }
@@ -192,17 +196,10 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 
 void USingleCookerProxy::InitShaderLibConllections()
 {
-	for(const auto& Platform:GetSettingObject()->MultiCookerSettings.CookTargetPlatforms)
+	PlatformCookShaderCollection = CreateCookShaderCollectionProxyByPlatform(GetSettingObject()->MultiCookerSettings.CookTargetPlatforms);
+	if(PlatformCookShaderCollection.IsValid())
 	{
-		// init shader lib collection
-		if(GetSettingObject()->MultiCookerSettings.ShaderOptions.bSharedShaderLibrary)
-		{
-			TSharedPtr<FCookShaderCollectionProxy> PlatfromCookShaderCollection = CreateCookShaderCollectionProxyByPlatform(Platform);
-			if(PlatfromCookShaderCollection.IsValid())
-			{
-				PlatfromCookShaderCollection->Init();
-			}
-		}
+		PlatformCookShaderCollection->Init();
 	}
 }
 
@@ -210,14 +207,16 @@ void USingleCookerProxy::ShutdowShaderLibCollections()
 {
 	if(GetSettingObject()->MultiCookerSettings.ShaderOptions.bSharedShaderLibrary)
 	{
-		for(auto& CookShaderCollection:PlatformCookShaderCollectionMap)
+		if(PlatformCookShaderCollection.IsValid())
 		{
-			if(CookShaderCollection.Value.IsValid())
-			{
-				CookShaderCollection.Value->Shutdown();
-			}
+			PlatformCookShaderCollection->Shutdown();
 		}
 	}
+}
+
+FString USingleCookerProxy::GetCookerShaderName()
+{
+	return FString::Printf(TEXT("%s_Shader_%d"),*GetSettingObject()->MissionName,GetSettingObject()->MissionID);
 }
 
 bool USingleCookerProxy::DoExport()

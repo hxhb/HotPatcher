@@ -83,7 +83,8 @@ public:
 	TArray<ETargetPlatform> CookTargetPlatforms;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	FCookerShaderOptions ShaderOptions;
-	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bMergeShaderCode;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bSerializeAssetRegistry;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")

@@ -43,6 +43,7 @@ public class HotPatcherEditor : ModuleRules
                 "Projects",
                 "Settings",
                 "HTTP",
+                "RHI",
                 "AssetRegistry",
                 "AssetManagerEx",
                 "PakFileUtilities",

@@ -9,28 +9,32 @@
 
 #define REMAPPED_PLUGINS TEXT("RemappedPlugins")
 
-FCookShaderCollectionProxy::FCookShaderCollectionProxy(const FString& InPlatformName,const FString& InLibraryName,bool InIsNative,const FString& InSaveBaseDir)
-:PlatformName(InPlatformName),LibraryName(InLibraryName),bIsNative(InIsNative),SaveBaseDir(InSaveBaseDir){}
+FCookShaderCollectionProxy::FCookShaderCollectionProxy(const TArray<FString>& InPlatformNames,const FString& InLibraryName,bool InIsNative,const FString& InSaveBaseDir)
+:PlatformNames(InPlatformNames),LibraryName(InLibraryName),bIsNative(InIsNative),SaveBaseDir(InSaveBaseDir){}
 
 FCookShaderCollectionProxy::~FCookShaderCollectionProxy(){}
 
 void FCookShaderCollectionProxy::Init()
 {
 	SHADER_COOKER_CLASS::InitForCooking(bIsNative);
-	TargetPlatform =  UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
-	TArray<FName> ShaderFormats = UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(TargetPlatform);
-	if (ShaderFormats.Num() > 0)
+	for(const auto& PlatformName:PlatformNames)
 	{
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
-		TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(ShaderFormats);
-#else
-		TArray<TPair<FName, bool>> ShaderFormatsWithStableKeys;
-		for (FName& Format : ShaderFormats)
+		ITargetPlatform* TargetPlatform = UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
+		TargetPlatforms.AddUnique(TargetPlatform);
+		TArray<FName> ShaderFormats = UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(TargetPlatform);
+		if (ShaderFormats.Num() > 0)
 		{
-			ShaderFormatsWithStableKeys.Push(MakeTuple(Format, true));
-		}
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+			TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(ShaderFormats);
+#else
+			TArray<TPair<FName, bool>> ShaderFormatsWithStableKeys;
+			for (FName& Format : ShaderFormats)
+			{
+				ShaderFormatsWithStableKeys.Push(MakeTuple(Format, true));
+			}
 #endif
-		SHADER_COOKER_CLASS::CookShaderFormats(ShaderFormatsWithStableKeys);
+			SHADER_COOKER_CLASS::CookShaderFormats(ShaderFormatsWithStableKeys);
+		}
 	}
 	FShaderCodeLibrary::OpenLibrary(LibraryName,TEXT(""));
 }
@@ -52,35 +56,104 @@ bool IsAppleMetalPlatform(ITargetPlatform* TargetPlatform)
 
 void FCookShaderCollectionProxy::Shutdown()
 {
-	bSuccessed = UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,NULL, LibraryName,SaveBaseDir);
+	for(const auto& TargetPlatform:TargetPlatforms)
+	{
+		FString PlatformName = TargetPlatform->PlatformName();
+		bSuccessed = UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,NULL, LibraryName,SaveBaseDir);
 #if ENGINE_MAJOR_VERSION < 5 && ENGINE_MINOR_VERSION <= 26
-	if(bIsNative)
-	{
-		FString ShaderCodeDir = FPaths::Combine(SaveBaseDir,PlatformName);
-		bSuccessed = bSuccessed && FShaderCodeLibrary::PackageNativeShaderLibrary(ShaderCodeDir,UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(TargetPlatform));
-	}
-#endif
-	// rename StarterContent_SF_METAL.0.metallib to startercontent_sf_metal.0.metallib
-	if(bSuccessed && bIsNative && IsAppleMetalPlatform(TargetPlatform))
-	{
-		TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,FPaths::Combine(SaveBaseDir,TargetPlatform->PlatformName()));
-		for(const auto& Shaderlib:FoundShaderLibs)
+		if(bIsNative)
 		{
-			if(Shaderlib.EndsWith(TEXT("metallib"),ESearchCase::IgnoreCase) || Shaderlib.EndsWith(TEXT("metalmap"),ESearchCase::IgnoreCase))
+			FString ShaderCodeDir = FPaths::Combine(SaveBaseDir,PlatformName);
+			bSuccessed = bSuccessed && FShaderCodeLibrary::PackageNativeShaderLibrary(ShaderCodeDir,UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(TargetPlatform));
+		}
+#endif
+		// rename StarterContent_SF_METAL.0.metallib to startercontent_sf_metal.0.metallib
+		if(bSuccessed && bIsNative && IsAppleMetalPlatform(TargetPlatform))
+		{
+			TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,FPaths::Combine(SaveBaseDir,TargetPlatform->PlatformName()));
+			for(const auto& Shaderlib:FoundShaderLibs)
 			{
-				FString Path = FPaths::GetPath(Shaderlib);
-				FString Name = FPaths::GetBaseFilename(Shaderlib,true);
-				FString Extersion = FPaths::GetExtension(Shaderlib,true);
-				Name = FString::Printf(TEXT("%s%s"),*Name,*Extersion);
-				Name.ToLowerInline();
-				if(!Shaderlib.EndsWith(Name,ESearchCase::CaseSensitive))
+				if(Shaderlib.EndsWith(TEXT("metallib"),ESearchCase::IgnoreCase) || Shaderlib.EndsWith(TEXT("metalmap"),ESearchCase::IgnoreCase))
 				{
-					IFileManager::Get().Move(*FPaths::Combine(Path,Name),*Shaderlib,false);
+					FString Path = FPaths::GetPath(Shaderlib);
+					FString Name = FPaths::GetBaseFilename(Shaderlib,true);
+					FString Extersion = FPaths::GetExtension(Shaderlib,true);
+					Name = FString::Printf(TEXT("%s%s"),*Name,*Extersion);
+					Name.ToLowerInline();
+					if(!Shaderlib.EndsWith(Name,ESearchCase::CaseSensitive))
+					{
+						IFileManager::Get().Move(*FPaths::Combine(Path,Name),*Shaderlib,false);
+					}
 				}
 			}
 		}
 	}
 	FShaderCodeLibrary::CloseLibrary(LibraryName);
+	FShaderCodeLibrary::Shutdown();
+}
+
+FMergeShaderCollectionProxy::FMergeShaderCollectionProxy(const TArray<FShaderCodeFormatMap>& InShaderCodeFiles):ShaderCodeFiles(InShaderCodeFiles)
+{
+	Init();
+}
+FMergeShaderCollectionProxy::~FMergeShaderCollectionProxy()
+{
+	Shutdown();
+}
+
+void FMergeShaderCollectionProxy::Init()
+{
+	for(const auto& ShaderCodeFoemat:ShaderCodeFiles)
+	{
+		TArray<FName> ShaderFormatNames = UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(ShaderCodeFoemat.Platform);
+		
+		for(const auto& ShaderFormatName:ShaderFormatNames)
+		{
+			EShaderPlatform ShaderPlatform= ::ShaderFormatToLegacyShaderPlatform(ShaderFormatName);
+			
+			if(ShaderCodeFoemat.ShaderCodeTypeFilesMap.Contains(ShaderFormatName.ToString()))
+			{
+				SHADER_COOKER_CLASS::InitForCooking(ShaderCodeFoemat.bIsNative);
+				SHADER_COOKER_CLASS::InitForRuntime(ShaderPlatform);
+				TArray<FName> CurrentPlatforomShaderTypeNames;
+				{
+					TArray<FString> PlatforomShaderTypeNames;
+					ShaderCodeFoemat.ShaderCodeTypeFilesMap.GetKeys(PlatforomShaderTypeNames);
+					for(const auto& Name:PlatforomShaderTypeNames)
+					{
+						CurrentPlatforomShaderTypeNames.AddUnique(*Name);
+					}
+				}
+
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+				TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(CurrentPlatforomShaderTypeNames);
+#else
+				TArray<TPair<FName, bool>> ShaderFormatsWithStableKeys;
+				for (FName& Format : ShaderFormats)
+				{
+					ShaderFormatsWithStableKeys.Push(MakeTuple(Format, true));
+				}
+#endif
+				
+				SHADER_COOKER_CLASS::CookShaderFormats(ShaderFormatsWithStableKeys);
+				FShaderCodeFormatMap::FShaderFormatNameFiles ShaderFormatNameFiles =  *ShaderCodeFoemat.ShaderCodeTypeFilesMap.Find(ShaderFormatName.ToString());
+				for(const auto& File:ShaderFormatNameFiles.Files)
+				{
+					FString Path = FPaths::GetPath(File);
+					FShaderCodeLibrary::OpenLibrary(ShaderFormatNameFiles.ShaderName,Path);
+				}
+				if(!UFlibShaderCodeLibraryHelper::SaveShaderLibrary(ShaderCodeFoemat.Platform,NULL, FApp::GetProjectName(),ShaderCodeFoemat.SaveBaseDir))
+				{
+					UE_LOG(LogHotPatcherEditorHelper,Display,TEXT("SaveShaderLibrary %s for %s Failed!"),*FApp::GetProjectName(),*ShaderCodeFoemat.Platform->PlatformName() );
+				}
+				SHADER_COOKER_CLASS::Shutdown();
+			}
+		}
+	}
+}
+
+void FMergeShaderCollectionProxy::Shutdown()
+{
 	FShaderCodeLibrary::Shutdown();
 }
 
@@ -147,6 +220,22 @@ bool UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* Targ
 	return bSaved;
 }
 
+TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByShaderFrmat(const FString& ShaderFormatName,const FString& Directory)
+{
+	TArray<FString> result;
+	TArray<FString > FoundShaderFiles;
+	IFileManager::Get().FindFiles(FoundShaderFiles,*Directory,TEXT("ushaderbytecode"));
+
+	FString FormatExtersion = FString::Printf(TEXT("%s.ushaderbytecode"),*ShaderFormatName);
+	for(const auto& ShaderFile:FoundShaderFiles)
+	{
+		if(ShaderFile.EndsWith(FormatExtersion))
+		{
+			result.Add(ShaderFile);
+		}
+	}
+	return result;
+}
 TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory, bool bRecursive)
 {
 	TArray<FString> FoundFiles;

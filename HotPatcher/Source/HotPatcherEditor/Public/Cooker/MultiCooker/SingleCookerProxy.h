@@ -33,7 +33,7 @@ protected:
     
     void OnCookAssetFailed(const FString& PackagePath,ETargetPlatform Platform);
     FCookerFailedCollection& GetCookFailedAssetsCollection(){return CookFailedAssetsCollection;};
-    TSharedPtr<struct FCookShaderCollectionProxy> CreateCookShaderCollectionProxyByPlatform(ETargetPlatform Platform);
+    TSharedPtr<struct FCookShaderCollectionProxy> CreateCookShaderCollectionProxyByPlatform(TArray<ETargetPlatform> Platform);
     void DoCookMission(const TArray<FAssetDetail>& Assets);
 
     struct FShaderCollection
@@ -51,6 +51,7 @@ protected:
     };
     void InitShaderLibConllections();
     void ShutdowShaderLibCollections();
+    FString GetCookerShaderName();
 private:
 #if WITH_PACKAGE_CONTEXT
     virtual void InitPlatformPackageContexts();
@@ -64,5 +65,5 @@ private:
     
     TSharedPtr<FThreadWorker> WaitThreadWorker;
     TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
-    TMap<ETargetPlatform,TSharedPtr<struct FCookShaderCollectionProxy>> PlatformCookShaderCollectionMap;
+    TSharedPtr<struct FCookShaderCollectionProxy> PlatformCookShaderCollection;
 };

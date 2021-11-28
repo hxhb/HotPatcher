@@ -34,6 +34,8 @@ public:
     bool IsRunning()const;
     void Cancel();
     bool HasError();
+    void OnCookMissionsFinished(bool bSuccessed);
+    bool MergeShader();
 protected:
     FExportPatchSettings MakePatchSettings();
     TArray<FSingleCookerSettings> MakeSingleCookerSettings(const TArray<FAssetDetail>& AllDetails);
