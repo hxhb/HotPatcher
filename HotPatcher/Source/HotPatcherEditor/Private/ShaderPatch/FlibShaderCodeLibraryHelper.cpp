@@ -129,7 +129,7 @@ void FMergeShaderCollectionProxy::Init()
 				TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(CurrentPlatforomShaderTypeNames);
 #else
 				TArray<TPair<FName, bool>> ShaderFormatsWithStableKeys;
-				for (FName& Format : ShaderFormats)
+				for (FName& Format : ShaderFormatNames)
 				{
 					ShaderFormatsWithStableKeys.Push(MakeTuple(Format, true));
 				}
