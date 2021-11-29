@@ -500,6 +500,7 @@ namespace PatchWorker
 				new FCookShaderCollectionProxy(
 					Context.GetSettingObject()->GetPakTargetPlatformNames(),
 					ShaderLibraryName,
+					Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary,
 					Context.GetSettingObject()->GetCookShaderOptions().bNativeShader,
 					SavePath
 					));

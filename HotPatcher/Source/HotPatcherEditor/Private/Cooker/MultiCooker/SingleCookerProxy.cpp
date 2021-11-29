@@ -38,6 +38,7 @@ TSharedPtr<FCookShaderCollectionProxy> USingleCookerProxy::CreateCookShaderColle
 			new FCookShaderCollectionProxy(
 				PlatformNames,
 				ShaderLibraryName,
+				GetSettingObject()->MultiCookerSettings.ShaderOptions.bSharedShaderLibrary,
 				GetSettingObject()->MultiCookerSettings.ShaderOptions.bNativeShader,
 				SavePath
 				));
@@ -220,39 +221,6 @@ bool USingleCookerProxy::DoExport()
 	GetCookFailedAssetsCollection().MissionID = GetSettingObject()->MissionID;
 	GetCookFailedAssetsCollection().CookFailedAssets.Empty();
 
-// 	USingleCookerProxy::FShaderCollection ShaderCollection(this);
-//
-// 	TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback = [this](const FString& PackagePath,ETargetPlatform Platform)
-// 	{
-// 		OnCookAssetFailed(PackagePath,Platform);						
-// 	};
-// 	
-// 	for(const auto& Platform:GetSettingObject()->MultiCookerSettings.CookTargetPlatforms)
-// 	{
-// 		UFlibHotPatcherEditorHelper::CookChunkAssets(
-// 							GetSettingObject()->CookAssets,
-// 							TArray<ETargetPlatform>{Platform},
-// 							CookFailedCallback
-// 	#if WITH_PACKAGE_CONTEXT
-// 							,GetPlatformSavePackageContextsRaw()
-// 	#endif
-// 						);
-// 		
-// 		if(GetSettingObject()->MultiCookerSettings.IoStoreSettings.bStorageBulkDataInfo)
-// 		{
-// #if WITH_PACKAGE_CONTEXT
-// 			SavePlatformBulkDataManifest(Platform);
-// #endif
-// 		}
-// 	}
-// 	 
-// 	WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("SingleCooker_WaitCookComplete"),[this]()
-// 		{
-// 			UPackage::WaitForAsyncFileWrites();
-// 		}));
-// 	WaitThreadWorker->Execute();
-// 	WaitThreadWorker->Join();
-
 	DoCookMission(GetSettingObject()->CookAssets);
 	
 	if(HasError())
@@ -279,7 +247,11 @@ void USingleCookerProxy::OnCookAssetFailed(const FString& PackagePath, ETargetPl
 	UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s for %s Failed!"),*PackagePath,*PlatformName);
 	FAssetsCollection& AssetsCollection = GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform);
 	AssetsCollection.TargetPlatform = Platform;
-	AssetsCollection.Assets.AddUnique(PackagePath);
+	FAssetData AssetData;
+	FAssetDetail AssetDetail;
+	UFLibAssetManageHelperEx::GetSingleAssetsData(PackagePath,AssetData);
+	UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(AssetData,AssetDetail);
+	AssetsCollection.Assets.AddUnique(AssetDetail);
 }
 
 #if WITH_PACKAGE_CONTEXT

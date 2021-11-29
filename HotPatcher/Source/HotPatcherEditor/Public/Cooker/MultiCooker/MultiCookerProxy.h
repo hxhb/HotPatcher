@@ -36,12 +36,13 @@ public:
     bool HasError();
     void OnCookMissionsFinished(bool bSuccessed);
     bool MergeShader();
+    void RecookFailedAssets();
 protected:
     FExportPatchSettings MakePatchSettings();
     TArray<FSingleCookerSettings> MakeSingleCookerSettings(const TArray<FAssetDetail>& AllDetails);
 protected:
     void UpdateMultiCookerStatus();
-    void UpdateSingleCookerStatus(bool bSuccessed,const FAssetsCollection& FailedCollection);
+    void UpdateSingleCookerStatus(FProcWorkerThread* ProcWorker, bool bSuccessed, const FAssetsCollection& FailedCollection);
     void OnOutputMsg(FProcWorkerThread* Worker,const FString& InMsg);
     void OnCookProcBegin(FProcWorkerThread* ProcWorker);
     void OnCookProcSuccessed(FProcWorkerThread* ProcWorker);
@@ -50,8 +51,12 @@ protected:
     TMap<FString,FAssetDependenciesInfo>& GetAssetsDependenciesScanedCaches(){ return ScanedCaches; };
     TSharedPtr<FProcWorkerThread> CreateProcMissionThread(const FString& Bin, const FString& Command, const FString& MissionName);
     TSharedPtr<FProcWorkerThread> CreateSingleCookWroker(const FSingleCookerSettings& SingleCookerSettings);
-    
+
+protected:
+    UPROPERTY()
+    class USingleCookerProxy* RecookerProxy;
 private:
+    FCriticalSection	SynchronizationObject;
     TSharedPtr<FMultiCookerSettings> MultiCookerSettings;
     TMap<FString,FAssetDependenciesInfo> ScanedCaches;
     TMap<FString,TSharedPtr<FProcWorkerThread>> CookerProcessMap;

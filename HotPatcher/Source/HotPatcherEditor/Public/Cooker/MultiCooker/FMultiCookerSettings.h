@@ -120,7 +120,7 @@ struct HOTPATCHEREDITOR_API FAssetsCollection
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	ETargetPlatform TargetPlatform;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	TArray<FString> Assets;
+	TArray<FAssetDetail> Assets;
 };
 
 USTRUCT(BlueprintType)

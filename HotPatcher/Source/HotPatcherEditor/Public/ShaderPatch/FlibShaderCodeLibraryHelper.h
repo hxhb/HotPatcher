@@ -17,7 +17,7 @@
 
 struct FCookShaderCollectionProxy
 {
-	FCookShaderCollectionProxy(const TArray<FString>& InPlatformNames,const FString& InLibraryName,bool InIsNative,const FString& InSaveBaseDir);
+	FCookShaderCollectionProxy(const TArray<FString>& InPlatformNames,const FString& InLibraryName,bool bShareShader,bool InIsNative,const FString& InSaveBaseDir);
 	virtual ~FCookShaderCollectionProxy();
 	virtual void Init();
 	virtual void Shutdown();
@@ -26,6 +26,7 @@ private:
 	TArray<ITargetPlatform*> TargetPlatforms;
 	TArray<FString> PlatformNames;
 	FString LibraryName;
+	bool bShareShader;
 	bool bIsNative;
 	FString SaveBaseDir;
 	bool bSuccessed = false;

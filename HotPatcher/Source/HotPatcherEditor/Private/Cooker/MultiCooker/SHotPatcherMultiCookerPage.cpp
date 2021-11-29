@@ -207,6 +207,7 @@ FReply SHotPatcherMultiCookerPage::RunCook()
 			FText::FromString(FString::Printf(TEXT("%s Mission Finished!"),*MissionName)),
 			FText::FromString(FString::Printf(TEXT("%s Failed!"),*MissionName))
 		);
+		MultiCookerProxy->Init();
 		MultiCookerProxy->DoExport();
 	}
 	else
