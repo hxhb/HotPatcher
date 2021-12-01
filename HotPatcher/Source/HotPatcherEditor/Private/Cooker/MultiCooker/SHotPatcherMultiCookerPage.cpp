@@ -8,6 +8,7 @@
 #include "HotPatcherEditor.h"
 #include "Cooker/MultiCooker/FMultiCookerSettings.h"
 // engine header
+#include "FlibMultiCookerHelper.h"
 #include "Cooker/MultiCooker/MultiCookerProxy.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
@@ -176,13 +177,14 @@ FReply SHotPatcherMultiCookerPage::RunCook()
 		MultiCookerProxy = NewObject<UMultiCookerProxy>();
 		MultiCookerProxy->AddToRoot();
 		MultiCookerProxy->SetProxySettings(GetConfigSettings());
-		
+		MultiCookerProxy->Init();
 		MultiCookerProxy->OnMultiCookerBegining.AddLambda([this](UMultiCookerProxy*)
 		{
 			MissionNotifyProay->SpawnRuningMissionNotification(NULL);
 		});
 		MultiCookerProxy->OnMultiCookerFinished.AddLambda([this](UMultiCookerProxy* MultiCookerProxy)
 		{
+			MultiCookerProxy->Shutdown();
 			if(MultiCookerProxy->HasError())
 			{
 				MissionNotifyProay->SpawnMissionFaildNotification(NULL);
@@ -216,7 +218,15 @@ FReply SHotPatcherMultiCookerPage::RunCook()
 		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher/MultiCooker/"),TEXT("MultiCookerConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
-		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotMultiCooker -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs());
+		FString ProfilingCmd = GetConfigSettings()->bProfilingMultiCooker ? UFlibMultiCookerHelper::GetProfilingCmd() : TEXT("");
+		
+		FString MissionCommand = FString::Printf(
+			TEXT("\"%s\" -run=HotMultiCooker -config=\"%s\" -norenderthread %s %s"),
+			*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,
+			*ProfilingCmd,
+			*GetConfigSettings()->GetCombinedAdditionalCommandletArgs()
+			);
+		
 		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
 		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
 	}

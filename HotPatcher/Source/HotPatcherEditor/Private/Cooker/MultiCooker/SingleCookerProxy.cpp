@@ -4,56 +4,32 @@
 #include "ShaderCompiler.h"
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
 #include "ThreadUtils/FThreadUtils.hpp"
+#include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
+#include "Misc/ScopeExit.h"
 
 void USingleCookerProxy::Init()
 {
 	InitPlatformPackageContexts();
+	InitShaderLibConllections();
+	
 	Super::Init();
 }
 
 void USingleCookerProxy::Shutdown()
 {
+	ShutdowShaderLibCollections();
+	
 	Super::Shutdown();
 }
 
-TSharedPtr<FCookShaderCollectionProxy> USingleCookerProxy::CreateCookShaderCollectionProxyByPlatform(TArray<ETargetPlatform> Platforms)
-{
-	TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
-	if(GetSettingObject()->MultiCookerSettings.ShaderOptions.bSharedShaderLibrary)
-	{
-		TArray<FString> PlatformNames;
-		for(const auto& Platform:Platforms)
-		{
-			PlatformNames.AddUnique(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
-		}
-		
-		FString SavePath = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),GetSettingObject()->MissionName);
-		if(FPaths::DirectoryExists(SavePath))
-		{
-			IFileManager::Get().DeleteDirectory(*SavePath);
-		}
-		FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
-		FString ShaderLibraryName = GetSettingObject()->ShaderLibName;
-		CookShaderCollection = MakeShareable(
-			new FCookShaderCollectionProxy(
-				PlatformNames,
-				ShaderLibraryName,
-				GetSettingObject()->MultiCookerSettings.ShaderOptions.bSharedShaderLibrary,
-				GetSettingObject()->MultiCookerSettings.ShaderOptions.bNativeShader,
-				SavePath
-				));
-	}
-	return CookShaderCollection;
-}
 
 void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::DoCookMission"),FColor::Red);
+
 	TArray<FSoftObjectPath> SoftObjectPaths;
 	TArray<UPackage*> AllObjects;
-
-	USingleCookerProxy::FShaderCollection ShaderCollection(this);
-
-
+	
 	TArray<ITargetPlatform*> TargetPlatforms;
 	TArray<FString> TargetPlatformNames;
 	for(const auto& Platform:GetSettingObject()->MultiCookerSettings.CookTargetPlatforms)
@@ -67,31 +43,33 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 		}
 	}
 	
-	GIsCookerLoadingPackage = true;
-	for (const auto& Asset : Assets)
 	{
-		FSoftObjectPath AssetSoftPath;
-		AssetSoftPath.SetPath(Asset.mPackagePath);
-		UPackage* Package = LoadPackage(nullptr, *Asset.mPackagePath, LOAD_None);;
-		SoftObjectPaths.AddUnique(AssetSoftPath);
-		AllObjects.AddUnique(Package);
-
-		TArray<UObject*> ExportMap;
-		GetObjectsWithOuter(Package,ExportMap);
-		for(const auto& ExportObj:ExportMap)
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("BeginCacheForCookedPlatformData for Assets"),FColor::Red);
+		GIsCookerLoadingPackage = true;
+		for (const auto& Asset : Assets)
 		{
-			for(const auto& Platform:TargetPlatforms)
+			FSoftObjectPath AssetSoftPath;
+			AssetSoftPath.SetPath(Asset.mPackagePath);
+			UPackage* Package = LoadPackage(nullptr, *Asset.mPackagePath, LOAD_None);;
+			SoftObjectPaths.AddUnique(AssetSoftPath);
+			AllObjects.AddUnique(Package);
+
+			TArray<UObject*> ExportMap;
+			GetObjectsWithOuter(Package,ExportMap);
+			for(const auto& ExportObj:ExportMap)
 			{
-				ExportObj->BeginCacheForCookedPlatformData(Platform);
+				for(const auto& Platform:TargetPlatforms)
+				{
+					ExportObj->BeginCacheForCookedPlatformData(Platform);
+				}
+			}
+			if (GShaderCompilingManager)
+			{
+				GShaderCompilingManager->ProcessAsyncResults(true, false);
 			}
 		}
-		if (GShaderCompilingManager)
-		{
-			GShaderCompilingManager->ProcessAsyncResults(true, false);
-		}
+		GIsCookerLoadingPackage = false;
 	}
-	GIsCookerLoadingPackage = false;
-	
 	TArray<UObject*> ObjectsToWaitForCookedPlatformData;
 	ObjectsToWaitForCookedPlatformData.Reserve(65536);
 	
@@ -119,6 +97,7 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 	// Wait for all shaders to finish compiling
 	if (GShaderCompilingManager)
 	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("Compile Shader for Assets"),FColor::Red);
 		UE_LOG(LogHotPatcher, Display, TEXT("Waiting for shader compilation..."));
 		while(GShaderCompilingManager->IsCompiling())
 		{
@@ -134,6 +113,7 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 		
 	// Wait for all platform data to be loaded
 	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("Wait for all platform data to be loaded"),FColor::Red);
 		UE_LOG(LogHotPatcher, Display, TEXT("Waiting for ObjectsToWaitForCookedPlatformData compilation..."));
 		while (ObjectsToWaitForCookedPlatformData.Num() > 0)
 		{
@@ -174,13 +154,16 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 #endif
 	);
 
-	UE_LOG(LogHotPatcher, Display, TEXT("Waiting Cook Assets Compilation..."));
-	WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("SingleCooker_WaitCookComplete"),[this]()
-		{
-			UPackage::WaitForAsyncFileWrites();
-		}));
-	WaitThreadWorker->Execute();
-	WaitThreadWorker->Join();
+	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("Waiting Cook Assets Compilation"),FColor::Red);
+		UE_LOG(LogHotPatcher, Display, TEXT("Waiting Cook Assets Compilation..."));
+		WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("SingleCooker_WaitCookComplete"),[this]()
+			{
+				UPackage::WaitForAsyncFileWrites();
+			}));
+		WaitThreadWorker->Execute();
+		WaitThreadWorker->Join();
+	}
 	
 	// save bulk data manifest
 	for(auto& Platform:GetSettingObject()->MultiCookerSettings.CookTargetPlatforms)
@@ -192,12 +175,21 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 #endif
 		}
 	}
-	
 }
 
 void USingleCookerProxy::InitShaderLibConllections()
 {
-	PlatformCookShaderCollection = CreateCookShaderCollectionProxyByPlatform(GetSettingObject()->MultiCookerSettings.CookTargetPlatforms);
+	FString SavePath = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),GetSettingObject()->MissionName);
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::InitShaderLibConllections"),FColor::Red);
+	PlatformCookShaderCollection = UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform(
+		GetSettingObject()->ShaderLibName,
+		GetSettingObject()->MultiCookerSettings.CookTargetPlatforms,
+		GetSettingObject()->MultiCookerSettings.ShaderOptions.bSharedShaderLibrary,
+		GetSettingObject()->MultiCookerSettings.ShaderOptions.bNativeShader,
+		true,
+		SavePath
+	);
+	
 	if(PlatformCookShaderCollection.IsValid())
 	{
 		PlatformCookShaderCollection->Init();
@@ -206,6 +198,7 @@ void USingleCookerProxy::InitShaderLibConllections()
 
 void USingleCookerProxy::ShutdowShaderLibCollections()
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::ShutdowShaderLibCollections"),FColor::Red);
 	if(GetSettingObject()->MultiCookerSettings.ShaderOptions.bSharedShaderLibrary)
 	{
 		if(PlatformCookShaderCollection.IsValid())
@@ -217,6 +210,7 @@ void USingleCookerProxy::ShutdowShaderLibCollections()
 
 bool USingleCookerProxy::DoExport()
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::DoExport"),FColor::Red);
 	GetCookFailedAssetsCollection().MissionName = GetSettingObject()->MissionName;
 	GetCookFailedAssetsCollection().MissionID = GetSettingObject()->MissionID;
 	GetCookFailedAssetsCollection().CookFailedAssets.Empty();
@@ -236,6 +230,7 @@ bool USingleCookerProxy::DoExport()
 
 bool USingleCookerProxy::HasError()
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::HasError"),FColor::Red);
 	TArray<ETargetPlatform> TargetPlatforms;
 	GetCookFailedAssetsCollection().CookFailedAssets.GetKeys(TargetPlatforms);
 	return !!TargetPlatforms.Num();
@@ -243,6 +238,7 @@ bool USingleCookerProxy::HasError()
 
 void USingleCookerProxy::OnCookAssetFailed(const FString& PackagePath, ETargetPlatform Platform)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::OnCookAssetFailed"),FColor::Red);
 	FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
 	UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s for %s Failed!"),*PackagePath,*PlatformName);
 	FAssetsCollection& AssetsCollection = GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform);
@@ -265,6 +261,7 @@ void USingleCookerProxy::OnCookAssetFailed(const FString& PackagePath, ETargetPl
 
 void USingleCookerProxy::InitPlatformPackageContexts()
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::InitPlatformPackageContexts"),FColor::Red);
 	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
 	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
 	TArray<ITargetPlatform*> CookPlatforms;
@@ -283,8 +280,8 @@ void USingleCookerProxy::InitPlatformPackageContexts()
 }
 
 TMap<ETargetPlatform, FSavePackageContext*> USingleCookerProxy::GetPlatformSavePackageContextsRaw() const
-
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::GetPlatformSavePackageContextsRaw"),FColor::Red);
 	TMap<ETargetPlatform,FSavePackageContext*> result;
 	TArray<ETargetPlatform> Keys;
 	GetPlatformSavePackageContexts().GetKeys(Keys);
@@ -297,6 +294,7 @@ TMap<ETargetPlatform, FSavePackageContext*> USingleCookerProxy::GetPlatformSaveP
 
 bool USingleCookerProxy::SavePlatformBulkDataManifest(ETargetPlatform Platform)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::SavePlatformBulkDataManifest"),FColor::Red);
 	bool bRet = false;
 	if(!GetPlatformSavePackageContexts().Contains(Platform))
 		return bRet;

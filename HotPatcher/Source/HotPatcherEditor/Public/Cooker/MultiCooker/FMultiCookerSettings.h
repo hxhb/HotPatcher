@@ -89,6 +89,12 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(ClampMin=1,ClampMax=20))
 	int32 ProcessNumber = 3;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
+	bool bProfilingMultiCooker = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
+	bool bProfilingPerSingleCooker = false;
+	
 };
 
 

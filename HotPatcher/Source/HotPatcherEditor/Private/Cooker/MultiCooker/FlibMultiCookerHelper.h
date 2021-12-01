@@ -3,9 +3,15 @@
 #pragma once
 #include "Resources/Version.h"
 #include "CoreMinimal.h"
+#include "ETargetPlatform.h"
+#include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Misc/AES.h"
 #include "Misc/AES.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
 #include "FlibMultiCookerHelper.generated.h"
 
 /**
@@ -19,4 +25,7 @@ public:
 	static FString GetMultiCookerBaseDir();
 	static FString GetCookerProcConfigPath(const FString& MissionName,int32 MissionID);
 	static FString GetCookerProcFailedResultPath(const FString& MissionName, int32 MissionID);
+	static FString GetProfilingCmd();
+	static TSharedPtr<FCookShaderCollectionProxy> CreateCookShaderCollectionProxyByPlatform(const FString& ShaderLibraryName, TArray<ETargetPlatform> Platforms, bool bShareShader, bool bNativeShader, bool bMaster, const
+		FString& InSavePath);
 };

@@ -33,7 +33,6 @@ protected:
     
     void OnCookAssetFailed(const FString& PackagePath,ETargetPlatform Platform);
     FCookerFailedCollection& GetCookFailedAssetsCollection(){return CookFailedAssetsCollection;};
-    TSharedPtr<struct FCookShaderCollectionProxy> CreateCookShaderCollectionProxyByPlatform(TArray<ETargetPlatform> Platform);
     void DoCookMission(const TArray<FAssetDetail>& Assets);
 
     struct FShaderCollection
@@ -49,6 +48,7 @@ protected:
     protected:
         USingleCookerProxy* Proxy;
     };
+    
     void InitShaderLibConllections();
     void ShutdowShaderLibCollections();
 private:

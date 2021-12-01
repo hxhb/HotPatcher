@@ -62,5 +62,7 @@ private:
     TMap<FString,TSharedPtr<FProcWorkerThread>> CookerProcessMap;
     TMap<FString,FSingleCookerSettings> CookerConfigMap;
     TMap<FString,FAssetsCollection> CookerFailedCollectionMap;
+
+    TSharedPtr<struct FCookShaderCollectionProxy> GlobalShaderCollectionProxy;
     int32 FinishedCount = 0;
 };

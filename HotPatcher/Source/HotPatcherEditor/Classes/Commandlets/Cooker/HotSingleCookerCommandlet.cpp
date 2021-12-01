@@ -47,13 +47,14 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 	
 	FString FinalConfig;
 	UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportSingleCookerSetting,FinalConfig);
-	UE_LOG(LogHotSingleCookerCommandlet, Display, TEXT("%s"), *FinalConfig);
-		
+	UE_LOG(LogHotSingleCookerCommandlet, Display, TEXT("Cooker %s Id %d,Assets Num %d"), *ExportSingleCookerSetting->MissionName,ExportSingleCookerSetting->MissionID,ExportSingleCookerSetting->CookAssets.Num());
+	
 	USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
 	SingleCookerProxy->AddToRoot();
 	SingleCookerProxy->SetProxySettings(ExportSingleCookerSetting.Get());
+	SingleCookerProxy->Init();
 	bool bExportStatus = SingleCookerProxy->DoExport();
-
+	SingleCookerProxy->Shutdown();
 	UE_LOG(LogHotSingleCookerCommandlet,Display,TEXT("Single Cook Misstion %s %d is %s!"),*ExportSingleCookerSetting->MissionName,ExportSingleCookerSetting->MissionID,bExportStatus?TEXT("Successed"):TEXT("Failure"));
 	
 	if(FParse::Param(FCommandLine::Get(), TEXT("wait")))

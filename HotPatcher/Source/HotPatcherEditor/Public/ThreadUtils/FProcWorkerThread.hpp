@@ -33,8 +33,6 @@ public:
 			FString Line;
 			while (mProcessHandle.IsValid() && FPlatformProcess::IsApplicationRunning(mProcessID))
 			{
-				FPlatformProcess::Sleep(0.0f);
-
 				FString NewLine = FPlatformProcess::ReadPipe(mReadPipe);
 				if (NewLine.Len() > 0)
 				{
@@ -56,7 +54,7 @@ public:
 						}
 					}
 				}
-				FPlatformProcess::Sleep(0.0f);
+				FPlatformProcess::Sleep(0.2f);
 			}
 
 			int32 ProcReturnCode;

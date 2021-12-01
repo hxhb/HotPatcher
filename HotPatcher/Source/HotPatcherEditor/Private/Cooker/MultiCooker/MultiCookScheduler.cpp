@@ -5,6 +5,7 @@
 
 TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementation(FMultiCookerSettings MultiCookerSettings,const TArray<FAssetDetail>& AllDetails)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookScheduler::MultiCookScheduler"),FColor::Red);
 	int32 ProcessNumber = MultiCookerSettings.ProcessNumber;
 	
 	TArray<FSingleCookerSettings> AllSingleCookerSettings;
@@ -17,6 +18,7 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 		EmptySetting.MissionID = index;
 		EmptySetting.MissionName = FString::Printf(TEXT("%s_Cooker_%d"),FApp::GetProjectName(),EmptySetting.MissionID);
 		EmptySetting.ShaderLibName = FString::Printf(TEXT("%s_Shader_%d"),FApp::GetProjectName(),EmptySetting.MissionID);
+		// EmptySetting.ShaderLibName = FApp::GetProjectName();
 		EmptySetting.MultiCookerSettings = MultiCookerSettings;
 		AllSingleCookerSettings.Add(EmptySetting);
 	}

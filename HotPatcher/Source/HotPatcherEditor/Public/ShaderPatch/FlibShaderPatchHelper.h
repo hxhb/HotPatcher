@@ -9,6 +9,8 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FlibShaderPatchHelper.generated.h"
 
+
+
 /**
  * 
  */
@@ -23,7 +25,12 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	static TArray<FString> ConvDirectoryPathToStr(const TArray<FDirectoryPath>& Dirs);
-	
+
+	static FString ShaderExtension;
+	FORCEINLINE static FString GetCodeArchiveFilename(const FString& BaseDir, const FString& LibraryName, FName Platform)
+	{
+		return BaseDir / FString::Printf(TEXT("ShaderArchive-%s-"), *LibraryName) + Platform.ToString() + ShaderExtension;
+	}
 	// static void InitShaderCodeLibrary(const TArray<ETargetPlatform>& Platforms);
 	// static void CleanShaderCodeLibraries(const TArray<ETargetPlatform>& Platforms);
 	// void SaveGlobalShaderLibrary(const TArray<ETargetPlatform>& Platforms);

@@ -6,12 +6,6 @@
 
 #define LOCTEXT_NAMESPACE "HotPatcherShaderPatchProxy"
 
-static FString ShaderExtension = TEXT(".ushaderbytecode");
-static FString GetCodeArchiveFilename(const FString& BaseDir, const FString& LibraryName, FName Platform)
-{
-	return BaseDir / FString::Printf(TEXT("ShaderArchive-%s-"), *LibraryName) + Platform.ToString() + ShaderExtension;
-}
-
 bool UShaderPatchProxy::DoExport()
 {
 	bool bStatus = false;
@@ -32,7 +26,7 @@ bool UShaderPatchProxy::DoExport()
 		{
 			TMap<FName, TSet<FString>> FormatLibraryMap;
 			TArray<FString> LibraryFiles;
-			IFileManager::Get().FindFiles(LibraryFiles, *(ShaderPatchDir), *ShaderExtension);
+			IFileManager::Get().FindFiles(LibraryFiles, *(ShaderPatchDir), *UFlibShaderPatchHelper::ShaderExtension);
 	
 			for (FString const& Path : LibraryFiles)
 			{
@@ -62,7 +56,7 @@ bool UShaderPatchProxy::DoExport()
 				TArray<FString> LibraryNames= ShaderFormatLibraryMap[FormatName].Array();
 				for(const auto& LibrartName:LibraryNames)
 				{
-					FString OutputFilePath = GetCodeArchiveFilename(SaveToPath, LibrartName, FormatName);
+					FString OutputFilePath = UFlibShaderPatchHelper::GetCodeArchiveFilename(SaveToPath, LibrartName, FormatName);
 					if(FPaths::FileExists(OutputFilePath))
 					{
 						bStatus = true;

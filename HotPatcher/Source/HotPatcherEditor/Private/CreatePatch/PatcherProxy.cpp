@@ -23,6 +23,7 @@
 #include "Serialization/ArrayWriter.h"
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
 #include "AssetRegistryState.h"
+#include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 
 
 #if WITH_IO_STORE_SUPPORT
@@ -502,6 +503,7 @@ namespace PatchWorker
 					ShaderLibraryName,
 					Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary,
 					Context.GetSettingObject()->GetCookShaderOptions().bNativeShader,
+					true,
 					SavePath
 					));
 			CookShaderCollection->Init();

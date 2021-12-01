@@ -52,8 +52,24 @@ int32 UHotMultiCookerCommandlet::Main(const FString& Params)
 	UMultiCookerProxy* MultiCookerProxy = NewObject<UMultiCookerProxy>();
 	MultiCookerProxy->AddToRoot();
 	MultiCookerProxy->SetProxySettings(ExportMultiCookerSetting.Get());
+	MultiCookerProxy->Init();
 	bool bExportStatus = MultiCookerProxy->DoExport();
 
+	if(IsRunningCommandlet())
+	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("wait Cook mission is completed"),FColor::Red);
+		TSharedPtr<FThreadWorker> WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("SingleCooker_WaitCookComplete"),[this,MultiCookerProxy]()
+		{
+			while(MultiCookerProxy->IsRunning())
+			{
+				FPlatformProcess::Sleep(1.f);
+			}
+		}));
+		WaitThreadWorker->Execute();
+		WaitThreadWorker->Join();
+	}
+	MultiCookerProxy->Shutdown();
+	
 	UE_LOG(LogHotMultiCookerCommandlet,Display,TEXT("Multi Process Cook Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));
 	
 	if(FParse::Param(FCommandLine::Get(), TEXT("wait")))

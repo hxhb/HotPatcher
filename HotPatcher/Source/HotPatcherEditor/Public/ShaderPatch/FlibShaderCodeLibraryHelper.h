@@ -6,7 +6,8 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Misc/AES.h"
-#include "Misc/AES.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
+#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
 #include "FlibShaderCodeLibraryHelper.generated.h"
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
@@ -14,23 +15,6 @@
 #else
 	#define SHADER_COOKER_CLASS FShaderCodeLibrary
 #endif
-
-struct FCookShaderCollectionProxy
-{
-	FCookShaderCollectionProxy(const TArray<FString>& InPlatformNames,const FString& InLibraryName,bool bShareShader,bool InIsNative,const FString& InSaveBaseDir);
-	virtual ~FCookShaderCollectionProxy();
-	virtual void Init();
-	virtual void Shutdown();
-	virtual bool IsSuccessed()const { return bSuccessed; }
-private:
-	TArray<ITargetPlatform*> TargetPlatforms;
-	TArray<FString> PlatformNames;
-	FString LibraryName;
-	bool bShareShader;
-	bool bIsNative;
-	FString SaveBaseDir;
-	bool bSuccessed = false;
-};
 
 struct FShaderCodeFormatMap
 {
@@ -71,7 +55,7 @@ public:
 	static TArray<FName> GetShaderFormatsByTargetPlatform(ITargetPlatform* TargetPlatform);
 	static FString GenerateShaderCodeLibraryName(FString const& Name, bool bIsIterateSharedBuild);
 	static bool SaveShaderLibrary(const ITargetPlatform* TargetPlatform, const TArray<TSet<FName>>* ChunkAssignments, FString const& Name, const FString&
-	                              SaveBaseDir);
+	                              SaveBaseDir, bool bMaster);
 	static TArray<FString> FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory,bool bRecursive = false);
 	static TArray<FString> FindCookedShaderLibByShaderFrmat(const FString& ShaderFormatName,const FString& Directory);
 	
