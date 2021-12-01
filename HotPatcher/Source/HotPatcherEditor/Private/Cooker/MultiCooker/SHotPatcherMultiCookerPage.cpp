@@ -116,17 +116,7 @@ void SHotPatcherMultiCookerPage::DoGenerate()
 
 void SHotPatcherMultiCookerPage::ImportProjectConfig()
 {
-	FProjectPackageAssetCollection AssetCollection = UFlibHotPatcherEditorHelper::ImportProjectSettingsPackages();
-	GetConfigSettings()->AssetIncludeFilters.Append(AssetCollection.DirectoryPaths);
-
-	for(const auto& Asset:AssetCollection.SoftObjectPaths)
-	{
-		FPatcherSpecifyAsset CurrentAsset;
-		CurrentAsset.Asset = Asset;
-		CurrentAsset.bAnalysisAssetDependencies = true;
-		CurrentAsset.AssetRegistryDependencyTypes = {EAssetRegistryDependencyTypeEx::Packages};
-		GetConfigSettings()->IncludeSpecifyAssets.Add(CurrentAsset);
-	}
+	GetConfigSettings()->ImportProjectSettings();
 	SHotPatcherCookerBase::ImportProjectConfig();
 }
 
@@ -177,7 +167,6 @@ FReply SHotPatcherMultiCookerPage::RunCook()
 		MultiCookerProxy = NewObject<UMultiCookerProxy>();
 		MultiCookerProxy->AddToRoot();
 		MultiCookerProxy->SetProxySettings(GetConfigSettings());
-		MultiCookerProxy->Init();
 		MultiCookerProxy->OnMultiCookerBegining.AddLambda([this](UMultiCookerProxy*)
 		{
 			MissionNotifyProay->SpawnRuningMissionNotification(NULL);

@@ -30,16 +30,16 @@ struct FShaderCodeFormatMap
 	// SF_METAL something files
 	TMap<FString,FShaderFormatNameFiles> ShaderCodeTypeFilesMap;
 };
-
-struct FMergeShaderCollectionProxy
-{
-	FMergeShaderCollectionProxy(const TArray<FShaderCodeFormatMap>& InShaderCodeFiles);
-	virtual ~FMergeShaderCollectionProxy();
-	void Init();
-	void Shutdown();
-private:
-	TArray<FShaderCodeFormatMap> ShaderCodeFiles;
-};
+//
+// struct FMergeShaderCollectionProxy
+// {
+// 	FMergeShaderCollectionProxy(const TArray<FShaderCodeFormatMap>& InShaderCodeFiles);
+// 	virtual ~FMergeShaderCollectionProxy();
+// 	void Init();
+// 	void Shutdown();
+// private:
+// 	TArray<FShaderCodeFormatMap> ShaderCodeFiles;
+// };
 
 /**
  * 

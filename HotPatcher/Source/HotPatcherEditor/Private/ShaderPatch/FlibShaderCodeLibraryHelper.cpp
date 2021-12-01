@@ -9,70 +9,70 @@
 
 #define REMAPPED_PLUGINS TEXT("RemappedPlugins")
 
-FMergeShaderCollectionProxy::FMergeShaderCollectionProxy(const TArray<FShaderCodeFormatMap>& InShaderCodeFiles):ShaderCodeFiles(InShaderCodeFiles)
-{
-	Init();
-}
-FMergeShaderCollectionProxy::~FMergeShaderCollectionProxy()
-{
-	Shutdown();
-}
-
-void FMergeShaderCollectionProxy::Init()
-{
-	for(const auto& ShaderCodeFoemat:ShaderCodeFiles)
-	{
-		TArray<FName> ShaderFormatNames = UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(ShaderCodeFoemat.Platform);
-		
-		for(const auto& ShaderFormatName:ShaderFormatNames)
-		{
-			EShaderPlatform ShaderPlatform= ::ShaderFormatToLegacyShaderPlatform(ShaderFormatName);
-			
-			if(ShaderCodeFoemat.ShaderCodeTypeFilesMap.Contains(ShaderFormatName.ToString()))
-			{
-				SHADER_COOKER_CLASS::InitForCooking(ShaderCodeFoemat.bIsNative);
-				SHADER_COOKER_CLASS::InitForRuntime(ShaderPlatform);
-				TArray<FName> CurrentPlatforomShaderTypeNames;
-				{
-					TArray<FString> PlatforomShaderTypeNames;
-					ShaderCodeFoemat.ShaderCodeTypeFilesMap.GetKeys(PlatforomShaderTypeNames);
-					for(const auto& Name:PlatforomShaderTypeNames)
-					{
-						CurrentPlatforomShaderTypeNames.AddUnique(*Name);
-					}
-				}
-
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
-				TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(CurrentPlatforomShaderTypeNames);
-#else
-				TArray<TPair<FName, bool>> ShaderFormatsWithStableKeys;
-				for (FName& Format : ShaderFormatNames)
-				{
-					ShaderFormatsWithStableKeys.Push(MakeTuple(Format, true));
-				}
-#endif
-				
-				SHADER_COOKER_CLASS::CookShaderFormats(ShaderFormatsWithStableKeys);
-				FShaderCodeFormatMap::FShaderFormatNameFiles ShaderFormatNameFiles =  *ShaderCodeFoemat.ShaderCodeTypeFilesMap.Find(ShaderFormatName.ToString());
-				for(const auto& File:ShaderFormatNameFiles.Files)
-				{
-					FString Path = FPaths::GetPath(File);
-					FShaderCodeLibrary::OpenLibrary(ShaderFormatNameFiles.ShaderName,Path);
-				}
-				if(!UFlibShaderCodeLibraryHelper::SaveShaderLibrary(ShaderCodeFoemat.Platform, NULL, FApp::GetProjectName(),ShaderCodeFoemat.SaveBaseDir,true))
-				{
-					UE_LOG(LogHotPatcherEditorHelper,Display,TEXT("SaveShaderLibrary %s for %s Failed!"),*FApp::GetProjectName(),*ShaderCodeFoemat.Platform->PlatformName() );
-				}
-				SHADER_COOKER_CLASS::Shutdown();
-			}
-		}
-	}
-}
-
-void FMergeShaderCollectionProxy::Shutdown()
-{
-	FShaderCodeLibrary::Shutdown();
-}
+// FMergeShaderCollectionProxy::FMergeShaderCollectionProxy(const TArray<FShaderCodeFormatMap>& InShaderCodeFiles):ShaderCodeFiles(InShaderCodeFiles)
+// {
+// 	Init();
+// }
+// FMergeShaderCollectionProxy::~FMergeShaderCollectionProxy()
+// {
+// 	Shutdown();
+// }
+//
+// void FMergeShaderCollectionProxy::Init()
+// {
+// 	for(const auto& ShaderCodeFoemat:ShaderCodeFiles)
+// 	{
+// 		TArray<FName> ShaderFormatNames = UFlibShaderCodeLibraryHelper::GetShaderFormatsByTargetPlatform(ShaderCodeFoemat.Platform);
+// 		
+// 		for(const auto& ShaderFormatName:ShaderFormatNames)
+// 		{
+// 			EShaderPlatform ShaderPlatform= ::ShaderFormatToLegacyShaderPlatform(ShaderFormatName);
+// 			
+// 			if(ShaderCodeFoemat.ShaderCodeTypeFilesMap.Contains(ShaderFormatName.ToString()))
+// 			{
+// 				SHADER_COOKER_CLASS::InitForCooking(ShaderCodeFoemat.bIsNative);
+// 				SHADER_COOKER_CLASS::InitForRuntime(ShaderPlatform);
+// 				TArray<FName> CurrentPlatforomShaderTypeNames;
+// 				{
+// 					TArray<FString> PlatforomShaderTypeNames;
+// 					ShaderCodeFoemat.ShaderCodeTypeFilesMap.GetKeys(PlatforomShaderTypeNames);
+// 					for(const auto& Name:PlatforomShaderTypeNames)
+// 					{
+// 						CurrentPlatforomShaderTypeNames.AddUnique(*Name);
+// 					}
+// 				}
+//
+// #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+// 				TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(CurrentPlatforomShaderTypeNames);
+// #else
+// 				TArray<TPair<FName, bool>> ShaderFormatsWithStableKeys;
+// 				for (FName& Format : ShaderFormatNames)
+// 				{
+// 					ShaderFormatsWithStableKeys.Push(MakeTuple(Format, true));
+// 				}
+// #endif
+// 				
+// 				SHADER_COOKER_CLASS::CookShaderFormats(ShaderFormatsWithStableKeys);
+// 				FShaderCodeFormatMap::FShaderFormatNameFiles ShaderFormatNameFiles =  *ShaderCodeFoemat.ShaderCodeTypeFilesMap.Find(ShaderFormatName.ToString());
+// 				for(const auto& File:ShaderFormatNameFiles.Files)
+// 				{
+// 					FString Path = FPaths::GetPath(File);
+// 					FShaderCodeLibrary::OpenLibrary(ShaderFormatNameFiles.ShaderName,Path);
+// 				}
+// 				if(!UFlibShaderCodeLibraryHelper::SaveShaderLibrary(ShaderCodeFoemat.Platform, NULL, FApp::GetProjectName(),ShaderCodeFoemat.SaveBaseDir,true))
+// 				{
+// 					UE_LOG(LogHotPatcherEditorHelper,Display,TEXT("SaveShaderLibrary %s for %s Failed!"),*FApp::GetProjectName(),*ShaderCodeFoemat.Platform->PlatformName() );
+// 				}
+// 				SHADER_COOKER_CLASS::Shutdown();
+// 			}
+// 		}
+// 	}
+// }
+//
+// void FMergeShaderCollectionProxy::Shutdown()
+// {
+// 	FShaderCodeLibrary::Shutdown();
+// }
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(

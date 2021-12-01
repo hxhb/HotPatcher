@@ -25,13 +25,7 @@ FExportPatchSettings::FExportPatchSettings()
 		UFlibPatchParserHelper::GetProjectName(),
 		TEXT("Versions/version.json")
 	);
-	TArray<FString> DefaultSkipEditorContentRules = {TEXT("/Engine/Editor"),TEXT("/Engine/VREditor")};
-	for(const auto& Ruls:DefaultSkipEditorContentRules)
-	{
-		FDirectoryPath PathIns;
-		PathIns.Path = Ruls;
-		ForceSkipContentRules.Add(PathIns);
-	}
+	ForceSkipContentRules.Append(UFlibPatchParserHelper::GetDefaultForceSkipContentDir());
 }
 
 void FExportPatchSettings::Init()

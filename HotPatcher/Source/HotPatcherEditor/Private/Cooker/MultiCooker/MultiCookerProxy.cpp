@@ -19,11 +19,16 @@ void UMultiCookerProxy::Init()
 		GetSettingObject()->ShaderOptions.bSharedShaderLibrary,
 		GetSettingObject()->ShaderOptions.bNativeShader,
 		true,
-		UFlibMultiCookerHelper::GetMultiCookerBaseDir()
+		FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("Shaders"))
 	);
 	if(GlobalShaderCollectionProxy.IsValid())
 	{
 		GlobalShaderCollectionProxy->Init();
+	}
+
+	if(GetSettingObject()->bImportProjectSettings)
+	{
+		GetSettingObject()->ImportProjectSettings();
 	}
 	Super::Init();
 }
@@ -140,29 +145,11 @@ bool UMultiCookerProxy::MergeShader()
 			
 			// merge shader
 			FShaderCodeLibrary::SaveShaderCodeMaster(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths);
-			
-			// for(auto& ShaderFormat:ShaderFormats)
-			// {
-			// 	TArray<FString > FoundShaderFiles = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByShaderFrmat(ShaderFormat.ToString(),CurrentCookerDir);
-			//
-			// 	if(FoundShaderFiles.Num())
-			// 	{
-			// 		FString FormatExtersion = FString::Printf(TEXT("-%s.ushaderbytecode"),*ShaderFormat.ToString());
-			// 		
-			// 		FString ShderName = FoundShaderFiles[0];
-			// 		ShderName.RemoveFromStart(TEXT("ShaderArchive-"));
-			// 		ShderName.RemoveFromEnd(FormatExtersion);
-			// 		FShaderCodeFormatMap::FShaderFormatNameFiles ShaderNameAndFileMap;
-			// 		ShaderNameAndFileMap.ShaderName = ShderName;
-			// 		ShaderNameAndFileMap.Files = FoundShaderFiles;
-			// 		ShaderCodeFormatMap.ShaderCodeTypeFilesMap.Add(ShaderFormat.ToString(),ShaderNameAndFileMap);
-			// 	}
-			// }
 		}
 		ShaderCodeFormatMaps.Add(ShaderCodeFormatMap);
 	}
 	
-	TSharedPtr<FMergeShaderCollectionProxy> MergeShaderCollectionProxy = MakeShareable(new FMergeShaderCollectionProxy(ShaderCodeFormatMaps));
+	// TSharedPtr<FMergeShaderCollectionProxy> MergeShaderCollectionProxy = MakeShareable(new FMergeShaderCollectionProxy(ShaderCodeFormatMaps));
 	return true;
 }
 

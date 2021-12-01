@@ -45,8 +45,12 @@ public:
 	virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets() override {return IncludeSpecifyAssets; };
 
 	bool IsValidConfig()const;
-	
+
+	void ImportProjectSettings();
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter")
+	bool bImportProjectSettings;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Filter",meta = (RelativeToGameContentDir, LongPackageName))
 	TArray<FDirectoryPath> AssetIncludeFilters;
 	// Ignore directories in AssetIncludeFilters 

@@ -13,9 +13,11 @@
 #include "HAL/PlatformFilemanager.h"
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Editor.h"
+#include "GameDelegates.h"
 #include "GameMapsSettings.h"
 #include "HotPatcherEditor.h"
 #include "IPlatformFileSandboxWrapper.h"
+#include "PackageHelperFunctions.h"
 #include "Async/Async.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/SecureHash.h"
@@ -1457,11 +1459,159 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 	FProjectPackageAssetCollection result;
 	TArray<FDirectoryPath>& DirectoryPaths = result.DirectoryPaths;
 	TArray<FSoftObjectPath>& SoftObjectPaths = result.SoftObjectPaths;
+
+	auto AddSoftObjectPath = [&](const FString& LongPackagePath)
+	{
+		if(FPackageName::DoesPackageExist(LongPackagePath))
+		{
+			SoftObjectPaths.Emplace(LongPackagePath);
+		}
+	};
+	
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	IAssetRegistry* AssetRegistry = &AssetRegistryModule.Get();
 	
 	const UProjectPackagingSettings* const PackagingSettings = GetDefault<UProjectPackagingSettings>();
+	
+	{
+		// allow the game to fill out the asset registry, as well as get a list of objects to always cook
+		TArray<FString> FilesInPathStrings;
+		FGameDelegates::Get().GetCookModificationDelegate().ExecuteIfBound(FilesInPathStrings);
+		for(const auto& BuildFilename:FilesInPathStrings)
+		{
+			FString OutPackageName;
+			if (FPackageName::TryConvertFilenameToLongPackageName(BuildFilename, OutPackageName))
+			{
+				AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(OutPackageName));
+			}
+		}
+	}
+	
+	// in Asset Manager / PrimaryAssetLabel
+	{
+		TArray<FName> PackageToCook;
+		TArray<FName> PackageToNeverCook;
+		UAssetManager::Get().ModifyCook(PackageToCook,PackageToNeverCook);
+		for(const auto& Package:PackageToCook)
+		{
+			AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(Package.ToString()));
+		}
+	}
 
+	// DirectoriesToAlwaysCook
+	DirectoryPaths.Append(PackagingSettings->DirectoriesToAlwaysCook);
+
+	// AlwaysCookMaps
+	{
+		TArray<FString> MapList;
+		// Add the default map section
+		GEditor->LoadMapListFromIni(TEXT("AlwaysCookMaps"), MapList);
+
+		for (int32 MapIdx = 0; MapIdx < MapList.Num(); MapIdx++)
+		{
+			FName PackageName = FName(*FPackageName::FilenameToLongPackageName(MapList[MapIdx]));
+			AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(PackageName.ToString()));
+		}
+	}
+
+	// MapsToCook
+	for (const FFilePath& MapToCook : PackagingSettings->MapsToCook)
+	{
+		FString File = MapToCook.FilePath;
+		FName PackageName = FName(*FPackageName::FilenameToLongPackageName(File));
+		AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(PackageName.ToString()));
+	}
+
+	// Loading default map ini section AllMaps
+	{
+		TArray<FString> AllMapsSection;
+		GEditor->LoadMapListFromIni(TEXT("AllMaps"), AllMapsSection);
+		for (const FString& MapName : AllMapsSection)
+		{
+			AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(MapName));
+		}
+	}
+
+	// all uasset and umap
+	if(!SoftObjectPaths.Num() && !DirectoryPaths.Num())
+	{
+		TArray<FString> Tokens;
+		Tokens.Empty(2);
+		Tokens.Add(FString("*") + FPackageName::GetAssetPackageExtension());
+		Tokens.Add(FString("*") + FPackageName::GetMapPackageExtension());
+
+		uint8 PackageFilter = NORMALIZE_DefaultFlags | NORMALIZE_ExcludeEnginePackages | NORMALIZE_ExcludeLocalizedPackages;
+		bool bMapsOnly = false;
+		if (bMapsOnly)
+		{
+			PackageFilter |= NORMALIZE_ExcludeContentPackages;
+		}
+		bool bNoDev = false;
+		if (bNoDev)
+		{
+			PackageFilter |= NORMALIZE_ExcludeDeveloperPackages;
+		}
+
+		// assume the first token is the map wildcard/pathname
+		TArray<FString> Unused;
+		for (int32 TokenIndex = 0; TokenIndex < Tokens.Num(); TokenIndex++)
+		{
+			TArray<FString> TokenFiles;
+			if (!NormalizePackageNames(Unused, TokenFiles, Tokens[TokenIndex], PackageFilter))
+			{
+				UE_LOG(LogHotPatcherEditorHelper, Display, TEXT("No packages found for parameter %i: '%s'"), TokenIndex, *Tokens[TokenIndex]);
+				continue;
+			}
+
+			for (int32 TokenFileIndex = 0; TokenFileIndex < TokenFiles.Num(); ++TokenFileIndex)
+			{
+				FName PackageName = FName(*FPackageName::FilenameToLongPackageName(TokenFiles[TokenFileIndex]));
+				AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(PackageName.ToString()));
+			}
+		}
+	}
+	
+	// ===============================================
+	// Find all the localized packages and map them back to their source package
+	{
+		TArray<FString> AllCulturesToCook;
+		for (const FString& CultureName : PackagingSettings->CulturesToStage)
+		{
+			const TArray<FString> PrioritizedCultureNames = FInternationalization::Get().GetPrioritizedCultureNames(CultureName);
+			for (const FString& PrioritizedCultureName : PrioritizedCultureNames)
+			{
+				AllCulturesToCook.AddUnique(PrioritizedCultureName);
+			}
+		}
+		AllCulturesToCook.Sort();
+
+		TArray<FString> RootPaths;
+		FPackageName::QueryRootContentPaths(RootPaths);
+
+		FARFilter Filter;
+		Filter.bRecursivePaths = true;
+		Filter.bIncludeOnlyOnDiskAssets = false;
+		Filter.PackagePaths.Reserve(AllCulturesToCook.Num() * RootPaths.Num());
+		for (const FString& RootPath : RootPaths)
+		{
+			for (const FString& CultureName : AllCulturesToCook)
+			{
+				FString LocalizedPackagePath = RootPath / TEXT("L10N") / CultureName;
+				Filter.PackagePaths.Add(*LocalizedPackagePath);
+			}
+		}
+
+		TArray<FAssetData> AssetDataForCultures;
+		AssetRegistry->GetAssets(Filter, AssetDataForCultures);
+
+		for (const FAssetData& AssetData : AssetDataForCultures)
+		{
+			const FName LocalizedPackageName = AssetData.PackageName;
+			const FName SourcePackageName = *FPackageName::GetSourcePackagePath(LocalizedPackageName.ToString());
+			AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(LocalizedPackageName.ToString()));
+		}
+	}
 	const UGameMapsSettings* const GameMapsSettings = GetDefault<UGameMapsSettings>();
-
 	{
 		if(GameMapsSettings->GameInstanceClass.IsAsset())
 		{
@@ -1497,7 +1647,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 		return DirectoryPath;
 	};
 
-	DirectoryPaths.Append(PackagingSettings->DirectoriesToAlwaysCook);
+	
 
 	// DirectoryPaths.AddUnique(CreateDirectory("/Game/UI"));
 	// DirectoryPaths.AddUnique(CreateDirectory("/Game/Widget"));
@@ -1515,37 +1665,6 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 		}
 	}
 
-	// AlwaysCookMaps
-	{
-		TArray<FString> MapList;
-		// Add the default map section
-		GEditor->LoadMapListFromIni(TEXT("AlwaysCookMaps"), MapList);
-
-		for (int32 MapIdx = 0; MapIdx < MapList.Num(); MapIdx++)
-		{
-			FName PackageName = FName(*FPackageName::FilenameToLongPackageName(MapList[MapIdx]));
-			SoftObjectPaths.Emplace(PackageName);
-		}
-	}
-
-	// MapsToCook
-	for (const FFilePath& MapToCook : PackagingSettings->MapsToCook)
-	{
-		FString File = MapToCook.FilePath;
-		FName PackageName = FName(*FPackageName::FilenameToLongPackageName(File));
-		SoftObjectPaths.Emplace(PackageName);
-	}
-
-	// Loading default map ini section AllMaps
-	{
-		TArray<FString> AllMapsSection;
-		GEditor->LoadMapListFromIni(TEXT("AllMaps"), AllMapsSection);
-		for (const FString& MapName : AllMapsSection)
-		{
-			SoftObjectPaths.Emplace(MapName);
-		}
-	}
-
 	{
 		FConfigFile InputIni;
 		FString InterfaceFile;
@@ -1554,7 +1673,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 		{
 			if (InterfaceFile != TEXT("None") && InterfaceFile != TEXT(""))
 			{
-				SoftObjectPaths.Emplace(InterfaceFile);
+				AddSoftObjectPath(InterfaceFile);
 			}
 		}
 	}
@@ -1578,8 +1697,6 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 			}
 		}
 
-		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-		IAssetRegistry* AssetRegistry = &AssetRegistryModule.Get();
 		
 		TArray<FAssetData> AssetDataForCultures;
 		AssetRegistry->GetAssets(Filter, AssetDataForCultures);
@@ -1589,7 +1706,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 			const FName LocalizedPackageName = AssetData.PackageName;
 			const FName SourcePackageName = *FPackageName::GetSourcePackagePath(LocalizedPackageName.ToString());
 
-			SoftObjectPaths.Emplace(SourcePackageName);
+			AddSoftObjectPath(SourcePackageName.ToString());
 		}
 	}
 

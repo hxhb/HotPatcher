@@ -2124,3 +2124,16 @@ bool UFlibPatchParserHelper::SerializePakEncryptionKeyToFile(const FPakEncryptio
 	UFlibPatchParserHelper::TSerializeStructAsJsonString(PakEncryptionKeys,KeyInfo);
 	return UFLibAssetManageHelperEx::SaveStringToFile(ToFile, KeyInfo);
 }
+
+TArray<FDirectoryPath> UFlibPatchParserHelper::GetDefaultForceSkipContentDir()
+{
+	TArray<FDirectoryPath> result;
+	TArray<FString> DefaultSkipEditorContentRules = {TEXT("/Engine/Editor"),TEXT("/Engine/VREditor")};
+	for(const auto& Ruls:DefaultSkipEditorContentRules)
+	{
+		FDirectoryPath PathIns;
+		PathIns.Path = Ruls;
+		result.Add(PathIns);
+	}
+	return result;
+}

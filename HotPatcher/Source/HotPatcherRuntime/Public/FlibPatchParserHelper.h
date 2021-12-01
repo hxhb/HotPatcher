@@ -492,5 +492,7 @@ public:
 	static FEncryptSetting GetCryptoSettingByPakEncryptSettings(const FPakEncryptSettings& Config);
 	
 	static bool SerializePakEncryptionKeyToFile(const FPakEncryptionKeys& PakEncryptionKeys,const FString& ToFile);
+
+	static TArray<FDirectoryPath> GetDefaultForceSkipContentDir();
 };
 
