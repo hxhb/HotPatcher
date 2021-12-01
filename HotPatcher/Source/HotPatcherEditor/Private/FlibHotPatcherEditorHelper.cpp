@@ -19,7 +19,9 @@
 #include "IPlatformFileSandboxWrapper.h"
 #include "PackageHelperFunctions.h"
 #include "Async/Async.h"
+#include "Engine/AssetManager.h"
 #include "Interfaces/IPluginManager.h"
+#include "Misc/RedirectCollector.h"
 #include "Misc/SecureHash.h"
 #include "Serialization/ArrayWriter.h"
 #include "Settings/ProjectPackagingSettings.h"
@@ -1572,6 +1574,36 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 	}
 	
 	// ===============================================
+
+	{
+		TSet<FName> StartupPackages;
+		TSet<FName> StartupSoftObjectPackages;
+
+		for (TObjectIterator<UPackage> It; It; ++It)
+		{
+			if ((*It) != GetTransientPackage())
+			{
+				if(!It->GetFName().ToString().StartsWith(TEXT("/Script")))
+				{
+					StartupPackages.Add(It->GetFName());
+				}
+			}
+		}
+		
+		// Get the list of soft references, for both empty package and all startup packages
+		GRedirectCollector.ProcessSoftObjectPathPackageList(NAME_None, false, StartupSoftObjectPackages);
+
+		for (const FName& StartupPackage : StartupPackages)
+		{
+			GRedirectCollector.ProcessSoftObjectPathPackageList(StartupPackage, false, StartupSoftObjectPackages);
+		}
+
+		// Add string asset packages after collecting files, to avoid accidentally activating the behavior to cook all maps if none are specified
+		for (FName SoftObjectPackage : StartupSoftObjectPackages)
+		{
+			AddSoftObjectPath(SoftObjectPackage.ToString());
+		}
+	}
 	// Find all the localized packages and map them back to their source package
 	{
 		TArray<FString> AllCulturesToCook;

@@ -6,12 +6,6 @@
 #include "ETargetPlatform.h"
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "Misc/AES.h"
-#include "Misc/AES.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
-#include "Programs/UnrealLightmass/Private/ImportExport/3DVisualizer.h"
 #include "FlibMultiCookerHelper.generated.h"
 
 /**

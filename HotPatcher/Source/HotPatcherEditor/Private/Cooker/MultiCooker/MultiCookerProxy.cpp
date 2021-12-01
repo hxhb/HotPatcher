@@ -130,8 +130,11 @@ bool UMultiCookerProxy::MergeShader()
 
 				const FString RootMetaDataPath = ShaderIntermediateLocation / TEXT("Metadata") / TEXT("PipelineCaches");
 				// load default shader,etc Saved/Shaders/PCD3D_SM5/ShaderArchive-Blank425-PCD3D_SM5.ushaderbytecode
-				FShaderCodeLibrary::SaveShaderCodeMaster(ShaderIntermediateLocation, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths);
-				
+				FShaderCodeLibrary::SaveShaderCode(ShaderIntermediateLocation, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths
+				#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+				,NULL
+				#endif
+				);
 				TArray<FString > FoundShaderFiles = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByShaderFrmat(ShaderFormat.ToString(),CurrentCookerDir);
 				for(const auto& ShaderArchiveFileName:FoundShaderFiles)
 				{
@@ -144,7 +147,11 @@ bool UMultiCookerProxy::MergeShader()
 			const FString RootMetaDataPath = ShaderCodeDir / TEXT("Metadata") / TEXT("PipelineCaches");
 			
 			// merge shader
-			FShaderCodeLibrary::SaveShaderCodeMaster(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths);
+			FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths
+			#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+				,NULL
+			#endif
+			);
 		}
 		ShaderCodeFormatMaps.Add(ShaderCodeFormatMap);
 	}
