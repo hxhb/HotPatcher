@@ -129,12 +129,13 @@ bool UMultiCookerProxy::MergeShader()
 				FString DefaultShaderLibIntermediateLocation = UFlibShaderPatchHelper::GetCodeArchiveFilename(ShaderIntermediateLocation,FApp::GetProjectName(),ShaderFormat);
 
 				const FString RootMetaDataPath = ShaderIntermediateLocation / TEXT("Metadata") / TEXT("PipelineCaches");
+				UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,TArray<FName>{ShaderFormat},ShaderIntermediateLocation,RootMetaDataPath,true);
 				// load default shader,etc Saved/Shaders/PCD3D_SM5/ShaderArchive-Blank425-PCD3D_SM5.ushaderbytecode
-				FShaderCodeLibrary::SaveShaderCode(ShaderIntermediateLocation, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths
-				#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
-				,NULL
-				#endif
-				);
+				// FShaderCodeLibrary::SaveShaderCode(ShaderIntermediateLocation, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths
+				// #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+				// ,NULL
+				// #endif
+				// );
 				TArray<FString > FoundShaderFiles = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByShaderFrmat(ShaderFormat.ToString(),CurrentCookerDir);
 				for(const auto& ShaderArchiveFileName:FoundShaderFiles)
 				{
@@ -145,13 +146,14 @@ bool UMultiCookerProxy::MergeShader()
 			}
 			FString ShaderCodeDir = ShaderCodeFormatMap.SaveBaseDir; //FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),Cooker.Value.MissionName,PlatformName);
 			const FString RootMetaDataPath = ShaderCodeDir / TEXT("Metadata") / TEXT("PipelineCaches");
-			
-			// merge shader
-			FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths
-			#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
-				,NULL
-			#endif
-			);
+
+			UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,ShaderFormats,ShaderCodeDir,RootMetaDataPath,true);
+			// // merge shader
+			// FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths
+			// #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+			// 	,NULL
+			// #endif
+			// );
 		}
 		ShaderCodeFormatMaps.Add(ShaderCodeFormatMap);
 	}

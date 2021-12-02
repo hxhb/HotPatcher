@@ -1460,13 +1460,17 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 {
 	FProjectPackageAssetCollection result;
 	TArray<FDirectoryPath>& DirectoryPaths = result.DirectoryPaths;
-	TArray<FSoftObjectPath>& SoftObjectPaths = result.SoftObjectPaths;
+	TArray<FSoftObjectPath>& SoftObjectPaths = result.NeedCookPackages;
 
 	auto AddSoftObjectPath = [&](const FString& LongPackagePath)
 	{
-		if(FPackageName::DoesPackageExist(LongPackagePath))
+		if (!LongPackagePath.IsEmpty() && !FPackageName::IsScriptPackage(LongPackagePath) && !FPackageName::IsMemoryPackage(LongPackagePath))
 		{
-			SoftObjectPaths.Emplace(LongPackagePath);
+			if(FPackageName::DoesPackageExist(LongPackagePath))
+			{
+				UE_LOG(LogHotPatcherEditorHelper,Display,TEXT("Import Project Setting Package: %s"),*LongPackagePath);
+				SoftObjectPaths.Emplace(LongPackagePath);
+			}
 		}
 	};
 	
@@ -1497,6 +1501,10 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 		for(const auto& Package:PackageToCook)
 		{
 			AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(Package.ToString()));
+		}
+		for(const auto& NeverCookPackage:PackageToNeverCook)
+		{
+			result.NeverCookPackages.Add(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(NeverCookPackage.ToString()));
 		}
 	}
 
@@ -1741,6 +1749,22 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 			AddSoftObjectPath(SourcePackageName.ToString());
 		}
 	}
+
+	// GetUnsolicitedPackages
+	{
+		for (TObjectIterator<UPackage> It; It; ++It)
+		{
+			UPackage* Package = *It;
+
+			if (Package->GetOuter() == nullptr)
+			{
+				AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(Package->GetName()));
+			}
+		}
+	}
+	
+	// never cook packages
+	result.NeverCookPaths.Append(PackagingSettings->DirectoriesToNeverCook);
 
 	return result;
 }

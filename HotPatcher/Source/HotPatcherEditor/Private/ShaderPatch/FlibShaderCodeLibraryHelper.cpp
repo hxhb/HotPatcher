@@ -104,6 +104,36 @@ FString UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FString cons
 	return ActualName;
 }
 
+bool UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* TargetPlatform,TArray<FName> ShaderFormats, const FString& ShaderCodeDir,const FString& RootMetaDataPath, bool bMaster)
+{
+	bool bSaved = false;
+	// TargetPlatform->GetAllTargetedShaderFormats(ShaderFormats);
+	if (ShaderFormats.Num() > 0)
+	{
+		FString TargetPlatformName = TargetPlatform->PlatformName();
+		TArray<FString> PlatformSCLCSVPaths;// = OutSCLCSVPaths.FindOrAdd(FName(TargetPlatformName));
+		
+		#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+		FString ErrorString;
+		bSaved = SHADER_COOKER_CLASS::SaveShaderLibraryWithoutChunking(TargetPlatform, FApp::GetProjectName(), ShaderCodeDir, RootMetaDataPath, PlatformSCLCSVPaths, ErrorString);
+#else
+		bSaved = FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths, ChunkAssignments);
+#endif
+#else
+		if(bMaster)
+		{
+			bSaved = FShaderCodeLibrary::SaveShaderCodeMaster(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths);
+		}
+		else
+		{
+			bSaved = FShaderCodeLibrary::SaveShaderCodeChild(ShaderCodeDir, RootMetaDataPath, ShaderFormats);
+		}
+#endif	
+	}
+	return bSaved;
+}
+
 bool UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* TargetPlatform, const TArray<TSet<FName>>* ChunkAssignments, FString const& Name, const FString&
                                                      SaveBaseDir, bool bMaster)
 {
@@ -120,29 +150,31 @@ bool UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* Targ
 	TargetPlatform->GetAllTargetedShaderFormats(ShaderFormats);
 	if (ShaderFormats.Num() > 0)
 	{
-		FString TargetPlatformName = TargetPlatform->PlatformName();
-		TArray<FString> PlatformSCLCSVPaths;// = OutSCLCSVPaths.FindOrAdd(FName(TargetPlatformName));
-		
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
-	#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
-		FString ErrorString;
-		bSaved = SHADER_COOKER_CLASS::SaveShaderLibraryWithoutChunking(TargetPlatform, FApp::GetProjectName(), ShaderCodeDir, RootMetaDataPath, PlatformSCLCSVPaths, ErrorString);
-	#else
-		bSaved = FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths, ChunkAssignments);
-	#endif
-#else
-		if(bMaster)
-		{
-			bSaved = FShaderCodeLibrary::SaveShaderCodeMaster(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths);
-		}
-		else
-		{
-			bSaved = FShaderCodeLibrary::SaveShaderCodeChild(ShaderCodeDir, RootMetaDataPath, ShaderFormats);
-		}
-#endif	
+		bSaved = UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,ShaderFormats,ShaderCodeDir,RootMetaDataPath,bMaster);
+// 		FString TargetPlatformName = TargetPlatform->PlatformName();
+// 		TArray<FString> PlatformSCLCSVPaths;// = OutSCLCSVPaths.FindOrAdd(FName(TargetPlatformName));
+// 		
+// #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+// 	#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+// 		FString ErrorString;
+// 		bSaved = SHADER_COOKER_CLASS::SaveShaderLibraryWithoutChunking(TargetPlatform, FApp::GetProjectName(), ShaderCodeDir, RootMetaDataPath, PlatformSCLCSVPaths, ErrorString);
+// 	#else
+// 		bSaved = FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths, ChunkAssignments);
+// 	#endif
+// #else
+// 		if(bMaster)
+// 		{
+// 			bSaved = FShaderCodeLibrary::SaveShaderCodeMaster(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths);
+// 		}
+// 		else
+// 		{
+// 			bSaved = FShaderCodeLibrary::SaveShaderCodeChild(ShaderCodeDir, RootMetaDataPath, ShaderFormats);
+// 		}
+// #endif	
 	}
 	return bSaved;
 }
+
 
 TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByShaderFrmat(const FString& ShaderFormatName,const FString& Directory)
 {

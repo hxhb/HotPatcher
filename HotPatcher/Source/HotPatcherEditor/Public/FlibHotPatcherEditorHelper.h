@@ -28,8 +28,9 @@ struct FExportPatchSettings;
 struct FProjectPackageAssetCollection
 {
 	TArray<FDirectoryPath> DirectoryPaths;
-	TArray<FSoftObjectPath> SoftObjectPaths;
-	
+	TArray<FDirectoryPath> NeverCookPaths;
+	TArray<FSoftObjectPath> NeedCookPackages;
+	TArray<FSoftObjectPath> NeverCookPackages;
 };
 
 /**

@@ -27,7 +27,7 @@ void FMultiCookerSettings::ImportProjectSettings()
 	FProjectPackageAssetCollection AssetCollection = UFlibHotPatcherEditorHelper::ImportProjectSettingsPackages();
 	AssetIncludeFilters.Append(AssetCollection.DirectoryPaths);
 
-	for(const auto& Asset:AssetCollection.SoftObjectPaths)
+	for(const auto& Asset:AssetCollection.NeedCookPackages)
 	{
 		FPatcherSpecifyAsset CurrentAsset;
 		CurrentAsset.Asset = Asset;
