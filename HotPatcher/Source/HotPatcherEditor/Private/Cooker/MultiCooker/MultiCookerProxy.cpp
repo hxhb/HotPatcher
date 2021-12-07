@@ -215,7 +215,10 @@ void UMultiCookerProxy::UpdateMultiCookerStatus()
 	++FinishedCount;
 	if(FinishedCount == CookerProcessMap.Num())
 	{
-		OnCookMissionsFinished(!HasError());
+		AsyncTask(ENamedThreads::GameThread,[this]()
+		{
+			OnCookMissionsFinished(!HasError());
+		});
 	}
 }
 
