@@ -1,9 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
-
+#include "HotPatcherLog.h"
 #include "FlibHotPatcherEditorHelper.h"
+
+#include "ShaderCompiler.h"
 #include "IPlatformFileSandboxWrapper.h"
 #include "Interfaces/IPluginManager.h"
 
@@ -226,4 +227,22 @@ TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(cons
 	return FoundFiles;
 }
 
+void UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate()
+{
+	// Wait for all shaders to finish compiling
+	if (GShaderCompilingManager)
+	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("Compile Shader for Assets"),FColor::Red);
+		UE_LOG(LogHotPatcher, Display, TEXT("Waiting for shader compilation..."));
+		while(GShaderCompilingManager->IsCompiling())
+		{
+			GShaderCompilingManager->ProcessAsyncResults(false, false);
+			UE_LOG(LogHotPatcher,Display,TEXT("Remaining Shader %d"),GShaderCompilingManager->GetNumRemainingJobs())
+			FPlatformProcess::Sleep(0.5f);
+		}
 
+		// One last process to get the shaders that were compiled at the very end
+		GShaderCompilingManager->ProcessAsyncResults(false, false);
+		UE_LOG(LogHotPatcher, Display, TEXT("Shader Compilated!"));
+	}
+}

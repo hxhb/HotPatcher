@@ -1,3 +1,4 @@
+// project header
 #include "CreatePatch/PatcherProxy.h"
 #include "HotPatcherLog.h"
 #include "ThreadUtils/FThreadUtils.hpp"
@@ -5,11 +6,15 @@
 #include "CreatePatch/ScopedSlowTaskContext.h"
 #include "CreatePatch/HotPatcherContext.h"
 #include "HotPatcherEditor.h"
+#include "FlibHotPatcherEditorHelper.h"
+#include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
+#include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 
 // engine header
 #include "Async/Async.h"
 #include "CoreGlobals.h"
-#include "FlibHotPatcherEditorHelper.h"
+#include "AssetRegistryState.h"
+#include "ShaderCompiler.h"
 #include "Dom/JsonValue.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Kismet/KismetStringLibrary.h"
@@ -21,10 +26,6 @@
 #include "Async/ParallelFor.h"
 #include "Misc/DataDrivenPlatformInfoRegistry.h"
 #include "Serialization/ArrayWriter.h"
-#include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
-#include "AssetRegistryState.h"
-#include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
-
 
 #if WITH_IO_STORE_SUPPORT
 #include "IoStoreUtilities.h"
@@ -95,8 +96,13 @@ namespace PatchWorker
 	bool SavePakVersionWorker(FHotPatcherPatchContext& Context);
 	// setup 6
 	bool ParserChunkWorker(FHotPatcherPatchContext& Context);
+	
+	bool PreCookPatchAssets(FHotPatcherPatchContext& Context);
 	// setup 7
 	bool CookPatchAssetsWorker(FHotPatcherPatchContext& Context);
+	// setup 7.1
+	bool PostCookPatchAssets(FHotPatcherPatchContext& Context);
+
 	// setup 7.1
 	bool PatchAssetRegistryWorker(FHotPatcherPatchContext& Context);
 	// setup 7.2
@@ -129,7 +135,6 @@ namespace PatchWorker
 	void GenerateBinariesPatch(FHotPatcherPatchContext& Context,FChunkInfo& Chunk,ETargetPlatform Platform,TArray<FPakCommand>& PakCommands);
 }
 
-
 bool UPatcherProxy::DoExport()
 {
 	InitPlatformPackageContexts();
@@ -155,6 +160,7 @@ bool UPatcherProxy::DoExport()
 	PreCookPatchWorkers.Emplace(&PatchWorker::PatchRequireChekerWorker);
 	PreCookPatchWorkers.Emplace(&PatchWorker::SavePakVersionWorker);
 	PreCookPatchWorkers.Emplace(&PatchWorker::ParserChunkWorker);
+	PreCookPatchWorkers.Emplace(&PatchWorker::PreCookPatchAssets);
 	PreCookPatchWorkers.Emplace(&PatchWorker::CookPatchAssetsWorker);
 
 	// wait cook complete
@@ -162,6 +168,7 @@ bool UPatcherProxy::DoExport()
 	{
 		this->OnPakListGenerated.AddStatic(&PatchWorker::GenerateBinariesPatch);
 	}
+	PostCookPatchWorkers.Emplace(&PatchWorker::PostCookPatchAssets);
 	PostCookPatchWorkers.Emplace(&PatchWorker::PatchAssetRegistryWorker);
 	PostCookPatchWorkers.Emplace(&PatchWorker::GenerateGlobalAssetRegistryData);
 	PostCookPatchWorkers.Emplace(&PatchWorker::GeneratePakProxysWorker);
@@ -192,12 +199,16 @@ bool UPatcherProxy::DoExport()
 	
 	if(bRet)
 	{
+		// wait cook complate!
 		ThreadWorker = MakeShareable(new FThreadWorker(TEXT("PatchProxy_WaitCook"),[this,PostCookPatchWorkers]()
 		{
 			UPackage::WaitForAsyncFileWrites();
 		}));
 		ThreadWorker->Execute();
 		ThreadWorker->Join();
+
+		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+		
 		for(TFunction<bool(FHotPatcherPatchContext&)> Worker:PostCookPatchWorkers)
 		{
 			if(!Worker(*PatchContext))
@@ -486,18 +497,14 @@ namespace PatchWorker
 	};
 
 
-	// setup 7
-	bool CookPatchAssetsWorker(FHotPatcherPatchContext& Context)
+	bool PreCookPatchAssets(FHotPatcherPatchContext& Context)
 	{
-		TimeRecorder CookAssetsTotalTR(FString::Printf(TEXT("Cook All Assets in Patch Total time:")));
-
-		TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
 		if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
 		{
 			FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId);
 			FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
 			FString ShaderLibraryName = Context.GetSettingObject()->GetShaderLibraryName();
-			CookShaderCollection = MakeShareable(
+			Context.PatchProxy->GetCookShaderCollectionProxy() = MakeShareable(
 				new FCookShaderCollectionProxy(
 					Context.GetSettingObject()->GetPakTargetPlatformNames(),
 					ShaderLibraryName,
@@ -506,8 +513,69 @@ namespace PatchWorker
 					true,
 					SavePath
 					));
-			CookShaderCollection->Init();
+			if(Context.PatchProxy->GetCookShaderCollectionProxy().IsValid())
+			{
+				Context.PatchProxy->GetCookShaderCollectionProxy()->Init();
+			}
 		}
+		return true;
+	}
+	
+	bool PostCookPatchAssets(FHotPatcherPatchContext& Context)
+	{
+		if(Context.PatchProxy->GetCookShaderCollectionProxy().IsValid())
+		{
+			if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
+			{
+				Context.PatchProxy->GetCookShaderCollectionProxy()->Shutdown();
+				if(Context.PatchProxy->GetCookShaderCollectionProxy()->IsSuccessed())
+				{
+					for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
+					{
+						for(auto& Chunk:Context.PakChunks)
+						{
+							FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,PlatformName);
+							TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath);
+
+							if(Context.PakChunks.Num())
+							{
+								for(const auto& FilePath:FoundShaderLibs)
+								{
+									if(!Context.GetSettingObject()->GetCookShaderOptions().bNativeShaderToPak &&
+										(FilePath.EndsWith(TEXT("metallib")) || FilePath.EndsWith(TEXT("metalmap"))))
+									{
+										// don't add metalib and metalmap to pak
+										continue;
+									}
+									FString FileName = FPaths::GetBaseFilename(FilePath,true);
+									FString FileExtersion = FPaths::GetExtension(FilePath,false);
+									FExternFileInfo AddShaderLib;
+									AddShaderLib.Type = EPatchAssetType::NEW;
+									AddShaderLib.FilePath.FilePath = FPaths::ConvertRelativePathToFull(FilePath);
+									AddShaderLib.MountPath = FPaths::Combine(
+										UFlibPatchParserHelper::ParserMountPointRegular(Context.GetSettingObject()->CookShaderOptions.GetShaderLibMountPointRegular()),
+										FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion)
+										);
+									Context.GetPatcherDiffInfoByName(PlatformName)->AddExternalFiles.Add(AddShaderLib);
+									Context.GetPatcherChunkInfoByName(PlatformName,Chunk.ChunkName)->AddExternFileToPak.Add(AddShaderLib);
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					UE_LOG(LogHotPatcher,Error,TEXT("This mission generate shader library faild!"));
+				}
+			}
+		}
+		return true;
+	}
+	
+	// setup 7
+	bool CookPatchAssetsWorker(FHotPatcherPatchContext& Context)
+	{
+		TimeRecorder CookAssetsTotalTR(FString::Printf(TEXT("Cook All Assets in Patch Total time:")));
 		
 		for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
 		{
@@ -602,49 +670,6 @@ namespace PatchWorker
 			}
 		}
 
-		if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
-		{
-			CookShaderCollection->Shutdown();
-			if(CookShaderCollection->IsSuccessed())
-			{
-				for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
-				{
-					for(auto& Chunk:Context.PakChunks)
-					{
-						FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,PlatformName);
-						TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath);
-
-						if(Context.PakChunks.Num())
-						{
-							for(const auto& FilePath:FoundShaderLibs)
-							{
-								if(!Context.GetSettingObject()->GetCookShaderOptions().bNativeShaderToPak &&
-									(FilePath.EndsWith(TEXT("metallib")) || FilePath.EndsWith(TEXT("metalmap"))))
-								{
-									// don't add metalib and metalmap to pak
-									continue;
-								}
-								FString FileName = FPaths::GetBaseFilename(FilePath,true);
-								FString FileExtersion = FPaths::GetExtension(FilePath,false);
-								FExternFileInfo AddShaderLib;
-								AddShaderLib.Type = EPatchAssetType::NEW;
-								AddShaderLib.FilePath.FilePath = FPaths::ConvertRelativePathToFull(FilePath);
-								AddShaderLib.MountPath = FPaths::Combine(
-									UFlibPatchParserHelper::ParserMountPointRegular(Context.GetSettingObject()->CookShaderOptions.GetShaderLibMountPointRegular()),
-									FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion)
-									);
-								Context.GetPatcherDiffInfoByName(PlatformName)->AddExternalFiles.Add(AddShaderLib);
-								Context.GetPatcherChunkInfoByName(PlatformName,Chunk.ChunkName)->AddExternFileToPak.Add(AddShaderLib);
-							}
-						}
-					}
-				}
-			}
-			else
-			{
-				UE_LOG(LogHotPatcher,Error,TEXT("This mission generate shader library faild!"));
-			}
-		}
 		return true;
 	};
 	

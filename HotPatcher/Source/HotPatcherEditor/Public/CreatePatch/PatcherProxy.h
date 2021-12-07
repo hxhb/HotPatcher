@@ -16,6 +16,7 @@
 #include "Templates/SharedPointer.h"
 #include "IDetailsView.h"
 #include "PropertyEditorModule.h"
+#include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 #include "Widgets/Text/SMultiLineEditableText.h"
 
 #include "PatcherProxy.generated.h"
@@ -49,10 +50,11 @@ public:
     bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
     // FSavePackageContext* CreateSaveContext(const ITargetPlatform* TargetPlatform,bool bUseZenLoader);
 #endif
+    FORCEINLINE TSharedPtr<FCookShaderCollectionProxy>& GetCookShaderCollectionProxy(){ return CookShaderCollection; }
     
 private:
     TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
-    
+    TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
 private:
     TSharedPtr<FHotPatcherPatchContext> PatchContext;
 

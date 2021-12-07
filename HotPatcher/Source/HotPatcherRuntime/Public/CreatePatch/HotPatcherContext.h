@@ -102,8 +102,7 @@ struct HOTPATCHERRUNTIME_API FHotPatcherPatchContext:public FHotPatcherContext
         return Keys.Num();
     }
     TMap<FString,TArray<FPakFileInfo>> PakFilesInfoMap;
-
-
+    
 };
 
 USTRUCT(BlueprintType)

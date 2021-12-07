@@ -56,5 +56,6 @@ public:
 	                              SaveBaseDir, bool bMaster);
 	static TArray<FString> FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory,bool bRecursive = false);
 	static TArray<FString> FindCookedShaderLibByShaderFrmat(const FString& ShaderFormatName,const FString& Directory);
-	
+
+	static void WaitShaderCompilingComplate();
 };
