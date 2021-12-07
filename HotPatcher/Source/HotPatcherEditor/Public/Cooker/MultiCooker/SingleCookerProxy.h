@@ -27,14 +27,11 @@ public:
     virtual bool DoExport()override;
     
     virtual FSingleCookerSettings* GetSettingObject()override {return (FSingleCookerSettings*)(Setting);};
-    
+    FCookerFailedCollection& GetCookFailedAssetsCollection(){return CookFailedAssetsCollection;};
 protected:
     bool HasError();
-    
     void OnCookAssetFailed(const FString& PackagePath,ETargetPlatform Platform);
-    FCookerFailedCollection& GetCookFailedAssetsCollection(){return CookFailedAssetsCollection;};
     void DoCookMission(const TArray<FAssetDetail>& Assets);
-
     struct FShaderCollection
     {
         FShaderCollection(USingleCookerProxy* InProxy):Proxy(InProxy)

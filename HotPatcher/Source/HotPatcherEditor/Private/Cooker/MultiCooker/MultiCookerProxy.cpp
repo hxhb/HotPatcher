@@ -188,6 +188,26 @@ void UMultiCookerProxy::RecookFailedAssets()
 		RecookerProxy->SetProxySettings(&SingleCookerSetting);
 		RecookerProxy->DoExport();
 	}
+	// remove child process failed assets
+	CookerFailedCollectionMap.Empty();
+	
+	// collection recook failed assets
+	FCookerFailedCollection& CookerFailedCollection = RecookerProxy->GetCookFailedAssetsCollection();
+	if(!!CookerFailedCollection.CookFailedAssets.Num())
+	{
+		TArray<ETargetPlatform> FailedPlatforms;
+		CookerFailedCollection.CookFailedAssets.GetKeys(FailedPlatforms);
+		for(auto TargetPlatform:FailedPlatforms)
+		{
+			FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(TargetPlatform);
+			CookerFailedCollectionMap.FindOrAdd(PlatformName,*CookerFailedCollection.CookFailedAssets.Find(TargetPlatform));
+			UE_LOG(LogHotPatcher,Error,TEXT("\nCook Platfotm %s Assets Failed:\n"),*PlatformName);
+			for(const auto& Asset:CookerFailedCollection.CookFailedAssets.Find(TargetPlatform)->Assets)
+			{
+				UE_LOG(LogHotPatcher,Error,TEXT("\t%s\n"),*Asset.mPackagePath);
+			}
+		}
+	}
 }
 
 FExportPatchSettings UMultiCookerProxy::MakePatchSettings()
