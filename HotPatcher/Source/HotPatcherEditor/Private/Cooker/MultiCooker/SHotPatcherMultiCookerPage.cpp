@@ -171,9 +171,9 @@ FReply SHotPatcherMultiCookerPage::RunCook()
 		{
 			MissionNotifyProay->SpawnRuningMissionNotification(NULL);
 		});
-		MultiCookerProxy->OnMultiCookerFinished.AddLambda([this](UMultiCookerProxy* MultiCookerProxy)
+		MultiCookerProxy->OnMultiCookerFinished.AddLambda([this](UMultiCookerProxy* InMultiCookerProxy)
 		{
-			MultiCookerProxy->Shutdown();
+            MultiCookerProxy->Shutdown();
 			if(MultiCookerProxy->HasError())
 			{
 				MissionNotifyProay->SpawnMissionFaildNotification(NULL);
@@ -218,6 +218,7 @@ FReply SHotPatcherMultiCookerPage::RunCook()
 		
 		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
 		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
+    
 	}
 	return FReply::Handled();
 }
