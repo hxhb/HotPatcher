@@ -119,7 +119,8 @@ bool UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* Targ
 		FString ErrorString;
 		bSaved = SHADER_COOKER_CLASS::SaveShaderLibraryWithoutChunking(TargetPlatform, FApp::GetProjectName(), ShaderCodeDir, RootMetaDataPath, PlatformSCLCSVPaths, ErrorString);
 #else
-		bSaved = FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths, ChunkAssignments);
+		TArray<TSet<FName>> ChunkAssignments;
+		bSaved = FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths, &ChunkAssignments);
 #endif
 #else
 		if(bMaster)
