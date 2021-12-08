@@ -1462,14 +1462,22 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 	TArray<FDirectoryPath>& DirectoryPaths = result.DirectoryPaths;
 	TArray<FSoftObjectPath>& SoftObjectPaths = result.NeedCookPackages;
 
-	auto AddSoftObjectPath = [&](const FString& LongPackagePath)
+	
+	auto AddSoftObjectPath = [&](const FString& LongPackageName)
 	{
+		FString LongPackagePath = UFLibAssetManageHelperEx::LongPackageNameToPackagePath(LongPackageName);
+		
 		if (!LongPackagePath.IsEmpty() && !FPackageName::IsScriptPackage(LongPackagePath) && !FPackageName::IsMemoryPackage(LongPackagePath))
 		{
-			if(FPackageName::DoesPackageExist(LongPackagePath))
+			FSoftObjectPath CurrentObject(LongPackagePath);
+			if(FPackageName::DoesPackageExist(LongPackagePath) && CurrentObject.IsValid())
 			{
 				UE_LOG(LogHotPatcherEditorHelper,Display,TEXT("Import Project Setting Package: %s"),*LongPackagePath);
-				SoftObjectPaths.Emplace(LongPackagePath);
+				SoftObjectPaths.Emplace(CurrentObject);
+			}
+			else
+			{
+				UE_LOG(LogHotPatcherEditorHelper,Warning,TEXT("Import Project Setting Package: %s is inavlid!"),*LongPackagePath);
 			}
 		}
 	};
@@ -1488,7 +1496,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 			FString OutPackageName;
 			if (FPackageName::TryConvertFilenameToLongPackageName(BuildFilename, OutPackageName))
 			{
-				AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(OutPackageName));
+				AddSoftObjectPath(OutPackageName);
 			}
 		}
 	}
@@ -1500,11 +1508,11 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 		UAssetManager::Get().ModifyCook(PackageToCook,PackageToNeverCook);
 		for(const auto& Package:PackageToCook)
 		{
-			AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(Package.ToString()));
+			AddSoftObjectPath(Package.ToString());
 		}
 		for(const auto& NeverCookPackage:PackageToNeverCook)
 		{
-			result.NeverCookPackages.Add(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(NeverCookPackage.ToString()));
+			result.NeverCookPackages.Add(NeverCookPackage.ToString());
 		}
 	}
 
@@ -1520,7 +1528,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 		for (int32 MapIdx = 0; MapIdx < MapList.Num(); MapIdx++)
 		{
 			FName PackageName = FName(*FPackageName::FilenameToLongPackageName(MapList[MapIdx]));
-			AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(PackageName.ToString()));
+			AddSoftObjectPath(PackageName.ToString());
 		}
 	}
 
@@ -1529,7 +1537,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 	{
 		FString File = MapToCook.FilePath;
 		FName PackageName = FName(*FPackageName::FilenameToLongPackageName(File));
-		AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(PackageName.ToString()));
+		AddSoftObjectPath(PackageName.ToString());
 	}
 
 	// Loading default map ini section AllMaps
@@ -1538,7 +1546,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 		GEditor->LoadMapListFromIni(TEXT("AllMaps"), AllMapsSection);
 		for (const FString& MapName : AllMapsSection)
 		{
-			AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(MapName));
+			AddSoftObjectPath(MapName);
 		}
 	}
 
@@ -1576,7 +1584,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 			for (int32 TokenFileIndex = 0; TokenFileIndex < TokenFiles.Num(); ++TokenFileIndex)
 			{
 				FName PackageName = FName(*FPackageName::FilenameToLongPackageName(TokenFiles[TokenFileIndex]));
-				AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(PackageName.ToString()));
+				AddSoftObjectPath(PackageName.ToString());
 			}
 		}
 	}
@@ -1648,37 +1656,36 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 		{
 			const FName LocalizedPackageName = AssetData.PackageName;
 			const FName SourcePackageName = *FPackageName::GetSourcePackagePath(LocalizedPackageName.ToString());
-			AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(LocalizedPackageName.ToString()));
+			AddSoftObjectPath(LocalizedPackageName.ToString());
 		}
 	}
 	const UGameMapsSettings* const GameMapsSettings = GetDefault<UGameMapsSettings>();
 	{
 		if(GameMapsSettings->GameInstanceClass.IsAsset())
 		{
-			SoftObjectPaths.AddUnique(GameMapsSettings->GameInstanceClass);
+			AddSoftObjectPath(GameMapsSettings->GameInstanceClass.GetAssetPathString());
 		}
 	
 		FSoftObjectPath GameDefaultMap{
-			UFLibAssetManageHelperEx::LongPackageNameToPackagePath(GameMapsSettings->GetGameDefaultMap())
+			(GameMapsSettings->GetGameDefaultMap())
 		};
 		if(GameDefaultMap.IsAsset())
 		{
-			SoftObjectPaths.AddUnique(GameDefaultMap);
+			AddSoftObjectPath(GameDefaultMap.GetAssetPathString());
 		}
 	
 		FSoftObjectPath DefaultGameMode{
-			UFLibAssetManageHelperEx::LongPackageNameToPackagePath(GameMapsSettings->GetGlobalDefaultGameMode())
+			(GameMapsSettings->GetGlobalDefaultGameMode())
 		};
 		if(DefaultGameMode.IsAsset())
 		{
-			SoftObjectPaths.AddUnique(DefaultGameMode);
+			AddSoftObjectPath(DefaultGameMode.GetAssetPathString());
 		}
 	
 		if(GameMapsSettings->TransitionMap.IsAsset())
 		{
-			SoftObjectPaths.AddUnique(GameMapsSettings->TransitionMap);
+			AddSoftObjectPath(GameMapsSettings->TransitionMap.GetAssetPathString());
 		}
-	
 	}
 	auto CreateDirectory = [](const FString& Path)
 	{
@@ -1743,10 +1750,10 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 
 		for (const FAssetData& AssetData : AssetDataForCultures)
 		{
-			const FName LocalizedPackageName = AssetData.PackageName;
-			const FName SourcePackageName = *FPackageName::GetSourcePackagePath(LocalizedPackageName.ToString());
+			// const FName LocalizedPackageName = AssetData.PackageName;
+			// const FName SourcePackageName = *FPackageName::GetSourcePackagePath(LocalizedPackageName.ToString());
 
-			AddSoftObjectPath(SourcePackageName.ToString());
+			AddSoftObjectPath(AssetData.PackageName.ToString());
 		}
 	}
 
@@ -1758,7 +1765,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 
 			if (Package->GetOuter() == nullptr)
 			{
-				AddSoftObjectPath(UFLibAssetManageHelperEx::LongPackageNameToPackagePath(Package->GetName()));
+				AddSoftObjectPath(Package->GetName());
 			}
 		}
 	}

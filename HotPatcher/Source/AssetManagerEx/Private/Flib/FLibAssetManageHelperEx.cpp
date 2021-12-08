@@ -118,6 +118,13 @@ bool UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(const FString& I
 	if(InLongPackageName.IsEmpty())
 		return runState;
 	
+	if(InLongPackageName.Contains(TEXT(".")))
+	{
+		OutPackagePath = InLongPackageName;
+		runState = true;
+		return runState;
+	}
+	
 	if (FPackageName::DoesPackageExist(InLongPackageName))
 	{
 		FString AssetName;
