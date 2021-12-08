@@ -27,10 +27,26 @@ public:
 	static TArray<FString> ConvDirectoryPathToStr(const TArray<FDirectoryPath>& Dirs);
 
 	static FString ShaderExtension;
+	static FString ShaderAssetInfoExtension;
+	static FString StableExtension;
+	
 	FORCEINLINE static FString GetCodeArchiveFilename(const FString& BaseDir, const FString& LibraryName, FName Platform)
 	{
 		return BaseDir / FString::Printf(TEXT("ShaderArchive-%s-"), *LibraryName) + Platform.ToString() + ShaderExtension;
 	}
+	FORCEINLINE static FString GetShaderAssetInfoFilename(const FString& BaseDir, const FString& LibraryName, FName Platform)
+	{
+		return BaseDir / FString::Printf(TEXT("ShaderAssetInfo-%s-"), *LibraryName) + Platform.ToString() + ShaderAssetInfoExtension;
+	}
+
+	FORCEINLINE static FString GetStableInfoArchiveFilename(const FString& BaseDir, const FString& LibraryName, FName Platform)
+	{
+		return BaseDir / FString::Printf(TEXT("ShaderStableInfo-%s-"), *LibraryName) + Platform.ToString() + StableExtension;
+	}
+	
+	static FString GetShaderStableInfoFileNameByShaderArchiveFileName(const FString& ShaderArchiveFileName);
+	static FString GetShaderInfoFileNameByShaderArchiveFileName(const FString& ShaderArchiveFileName);
+	
 	// static void InitShaderCodeLibrary(const TArray<ETargetPlatform>& Platforms);
 	// static void CleanShaderCodeLibraries(const TArray<ETargetPlatform>& Platforms);
 	// void SaveGlobalShaderLibrary(const TArray<ETargetPlatform>& Platforms);

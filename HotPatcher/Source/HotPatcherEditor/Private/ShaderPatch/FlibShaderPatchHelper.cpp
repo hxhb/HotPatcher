@@ -10,6 +10,8 @@
 
 
 FString UFlibShaderPatchHelper::ShaderExtension = TEXT(".ushaderbytecode");
+FString UFlibShaderPatchHelper::ShaderAssetInfoExtension = TEXT(".assetinfo.json");
+FString UFlibShaderPatchHelper::StableExtension = TEXT(".scl.csv");
 
 bool UFlibShaderPatchHelper::CreateShaderCodePatch(TArray<FString> const& OldMetaDataDirs, FString const& NewMetaDataDir, FString const& OutDir, bool bNativeFormat,bool bDeterministicShaderCodeOrder)
 {
@@ -41,6 +43,25 @@ TArray<FString> UFlibShaderPatchHelper::ConvDirectoryPathToStr(const TArray<FDir
 	}
 	return result;
 }
+
+FString UFlibShaderPatchHelper::GetShaderStableInfoFileNameByShaderArchiveFileName(const FString& ShaderArchiveFileName)
+{
+	FString ShaderInfoFileName = ShaderArchiveFileName;
+	ShaderInfoFileName.RemoveFromStart(TEXT("ShaderArchive-"));
+	ShaderInfoFileName.RemoveFromEnd(TEXT(".ushaderbytecode"));
+	ShaderInfoFileName = FString::Printf(TEXT("ShaderStableInfo-%s.scl.csv"),*ShaderInfoFileName);
+	return ShaderInfoFileName;
+}
+
+FString UFlibShaderPatchHelper::GetShaderInfoFileNameByShaderArchiveFileName(const FString& ShaderArchiveFileName)
+{
+	FString ShaderInfoFileName = ShaderArchiveFileName;
+	ShaderInfoFileName.RemoveFromStart(TEXT("ShaderArchive-"));
+	ShaderInfoFileName.RemoveFromEnd(TEXT(".ushaderbytecode"));
+	ShaderInfoFileName = FString::Printf(TEXT("ShaderAssetInfo-%s.assetinfo.json"),*ShaderInfoFileName);
+	return ShaderInfoFileName;
+}
+
 
 // void UFlibShaderPatchHelper::InitShaderCodeLibrary(const TArray<ETargetPlatform>& Platforms)
 // {
