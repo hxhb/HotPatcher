@@ -3,6 +3,8 @@
 #include "FlibHotPatcherEditorHelper.h"
 #include "FlibMultiCookerHelper.h"
 #include "HotPatcherEditor.h"
+#include "INetworkFileSystemModule.h"
+#include "ShaderCompiler.h"
 #include "Cooker/MultiCooker/MultiCookScheduler.h"
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
@@ -13,18 +15,7 @@ void UMultiCookerProxy::Init()
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::Init"),FColor::Red);
 
-	GlobalShaderCollectionProxy = UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform(
-		FApp::GetProjectName(),
-		GetSettingObject()->CookTargetPlatforms,
-		GetSettingObject()->ShaderOptions.bSharedShaderLibrary,
-		GetSettingObject()->ShaderOptions.bNativeShader,
-		true,
-		FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("Shaders"))
-	);
-	if(GlobalShaderCollectionProxy.IsValid())
-	{
-		GlobalShaderCollectionProxy->Init();
-	}
+
 
 	if(GetSettingObject()->bImportProjectSettings)
 	{
@@ -36,10 +27,8 @@ void UMultiCookerProxy::Init()
 void UMultiCookerProxy::Shutdown()
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::Shutdown"),FColor::Red);
-	if(GlobalShaderCollectionProxy.IsValid())
-	{
-		GlobalShaderCollectionProxy->Shutdown();
-	}
+
+	ShutdownShaderCollection();
 	Super::Shutdown();
 }
 
@@ -84,6 +73,52 @@ bool UMultiCookerProxy::HasError()
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::HasError"),FColor::Red);
 	return !!CookerFailedCollectionMap.Num();
 }
+
+void SaveGlobalShaderMapFiles(const TArrayView<const ITargetPlatform* const>& Platforms,const FString& BaseOutputDir)
+{
+	// we don't support this behavior
+	for (int32 Index = 0; Index < Platforms.Num(); Index++)
+	{
+		// make sure global shaders are up to date!
+		TArray<FString> Files;
+		FShaderRecompileData RecompileData;
+		RecompileData.PlatformName = Platforms[Index]->PlatformName();
+		// Compile for all platforms
+		RecompileData.ShaderPlatform = -1;
+		RecompileData.ModifiedFiles = &Files;
+		RecompileData.MeshMaterialMaps = NULL;
+
+		check( IsInGameThread() );
+
+		FString OutputDir  = FPaths::Combine(BaseOutputDir,TEXT("Shaders"),Platforms[Index]->PlatformName());
+		RecompileShadersForRemote
+			(RecompileData.PlatformName, 
+			RecompileData.ShaderPlatform == -1 ? SP_NumPlatforms : (EShaderPlatform)RecompileData.ShaderPlatform, //-V547
+			OutputDir, 
+			RecompileData.MaterialsToLoad, 
+			RecompileData.MeshMaterialMaps, 
+			RecompileData.ModifiedFiles);
+	}
+}
+
+// void UMultiCookerProxy::CompileGlobalShader(const TArray<ITargetPlatform*> Platforms)
+// {
+// 	// don't resave the global shader map files in dlc
+// 	if(GetSettingObject()->ShaderOptions.bSharedShaderLibrary)
+// 	{
+// 		// FShaderCodeLibrary::OpenLibrary(TEXT("Global"), TEXT(""));
+// 		SaveGlobalShaderMapFiles(Platforms,UFlibMultiCookerHelper::GetMultiCookerBaseDir());
+// 		
+// 		// for(const auto& Platform:Platforms)
+// 		// {
+// 		// 	FString SavePath = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("Shaders"),Platform->PlatformName());
+// 		// 	TArray<FName> OutFormats;
+// 		// 	Platform->GetAllTargetedShaderFormats(OutFormats);
+// 		// 	UFlibShaderCodeLibraryHelper::SaveShaderLibrary(Platform,NULL, TEXT("Global"),SavePath,true);
+// 		// }
+// 		// FShaderCodeLibrary::CloseLibrary(TEXT("Global"));
+// 	}
+// }
 
 void UMultiCookerProxy::OnCookMissionsFinished(bool bSuccessed)
 {
@@ -233,6 +268,30 @@ void UMultiCookerProxy::RecookFailedAssets()
 	}
 }
 
+void UMultiCookerProxy::CreateShaderCollectionByName(const FString& Name)
+{
+	GlobalShaderCollectionProxy = UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform(
+	Name,
+	GetSettingObject()->CookTargetPlatforms,
+	GetSettingObject()->ShaderOptions.bSharedShaderLibrary,
+	GetSettingObject()->ShaderOptions.bNativeShader,
+	true,
+	FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("Shaders"))
+);
+	if(GlobalShaderCollectionProxy.IsValid())
+	{
+		GlobalShaderCollectionProxy->Init();
+	}
+}
+
+void UMultiCookerProxy::ShutdownShaderCollection()
+{
+	if(GlobalShaderCollectionProxy.IsValid())
+	{
+		GlobalShaderCollectionProxy->Shutdown();
+	}
+}
+
 FExportPatchSettings UMultiCookerProxy::MakePatchSettings()
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::MakePatchSettings"),FColor::Red);
@@ -292,6 +351,23 @@ bool UMultiCookerProxy::DoExport()
 	
 	FString TempDir = UFlibMultiCookerHelper::GetMultiCookerBaseDir();
 	FString SaveConfigDir = UFlibPatchParserHelper::ReplaceMark(GetSettingObject()->SavePath.Path);
+
+	// for cook global shader
+	if(GetSettingObject()->bCompileGlobalShader)
+	{
+		CreateShaderCollectionByName(TEXT("Global"));
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::DoExport Compile Global Shader"),FColor::Red);
+		// CompileGlobalShader(UFlibHotPatcherEditorHelper::GetTargetPlatformsByNames(GetSettingObject()->CookTargetPlatforms));
+		SaveGlobalShaderMapFiles(UFlibHotPatcherEditorHelper::GetTargetPlatformsByNames(GetSettingObject()->CookTargetPlatforms),UFlibMultiCookerHelper::GetMultiCookerBaseDir());
+		UE_LOG(LogHotPatcher,Display,TEXT("MultiCookerProxy: Wait Global Shader Compile complate!"));
+		
+		// Wait for all shaders to finish compiling
+		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+		ShutdownShaderCollection();
+	}
+
+	// for project shader
+	CreateShaderCollectionByName(FApp::GetProjectName());
 	
 	if(FPaths::DirectoryExists(TempDir))
 	{

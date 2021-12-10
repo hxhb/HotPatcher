@@ -626,7 +626,7 @@ ITargetPlatform* UFlibHotPatcherEditorHelper::GetTargetPlatformByName(const FStr
 	ITargetPlatform* PlatformIns = NULL; 
 	for (ITargetPlatform *TargetPlatform : TargetPlatforms)
 	{
-		if (PlatformName.Contains(TargetPlatform->PlatformName()))
+		if (PlatformName.Equals(TargetPlatform->PlatformName()))
 		{
 			PlatformIns = TargetPlatform;
 		}

@@ -34,9 +34,13 @@ public:
     bool IsRunning()const;
     void Cancel();
     bool HasError();
+    // void CompileGlobalShader(const TArray<ITargetPlatform*> Platforms);
     void OnCookMissionsFinished(bool bSuccessed);
     bool MergeShader();
     void RecookFailedAssets();
+protected:
+    void CreateShaderCollectionByName(const FString& Name);
+    void ShutdownShaderCollection();
 protected:
     FExportPatchSettings MakePatchSettings();
     TArray<FSingleCookerSettings> MakeSingleCookerSettings(const TArray<FAssetDetail>& AllDetails);

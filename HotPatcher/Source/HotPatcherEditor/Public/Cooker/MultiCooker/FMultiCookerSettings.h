@@ -82,6 +82,9 @@ public:
 	TArray<ETargetPlatform> CookTargetPlatforms;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	FCookerShaderOptions ShaderOptions;
+	// Compile Global Shader on Multi Cooker
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bCompileGlobalShader = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bSerializeAssetRegistry;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
