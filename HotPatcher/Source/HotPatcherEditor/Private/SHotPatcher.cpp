@@ -53,6 +53,7 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 			.Padding(0.0f, 10.0f, 8.0f, 0.0f)
 			[
 				SNew(SVerticalBox)
+#ifdef ENABLE_UPDATER_CHECK
 				+SVerticalBox::Slot()
 				.AutoHeight()
 				[
@@ -63,6 +64,7 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 					.UpdateWebsite(FText::FromString(TEXT("https://imzlp.com/posts/17590/")))
 					.CurrentVersion(CURRENT_VERSION_ID)
 				]
+#endif
 				+SVerticalBox::Slot()
 				.Padding(0,10,0,0)
 				.AutoHeight()

@@ -164,6 +164,7 @@ public class HotPatcherEditor : ModuleRules
 		
 		PublicDefinitions.AddRange(new string[]
 		{
+			"ENABLE_UPDATER_CHECK",
 			"TOOL_NAME=\"HotPatcher\"",
 			"CURRENT_VERSION_ID=71",
 			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
