@@ -1467,8 +1467,10 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 	{
 		FString LongPackagePath = UFLibAssetManageHelperEx::LongPackageNameToPackagePath(LongPackageName);
 		
-		if (!LongPackagePath.IsEmpty() && !FPackageName::IsScriptPackage(LongPackagePath) && !FPackageName::IsMemoryPackage(LongPackagePath))
+		if (!LongPackagePath.IsEmpty() && UAssetManager::Get().VerifyCanCookPackage(FName(*LongPackageName),false)
+			&& !FPackageName::IsScriptPackage(LongPackagePath) && !FPackageName::IsMemoryPackage(LongPackagePath))
 		{
+			
 			FSoftObjectPath CurrentObject(LongPackagePath);
 			if(FPackageName::DoesPackageExist(LongPackagePath) && CurrentObject.IsValid())
 			{

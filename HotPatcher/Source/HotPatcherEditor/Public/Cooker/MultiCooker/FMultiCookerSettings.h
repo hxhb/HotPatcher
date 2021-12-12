@@ -101,6 +101,8 @@ public:
 	bool bProfilingMultiCooker = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
 	bool bProfilingPerSingleCooker = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
+	bool bDisplayMissionConfig = false;
 	
 };
 

@@ -45,8 +45,12 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 	TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
 	UFlibPatchParserHelper::ReplaceProperty(*ExportSingleCookerSetting, KeyValues);
 	
-	FString FinalConfig;
-	UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportSingleCookerSetting,FinalConfig);
+	if(ExportSingleCookerSetting->MultiCookerSettings.bDisplayMissionConfig)
+	{
+		FString FinalConfig;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportSingleCookerSetting,FinalConfig);
+	}
+	
 	UE_LOG(LogHotSingleCookerCommandlet, Display, TEXT("Cooker %s Id %d,Assets Num %d"), *ExportSingleCookerSetting->MissionName,ExportSingleCookerSetting->MissionID,ExportSingleCookerSetting->CookAssets.Num());
 	
 	USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();

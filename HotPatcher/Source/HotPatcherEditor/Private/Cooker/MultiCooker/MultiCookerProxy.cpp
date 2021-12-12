@@ -14,9 +14,6 @@
 void UMultiCookerProxy::Init()
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::Init"),FColor::Red);
-
-
-
 	if(GetSettingObject()->bImportProjectSettings)
 	{
 		GetSettingObject()->ImportProjectSettings();
@@ -122,6 +119,7 @@ void SaveGlobalShaderMapFiles(const TArrayView<const ITargetPlatform* const>& Pl
 
 void UMultiCookerProxy::OnCookMissionsFinished(bool bSuccessed)
 {
+	FScopeLock Lock(&SynchronizationObject);
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::OnCookMissionsFinished"),FColor::Red);
 	if(bSuccessed && GetSettingObject()->ShaderOptions.bMergeShaderLibrary)
 	{
@@ -133,6 +131,7 @@ void UMultiCookerProxy::OnCookMissionsFinished(bool bSuccessed)
 		RecookFailedAssets();
 	}
 	OnMultiCookerFinished.Broadcast(this);
+	bMissionFinished = true;
 }
 
 bool UMultiCookerProxy::MergeShader()
@@ -197,13 +196,16 @@ bool UMultiCookerProxy::MergeShader()
 					
 					FString CopyShaderArchiveTo = UFlibShaderPatchHelper::GetCodeArchiveFilename(ShaderCodeFormatMap.SaveBaseDir,FApp::GetProjectName(),ShaderFormat);
 					FString ChildShaderArchive = FPaths::Combine(CurrentCookerDir,ShaderArchiveFileName);
-					
+
+					FString CopyShaderSclCsvTo = UFlibShaderPatchHelper::GetStableInfoArchiveFilename(FPaths::Combine(ShaderCodeFormatMap.SaveBaseDir,TEXT("Metadata/PipelineCaches")),FApp::GetProjectName(),ShaderFormat);
 					IFileManager::Get().Copy(*CopyShaderArchiveTo,*ChildShaderArchive);
-					IFileManager::Get().Copy(*DefaultShaderArchiveLocation,*ChildShaderArchive);
 					IFileManager::Get().Copy(*CopyShaderInfoFileTo,*ChildShaderInfoFile);
-					IFileManager::Get().Copy(*DefaultShaderInfoLocation,*ChildShaderInfoFile);
-					IFileManager::Get().Copy(*CopyToDefaultShaderInfoFile,*ChildShaderInfoFile);
-					IFileManager::Get().Copy(*DefaultShaderStableInfoFile,*ChildShaderStableInfoFile);
+					IFileManager::Get().Copy(*CopyShaderSclCsvTo,*ChildShaderStableInfoFile);
+					// copy to Saved/Shaders
+					// IFileManager::Get().Copy(*DefaultShaderArchiveLocation,*ChildShaderArchive);
+					// IFileManager::Get().Copy(*DefaultShaderInfoLocation,*ChildShaderInfoFile);
+					// IFileManager::Get().Copy(*CopyToDefaultShaderInfoFile,*ChildShaderInfoFile);
+					// IFileManager::Get().Copy(*DefaultShaderStableInfoFile,*ChildShaderStableInfoFile);
 				}
 			}
 			FString ShaderCodeDir = ShaderCodeFormatMap.SaveBaseDir; //FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),Cooker.Value.MissionName,PlatformName);
@@ -211,8 +213,12 @@ bool UMultiCookerProxy::MergeShader()
 
 			UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,ShaderFormats,ShaderCodeDir,RootMetaDataPath,true);
 			// Save to default shader Saved\Shaders\PCD3D_SM5\ShaderArchive-Blank426-PCD3D_SM5.ushaderbytecode
-			SerializeDefaultShaderLib();
+			
 		}
+		FString ShaderDir = FPaths::Combine(BaseDir,UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("Shader"),PlatformName);
+		const FString RootMetaDataPath = ShaderDir / TEXT("Metadata") / TEXT("PipelineCaches");;
+		UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,ShaderFormats,ShaderDir,RootMetaDataPath,true);
+		// SerializeDefaultShaderLib();
 		ShaderCodeFormatMaps.Add(ShaderCodeFormatMap);
 	}
 	
@@ -268,6 +274,20 @@ void UMultiCookerProxy::RecookFailedAssets()
 	}
 }
 
+void UMultiCookerProxy::WaitMissionFinished()
+{
+	TSharedPtr<FThreadWorker> WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("SingleCooker_WaitCookComplete"),[this]()
+		{
+			while(IsRunning())
+			{
+				FPlatformProcess::Sleep(1.f);
+			}
+		}));
+	WaitThreadWorker->Execute();
+	WaitThreadWorker->Join();
+	OnCookMissionsFinished(!HasError());
+}
+
 void UMultiCookerProxy::CreateShaderCollectionByName(const FString& Name)
 {
 	GlobalShaderCollectionProxy = UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform(
@@ -317,10 +337,13 @@ void UMultiCookerProxy::UpdateMultiCookerStatus()
 	++FinishedCount;
 	if(FinishedCount == CookerProcessMap.Num())
 	{
-		AsyncTask(ENamedThreads::GameThread,[this]()
+		if(!IsRunningCommandlet())
 		{
-			OnCookMissionsFinished(!HasError());
-		});
+			AsyncTask(ENamedThreads::GameThread,[this]()
+			{
+				OnCookMissionsFinished(!HasError());
+			});
+		}
 	}
 }
 

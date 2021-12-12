@@ -38,6 +38,8 @@ public:
     void OnCookMissionsFinished(bool bSuccessed);
     bool MergeShader();
     void RecookFailedAssets();
+    FORCEINLINE bool IsFinished()const{return bMissionFinished;}
+    void WaitMissionFinished();
 protected:
     void CreateShaderCollectionByName(const FString& Name);
     void ShutdownShaderCollection();
@@ -59,6 +61,7 @@ protected:
 protected:
     UPROPERTY()
     class USingleCookerProxy* RecookerProxy;
+    bool bMissionFinished = false;
 private:
     FCriticalSection	SynchronizationObject;
     TSharedPtr<FMultiCookerSettings> MultiCookerSettings;

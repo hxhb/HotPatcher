@@ -44,11 +44,14 @@ int32 UHotMultiCookerCommandlet::Main(const FString& Params)
 
 	TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
 	UFlibPatchParserHelper::ReplaceProperty(*ExportMultiCookerSetting, KeyValues);
+
+	if(ExportMultiCookerSetting->bDisplayMissionConfig)
+	{
+		FString FinalConfig;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportMultiCookerSetting,FinalConfig);
+		UE_LOG(LogHotMultiCookerCommandlet, Display, TEXT("%s"), *FinalConfig);
+	}
 	
-	FString FinalConfig;
-	UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportMultiCookerSetting,FinalConfig);
-	UE_LOG(LogHotMultiCookerCommandlet, Display, TEXT("%s"), *FinalConfig);
-		
 	UMultiCookerProxy* MultiCookerProxy = NewObject<UMultiCookerProxy>();
 	MultiCookerProxy->AddToRoot();
 	MultiCookerProxy->SetProxySettings(ExportMultiCookerSetting.Get());
@@ -58,18 +61,10 @@ int32 UHotMultiCookerCommandlet::Main(const FString& Params)
 	if(IsRunningCommandlet())
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("wait Cook mission is completed"),FColor::Red);
-		TSharedPtr<FThreadWorker> WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("SingleCooker_WaitCookComplete"),[this,MultiCookerProxy]()
-		{
-			while(MultiCookerProxy->IsRunning())
-			{
-				FPlatformProcess::Sleep(1.f);
-			}
-		}));
-		WaitThreadWorker->Execute();
-		WaitThreadWorker->Join();
+		MultiCookerProxy->WaitMissionFinished();
 	}
+
 	MultiCookerProxy->Shutdown();
-	
 	UE_LOG(LogHotMultiCookerCommandlet,Display,TEXT("Multi Process Cook Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));
 	
 	if(FParse::Param(FCommandLine::Get(), TEXT("wait")))
