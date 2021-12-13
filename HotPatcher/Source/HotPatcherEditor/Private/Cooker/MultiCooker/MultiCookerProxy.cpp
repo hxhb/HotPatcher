@@ -202,7 +202,7 @@ bool UMultiCookerProxy::MergeShader()
 					IFileManager::Get().Copy(*CopyShaderInfoFileTo,*ChildShaderInfoFile);
 					IFileManager::Get().Copy(*CopyShaderSclCsvTo,*ChildShaderStableInfoFile);
 					// copy to Saved/Shaders
-					// IFileManager::Get().Copy(*DefaultShaderArchiveLocation,*ChildShaderArchive);
+					IFileManager::Get().Copy(*DefaultShaderArchiveLocation,*ChildShaderArchive);
 					// IFileManager::Get().Copy(*DefaultShaderInfoLocation,*ChildShaderInfoFile);
 					// IFileManager::Get().Copy(*CopyToDefaultShaderInfoFile,*ChildShaderInfoFile);
 					// IFileManager::Get().Copy(*DefaultShaderStableInfoFile,*ChildShaderStableInfoFile);
