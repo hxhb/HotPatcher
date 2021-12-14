@@ -39,7 +39,11 @@ public:
     bool MergeShader();
     void RecookFailedAssets();
     FORCEINLINE bool IsFinished()const{return bMissionFinished;}
+public:
     void WaitMissionFinished();
+    void PreMission();
+    void PostMission();
+    
 protected:
     void CreateShaderCollectionByName(const FString& Name);
     void ShutdownShaderCollection();

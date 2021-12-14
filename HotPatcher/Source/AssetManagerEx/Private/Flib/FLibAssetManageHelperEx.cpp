@@ -117,6 +117,7 @@ bool UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(const FString& I
 	bool runState = false;
 	if(InLongPackageName.IsEmpty())
 		return runState;
+	OutPackagePath = InLongPackageName;
 	
 	if(InLongPackageName.Contains(TEXT(".")))
 	{
@@ -657,7 +658,7 @@ bool UFLibAssetManageHelperEx::GetAssetsList(
 )
 {
 	TArray<FAssetData> AllAssetData;
-	if (UFLibAssetManageHelperEx::GetAssetsData(InFilterPackagePaths, AllAssetData))
+	if (UFLibAssetManageHelperEx::GetAssetsData(InFilterPackagePaths, AllAssetData,true))
 	{
 		for (const auto& AssetDataIndex : AllAssetData)
 		{
@@ -698,7 +699,7 @@ bool UFLibAssetManageHelperEx::GetAssetsList(
 bool UFLibAssetManageHelperEx::GetRedirectorList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutRedirector)
 {
 	TArray<FAssetData> AllAssetData;
-	if (UFLibAssetManageHelperEx::GetAssetsData(InFilterPackagePaths, AllAssetData))
+	if (UFLibAssetManageHelperEx::GetAssetsData(InFilterPackagePaths, AllAssetData,true))
 	{
 		for (const auto& AssetDataIndex : AllAssetData)
 		{
@@ -720,12 +721,12 @@ bool UFLibAssetManageHelperEx::GetSpecifyAssetData(const FString& InLongPackageN
 	return AssetRegistryModule.Get().GetAssetsByPackageName(*InLongPackageName, OutAssetData, InIncludeOnlyOnDiskAssets);
 }
 
-bool UFLibAssetManageHelperEx::GetAssetsData(const TArray<FString>& InFilterPackagePaths, TArray<FAssetData>& OutAssetData)
+bool UFLibAssetManageHelperEx::GetAssetsData(const TArray<FString>& InFilterPackagePaths, TArray<FAssetData>& OutAssetData, bool bIncludeOnlyOnDiskAssets)
 {
 	OutAssetData.Reset();
 
 	FARFilter Filter;
-	Filter.bIncludeOnlyOnDiskAssets = true;
+	Filter.bIncludeOnlyOnDiskAssets = bIncludeOnlyOnDiskAssets;
 	Filter.bRecursivePaths = true;
 	for(const auto& FilterPackageName: InFilterPackagePaths)
 	{

@@ -1466,21 +1466,23 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 	auto AddSoftObjectPath = [&](const FString& LongPackageName)
 	{
 		FString LongPackagePath = UFLibAssetManageHelperEx::LongPackageNameToPackagePath(LongPackageName);
-		
+		bool bSuccessed = false;
 		if (!LongPackagePath.IsEmpty() && UAssetManager::Get().VerifyCanCookPackage(FName(*LongPackageName),false)
 			&& !FPackageName::IsScriptPackage(LongPackagePath) && !FPackageName::IsMemoryPackage(LongPackagePath))
 		{
 			
 			FSoftObjectPath CurrentObject(LongPackagePath);
-			if(FPackageName::DoesPackageExist(LongPackagePath) && CurrentObject.IsValid())
+			if(FPackageName::DoesPackageExist(LongPackagePath) && CurrentObject.IsValid()) 
 			{
-				UE_LOG(LogHotPatcherEditorHelper,Display,TEXT("Import Project Setting Package: %s"),*LongPackagePath);
-				SoftObjectPaths.Emplace(CurrentObject);
+				// UE_LOG(LogHotPatcherEditorHelper,Display,TEXT("Import Project Setting Package: %s"),*LongPackagePath);
+				SoftObjectPaths.AddUnique(CurrentObject);
+				bSuccessed = true;
 			}
-			else
-			{
-				UE_LOG(LogHotPatcherEditorHelper,Warning,TEXT("Import Project Setting Package: %s is inavlid!"),*LongPackagePath);
-			}
+		}
+
+		if(!bSuccessed)
+		{
+			// UE_LOG(LogHotPatcherEditorHelper,Warning,TEXT("Import Project Setting Package: %s is inavlid!"),*LongPackagePath);
 		}
 	};
 	

@@ -27,12 +27,13 @@ int32 UHotMultiCookerCommandlet::Main(const FString& Params)
 		UE_LOG(LogHotMultiCookerCommandlet, Error, TEXT("cofnig file %s not exists."), *config_path);
 		return -1;
 	}
-	// if(IsRunningCommandlet())
-	// {
-	// 	// load asset registry
-	// 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-	// 	AssetRegistryModule.Get().SearchAllAssets(true);
-	// }
+
+	if(IsRunningCommandlet())
+	{
+		// load asset registry
+		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+		AssetRegistryModule.Get().SearchAllAssets(true);
+	}
 
 	TSharedPtr<FMultiCookerSettings> ExportMultiCookerSetting = MakeShareable(new FMultiCookerSettings);
 	

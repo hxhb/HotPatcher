@@ -132,6 +132,7 @@ void UMultiCookerProxy::OnCookMissionsFinished(bool bSuccessed)
 	}
 	OnMultiCookerFinished.Broadcast(this);
 	bMissionFinished = true;
+	PostMission();
 }
 
 bool UMultiCookerProxy::MergeShader()
@@ -288,6 +289,50 @@ void UMultiCookerProxy::WaitMissionFinished()
 	OnCookMissionsFinished(!HasError());
 }
 
+void UMultiCookerProxy::PreMission()
+{
+	
+}
+
+void UMultiCookerProxy::PostMission()
+{
+	FString ShaderLibBaseDir = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("Shaders"));
+	
+	for(const auto& Platform:GetSettingObject()->CookTargetPlatforms)
+	{
+		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+		FString PlatformShaderDir = FPaths::Combine(ShaderLibBaseDir,PlatformName);
+		FString PlatformDefaultCookedDir = FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked"),PlatformName);
+		FString DefaultCookedProjectContentDir = FPaths::Combine(PlatformDefaultCookedDir,FApp::GetProjectName(),TEXT("Content"));
+		
+		TArray<FName> ShaderFormats;
+		ITargetPlatform* PlatformIns = UFlibHotPatcherEditorHelper::GetTargetPlatformByName(PlatformName);
+		if(PlatformIns)
+		{
+			PlatformIns->GetAllTargetedShaderFormats(ShaderFormats);
+			for(const auto& ShaderFormat:ShaderFormats)
+			{
+				// copy GlobalShaderCache-%s.bin to Saved/Cooked/WindowsNoEditor/PROJECT_NAME/
+				FString GlobalShaderCache = FPaths::Combine(PlatformShaderDir,FString::Printf(TEXT("Engine/GlobalShaderCache-%s.bin"),*ShaderFormat.ToString()));
+				FString DefaultGlobalShaderCache = FPaths::Combine(PlatformDefaultCookedDir,FString::Printf(TEXT("Engine/GlobalShaderCache-%s.bin"),*ShaderFormat.ToString()));
+				IFileManager::Get().Copy(*DefaultGlobalShaderCache,*GlobalShaderCache,true,true);
+
+				// copy ShaderArchive-Global-PCD3D_SM5.ushaderbytecode to Saved/Cooked/WindowsNoEditor/PROJECT_NAME/Content
+				FString GlobalShaderLib = UFlibShaderPatchHelper::GetCodeArchiveFilename(PlatformShaderDir,TEXT("Global"),ShaderFormat);
+				FString DefaultGlobalShaderLib = UFlibShaderPatchHelper::GetCodeArchiveFilename(DefaultCookedProjectContentDir ,TEXT("Global"),ShaderFormat);
+				IFileManager::Get().Copy(*DefaultGlobalShaderLib,*GlobalShaderLib,true,true);
+
+				// copy ShaderArchive-PROJECT_NAME-PCD3D_SM5.ushaderbytecode to Saved/Cooked/WindowsNoEditor/PROJECT_NAME/Content
+				FString ProjectShaderLib = UFlibShaderPatchHelper::GetCodeArchiveFilename(PlatformShaderDir,FApp::GetProjectName(),ShaderFormat);
+				FString DefaultShaderLib = UFlibShaderPatchHelper::GetCodeArchiveFilename(DefaultCookedProjectContentDir,FApp::GetProjectName(),ShaderFormat);
+				IFileManager::Get().Copy(*DefaultShaderLib,*ProjectShaderLib,true,true);
+			}
+			
+		}
+		
+	}
+}
+
 void UMultiCookerProxy::CreateShaderCollectionByName(const FString& Name)
 {
 	GlobalShaderCollectionProxy = UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform(
@@ -375,6 +420,7 @@ bool UMultiCookerProxy::DoExport()
 	FString TempDir = UFlibMultiCookerHelper::GetMultiCookerBaseDir();
 	FString SaveConfigDir = UFlibPatchParserHelper::ReplaceMark(GetSettingObject()->SavePath.Path);
 
+	PreMission();
 	// for cook global shader
 	if(GetSettingObject()->bCompileGlobalShader)
 	{
