@@ -165,7 +165,7 @@ public class HotPatcherEditor : ModuleRules
 		PublicDefinitions.AddRange(new string[]
 		{
 			"ENABLE_UPDATER_CHECK=1",
-			"ENABLE_MULTI_COOKER=0",
+			"ENABLE_MULTI_COOKER=1",
 			"TOOL_NAME=\"HotPatcher\"",
 			"CURRENT_VERSION_ID=72",
 			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
