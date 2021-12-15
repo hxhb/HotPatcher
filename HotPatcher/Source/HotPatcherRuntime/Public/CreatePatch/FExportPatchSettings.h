@@ -265,11 +265,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Specify Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
 		bool bIncludeAssetRegistry = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
 		bool bIncludeGlobalShaderCache = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
 		bool bIncludeShaderBytecode = false;
 
 	// Only in UE5

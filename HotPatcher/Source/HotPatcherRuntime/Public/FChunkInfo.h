@@ -34,11 +34,11 @@ public:
 		return bIncludeAssetRegistry || bIncludeGlobalShaderCache || bIncludeShaderBytecode || bIncludeEngineIni || bIncludePluginIni || bIncludeProjectIni;
 	}
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked")
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked")
 		bool bIncludeAssetRegistry = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked")
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked")
 		bool bIncludeGlobalShaderCache = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked")
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked")
 		bool bIncludeShaderBytecode = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini")

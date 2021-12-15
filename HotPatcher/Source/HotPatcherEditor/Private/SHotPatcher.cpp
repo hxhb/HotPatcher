@@ -53,7 +53,7 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 			.Padding(0.0f, 10.0f, 8.0f, 0.0f)
 			[
 				SNew(SVerticalBox)
-#ifdef ENABLE_UPDATER_CHECK
+#if ENABLE_UPDATER_CHECK
 				+SVerticalBox::Slot()
 				.AutoHeight()
 				[
