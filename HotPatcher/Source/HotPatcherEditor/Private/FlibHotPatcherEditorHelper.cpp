@@ -274,7 +274,7 @@ FString UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(const FString& BaseDir
 	FString PackageFilename;
 	FString StandardFilename;
 	FName StandardFileFName = NAME_None;
-
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	if (FPackageName::DoesPackageExist(PacakgeName, NULL, &Filename, false))
 	{
 		StandardFilename = PackageFilename = FPaths::ConvertRelativePathToFull(Filename);
@@ -282,7 +282,7 @@ FString UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(const FString& BaseDir
 		FPaths::MakeStandardFilename(StandardFilename);
 		StandardFileFName = FName(*StandardFilename);
 	}
-
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	FString SandboxFilename = ConvertToFullSandboxPath(*StandardFilename, true);
 	// UE_LOG(LogHotPatcherEditorHelper,Log,TEXT("Filename:%s,PackageFileName:%s,StandardFileName:%s"),*Filename,*PackageFilename,*StandardFilename);
 	
@@ -552,8 +552,9 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 	#endif
 #endif
 		GIsCookerLoadingPackage = true;
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS
 		UPackage::PackageSavedEvent.AddLambda([PackageSavedCallback](const FString& InFilePath,UObject* Object){PackageSavedCallback(InFilePath);});
-		
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS
 		// UE_LOG(LogHotPatcherEditorHelper,Display,TEXT("Cook Assets:%s save to %s"),*Package->GetName(),*CookedSavePath);
 		FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, CookedFlags, *CookedSavePath, 
                                                 GError, nullptr, false, false, SaveFlags, Platform, 
@@ -575,7 +576,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 				Info.bSucceeded = bSuccessed;
 				Info.PackageName = Package->GetFName();
 				PRAGMA_DISABLE_DEPRECATION_WARNINGS
-				Info.PackageGuid = AssetPackageData->PackageGuid;
+				Info.PackageGuid = AssetPackageData ? AssetPackageData->PackageGuid : FGuid::NewGuid();
 				PRAGMA_ENABLE_DEPRECATION_WARNINGS
 				// Info.Attachments.Add({ "Dependencies", TargetDomainDependencies });
 				// TODO: Reenable BuildDefinitionList once FCbPackage support for empty FCbObjects is in
@@ -1467,6 +1468,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 	{
 		FString LongPackagePath = UFLibAssetManageHelperEx::LongPackageNameToPackagePath(LongPackageName);
 		bool bSuccessed = false;
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS
 		if (!LongPackagePath.IsEmpty() && UAssetManager::Get().VerifyCanCookPackage(FName(*LongPackageName),false)
 			&& !FPackageName::IsScriptPackage(LongPackagePath) && !FPackageName::IsMemoryPackage(LongPackagePath))
 		{
@@ -1479,7 +1481,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 				bSuccessed = true;
 			}
 		}
-
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS
 		if(!bSuccessed)
 		{
 			// UE_LOG(LogHotPatcherEditorHelper,Warning,TEXT("Import Project Setting Package: %s is inavlid!"),*LongPackagePath);
@@ -1498,7 +1500,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 		for(const auto& BuildFilename:FilesInPathStrings)
 		{
 			FString OutPackageName;
-			if (FPackageName::TryConvertFilenameToLongPackageName(BuildFilename, OutPackageName))
+			if (FPackageName::TryConvertFilenameToLongPackageName(FPaths::ConvertRelativePathToFull(BuildFilename), OutPackageName))
 			{
 				AddSoftObjectPath(OutPackageName);
 			}
@@ -1531,7 +1533,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 
 		for (int32 MapIdx = 0; MapIdx < MapList.Num(); MapIdx++)
 		{
-			FName PackageName = FName(*FPackageName::FilenameToLongPackageName(MapList[MapIdx]));
+			FName PackageName = FName(*FPackageName::FilenameToLongPackageName(FPaths::ConvertRelativePathToFull(MapList[MapIdx])));
 			AddSoftObjectPath(PackageName.ToString());
 		}
 	}
@@ -1540,7 +1542,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 	for (const FFilePath& MapToCook : PackagingSettings->MapsToCook)
 	{
 		FString File = MapToCook.FilePath;
-		FName PackageName = FName(*FPackageName::FilenameToLongPackageName(File));
+		FName PackageName = FName(*FPackageName::FilenameToLongPackageName(FPaths::ConvertRelativePathToFull(File)));
 		AddSoftObjectPath(PackageName.ToString());
 	}
 
@@ -1587,7 +1589,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 
 			for (int32 TokenFileIndex = 0; TokenFileIndex < TokenFiles.Num(); ++TokenFileIndex)
 			{
-				FName PackageName = FName(*FPackageName::FilenameToLongPackageName(TokenFiles[TokenFileIndex]));
+				FName PackageName = FName(*FPackageName::FilenameToLongPackageName(FPaths::ConvertRelativePathToFull(TokenFiles[TokenFileIndex])));
 				AddSoftObjectPath(PackageName.ToString());
 			}
 		}

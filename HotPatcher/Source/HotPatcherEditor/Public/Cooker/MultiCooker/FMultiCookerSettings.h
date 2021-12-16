@@ -115,7 +115,7 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString MissionName;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	int32 MissionID;
+	int32 MissionID = -1;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString ShaderLibName;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
@@ -133,7 +133,7 @@ struct HOTPATCHEREDITOR_API FAssetsCollection
 {
 	GENERATED_BODY()
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	ETargetPlatform TargetPlatform;
+	ETargetPlatform TargetPlatform = ETargetPlatform::None;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TArray<FAssetDetail> Assets;
 };
@@ -146,7 +146,7 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString MissionName;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	int32 MissionID;
+	int32 MissionID = -1;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TMap<ETargetPlatform,FAssetsCollection> CookFailedAssets;
 };

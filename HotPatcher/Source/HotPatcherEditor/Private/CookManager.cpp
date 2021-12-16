@@ -2,11 +2,14 @@
 #include "FlibPatchParserHelper.h"
 #include "FlibHotPatcherEditorHelper.h"
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
 void FCookManager::Init()
 {
 	UPackage::PackageSavedEvent.AddRaw(this,&FCookManager::OnPackageSavedEvent);
 }
 
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 void FCookManager::Shutdown(){}
 FString FCookManager::GetCookedAssetPath(const FString& PackageName,ETargetPlatform Platform)
 {

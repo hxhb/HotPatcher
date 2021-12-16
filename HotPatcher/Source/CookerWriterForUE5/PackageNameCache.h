@@ -140,12 +140,12 @@ inline bool FPackageNameCache::DoesPackageExist(const FName& PackageName, FStrin
 	// 	// that the linker loader is creating a dummy object to fill a referencing import slot, not loading
 	// 	// the proper object (which means we want to ignore it).
 	// }
-
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	if (!AssetRegistry)
 	{
 		return FPackageName::DoesPackageExist(PackageNameStr, NULL, OutFilename, false);
 	}
-
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	TArray<FAssetData> Assets;
 	AssetRegistry->GetAssetsByPackageName(PackageName, Assets, /*bIncludeOnlyDiskAssets =*/true);
 

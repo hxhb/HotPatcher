@@ -63,22 +63,22 @@ struct FPakEncryptionKeys
 	TArray<FEncryptionKeyEntry> SecondaryEncryptionKeys;
 
 	UPROPERTY()
-	bool bEnablePakIndexEncryption;
+	bool bEnablePakIndexEncryption = false;
 	UPROPERTY()
-	bool bEnablePakIniEncryption;
+	bool bEnablePakIniEncryption = false;
 	UPROPERTY()
-	bool bEnablePakUAssetEncryption;
+	bool bEnablePakUAssetEncryption = false;
 	UPROPERTY()
-	bool bEnablePakFullAssetEncryption;
+	bool bEnablePakFullAssetEncryption = false;
 	UPROPERTY()
-	bool bDataCryptoRequired;
+	bool bDataCryptoRequired = false;
 	UPROPERTY()
-	bool PakEncryptionRequired;
+	bool PakEncryptionRequired = false;
 	UPROPERTY()
-	bool PakSigningRequired;
+	bool PakSigningRequired = false;
 
 	UPROPERTY()
-	bool bEnablePakSigning;
+	bool bEnablePakSigning = false;
 	UPROPERTY()
 	FSignKeyEntry SigningKey;
 };

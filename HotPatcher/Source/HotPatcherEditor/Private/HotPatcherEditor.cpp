@@ -91,8 +91,10 @@ void FHotPatcherEditorModule::StartupModule()
 	
 	if(::IsRunningCommandlet())
 		return;
-
+	
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	FCoreUObjectDelegates::OnObjectSaved.AddRaw(this,&FHotPatcherEditorModule::OnObjectSaved);
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	FCookManager::Get().Init();
 	MakeProjectSettingsForHotPatcher();
 

@@ -24,6 +24,7 @@
 
 bool GScanCacheOptimize = true;
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 FString UFLibAssetManageHelperEx::ConvVirtualToAbsPath(const FString& InPackagePath)
 {
 	FString ResultAbsPath;
@@ -957,6 +958,10 @@ const FAssetPackageData* UFLibAssetManageHelperEx::GetPackageDataByPackagePath(c
 				return AssetPackageData;
 			}
 		}
+		else
+		{
+			UE_LOG(LogAssetManagerEx,Warning,TEXT("GetPackageDataByPackagePath %s Failed!"),*InPackagePath);
+		}
 	}
 
 	return NULL;
@@ -1636,3 +1641,5 @@ void UFLibAssetManageHelperEx::GetAssetDataInPaths(const TArray<FString>& Paths,
 	
 	AssetRegistryModule.Get().GetAssets(Filter, OutAssetData);
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
