@@ -17,6 +17,12 @@ FMultiCookerSettings::FMultiCookerSettings()
 	bStandaloneMode = false;
 }
 
+FMultiCookerSettings* FMultiCookerSettings::Get()
+{
+	static FMultiCookerSettings Settings;
+	return &Settings;
+}
+
 bool FMultiCookerSettings::IsValidConfig() const
 {
 	return (IncludeSpecifyAssets.Num() || AssetIncludeFilters.Num() || bImportProjectSettings) && CookTargetPlatforms.Num();

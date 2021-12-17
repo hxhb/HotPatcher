@@ -39,6 +39,8 @@ struct HOTPATCHEREDITOR_API FMultiCookerSettings: public FHotPatcherSettingBase
 	GENERATED_USTRUCT_BODY()
 public:
 	FMultiCookerSettings();
+
+	static FMultiCookerSettings* Get();
 	
 	virtual TArray<FDirectoryPath>& GetAssetIncludeFilters()override { return AssetIncludeFilters; };
 	virtual TArray<FDirectoryPath>& GetAssetIgnoreFilters()override { return AssetIgnoreFilters; };

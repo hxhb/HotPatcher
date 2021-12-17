@@ -105,10 +105,11 @@ void SHotPatcherMultiCookerPage::ResetConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Release Clear Config"));
 	FString DefaultSettingJson;
-	UFlibPatchParserHelper::TSerializeStructAsJsonString(*FExportReleaseSettings::Get(),DefaultSettingJson);
+	UFlibPatchParserHelper::TSerializeStructAsJsonString(*FMultiCookerSettings::Get(),DefaultSettingJson);
 	UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*CookerSettings);
 	SettingsView->GetDetailsView()->ForceRefresh();
 }
+
 void SHotPatcherMultiCookerPage::DoGenerate()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Release DoGenerate"));
