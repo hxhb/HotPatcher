@@ -664,7 +664,7 @@ TArray<FAssetDetail> UFlibPatchParserHelper::ParserExFilesInfoAsAssetDetailInfo(
 	{
 		FAssetDetail CurrentFile;
 		CurrentFile.mAssetType = TEXT("ExternalFile");
-		CurrentFile.mPackagePath = File.MountPath;
+		CurrentFile.mPackagePath = FName(File.MountPath);
 		//CurrentFile.mGuid = File.GetFileHash();
 		result.Add(CurrentFile);
 	}
@@ -1312,7 +1312,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 				bool bIsIgnore = false;
 				for (const auto& IgnoreFilter : ExportVersion.IgnoreFilter)
 				{
-					if (AssetDetail.mPackagePath.StartsWith(IgnoreFilter))
+					if (AssetDetail.mPackagePath.ToString().StartsWith(IgnoreFilter))
 					{
 						bIsIgnore = true;
 						break;
@@ -1452,7 +1452,7 @@ FHotPatcherAssetDependency UFlibPatchParserHelper::GetAssetRelatedInfo(
 	FHotPatcherAssetDependency Dependency;
 	Dependency.Asset = InAsset;
 	FString LongPackageName;
-	if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.mPackagePath, LongPackageName))
+	if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.mPackagePath.ToString(), LongPackageName))
 	{
 		TArray<EAssetRegistryDependencyType::Type> SearchAssetDepTypes;
 		for (const auto& Type : AssetRegistryDependencyTypes)
@@ -1678,13 +1678,14 @@ TArray<FAssetDetail> UFlibPatchParserHelper::GetAllAssetDependencyDetails(
 	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
 	)
 {
+	FName AssetTypeName = FName(AssetType);
 	TArray<FAssetDetail> result;
-	TArray<FHotPatcherAssetDependency> AssetDeps = UFlibPatchParserHelper::GetAssetsRelatedInfo(TArray<FAssetDetail>{Asset}, Types,ScanedCaches);
+	const TArray<FHotPatcherAssetDependency>& AssetDeps = UFlibPatchParserHelper::GetAssetsRelatedInfo(TArray<FAssetDetail>{Asset}, Types,ScanedCaches);
 	for(const auto& AssetDependency:AssetDeps)
 	{
 		for(const auto& AssetRederenceItem:AssetDependency.AssetReference)
 		{
-			if(AssetType.IsEmpty() || AssetRederenceItem.mAssetType.Equals(AssetType,ESearchCase::IgnoreCase))
+			if(AssetType.IsEmpty() || AssetRederenceItem.mAssetType == AssetTypeName)
 			{
 				TArray<FAssetDetail> CurrentAssetDepAssetList = UFlibPatchParserHelper::GetAllAssetDependencyDetails(AssetRederenceItem,Types,AssetType,ScanedCaches);
 				CurrentAssetDepAssetList.AddUnique(AssetRederenceItem);

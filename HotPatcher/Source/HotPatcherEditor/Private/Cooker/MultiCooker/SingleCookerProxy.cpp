@@ -11,7 +11,7 @@ void USingleCookerProxy::Init()
 {
 	InitPlatformPackageContexts();
 	InitShaderLibConllections();
-	
+	// PackageTracker = MakeShareable(new FPackageTracker(TSet<FName>{}));
 	Super::Init();
 }
 
@@ -50,7 +50,7 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 		{
 			FSoftObjectPath AssetSoftPath;
 			AssetSoftPath.SetPath(Asset.mPackagePath);
-			UPackage* Package = LoadPackage(nullptr, *Asset.mPackagePath, LOAD_None);;
+			UPackage* Package = LoadPackage(nullptr, *Asset.mPackagePath.ToString(), LOAD_None);;
 			SoftObjectPaths.AddUnique(AssetSoftPath);
 			AllObjects.AddUnique(Package);
 

@@ -81,15 +81,16 @@ public:
 		static FString GetAssetNameFromPackagePath(const FString& InPackagePath);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
 	static FString LongPackageNameToPackagePath(const FString& InLongPackageName);
+
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
 		static bool ConvLongPackageNameToPackagePath(const FString& InLongPackageName,FString& OutPackagePath);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
 		static bool ConvPackagePathToLongPackageName(const FString& InPackagePath, FString& OutLongPackageName);
-
+		static bool ConvPackagePathToLongPackageName(FName InPackagePath, FName& OutLongPackageName);
 		static const FAssetPackageData* GetPackageDataByPackagePath(const FString& InShortPackagePath);
 
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerExEx")
-		static bool GetAssetPackageGUID(const FString& InPackagePath, FString& OutGUID);
+		static bool GetAssetPackageGUID(const FString& InPackagePath, FName& OutGUID);
 
 	// Combine AssetDependencies Filter repeat asset
 	UFUNCTION(BlueprintPure, Category = "GWorld|Flib|AssetManager", meta = (CommutativeAssociativeBinaryOperator = "true"))

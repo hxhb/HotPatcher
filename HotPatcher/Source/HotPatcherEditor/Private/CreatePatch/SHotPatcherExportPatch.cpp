@@ -407,14 +407,14 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 	{	
 		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(VersionDiffInfo, Chunk,ExportPatchSetting->GetPakTargetPlatforms(),ExportPatchSetting->GetAssetsDependenciesScanedCaches());
 		ShowMsg.Append(FString::Printf(TEXT("Chunk:%s\n"), *Chunk.ChunkName));
-		auto AppendFilesToMsg = [&ShowMsg](const FString& CategoryName, const TArray<FString>& InFiles)
+		auto AppendFilesToMsg = [&ShowMsg](const FString& CategoryName, const TArray<FName>& InFiles)
 		{
 			if (!!InFiles.Num())
 			{
 				ShowMsg.Append(FString::Printf(TEXT("%s:\n"), *CategoryName));
 				for (const auto& File : InFiles)
 				{
-					ShowMsg.Append(FString::Printf(TEXT("\t%s\n"), *File));
+					ShowMsg.Append(FString::Printf(TEXT("\t%s\n"), *File.ToString()));
 				}
 			}
 		};
@@ -422,12 +422,12 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 		
 		for(auto Platform:ExportPatchSetting->GetPakTargetPlatforms())
 		{
-			TArray<FString> PlatformExFiles;
+			TArray<FName> PlatformExFiles;
 			FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform,false);
-			PlatformExFiles.Append(ChunkAssetsDescrible.GetExFileStrings(Platform));
+			PlatformExFiles.Append(ChunkAssetsDescrible.GetExternalFileNames(Platform));
 			AppendFilesToMsg(PlatformName, PlatformExFiles);
 		}
-		AppendFilesToMsg(TEXT("Internal Files"), ChunkAssetsDescrible.GetInternalFileStrings());
+		AppendFilesToMsg(TEXT("Internal Files"), ChunkAssetsDescrible.GetInternalFileNames());
 		ShowMsg.Append(TEXT("\n"));
 	}
 	
@@ -630,29 +630,29 @@ FReply SHotPatcherExportPatch::DoPreviewPatch()
 	
 	FChunkAssetDescribe ChunkAssetsDescrible = UFlibHotPatcherEditorHelper::DiffChunkByBaseVersionWithPatchSetting(*ExportPatchSetting.Get(),NewVersionChunk, DefaultChunk, BaseVersion,ExportPatchSetting->GetAssetsDependenciesScanedCaches());
 
-	TArray<FString> AllUnselectedAssets = ChunkAssetsDescrible.GetAssetsStrings();
-	TArray<FString> UnSelectedInternalFiles = ChunkAssetsDescrible.GetInternalFileStrings();
+	TArray<FName> AllUnselectedAssets = ChunkAssetsDescrible.GetAssetsStrings();
+	TArray<FName> UnSelectedInternalFiles = ChunkAssetsDescrible.GetInternalFileNames();
 
 	FString TotalMsg;
-	auto ChunkCheckerMsg = [&TotalMsg](const FString& Category, const TArray<FString>& InAssetList)
+	auto ChunkCheckerMsg = [&TotalMsg](const FString& Category, const TArray<FName>& InAssetList)
 	{
 		if (!!InAssetList.Num())
 		{
 			TotalMsg.Append(FString::Printf(TEXT("\n%s:\n"), *Category));
 			for (const auto& Asset : InAssetList)
 			{
-				TotalMsg.Append(FString::Printf(TEXT("\t%s\n"), *Asset));
+				TotalMsg.Append(FString::Printf(TEXT("\t%s\n"), *Asset.ToString()));
 			}
 		}
 	};
 	ChunkCheckerMsg(TEXT("Unreal Asset"), AllUnselectedAssets);
-	ChunkCheckerMsg(TEXT("External Files"), TArray<FString>{});
+	ChunkCheckerMsg(TEXT("External Files"), TArray<FName>{});
 	for(auto Platform:ExportPatchSetting->GetPakTargetPlatforms())
 	{
-		TArray<FString> PlatformExFiles;
+		TArray<FName> PlatformExFiles;
 		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform,false);
-		PlatformExFiles.Append(ChunkAssetsDescrible.GetExFileStrings(Platform));
-		PlatformExFiles.Append(ChunkAssetsDescrible.GetExFileStrings(ETargetPlatform::AllPlatforms));
+		PlatformExFiles.Append(ChunkAssetsDescrible.GetExternalFileNames(Platform));
+		PlatformExFiles.Append(ChunkAssetsDescrible.GetExternalFileNames(ETargetPlatform::AllPlatforms));
 		ChunkCheckerMsg(PlatformName, PlatformExFiles);
 	}
 	

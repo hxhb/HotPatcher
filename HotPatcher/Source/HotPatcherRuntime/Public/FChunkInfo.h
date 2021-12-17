@@ -189,10 +189,10 @@ public:
 	}
 	
 	
-	FORCEINLINE TArray<FString> GetAssetsStrings()const
+	FORCEINLINE TArray<FName> GetAssetsStrings()const
 	{
-		TArray<FString> AllUnselectedAssets;
-		TArray<FAssetDetail> OutAssetDetails = GetAssetsDetail();
+		TArray<FName> AllUnselectedAssets;
+		const TArray<FAssetDetail>& OutAssetDetails = GetAssetsDetail();
 
 		for (const auto& AssetDetail : OutAssetDetails)
 		{
@@ -210,15 +210,15 @@ public:
 		}
 		return result;
 	}
-	FORCEINLINE TArray<FString> GetExFileStrings(ETargetPlatform Platform)const
+	FORCEINLINE TArray<FName> GetExternalFileNames(ETargetPlatform Platform)const
 	{
-		TArray<FString> ExFilesResult;
- 		auto CollectExFilesStrings = [](const TArray<FExternFileInfo>& InFiles)->TArray<FString>
+		TArray<FName> ExFilesResult;
+ 		auto CollectExFilesStrings = [](const TArray<FExternFileInfo>& InFiles)->TArray<FName>
 		{
-			TArray<FString> result;
+			TArray<FName> result;
 			for (const auto& File : InFiles)
 			{
-				result.AddUnique(File.FilePath.FilePath);
+				result.AddUnique(FName(File.FilePath.FilePath));
 			}
 			return result;
 		};
@@ -230,9 +230,9 @@ public:
 	}
 	FORCEINLINE FPakInternalInfo GetInternalInfo()const{return InternalFiles;}
 	
-	FORCEINLINE TArray<FString> GetInternalFileStrings()const
+	FORCEINLINE TArray<FName> GetInternalFileNames()const
 	{
-		TArray<FString> result;
+		TArray<FName> result;
 		{
 			if (InternalFiles.bIncludeAssetRegistry) { result.Add(TEXT("bIncludeAssetRegistry")); };
 			if (InternalFiles.bIncludeGlobalShaderCache) { result.Add(TEXT("bIncludeGlobalShaderCache")); };

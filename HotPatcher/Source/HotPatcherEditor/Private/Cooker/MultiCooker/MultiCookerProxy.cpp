@@ -272,7 +272,7 @@ void UMultiCookerProxy::RecookFailedAssets()
 			UE_LOG(LogHotPatcher,Error,TEXT("\nCook Platfotm %s Assets Failed:\n"),*PlatformName);
 			for(const auto& Asset:CookerFailedCollection.CookFailedAssets.Find(TargetPlatform)->Assets)
 			{
-				UE_LOG(LogHotPatcher,Error,TEXT("\t%s\n"),*Asset.mPackagePath);
+				UE_LOG(LogHotPatcher,Error,TEXT("\t%s\n"),*Asset.mPackagePath.ToString());
 			}
 		}
 	}

@@ -3,7 +3,7 @@
 #include "Cooker/HotPatcherCookerSettingBase.h"
 #include "CreatePatch/HotPatcherProxyBase.h"
 // engine header
-
+#include "FPackageTracker.h"
 #include "FMultiCookerSettings.h"
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Interfaces/ITargetPlatform.h"
@@ -58,7 +58,7 @@ private:
 
 private:
     FCookerFailedCollection CookFailedAssetsCollection;
-    
+    TSharedPtr<FPackageTracker> PackageTracker;
     TSharedPtr<FThreadWorker> WaitThreadWorker;
     TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
     TSharedPtr<struct FCookShaderCollectionProxy> PlatformCookShaderCollection;

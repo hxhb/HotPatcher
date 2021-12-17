@@ -143,7 +143,13 @@ bool UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(const FString& I
 	}
 	return runState;
 }
-
+bool UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(FName InPackagePath, FName& OutLongPackageName)
+{
+	FString result;
+	bool bStatue = UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InPackagePath.ToString(),result);
+	OutLongPackageName = FName(result);
+	return bStatue;
+}
 bool UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(const FString& InPackagePath, FString& OutLongPackageName)
 {
 	bool brunstatus=false;
@@ -157,7 +163,7 @@ bool UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(const FString& I
 	return brunstatus;
 }
 
-bool UFLibAssetManageHelperEx::GetAssetPackageGUID(const FString& InPackagePath, FString& OutGUID)
+bool UFLibAssetManageHelperEx::GetAssetPackageGUID(const FString& InPackagePath, FName& OutGUID)
 {
 	bool bResult = false;
 	if (InPackagePath.IsEmpty())
@@ -167,7 +173,7 @@ bool UFLibAssetManageHelperEx::GetAssetPackageGUID(const FString& InPackagePath,
 	if (AssetPackageData != NULL)
 	{
 		const FGuid& AssetGuid = AssetPackageData->PackageGuid;
-		OutGUID = AssetGuid.ToString();
+		OutGUID = FName(AssetGuid.ToString());
 		bResult = true;
 	}
 	return bResult;
@@ -306,7 +312,7 @@ bool UFLibAssetManageHelperEx::GetAssetDependencyByDetail(
 	bool bRecursively /*= true*/)
 {
 	FString LongPackageName;
-	UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.mPackagePath, LongPackageName);
+	UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.mPackagePath.ToString(), LongPackageName);
 	
 	return UFLibAssetManageHelperEx::GetAssetDependency(LongPackageName, AssetRegistryDependencyTypes, OutRefAsset,ScanedCaches, bRecursively);
 }
@@ -315,7 +321,7 @@ bool UFLibAssetManageHelperEx::GetAssetReference(const FAssetDetail& InAsset, co
 {
 	bool bStatus = false;
 	FString LongPackageName;
-	if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.mPackagePath, LongPackageName))
+	if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.mPackagePath.ToString(), LongPackageName))
 	{
 		TArray<FAssetIdentifier> AssetIdentifier;
 
@@ -375,7 +381,7 @@ void UFLibAssetManageHelperEx::GetAssetReferenceRecursively(const FAssetDetail& 
 		{
 			for(const auto& AssetType:SearchAssetsTypes)
 			{
-				if(InAsset.mAssetType.Equals(AssetType))
+				if(InAsset.mAssetType == FName(AssetType))
 				{
 					bresult = true;
 					break;
@@ -420,8 +426,7 @@ void UFLibAssetManageHelperEx::GetAssetDependenciesForAssetDetail(
 	TMap<FString, FAssetDependenciesInfo>& ScandCaches
 )
 {
-	FString AssetPackagePath = InAssetDetail.mPackagePath;
-	FSoftObjectPath AssetObjectSoftRef{ AssetPackagePath };
+	FSoftObjectPath AssetObjectSoftRef{ InAssetDetail.mPackagePath.ToString() };
 
 	UFLibAssetManageHelperEx::GetAssetDependencies(AssetObjectSoftRef.GetLongPackageName(), AssetRegistryDependencyTypes, OutDependices,ScandCaches);
 }
@@ -437,7 +442,7 @@ void UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(
 	for (const auto& AssetDetail : InAssetsDetailList)
 	{
 		FString AssetPackageName;
-		UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(AssetDetail.mPackagePath,AssetPackageName);
+		UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(AssetDetail.mPackagePath.ToString(),AssetPackageName);
 		FAssetDependenciesInfo CurrentAsserInfo;
 
 		if(GScanCacheOptimize && ScandCaches.Find(AssetPackageName))
@@ -490,8 +495,8 @@ FAssetDetail UFLibAssetManageHelperEx::GetAssetDetailByPackageName(const FString
 			FAssetData OutAssetData;
 			if (AssetManager.GetAssetDataForPath(FSoftObjectPath{ PackagePath }, OutAssetData) && OutAssetData.IsValid())
 			{
-				AssetDetail.mPackagePath = OutAssetData.ObjectPath.ToString();
-				AssetDetail.mAssetType = OutAssetData.AssetClass.ToString();
+				AssetDetail.mPackagePath = OutAssetData.ObjectPath;
+				AssetDetail.mAssetType = OutAssetData.AssetClass;
 				UFLibAssetManageHelperEx::GetAssetPackageGUID(PackagePath, AssetDetail.mGuid);
 			}
 		}
@@ -520,7 +525,7 @@ TArray<FString> UFLibAssetManageHelperEx::GetAssetLongPackageNameByAssetDependen
 	for (const auto& Asset : OutAssetDetails)
 	{
 		FString LongPackageName;
-		if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath, LongPackageName))
+		if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath.ToString(), LongPackageName))
 		{
 			OutAssetLongPackageName.AddUnique(LongPackageName);
 		}
@@ -578,7 +583,7 @@ void UFLibAssetManageHelperEx::GatherAssetDependicesInfoRecursively(
 
 	for(const auto& AssetDetail:AssetDependenciesDetailMap)
 	{
-		if(AssetDetail.Value.mPackagePath.IsEmpty())
+		if(AssetDetail.Value.mPackagePath.IsNone())
 			continue;
 		FString BelongModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(AssetDetail.Key);
 		FAssetDependenciesDetail* ModuleCategory;
@@ -686,7 +691,7 @@ bool UFLibAssetManageHelperEx::GetAssetsList(
 			{
 				UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(AssetDataIndex, AssetDetail);
 			}
-			if (!AssetDetail.mPackagePath.IsEmpty())
+			if (!AssetDetail.mPackagePath.IsNone())
 			{
 				OutAssetList.Add(AssetDetail);
 			}
@@ -769,13 +774,14 @@ bool UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(const FAssetData& In
 	if (!InAssetData.IsValid())
 		return false;
 	FAssetDetail AssetDetail;
-	AssetDetail.mAssetType = InAssetData.AssetClass.ToString();
-	UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InAssetData.PackageName.ToString(), AssetDetail.mPackagePath);
-
+	AssetDetail.mAssetType = FName(InAssetData.AssetClass.ToString());
+	FString PackagePath;
+	AssetDetail.mPackagePath = FName(PackagePath);
+	UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InAssetData.PackageName.ToString(), PackagePath);
 	UFLibAssetManageHelperEx::GetAssetPackageGUID(InAssetData.PackageName.ToString(), AssetDetail.mGuid);
 
 	OutAssetDetail = AssetDetail;
-	return !OutAssetDetail.mAssetType.IsEmpty() && !OutAssetDetail.mAssetType.IsEmpty() && !OutAssetDetail.mAssetType.IsEmpty();
+	return !OutAssetDetail.mAssetType.IsNone() && !OutAssetDetail.mAssetType.IsNone() && !OutAssetDetail.mAssetType.IsNone();
 }
 
 bool UFLibAssetManageHelperEx::GetSpecifyAssetDetail(const FString& InLongPackageName, FAssetDetail& OutAssetDetail)
@@ -807,7 +813,7 @@ void UFLibAssetManageHelperEx::FilterNoRefAssets(const TArray<FAssetDetail>& InA
 		// ignore scan Map Asset reference
 		{
 			FAssetData CurrentAssetData;
-			if (UFLibAssetManageHelperEx::GetSingleAssetsData(AssetDetail.mPackagePath, CurrentAssetData) && CurrentAssetData.IsValid())
+			if (UFLibAssetManageHelperEx::GetSingleAssetsData(AssetDetail.mPackagePath.ToString(), CurrentAssetData) && CurrentAssetData.IsValid())
 			{
 				if (CurrentAssetData.AssetClass == TEXT("World") || 
 					CurrentAssetData.AssetClass == TEXT("MapBuildDataRegistry")
@@ -845,7 +851,7 @@ void UFLibAssetManageHelperEx::FilterNoRefAssetsWithIgnoreFilter(const TArray<FA
 		// ignore scan Map Asset reference
 		{
 			FAssetData CurrentAssetData;
-			if (UFLibAssetManageHelperEx::GetSingleAssetsData(AssetDetail.mPackagePath, CurrentAssetData) && CurrentAssetData.IsValid())
+			if (UFLibAssetManageHelperEx::GetSingleAssetsData(AssetDetail.mPackagePath.ToString(), CurrentAssetData) && CurrentAssetData.IsValid())
 			{
 				if (CurrentAssetData.AssetClass == TEXT("World") ||
 					CurrentAssetData.AssetClass == TEXT("MapBuildDataRegistry")
@@ -888,7 +894,7 @@ bool UFLibAssetManageHelperEx::CombineAssetsDetailAsFAssetDepenInfo(const TArray
 
 	for (const auto& AssetDetail : InAssetsDetailList)
 	{
-		FString CurrAssetModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(AssetDetail.mPackagePath);
+		FString CurrAssetModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(AssetDetail.mPackagePath.ToString());
 		FSoftObjectPath CurrAssetObjectPath(AssetDetail.mPackagePath);
 		FString CurrAssetLongPackageName = CurrAssetObjectPath.GetLongPackageName();
 		if (!result.AssetsDependenciesMap.Contains(CurrAssetModuleName))
@@ -1317,9 +1323,9 @@ TSharedPtr<FJsonObject> UFLibAssetManageHelperEx::SerilizeAssetDetial(const FAss
 {
 	TSharedPtr<FJsonObject> RootJsonObject = MakeShareable(new FJsonObject);
 	{
-		RootJsonObject->SetStringField("PackagePath", InAssetDetail.mPackagePath);
-		RootJsonObject->SetStringField("AssetType", InAssetDetail.mAssetType);
-		RootJsonObject->SetStringField("AssetGUID", InAssetDetail.mGuid);
+		RootJsonObject->SetStringField("PackagePath", InAssetDetail.mPackagePath.ToString());
+		RootJsonObject->SetStringField("AssetType", InAssetDetail.mAssetType.ToString());
+		RootJsonObject->SetStringField("AssetGUID", InAssetDetail.mGuid.ToString());
 	}
 
 	return RootJsonObject;
@@ -1330,9 +1336,9 @@ bool UFLibAssetManageHelperEx::DeserilizeAssetDetial(TSharedPtr<FJsonObject>& In
 	bool bRunStatus = false;
 	if (InJsonObject.IsValid())
 	{
-		OutAssetDetail.mPackagePath = InJsonObject->GetStringField(TEXT("PackagePath"));
-		OutAssetDetail.mAssetType = InJsonObject->GetStringField(TEXT("AssetType"));
-		OutAssetDetail.mGuid = InJsonObject->GetStringField(TEXT("AssetGUID"));
+		OutAssetDetail.mPackagePath = FName(InJsonObject->GetStringField(TEXT("PackagePath")));
+		OutAssetDetail.mAssetType = FName(InJsonObject->GetStringField(TEXT("AssetType")));
+		OutAssetDetail.mGuid = FName(InJsonObject->GetStringField(TEXT("AssetGUID")));
 		bRunStatus = true;
 	}
 	return bRunStatus;
@@ -1344,7 +1350,7 @@ FString UFLibAssetManageHelperEx::SerializeAssetDetialArrayToString(const TArray
 
 	for (const auto& AssetDetial : InAssetDetialList)
 	{
-		RootJsonObject->SetObjectField(AssetDetial.mPackagePath, UFLibAssetManageHelperEx::SerilizeAssetDetial(AssetDetial));
+		RootJsonObject->SetObjectField(AssetDetial.mPackagePath.ToString(), UFLibAssetManageHelperEx::SerilizeAssetDetial(AssetDetial));
 	}
 
 	FString OutJsonStr;

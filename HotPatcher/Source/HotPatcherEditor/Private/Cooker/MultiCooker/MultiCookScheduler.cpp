@@ -10,7 +10,7 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 	
 	TArray<FSingleCookerSettings> AllSingleCookerSettings;
 
-	TMap<FString,TArray<FAssetDetail>> TypeAssetDetails;
+	TMap<FName,TArray<FAssetDetail>> TypeAssetDetails;
 
 	for(int32 index = 0;index<ProcessNumber;++index)
 	{

@@ -394,23 +394,23 @@ namespace PatchWorker
 				}
 				else
 				{
-					TArray<FString> AllUnselectedAssets = ChunkDiffInfo.GetAssetsStrings();
-					TArray<FString> AllUnselectedExFiles;
+					TArray<FName> AllUnselectedAssets = ChunkDiffInfo.GetAssetsStrings();
+					TArray<FName> AllUnselectedExFiles;
 					for(auto Platform:Context.GetSettingObject()->GetPakTargetPlatforms())
 					{
-						AllUnselectedExFiles.Append(ChunkDiffInfo.GetExFileStrings(Platform));
+						AllUnselectedExFiles.Append(ChunkDiffInfo.GetExternalFileNames(Platform));
 					}
 			
-					TArray<FString> UnSelectedInternalFiles = ChunkDiffInfo.GetInternalFileStrings();
+					TArray<FName> UnSelectedInternalFiles = ChunkDiffInfo.GetInternalFileNames();
 
-					auto ChunkCheckerMsg = [&TotalMsg](const FString& Category,const TArray<FString>& InAssetList)
+					auto ChunkCheckerMsg = [&TotalMsg](const FString& Category,const TArray<FName>& InAssetList)
 					{
 						if (!!InAssetList.Num())
 						{
 							TotalMsg.Append(FString::Printf(TEXT("\n%s:\n"),*Category));
 							for (const auto& Asset : InAssetList)
 							{
-								TotalMsg.Append(FString::Printf(TEXT("%s\n"), *Asset));
+								TotalMsg.Append(FString::Printf(TEXT("%s\n"), *Asset.ToString()));
 							}
 						}
 					};
@@ -447,7 +447,7 @@ namespace PatchWorker
 						FString Path;
 						FString Filename;
 						FString Extension;
-						FPaths::Split(Asset.mPackagePath, Path, Filename, Extension);
+						FPaths::Split(Asset.mPackagePath.ToString(), Path, Filename, Extension);
 						DependenciesFilters.AddUnique(Path);
 					}
 				};
@@ -750,7 +750,7 @@ namespace PatchWorker
 		for(const auto& Asset:AllAssets)
 		{
 			FString LongPackageName;
-			if(UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath,LongPackageName))
+			if(UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath.ToString(),LongPackageName))
 			{
 				PackageAssetsSet.Add(*LongPackageName);
 			}

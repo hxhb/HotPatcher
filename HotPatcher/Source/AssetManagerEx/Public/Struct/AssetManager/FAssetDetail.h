@@ -27,14 +27,14 @@ struct ASSETMANAGEREX_API FAssetDetail
 	}
 	FORCEINLINE bool IsValid()const
 	{
-		return !mPackagePath.IsEmpty() && !mAssetType.IsEmpty() && !mGuid.IsEmpty();
+		return !mPackagePath.IsNone() && !mAssetType.IsNone() && !mGuid.IsNone();
 	}
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FString mPackagePath;
+		FName mPackagePath;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FString mAssetType;
+		FName mAssetType;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FString mGuid;
+		FName mGuid;
 	
 };
 
