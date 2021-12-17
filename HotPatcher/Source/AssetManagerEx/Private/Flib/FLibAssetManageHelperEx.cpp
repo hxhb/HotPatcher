@@ -776,8 +776,9 @@ bool UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(const FAssetData& In
 	FAssetDetail AssetDetail;
 	AssetDetail.mAssetType = FName(InAssetData.AssetClass.ToString());
 	FString PackagePath;
-	AssetDetail.mPackagePath = FName(PackagePath);
+	
 	UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InAssetData.PackageName.ToString(), PackagePath);
+	AssetDetail.mPackagePath = FName(PackagePath);
 	UFLibAssetManageHelperEx::GetAssetPackageGUID(InAssetData.PackageName.ToString(), AssetDetail.mGuid);
 
 	OutAssetDetail = AssetDetail;

@@ -48,6 +48,8 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 		GIsCookerLoadingPackage = true;
 		for (const auto& Asset : Assets)
 		{
+			if(!Asset.mPackagePath.IsNone())
+				continue;
 			FSoftObjectPath AssetSoftPath;
 			AssetSoftPath.SetPath(Asset.mPackagePath);
 			UPackage* Package = LoadPackage(nullptr, *Asset.mPackagePath.ToString(), LOAD_None);;
