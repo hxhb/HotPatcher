@@ -4,6 +4,7 @@
 #include "Commandlets/CommandletHelper.hpp"
 #include "Cooker/MultiCooker/FMultiCookerSettings.h"
 #include "Cooker/MultiCooker/MultiCookerProxy.h"
+#include "HAL/ExceptionHandling.h"
 #include "Misc/FileHelper.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Paths.h"
@@ -52,7 +53,7 @@ int32 UHotMultiCookerCommandlet::Main(const FString& Params)
 		UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportMultiCookerSetting,FinalConfig);
 		UE_LOG(LogHotMultiCookerCommandlet, Display, TEXT("%s"), *FinalConfig);
 	}
-	
+	GAlwaysReportCrash = false;
 	UMultiCookerProxy* MultiCookerProxy = NewObject<UMultiCookerProxy>();
 	MultiCookerProxy->AddToRoot();
 	MultiCookerProxy->SetProxySettings(ExportMultiCookerSetting.Get());

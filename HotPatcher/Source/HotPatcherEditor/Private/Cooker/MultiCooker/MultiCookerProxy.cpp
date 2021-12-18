@@ -156,21 +156,33 @@ bool UMultiCookerProxy::MergeShader()
 
 		TArray<FName> ShaderFormats;
 		TargetPlatform->GetAllTargetedShaderFormats(ShaderFormats);
-		
-		auto SerializeDefaultShaderLib = [&]()
+
+		// clear old shader dir
 		{
-			for(auto& ShaderFormat:ShaderFormats)
+			for(const auto& ShaderFormat:ShaderFormats)
 			{
-				FString ShaderIntermediateLocation = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("Shaders") / ShaderFormat.ToString());
-				FString DefaultShaderArchiveLocation = UFlibShaderPatchHelper::GetCodeArchiveFilename(ShaderIntermediateLocation,FApp::GetProjectName(),ShaderFormat);
-				FString DefaultShaderInfoLocation = UFlibShaderPatchHelper::GetShaderAssetInfoFilename(ShaderIntermediateLocation,FApp::GetProjectName(),ShaderFormat);
-				const FString RootMetaDataPath = ShaderIntermediateLocation / TEXT("Metadata") / TEXT("PipelineCaches");
-				UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,TArray<FName>{ShaderFormat},ShaderIntermediateLocation,RootMetaDataPath,true);
+				FString Path = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Shaders"),ShaderFormat.ToString()));
+				if(FPaths::DirectoryExists(Path))
+				{
+					UE_LOG(LogHotPatcher,Display,TEXT("delete shader dir %s"),*Path);
+					IFileManager::Get().DeleteDirectory(*Path,true);
+				}
 			}
-		};
+		}
 		
+		// auto SerializeDefaultShaderLib = [&]()
+		// {
+		// 	for(auto& ShaderFormat:ShaderFormats)
+		// 	{
+		// 		FString ShaderIntermediateLocation = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("Shaders") / ShaderFormat.ToString());
+		// 		FString DefaultShaderArchiveLocation = UFlibShaderPatchHelper::GetCodeArchiveFilename(ShaderIntermediateLocation,FApp::GetProjectName(),ShaderFormat);
+		// 		FString DefaultShaderInfoLocation = UFlibShaderPatchHelper::GetShaderAssetInfoFilename(ShaderIntermediateLocation,FApp::GetProjectName(),ShaderFormat);
+		// 		const FString RootMetaDataPath = ShaderIntermediateLocation / TEXT("Metadata") / TEXT("PipelineCaches");
+		// 		UFlibShaderCodeLibraryHelper::SaveShaderLibrary(TargetPlatform,TArray<FName>{ShaderFormat},ShaderIntermediateLocation,RootMetaDataPath,true);
+		// 	}
+		// };
 		// load default shader Saved\Shaders\PCD3D_SM5\ShaderArchive-Blank426-PCD3D_SM5.ushaderbytecode
-		SerializeDefaultShaderLib();
+		// SerializeDefaultShaderLib();
 		
 		for(const auto& Cooker:CookerConfigMap)
 		{
@@ -331,8 +343,16 @@ void UMultiCookerProxy::PostMission()
 				IFileManager::Get().Copy(*DefaultShaderLib,*ProjectShaderLib,true,true);
 			}
 			
+			FString AssetInfoJsonDir = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("Shaders"),PlatformName);
+			TArray<FString > AssetInfoJsonFiles;
+			IFileManager::Get().FindFiles(AssetInfoJsonFiles,*AssetInfoJsonDir,TEXT("assetinfo.json"));
+			for(const auto& AssetInfoJsonFileName:AssetInfoJsonFiles)
+			{
+				FString SrcFile = FPaths::Combine(AssetInfoJsonDir,AssetInfoJsonFileName);
+				FString CopyTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked"),PlatformName,FApp::GetProjectName(),TEXT("Content"),AssetInfoJsonFileName));
+				IFileManager::Get().Copy(*CopyTo,*SrcFile,true,true);
+			}
 		}
-		
 	}
 }
 

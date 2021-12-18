@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "Cooker/MultiCooker/FMultiCookerSettings.h"
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
+#include "HAL/ExceptionHandling.h"
 #include "Misc/FileHelper.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Paths.h"
@@ -52,7 +53,8 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 	}
 	
 	UE_LOG(LogHotSingleCookerCommandlet, Display, TEXT("Cooker %s Id %d,Assets Num %d"), *ExportSingleCookerSetting->MissionName,ExportSingleCookerSetting->MissionID,ExportSingleCookerSetting->CookAssets.Num());
-	
+
+	GAlwaysReportCrash = false;
 	USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
 	SingleCookerProxy->AddToRoot();
 	SingleCookerProxy->SetProxySettings(ExportSingleCookerSetting.Get());
