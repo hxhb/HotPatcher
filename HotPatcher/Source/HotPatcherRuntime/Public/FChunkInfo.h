@@ -196,7 +196,7 @@ public:
 
 		for (const auto& AssetDetail : OutAssetDetails)
 		{
-			AllUnselectedAssets.AddUnique(AssetDetail.mPackagePath);
+			AllUnselectedAssets.AddUnique(AssetDetail.PackagePath);
 		}
 		return AllUnselectedAssets;
 	}
@@ -256,7 +256,7 @@ public:
 		for(const auto& AssetDetail:GetAssetsDetail())
 		{
 			FPatcherSpecifyAsset Asset;
-			Asset.Asset.SetPath(AssetDetail.mPackagePath);
+			Asset.Asset.SetPath(AssetDetail.PackagePath);
 			DefaultChunk.IncludeSpecifyAssets.AddUnique(Asset);
 		}
 		for(const auto& ExFiles:AllPlatformExFiles)

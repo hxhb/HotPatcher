@@ -183,5 +183,6 @@ public:
 		const TArray<FString>& InIgnoreOptions);
 
 	static FProjectPackageAssetCollection ImportProjectSettingsPackages();
-	
+
+	static void WaitForAsyncFileWrites();
 };

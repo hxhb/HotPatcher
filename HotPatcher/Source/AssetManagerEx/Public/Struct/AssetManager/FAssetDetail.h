@@ -15,26 +15,26 @@ struct ASSETMANAGEREX_API FAssetDetail
 	FAssetDetail(const FAssetDetail&) = default;
 	FAssetDetail& operator=(const FAssetDetail&) = default;
 	FORCEINLINE FAssetDetail(const FString& InAssetPackagePath, const FString& InAsetType,const FString& InGuid)
-		: mPackagePath(InAssetPackagePath), mAssetType(InAsetType), mGuid(InGuid){}
+		: PackagePath(InAssetPackagePath), AssetType(InAsetType), Guid(InGuid){}
 
 	bool operator==(const FAssetDetail& InRight)const
 	{
-		bool bSamePackageName = mPackagePath == InRight.mPackagePath;
-		bool bSameAssetType = mAssetType == InRight.mAssetType;
-		bool bSameGUID = mGuid == InRight.mGuid;
+		bool bSamePackageName = PackagePath == InRight.PackagePath;
+		bool bSameAssetType = AssetType == InRight.AssetType;
+		bool bSameGUID = Guid == InRight.Guid;
 
 		return bSamePackageName && bSameAssetType && bSameGUID;
 	}
 	FORCEINLINE bool IsValid()const
 	{
-		return !mPackagePath.IsNone() && !mAssetType.IsNone() && !mGuid.IsNone();
+		return !PackagePath.IsNone() && !AssetType.IsNone() && !Guid.IsNone();
 	}
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FName mPackagePath;
+		FName PackagePath;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FName mAssetType;
+		FName AssetType;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FName mGuid;
+		FName Guid;
 	
 };
 

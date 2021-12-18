@@ -288,7 +288,7 @@ namespace PatchWorker
 			for(const auto& AssetDetail:DiffAssetDetails)
 			{
 				FPatcherSpecifyAsset CurrentAsets;
-				CurrentAsets.Asset = FSoftObjectPath(AssetDetail.mPackagePath);
+				CurrentAsets.Asset = FSoftObjectPath(AssetDetail.PackagePath);
 				CurrentAsets.bAnalysisAssetDependencies = true;
 				CurrentAsets.AssetRegistryDependencyTypes.AddUnique(EAssetRegistryDependencyTypeEx::Packages);
 				DiffChunk.IncludeSpecifyAssets.Add(CurrentAsets);
@@ -447,7 +447,7 @@ namespace PatchWorker
 						FString Path;
 						FString Filename;
 						FString Extension;
-						FPaths::Split(Asset.mPackagePath.ToString(), Path, Filename, Extension);
+						FPaths::Split(Asset.PackagePath.ToString(), Path, Filename, Extension);
 						DependenciesFilters.AddUnique(Path);
 					}
 				};
@@ -634,7 +634,7 @@ namespace PatchWorker
 							for (auto Asset : Assets)
 							{
 								FSoftObjectPath ObjectPath;
-								ObjectPath.SetPath(Asset.mPackagePath);
+								ObjectPath.SetPath(Asset.PackagePath);
 								TArray<FAssetData> AssetData;
 								UFLibAssetManageHelperEx::GetSpecifyAssetData(ObjectPath.GetLongPackageName(),AssetData,true);
 								AssetsData.Append(AssetData);
@@ -750,7 +750,7 @@ namespace PatchWorker
 		for(const auto& Asset:AllAssets)
 		{
 			FString LongPackageName;
-			if(UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath.ToString(),LongPackageName))
+			if(UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.PackagePath.ToString(),LongPackageName))
 			{
 				PackageAssetsSet.Add(*LongPackageName);
 			}

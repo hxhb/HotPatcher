@@ -11,7 +11,22 @@ void USingleCookerProxy::Init()
 {
 	InitPlatformPackageContexts();
 	InitShaderLibConllections();
-	// PackageTracker = MakeShareable(new FPackageTracker(TSet<FName>{}));
+	// cook package tracker
+	{
+		FMultiCookerAssets MultiCookerAssets;
+		FString Path = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("../"),FString::Printf(TEXT("%s_MultiCookerAssets.json"),FApp::GetProjectName()));
+		if(FPaths::FileExists(Path))
+		{
+			FString Content;
+			FFileHelper::LoadFileToString(Content,*Path);
+			UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(Content,MultiCookerAssets);
+			for(const auto& Asset:MultiCookerAssets.Assets)
+			{
+				PackagePathSet.PackagePaths.Add(Asset.PackagePath);
+			}
+			PackageTracker = MakeShareable(new FPackageTracker(PackagePathSet.PackagePaths));
+		}
+	}
 	Super::Init();
 }
 
@@ -19,6 +34,15 @@ void USingleCookerProxy::Shutdown()
 {
 	ShutdowShaderLibCollections();
 	
+	if(PackageTracker)
+	{
+		FPackagePathSet AdditionalPackageSet;
+		AdditionalPackageSet.PackagePaths.Append(PackageTracker->GetPendingPackageSet());
+		FString OutString;
+		UFlibPatchParserHelper::TSerializeStructAsJsonString(AdditionalPackageSet,OutString);
+
+		FFileHelper::SaveStringToFile(OutString,*FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),GetSettingObject()->MissionName,TEXT("AdditionalPackageSet.json")));
+	}
 	Super::Shutdown();
 }
 
@@ -48,11 +72,13 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 		GIsCookerLoadingPackage = true;
 		for (const auto& Asset : Assets)
 		{
-			if(!Asset.mPackagePath.IsNone())
+			if(Asset.PackagePath.IsNone())
 				continue;
 			FSoftObjectPath AssetSoftPath;
-			AssetSoftPath.SetPath(Asset.mPackagePath);
-			UPackage* Package = LoadPackage(nullptr, *Asset.mPackagePath.ToString(), LOAD_None);;
+			AssetSoftPath.SetPath(Asset.PackagePath);
+			// PackagePathSet.PackagePaths.Add(Asset.PackagePath);
+			
+			UPackage* Package = LoadPackage(nullptr, *Asset.PackagePath.ToString(), LOAD_None);;
 			SoftObjectPaths.AddUnique(AssetSoftPath);
 			AllObjects.AddUnique(Package);
 
@@ -72,6 +98,7 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 		}
 		GIsCookerLoadingPackage = false;
 	}
+
 	TArray<UObject*> ObjectsToWaitForCookedPlatformData;
 	ObjectsToWaitForCookedPlatformData.Reserve(65536);
 	
@@ -141,17 +168,23 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 	,GetPlatformSavePackageContextsRaw()
 #endif
 	);
+	
+	UFlibHotPatcherEditorHelper::WaitForAsyncFileWrites();
 
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("Waiting Cook Assets Compilation"),FColor::Red);
-		UE_LOG(LogHotPatcher, Display, TEXT("Waiting Cook Assets Compilation..."));
-		WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("SingleCooker_WaitCookComplete"),[this]()
-			{
-				UPackage::WaitForAsyncFileWrites();
-			}));
-		WaitThreadWorker->Execute();
-		WaitThreadWorker->Join();
+		TArray<FSoftObjectPath> AdditionAssets;
+		for(FName PackagePath:PackageTracker->GetPendingPackageSet())
+		{
+			AdditionAssets.Emplace(PackagePath);
+		}
+		UFlibHotPatcherEditorHelper::CookAssets(AdditionAssets,GetSettingObject()->MultiCookerSettings.CookTargetPlatforms,PackageSavedCallback,CookFailedCallback
+		#if WITH_PACKAGE_CONTEXT
+		,GetPlatformSavePackageContextsRaw()
+		#endif
+		);
 	}
+	
+	UFlibHotPatcherEditorHelper::WaitForAsyncFileWrites();
 	
 	// save bulk data manifest
 	for(auto& Platform:GetSettingObject()->MultiCookerSettings.CookTargetPlatforms)
@@ -163,6 +196,7 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 #endif
 		}
 	}
+
 }
 
 void USingleCookerProxy::InitShaderLibConllections()

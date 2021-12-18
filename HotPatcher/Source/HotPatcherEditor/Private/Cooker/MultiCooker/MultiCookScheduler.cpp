@@ -25,7 +25,7 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 	
 	for(const auto& AssetDetail:AllDetails)
 	{
-		TArray<FAssetDetail>& Assets = TypeAssetDetails.FindOrAdd(AssetDetail.mAssetType);
+		TArray<FAssetDetail>& Assets = TypeAssetDetails.FindOrAdd(AssetDetail.AssetType);
 		Assets.AddUnique(AssetDetail);
 	}
 	for(auto& TypeAssets:TypeAssetDetails)

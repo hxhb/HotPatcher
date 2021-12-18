@@ -663,8 +663,8 @@ TArray<FAssetDetail> UFlibPatchParserHelper::ParserExFilesInfoAsAssetDetailInfo(
 	for (auto& File : InExFiles)
 	{
 		FAssetDetail CurrentFile;
-		CurrentFile.mAssetType = TEXT("ExternalFile");
-		CurrentFile.mPackagePath = FName(File.MountPath);
+		CurrentFile.AssetType = TEXT("ExternalFile");
+		CurrentFile.PackagePath = FName(File.MountPath);
 		//CurrentFile.mGuid = File.GetFileHash();
 		result.Add(CurrentFile);
 	}
@@ -1312,7 +1312,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 				bool bIsIgnore = false;
 				for (const auto& IgnoreFilter : ExportVersion.IgnoreFilter)
 				{
-					if (AssetDetail.mPackagePath.ToString().StartsWith(IgnoreFilter))
+					if (AssetDetail.PackagePath.ToString().StartsWith(IgnoreFilter))
 					{
 						bIsIgnore = true;
 						break;
@@ -1452,7 +1452,7 @@ FHotPatcherAssetDependency UFlibPatchParserHelper::GetAssetRelatedInfo(
 	FHotPatcherAssetDependency Dependency;
 	Dependency.Asset = InAsset;
 	FString LongPackageName;
-	if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.mPackagePath.ToString(), LongPackageName))
+	if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.PackagePath.ToString(), LongPackageName))
 	{
 		TArray<EAssetRegistryDependencyType::Type> SearchAssetDepTypes;
 		for (const auto& Type : AssetRegistryDependencyTypes)
@@ -1685,7 +1685,7 @@ TArray<FAssetDetail> UFlibPatchParserHelper::GetAllAssetDependencyDetails(
 	{
 		for(const auto& AssetRederenceItem:AssetDependency.AssetReference)
 		{
-			if(AssetType.IsEmpty() || AssetRederenceItem.mAssetType == AssetTypeName)
+			if(AssetType.IsEmpty() || AssetRederenceItem.AssetType == AssetTypeName)
 			{
 				TArray<FAssetDetail> CurrentAssetDepAssetList = UFlibPatchParserHelper::GetAllAssetDependencyDetails(AssetRederenceItem,Types,AssetType,ScanedCaches);
 				CurrentAssetDepAssetList.AddUnique(AssetRederenceItem);

@@ -29,17 +29,32 @@ struct FPackageTracker : public FUObjectArray::FUObjectCreateListener, public FU
 		GUObjectArray.RemoveUObjectCreateListener(this);
 	}
 
+	FName LongPackageNameToPackagePath(FString InLongPackageName)
+	{
+		FString AssetName;
+		{
+			int32 FoundIndex;
+			InLongPackageName.FindLastChar('/', FoundIndex);
+			if (FoundIndex != INDEX_NONE)
+			{
+				AssetName = UKismetStringLibrary::GetSubstring(InLongPackageName, FoundIndex + 1, InLongPackageName.Len() - FoundIndex);
+			}
+		}
+		FString OutPackagePath = InLongPackageName + TEXT(".") + AssetName;
+		return FName(OutPackagePath);
+	}
 	virtual void NotifyUObjectCreated(const class UObjectBase *Object, int32 Index) override
 	{
 		if (Object->GetClass() == UPackage::StaticClass())
 		{
 			auto Package = const_cast<UPackage*>(static_cast<const UPackage*>(Object));
 
-			if (Package->GetOuter() == nullptr)
+			if (Package->GetOuter() == nullptr && !Package->GetFName().IsNone())
 			{
-				if(!ExisitAssets.Contains(Package->GetFName()))
+				FName AssetPathName = LongPackageNameToPackagePath(Package->GetName());
+				if(!ExisitAssets.Contains(AssetPathName))
 				{
-					PackagesPendingSave.Add(Package);
+					PackagesPendingSave.Add(AssetPathName);
 				}
 			}
 		}
@@ -51,9 +66,13 @@ struct FPackageTracker : public FUObjectArray::FUObjectCreateListener, public FU
 		{
 			auto Package = const_cast<UPackage*>(static_cast<const UPackage*>(Object));
 
-			if(PackagesPendingSave.Contains(Package))
+			if(!Package->GetFName().IsNone())
 			{
-				PackagesPendingSave.Remove(Package);
+				FName AssetPathName = LongPackageNameToPackagePath(Package->GetName());
+				if(PackagesPendingSave.Contains(AssetPathName))
+				{
+					PackagesPendingSave.Remove(AssetPathName);
+				}
 			}
 		}
 	}
@@ -64,9 +83,9 @@ struct FPackageTracker : public FUObjectArray::FUObjectCreateListener, public FU
 		GUObjectArray.RemoveUObjectCreateListener(this);
 	}
 public:
-	typedef TSet<UPackage*> PendingPackageSet;
-	const PendingPackageSet& GetPendingPackageSet()const {return PackagesPendingSave; }
+	// typedef TSet<UPackage*> PendingPackageSet;
+	const TSet<FName>& GetPendingPackageSet()const {return PackagesPendingSave; }
 protected:
-	PendingPackageSet		PackagesPendingSave;
+	TSet<FName>		PackagesPendingSave;
 	TSet<FName>& ExisitAssets;
 };

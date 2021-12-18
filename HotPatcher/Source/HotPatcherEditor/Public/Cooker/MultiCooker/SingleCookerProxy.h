@@ -15,6 +15,14 @@
 #include "Widgets/Text/SMultiLineEditableText.h"
 #include "SingleCookerProxy.generated.h"
 
+USTRUCT()
+struct FPackagePathSet
+{
+    GENERATED_BODY()
+
+    UPROPERTY()
+    TSet<FName> PackagePaths;
+};
 
 
 UCLASS()
@@ -62,4 +70,5 @@ private:
     TSharedPtr<FThreadWorker> WaitThreadWorker;
     TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
     TSharedPtr<struct FCookShaderCollectionProxy> PlatformCookShaderCollection;
+    FPackagePathSet PackagePathSet;
 };

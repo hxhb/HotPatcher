@@ -272,7 +272,7 @@ void UMultiCookerProxy::RecookFailedAssets()
 			UE_LOG(LogHotPatcher,Error,TEXT("\nCook Platfotm %s Assets Failed:\n"),*PlatformName);
 			for(const auto& Asset:CookerFailedCollection.CookFailedAssets.Find(TargetPlatform)->Assets)
 			{
-				UE_LOG(LogHotPatcher,Error,TEXT("\t%s\n"),*Asset.mPackagePath.ToString());
+				UE_LOG(LogHotPatcher,Error,TEXT("\t%s\n"),*Asset.PackagePath.ToString());
 			}
 		}
 	}
@@ -482,6 +482,8 @@ bool UMultiCookerProxy::DoExport()
 			ProcWorker->Execute();
 		}
 	}
+
+	
 	if(GetSettingObject()->IsSaveConfig())
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("Save Multi Cooker Config"),FColor::Red);
