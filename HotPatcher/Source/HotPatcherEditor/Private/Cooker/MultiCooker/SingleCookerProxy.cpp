@@ -171,6 +171,7 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 	
 	UFlibHotPatcherEditorHelper::WaitForAsyncFileWrites();
 
+	if(PackageTracker)
 	{
 		TArray<FSoftObjectPath> AdditionAssets;
 		for(FName PackagePath:PackageTracker->GetPendingPackageSet())
