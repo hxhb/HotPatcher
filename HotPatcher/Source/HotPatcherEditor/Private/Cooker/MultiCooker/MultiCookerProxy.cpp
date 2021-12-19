@@ -324,6 +324,8 @@ void UMultiCookerProxy::PostMission()
 		ITargetPlatform* PlatformIns = UFlibHotPatcherEditorHelper::GetTargetPlatformByName(PlatformName);
 		if(PlatformIns)
 		{
+			FString CookedMetadataDir = FPaths::Combine(PlatformDefaultCookedDir,FApp::GetProjectName(),TEXT("Metadata/ShaderLibrarySource"));
+			FPaths::NormalizeFilename(CookedMetadataDir);
 			PlatformIns->GetAllTargetedShaderFormats(ShaderFormats);
 			for(const auto& ShaderFormat:ShaderFormats)
 			{
@@ -335,12 +337,16 @@ void UMultiCookerProxy::PostMission()
 				// copy ShaderArchive-Global-PCD3D_SM5.ushaderbytecode to Saved/Cooked/WindowsNoEditor/PROJECT_NAME/Content
 				FString GlobalShaderLib = UFlibShaderPatchHelper::GetCodeArchiveFilename(PlatformShaderDir,TEXT("Global"),ShaderFormat);
 				FString DefaultGlobalShaderLib = UFlibShaderPatchHelper::GetCodeArchiveFilename(DefaultCookedProjectContentDir ,TEXT("Global"),ShaderFormat);
+				FString MetadateGlobalShaderLib = UFlibShaderPatchHelper::GetCodeArchiveFilename(CookedMetadataDir,TEXT("Global"),ShaderFormat);
 				IFileManager::Get().Copy(*DefaultGlobalShaderLib,*GlobalShaderLib,true,true);
-
+				IFileManager::Get().Copy(*MetadateGlobalShaderLib,*GlobalShaderLib,true,true);
+				
 				// copy ShaderArchive-PROJECT_NAME-PCD3D_SM5.ushaderbytecode to Saved/Cooked/WindowsNoEditor/PROJECT_NAME/Content
 				FString ProjectShaderLib = UFlibShaderPatchHelper::GetCodeArchiveFilename(PlatformShaderDir,FApp::GetProjectName(),ShaderFormat);
 				FString DefaultShaderLib = UFlibShaderPatchHelper::GetCodeArchiveFilename(DefaultCookedProjectContentDir,FApp::GetProjectName(),ShaderFormat);
+				FString MetadateProjectShaderLib = UFlibShaderPatchHelper::GetCodeArchiveFilename(CookedMetadataDir,FApp::GetProjectName(),ShaderFormat);
 				IFileManager::Get().Copy(*DefaultShaderLib,*ProjectShaderLib,true,true);
+				IFileManager::Get().Copy(*MetadateProjectShaderLib,*ProjectShaderLib,true,true);
 			}
 			
 			FString AssetInfoJsonDir = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("Shaders"),PlatformName);
