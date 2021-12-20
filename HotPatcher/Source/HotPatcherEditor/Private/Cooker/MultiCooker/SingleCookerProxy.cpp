@@ -9,7 +9,9 @@
 
 void USingleCookerProxy::Init()
 {
+#if WITH_PACKAGE_CONTEXT
 	InitPlatformPackageContexts();
+#endif
 	InitShaderLibConllections();
 	// cook package tracker
 	{

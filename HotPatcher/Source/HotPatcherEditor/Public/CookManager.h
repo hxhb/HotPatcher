@@ -1,5 +1,6 @@
 #pragma once
 
+#include "UObject/SavePackage.h"
 #include "CoreMinimal.h"
 #include "AssetData.h"
 #include "ETargetPlatform.h"
@@ -42,8 +43,10 @@ struct HOTPATCHEREDITOR_API FCookManager
 	int32 AddCookMission(const FCookMission& InCookMission,TFunction<void(TArray<FCookManager::FCookPackageInfo>)> FaildPackagesCallback = [](TArray<FCookManager::FCookPackageInfo>){});
 	FORCEINLINE TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>>& GetPlatformSavePackageContexts() {return PlatformSavePackageContexts;}
 protected:
+#if WITH_PACKAGE_CONTEXT
 	TMap<FString, FSavePackageContext*> GetSavePackageContextByPlatforms(const TArray<ETargetPlatform>& Platforms);
-	
+#endif
+
 private:
 	TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
 	TArray<FCookMission> CookMissions;

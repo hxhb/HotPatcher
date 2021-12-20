@@ -137,7 +137,9 @@ namespace PatchWorker
 
 bool UPatcherProxy::DoExport()
 {
+#if WITH_PACKAGE_CONTEXT
 	InitPlatformPackageContexts();
+#endif
 	UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(true);
 	GetSettingObject()->Init();
 	

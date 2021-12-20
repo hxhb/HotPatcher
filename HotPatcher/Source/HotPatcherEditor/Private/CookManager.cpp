@@ -63,8 +63,10 @@ int32 FCookManager::AddCookMission(const FCookMission& InCookMission,TFunction<v
 			Package.AssetData.GetPackage(),
 			Package.GetCookPlatformsString(),
 			[](const FString&){},
-			[](const FString&,ETargetPlatform){},
-			GetSavePackageContextByPlatforms(Package.CookPlatforms)
+			[](const FString&,ETargetPlatform){}
+#if WITH_PACKAGE_CONTEXT
+			,GetSavePackageContextByPlatforms(Package.CookPlatforms)
+#endif
 			)
 			)
 		{
@@ -101,7 +103,7 @@ int32 FCookManager::AddCookMission(const FCookMission& InCookMission,TFunction<v
 	}
 	return index;
 }
-
+#if WITH_PACKAGE_CONTEXT
 TMap<FString, FSavePackageContext*> FCookManager::GetSavePackageContextByPlatforms(const TArray<ETargetPlatform>& Platforms)
 {
 	TMap<FString, FSavePackageContext*> PlatformSavePackageContext;
@@ -127,7 +129,7 @@ TMap<FString, FSavePackageContext*> FCookManager::GetSavePackageContextByPlatfor
 	}
 	return PlatformSavePackageContext;
 }
-
+#endif
 
 TArray<ETargetPlatform> FCookManager::FCookPackageInfo::GetCookPlatforms() const
 {
