@@ -355,20 +355,23 @@ void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
 	Settings->ReloadConfig();
 	for (auto Platform : GetAllCookPlatforms())
 	{
+		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+		if(PlatformName.StartsWith(TEXT("All")))
+			continue;
 		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
 			continue;
-		FToolMenuEntry& PlatformEntry = Section.AddSubMenu(FName(*UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
+		FToolMenuEntry& PlatformEntry = Section.AddSubMenu(FName(*PlatformName),
 			FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))),
 			FText(),
 			FNewMenuDelegate::CreateLambda([=](FMenuBuilder& SubMenuBuilder){
 				SubMenuBuilder.AddMenuEntry(
 					LOCTEXT("AnalysisDependencies", "AnalysisDependencies"), FText(),
-					FSlateIcon(),
-					FUIAction(FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookAndPakPlatform, Platform,true)), NAME_None, EUserInterfaceActionType::ToggleButton);
+					FSlateIcon(FEditorStyle::GetStyleSetName(),TEXT("WorldBrowser.LevelsMenuBrush")),
+					FUIAction(FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookAndPakPlatform, Platform,true)), NAME_None, EUserInterfaceActionType::Button);
 				SubMenuBuilder.AddMenuEntry(
 					LOCTEXT("NoDependencies", "NoDependencies"), FText(),
-					FSlateIcon(),
-					FUIAction(FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookAndPakPlatform, Platform,false)), NAME_None, EUserInterfaceActionType::ToggleButton);
+					FSlateIcon(FEditorStyle::GetStyleSetName(),TEXT("Level.SaveIcon16x")),
+					FUIAction(FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookAndPakPlatform, Platform,false)), NAME_None, EUserInterfaceActionType::Button);
 			}
 			));
 		

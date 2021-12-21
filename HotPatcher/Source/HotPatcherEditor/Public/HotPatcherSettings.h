@@ -62,8 +62,8 @@ FORCEINLINE UHotPatcherSettings::UHotPatcherSettings(const FObjectInitializer& I
     TempPatchSetting.bStorageNewRelease = false;
     TempPatchSetting.bStoragePakFileInfo = false;
     TempPatchSetting.bCookPatchAssets = true;
-    TempPatchSetting.CookShaderOptions.bSharedShaderLibrary = true;
-    TempPatchSetting.CookShaderOptions.bNativeShader = true;
+    TempPatchSetting.CookShaderOptions.bSharedShaderLibrary = false;
+    TempPatchSetting.CookShaderOptions.bNativeShader = false;
     TempPatchSetting.EncryptSettings.bUseDefaultCryptoIni = true;
     TempPatchSetting.SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/Paks");
 }
