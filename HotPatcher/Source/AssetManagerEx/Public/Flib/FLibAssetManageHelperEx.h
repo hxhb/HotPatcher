@@ -188,7 +188,7 @@ public:
 	 * FilterPackageName format is /Game or /Game/TEST
 	 */
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-	static bool GetAssetsList(	const TArray<FString>& InFilterPackagePaths,
+	static bool GetAssetsList(	const TArray<FString>& InFilterPaths,
 			const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
 			TArray<FAssetDetail>& OutAssetList,
 			TMap<FString, FAssetDependenciesInfo>& ScanedCaches,
@@ -197,7 +197,10 @@ public:
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetRedirectorList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutRedirector);
 		static bool GetSpecifyAssetData(const FString& InLongPackageName, TArray<FAssetData>& OutAssetData,bool InIncludeOnlyOnDiskAssets);
-		static bool GetAssetsData(const TArray<FString>& InFilterPackagePaths, TArray<FAssetData>& OutAssetData, bool bIncludeOnlyOnDiskAssets = true);
+		// /Game all uasset/umap files
+		static TArray<FString> GetAssetsByFilter(const FString& InFilter);
+		static bool GetAssetsData(const TArray<FString>& InFilterPaths, TArray<FAssetData>& OutAssetData, bool bIncludeOnlyOnDiskAssets = true);
+		static bool GetAssetsDataByDisk(const TArray<FString>& InFilterPaths, TArray<FAssetData>& OutAssetData);
 		static bool GetSingleAssetsData(const FString& InPackagePath, FAssetData& OutAssetData);
 		static bool GetClassStringFromFAssetData(const FAssetData& InAssetData,FString& OutAssetType);
 		static bool ConvFAssetDataToFAssetDetail(const FAssetData& InAssetData,FAssetDetail& OutAssetDetail);

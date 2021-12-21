@@ -20,6 +20,7 @@
 #include "Engine/EngineTypes.h"
 #include "JsonObjectConverter.h"
 #include "AssetRegistryState.h"
+#include "CreatePatch/TimeRecorder.h"
 #include "Misc/Paths.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "Serialization/LargeMemoryReader.h"
@@ -1259,6 +1260,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	bool bInAnalysisFilterDepend
 )
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportReleaseVersionInfo"),FColor::Red);
 	FHotPatcherVersion ExportVersion;
 	{
 		ExportVersion.VersionId = InVersionId;
@@ -1292,6 +1294,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	{
 		TArray<FAssetDetail> AllNeedPakRefAssets;
 		{
+			SCOPED_NAMED_EVENT_TCHAR(TEXT("parser asset by filter"),FColor::Red);
 			TArray<FAssetDetail> AllAssets;
 			UFLibAssetManageHelperEx::GetAssetsList(ExportVersion.IncludeFilter, AssetRegistryDependencyTypes, AllAssets,ScanedCaches);
 			if (InIncludeHasRefAssetsOnly)
@@ -1307,6 +1310,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 		// 剔除ignore filter中指定的资源
 		if (ExportVersion.IgnoreFilter.Num() > 0)
 		{
+			SCOPED_NAMED_EVENT_TCHAR(TEXT("remove asset by IgnoreFilter"),FColor::Red);
 			for (const auto& AssetDetail : AllNeedPakRefAssets)
 			{
 				bool bIsIgnore = false;
@@ -1333,6 +1337,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 
 	auto AnalysisAssetDependency = [&ScanedCaches](const TArray<FAssetDetail>& InAssetDetail, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, bool bInAnalysisDepend)->FAssetDependenciesInfo
 	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportReleaseVersionInfo AnalysisAssetDependency"),FColor::Red);
 		FAssetDependenciesInfo RetAssetDepend;
 		if (InAssetDetail.Num())
 		{
@@ -1355,6 +1360,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	// Specify Assets
 	FAssetDependenciesInfo SpecifyAssetDependencies;
 	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportReleaseVersionInfo parser Specify Assets"),FColor::Red);
 		for (const auto& SpecifyAsset : InIncludeSpecifyAsset)
 		{
 			FString AssetLongPackageName = SpecifyAsset.Asset.GetLongPackageName();
@@ -1377,13 +1383,16 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	// 	}
 	// }
 
-	for(const auto& PlatformExInfo:AddToPlatformExFiles)
 	{
-		FPlatformExternFiles PlatformFileInfo = UFlibPatchParserHelper::GetAllExFilesByPlatform(PlatformExInfo);
-		FPlatformExternAssets PlatformExternAssets;
-		PlatformExternAssets.TargetPlatform = PlatformExInfo.TargetPlatform;
-		PlatformExternAssets.AddExternFileToPak = PlatformFileInfo.ExternFiles;
-		ExportVersion.PlatformAssets.Add(PlatformExInfo.TargetPlatform,PlatformExternAssets);
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportReleaseVersionInfo parser external files"),FColor::Red);
+		for(const auto& PlatformExInfo:AddToPlatformExFiles)
+		{
+			FPlatformExternFiles PlatformFileInfo = UFlibPatchParserHelper::GetAllExFilesByPlatform(PlatformExInfo);
+			FPlatformExternAssets PlatformExternAssets;
+			PlatformExternAssets.TargetPlatform = PlatformExInfo.TargetPlatform;
+			PlatformExternAssets.AddExternFileToPak = PlatformFileInfo.ExternFiles;
+			ExportVersion.PlatformAssets.Add(PlatformExInfo.TargetPlatform,PlatformExternAssets);
+		}
 	}
 	return ExportVersion;
 }

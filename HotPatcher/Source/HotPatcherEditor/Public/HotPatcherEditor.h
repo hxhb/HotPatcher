@@ -72,7 +72,7 @@ public:
 #endif
 	TArray<ETargetPlatform> GetAllCookPlatforms()const;
 	void OnCookPlatform(ETargetPlatform Platform);
-	void OnCookAndPakPlatform(ETargetPlatform Platform);
+	void OnCookAndPakPlatform(ETargetPlatform Platform, bool bAnalysicDependencies);
 	void CookAndPakByAssetsAndFilters(TArray<FPatcherSpecifyAsset> IncludeAssets,TArray<FDirectoryPath> IncludePaths,TArray<ETargetPlatform> Platforms,bool bForceStandalone = false);
 	void OnPakExternal(FPakExternalInfo Config);
 	void OnPakPreset(FExportPatchSettings Config);

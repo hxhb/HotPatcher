@@ -357,15 +357,30 @@ void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
 	{
 		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
 			continue;
-		Section.AddMenuEntry(
-            FName(*UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
-            FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))),
-            FText(),
-            FSlateIcon(),
-            FUIAction(
-                FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookAndPakPlatform, Platform)
-            )
-        );
+		FToolMenuEntry& PlatformEntry = Section.AddSubMenu(FName(*UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
+			FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))),
+			FText(),
+			FNewMenuDelegate::CreateLambda([=](FMenuBuilder& SubMenuBuilder){
+				SubMenuBuilder.AddMenuEntry(
+					LOCTEXT("AnalysisDependencies", "AnalysisDependencies"), FText(),
+					FSlateIcon(),
+					FUIAction(FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookAndPakPlatform, Platform,true)), NAME_None, EUserInterfaceActionType::ToggleButton);
+				SubMenuBuilder.AddMenuEntry(
+					LOCTEXT("NoDependencies", "NoDependencies"), FText(),
+					FSlateIcon(),
+					FUIAction(FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookAndPakPlatform, Platform,false)), NAME_None, EUserInterfaceActionType::ToggleButton);
+			}
+			));
+		
+		// Section.AddMenuEntry(
+  //           FName(*UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
+  //           FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))),
+  //           FText(),
+  //           FSlateIcon(),
+  //           FUIAction(
+  //               FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookAndPakPlatform, Platform)
+  //           )
+        //);
 	}
 }
 
@@ -579,7 +594,7 @@ void FHotPatcherEditorModule::CookAndPakByAssetsAndFilters(TArray<FPatcherSpecif
 	}
 }
 
-void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
+void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform, bool bAnalysicDependencies)
 {
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
 	Settings->ReloadConfig();
@@ -604,7 +619,7 @@ void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform)
 	{
 		FPatcherSpecifyAsset CurrentAsset;
 		CurrentAsset.Asset = Asset.ToSoftObjectPath();
-		CurrentAsset.bAnalysisAssetDependencies = false;
+		CurrentAsset.bAnalysisAssetDependencies = bAnalysicDependencies;
 		CurrentAsset.AssetRegistryDependencyTypes.AddUnique(EAssetRegistryDependencyTypeEx::Packages);
 		IncludeAssets.AddUnique(CurrentAsset);
 	}
