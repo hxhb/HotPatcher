@@ -132,4 +132,6 @@ public:
 		bool bBackupMetadata = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bBackupMetadata"))
 		TArray<ETargetPlatform> BackupMetadataPlatforms;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Advanced")
+	bool bNoShaderCompile = true;
 };
