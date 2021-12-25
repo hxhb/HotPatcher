@@ -1462,17 +1462,14 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 	FProjectPackageAssetCollection result;
 	TArray<FDirectoryPath>& DirectoryPaths = result.DirectoryPaths;
 	TArray<FSoftObjectPath>& SoftObjectPaths = result.NeedCookPackages;
-
 	
 	auto AddSoftObjectPath = [&](const FString& LongPackageName)
 	{
-		FString LongPackagePath = UFLibAssetManageHelperEx::LongPackageNameToPackagePath(LongPackageName);
 		bool bSuccessed = false;
 		PRAGMA_DISABLE_DEPRECATION_WARNINGS
-		if (!LongPackagePath.IsEmpty() && UAssetManager::Get().VerifyCanCookPackage(FName(*LongPackageName),false)
-			&& !FPackageName::IsScriptPackage(LongPackagePath) && !FPackageName::IsMemoryPackage(LongPackagePath))
+		if (UFlibHotPatcherEditorHelper::IsCanCookPackage(LongPackageName))
 		{
-			
+			FString LongPackagePath = UFLibAssetManageHelperEx::LongPackageNameToPackagePath(LongPackageName);
 			FSoftObjectPath CurrentObject(LongPackagePath);
 			if(FPackageName::DoesPackageExist(LongPackagePath) && CurrentObject.IsValid()) 
 			{
@@ -1792,4 +1789,19 @@ void UFlibHotPatcherEditorHelper::WaitForAsyncFileWrites()
 		}));
 	WaitThreadWorker->Execute();
 	WaitThreadWorker->Join();
+}
+
+bool UFlibHotPatcherEditorHelper::IsCanCookPackage(const FString& LongPackageName)
+{
+	bool bResult = false;
+	
+	FString LongPackagePath = UFLibAssetManageHelperEx::LongPackageNameToPackagePath(LongPackageName);
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
+	if (!LongPackagePath.IsEmpty() && UAssetManager::Get().VerifyCanCookPackage(FName(*LongPackageName),false)
+		&& !FPackageName::IsScriptPackage(LongPackagePath) && !FPackageName::IsMemoryPackage(LongPackagePath))
+	{
+		bResult = true;
+	}
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
+	return bResult;
 }

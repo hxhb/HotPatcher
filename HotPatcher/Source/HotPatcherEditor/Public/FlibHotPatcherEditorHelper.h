@@ -185,4 +185,6 @@ public:
 	static FProjectPackageAssetCollection ImportProjectSettingsPackages();
 
 	static void WaitForAsyncFileWrites();
+
+	static bool IsCanCookPackage(const FString& LongPackageName);
 };
