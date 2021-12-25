@@ -178,22 +178,29 @@ bool UFLibAssetManageHelperEx::GetAssetPackageGUID(const FString& InPackagePath,
 		bResult = true;
 	}
 #else
-	FSoftObjectPath CurrentPackagePath = InPackagePath;
-	UPackage* Package = Cast<UPackage>(CurrentPackagePath.TryLoad());
-	if(Package)
+	FString FileName;
+	// FSoftObjectPath CurrentPackagePath = InPackagePath;
+	// UObject* Object = CurrentPackagePath.TryLoad();
+	// UPackage* Package = NULL;
+	// if(Object)
+	// {
+	// 	Package = Object->GetPackage();
+	// }
+	// if(Package)
+	// {
+	// 	FString LongPackageName = CurrentPackagePath.GetLongPackageName();
+	// 	FString Extersion = Package->ContainsMap() ? FPackageName::GetMapPackageExtension() : FPackageName::GetAssetPackageExtension();
+	// 	bool bCovStatus = FPackageName::TryConvertLongPackageNameToFilename(LongPackageName,FileName,Extersion);
+	// }
+	
+	FileName = UFLibAssetManageHelperEx::ConvVirtualToAbsPath(InPackagePath);
+
+	if(!FileName.IsEmpty() && FPaths::FileExists(FileName))
 	{
-		FString LongPackageName = CurrentPackagePath.GetLongPackageName();
-		FString Extersion = Package->ContainsMap() ? FPackageName::GetMapPackageExtension() : FPackageName::GetAssetPackageExtension();
-		FString FileName;
-		bool bCovStatus = FPackageName::TryConvertLongPackageNameToFilename(LongPackageName,FileName,Extersion);
-    
-		if(bCovStatus && FPaths::FileExists(FileName))
-		{
-			FMD5Hash FileMD5Hash = FMD5Hash::HashFile(*FileName);
-			FString HashValue = LexToString(FileMD5Hash);
-			OutGUID = FName(HashValue);
-			bResult = true;
-		}
+		FMD5Hash FileMD5Hash = FMD5Hash::HashFile(*FileName);
+		FString HashValue = LexToString(FileMD5Hash);
+		OutGUID = FName(HashValue);
+		bResult = true;
 	}
 #endif
 	return bResult;
@@ -853,7 +860,7 @@ bool UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(const FAssetData& In
 	
 	UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(InAssetData.PackageName.ToString(), PackagePath);
 	AssetDetail.PackagePath = FName(PackagePath);
-	UFLibAssetManageHelperEx::GetAssetPackageGUID(InAssetData.PackageName.ToString(), AssetDetail.Guid);
+	UFLibAssetManageHelperEx::GetAssetPackageGUID(PackagePath, AssetDetail.Guid);
 
 	OutAssetDetail = AssetDetail;
 	return !OutAssetDetail.AssetType.IsNone() && !OutAssetDetail.AssetType.IsNone() && !OutAssetDetail.AssetType.IsNone();
