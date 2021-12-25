@@ -58,6 +58,11 @@ public class AssetManagerEx : ModuleRules
 			}
 			);
 
+		bool bCustomAssetGUID = false;
+		if(bCustomAssetGUID)
+		{
+			PublicDefinitions.Add("CUSTOM_ASSET_GUID");	
+		}
         OptimizeCode = CodeOptimization.InShippingBuildsOnly;
     }
 }

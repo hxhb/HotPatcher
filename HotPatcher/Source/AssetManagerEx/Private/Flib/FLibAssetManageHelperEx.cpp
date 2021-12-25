@@ -168,7 +168,8 @@ bool UFLibAssetManageHelperEx::GetAssetPackageGUID(const FString& InPackagePath,
 	bool bResult = false;
 	if (InPackagePath.IsEmpty())
 		return false;
-
+	
+#ifndef CUSTOM_ASSET_GUID
 	const FAssetPackageData* AssetPackageData = UFLibAssetManageHelperEx::GetPackageDataByPackagePath(InPackagePath);
 	if (AssetPackageData != NULL)
 	{
@@ -176,6 +177,25 @@ bool UFLibAssetManageHelperEx::GetAssetPackageGUID(const FString& InPackagePath,
 		OutGUID = FName(AssetGuid.ToString());
 		bResult = true;
 	}
+#else
+	FSoftObjectPath CurrentPackagePath = InPackagePath;
+	UPackage* Package = Cast<UPackage>(CurrentPackagePath.TryLoad());
+	if(Package)
+	{
+		FString LongPackageName = CurrentPackagePath.GetLongPackageName();
+		FString Extersion = Package->ContainsMap() ? FPackageName::GetMapPackageExtension() : FPackageName::GetAssetPackageExtension();
+		FString FileName;
+		bool bCovStatus = FPackageName::TryConvertLongPackageNameToFilename(LongPackageName,FileName,Extersion);
+    
+		if(bCovStatus && FPaths::FileExists(FileName))
+		{
+			FMD5Hash FileMD5Hash = FMD5Hash::HashFile(*FileName);
+			FString HashValue = LexToString(FileMD5Hash);
+			OutGUID = FName(HashValue);
+			bResult = true;
+		}
+	}
+#endif
 	return bResult;
 }
 
