@@ -24,7 +24,7 @@
 
 bool GScanCacheOptimize = true;
 
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
+// PRAGMA_DISABLE_DEPRECATION_WARNINGS
 FString UFLibAssetManageHelperEx::ConvVirtualToAbsPath(const FString& InPackagePath)
 {
 	FString ResultAbsPath;
@@ -89,7 +89,7 @@ FString UFLibAssetManageHelperEx::GetLongPackageNameFromPackagePath(const FStrin
 	int32 FoundIndex;
 	if (InPackagePath.FindLastChar('.', FoundIndex))
 	{
-		FStringAssetReference InAssetRef = InPackagePath;
+		FSoftObjectPath InAssetRef = InPackagePath;
 		return InAssetRef.GetLongPackageName();
 	}
 	else
@@ -100,7 +100,7 @@ FString UFLibAssetManageHelperEx::GetLongPackageNameFromPackagePath(const FStrin
 
 FString UFLibAssetManageHelperEx::GetAssetNameFromPackagePath(const FString& InPackagePath)
 {
-	FStringAssetReference InAssetRef = InPackagePath;
+	FSoftObjectPath InAssetRef = InPackagePath;
 	return InAssetRef.GetAssetName();
 }
 
@@ -262,7 +262,7 @@ void UFLibAssetManageHelperEx::GetAssetDependencies(
 	if (InLongPackageName.IsEmpty())
 		return;
 
-	FStringAssetReference AssetRef = FStringAssetReference(InLongPackageName);
+	FSoftObjectPath AssetRef = FSoftObjectPath(InLongPackageName);
 	if (!AssetRef.IsValid())
 		return;
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
@@ -1040,7 +1040,13 @@ const FAssetPackageData* UFLibAssetManageHelperEx::GetPackageDataByPackagePath(c
 
 		if(FPackageName::DoesPackageExist(TargetLongPackageName))
 		{
-			FAssetPackageData* AssetPackageData = const_cast<FAssetPackageData*>(AssetRegistryModule.Get().GetAssetPackageData(*TargetLongPackageName));
+#if ENGINE_MAJOR_VERSION > 4
+			TOptional<FAssetPackageData> PackageDataOpt = AssetRegistryModule.Get().GetAssetPackageDataCopy(*TargetLongPackageName);
+			const FAssetPackageData* PackageData = &PackageDataOpt.GetValue();
+#else
+			const FAssetPackageData* PackageData = AssetRegistryModule.Get().GetAssetPackageData(*TargetLongPackageName);
+#endif
+			FAssetPackageData* AssetPackageData = const_cast<FAssetPackageData*>(PackageData);
 			if (AssetPackageData != nullptr)
 			{
 				return AssetPackageData;
@@ -1730,4 +1736,4 @@ void UFLibAssetManageHelperEx::GetAssetDataInPaths(const TArray<FString>& Paths,
 	AssetRegistryModule.Get().GetAssets(Filter, OutAssetData);
 }
 
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
+// PRAGMA_ENABLE_DEPRECATION_WARNINGS

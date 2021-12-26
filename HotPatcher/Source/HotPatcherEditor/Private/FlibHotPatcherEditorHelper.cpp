@@ -274,15 +274,15 @@ FString UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(const FString& BaseDir
 	FString PackageFilename;
 	FString StandardFilename;
 	FName StandardFileFName = NAME_None;
-	PRAGMA_DISABLE_DEPRECATION_WARNINGS
-	if (FPackageName::DoesPackageExist(PacakgeName, NULL, &Filename, false))
+	// PRAGMA_DISABLE_DEPRECATION_WARNINGS
+	if (FPackageName::DoesPackageExist(PacakgeName, &Filename, false))
 	{
 		StandardFilename = PackageFilename = FPaths::ConvertRelativePathToFull(Filename);
 
 		FPaths::MakeStandardFilename(StandardFilename);
 		StandardFileFName = FName(*StandardFilename);
 	}
-	PRAGMA_ENABLE_DEPRECATION_WARNINGS
+	// PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	FString SandboxFilename = ConvertToFullSandboxPath(*StandardFilename, true);
 	// UE_LOG(LogHotPatcherEditorHelper,Log,TEXT("Filename:%s,PackageFileName:%s,StandardFileName:%s"),*Filename,*PackageFilename,*StandardFilename);
 	
@@ -575,9 +575,9 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 				ICookedPackageWriter::FCommitPackageInfo Info;
 				Info.bSucceeded = bSuccessed;
 				Info.PackageName = Package->GetFName();
-				PRAGMA_DISABLE_DEPRECATION_WARNINGS
-				Info.PackageGuid = AssetPackageData ? AssetPackageData->PackageGuid : FGuid::NewGuid();
-				PRAGMA_ENABLE_DEPRECATION_WARNINGS
+				// PRAGMA_DISABLE_DEPRECATION_WARNINGS
+				Info.PackageGuid = FGuid::NewGuid(); //AssetPackageData ? AssetPackageData->PackageGuid : FGuid::NewGuid();
+				// PRAGMA_ENABLE_DEPRECATION_WARNINGS
 				// Info.Attachments.Add({ "Dependencies", TargetDomainDependencies });
 				// TODO: Reenable BuildDefinitionList once FCbPackage support for empty FCbObjects is in
 				//Info.Attachments.Add({ "BuildDefinitionList", BuildDefinitionList });
@@ -1466,7 +1466,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 	auto AddSoftObjectPath = [&](const FString& LongPackageName)
 	{
 		bool bSuccessed = false;
-		PRAGMA_DISABLE_DEPRECATION_WARNINGS
+		// PRAGMA_DISABLE_DEPRECATION_WARNINGS
 		if (UFlibHotPatcherEditorHelper::IsCanCookPackage(LongPackageName))
 		{
 			FString LongPackagePath = UFLibAssetManageHelperEx::LongPackageNameToPackagePath(LongPackageName);
@@ -1478,7 +1478,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 				bSuccessed = true;
 			}
 		}
-		PRAGMA_ENABLE_DEPRECATION_WARNINGS
+		// PRAGMA_ENABLE_DEPRECATION_WARNINGS
 		if(!bSuccessed)
 		{
 			// UE_LOG(LogHotPatcherEditorHelper,Warning,TEXT("Import Project Setting Package: %s is inavlid!"),*LongPackagePath);
