@@ -26,6 +26,8 @@ namespace ReleaseWorker
 	bool SaveReleaseAssetDependencyWorker(FHotPatcherReleaseContext& Context);
 	// backup Metadata
 	bool BakcupMetadataWorker(FHotPatcherReleaseContext& Context);
+	// backup config
+	bool BakcupProjectConfigWorker(FHotPatcherReleaseContext& Context);
 	// display release summary
 	bool ReleaseSummaryWorker(FHotPatcherReleaseContext& Context);
 
@@ -49,6 +51,7 @@ bool UReleaseProxy::DoExport()
 	ReleaseWorker.Emplace(&::ReleaseWorker::SaveReleaseConfigWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::SaveReleaseAssetDependencyWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::BakcupMetadataWorker);
+	ReleaseWorker.Emplace(&::ReleaseWorker::BakcupProjectConfigWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::ReleaseSummaryWorker);
 	ReleaseContext.UnrealPakSlowTask->init((float)ReleaseWorker.Num());
 
@@ -228,6 +231,22 @@ namespace ReleaseWorker
 		}
 		return true;
 	}
+	// backup project config
+	bool BakcupProjectConfigWorker(FHotPatcherReleaseContext& Context)
+	{
+		TimeRecorder TR(TEXT("Backup Config"));
+		FText DiaLogMsg = FText::Format(NSLOCTEXT("BackupProjectConfig", "BackupProjectConfig", "Backup Release {0} Configs."), FText::FromString(Context.GetSettingObject()->GetVersionId()));
+		Context.UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
+		if(Context.GetSettingObject()->IsBackupProjectConfig())
+		{
+			UFlibHotPatcherEditorHelper::BackupProjectConfigDir(
+				FPaths::ProjectDir(),
+				FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.GetSettingObject()->GetVersionId())
+			);
+		}
+		return true;
+	}
+
 	bool ReleaseSummaryWorker(FHotPatcherReleaseContext& Context)
 	{
 		FText DiaLogMsg = NSLOCTEXT("ReleaseSummaryWorker", "ReleaseSummaryWorker", "Release Summary.");

@@ -80,6 +80,7 @@ public:
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 	FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
 	FORCEINLINE bool IsBackupMetadata()const {return bBackupMetadata;}
+	FORCEINLINE bool IsBackupProjectConfig()const {return bBackupProjectConfig;}
 	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
 	FORCEINLINE TArray<FPatcherSpecifyAsset> GetSpecifyAssets()const { return IncludeSpecifyAssets; }
 	FORCEINLINE bool AddSpecifyAsset(FPatcherSpecifyAsset const& InAsset){ return IncludeSpecifyAssets.AddUnique(InAsset) != INDEX_NONE; }
@@ -130,6 +131,8 @@ public:
 		bool bStorageAssetDependencies = false;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "SaveTo")
 		bool bBackupMetadata = false;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "SaveTo")
+		bool bBackupProjectConfig = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bBackupMetadata"))
 		TArray<ETargetPlatform> BackupMetadataPlatforms;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Advanced")

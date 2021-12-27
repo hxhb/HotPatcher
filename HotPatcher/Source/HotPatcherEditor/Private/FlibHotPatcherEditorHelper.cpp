@@ -275,7 +275,7 @@ FString UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(const FString& BaseDir
 	FString StandardFilename;
 	FName StandardFileFName = NAME_None;
 	// PRAGMA_DISABLE_DEPRECATION_WARNINGS
-	if (FPackageName::DoesPackageExist(PacakgeName, &Filename, false))
+	if (FPackageName::DoesPackageExist(PacakgeName,NULL, &Filename, false))
 	{
 		StandardFilename = PackageFilename = FPaths::ConvertRelativePathToFull(Filename);
 
@@ -771,6 +771,18 @@ void UFlibHotPatcherEditorHelper::BackupMetadataDir(const FString& ProjectDir, c
 			PlatformFile.CreateDirectoryTree(*OutMetadir);
 			PlatformFile.CopyDirectoryTree(*OutMetadir,*MetadataDir,true);
 		}
+	}
+}
+
+void UFlibHotPatcherEditorHelper::BackupProjectConfigDir(const FString& ProjectDir,const FString& OutDir)
+{
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	FString ConfigDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectConfigDir());
+	FString OutConfigdir = FPaths::Combine(OutDir,TEXT("Config"));
+	if(FPaths::DirectoryExists(ConfigDir))
+	{
+		PlatformFile.CreateDirectoryTree(*OutConfigdir);
+		PlatformFile.CopyDirectoryTree(*OutConfigdir,*ConfigDir,true);
 	}
 }
 
