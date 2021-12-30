@@ -25,7 +25,7 @@ namespace CommandletHelper
 	static TArray<FString> ParserPatchConfigByCommandline(const FString& Commandline,const FString& Token)
 	{
 		TArray<FString> result;
-		TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Commandline);
+		TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Commandline);
 		if(KeyValues.Find(Token))
 		{
 			FString AddPakListInfo = *KeyValues.Find(Token);
@@ -42,7 +42,7 @@ namespace CommandletHelper
 		for(auto& PlatformName:ParserPatchConfigByCommandline(Commandline,ADD_PATCH_PLATFORMS))
 		{
 			ETargetPlatform Platform = ETargetPlatform::None;
-			UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
+			THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
 			if(Platform != ETargetPlatform::None)
 			{
 				result.AddUnique(Platform);

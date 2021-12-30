@@ -11,9 +11,9 @@ bool UShaderPatchProxy::DoExport()
 	bool bStatus = false;
 	for(const auto& PlatformConfig:GetSettingObject()->ShaderPatchConfigs)
 	{
-		UE_LOG(LogHotShaderPatchCommandlet,Display,TEXT("Generating Shader Patch for %s"),*UFlibPatchParserHelper::GetEnumNameByValue(PlatformConfig.Platform));
+		UE_LOG(LogHotShaderPatchCommandlet,Display,TEXT("Generating Shader Patch for %s"),*THotPatcherTemplateHelper::GetEnumNameByValue(PlatformConfig.Platform));
 		
-		FString SaveToPath = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),GetSettingObject()->VersionID,UFlibPatchParserHelper::GetEnumNameByValue(PlatformConfig.Platform));
+		FString SaveToPath = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),GetSettingObject()->VersionID,THotPatcherTemplateHelper::GetEnumNameByValue(PlatformConfig.Platform));
 		bool bCreateStatus = UFlibShaderPatchHelper::CreateShaderCodePatch(
         UFlibShaderPatchHelper::ConvDirectoryPathToStr(PlatformConfig.OldMetadataDir),
         FPaths::ConvertRelativePathToFull(PlatformConfig.NewMetadataDir.Path),
@@ -81,7 +81,7 @@ bool UShaderPatchProxy::DoExport()
 	if(GetSettingObject()->bStorageConfig)
 	{
 		FString SerializedJsonStr;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetSettingObject(),SerializedJsonStr);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*GetSettingObject(),SerializedJsonStr);
 
 		FString SaveToPath = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),GetSettingObject()->VersionID,GetSettingObject()->VersionID).Append(TEXT(".json"));
 		

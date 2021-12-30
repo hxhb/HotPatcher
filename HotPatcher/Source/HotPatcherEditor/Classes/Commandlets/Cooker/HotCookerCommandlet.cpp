@@ -39,10 +39,10 @@ int32 UHotCookerCommandlet::Main(const FString& Params)
 	{
 		UE_LOG(LogHotCookerCommandlet, Display, TEXT("%s"), *JsonContent);
 		FCookerConfig CookConfig;
-		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,CookConfig);
+		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,CookConfig);
 		
-		TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
-		UFlibPatchParserHelper::ReplaceProperty(CookConfig, KeyValues);
+		TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Params);
+		THotPatcherTemplateHelper::ReplaceProperty(CookConfig, KeyValues);
 		
 		if (CookConfig.bCookAllMap)
 		{

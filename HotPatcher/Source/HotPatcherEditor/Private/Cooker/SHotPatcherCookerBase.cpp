@@ -5,7 +5,7 @@
 #include "FlibHotPatcherEditorHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "FHotPatcherVersion.h"
-#include "FLibAssetManageHelperEx.h"
+#include "FlibAssetManageHelper.h"
 #include "FPakFileInfo.h"
 // engine header
 #include "IDesktopPlatform.h"

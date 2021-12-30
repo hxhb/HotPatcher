@@ -41,16 +41,16 @@ int32 UHotMultiCookerCommandlet::Main(const FString& Params)
 	FString JsonContent;
 	if (FPaths::FileExists(config_path) && FFileHelper::LoadFileToString(JsonContent, *config_path))
 	{
-		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportMultiCookerSetting);
+		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportMultiCookerSetting);
 	}
 
-	TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
-	UFlibPatchParserHelper::ReplaceProperty(*ExportMultiCookerSetting, KeyValues);
+	TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Params);
+	THotPatcherTemplateHelper::ReplaceProperty(*ExportMultiCookerSetting, KeyValues);
 
 	if(ExportMultiCookerSetting->bDisplayMissionConfig)
 	{
 		FString FinalConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportMultiCookerSetting,FinalConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*ExportMultiCookerSetting,FinalConfig);
 		UE_LOG(LogHotMultiCookerCommandlet, Display, TEXT("%s"), *FinalConfig);
 	}
 	GAlwaysReportCrash = false;

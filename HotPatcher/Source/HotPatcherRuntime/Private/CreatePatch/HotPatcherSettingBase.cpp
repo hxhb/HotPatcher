@@ -23,15 +23,10 @@ TArray<FPlatformExternAssets>& FHotPatcherSettingBase::GetAddExternAssetsToPlatf
 	static TArray<FPlatformExternAssets> PlatformNoAssets;
 	return PlatformNoAssets;
 };
-TMap<FString,FAssetDependenciesInfo>& FHotPatcherSettingBase::GetAssetsDependenciesScanedCaches()
-{
-	return ScanedCaches;
-}
+
 
 void FHotPatcherSettingBase::Init()
 {
-	GetAssetsDependenciesScanedCaches().Empty();
-    GScanCacheOptimize = IsScanCacheOptimize();
     UE_LOG(LogHotPatcher, Display, TEXT("Enable Scan Cache Optimize %s"),GScanCacheOptimize?TEXT("true"):TEXT("false"));
     	
 }

@@ -136,7 +136,7 @@ public:
 	* 0x1 Add
 	* 0x2 Modyfy
 	*/
-	static void AnalysisWidgetTree(FPatchVersionDiff& PakDiff,int32 flags = 0x1|0x2);
+	static void AnalysisWidgetTree(const FExportPatchSettings& PatchSetting,const FHotPatcherVersion& Base, const FHotPatcherVersion& New,FPatchVersionDiff& PakDiff,int32 flags = 0x1|0x2);
 	
 	static FPatchVersionDiff DiffPatchVersionWithPatchSetting(const struct FExportPatchSettings& PatchSetting, const FHotPatcherVersion& Base, const FHotPatcherVersion& New);
 
@@ -144,15 +144,15 @@ public:
 	static FChunkAssetDescribe DiffChunkWithPatchSetting(
 		const struct FExportPatchSettings& PatchSetting,
 		const FChunkInfo& CurrentVersionChunk,
-		const FChunkInfo& TotalChunk,
-		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+		const FChunkInfo& TotalChunk
+		//,TMap<FString, FAssetDependenciesInfo>& ScanedCaches
 	);
 	static FChunkAssetDescribe DiffChunkByBaseVersionWithPatchSetting(
 		const struct FExportPatchSettings& PatchSetting,
 		const FChunkInfo& CurrentVersionChunk,
 		const FChunkInfo& TotalChunk,
-		const FHotPatcherVersion& BaseVersion,
-		TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+		const FHotPatcherVersion& BaseVersion
+		//,TMap<FString, FAssetDependenciesInfo>& ScanedCaches
 	);
 	
 	static bool SerializeAssetRegistryByDetails(const FString& PlatformName,const TArray<FAssetDetail>& AssetDetails,const FString& SavePath);

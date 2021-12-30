@@ -3,7 +3,7 @@
 // #include "HotPatcherPrivatePCH.h"
 #include "CreatePatch/SHotPatcherExportRelease.h"
 #include "FlibHotPatcherEditorHelper.h"
-#include "FLibAssetManageHelperEx.h"
+#include "FlibAssetManageHelper.h"
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "FHotPatcherVersion.h"
 #include "HotPatcherLog.h"
@@ -72,10 +72,10 @@ void SHotPatcherExportRelease::ImportConfig()
 	FString LoadFile = Files[0];
 
 	FString JsonContent;
-	if (UFLibAssetManageHelperEx::LoadFileToString(LoadFile, JsonContent))
+	if (UFlibAssetManageHelper::LoadFileToString(LoadFile, JsonContent))
 	{
 		// UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
-		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportReleaseSettings);
+		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportReleaseSettings);
 		SettingsView->GetDetailsView()->ForceRefresh();
 	}
 }
@@ -93,7 +93,7 @@ void SHotPatcherExportRelease::ExportConfig()const
 	{
 
 		FString SerializedJsonStr;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportReleaseSettings,SerializedJsonStr);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*ExportReleaseSettings,SerializedJsonStr);
 		if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile))
 		{
 			FText Msg = LOCTEXT("SavedPatchConfigMas", "Successd to Export the Patch Config.");
@@ -106,8 +106,8 @@ void SHotPatcherExportRelease::ResetConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Release Clear Config"));
 	FString DefaultSettingJson;
-	UFlibPatchParserHelper::TSerializeStructAsJsonString(*FExportReleaseSettings::Get(),DefaultSettingJson);
-	UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*ExportReleaseSettings);
+	THotPatcherTemplateHelper::TSerializeStructAsJsonString(*FExportReleaseSettings::Get(),DefaultSettingJson);
+	THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*ExportReleaseSettings);
 	SettingsView->GetDetailsView()->ForceRefresh();
 }
 void SHotPatcherExportRelease::DoGenerate()
@@ -177,7 +177,7 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 	else
 	{
 		FString CurrentConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("ReleaseConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString NoShaderCompile = GetConfigSettings()->bNoShaderCompile ? TEXT("-NoShaderCompile") : TEXT("");

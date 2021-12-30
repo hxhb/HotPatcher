@@ -47,14 +47,14 @@ int32 UHotPluginCommandlet::Main(const FString& Params)
 		}
 		
 		TSharedPtr<FGameFeaturePackagerSettings> PluginPackagerSetting = MakeShareable(new FGameFeaturePackagerSettings);
-		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*PluginPackagerSetting);
+		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*PluginPackagerSetting);
 		
-		TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
-		UFlibPatchParserHelper::ReplaceProperty(*PluginPackagerSetting, KeyValues);
+		TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Params);
+		THotPatcherTemplateHelper::ReplaceProperty(*PluginPackagerSetting, KeyValues);
 		TArray<ETargetPlatform> AddPlatforms = CommandletHelper::ParserPatchPlatforms(Params);
 
 		FString FinalConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*PluginPackagerSetting,FinalConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*PluginPackagerSetting,FinalConfig);
 		UE_LOG(LogHotPluginCommandlet, Display, TEXT("%s"), *FinalConfig);
 
 		

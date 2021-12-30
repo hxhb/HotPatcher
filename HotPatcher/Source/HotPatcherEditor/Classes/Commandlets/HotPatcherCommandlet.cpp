@@ -41,10 +41,10 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 		}
 		
 		TSharedPtr<FExportPatchSettings> ExportPatchSetting = MakeShareable(new FExportPatchSettings);
-		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportPatchSetting);
+		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportPatchSetting);
 		
-		TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
-		UFlibPatchParserHelper::ReplaceProperty(*ExportPatchSetting, KeyValues);
+		TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Params);
+		THotPatcherTemplateHelper::ReplaceProperty(*ExportPatchSetting, KeyValues);
 		TArray<ETargetPlatform> AddPlatforms = CommandletHelper::ParserPatchPlatforms(Params);
 	
 		if(AddPlatforms.Num())
@@ -58,7 +58,7 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 		ExportPatchSetting->AssetIgnoreFilters.Append(CommandletHelper::ParserPatchFilters(Params,TEXT("AssetIgnoreFilters")));
 		
 		FString FinalConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportPatchSetting,FinalConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*ExportPatchSetting,FinalConfig);
 		UE_LOG(LogHotPatcherCommandlet, Display, TEXT("%s"), *FinalConfig);
 
 		

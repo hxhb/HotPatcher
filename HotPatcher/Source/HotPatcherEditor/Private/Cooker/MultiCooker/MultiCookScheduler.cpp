@@ -30,7 +30,7 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 	}
 	for(auto& TypeAssets:TypeAssetDetails)
 	{
-		TArray<TArray<FAssetDetail>> SplitInfo = UFlibPatchParserHelper::SplitArray(TypeAssets.Value,ProcessNumber);
+		TArray<TArray<FAssetDetail>> SplitInfo = THotPatcherTemplateHelper::SplitArray(TypeAssets.Value,ProcessNumber);
 		for(int32 index = 0;index < ProcessNumber;++index)
 		{
 			AllSingleCookerSettings[index].CookAssets.Append(SplitInfo[index]);

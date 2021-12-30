@@ -57,6 +57,4 @@ private:
     TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
 private:
     TSharedPtr<FHotPatcherPatchContext> PatchContext;
-
-    TSharedPtr<FThreadWorker> ThreadWorker;
 };

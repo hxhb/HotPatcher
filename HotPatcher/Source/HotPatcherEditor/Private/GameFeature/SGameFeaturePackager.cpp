@@ -61,10 +61,10 @@ void SHotPatcherGameFeaturePackager::ImportConfig()
 	FString LoadFile = Files[0];
 
 	FString JsonContent;
-	if (UFLibAssetManageHelperEx::LoadFileToString(LoadFile, JsonContent))
+	if (UFlibAssetManageHelper::LoadFileToString(LoadFile, JsonContent))
 	{
 		// UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
-		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*GameFeaturePackagerSettings);
+		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*GameFeaturePackagerSettings);
 		SettingsView->GetDetailsView()->ForceRefresh();
 	}
 }
@@ -81,7 +81,7 @@ void SHotPatcherGameFeaturePackager::ExportConfig() const
 	if (GameFeaturePackagerSettings)
 	{
 			FString SerializedJsonStr;
-			UFlibPatchParserHelper::TSerializeStructAsJsonString(*GameFeaturePackagerSettings,SerializedJsonStr);
+			THotPatcherTemplateHelper::TSerializeStructAsJsonString(*GameFeaturePackagerSettings,SerializedJsonStr);
 			if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile))
 			{
 				FText Msg = LOCTEXT("SavedGameFeatureConfigMas", "Successd to Export the Game Feature Packager Config.");
@@ -94,8 +94,8 @@ void SHotPatcherGameFeaturePackager::ResetConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Reset Game Feature Packager Config"));
 	FString DefaultSettingJson;
-	UFlibPatchParserHelper::TSerializeStructAsJsonString(*FGameFeaturePackagerSettings::Get(),DefaultSettingJson);
-	UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*GameFeaturePackagerSettings);
+	THotPatcherTemplateHelper::TSerializeStructAsJsonString(*FGameFeaturePackagerSettings::Get(),DefaultSettingJson);
+	THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*GameFeaturePackagerSettings);
 	SettingsView->GetDetailsView()->ForceRefresh();
 }
 
@@ -182,7 +182,7 @@ void SHotPatcherGameFeaturePackager::FeaturePackager()
 	else
 	{
 		FString CurrentConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),FString::Printf(TEXT("GameFeatureConfig.json"))));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPlugin -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs());

@@ -9,9 +9,10 @@
 #include "HotPatcherSettingBase.h"
 #include "Misc/ScopedSlowTask.h"
 #include "CreatePatch/ScopedSlowTaskContext.h"
+#include "BaseTypes/FPackageTracker.h"
+
 // engine
 #include "CoreMinimal.h"
-
 #include "TimeRecorder.h"
 #include "Engine/EngineTypes.h"
 #include "HotPatcherContext.generated.h"
@@ -51,6 +52,21 @@ public:
     TSharedPtr<TimeRecorder> TotalTimeRecorder;
 };
 
+struct HOTPATCHERRUNTIME_API FPackageTrackerByDiff : public FPackageTrackerBase
+{
+    FPackageTrackerByDiff(struct FHotPatcherPatchContext& InContext):Context(InContext)
+    {}
+
+    virtual ~FPackageTrackerByDiff(){}
+
+    virtual void OnPackageCreated(UPackage* Package) override;
+    virtual void OnPackageDeleted(UPackage* Package) override{}
+
+    const TMap<FName,FAssetDetail>& GetTrackResult()const { return TrackedAssets; }	
+protected:
+    TMap<FName,FAssetDetail> TrackedAssets;
+    FHotPatcherPatchContext& Context;
+};
 
 
 USTRUCT(BlueprintType)
@@ -98,11 +114,17 @@ struct HOTPATCHERRUNTIME_API FHotPatcherPatchContext:public FHotPatcherContext
     FORCEINLINE uint32 GetPakFileNum()const 
     {
         TArray<FString> Keys;
-        PakFilesInfoMap.GetKeys(Keys);
+        PakFilesInfoMap.PakFilesMap.GetKeys(Keys);
         return Keys.Num();
     }
-    TMap<FString,TArray<FPakFileInfo>> PakFilesInfoMap;
-    
+    FPakFilesMap PakFilesInfoMap;
+
+    void AddExternalFile(const FString& PlatformName,const FString& ChunkName,const FExternFileInfo& AddShaderLib)
+    {
+        GetPatcherDiffInfoByName(PlatformName)->AddExternalFiles.Add(AddShaderLib);
+        GetPatcherChunkInfoByName(PlatformName,ChunkName)->AddExternFileToPak.Add(AddShaderLib);
+    }
+    void AddAsset(const FString ChunkName,const FAssetDetail& AssetDetail);
 };
 
 USTRUCT(BlueprintType)

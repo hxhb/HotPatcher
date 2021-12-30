@@ -5,7 +5,7 @@
 #include "FlibHotPatcherEditorHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "FHotPatcherVersion.h"
-#include "FLibAssetManageHelperEx.h"
+#include "FlibAssetManageHelper.h"
 #include "FPakFileInfo.h"
 // engine header
 #include "IDesktopPlatform.h"
@@ -40,24 +40,7 @@ void SHotPatcherPatchableBase::ImportProjectConfig()
 		GConfig->GetArray(*Section,*Key,result,Ini);
 		return result;
 	};
-	// TArray<FString> AllMaps = GameConingLoader(TEXT("AllMaps"),TEXT("+Map"),DefaultEditorIni);
-	// TArray<FString> AlwayCookMaps = GameConingLoader(TEXT("AlwaysCookMaps"),TEXT("+Map"),DefaultEditorIni);
-	// TArray<FString> AddToPatchMaps;
-	// AddToPatchMaps.Append(AllMaps);
-	// for (const auto& CookMap : AlwayCookMaps)
-	// {
-	// 	AddToPatchMaps.AddUnique(CookMap);
-	// }
-	// GetConfigSettings()->GetIncludeSpecifyAssets().Empty();
-	// for(const auto& Map: AddToPatchMaps)
-	// {
-	// 	FPatcherSpecifyAsset Asset;
-	// 	FString MapPackagePath;
-	// 	UFLibAssetManageHelperEx::ConvLongPackageNameToPackagePath(Map, MapPackagePath);
-	// 	Asset.Asset = FSoftObjectPath(MapPackagePath);
-	// 	Asset.bAnalysisAssetDependencies = true;
-	// 	GetConfigSettings()->GetIncludeSpecifyAssets().Add(Asset);
-	// }
+
 	auto CleanPath= [](const TArray<FString>& List)->TArray<FString>
 	{
 		TArray<FString> result;
@@ -74,23 +57,6 @@ void SHotPatcherPatchableBase::ImportProjectConfig()
 		}
 		return result;
 	};
-	// TArray<FString> AlwayCookDirs = GameConingLoader(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("+DirectoriesToAlwaysCook"),DefaultGameIni);
-	// GetConfigSettings()->GetAssetIncludeFilters().Empty();
-	// for(const auto& AlwayCookDir:CleanPath(AlwayCookDirs))
-	// {
-	// 	FDirectoryPath path;
-	// 	path.Path = AlwayCookDir;
-	// 	GetConfigSettings()->GetAssetIncludeFilters().Add(path);
-	// }
-	//
-	// TArray<FString> NeverCookDirs = GameConingLoader(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("+DirectoriesToNeverCook"),DefaultGameIni);
-	// GetConfigSettings()->GetAssetIgnoreFilters().Empty();
-	// for(const auto& NeverCookDir:CleanPath(NeverCookDirs))
-	// {
-	// 	FDirectoryPath path;
-	// 	path.Path = NeverCookDir;
-	// 	GetConfigSettings()->GetAssetIgnoreFilters().Add(path);
-	// }
 
 	TArray<FString> NotUFSDirsToPackage = GameConingLoader(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("+DirectoriesToAlwaysStageAsUFS"),DefaultGameIni);
 

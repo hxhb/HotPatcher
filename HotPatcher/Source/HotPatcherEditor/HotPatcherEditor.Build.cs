@@ -46,7 +46,6 @@ public class HotPatcherEditor : ModuleRules
                 "RHI",
                 "EngineSettings",
                 "AssetRegistry",
-                "AssetManagerEx",
                 "PakFileUtilities",
                 "HotPatcherRuntime",
                 "BinariesPatchFeature"
@@ -165,14 +164,14 @@ public class HotPatcherEditor : ModuleRules
 		PublicDefinitions.AddRange(new string[]
 		{
 			"ENABLE_UPDATER_CHECK=1",
-			"ENABLE_MULTI_COOKER=1",
+			"ENABLE_MULTI_COOKER=0",
 			"TOOL_NAME=\"HotPatcher\"",
-			"CURRENT_VERSION_ID=73",
+			"CURRENT_VERSION_ID=74",
 			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
 		});
 
 		bool bEnablePackageContext = true;
-		AddPublicDefinitions("WITH_PACKAGE_CONTEXT", (Version.MajorVersion > 4 || Version.MinorVersion > 24) && bEnablePackageContext);
+		AddPublicDefinitions("WITH_PACKAGE_CONTEXT", (Version.MajorVersion > 4 || Version.MinorVersion > 23) && bEnablePackageContext);
 		if (Version.MajorVersion > 4 || Version.MajorVersion > 26)
 		{
 			PublicDependencyModuleNames.AddRange(new string[]

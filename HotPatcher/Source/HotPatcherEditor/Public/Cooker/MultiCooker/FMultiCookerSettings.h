@@ -91,7 +91,10 @@ public:
 	bool bSerializeAssetRegistry;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	// FAssetRegistryOptions SerializeAssetRegistryOptions;
-	// 
+	//
+	// track load asset when cooking
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bPackageTracker = true;
 	// support UE4.26 later
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	FIoStoreSettings IoStoreSettings;
@@ -105,7 +108,8 @@ public:
 	bool bProfilingPerSingleCooker = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
 	bool bDisplayMissionConfig = false;
-	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
+	bool bSkipCook = false;
 };
 
 

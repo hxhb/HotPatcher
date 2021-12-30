@@ -1,7 +1,7 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
 #include "SHotPatcherCookSpecifyCookFilter.h"
-#include "FLibAssetManageHelperEx.h"
+#include "FlibAssetManageHelper.h"
 #include "SProjectCookMapListRow.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
@@ -101,7 +101,7 @@ TArray<FString> SHotPatcherCookSpecifyCookFilter::GetAlwayCookAbsDirectory()
 	for (const auto& AlwayCookRelativeDir : GetAlwayCookDirectory())
 	{
 		FString AbsPath;
-		if (UFLibAssetManageHelperEx::ConvRelativeDirToAbsDir(AlwayCookRelativeDir.Path, AbsPath))
+		if (UFlibAssetManageHelper::ConvRelativeDirToAbsDir(AlwayCookRelativeDir.Path, AbsPath))
 		{
 			AlwayCookDirAbsPathList.AddUnique(AbsPath);
 		}

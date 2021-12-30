@@ -3,7 +3,7 @@
 // #include "HotPatcherPrivatePCH.h"
 #include "SHotPatcherMultiCookerPage.h"
 #include "FlibHotPatcherEditorHelper.h"
-#include "FLibAssetManageHelperEx.h"
+#include "FlibAssetManageHelper.h"
 #include "HotPatcherLog.h"
 #include "HotPatcherEditor.h"
 #include "Cooker/MultiCooker/FMultiCookerSettings.h"
@@ -71,10 +71,10 @@ void SHotPatcherMultiCookerPage::ImportConfig()
 	FString LoadFile = Files[0];
 
 	FString JsonContent;
-	if (UFLibAssetManageHelperEx::LoadFileToString(LoadFile, JsonContent))
+	if (UFlibAssetManageHelper::LoadFileToString(LoadFile, JsonContent))
 	{
 		// UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
-		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*CookerSettings);
+		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*CookerSettings);
 		SettingsView->GetDetailsView()->ForceRefresh();
 	}
 }
@@ -92,7 +92,7 @@ void SHotPatcherMultiCookerPage::ExportConfig()const
 	{
 
 		FString SerializedJsonStr;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*CookerSettings,SerializedJsonStr);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*CookerSettings,SerializedJsonStr);
 		if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile))
 		{
 			FText Msg = LOCTEXT("SavedPatchConfigMas", "Successd to Export the Patch Config.");
@@ -105,8 +105,8 @@ void SHotPatcherMultiCookerPage::ResetConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Release Clear Config"));
 	FString DefaultSettingJson;
-	UFlibPatchParserHelper::TSerializeStructAsJsonString(*FMultiCookerSettings::Get(),DefaultSettingJson);
-	UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*CookerSettings);
+	THotPatcherTemplateHelper::TSerializeStructAsJsonString(*FMultiCookerSettings::Get(),DefaultSettingJson);
+	THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*CookerSettings);
 	SettingsView->GetDetailsView()->ForceRefresh();
 }
 
@@ -205,7 +205,7 @@ FReply SHotPatcherMultiCookerPage::RunCook()
 	else
 	{
 		FString CurrentConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher/MultiCooker/"),TEXT("MultiCookerConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString ProfilingCmd = GetConfigSettings()->bProfilingMultiCooker ? UFlibMultiCookerHelper::GetProfilingCmd() : TEXT("");

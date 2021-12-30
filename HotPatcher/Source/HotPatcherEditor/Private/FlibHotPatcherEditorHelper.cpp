@@ -73,18 +73,16 @@ void UFlibHotPatcherEditorHelper::CheckInvalidCookFilesByAssetDependenciesInfo(
 {
 	OutValidAssets.Empty();
 	OutInvalidAssets.Empty();
-	TArray<FAssetDetail> AllAssetDetails;
-	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(InAssetDependencies,AllAssetDetails);
+	const TArray<FAssetDetail>& AllAssetDetails = InAssetDependencies.GetAssetDetails();
 
 	for (const auto& AssetDetail : AllAssetDetails)
 	{
 		TArray<FString> CookedAssetPath;
 		TArray<FString> CookedAssetRelativePath;
-		FString AssetLongPackageName;
-		if(!UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(AssetDetail.PackagePath.ToString(), AssetLongPackageName))
-			continue;
+		FString AssetLongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(AssetDetail.PackagePath.ToString());
+		
 		FAssetData CurrentAssetData;
-		UFLibAssetManageHelperEx::GetSingleAssetsData(AssetDetail.PackagePath.ToString(),CurrentAssetData);
+		UFlibAssetManageHelper::GetSingleAssetsData(AssetDetail.PackagePath.ToString(),CurrentAssetData);
 		if(!CurrentAssetData.GetAsset()->IsValidLowLevelFast())
 		{
 			UE_LOG(LogHotPatcherEditorHelper,Warning,TEXT("%s is invalid Asset Uobject"),*CurrentAssetData.PackageName.ToString());
@@ -96,7 +94,7 @@ void UFlibHotPatcherEditorHelper::CheckInvalidCookFilesByAssetDependenciesInfo(
 			continue;
 		}
 		
-		if (UFLibAssetManageHelperEx::ConvLongPackageNameToCookedPath(
+		if (UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(
 			InProjectAbsDir,
 			InPlatformName,
 			AssetLongPackageName,
@@ -168,8 +166,7 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchVerison(const FHotPatc
 	//Chunk.AssetIncludeFilters = ConvPathStrToDirPaths(InPatchVersion.IgnoreFilter);
 	// Chunk.AssetIgnoreFilters = ConvPathStrToDirPaths(InPatchVersion.IgnoreFilter);
 	Chunk.bAnalysisFilterDependencies = false;
-	TArray<FAssetDetail> AllVersionAssets;
-	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(InPatchVersion.AssetInfo, AllVersionAssets);
+	const TArray<FAssetDetail>& AllVersionAssets = InPatchVersion.AssetInfo.GetAssetDetails();
 
 	for (const auto& Asset : AllVersionAssets)
 	{
@@ -274,7 +271,7 @@ FString UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(const FString& BaseDir
 	FString PackageFilename;
 	FString StandardFilename;
 	FName StandardFileFName = NAME_None;
-	// PRAGMA_DISABLE_DEPRECATION_WARNINGS
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	if (FPackageName::DoesPackageExist(PacakgeName,NULL, &Filename, false))
 	{
 		StandardFilename = PackageFilename = FPaths::ConvertRelativePathToFull(Filename);
@@ -282,7 +279,7 @@ FString UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(const FString& BaseDir
 		FPaths::MakeStandardFilename(StandardFilename);
 		StandardFileFName = FName(*StandardFilename);
 	}
-	// PRAGMA_ENABLE_DEPRECATION_WARNINGS
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	FString SandboxFilename = ConvertToFullSandboxPath(*StandardFilename, true);
 	// UE_LOG(LogHotPatcherEditorHelper,Log,TEXT("Filename:%s,PackageFileName:%s,StandardFileName:%s"),*Filename,*PackageFilename,*StandardFilename);
 	
@@ -368,7 +365,7 @@ bool UFlibHotPatcherEditorHelper::CookAssets(
 	for(const auto& Asset:Assets)
 	{
 		FAssetData AssetData;
-		if(UFLibAssetManageHelperEx::GetSingleAssetsData(Asset.GetAssetPathString(),AssetData))
+		if(UFlibAssetManageHelper::GetSingleAssetsData(Asset.GetAssetPathString(),AssetData))
 		{
 			AssetsData.AddUnique(AssetData);
 			Packages.AddUnique(AssetData.GetPackage());
@@ -378,7 +375,7 @@ bool UFlibHotPatcherEditorHelper::CookAssets(
 	TMap<FString,FSavePackageContext*> FinalPlatformSavePackageContext;
 	for(const auto& Platform:Platforms)
 	{
-		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
 		StringPlatforms.AddUnique(PlatformName);
 		FSavePackageContext* CurrentPackageContext = NULL;
 		if(PlatformSavePackageContext.Contains(Platform))
@@ -400,7 +397,7 @@ bool UFlibHotPatcherEditorHelper::CookPackages(const TArray<FAssetData>& AssetDa
 	TMap<FString,FSavePackageContext*> PlatformStrSavePackageContext;
 	for(auto& PlatformContext:PlatformSavePackageContext)
 	{
-		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(PlatformContext.Key);
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(PlatformContext.Key);
 		PlatformStrSavePackageContext.Add(PlatformName,PlatformContext.Value);
 	}
 	return UFlibHotPatcherEditorHelper::CookPackages(AssetDatas,InPackage,Platforms,PackageSavedCallback,CookFailedCallback,PlatformStrSavePackageContext);
@@ -506,7 +503,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 		FString PackageName = PackageFileName.IsNone()?AssetData.PackageName.ToString():PackageFileName.ToString();
 		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(SavePath,PackageName, Platform->PlatformName());
 		ETargetPlatform TargetPlatform;
-		UFlibPatchParserHelper::GetEnumValueByName(Platform->PlatformName(),TargetPlatform);
+		THotPatcherTemplateHelper::GetEnumValueByName(Platform->PlatformName(),TargetPlatform);
 		
 		// delete old cooked assets
 		if(FPaths::FileExists(CookedSavePath))
@@ -571,7 +568,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 			// save cooked file to desk in UE5-main
 			if(bSuccessed)
 			{
-				const FAssetPackageData* AssetPackageData = UFLibAssetManageHelperEx::GetPackageDataByPackagePath(Package->GetFName().ToString());
+				const FAssetPackageData* AssetPackageData = UFlibAssetManageHelper::GetPackageDataByPackagePath(Package->GetFName().ToString());
 				ICookedPackageWriter::FCommitPackageInfo Info;
 				Info.bSucceeded = bSuccessed;
 				Info.PackageName = Package->GetFName();
@@ -642,7 +639,7 @@ TArray<ITargetPlatform*> UFlibHotPatcherEditorHelper::GetTargetPlatformsByNames(
 	for(const auto& Platform:Platforms)
 	{
     			
-		ITargetPlatform* Found = UFlibHotPatcherEditorHelper::GetTargetPlatformByName(UFlibPatchParserHelper::GetEnumNameByValue(Platform,false));
+		ITargetPlatform* Found = UFlibHotPatcherEditorHelper::GetTargetPlatformByName(THotPatcherTemplateHelper::GetEnumNameByValue(Platform,false));
 		if(Found)
 		{
 			result.Add(Found);
@@ -754,7 +751,7 @@ FProcHandle UFlibHotPatcherEditorHelper::DoUnrealPak(TArray<FString> UnrealPakCo
 FString UFlibHotPatcherEditorHelper::GetMetadataDir(const FString& ProjectDir, const FString& ProjectName,ETargetPlatform Platform)
 {
 	FString result;
-	FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform,false);
+	FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform,false);
 	return FPaths::Combine(ProjectDir,TEXT("Saved/Cooked"),PlatformName,ProjectName,TEXT("Metadata"));
 }
 
@@ -765,7 +762,7 @@ void UFlibHotPatcherEditorHelper::BackupMetadataDir(const FString& ProjectDir, c
 	for(const auto& Platform:Platforms)
 	{
 		FString MetadataDir = FPaths::ConvertRelativePathToFull(UFlibHotPatcherEditorHelper::GetMetadataDir(ProjectDir,ProjectName,Platform));
-		FString OutMetadir = FPaths::Combine(OutDir,TEXT("BackupMatedatas"),UFlibPatchParserHelper::GetEnumNameByValue(Platform,false));
+		FString OutMetadir = FPaths::Combine(OutDir,TEXT("BackupMatedatas"),THotPatcherTemplateHelper::GetEnumNameByValue(Platform,false));
 		if(FPaths::DirectoryExists(MetadataDir))
 		{
 			PlatformFile.CreateDirectoryTree(*OutMetadir);
@@ -792,7 +789,7 @@ FString UFlibHotPatcherEditorHelper::ReleaseSummary(const FHotPatcherVersion& Ne
 
 	auto ParserPlatformExternAssets = [](ETargetPlatform Platform,const FPlatformExternAssets& PlatformExternAssets)->FString
 	{
-		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);;
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);;
 		FString result = FString::Printf(TEXT("======== %s Non-Assets =========\n"),*PlatformName);
 		uint32 BeginLength = result.Len();
 		result += FString::Printf(TEXT("External Files: %d\n"),PlatformExternAssets.AddExternFileToPak.Num());
@@ -804,8 +801,8 @@ FString UFlibHotPatcherEditorHelper::ReleaseSummary(const FHotPatcherVersion& Ne
 		return result;
 	};
 	TMap<FString,uint32> AddModuleAssetNumMap;
-	result += FString::Printf(TEXT("New Release Asset Number: %d\n"),UFLibAssetManageHelperEx::ParserAssetDependenciesInfoNumber(NewVersion.AssetInfo,AddModuleAssetNumMap));
-	result += UFLibAssetManageHelperEx::ParserModuleAssetsNumMap(AddModuleAssetNumMap);
+	result += FString::Printf(TEXT("New Release Asset Number: %d\n"),UFlibAssetManageHelper::ParserAssetDependenciesInfoNumber(NewVersion.AssetInfo,AddModuleAssetNumMap));
+	result += UFlibAssetManageHelper::ParserModuleAssetsNumMap(AddModuleAssetNumMap);
 	TArray<ETargetPlatform> Keys;
 	NewVersion.PlatformAssets.GetKeys(Keys);
 	for(const auto& Key:Keys)
@@ -819,7 +816,7 @@ FString UFlibHotPatcherEditorHelper::PatchSummary(const FPatchVersionDiff& DiffI
 {
 	auto ExternFileSummary = [](ETargetPlatform Platform,const FPatchVersionExternDiff& ExternDiff)->FString
 	{
-		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);;
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);;
 		FString result = FString::Printf(TEXT("======== %s Non-Assets =========\n"),*PlatformName);
 		uint32 BeginLength = result.Len();
 		result += FString::Printf(TEXT("Add Non-Asset Number: %d\n"),ExternDiff.AddExternalFiles.Num());
@@ -834,14 +831,14 @@ FString UFlibHotPatcherEditorHelper::PatchSummary(const FPatchVersionDiff& DiffI
 	FString result = TEXT("\n-----------------HotPatcher Patch Summary-----------------\n");
 	result+= TEXT("=================\n");
 	TMap<FString,uint32> AddModuleAssetNumMap;
-	result += FString::Printf(TEXT("Add Asset Number: %d\n"),UFLibAssetManageHelperEx::ParserAssetDependenciesInfoNumber(DiffInfo.AssetDiffInfo.AddAssetDependInfo,AddModuleAssetNumMap));
-	result += UFLibAssetManageHelperEx::ParserModuleAssetsNumMap(AddModuleAssetNumMap);
+	result += FString::Printf(TEXT("Add Asset Number: %d\n"),UFlibAssetManageHelper::ParserAssetDependenciesInfoNumber(DiffInfo.AssetDiffInfo.AddAssetDependInfo,AddModuleAssetNumMap));
+	result += UFlibAssetManageHelper::ParserModuleAssetsNumMap(AddModuleAssetNumMap);
 	TMap<FString,uint32> ModifyModuleAssetNumMap;
-	result += FString::Printf(TEXT("Modify Asset Number: %d\n"),UFLibAssetManageHelperEx::ParserAssetDependenciesInfoNumber(DiffInfo.AssetDiffInfo.ModifyAssetDependInfo,ModifyModuleAssetNumMap));
-	result += UFLibAssetManageHelperEx::ParserModuleAssetsNumMap(ModifyModuleAssetNumMap);
+	result += FString::Printf(TEXT("Modify Asset Number: %d\n"),UFlibAssetManageHelper::ParserAssetDependenciesInfoNumber(DiffInfo.AssetDiffInfo.ModifyAssetDependInfo,ModifyModuleAssetNumMap));
+	result += UFlibAssetManageHelper::ParserModuleAssetsNumMap(ModifyModuleAssetNumMap);
 	TMap<FString,uint32> DeleteModuleAssetNumMap;
-	result += FString::Printf(TEXT("Delete Asset Number: %d\n"),UFLibAssetManageHelperEx::ParserAssetDependenciesInfoNumber(DiffInfo.AssetDiffInfo.DeleteAssetDependInfo,DeleteModuleAssetNumMap));
-	result += UFLibAssetManageHelperEx::ParserModuleAssetsNumMap(DeleteModuleAssetNumMap);
+	result += FString::Printf(TEXT("Delete Asset Number: %d\n"),UFlibAssetManageHelper::ParserAssetDependenciesInfoNumber(DiffInfo.AssetDiffInfo.DeleteAssetDependInfo,DeleteModuleAssetNumMap));
+	result += UFlibAssetManageHelper::ParserModuleAssetsNumMap(DeleteModuleAssetNumMap);
 	TArray<ETargetPlatform> Platforms;
 	DiffInfo.PlatformExternDiffInfo.GetKeys(Platforms);
 	for(const auto& Platform:Platforms)
@@ -908,8 +905,7 @@ bool UFlibHotPatcherEditorHelper::CheckSelectedAssetsCookStatus(const TArray<FSt
 
 			for (const auto& Asset : InvalidCookAssets)
 			{
-				FString AssetLongPackageName;
-				UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.PackagePath.ToString(), AssetLongPackageName);
+				FString AssetLongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString());
 				OutMsg.Append(FString::Printf(TEXT("\t%s\n"), *AssetLongPackageName));
 			}
 		}
@@ -924,7 +920,7 @@ bool UFlibHotPatcherEditorHelper::CheckPatchRequire(const FPatchVersionDiff& InD
 	// 错误处理
 	{
 		FString GenErrorMsg;
-		FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(InDiff.AssetDiffInfo.AddAssetDependInfo, InDiff.AssetDiffInfo.ModifyAssetDependInfo);
+		FAssetDependenciesInfo AllChangedAssetInfo = UFlibAssetManageHelper::CombineAssetDependencies(InDiff.AssetDiffInfo.AddAssetDependInfo, InDiff.AssetDiffInfo.ModifyAssetDependInfo);
 		bool bSelectedCookStatus = CheckSelectedAssetsCookStatus(PlatformNames, AllChangedAssetInfo, GenErrorMsg);
 
 		// 如果有错误信息 则输出后退出
@@ -1094,7 +1090,7 @@ FPatchVersionDiff UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(
 	
 	if(PatchSetting.IsRecursiveWidgetTree())
 	{
-		UFlibHotPatcherEditorHelper::AnalysisWidgetTree(VersionDiffInfo);
+		UFlibHotPatcherEditorHelper::AnalysisWidgetTree(PatchSetting,Base,New,VersionDiffInfo);
 	}
 	
 	if(PatchSetting.IsForceSkipContent())
@@ -1127,76 +1123,44 @@ FPatchVersionDiff UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(
 #include "Blueprint/WidgetTree.h"
 #include "WidgetBlueprint.h"
 
-void UFlibHotPatcherEditorHelper::AnalysisWidgetTree(FPatchVersionDiff& PakDiff,int32 flags)
+void UFlibHotPatcherEditorHelper::AnalysisWidgetTree(const FExportPatchSettings& PatchSetting,const FHotPatcherVersion& Base, const FHotPatcherVersion& New,FPatchVersionDiff& PakDiff,int32 flags)
 {
 	TArray<FAssetDetail> AnalysisAssets;
 	if(flags & 0x1)
 	{
-		TArray<FAssetDetail> AddAssets;
-		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(PakDiff.AssetDiffInfo.AddAssetDependInfo,AddAssets);
+		const TArray<FAssetDetail>& AddAssets = PakDiff.AssetDiffInfo.AddAssetDependInfo.GetAssetDetails();
 		AnalysisAssets.Append(AddAssets);
 		
 	}
 	if(flags & 0x2)
 	{
-		TArray<FAssetDetail> ModifyAssets;
-		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(PakDiff.AssetDiffInfo.ModifyAssetDependInfo,ModifyAssets);
+		const TArray<FAssetDetail>& ModifyAssets = PakDiff.AssetDiffInfo.ModifyAssetDependInfo.GetAssetDetails();
 		AnalysisAssets.Append(ModifyAssets);
 	}
 	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDepTypes {EAssetRegistryDependencyTypeEx::Hard};
 	FName AssetType = TEXT("WidgetBlueprint");
-
-	auto AssetsIsExist = [&PakDiff](const FAssetDetail& Asset)->bool
-	{
-		bool result = false;
-		FString ModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(Asset.PackagePath.ToString());
-		FString LongPackageName;
-		UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.PackagePath.ToString(),LongPackageName);
-		if(PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName))
-		{
-			if(PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName)->AssetDependencyDetails.Find(LongPackageName))
-			{
-				result = true;
-			}
-		}
-		return result;
-	};
+	
 	TArray<EAssetRegistryDependencyType::Type> SearchType{EAssetRegistryDependencyType::Hard};
 	
 	for(const auto& OriginAsset:AnalysisAssets)
 	{
 		if(OriginAsset.AssetType == AssetType)
 		{
-			// if asset is existed
-			if(AssetsIsExist(OriginAsset))
-			{
-				continue;
-			}
 			TArray<FAssetDetail> CurrentAssetsRef;
-			UFLibAssetManageHelperEx::GetAssetReferenceRecursively(OriginAsset, SearchType, TArray<FString>{AssetType.ToString()}, CurrentAssetsRef);
+			UFlibAssetManageHelper::GetAssetReferenceRecursively(OriginAsset, SearchType, TArray<FString>{AssetType.ToString()}, CurrentAssetsRef);
 			UE_LOG(LogHotPatcher,Display,TEXT("Reference %s Widgets:"),*OriginAsset.PackagePath.ToString());
-			// TArray<FAssetDetail> CurrentAssetDeps = UFlibPatchParserHelper::GetAllAssetDependencyDetails(OriginAsset,AssetRegistryDepTypes,AssetType);
 			for(const auto& Asset:CurrentAssetsRef)
 			{
 				if(!(Asset.AssetType == AssetType))
 				{
 					continue;
 				}
-				
-				UE_LOG(LogHotPatcher,Display,TEXT("Widget: %s"),*Asset.PackagePath.ToString());
-				FString ModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(Asset.PackagePath.ToString());
-				FString LongPackageName;
-				UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.PackagePath.ToString(),LongPackageName);
-				if(PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName))
+				FString PackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString());
+				bool bInBaseVersion = PatchSetting.bByBaseVersion ? Base.AssetInfo.HasAsset(PackageName) : true;
+				if(bInBaseVersion)
 				{
-					PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName)->AssetDependencyDetails.Add(LongPackageName,Asset);
-				}
-				else
-				{
-					FAssetDependenciesDetail AssetModuleDetail;
-					AssetModuleDetail.ModuleCategory = ModuleName;
-					AssetModuleDetail.AssetDependencyDetails.Add(LongPackageName,Asset);
-					PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Add(ModuleName,AssetModuleDetail);
+					PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AddAssetsDetail(Asset);
+					UE_LOG(LogHotPatcher,Display,TEXT("Widget: %s"),*Asset.PackagePath.ToString());
 				}
 			}
 		}
@@ -1205,8 +1169,8 @@ void UFlibHotPatcherEditorHelper::AnalysisWidgetTree(FPatchVersionDiff& PakDiff,
 FChunkAssetDescribe UFlibHotPatcherEditorHelper::DiffChunkWithPatchSetting(
 	const FExportPatchSettings& PatchSetting,
 	const FChunkInfo& CurrentVersionChunk,
-	const FChunkInfo& TotalChunk,
-	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+	const FChunkInfo& TotalChunk
+	//,TMap<FString, FAssetDependenciesInfo>& ScanedCaches
 )
 {
 	FHotPatcherVersion TotalChunkVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
@@ -1214,20 +1178,20 @@ FChunkAssetDescribe UFlibHotPatcherEditorHelper::DiffChunkWithPatchSetting(
 		TEXT(""),
 		TEXT(""),
 		TotalChunk,
-		ScanedCaches,
+		//ScanedCaches,
 		PatchSetting.IsIncludeHasRefAssetsOnly(),
 		TotalChunk.bAnalysisFilterDependencies
 	);
 
-	return UFlibHotPatcherEditorHelper::DiffChunkByBaseVersionWithPatchSetting(PatchSetting, CurrentVersionChunk ,TotalChunk, TotalChunkVersion,ScanedCaches);
+	return UFlibHotPatcherEditorHelper::DiffChunkByBaseVersionWithPatchSetting(PatchSetting, CurrentVersionChunk ,TotalChunk, TotalChunkVersion/*,ScanedCaches*/);
 }
 
 FChunkAssetDescribe UFlibHotPatcherEditorHelper::DiffChunkByBaseVersionWithPatchSetting(
 	const FExportPatchSettings& PatchSetting,
 	const FChunkInfo& CurrentVersionChunk,
 	const FChunkInfo& TotalChunk,
-	const FHotPatcherVersion& BaseVersion,
-	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+	const FHotPatcherVersion& BaseVersion
+	//,TMap<FString, FAssetDependenciesInfo>& ScanedCaches
 )
 {
 	FChunkAssetDescribe result;
@@ -1236,13 +1200,13 @@ FChunkAssetDescribe UFlibHotPatcherEditorHelper::DiffChunkByBaseVersionWithPatch
 		TEXT(""),
 		TEXT(""),
 		CurrentVersionChunk,
-		ScanedCaches,
+		//ScanedCaches,
 		PatchSetting.IsIncludeHasRefAssetsOnly(),
 		CurrentVersionChunk.bAnalysisFilterDependencies
 	);
 	FPatchVersionDiff ChunkDiffInfo = UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(PatchSetting, BaseVersion, CurrentVersion);
 	
-	result.Assets = UFLibAssetManageHelperEx::CombineAssetDependencies(ChunkDiffInfo.AssetDiffInfo.AddAssetDependInfo, ChunkDiffInfo.AssetDiffInfo.ModifyAssetDependInfo);
+	result.Assets = UFlibAssetManageHelper::CombineAssetDependencies(ChunkDiffInfo.AssetDiffInfo.AddAssetDependInfo, ChunkDiffInfo.AssetDiffInfo.ModifyAssetDependInfo);
 
 	TArray<ETargetPlatform> Platforms;
 	ChunkDiffInfo.PlatformExternDiffInfo.GetKeys(Platforms);
@@ -1295,7 +1259,7 @@ bool UFlibHotPatcherEditorHelper::SerializeAssetRegistry(const FString& Platform
 	for(const auto& AssetPackagePath:PackagePaths)
 	{
 		FAssetData* AssetData = new FAssetData();
-		if(UFLibAssetManageHelperEx::GetSingleAssetsData(AssetPackagePath,*AssetData))
+		if(UFlibAssetManageHelper::GetSingleAssetsData(AssetPackagePath,*AssetData))
 		{
 			State.AddAssetData(AssetData);
 		}
@@ -1366,9 +1330,9 @@ FHotPatcherVersion UFlibHotPatcherEditorHelper::MakeNewReleaseByDiff(const FHotP
 	}
 
 	// Add Asset
-	BaseAssetInfoRef = UFLibAssetManageHelperEx::CombineAssetDependencies(BaseAssetInfoRef, InDiff.AssetDiffInfo.AddAssetDependInfo);
+	BaseAssetInfoRef = UFlibAssetManageHelper::CombineAssetDependencies(BaseAssetInfoRef, InDiff.AssetDiffInfo.AddAssetDependInfo);
 	// modify Asset
-	BaseAssetInfoRef = UFLibAssetManageHelperEx::CombineAssetDependencies(BaseAssetInfoRef, InDiff.AssetDiffInfo.ModifyAssetDependInfo);
+	BaseAssetInfoRef = UFlibAssetManageHelper::CombineAssetDependencies(BaseAssetInfoRef, InDiff.AssetDiffInfo.ModifyAssetDependInfo);
 	NewRelease.AssetInfo = BaseAssetInfoRef;
 
 	// // external files
@@ -1481,7 +1445,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 		// PRAGMA_DISABLE_DEPRECATION_WARNINGS
 		if (UFlibHotPatcherEditorHelper::IsCanCookPackage(LongPackageName))
 		{
-			FString LongPackagePath = UFLibAssetManageHelperEx::LongPackageNameToPackagePath(LongPackageName);
+			FString LongPackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(LongPackageName);
 			FSoftObjectPath CurrentObject(LongPackagePath);
 			if(FPackageName::DoesPackageExist(LongPackagePath) && CurrentObject.IsValid()) 
 			{
@@ -1807,7 +1771,7 @@ bool UFlibHotPatcherEditorHelper::IsCanCookPackage(const FString& LongPackageNam
 {
 	bool bResult = false;
 	
-	FString LongPackagePath = UFLibAssetManageHelperEx::LongPackageNameToPackagePath(LongPackageName);
+	FString LongPackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(LongPackageName);
 	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	if (!LongPackagePath.IsEmpty() && UAssetManager::Get().VerifyCanCookPackage(FName(*LongPackageName),false)
 		&& !FPackageName::IsScriptPackage(LongPackagePath) && !FPackageName::IsMemoryPackage(LongPackagePath))

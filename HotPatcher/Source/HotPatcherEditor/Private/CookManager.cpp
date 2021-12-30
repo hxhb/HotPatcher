@@ -14,7 +14,7 @@ void FCookManager::Shutdown(){}
 FString FCookManager::GetCookedAssetPath(const FString& PackageName,ETargetPlatform Platform)
 {
 	FString CookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
-	return UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookedDir,PackageName, UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+	return UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookedDir,PackageName, THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
 }
 
 #define WAIT_TIME 0.1f
@@ -109,7 +109,7 @@ TMap<FString, FSavePackageContext*> FCookManager::GetSavePackageContextByPlatfor
 	TMap<FString, FSavePackageContext*> PlatformSavePackageContext;
 	for(const auto& Platform:Platforms)
 	{
-		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
 		if(!GetPlatformSavePackageContexts().Contains(Platform))
 		{
 			ITargetPlatform* TargetPlatform = UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
@@ -141,7 +141,7 @@ TArray<FString> FCookManager::FCookPackageInfo::GetCookPlatformsString()const
 	TArray<FString> Result;
 	for(const auto& Platform:GetCookPlatforms())
 	{
-		Result.Add(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+		Result.Add(THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
 	}
 	return Result;
 }
@@ -152,7 +152,7 @@ TMap<ETargetPlatform,FString> FCookManager::FCookPackageInfo::GetCookedSavePaths
 	for(const auto&Platform:CookPlatforms)
 	{
 		FString CookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
-		result.Add(Platform,UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookedDir,PackageName, UFlibPatchParserHelper::GetEnumNameByValue(Platform)));
+		result.Add(Platform,UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookedDir,PackageName, THotPatcherTemplateHelper::GetEnumNameByValue(Platform)));
 	}
 	return result;
 }

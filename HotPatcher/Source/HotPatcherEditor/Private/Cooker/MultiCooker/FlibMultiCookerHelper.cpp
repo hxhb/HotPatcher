@@ -50,7 +50,7 @@ TSharedPtr<FCookShaderCollectionProxy> UFlibMultiCookerHelper::CreateCookShaderC
 	TArray<FString> PlatformNames;
 	for(const auto& Platform:Platforms)
 	{
-		PlatformNames.AddUnique(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+		PlatformNames.AddUnique(THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
 	}
 	
 	FString SavePath = InSavePath;

@@ -2,7 +2,7 @@
 #include "FPlatformExternFiles.h"
 #include "FPatcherSpecifyAsset.h"
 #include "FPlatformExternAssets.h"
-#include "Struct/AssetManager/FAssetDependenciesInfo.h"
+#include "BaseTypes/AssetManager/FAssetDependenciesInfo.h"
 // engine
 #include "CoreMinimal.h"
 #include "Engine/EngineTypes.h"
@@ -23,8 +23,6 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase:public FPatcherEntitySetting
     virtual TArray<FDirectoryPath>& GetAssetIgnoreFilters();
     virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets();
     virtual TArray<FPlatformExternAssets>& GetAddExternAssetsToPlatform();
-    virtual TMap<FString,FAssetDependenciesInfo>& GetAssetsDependenciesScanedCaches();
-    virtual bool IsScanCacheOptimize()const{ return bScanCacheOptimize; }
     virtual void Init();
 
     virtual TArray<FExternFileInfo> GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash = false);
@@ -58,8 +56,5 @@ public:
     bool bStandaloneMode = true;
     UPROPERTY(EditAnywhere, Category = "Advanced")
     TArray<FString> AdditionalCommandletArgs;
-    // UPROPERTY(EditAnywhere, Category = "Advanced")
-    bool bScanCacheOptimize=true;
-protected:
-    TMap<FString,FAssetDependenciesInfo> ScanedCaches;
+    
 };

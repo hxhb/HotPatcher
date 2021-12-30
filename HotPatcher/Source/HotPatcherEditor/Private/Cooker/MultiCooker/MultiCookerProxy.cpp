@@ -146,7 +146,7 @@ bool UMultiCookerProxy::MergeShader()
 	TArray<FShaderCodeFormatMap> ShaderCodeFormatMaps;
 	for(const auto& Platform:GetSettingObject()->CookTargetPlatforms)
 	{
-		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
 		ITargetPlatform* TargetPlatform = UFlibHotPatcherEditorHelper::GetPlatformByName(PlatformName);
 		PlatformNames.AddUnique(PlatformName);
 		FShaderCodeFormatMap ShaderCodeFormatMap;
@@ -279,7 +279,7 @@ void UMultiCookerProxy::RecookFailedAssets()
 		CookerFailedCollection.CookFailedAssets.GetKeys(FailedPlatforms);
 		for(auto TargetPlatform:FailedPlatforms)
 		{
-			FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(TargetPlatform);
+			FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(TargetPlatform);
 			CookerFailedCollectionMap.FindOrAdd(PlatformName,*CookerFailedCollection.CookFailedAssets.Find(TargetPlatform));
 			UE_LOG(LogHotPatcher,Error,TEXT("\nCook Platfotm %s Assets Failed:\n"),*PlatformName);
 			for(const auto& Asset:CookerFailedCollection.CookFailedAssets.Find(TargetPlatform)->Assets)
@@ -315,7 +315,7 @@ void UMultiCookerProxy::PostMission()
 	
 	for(const auto& Platform:GetSettingObject()->CookTargetPlatforms)
 	{
-		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
 		FString PlatformShaderDir = FPaths::Combine(ShaderLibBaseDir,PlatformName);
 		FString PlatformDefaultCookedDir = FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked"),PlatformName);
 		FString DefaultCookedProjectContentDir = FPaths::Combine(PlatformDefaultCookedDir,FApp::GetProjectName(),TEXT("Content"));
@@ -483,7 +483,6 @@ bool UMultiCookerProxy::DoExport()
 		   TEXT(""),
 		   FDateTime::UtcNow().ToString(),
 		   CookChunk,
-		   GetAssetsDependenciesScanedCaches(),
 		   CookPatchSettings.IsIncludeHasRefAssetsOnly(),
 		   CookPatchSettings.IsAnalysisFilterDependencies()
 	   );
@@ -491,13 +490,15 @@ bool UMultiCookerProxy::DoExport()
 	FMultiCookerAssets MultiCookerAssets;
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("GetAssetDetailsByAssetDependenciesInfo and Serialize to json"),FColor::Red);
-		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(CurrentVersion.AssetInfo,MultiCookerAssets.Assets);
+		MultiCookerAssets.Assets = CurrentVersion.AssetInfo.GetAssetDetails();
 		FString SaveNeedCookAssets;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(MultiCookerAssets,SaveNeedCookAssets);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(MultiCookerAssets,SaveNeedCookAssets);
 		FString SaveMultiCookerAssetsTo= FPaths::ConvertRelativePathToFull(SaveConfigDir,FString::Printf(TEXT("%s_MultiCookerAssets.json"),FApp::GetProjectName()));
 		FFileHelper::SaveStringToFile(SaveNeedCookAssets,*SaveMultiCookerAssetsTo);
 	}
 	OnMultiCookerBegining.Broadcast(this);
+
+	if(!GetSettingObject()->bSkipCook)
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("MakeSingleCookerSettings and Execute"),FColor::Red);
 		TArray<FSingleCookerSettings> SingleCookerSettings = MakeSingleCookerSettings(MultiCookerAssets.Assets);
@@ -514,7 +515,7 @@ bool UMultiCookerProxy::DoExport()
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("Save Multi Cooker Config"),FColor::Red);
 		FString CurrentConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetSettingObject(),CurrentConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*GetSettingObject(),CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(SaveConfigDir,FString::Printf(TEXT("%s_MultiCookerConfig.json"),FApp::GetProjectName()));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 	}
@@ -559,7 +560,7 @@ void UMultiCookerProxy::OnCookProcFailed(FProcWorkerThread* ProcWorker)
 		FString FailedContent;
 		if(FFileHelper::LoadFileToString(FailedContent,*CookFailedResultPath))
 		{
-			UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(FailedContent,FailedMissionCollection);
+			THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(FailedContent,FailedMissionCollection);
 		}
 	}
 	// CookerProcessMap.Remove(CookerProcName);
@@ -584,7 +585,7 @@ TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateSingleCookWroker(const FS
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::CreateSingleCookWroker"),FColor::Red);
 	FString CurrentConfig;
-	UFlibPatchParserHelper::TSerializeStructAsJsonString(SingleCookerSettings,CurrentConfig);
+	THotPatcherTemplateHelper::TSerializeStructAsJsonString(SingleCookerSettings,CurrentConfig);
 	FString SaveConfigTo = UFlibMultiCookerHelper::GetCookerProcConfigPath(SingleCookerSettings.MissionName,SingleCookerSettings.MissionID);
 	
 	FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);

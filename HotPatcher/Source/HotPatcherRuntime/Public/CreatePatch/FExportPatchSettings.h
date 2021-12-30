@@ -168,6 +168,7 @@ public:
 	TArray<FString> GetForceSkipContentStrRules()const;
 	TArray<FString> GetForceSkipAssetsStr()const;
 	
+	FORCEINLINE bool IsPackageTracker()const { return bPackageTracker; }
 	FORCEINLINE bool IsIncludeAssetRegistry()const { return bIncludeAssetRegistry; }
 	FORCEINLINE bool IsIncludeGlobalShaderCache()const { return bIncludeGlobalShaderCache; }
 	FORCEINLINE bool IsIncludeShaderBytecode()const { return bIncludeShaderBytecode; }
@@ -180,7 +181,7 @@ public:
 	FORCEINLINE bool IsEnableExternFilesDiff()const { return bEnableExternFilesDiff; }
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 	FORCEINLINE bool IsIncludePakVersion()const { return bIncludePakVersionFile; }
-	FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bStorageAssetDependencies; }
+	// FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bStorageAssetDependencies; }
 
 	// chunk infomation
 	FORCEINLINE bool IsEnableChunk()const { return bEnableChunk; }
@@ -216,6 +217,7 @@ public:
 	FORCEINLINE bool IsStorageNewRelease()const{return bStorageNewRelease;}
 	FORCEINLINE bool IsStoragePakFileInfo()const{return bStoragePakFileInfo;}
 	FORCEINLINE bool IsBackupMetadata()const {return bBackupMetadata;}
+	FORCEINLINE bool IsEnableProfiling()const { return bEnableProfiling; }
 	
 	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
 	FORCEINLINE bool IsBinariesPatch()const{ return bBinariesPatch; }
@@ -258,13 +260,15 @@ public:
 	// 只对与基础包有差异的资源进行依赖分析，提高依赖分析的速度
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter",meta = (EditCondition = "!bAnalysisFilterDependencies"))
 		bool bAnalysisDiffAssetDependenciesOnly=false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
-		bool bRecursiveWidgetTree = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter",meta = (EditCondition="bAnalysisFilterDependencies || bAnalysisDiffAssetDependenciesOnly"))
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Specify Assets")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
+	bool bRecursiveWidgetTree = true;
+	// allow tracking load asset when cooking
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
+		bool bPackageTracker = true;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
 		bool bIncludeAssetRegistry = false;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
@@ -353,11 +357,14 @@ public:
 		bool bStorageDeletedAssetsToNewReleaseJson = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bByBaseVersion"))
 		bool bStorageDiffAnalysisResults = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bStorageAssetDependencies = false;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+	// 	bool bStorageAssetDependencies = false;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "SaveTo")
 		bool bBackupMetadata = false;
 
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
 		bool bEnableMultiThread = false;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Advanced")
+		bool bEnableProfiling = false;
 };

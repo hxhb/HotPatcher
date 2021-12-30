@@ -40,18 +40,6 @@ struct HOTPATCHERRUNTIME_API FPlatformPakListFiles
 	FString AESKey;
 };
 
-USTRUCT(BlueprintType)
-struct HOTPATCHERRUNTIME_API FPlatformPakAssets
-{
-	GENERATED_USTRUCT_BODY()
-	UPROPERTY(EditAnywhere)
-		ETargetPlatform Platform = ETargetPlatform::None;
-	UPROPERTY(EditAnywhere)
-		TArray<FPatcherSpecifyAsset> Assets;
-	UPROPERTY(EditAnywhere)
-		TArray<FExternFileInfo> ExternFiles;
-};
-
 /** Singleton wrapper to allow for using the setting structur e in SSettingsView */
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FExportReleaseSettings:public FHotPatcherSettingBase
@@ -65,10 +53,7 @@ public:
 	virtual void ClearImportedPakList();
 	void OnFinishedChangingProperties(const FPropertyChangedEvent& PropertyChangedEvent);
 	virtual void PostEditChangeProperty(const FPropertyChangedEvent& PropertyChangedEvent);
-	virtual bool ParseByPaklist(FExportReleaseSettings* InReleaseSetting,const TArray<FString>& InPaklistFile);
-	virtual bool PlatformPakListParser(const ETargetPlatform Platform, const TArray<FString>& ,FPlatformPakAssets& Out);
-	virtual bool PlatformPakFileParser(const ETargetPlatform Platform, const TArray<FString>& ,FPlatformPakAssets& Out);
-
+	
 	static FExportReleaseSettings* Get();
 	FString GetVersionId()const;
 	TArray<FString> GetAssetIncludeFiltersPaths()const;
@@ -76,7 +61,7 @@ public:
 	TArray<FExternFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const;
 	
 	TArray<FPlatformExternAssets> GetAddExternAssetsToPlatform()const{return AddExternAssetsToPlatform;}
-	FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bStorageAssetDependencies; }
+	// FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bStorageAssetDependencies; }
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 	FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
 	FORCEINLINE bool IsBackupMetadata()const {return bBackupMetadata;}
@@ -127,8 +112,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ExternFiles")
 		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bStorageAssetDependencies = false;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+	// 	bool bStorageAssetDependencies = false;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "SaveTo")
 		bool bBackupMetadata = false;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "SaveTo")
@@ -136,5 +121,5 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bBackupMetadata"))
 		TArray<ETargetPlatform> BackupMetadataPlatforms;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Advanced")
-	bool bNoShaderCompile = true;
+		bool bNoShaderCompile = true;
 };

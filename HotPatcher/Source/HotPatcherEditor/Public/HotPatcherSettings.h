@@ -55,7 +55,7 @@ FORCEINLINE FString UHotPatcherSettings::GetTempSavedDir()const
 FORCEINLINE UHotPatcherSettings::UHotPatcherSettings(const FObjectInitializer& Initializer):Super(Initializer)
 {
     TempPatchSetting.bByBaseVersion=false;
-    TempPatchSetting.bStorageAssetDependencies = false;
+    // TempPatchSetting.bStorageAssetDependencies = false;
     TempPatchSetting.bStorageDiffAnalysisResults=false;
     TempPatchSetting.bStorageDeletedAssetsToNewReleaseJson = false;
     TempPatchSetting.bStorageConfig = false;

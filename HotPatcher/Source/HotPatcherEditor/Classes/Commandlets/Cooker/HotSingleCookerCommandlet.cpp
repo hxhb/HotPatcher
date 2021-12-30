@@ -40,16 +40,16 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 	FString JsonContent;
 	if (FPaths::FileExists(config_path) && FFileHelper::LoadFileToString(JsonContent, *config_path))
 	{
-		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportSingleCookerSetting);
+		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportSingleCookerSetting);
 	}
 
-	TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
-	UFlibPatchParserHelper::ReplaceProperty(*ExportSingleCookerSetting, KeyValues);
+	TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Params);
+	THotPatcherTemplateHelper::ReplaceProperty(*ExportSingleCookerSetting, KeyValues);
 	
 	if(ExportSingleCookerSetting->MultiCookerSettings.bDisplayMissionConfig)
 	{
 		FString FinalConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportSingleCookerSetting,FinalConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*ExportSingleCookerSetting,FinalConfig);
 	}
 	
 	UE_LOG(LogHotSingleCookerCommandlet, Display, TEXT("Cooker %s Id %d,Assets Num %d"), *ExportSingleCookerSetting->MissionName,ExportSingleCookerSetting->MissionID,ExportSingleCookerSetting->CookAssets.Num());

@@ -2,7 +2,7 @@
 #include "Engine/PrimaryAssetLabel.h"
 #include "ToolMenuSection.h"
 #include "HotPatcherEditor.h"
-#include "Flib/FLibAssetManageHelperEx.h"
+#include "FlibAssetManageHelper.h"
 
 #if WITH_EDITOR_SECTION
 void FAssetTypeActions_PrimaryAssetLabel::GetActions(const TArray<UObject*>& InObjects,
@@ -103,8 +103,7 @@ TArray<FChunkInfo> GetChunksByAssetLabels(TArray<TWeakObjectPtr<UPrimaryAssetLab
 		Chunk.AssetIgnoreFilters = GetLabelsDirs(TArray<TWeakObjectPtr<UPrimaryAssetLabel>>{Object});
 		Chunk.IncludeSpecifyAssets = GetLabelsAssets(TArray<TWeakObjectPtr<UPrimaryAssetLabel>>{Object});
 		Chunk.bAnalysisFilterDependencies = Object->Rules.bApplyRecursively;
-		FString LongPackageName;
-		if(UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Object->GetPathName(),LongPackageName))
+		FString LongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(Object->GetPathName());
 		{
 			TArray<FString> DirNames;
 			LongPackageName.ParseIntoArray(DirNames,TEXT("/"));
@@ -134,8 +133,8 @@ void FAssetTypeActions_PrimaryAssetLabel::MakeCookAndPakActionsSubMenu(UToolMenu
 		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
 			continue;
 		Section.AddMenuEntry(
-			FName(*UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
-			FText::Format(NSLOCTEXT("Platform","Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))),
+			FName(*THotPatcherTemplateHelper::GetEnumNameByValue(Platform)),
+			FText::Format(NSLOCTEXT("Platform","Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(THotPatcherTemplateHelper::GetEnumNameByValue(Platform))),
 			FText(),
 			FSlateIcon(),
 			FUIAction(

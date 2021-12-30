@@ -60,10 +60,10 @@ void SHotPatcherExportShaderPatch::ImportConfig()
 	FString LoadFile = Files[0];
 
 	FString JsonContent;
-	if (UFLibAssetManageHelperEx::LoadFileToString(LoadFile, JsonContent))
+	if (UFlibAssetManageHelper::LoadFileToString(LoadFile, JsonContent))
 	{
 		// UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
-		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportShaderPatchSettings);
+		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportShaderPatchSettings);
 		SettingsView->GetDetailsView()->ForceRefresh();
 	}
 }
@@ -80,7 +80,7 @@ void SHotPatcherExportShaderPatch::ExportConfig() const
 	if (ExportShaderPatchSettings)
 	{
 			FString SerializedJsonStr;
-			UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportShaderPatchSettings,SerializedJsonStr);
+			THotPatcherTemplateHelper::TSerializeStructAsJsonString(*ExportShaderPatchSettings,SerializedJsonStr);
 			if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile))
 			{
 				FText Msg = LOCTEXT("SavedShaderPatchConfigMas", "Successd to Export the Shader Patch Config.");
@@ -93,8 +93,8 @@ void SHotPatcherExportShaderPatch::ResetConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Reset Shader Patch Config"));
 	FString DefaultSettingJson;
-	UFlibPatchParserHelper::TSerializeStructAsJsonString(*FExportShaderPatchSettings::Get(),DefaultSettingJson);
-	UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*ExportShaderPatchSettings);
+	THotPatcherTemplateHelper::TSerializeStructAsJsonString(*FExportShaderPatchSettings::Get(),DefaultSettingJson);
+	THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*ExportShaderPatchSettings);
 	SettingsView->GetDetailsView()->ForceRefresh();
 }
 
@@ -110,7 +110,7 @@ void SHotPatcherExportShaderPatch::DoGenerate()
 	else
 	{
 		FString CurrentConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("ShaderPatchConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotShaderPatch -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs());

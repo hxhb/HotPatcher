@@ -40,14 +40,14 @@ int32 UHotShaderPatchCommandlet::Main(const FString& Params)
 	FString JsonContent;
 	if (FPaths::FileExists(config_path) && FFileHelper::LoadFileToString(JsonContent, *config_path))
 	{
-		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportShaderPatchSetting);
+		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportShaderPatchSetting);
 	}
 
-	TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
-	UFlibPatchParserHelper::ReplaceProperty(*ExportShaderPatchSetting, KeyValues);
+	TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Params);
+	THotPatcherTemplateHelper::ReplaceProperty(*ExportShaderPatchSetting, KeyValues);
 	
 	FString FinalConfig;
-	UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportShaderPatchSetting,FinalConfig);
+	THotPatcherTemplateHelper::TSerializeStructAsJsonString(*ExportShaderPatchSetting,FinalConfig);
 	UE_LOG(LogHotShaderPatchCommandlet, Display, TEXT("%s"), *FinalConfig);
 		
 	UShaderPatchProxy* ShaderPatchProxy = NewObject<UShaderPatchProxy>();

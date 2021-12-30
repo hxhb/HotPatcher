@@ -1,6 +1,6 @@
 #pragma once
 
-#include "FLibAssetManageHelperEx.h"
+#include "FlibAssetManageHelper.h"
 #include "FCookerConfig.h"
 #include "FlibPatchParserHelper.h"
 
@@ -108,7 +108,7 @@ public:
 		for (const auto& CookFilter : GetAlwayCookFilters())
 		{
 			FString FilterFullPath;
-			if (UFLibAssetManageHelperEx::ConvRelativeDirToAbsDir(CookFilter.Path, FilterFullPath))
+			if (UFlibAssetManageHelper::ConvRelativeDirToAbsDir(CookFilter.Path, FilterFullPath))
 			{
 				if (FPaths::DirectoryExists(FilterFullPath))
 				{

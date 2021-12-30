@@ -76,7 +76,7 @@ bool UGameFeatureProxy::DoExport()
 	{
 		FString SaveToFile = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),FString::Printf(TEXT("%s_GameFeatureConfig.json"),*FeatureName));
 		FString SerializedJsonStr;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetSettingObject(),SerializedJsonStr);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*GetSettingObject(),SerializedJsonStr);
 		FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile);
 	}
 	}

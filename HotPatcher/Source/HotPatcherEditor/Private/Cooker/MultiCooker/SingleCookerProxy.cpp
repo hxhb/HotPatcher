@@ -14,6 +14,7 @@ void USingleCookerProxy::Init()
 #endif
 	InitShaderLibConllections();
 	// cook package tracker
+	if(GetSettingObject()->MultiCookerSettings.bPackageTracker)
 	{
 		FMultiCookerAssets MultiCookerAssets;
 		FString Path = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("../"),FString::Printf(TEXT("%s_MultiCookerAssets.json"),FApp::GetProjectName()));
@@ -21,7 +22,7 @@ void USingleCookerProxy::Init()
 		{
 			FString Content;
 			FFileHelper::LoadFileToString(Content,*Path);
-			UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(Content,MultiCookerAssets);
+			THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(Content,MultiCookerAssets);
 			for(const auto& Asset:MultiCookerAssets.Assets)
 			{
 				PackagePathSet.PackagePaths.Add(Asset.PackagePath);
@@ -41,7 +42,7 @@ void USingleCookerProxy::Shutdown()
 		FPackagePathSet AdditionalPackageSet;
 		AdditionalPackageSet.PackagePaths.Append(PackageTracker->GetPendingPackageSet());
 		FString OutString;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(AdditionalPackageSet,OutString);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(AdditionalPackageSet,OutString);
 
 		FFileHelper::SaveStringToFile(OutString,*FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),GetSettingObject()->MissionName,TEXT("AdditionalPackageSet.json")));
 	}
@@ -60,7 +61,7 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 	TArray<FString> TargetPlatformNames;
 	for(const auto& Platform:GetSettingObject()->MultiCookerSettings.CookTargetPlatforms)
 	{
-		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
 		TargetPlatformNames.AddUnique(PlatformName);
 		ITargetPlatform* TargetPlatform = UFlibHotPatcherEditorHelper::GetTargetPlatformByName(PlatformName);
 		if(TargetPlatform)
@@ -245,7 +246,7 @@ bool USingleCookerProxy::DoExport()
 	if(HasError())
 	{
 		FString FailedJsonString;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(GetCookFailedAssetsCollection(),FailedJsonString);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(GetCookFailedAssetsCollection(),FailedJsonString);
 		UE_LOG(LogHotPatcher,Warning,TEXT("Single Cooker Proxy %s:\n%s"),*GetSettingObject()->MissionName,*FailedJsonString);
 		FString SaveTo = UFlibMultiCookerHelper::GetCookerProcFailedResultPath(GetSettingObject()->MissionName,GetSettingObject()->MissionID);
 		FFileHelper::SaveStringToFile(FailedJsonString,*SaveTo);
@@ -264,14 +265,14 @@ bool USingleCookerProxy::HasError()
 void USingleCookerProxy::OnCookAssetFailed(const FString& PackagePath, ETargetPlatform Platform)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::OnCookAssetFailed"),FColor::Red);
-	FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+	FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
 	UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s for %s Failed!"),*PackagePath,*PlatformName);
 	FAssetsCollection& AssetsCollection = GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform);
 	AssetsCollection.TargetPlatform = Platform;
 	FAssetData AssetData;
 	FAssetDetail AssetDetail;
-	UFLibAssetManageHelperEx::GetSingleAssetsData(PackagePath,AssetData);
-	UFLibAssetManageHelperEx::ConvFAssetDataToFAssetDetail(AssetData,AssetDetail);
+	UFlibAssetManageHelper::GetSingleAssetsData(PackagePath,AssetData);
+	UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(AssetData,AssetDetail);
 	AssetsCollection.Assets.AddUnique(AssetDetail);
 }
 
@@ -294,7 +295,7 @@ void USingleCookerProxy::InitPlatformPackageContexts()
 	for (ITargetPlatform *TargetPlatform : TargetPlatforms)
 	{
 		ETargetPlatform Platform;
-		UFlibPatchParserHelper::GetEnumValueByName(TargetPlatform->PlatformName(),Platform);
+		THotPatcherTemplateHelper::GetEnumValueByName(TargetPlatform->PlatformName(),Platform);
 		if (GetSettingObject()->MultiCookerSettings.CookTargetPlatforms.Contains(Platform))
 		{
 			CookPlatforms.AddUnique(TargetPlatform);

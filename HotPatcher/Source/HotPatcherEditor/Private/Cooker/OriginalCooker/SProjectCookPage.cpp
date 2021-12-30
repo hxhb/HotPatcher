@@ -308,7 +308,7 @@ TSharedPtr<FJsonObject> SProjectCookPage::SerializeAsJson() const
 {
 	FCookerConfig CookConfig = mCookModel->GetCookConfig();
 	TSharedPtr<FJsonObject> CookConfigJsonObj;
-	UFlibPatchParserHelper::TSerializeStructAsJsonObject(CookConfig,CookConfigJsonObj);
+	THotPatcherTemplateHelper::TSerializeStructAsJsonObject(CookConfig,CookConfigJsonObj);
 	return CookConfigJsonObj;
 }
 

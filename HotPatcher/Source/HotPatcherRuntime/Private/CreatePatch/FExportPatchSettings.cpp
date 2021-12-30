@@ -1,5 +1,5 @@
 #include "CreatePatch/FExportPatchSettings.h"
-#include "FLibAssetManageHelperEx.h"
+#include "FlibAssetManageHelper.h"
 #include "HotPatcherLog.h"
 
 // engine header
@@ -121,8 +121,6 @@ FHotPatcherVersion FExportPatchSettings::GetNewPatchVersionInfo()
         this->GetAssetRegistryDependencyTypes(),
         this->GetIncludeSpecifyAssets(),
         this->GetAddExternAssetsToPlatform(),
-        // this->GetAllExternFiles(true),
-        this->GetAssetsDependenciesScanedCaches(),
         this->IsIncludeHasRefAssetsOnly()
     );
 
@@ -136,9 +134,9 @@ bool FExportPatchSettings::GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion
 	bool bDeserializeStatus = false;
 	if (this->IsByBaseVersion())
 	{
-		if (UFLibAssetManageHelperEx::LoadFileToString(this->GetBaseVersion(), BaseVersionContent))
+		if (UFlibAssetManageHelper::LoadFileToString(this->GetBaseVersion(), BaseVersionContent))
 		{
-			bDeserializeStatus = UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(BaseVersionContent, OutBaseVersion);
+			bDeserializeStatus = THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(BaseVersionContent, OutBaseVersion);
 		}
 	}
 
@@ -157,7 +155,7 @@ TArray<FString> FExportPatchSettings::GetPakTargetPlatformNames() const
 	TArray<FString> Resault;
 	for (const auto &Platform : this->GetPakTargetPlatforms())
 	{
-		Resault.Add(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+		Resault.Add(THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
 	}
 	return Resault;
 }

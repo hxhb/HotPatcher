@@ -15,7 +15,7 @@
 
 void FHotPatcherRuntimeModule::StartupModule()
 {
-	UEnum* TargetPlatform = UFlibPatchParserHelper::GetUEnum<ETargetPlatform>();
+	UEnum* TargetPlatform = THotPatcherTemplateHelper::GetUEnum<ETargetPlatform>();
 	uint64 MaxEnumValue = TargetPlatform->GetMaxEnumValue()-2;
 	FString EnumName = TargetPlatform->GetName();
 	TArray<TPair<FName, int64>> EnumNames;

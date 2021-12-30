@@ -16,7 +16,7 @@ DEFINE_LOG_CATEGORY(LogHotReleaseCommandlet);
 TArray<FPlatformPakListFiles> ParserPlatformPakList(const FString& Commandline)
 {
 	TArray<FPlatformPakListFiles> result;
-	TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Commandline);
+	TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Commandline);
 	if(KeyValues.Find(ADD_PLATFORM_PAK_LIST))
 	{
 		FString AddPakListInfo = *KeyValues.Find(ADD_PLATFORM_PAK_LIST);
@@ -31,7 +31,7 @@ TArray<FPlatformPakListFiles> ParserPlatformPakList(const FString& Commandline)
 			{
 				FString PlatformName = PlatformPakListToken[0];
 				FPlatformPakListFiles PlatformPakListItem;
-				UFlibPatchParserHelper::GetEnumValueByName(PlatformName,PlatformPakListItem.TargetPlatform);
+				THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,PlatformPakListItem.TargetPlatform);
 				for(int32 index=1;index<PlatformPakListToken.Num();++index)
 				{
 					FString PakListPath = PlatformPakListToken[index];
@@ -78,11 +78,11 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 	FString JsonContent;
 	if (FPaths::FileExists(config_path) && FFileHelper::LoadFileToString(JsonContent, *config_path))
 	{
-		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportReleaseSetting);
+		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportReleaseSetting);
 	}
 
-	TMap<FString, FString> KeyValues = UFlibPatchParserHelper::GetCommandLineParamsMap(Params);
-	UFlibPatchParserHelper::ReplaceProperty(*ExportReleaseSetting, KeyValues);
+	TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Params);
+	THotPatcherTemplateHelper::ReplaceProperty(*ExportReleaseSetting, KeyValues);
 
 	// 从命令行分析PlatformPakList
 	TArray<FPlatformPakListFiles> ReadPakList = ParserPlatformPakList(Params);
@@ -100,7 +100,7 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 	}
 	
 	FString FinalConfig;
-	UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportReleaseSetting,FinalConfig);
+	THotPatcherTemplateHelper::TSerializeStructAsJsonString(*ExportReleaseSetting,FinalConfig);
 	UE_LOG(LogHotReleaseCommandlet, Display, TEXT("%s"), *FinalConfig);
 		
 	UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();

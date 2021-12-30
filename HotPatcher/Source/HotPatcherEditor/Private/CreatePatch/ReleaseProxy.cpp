@@ -22,8 +22,6 @@ namespace ReleaseWorker
 	// save release asset info
 	bool SaveReleaseVersionWorker(FHotPatcherReleaseContext& Context);
 	bool SaveReleaseConfigWorker(FHotPatcherReleaseContext& Context);
-	// save asset dependency
-	bool SaveReleaseAssetDependencyWorker(FHotPatcherReleaseContext& Context);
 	// backup Metadata
 	bool BakcupMetadataWorker(FHotPatcherReleaseContext& Context);
 	// backup config
@@ -49,7 +47,6 @@ bool UReleaseProxy::DoExport()
 	ReleaseWorker.Emplace(&::ReleaseWorker::ExportNewReleaseWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::SaveReleaseVersionWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::SaveReleaseConfigWorker);
-	ReleaseWorker.Emplace(&::ReleaseWorker::SaveReleaseAssetDependencyWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::BakcupMetadataWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::BakcupProjectConfigWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::ReleaseSummaryWorker);
@@ -103,13 +100,13 @@ namespace ReleaseWorker
 			Context.GetSettingObject()->GetAssetIgnoreFiltersPaths(),
 			Context.GetSettingObject()->GetAssetRegistryDependencyTypes(),
 			Context.GetSettingObject()->GetSpecifyAssets(),
-			// GetSettingObject()->GetAllExternFiles(true),
 			Context.GetSettingObject()->GetAddExternAssetsToPlatform(),
-			Context.GetSettingObject()->GetAssetsDependenciesScanedCaches(),
 			Context.GetSettingObject()->IsIncludeHasRefAssetsOnly(),
 			Context.GetSettingObject()->IsAnalysisFilterDependencies()
 		);
-		UE_LOG(LogHotPatcher,Display,TEXT("New Version total asset number is %d."),Context.GetSettingObject()->GetAssetsDependenciesScanedCaches().Num());
+		FString NewReleaseVersionStr;
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(Context.NewReleaseVersion,NewReleaseVersionStr);
+		UE_LOG(LogHotPatcher,Display,TEXT("New Version Release Config:\n%s"),*NewReleaseVersionStr);
 		return true;
 	}
 
@@ -120,14 +117,14 @@ namespace ReleaseWorker
 		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportReleaseJson", "ExportReleaseVersionInfoJson", "Export Release {0} Assets info to file."), FText::FromString(Context.GetSettingObject()->GetVersionId()));
 		Context.UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
 		FString SaveToJson;
-		if (UFlibPatchParserHelper::TSerializeStructAsJsonString(Context.NewReleaseVersion, SaveToJson))
+		if (THotPatcherTemplateHelper::TSerializeStructAsJsonString(Context.NewReleaseVersion, SaveToJson))
 		{
 
 			FString SaveToFile = FPaths::Combine(
 				FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(), Context.GetSettingObject()->GetVersionId()),
 				FString::Printf(TEXT("%s_Release.json"), *Context.GetSettingObject()->GetVersionId())
 			);
-			bool runState = UFLibAssetManageHelperEx::SaveStringToFile(SaveToFile, SaveToJson);
+			bool runState = UFlibAssetManageHelper::SaveStringToFile(SaveToFile, SaveToJson);
 			if (runState)
 			{
 				auto Message = LOCTEXT("ExportReleaseSuccessNotification", "Succeed to export HotPatcher Release Version.");
@@ -152,13 +149,13 @@ namespace ReleaseWorker
 		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportReleaseConfig", "ExportReleaseConfigJson", "Export Release {0} Configuration to file."), FText::FromString(Context.GetSettingObject()->GetVersionId()));
 		Context.UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
 		FString ConfigJson;
-		if (UFlibPatchParserHelper::TSerializeStructAsJsonString(*Context.GetSettingObject(),ConfigJson))
+		if (THotPatcherTemplateHelper::TSerializeStructAsJsonString(*Context.GetSettingObject(),ConfigJson))
 		{
 			FString SaveToFile = FPaths::Combine(
 				FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(), Context.GetSettingObject()->GetVersionId()),
 				FString::Printf(TEXT("%s_ReleaseConfig.json"), *Context.GetSettingObject()->GetVersionId())
 			);
-			bool runState = UFLibAssetManageHelperEx::SaveStringToFile(SaveToFile, ConfigJson);
+			bool runState = UFlibAssetManageHelper::SaveStringToFile(SaveToFile, ConfigJson);
 			if (runState)
 			{
 				auto Message = LOCTEXT("ExportReleaseConfigSuccessNotification", "Succeed to export HotPatcher Release Config.");
@@ -174,43 +171,6 @@ namespace ReleaseWorker
 			UE_LOG(LogHotPatcher, Log, TEXT("HotPatcher Export RELEASE CONFIG is %s."), runState ? TEXT("Success") : TEXT("FAILD"));
 		}
 		return true;
-	}
-	// save asset dependency
-	bool SaveReleaseAssetDependencyWorker(FHotPatcherReleaseContext& Context)
-	{
-		bool bRetStatus= true;
-		TimeRecorder TR(TEXT("save new release asset dependencies"));
-		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportReleaseAssetDependency", "ExportReleaseAssetDependencyJson", "Export Release {0} Asset Dependency to file."), FText::FromString(Context.GetSettingObject()->GetVersionId()));
-		Context.UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
-		if (Context.GetSettingObject()->IsSaveAssetRelatedInfo())
-		{
-			TArray<FHotPatcherAssetDependency> AssetsDependency = UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(
-				Context.NewReleaseVersion.AssetInfo,
-				Context.GetSettingObject()->GetAssetRegistryDependencyTypes(),
-				Context.GetSettingObject()->GetAssetsDependenciesScanedCaches()
-			);
-
-			FString AssetsDependencyString = UFlibPatchParserHelper::SerializeAssetsDependencyAsJsonString(AssetsDependency);
-			
-			FString SaveAssetRelatedInfoToFile = FPaths::Combine(
-				FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(), Context.GetSettingObject()->GetVersionId()),
-				FString::Printf(TEXT("%s_AssetRelatedInfos.json"), *Context.NewReleaseVersion.VersionId)
-			);
-			if (UFLibAssetManageHelperEx::SaveStringToFile(SaveAssetRelatedInfoToFile, AssetsDependencyString))
-			{
-				auto Message = LOCTEXT("SaveAssetRelatedInfoInfo", "Succeed to export Asset Related info.");
-				if(::IsRunningCommandlet())
-				{
-					Context.OnShowMsg.Broadcast(Message.ToString());
-				}
-				else
-				{
-					UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Message, SaveAssetRelatedInfoToFile);
-				}
-				bRetStatus = true;
-			}
-		}
-		return bRetStatus;
 	}
 
 	// backup Metadata

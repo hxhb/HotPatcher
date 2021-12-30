@@ -13,7 +13,8 @@ public class HotPatcherRuntime : ModuleRules
 		PublicIncludePaths.AddRange(
 			new string[] {
 				Path.Combine(EngineDirectory,"Source/Runtime/Launch"),
-				Path.Combine(ModuleDirectory,"Public")
+				Path.Combine(ModuleDirectory,"Public"),
+				Path.Combine(ModuleDirectory,"Public/BaseTypes")
 				// ... add public include paths required here ...
 			}
 			);
@@ -29,6 +30,7 @@ public class HotPatcherRuntime : ModuleRules
 		{
 			PublicDependencyModuleNames.Add("TargetPlatform");
 		}
+		
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
@@ -40,12 +42,30 @@ public class HotPatcherRuntime : ModuleRules
                 "JsonUtilities",
                 "PakFile",
                 "AssetRegistry",
-                "AssetManagerEx",
                 "BinariesPatchFeature"
                 // ... add other public dependencies that you statically link with here ...
 			}
 			);
 
+		PrivateDependencyModuleNames.AddRange(
+			new string[]
+			{
+				"CoreUObject",
+				"Engine",
+				"Slate",
+				"SlateCore"
+				// ... add private dependencies that you statically link with here ...	
+			}
+		);
+		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 21)
+		{
+			PrivateDependencyModuleNames.Add("RenderCore");
+		}
+		else
+		{
+			PrivateDependencyModuleNames.Add("ShaderCore");
+		}
+		
 		BuildVersion Version;
 		BuildVersion.TryRead(BuildVersion.GetDefaultFileName(), out Version);
 		// PackageContext
@@ -57,26 +77,13 @@ public class HotPatcherRuntime : ModuleRules
 
 		AddPublicDefinitions("WITH_EDITOR_SECTION", Version.MajorVersion > 4 || Version.MinorVersion > 24);
 
-		PrivateDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"CoreUObject",
-				"Engine",
-				"Slate",
-				"SlateCore"
-				// ... add private dependencies that you statically link with here ...	
-			}
-			);
-		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 21)
+		bool bCustomAssetGUID = false;
+		if(bCustomAssetGUID)
 		{
-			PrivateDependencyModuleNames.Add("RenderCore");
+			PublicDefinitions.Add("CUSTOM_ASSET_GUID");	
 		}
-		else
-		{
-			PrivateDependencyModuleNames.Add("ShaderCore");
-		}
+		
 		bLegacyPublicIncludePaths = false;
-
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
 	}
 }

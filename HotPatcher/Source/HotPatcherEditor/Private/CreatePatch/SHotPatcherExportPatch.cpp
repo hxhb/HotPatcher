@@ -9,7 +9,7 @@
 #include "FlibHotPatcherEditorHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "FHotPatcherVersion.h"
-#include "FLibAssetManageHelperEx.h"
+#include "FlibAssetManageHelper.h"
 #include "FPakFileInfo.h"
 #include "ThreadUtils/FThreadUtils.hpp"
 #include "HotPatcherLog.h"
@@ -144,9 +144,9 @@ void SHotPatcherExportPatch::ImportConfig()
 	FString LoadFile = Files[0];
 
 	FString JsonContent;
-	if (UFLibAssetManageHelperEx::LoadFileToString(LoadFile, JsonContent))
+	if (UFlibAssetManageHelper::LoadFileToString(LoadFile, JsonContent))
 	{
-		UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportPatchSetting);
+		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportPatchSetting);
 		SettingsView->GetDetailsView()->ForceRefresh();
 	}
 }
@@ -165,7 +165,7 @@ void SHotPatcherExportPatch::ExportConfig()const
 		if (ExportPatchSetting->IsSaveConfig())
 		{
 			FString SerializedJsonStr;
-			UFlibPatchParserHelper::TSerializeStructAsJsonString(*ExportPatchSetting,SerializedJsonStr);
+			THotPatcherTemplateHelper::TSerializeStructAsJsonString(*ExportPatchSetting,SerializedJsonStr);
 			if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveToFile))
 			{
 				FText Msg = LOCTEXT("SavedPatchConfigMas", "Successd to Export the Patch Config.");
@@ -179,8 +179,8 @@ void SHotPatcherExportPatch::ResetConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Patch Clear Config"));
 	FString DefaultSettingJson;
-	UFlibPatchParserHelper::TSerializeStructAsJsonString(*FExportPatchSettings::Get(),DefaultSettingJson);
-	UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*ExportPatchSetting);
+	THotPatcherTemplateHelper::TSerializeStructAsJsonString(*FExportPatchSettings::Get(),DefaultSettingJson);
+	THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*ExportPatchSetting);
 	SettingsView->GetDetailsView()->ForceRefresh();
 
 }
@@ -287,9 +287,9 @@ FReply SHotPatcherExportPatch::DoDiff()const
 
 	if (ExportPatchSetting->IsByBaseVersion())
 	{
-		if (UFLibAssetManageHelperEx::LoadFileToString(ExportPatchSetting->GetBaseVersion(), BaseVersionContent))
+		if (UFlibAssetManageHelper::LoadFileToString(ExportPatchSetting->GetBaseVersion(), BaseVersionContent))
 		{
-			bDeserializeStatus = UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(BaseVersionContent, BaseVersion);
+			bDeserializeStatus = THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(BaseVersionContent, BaseVersion);
 		}
 		if (!bDeserializeStatus)
 		{
@@ -307,7 +307,6 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		ExportPatchSetting->GetAssetRegistryDependencyTypes(),
 		ExportPatchSetting->GetIncludeSpecifyAssets(),
 		ExportPatchSetting->GetAddExternAssetsToPlatform(),
-		ExportPatchSetting->GetAssetsDependenciesScanedCaches(),
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
 	);
 
@@ -315,7 +314,7 @@ FReply SHotPatcherExportPatch::DoDiff()const
 	
 	bool bShowDeleteAsset = false;
 	FString SerializeDiffInfo;
-	UFlibPatchParserHelper::TSerializeStructAsJsonString(VersionDiffInfo,SerializeDiffInfo);
+	THotPatcherTemplateHelper::TSerializeStructAsJsonString(VersionDiffInfo,SerializeDiffInfo);
 	SetInformationContent(SerializeDiffInfo);
 	SetInfomationContentVisibility(EVisibility::Visible);
 
@@ -368,7 +367,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 		}
 	}
 	ExportPatchSetting->Init();
-	UFLibAssetManageHelperEx::UpdateAssetMangerDatabase(true);
+	UFlibAssetManageHelper::UpdateAssetMangerDatabase(true);
 	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
 
 	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
@@ -376,7 +375,6 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 		BaseVersion.VersionId,
 		FDateTime::UtcNow().ToString(),
 		NewVersionChunk,
-		ExportPatchSetting->GetAssetsDependenciesScanedCaches(),
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
 	);
 
@@ -393,8 +391,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 		FChunkAssetDescribe ChunkDiffInfo = UFlibHotPatcherEditorHelper::DiffChunkWithPatchSetting(
 			*ExportPatchSetting,
 			NewVersionChunk,
-			TotalChunk,
-			ExportPatchSetting->GetAssetsDependenciesScanedCaches()
+			TotalChunk
 		);
 		if(ChunkDiffInfo.HasValidAssets())
 		{
@@ -405,7 +402,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 	FString ShowMsg;
 	for (const auto& Chunk : PatchChunks)
 	{	
-		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(VersionDiffInfo, Chunk,ExportPatchSetting->GetPakTargetPlatforms(),ExportPatchSetting->GetAssetsDependenciesScanedCaches());
+		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(VersionDiffInfo, Chunk,ExportPatchSetting->GetPakTargetPlatforms());
 		ShowMsg.Append(FString::Printf(TEXT("Chunk:%s\n"), *Chunk.ChunkName));
 		auto AppendFilesToMsg = [&ShowMsg](const FString& CategoryName, const TArray<FName>& InFiles)
 		{
@@ -423,7 +420,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 		for(auto Platform:ExportPatchSetting->GetPakTargetPlatforms())
 		{
 			TArray<FName> PlatformExFiles;
-			FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform,false);
+			FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform,false);
 			PlatformExFiles.Append(ChunkAssetsDescrible.GetExternalFileNames(Platform));
 			AppendFilesToMsg(PlatformName, PlatformExFiles);
 		}
@@ -503,10 +500,11 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	else
 	{
 		FString CurrentConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("PatchConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
-		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs());
+		FString ProfilingCmd = GetConfigSettings()->IsEnableProfiling() ? TEXT("-trace=cpu,loadtimetrace") : TEXT("");
+		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs(),*ProfilingCmd);
 		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
 		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
 	}
@@ -628,7 +626,7 @@ FReply SHotPatcherExportPatch::DoPreviewPatch()
 
 	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
 	
-	FChunkAssetDescribe ChunkAssetsDescrible = UFlibHotPatcherEditorHelper::DiffChunkByBaseVersionWithPatchSetting(*ExportPatchSetting.Get(),NewVersionChunk, DefaultChunk, BaseVersion,ExportPatchSetting->GetAssetsDependenciesScanedCaches());
+	FChunkAssetDescribe ChunkAssetsDescrible = UFlibHotPatcherEditorHelper::DiffChunkByBaseVersionWithPatchSetting(*ExportPatchSetting.Get(),NewVersionChunk, DefaultChunk, BaseVersion);
 
 	TArray<FName> AllUnselectedAssets = ChunkAssetsDescrible.GetAssetsStrings();
 	TArray<FName> UnSelectedInternalFiles = ChunkAssetsDescrible.GetInternalFileNames();
@@ -650,7 +648,7 @@ FReply SHotPatcherExportPatch::DoPreviewPatch()
 	for(auto Platform:ExportPatchSetting->GetPakTargetPlatforms())
 	{
 		TArray<FName> PlatformExFiles;
-		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform,false);
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform,false);
 		PlatformExFiles.Append(ChunkAssetsDescrible.GetExternalFileNames(Platform));
 		PlatformExFiles.Append(ChunkAssetsDescrible.GetExternalFileNames(ETargetPlatform::AllPlatforms));
 		ChunkCheckerMsg(PlatformName, PlatformExFiles);

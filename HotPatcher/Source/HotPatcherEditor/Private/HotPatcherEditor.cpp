@@ -337,8 +337,8 @@ void FHotPatcherEditorModule::MakeCookActionsSubMenu(UToolMenu* Menu)
 		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
 			continue;
 		Section.AddMenuEntry(
-            FName(*UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
-            FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))),
+            FName(*THotPatcherTemplateHelper::GetEnumNameByValue(Platform)),
+            FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(THotPatcherTemplateHelper::GetEnumNameByValue(Platform))),
             FText(),
             FSlateIcon(),
             FUIAction(
@@ -355,13 +355,13 @@ void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
 	Settings->ReloadConfig();
 	for (auto Platform : GetAllCookPlatforms())
 	{
-		FString PlatformName = UFlibPatchParserHelper::GetEnumNameByValue(Platform);
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
 		if(PlatformName.StartsWith(TEXT("All")))
 			continue;
 		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
 			continue;
 		FToolMenuEntry& PlatformEntry = Section.AddSubMenu(FName(*PlatformName),
-			FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))),
+			FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(THotPatcherTemplateHelper::GetEnumNameByValue(Platform))),
 			FText(),
 			FNewMenuDelegate::CreateLambda([=](FMenuBuilder& SubMenuBuilder){
 				SubMenuBuilder.AddMenuEntry(
@@ -376,8 +376,8 @@ void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
 			));
 		
 		// Section.AddMenuEntry(
-  //           FName(*UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
-  //           FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform))),
+  //           FName(*THotPatcherTemplateHelper::GetEnumNameByValue(Platform)),
+  //           FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(THotPatcherTemplateHelper::GetEnumNameByValue(Platform))),
   //           FText(),
   //           FSlateIcon(),
   //           FUIAction(
@@ -397,7 +397,7 @@ void FHotPatcherEditorModule::MakePakExternalActionsSubMenu(UToolMenu* Menu)
 		FString AppendPlatformName;
 		for(const auto& Platform:PakExternalConfig.TargetPlatforms)
 		{
-			AppendPlatformName += FString::Printf(TEXT("%s/"),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+			AppendPlatformName += FString::Printf(TEXT("%s/"),*THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
 		}
 		AppendPlatformName.RemoveFromEnd(TEXT("/"));
 		
@@ -478,7 +478,7 @@ void FHotPatcherEditorModule::OnPakPreset(FExportPatchSettings Config)
 	else
 	{
 		FString CurrentConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(Config,CurrentConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(Config,CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("PatchConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*Config.GetCombinedAdditionalCommandletArgs());
@@ -497,7 +497,7 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 	TArray<FString> SelectedFolder = GetSelectedFolderInBrowserContent();
 	TArray<FAssetData> FolderAssetDatas;
 	
-	UFLibAssetManageHelperEx::GetAssetDataInPaths(SelectedFolder,FolderAssetDatas);
+	UFlibAssetManageHelper::GetAssetDataInPaths(SelectedFolder,FolderAssetDatas);
 	AssetsData.Append(FolderAssetDatas);
 	
 	FCookManager::FCookMission CookMission;
@@ -508,7 +508,7 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 		auto Msg = FText::Format(
 			LOCTEXT("CookAssetsNotify", "Cook {1} for {0} {2}!"),
 			UKismetTextLibrary::Conv_StringToText(PackageName),
-			UKismetTextLibrary::Conv_StringToText(UFlibPatchParserHelper::GetEnumNameByValue(Platform)),
+			UKismetTextLibrary::Conv_StringToText(THotPatcherTemplateHelper::GetEnumNameByValue(Platform)),
 			bSuccessed ? UKismetTextLibrary::Conv_StringToText(TEXT("Successfuly")):UKismetTextLibrary::Conv_StringToText(TEXT("Faild"))
 			);
 		SNotificationItem::ECompletionState CookStatus = bSuccessed ? SNotificationItem::CS_Success:SNotificationItem::CS_Fail;
@@ -525,7 +525,7 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 		CookMission.MissionPackages.Add(CurrentPackage);
 		if(!GCookLog)
 		{
-			UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*AssetsData[index].PackagePath.ToString(),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+			UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*AssetsData[index].PackagePath.ToString(),*THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
 		}
 	}
 	CookMission.Callback = [](bool){};
@@ -536,7 +536,7 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 			FString PlatformsStr;
 			for(const auto& Platform:Package.CookPlatforms)
 			{
-				PlatformsStr += FString::Printf(TEXT("%s/"),*UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+				PlatformsStr += FString::Printf(TEXT("%s/"),*THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
 			}
 			PlatformsStr.RemoveFromEnd(TEXT("/"));
 			auto Msg = FText::Format(
@@ -584,7 +584,7 @@ void FHotPatcherEditorModule::CookAndPakByAssetsAndFilters(TArray<FPatcherSpecif
 	if(bForceStandalone || PatchSettings->IsStandaloneMode())
 	{
 		FString CurrentConfig;
-		UFlibPatchParserHelper::TSerializeStructAsJsonString(*PatchSettings,CurrentConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*PatchSettings,CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("PatchConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*PatchSettings->GetCombinedAdditionalCommandletArgs());
