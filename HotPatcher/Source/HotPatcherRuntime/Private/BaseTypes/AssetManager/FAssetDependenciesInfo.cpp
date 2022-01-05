@@ -4,6 +4,8 @@
 
 void FAssetDependenciesInfo::AddAssetsDetail(const FAssetDetail& AssetDetail)
 {
+	if(!AssetDetail.IsValid())
+		return;
 	FString CurrAssetModuleName = UFlibAssetManageHelper::GetAssetBelongModuleName(AssetDetail.PackagePath.ToString());
 	FSoftObjectPath CurrAssetObjectPath(AssetDetail.PackagePath);
 	FString CurrAssetLongPackageName = CurrAssetObjectPath.GetLongPackageName();

@@ -1297,8 +1297,11 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 			for(FName LongPackageName:Parser.GetrParseResults())
 			{
 				FAssetDetail CurrentDetail;
-				UFlibAssetManageHelper::GetSpecifyAssetDetail(LongPackageName.ToString(),CurrentDetail);
-				ExportVersion.AssetInfo.AddAssetsDetail(CurrentDetail);
+				if(UFlibAssetManageHelper::GetSpecifyAssetDetail(LongPackageName.ToString(),CurrentDetail))
+				{
+					ExportVersion.AssetInfo.AddAssetsDetail(CurrentDetail);
+				}
+				
 			}
 		}
 	}

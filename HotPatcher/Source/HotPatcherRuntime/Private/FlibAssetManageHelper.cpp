@@ -444,6 +444,10 @@ bool UFlibAssetManageHelper::GetSpecifyAssetDetail(const FString& InLongPackageN
 			bRunStatus = true;
 		}
 	}
+	if(!bRunStatus)
+	{
+		UE_LOG(LogHotPatcher,Display,TEXT("Get %s AssetDetail failed!"),*InLongPackageName);
+	}
 	return bRunStatus;
 }
 
