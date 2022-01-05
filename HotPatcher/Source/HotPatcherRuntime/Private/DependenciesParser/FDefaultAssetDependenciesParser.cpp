@@ -1,5 +1,6 @@
 #include "DependenciesParser/FDefaultAssetDependenciesParser.h"
 #include "FlibAssetManageHelper.h"
+#include "HotPatcherLog.h"
 
 
 void FAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
@@ -51,6 +52,10 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("Get dependencies for SpecifyAsset"),FColor::Red);
 		for(const auto& SpecifyAsset:ParseConfig.InIncludeSpecifyAsset)
 		{
+			if(!SpecifyAsset.Asset.IsValid())
+			{
+				continue;
+			}
 			Results.Add(FName(SpecifyAsset.Asset.GetLongPackageName()));
 			if(SpecifyAsset.bAnalysisAssetDependencies)
 			{
@@ -58,7 +63,8 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 			}
 		}
 	}
-	
+
+	Results.Remove(FName(NAME_None));
 }
 
 bool IsValidPackageName(const FString& LongPackageName)
@@ -102,7 +108,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 	for (auto &LongPackageName : CurrentAssetDependencies)
 	{
 		// ignore /Script/WeatherSystem and self
-		if(!IsValidPackageName(LongPackageName.ToString()) || LongPackageName == InLongPackageName)
+		if(LongPackageName.IsNone() || !IsValidPackageName(LongPackageName.ToString()) || LongPackageName == InLongPackageName)
 			continue;
 		AssetDependencies.Add(LongPackageName);
 	}

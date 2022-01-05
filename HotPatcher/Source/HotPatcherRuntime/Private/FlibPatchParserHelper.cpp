@@ -943,6 +943,8 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 		// AssetFilterPaths.Append(SpecifyDependAssets.GetAssetLongPackageNames());
 		for(FName LongPackageName:AssetLongPackageNames)
 		{
+			if(LongPackageName.IsNone())
+				continue;
 			AssetFilterPaths.AddUnique(LongPackageName.ToString());
 		}
 
@@ -1296,12 +1298,13 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 			SCOPED_NAMED_EVENT_TCHAR(TEXT("combine all assets to FAssetDependenciesInfo"),FColor::Red);
 			for(FName LongPackageName:Parser.GetrParseResults())
 			{
+				if(LongPackageName.IsNone())
+					continue;
 				FAssetDetail CurrentDetail;
 				if(UFlibAssetManageHelper::GetSpecifyAssetDetail(LongPackageName.ToString(),CurrentDetail))
 				{
 					ExportVersion.AssetInfo.AddAssetsDetail(CurrentDetail);
 				}
-				
 			}
 		}
 	}
