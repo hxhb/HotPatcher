@@ -58,27 +58,6 @@ FPakVersion FExportPatchSettings::GetPakVersion(const FHotPatcherVersion& InHotP
 	return PakVersion;
 }
 
-TArray<FExternFileInfo> FExportPatchSettings::GetAllExternFiles(bool InGeneratedHash)const
-{
-	TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
-
-	for (auto& ExFile : GetAddExternFiles())
-	{
-		if (!AllExternFiles.Contains(ExFile))
-		{
-			AllExternFiles.Add(ExFile);
-		}
-	}
-	if (InGeneratedHash)
-	{
-		for (auto& ExFile : AllExternFiles)
-		{
-			ExFile.GenerateFileHash();
-		}
-	}
-	return AllExternFiles;
-}
-
 FString FExportPatchSettings::GetSavePakVersionPath(const FString& InSaveAbsPath, const FHotPatcherVersion& InVersion)
 {
 	FString PatchSavePath(InSaveAbsPath);

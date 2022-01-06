@@ -1101,7 +1101,7 @@ FPatchVersionDiff UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(
 		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipContents);
 	}
 	// clean deleted asset info in patch
-	if(PatchSetting.IsIgnoreDeleatedAssetsInfo())
+	if(PatchSetting.IsIgnoreDeletedAssetsInfo())
 	{
 		UE_LOG(LogHotPatcher,Display,TEXT("ignore deleted assets info in patch..."));
 		VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap.Empty();

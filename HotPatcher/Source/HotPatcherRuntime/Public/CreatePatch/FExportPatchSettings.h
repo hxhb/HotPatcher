@@ -136,8 +136,6 @@ public:
 		return &StaticIns;
 	}
 
-	TArray<FExternFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const;
-
 	// override
 	FORCEINLINE virtual TArray<FDirectoryPath>& GetAssetIncludeFilters() override{ return AssetIncludeFilters; }
 	FORCEINLINE virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets()override { return IncludeSpecifyAssets; }
@@ -188,8 +186,6 @@ public:
 	FORCEINLINE TArray<FChunkInfo> GetChunkInfos()const { return ChunkInfos; }
 
 	FORCEINLINE FString GetPakVersionFileMountPoint()const { return PakVersionFileMountPoint; }
-	FORCEINLINE TArray<FExternFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
-	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
 	static FPakVersion GetPakVersion(const FHotPatcherVersion& InHotPatcherVersion,const FString& InUtcTime);
 	static FString GetSavePakVersionPath(const FString& InSaveAbsPath,const FHotPatcherVersion& InVersion);
 	static FString GetPakCommandsSaveToPath(const FString& InSaveAbsPath, const FString& InPlatfornName, const FHotPatcherVersion& InVersion);
@@ -201,7 +197,7 @@ public:
 	FORCEINLINE bool IsCustomPakNameRegular()const {return bCustomPakNameRegular;}
 	FORCEINLINE FString GetPakNameRegular()const { return PakNameRegular;}
 	FORCEINLINE bool IsCookPatchAssets()const {return bCookPatchAssets;}
-	FORCEINLINE bool IsIgnoreDeleatedAssetsInfo()const {return bIgnoreDeleatedAssetsInfo;}
+	FORCEINLINE bool IsIgnoreDeletedAssetsInfo()const {return bIgnoreDeletedAssetsInfo;}
 	FORCEINLINE bool IsSaveDeletedAssetsToNewReleaseJson()const {return bStorageDeletedAssetsToNewReleaseJson;}
 	
 	TArray<FString> GetAssetIncludeFiltersPaths()const;
@@ -290,15 +286,11 @@ public:
 		bool bEnableExternFilesDiff = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		TArray<FString> IgnoreDeletionModulesAsset;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
-		TArray<FExternFileInfo> AddExternFileToPak;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
-		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
 		bool bIncludePakVersionFile = false;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))
 		FString PakVersionFileMountPoint;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options")
 		bool bEnableChunk = false;
@@ -352,7 +344,7 @@ public:
 		bool bStoragePakFileInfo = true;
 	// dont display deleted asset info in patcher
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-		bool bIgnoreDeleatedAssetsInfo = false;
+		bool bIgnoreDeletedAssetsInfo = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bStorageDeletedAssetsToNewReleaseJson = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bByBaseVersion"))

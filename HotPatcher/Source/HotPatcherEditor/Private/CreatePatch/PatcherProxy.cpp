@@ -49,13 +49,11 @@ bool UPatcherProxy::CanExportPatch()const
 		bool bHasVersionId = !NoConstSettingObject->GetVersionId().IsEmpty();
 		bool bHasFilter = !!NoConstSettingObject->GetAssetIncludeFiltersPaths().Num();
 		bool bHasSpecifyAssets = !!NoConstSettingObject->GetIncludeSpecifyAssets().Num();
-		bool bHasExternFiles = !!NoConstSettingObject->GetAddExternFiles().Num();
-		bool bHasExDirs = !!NoConstSettingObject->GetAddExternDirectory().Num();
 		bool bHasSavePath = !NoConstSettingObject->GetSaveAbsPath().IsEmpty();
 		bool bHasPakPlatfotm = !!NoConstSettingObject->GetPakTargetPlatforms().Num();
 
 		bool bHasAnyPakFiles = (
-			bHasFilter || bHasSpecifyAssets || bHasExternFiles || bHasExDirs ||
+			bHasFilter || bHasSpecifyAssets ||
 			NoConstSettingObject->IsIncludeEngineIni() ||
 			NoConstSettingObject->IsIncludePluginIni() ||
 			NoConstSettingObject->IsIncludeProjectIni()
