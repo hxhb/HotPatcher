@@ -402,6 +402,12 @@ bool UFlibAssetManageHelper::GetSingleAssetsData(const FString& InPackagePath, F
 	return AssetManager.GetAssetDataForPath(FSoftObjectPath{ InPackagePath }, OutAssetData);
 }
 
+bool UFlibAssetManageHelper::GetAssetsDataByPackageName(const FString& InPackageName, FAssetData& OutAssetData)
+{
+	FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InPackageName);
+	return UFlibAssetManageHelper::GetSingleAssetsData(PackagePath,OutAssetData);
+}
+
 bool UFlibAssetManageHelper::GetClassStringFromFAssetData(const FAssetData& InAssetData, FString& OutAssetType)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetClassStringFromFAssetData"),FColor::Red);
@@ -1017,6 +1023,62 @@ FString UFlibAssetManageHelper::PackagePathToLongPackageName(const FString& Pack
 {
 	FSoftObjectPath ObjectPath = PackagePath;
 	return ObjectPath.GetLongPackageName();
+}
+
+void UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(FAssetDependenciesInfo& AssetDependencies,const TArray<FString>& ExcludeRules)
+{
+	auto ExcludeEditorContent = [&ExcludeRules](TMap<FString,FAssetDependenciesDetail>& AssetCategorys)
+	{
+		TArray<FString> Keys;
+		AssetCategorys.GetKeys(Keys);
+		for(const auto& Key:Keys)
+		{
+			FAssetDependenciesDetail&  ModuleAssetList = *AssetCategorys.Find(Key);
+			TArray<FString> AssetKeys;
+			
+			ModuleAssetList.AssetDependencyDetails.GetKeys(AssetKeys);
+			for(const auto& AssetKey:AssetKeys)
+			{
+				bool customStartWith = false;
+				FString MatchRule;
+				for(const auto& Rule:ExcludeRules)
+				{
+					if(AssetKey.StartsWith(Rule))
+					{
+						MatchRule = Rule;
+						customStartWith = true;
+						break;
+					}
+				}
+				if( customStartWith )
+				{
+					UE_LOG(LogHotPatcher,Display,TEXT("remove %s in AssetDependencies(match exclude rule %s)"),*AssetKey,*MatchRule);
+					ModuleAssetList.AssetDependencyDetails.Remove(AssetKey);
+				}
+			}
+		}
+	};
+	ExcludeEditorContent(AssetDependencies.AssetsDependenciesMap);
+}
+
+TArray<FString> UFlibAssetManageHelper::DirectoryPathsToStrings(const TArray<FDirectoryPath>& DirectoryPaths)
+{
+	TArray<FString> Path;
+	for(const auto& DirPath:DirectoryPaths)
+	{
+		Path.Add(DirPath.Path);
+	}
+	return Path;
+}
+
+TArray<FString> UFlibAssetManageHelper::SoftObjectPathsToStrings(const TArray<FSoftObjectPath>& SoftObjectPaths)
+{
+	TArray<FString> result;
+	for(const auto &Asset:SoftObjectPaths)
+	{
+		result.Add(Asset.GetLongPackageName());
+	}
+	return result;
 }
 
 // PRAGMA_ENABLE_DEPRECATION_WARNINGS

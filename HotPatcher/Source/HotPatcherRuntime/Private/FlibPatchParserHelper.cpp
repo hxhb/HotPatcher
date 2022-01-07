@@ -934,7 +934,8 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 		FAssetDependenciesParser Parser;
 		FAssetDependencies Conf;
 		Conf.InIncludeSpecifyAsset = Chunk.IncludeSpecifyAssets;
-
+		Conf.IgnoreDependenciesAseetTypes = { FName(TEXT("World")) };
+		
 		Parser.Parse(Conf);
 		TSet<FName> AssetLongPackageNames = Parser.GetrParseResults();
 		
@@ -1233,9 +1234,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	const TArray<FString>& InIgnoreFilter,
 	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
 	const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
-	// const TArray<FExternAssetFileInfo>& InAllExternFiles,
 	const TArray<FPlatformExternAssets>& AddToPlatformExFiles,
-	// TMap<FString, FAssetDependenciesInfo>& ScanedCaches,
 	bool InIncludeHasRefAssetsOnly,
 	bool bInAnalysisFilterDependencies
 )
@@ -1247,8 +1246,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 		ExportVersion.Date = InDate;
 		ExportVersion.BaseVersionId = InBaseVersion;
 	}
-
-
+	
 	// add Include Filter
 	{
 		TArray<FString> AllIncludeFilter;
@@ -1286,6 +1284,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	AssetConfig.bRedirector = true;
 	AssetConfig.AnalysicFilterDependencies = bInAnalysisFilterDependencies;
 	AssetConfig.IncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
+	AssetConfig.IgnoreDependenciesAseetTypes = { FName(TEXT("World")) };
 	
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("parser all uasset dependencies(optimized)"),FColor::Red);
@@ -1493,41 +1492,10 @@ bool UFlibPatchParserHelper::GetCookProcCommandParams(const FCookerConfig& InCon
 
 void UFlibPatchParserHelper::ExcludeContentForVersionDiff(FPatchVersionDiff& VersionDiff,const TArray<FString>& ExcludeRules)
 {
-	auto ExcludeEditorContent = [&ExcludeRules](TMap<FString,FAssetDependenciesDetail>& AssetCategorys)
-	{
-		TArray<FString> Keys;
-		AssetCategorys.GetKeys(Keys);
-		for(const auto& Key:Keys)
-		{
-			FAssetDependenciesDetail&  ModuleAssetList = *AssetCategorys.Find(Key);
-			TArray<FString> AssetKeys;
-			
-			ModuleAssetList.AssetDependencyDetails.GetKeys(AssetKeys);
-			for(const auto& AssetKey:AssetKeys)
-			{
-				bool customStartWith = false;
-                for(const auto& Rule:ExcludeRules)
-                {
-                	if(AssetKey.StartsWith(Rule))
-                	{
-                		customStartWith = true;
-                		break;
-                	}
-                }
-                			
-                if( customStartWith )
-                {
-                	ModuleAssetList.AssetDependencyDetails.Remove(AssetKey);
-                }
-			}
-		}
-	};
-
-	ExcludeEditorContent(VersionDiff.AssetDiffInfo.AddAssetDependInfo.AssetsDependenciesMap);
-	ExcludeEditorContent(VersionDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap);
-	ExcludeEditorContent(VersionDiff.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.AddAssetDependInfo,ExcludeRules);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.ModifyAssetDependInfo,ExcludeRules);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.DeleteAssetDependInfo,ExcludeRules);
 }
-
 
 FString UFlibPatchParserHelper::MountPathToRelativePath(const FString& InMountPath)
 {

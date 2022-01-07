@@ -1096,8 +1096,8 @@ FPatchVersionDiff UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(
 	if(PatchSetting.IsForceSkipContent())
 	{
 		TArray<FString> AllSkipContents;
-		AllSkipContents.Append(PatchSetting.GetForceSkipContentStrRules());
-		AllSkipContents.Append(PatchSetting.GetForceSkipAssetsStr());
+		AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(PatchSetting.GetForceSkipContentRules()));
+		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(PatchSetting.GetForceSkipAssets()));
 		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipContents);
 	}
 	// clean deleted asset info in patch

@@ -6,6 +6,7 @@
 #include "AssetManager/FAssetDetail.h"
 
 // engine
+#include "Engine/EngineTypes.h"
 #include "Dom/JsonValue.h"
 #include "Templates/SharedPointer.h"
 #include "AssetRegistryModule.h"
@@ -110,6 +111,7 @@ public:
 		static bool GetAssetsData(const TArray<FString>& InFilterPaths, TArray<FAssetData>& OutAssetData, bool bIncludeOnlyOnDiskAssets = true);
 		static bool GetAssetsDataByDisk(const TArray<FString>& InFilterPaths, TArray<FAssetData>& OutAssetData);
 		static bool GetSingleAssetsData(const FString& InPackagePath, FAssetData& OutAssetData);
+		static bool GetAssetsDataByPackageName(const FString& InPackageName, FAssetData& OutAssetData);
 		static bool GetClassStringFromFAssetData(const FAssetData& InAssetData,FString& OutAssetType);
 		static bool ConvFAssetDataToFAssetDetail(const FAssetData& InAssetData,FAssetDetail& OutAssetDetail);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
@@ -190,4 +192,11 @@ public:
 	static EAssetRegistryDependencyType::Type ConvAssetRegistryDependencyToInternal(const EAssetRegistryDependencyTypeEx& InType);
 
 	static void GetAssetDataInPaths(const TArray<FString>& Paths, TArray<FAssetData>& OutAssetData);
+
+	static void ExcludeContentForAssetDependenciesDetail(FAssetDependenciesInfo& AssetDependencies,const TArray<FString>& ExcludeRules = {TEXT("")});
+
+	
+	static TArray<FString> DirectoryPathsToStrings(const TArray<FDirectoryPath>& DirectoryPaths);
+	static TArray<FString> SoftObjectPathsToStrings(const TArray<FSoftObjectPath>& SoftObjectPaths);
+	
 };

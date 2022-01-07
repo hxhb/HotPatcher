@@ -13,6 +13,7 @@ struct FAssetDependencies
 	bool bRedirector = true;
 	bool AnalysicFilterDependencies = true;
 	bool IncludeHasRefAssetsOnly = false;
+	TSet<FName> IgnoreDependenciesAseetTypes;
 };
 
 struct IAssetDependenciesParser

@@ -189,23 +189,3 @@ FString FExportPatchSettings::GetShaderLibraryName() const
 	return ShaderLibraryName;
 }
 
-TArray<FString> FExportPatchSettings::GetForceSkipContentStrRules()const
-{
-	TArray<FString> Path;
-	for(const auto& DirPath:GetForceSkipContentRules())
-	{
-		Path.AddUnique(DirPath.Path);
-	}
-	return Path;
-}
-
-TArray<FString> FExportPatchSettings::GetForceSkipAssetsStr()const
-{
-	TArray<FString> result;
-	for(const auto &Asset:GetForceSkipAssets())
-	{
-		result.Add(Asset.GetLongPackageName());
-	}
-	return result;
-}
-

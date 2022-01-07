@@ -393,10 +393,12 @@ FExportPatchSettings UMultiCookerProxy::MakePatchSettings()
 	CookPatchSettings.AssetIncludeFilters = GetSettingObject()->AssetIncludeFilters;
 	CookPatchSettings.AssetIgnoreFilters = GetSettingObject()->AssetIgnoreFilters;
 	CookPatchSettings.IncludeSpecifyAssets = GetSettingObject()->IncludeSpecifyAssets;
+	
 	CookPatchSettings.bIncludeHasRefAssetsOnly = GetSettingObject()->bIncludeHasRefAssetsOnly;
 	CookPatchSettings.bAnalysisFilterDependencies = GetSettingObject()->bAnalysisFilterDependencies;
 	CookPatchSettings.bForceSkipContent = GetSettingObject()->bForceSkipContent;
 	CookPatchSettings.ForceSkipContentRules = GetSettingObject()->ForceSkipContentRules;
+	CookPatchSettings.ForceSkipAssets = GetSettingObject()->ForceSkipAssets;
 	CookPatchSettings.AssetRegistryDependencyTypes = GetSettingObject()->AssetRegistryDependencyTypes;
 	CookPatchSettings.SavePath = GetSettingObject()->SavePath;
 	return CookPatchSettings;
@@ -487,6 +489,15 @@ bool UMultiCookerProxy::DoExport()
 		   CookPatchSettings.IsAnalysisFilterDependencies()
 	   );
 	}
+	
+	if(CookPatchSettings.IsForceSkipContent())
+	{
+		TArray<FString> AllSkipContents;
+		AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(CookPatchSettings.GetForceSkipContentRules()));
+		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(CookPatchSettings.GetForceSkipAssets()));
+		UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(CurrentVersion.AssetInfo,AllSkipContents);
+	}
+	
 	FMultiCookerAssets MultiCookerAssets;
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("GetAssetDetailsByAssetDependenciesInfo and Serialize to json"),FColor::Red);

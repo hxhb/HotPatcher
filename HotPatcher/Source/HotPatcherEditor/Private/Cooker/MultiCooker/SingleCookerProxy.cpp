@@ -80,7 +80,12 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 			FSoftObjectPath AssetSoftPath;
 			AssetSoftPath.SetPath(Asset.PackagePath);
 			// PackagePathSet.PackagePaths.Add(Asset.PackagePath);
-			
+
+			if(GetSettingObject()->MultiCookerSettings.IsSkipAssets(*AssetSoftPath.GetAssetName()))
+			{
+				UE_LOG(LogHotPatcher,Display,TEXT("Skip Cook %s"),*Asset.PackagePath.ToString());
+				continue;
+			}
 			UPackage* Package = LoadPackage(nullptr, *Asset.PackagePath.ToString(), LOAD_None);;
 			SoftObjectPaths.AddUnique(AssetSoftPath);
 			AllObjects.AddUnique(Package);
@@ -179,6 +184,13 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 		TArray<FSoftObjectPath> AdditionAssets;
 		for(FName PackagePath:PackageTracker->GetPendingPackageSet())
 		{
+			// FSoftObjectPath ObjectPath{PackagePath};
+			//
+			// if(GetSettingObject()->MultiCookerSettings.IsSkipAssets(*ObjectPath.GetAssetName()))
+			// {
+			// 	UE_LOG(LogHotPatcher,Display,TEXT("Skip Cook Runtime Loaded %s"),*PackagePath.ToString());
+			// 	continue;
+			// }
 			AdditionAssets.Emplace(PackagePath);
 		}
 		UFlibHotPatcherEditorHelper::CookAssets(AdditionAssets,GetSettingObject()->MultiCookerSettings.CookTargetPlatforms,PackageSavedCallback,CookFailedCallback

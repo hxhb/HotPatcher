@@ -163,8 +163,6 @@ public:
 	FORCEINLINE bool IsForceSkipContent()const{return bForceSkipContent;}
 	FORCEINLINE TArray<FDirectoryPath> GetForceSkipContentRules()const {return ForceSkipContentRules;}
 	FORCEINLINE TArray<FSoftObjectPath> GetForceSkipAssets()const {return ForceSkipAssets;}
-	TArray<FString> GetForceSkipContentStrRules()const;
-	TArray<FString> GetForceSkipAssetsStr()const;
 	
 	FORCEINLINE bool IsPackageTracker()const { return bPackageTracker; }
 	FORCEINLINE bool IsIncludeAssetRegistry()const { return bIncludeAssetRegistry; }

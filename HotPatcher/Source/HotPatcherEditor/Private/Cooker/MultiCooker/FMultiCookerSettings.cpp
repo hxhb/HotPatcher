@@ -28,6 +28,14 @@ bool FMultiCookerSettings::IsValidConfig() const
 	return (IncludeSpecifyAssets.Num() || AssetIncludeFilters.Num() || bImportProjectSettings) && CookTargetPlatforms.Num();
 }
 
+bool FMultiCookerSettings::IsSkipAssets(FName LongPacakgeName)
+{
+	TSet<FString> AllSkipContents;
+	AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(ForceSkipContentRules));
+	AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(ForceSkipAssets));
+	return AllSkipContents.Contains(LongPacakgeName.ToString());
+}
+
 void FMultiCookerSettings::ImportProjectSettings()
 {
 	FProjectPackageAssetCollection AssetCollection = UFlibHotPatcherEditorHelper::ImportProjectSettingsPackages();
@@ -41,4 +49,8 @@ void FMultiCookerSettings::ImportProjectSettings()
 		CurrentAsset.AssetRegistryDependencyTypes = {EAssetRegistryDependencyTypeEx::Packages};
 		IncludeSpecifyAssets.Add(CurrentAsset);
 	}
+	// NEVER COOK
+	AssetIgnoreFilters.Append(AssetCollection.NeverCookPaths);
+	ForceSkipContentRules.Append(AssetCollection.NeverCookPaths);
+	ForceSkipAssets.Append(AssetCollection.NeverCookPackages);
 }

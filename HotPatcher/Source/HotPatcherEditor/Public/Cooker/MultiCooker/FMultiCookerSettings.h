@@ -47,7 +47,8 @@ public:
 	virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets() override {return IncludeSpecifyAssets; };
 
 	bool IsValidConfig()const;
-
+	bool IsSkipAssets(FName LongPacakgeName);
+	
 	void ImportProjectSettings();
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter")
