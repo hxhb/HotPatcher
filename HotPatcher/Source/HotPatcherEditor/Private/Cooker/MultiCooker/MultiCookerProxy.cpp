@@ -16,7 +16,7 @@ void UMultiCookerProxy::Init()
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::Init"),FColor::Red);
 	if(GetSettingObject()->bImportProjectSettings)
 	{
-		GetSettingObject()->ImportProjectSettings();
+		UFlibHotPatcherEditorHelper::ImportProjectSettingsToSettingBase(GetSettingObject());
 	}
 	Super::Init();
 }
@@ -507,10 +507,10 @@ bool UMultiCookerProxy::DoExport()
 		FString SaveMultiCookerAssetsTo= FPaths::ConvertRelativePathToFull(SaveConfigDir,FString::Printf(TEXT("%s_MultiCookerAssets.json"),FApp::GetProjectName()));
 		FFileHelper::SaveStringToFile(SaveNeedCookAssets,*SaveMultiCookerAssetsTo);
 	}
-	OnMultiCookerBegining.Broadcast(this);
-
+	
 	if(!GetSettingObject()->bSkipCook)
 	{
+		OnMultiCookerBegining.Broadcast(this);
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("MakeSingleCookerSettings and Execute"),FColor::Red);
 		TArray<FSingleCookerSettings> SingleCookerSettings = MakeSingleCookerSettings(MultiCookerAssets.Assets);
 

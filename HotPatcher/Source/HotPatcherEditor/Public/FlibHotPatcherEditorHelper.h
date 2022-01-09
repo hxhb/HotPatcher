@@ -188,4 +188,6 @@ public:
 	static void WaitForAsyncFileWrites();
 
 	static bool IsCanCookPackage(const FString& LongPackageName);
+
+	static void ImportProjectSettingsToSettingBase(FHotPatcherSettingBase* HotPatcherSettingBase);
 };

@@ -117,7 +117,7 @@ void SHotPatcherMultiCookerPage::DoGenerate()
 
 void SHotPatcherMultiCookerPage::ImportProjectConfig()
 {
-	GetConfigSettings()->ImportProjectSettings();
+	UFlibHotPatcherEditorHelper::ImportProjectSettingsToSettingBase(CookerSettings.Get());
 	SHotPatcherCookerBase::ImportProjectConfig();
 }
 

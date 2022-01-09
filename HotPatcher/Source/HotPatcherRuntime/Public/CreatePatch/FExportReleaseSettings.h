@@ -56,33 +56,17 @@ public:
 	
 	static FExportReleaseSettings* Get();
 	FString GetVersionId()const;
-	TArray<FString> GetAssetIncludeFiltersPaths()const;
-	TArray<FString> GetAssetIgnoreFiltersPaths()const;
-	TArray<FExternFileInfo> GetAllExternFiles(bool InGeneratedHash=false)const;
 	
 	TArray<FPlatformExternAssets> GetAddExternAssetsToPlatform()const{return AddExternAssetsToPlatform;}
-	// FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bStorageAssetDependencies; }
-	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
-	FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
+
 	FORCEINLINE bool IsBackupMetadata()const {return bBackupMetadata;}
 	FORCEINLINE bool IsBackupProjectConfig()const {return bBackupProjectConfig;}
-	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
-	FORCEINLINE TArray<FPatcherSpecifyAsset> GetSpecifyAssets()const { return IncludeSpecifyAssets; }
-	FORCEINLINE bool AddSpecifyAsset(FPatcherSpecifyAsset const& InAsset){ return IncludeSpecifyAssets.AddUnique(InAsset) != INDEX_NONE; }
-
-	FORCEINLINE TArray<FExternFileInfo> GetAddExternFiles()const { return AddExternFileToPak; }
-	FORCEINLINE TArray<FExternDirectoryInfo> GetAddExternDirectory()const { return AddExternDirectoryToPak; }
-
 	FORCEINLINE bool IsByPakList()const { return ByPakList; }
 	FORCEINLINE TArray<FPlatformPakListFiles> GetPlatformsPakListFiles()const {return PlatformsPakListFiles;}
-
 	FORCEINLINE TArray<ETargetPlatform> GetBackupMetadataPlatforms()const{return BackupMetadataPlatforms;}
 	
-	// override
-	virtual TArray<FDirectoryPath>& GetAssetIncludeFilters() override{ return AssetIncludeFilters; }
-	virtual TArray<FDirectoryPath>& GetAssetIgnoreFilters()override{ return AssetIgnoreFilters; }
-	virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets()override{ return IncludeSpecifyAssets; }
 	virtual TArray<FPlatformExternAssets>& GetAddExternAssetsToPlatform()override{ return AddExternAssetsToPlatform;}
+	FORCEINLINE bool IsImportProjectSettings()const{return bImportProjectSettings;}
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Version")
@@ -91,29 +75,13 @@ public:
 		bool ByPakList = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version", meta = (RelativeToGameContentDir, EditCondition = "ByPakList"))
 		TArray<FPlatformPakListFiles> PlatformsPakListFiles;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filters")
+		bool bImportProjectSettings = false;
 	
-	/** You can use copied asset string reference here, e.g. World'/Game/NewMap.NewMap'*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "AssetFilters",meta = (RelativeToGameContentDir, LongPackageName))
-		TArray<FDirectoryPath> AssetIncludeFilters;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetFilters", meta = (RelativeToGameContentDir, LongPackageName))
-		TArray<FDirectoryPath> AssetIgnoreFilters;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetFilters")
-		bool bAnalysisFilterDependencies = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetFilters",meta=(EditCondition="bAnalysisFilterDependencies"))
-		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetFilters")
-		bool bIncludeHasRefAssetsOnly = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpecifyAssets")
-		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ExternFiles")
-		TArray<FExternFileInfo> AddExternFileToPak;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ExternFiles")
-		TArray<FExternDirectoryInfo> AddExternDirectoryToPak;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ExternFiles")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "External Files")
 		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
-	
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
-	// 	bool bStorageAssetDependencies = false;
+
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "SaveTo")
 		bool bBackupMetadata = false;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "SaveTo")

@@ -41,44 +41,14 @@ public:
 	FMultiCookerSettings();
 
 	static FMultiCookerSettings* Get();
-	
-	virtual TArray<FDirectoryPath>& GetAssetIncludeFilters()override { return AssetIncludeFilters; };
-	virtual TArray<FDirectoryPath>& GetAssetIgnoreFilters()override { return AssetIgnoreFilters; };
-	virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets() override {return IncludeSpecifyAssets; };
 
 	bool IsValidConfig()const;
 	bool IsSkipAssets(FName LongPacakgeName);
-	
-	void ImportProjectSettings();
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter")
-	bool bImportProjectSettings;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Filter",meta = (RelativeToGameContentDir, LongPackageName))
-	TArray<FDirectoryPath> AssetIncludeFilters;
-	// Ignore directories in AssetIncludeFilters 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter", meta = (RelativeToGameContentDir, LongPackageName))
-	TArray<FDirectoryPath> AssetIgnoreFilters;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter")
-	bool bForceSkipContent = true;
-	// force exclude asset folder e.g. Exclude editor content when cooking in Project Settings
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Filter",meta = (RelativeToGameContentDir, LongPackageName, EditCondition="bForceSkipContent"))
-	TArray<FDirectoryPath> ForceSkipContentRules;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Filter",meta = (EditCondition="bForceSkipContent"))
-	TArray<FSoftObjectPath> ForceSkipAssets;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter")
-	bool bIncludeHasRefAssetsOnly = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter")
-	bool bAnalysisFilterDependencies=true;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter")
-	bool bRecursiveWidgetTree = true;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Filter",meta = (EditCondition="bAnalysisFilterDependencies"))
-	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes{ EAssetRegistryDependencyTypeEx::Packages };
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Assets")
-	TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filters")
+	bool bImportProjectSettings;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	TSubclassOf<class UMultiCookScheduler> Scheduler;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")

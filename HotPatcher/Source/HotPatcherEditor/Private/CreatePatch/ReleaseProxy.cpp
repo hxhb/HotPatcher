@@ -17,6 +17,7 @@ namespace ReleaseWorker
 {
 	// inport from paklist
 	bool ImportPakListWorker(FHotPatcherReleaseContext& Context);
+	bool ImportProjectSettingsWorker(FHotPatcherReleaseContext& Context);
 	// scan new release 
 	bool ExportNewReleaseWorker(FHotPatcherReleaseContext& Context);
 	// save release asset info
@@ -44,6 +45,7 @@ bool UReleaseProxy::DoExport()
 	TArray<TFunction<bool(FHotPatcherReleaseContext&)>> ReleaseWorker;
 	
 	ReleaseWorker.Emplace(&::ReleaseWorker::ImportPakListWorker);
+	ReleaseWorker.Emplace(&::ReleaseWorker::ImportProjectSettingsWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::ExportNewReleaseWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::SaveReleaseVersionWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::SaveReleaseConfigWorker);
@@ -86,27 +88,34 @@ namespace ReleaseWorker
 		return true;
 	}
 
+	bool ImportProjectSettingsWorker(FHotPatcherReleaseContext& Context)
+	{
+		UFlibHotPatcherEditorHelper::ImportProjectSettingsToSettingBase(Context.GetSettingObject());
+		return true;
+	}
 	bool ExportNewReleaseWorker(FHotPatcherReleaseContext& Context)
 	{
 		TimeRecorder TotalTimeTR(TEXT("Export Release Version Info"));
-		
+		TArray<FString> AllSkipContent;
+		if(Context.GetSettingObject()->IsForceSkipContent())
+		{
+			AllSkipContent = Context.GetSettingObject()->GetAllSkipContents();
+		}
 		FText DiaLogMsg = FText::Format(NSLOCTEXT("AnalysisRelease", "AnalysisReleaseVersionInfo", "Analysis Release {0} Assets info."), FText::FromString(Context.GetSettingObject()->GetVersionId()));
 		Context.UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
 		Context.NewReleaseVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
 			Context.GetSettingObject()->GetVersionId(),
 			TEXT(""),
 			FDateTime::UtcNow().ToString(),
-			Context.GetSettingObject()->GetAssetIncludeFiltersPaths(),
-			Context.GetSettingObject()->GetAssetIgnoreFiltersPaths(),
+			UFlibAssetManageHelper::DirectoryPathsToStrings(Context.GetSettingObject()->GetAssetIncludeFilters()),
+			UFlibAssetManageHelper::DirectoryPathsToStrings(Context.GetSettingObject()->GetAssetIgnoreFilters()),
+			AllSkipContent,
 			Context.GetSettingObject()->GetAssetRegistryDependencyTypes(),
 			Context.GetSettingObject()->GetSpecifyAssets(),
 			Context.GetSettingObject()->GetAddExternAssetsToPlatform(),
 			Context.GetSettingObject()->IsIncludeHasRefAssetsOnly(),
 			Context.GetSettingObject()->IsAnalysisFilterDependencies()
 		);
-		FString NewReleaseVersionStr;
-		THotPatcherTemplateHelper::TSerializeStructAsJsonString(Context.NewReleaseVersion,NewReleaseVersionStr);
-		UE_LOG(LogHotPatcher,Display,TEXT("New Version Release Config:\n%s"),*NewReleaseVersionStr);
 		return true;
 	}
 

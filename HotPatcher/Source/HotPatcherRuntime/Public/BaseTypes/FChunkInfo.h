@@ -131,7 +131,14 @@ public:
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Assets")
+		bool bForceSkipContent = false;
+	// force exclude asset folder e.g. Exclude editor content when cooking in Project Settings
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Assets",meta = (RelativeToGameContentDir, LongPackageName, EditCondition="bForceSkipContent"))
+		TArray<FDirectoryPath> ForceSkipContentRules;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Assets",meta = (EditCondition="bForceSkipContent"))
+		TArray<FSoftObjectPath> ForceSkipAssets;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "External")
 		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Internal", meta = (EditCondition = "!bMonolithic"))
 		FPakInternalInfo InternalFiles;

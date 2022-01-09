@@ -13,7 +13,6 @@ FMultiCookerSettings::FMultiCookerSettings()
 	Scheduler = UMultiCookScheduler::StaticClass();
 	bStorageConfig = true;
 	SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/MultiCooker");
-	ForceSkipContentRules.Append(UFlibPatchParserHelper::GetDefaultForceSkipContentDir());
 	bStandaloneMode = false;
 }
 
@@ -30,27 +29,5 @@ bool FMultiCookerSettings::IsValidConfig() const
 
 bool FMultiCookerSettings::IsSkipAssets(FName LongPacakgeName)
 {
-	TSet<FString> AllSkipContents;
-	AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(ForceSkipContentRules));
-	AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(ForceSkipAssets));
-	return AllSkipContents.Contains(LongPacakgeName.ToString());
-}
-
-void FMultiCookerSettings::ImportProjectSettings()
-{
-	FProjectPackageAssetCollection AssetCollection = UFlibHotPatcherEditorHelper::ImportProjectSettingsPackages();
-	AssetIncludeFilters.Append(AssetCollection.DirectoryPaths);
-
-	for(const auto& Asset:AssetCollection.NeedCookPackages)
-	{
-		FPatcherSpecifyAsset CurrentAsset;
-		CurrentAsset.Asset = Asset;
-		CurrentAsset.bAnalysisAssetDependencies = true;
-		CurrentAsset.AssetRegistryDependencyTypes = {EAssetRegistryDependencyTypeEx::Packages};
-		IncludeSpecifyAssets.Add(CurrentAsset);
-	}
-	// NEVER COOK
-	AssetIgnoreFilters.Append(AssetCollection.NeverCookPaths);
-	ForceSkipContentRules.Append(AssetCollection.NeverCookPaths);
-	ForceSkipAssets.Append(AssetCollection.NeverCookPackages);
+	return GetAllSkipContents().Contains(LongPacakgeName.ToString());
 }

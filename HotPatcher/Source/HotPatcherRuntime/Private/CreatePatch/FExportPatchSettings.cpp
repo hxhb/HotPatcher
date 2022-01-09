@@ -1,21 +1,11 @@
 #include "CreatePatch/FExportPatchSettings.h"
 #include "FlibAssetManageHelper.h"
 #include "HotPatcherLog.h"
-
-// engine header
 #include "FlibPatchParserHelper.h"
-#include "Dom/JsonValue.h"
-#include "HAL/PlatformFilemanager.h"
-#include "Kismet/KismetStringLibrary.h"
-#include "Kismet/KismetSystemLibrary.h"
-#include "Interfaces/ITargetPlatform.h"
-#include "Interfaces/ITargetPlatformManagerModule.h"
 
 
 FExportPatchSettings::FExportPatchSettings()
-	: bAnalysisFilterDependencies(true),
-	AssetRegistryDependencyTypes(TArray<EAssetRegistryDependencyTypeEx>{EAssetRegistryDependencyTypeEx::Packages}),
-	bEnableExternFilesDiff(true),
+	:bEnableExternFilesDiff(true),
 	DefaultPakListOptions{ TEXT("-compress") },
 	DefaultCommandletOptions{ TEXT("-compress") ,TEXT("-compressionformats=Zlib")}
 {
@@ -25,7 +15,6 @@ FExportPatchSettings::FExportPatchSettings()
 		UFlibPatchParserHelper::GetProjectName(),
 		TEXT("Versions/version.json")
 	);
-	ForceSkipContentRules.Append(UFlibPatchParserHelper::GetDefaultForceSkipContentDir());
 }
 
 void FExportPatchSettings::Init()
@@ -89,18 +78,19 @@ FString FExportPatchSettings::GetPakCommandsSaveToPath(const FString& InSaveAbsP
 FHotPatcherVersion FExportPatchSettings::GetNewPatchVersionInfo()
 {
 	FHotPatcherVersion BaseVersionInfo;
-	this->GetBaseVersionInfo(BaseVersionInfo);
+	GetBaseVersionInfo(BaseVersionInfo);
 
 	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
-        this->GetVersionId(),
+        GetVersionId(),
         BaseVersionInfo.VersionId,
         FDateTime::UtcNow().ToString(),
-        this->GetAssetIncludeFiltersPaths(),
-        this->GetAssetIgnoreFiltersPaths(),
-        this->GetAssetRegistryDependencyTypes(),
-        this->GetIncludeSpecifyAssets(),
-        this->GetAddExternAssetsToPlatform(),
-        this->IsIncludeHasRefAssetsOnly()
+        UFlibAssetManageHelper::DirectoryPathsToStrings(GetAssetIncludeFilters()),
+			 UFlibAssetManageHelper::DirectoryPathsToStrings(GetAssetIgnoreFilters()),
+        GetAllSkipContents(),
+        GetAssetRegistryDependencyTypes(),
+        GetIncludeSpecifyAssets(),
+        GetAddExternAssetsToPlatform(),
+        IsIncludeHasRefAssetsOnly()
     );
 
 	return CurrentVersion;
@@ -111,9 +101,9 @@ bool FExportPatchSettings::GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion
 	FString BaseVersionContent;
 
 	bool bDeserializeStatus = false;
-	if (this->IsByBaseVersion())
+	if (IsByBaseVersion())
 	{
-		if (UFlibAssetManageHelper::LoadFileToString(this->GetBaseVersion(), BaseVersionContent))
+		if (UFlibAssetManageHelper::LoadFileToString(GetBaseVersion(), BaseVersionContent))
 		{
 			bDeserializeStatus = THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(BaseVersionContent, OutBaseVersion);
 		}
@@ -125,45 +115,45 @@ bool FExportPatchSettings::GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion
 
 FString FExportPatchSettings::GetCurrentVersionSavePath() const
 {
-	FString CurrentVersionSavePath = FPaths::Combine(this->GetSaveAbsPath(), /*const_cast<FExportPatchSettings*>(this)->GetNewPatchVersionInfo().*/VersionId);
+	FString CurrentVersionSavePath = FPaths::Combine(GetSaveAbsPath(), /*const_cast<FExportPatchSettings*>(this)->GetNewPatchVersionInfo().*/VersionId);
 	return CurrentVersionSavePath;
 }
 
 TArray<FString> FExportPatchSettings::GetPakTargetPlatformNames() const
 {
 	TArray<FString> Resault;
-	for (const auto &Platform : this->GetPakTargetPlatforms())
+	for (const auto &Platform : GetPakTargetPlatforms())
 	{
 		Resault.Add(THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
 	}
 	return Resault;
 }
 
-TArray<FString> FExportPatchSettings::GetAssetIgnoreFiltersPaths()const
-{
-	TArray<FString> Result;
-	for (const auto& Filter : AssetIgnoreFilters)
-	{
-		if (!Filter.Path.IsEmpty())
-		{
-			Result.AddUnique(Filter.Path);
-		}
-	}
-	return Result;
-}
-
-TArray<FString> FExportPatchSettings::GetAssetIncludeFiltersPaths()const
-{
-	TArray<FString> Result;
-	for (const auto& Filter : AssetIncludeFilters)
-	{
-		if (!Filter.Path.IsEmpty())
-		{
-			Result.AddUnique(Filter.Path);
-		}
-	}
-	return Result;
-}
+// TArray<FString> FExportPatchSettings::GetAssetIgnoreFiltersPaths()const
+// {
+// 	TArray<FString> Result;
+// 	for (const auto& Filter : AssetIgnoreFilters)
+// 	{
+// 		if (!Filter.Path.IsEmpty())
+// 		{
+// 			Result.AddUnique(Filter.Path);
+// 		}
+// 	}
+// 	return Result;
+// }
+//
+// TArray<FString> FExportPatchSettings::GetAssetIncludeFiltersPaths()const
+// {
+// 	TArray<FString> Result;
+// 	for (const auto& Filter : AssetIncludeFilters)
+// 	{
+// 		if (!Filter.Path.IsEmpty())
+// 		{
+// 			Result.AddUnique(Filter.Path);
+// 		}
+// 	}
+// 	return Result;
+// }
 
 FString FExportPatchSettings::GetShaderLibraryName() const
 {

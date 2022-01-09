@@ -1066,7 +1066,7 @@ TArray<FString> UFlibAssetManageHelper::DirectoryPathsToStrings(const TArray<FDi
 	TArray<FString> Path;
 	for(const auto& DirPath:DirectoryPaths)
 	{
-		Path.Add(DirPath.Path);
+		Path.AddUnique(NormalizeContentDir(DirPath.Path));
 	}
 	return Path;
 }
@@ -1081,4 +1081,13 @@ TArray<FString> UFlibAssetManageHelper::SoftObjectPathsToStrings(const TArray<FS
 	return result;
 }
 
+FString UFlibAssetManageHelper::NormalizeContentDir(const FString& Dir)
+{
+	FString result = Dir;
+	if(!Dir.EndsWith(TEXT("/")))
+	{
+		result = FString::Printf(TEXT("%s/"),*Dir);
+	}
+	return result;
+}
 // PRAGMA_ENABLE_DEPRECATION_WARNINGS

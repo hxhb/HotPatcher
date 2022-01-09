@@ -47,7 +47,7 @@ bool UPatcherProxy::CanExportPatch()const
 		else
 			bHasBase = true;
 		bool bHasVersionId = !NoConstSettingObject->GetVersionId().IsEmpty();
-		bool bHasFilter = !!NoConstSettingObject->GetAssetIncludeFiltersPaths().Num();
+		bool bHasFilter = !!NoConstSettingObject->GetAssetIncludeFilters().Num();
 		bool bHasSpecifyAssets = !!NoConstSettingObject->GetIncludeSpecifyAssets().Num();
 		bool bHasSavePath = !NoConstSettingObject->GetSaveAbsPath().IsEmpty();
 		bool bHasPakPlatfotm = !!NoConstSettingObject->GetPakTargetPlatforms().Num();
@@ -288,10 +288,6 @@ namespace PatchWorker
 			Context.GetSettingObject()->IsIncludeHasRefAssetsOnly(),
 			Context.GetSettingObject()->IsAnalysisFilterDependencies()
 		);
-
-		FString NewReleaseVersionStr;
-		THotPatcherTemplateHelper::TSerializeStructAsJsonString(Context.CurrentVersion,NewReleaseVersionStr);
-		UE_LOG(LogHotPatcher,Display,TEXT("Current Version Release Config:\n%s"),*NewReleaseVersionStr);
 		return true;
 	};
 

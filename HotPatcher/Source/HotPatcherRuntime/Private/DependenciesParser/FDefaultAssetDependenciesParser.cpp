@@ -8,6 +8,14 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("FAssetDependenciesParser::Parse"),FColor::Red);
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 	TSet<FName> AssetPackageNames;
+	
+	// make /Game/XXX to /Game/XXX/
+	TArray<FString> IngnoreFilters;
+	for(const auto& IgnoreFilter:ParseConfig.IgnoreFilters)
+	{
+		IngnoreFilters.AddUnique(UFlibAssetManageHelper::NormalizeContentDir(IgnoreFilter));
+	}
+	
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("Get AssetPackageNames by filter"),FColor::Red);
 		TArray<FAssetData> AssetDatas;
@@ -31,7 +39,7 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 				{
 					if(!AssetData.PackageName.IsNone())
 					{
-						AssetPackageNames.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,AssetData.PackageName,ParseConfig.AssetRegistryDependencyTypes,false,ParseConfig.IgnoreFilters,TSet<FName>{},ParseConfig.IgnoreDependenciesAseetTypes,ScanedCaches));
+						AssetPackageNames.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,AssetData.PackageName,ParseConfig.AssetRegistryDependencyTypes,false,IngnoreFilters,TSet<FName>{},ParseConfig.IgnoreDependenciesAseetTypes,ScanedCaches));
 					}
 				}
 			}
@@ -44,7 +52,7 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("Get dependencies for filters"),FColor::Red);
 		for(FName PackageName:AssetPackageNames)
 		{
-			Results.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,PackageName,ParseConfig.AssetRegistryDependencyTypes,true,ParseConfig.IgnoreFilters,TSet<FName>{},ParseConfig.IgnoreDependenciesAseetTypes,ScanedCaches));
+			Results.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,PackageName,ParseConfig.AssetRegistryDependencyTypes,true,IngnoreFilters,TSet<FName>{},ParseConfig.IgnoreDependenciesAseetTypes,ScanedCaches));
 		}
 	}
 	
@@ -59,12 +67,30 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 			Results.Add(FName(SpecifyAsset.Asset.GetLongPackageName()));
 			if(SpecifyAsset.bAnalysisAssetDependencies)
 			{
-				Results.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,FName(SpecifyAsset.Asset.GetLongPackageName()),SpecifyAsset.AssetRegistryDependencyTypes,SpecifyAsset.bAnalysisAssetDependencies,ParseConfig.IgnoreFilters,TSet<FName>{},ParseConfig.IgnoreDependenciesAseetTypes,ScanedCaches));
+				Results.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,FName(SpecifyAsset.Asset.GetLongPackageName()),SpecifyAsset.AssetRegistryDependencyTypes,SpecifyAsset.bAnalysisAssetDependencies,IngnoreFilters,TSet<FName>{},ParseConfig.IgnoreDependenciesAseetTypes,ScanedCaches));
 			}
 		}
 	}
 
 	Results.Remove(FName(NAME_None));
+	TSet<FName> ForceSkipPackages;
+	for(const auto& SkipContent:ParseConfig.ForceSkipContents)
+	{
+		for(auto& AssetPackageName:Results)
+		{
+			FString AssetPackageNameStr = AssetPackageName.ToString();
+			if(AssetPackageNameStr.StartsWith(SkipContent))
+			{
+				UE_LOG(LogHotPatcher,Display,TEXT("Force Skip %s (match %s)"),*AssetPackageNameStr,*SkipContent);
+				ForceSkipPackages.Add(AssetPackageName);
+			}
+		}
+	}
+
+	for(FName SkipPackage:ForceSkipPackages)
+	{
+		Results.Remove(SkipPackage);
+	}
 }
 
 bool IsValidPackageName(const FString& LongPackageName)

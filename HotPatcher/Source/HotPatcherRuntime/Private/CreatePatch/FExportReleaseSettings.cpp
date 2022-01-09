@@ -3,18 +3,14 @@
 #include "ReleaseParser/FReleasePakParser.h"
 #include "ReleaseParser/FReleasePaklistParser.h"
 
-FExportReleaseSettings::FExportReleaseSettings()
-{
-	AssetRegistryDependencyTypes.Add(EAssetRegistryDependencyTypeEx::Packages);
-}
+FExportReleaseSettings::FExportReleaseSettings(){}
 FExportReleaseSettings::~FExportReleaseSettings(){};
 
 void FExportReleaseSettings::Init()
 {
 	Super::Init();
 }
-	
-	void FExportReleaseSettings::ImportPakLists()
+		void FExportReleaseSettings::ImportPakLists()
 	{
 		UE_LOG(LogHotPatcher,Log,TEXT("FExportReleaseSettings::ImportPakList"));
 		
@@ -137,6 +133,7 @@ void FExportReleaseSettings::Init()
 			}	
 		}
 	}
+
 	
 void FExportReleaseSettings::ClearImportedPakList()
 {
@@ -166,48 +163,4 @@ FString FExportReleaseSettings::GetVersionId()const
 {
 	return VersionId;
 }
-TArray<FString> FExportReleaseSettings::GetAssetIncludeFiltersPaths()const
-{
-	TArray<FString> Result;
-	for (const auto& Filter : AssetIncludeFilters)
-	{
-		if (!Filter.Path.IsEmpty())
-		{
-			Result.AddUnique(Filter.Path);
-		}
-	}
-	return Result;
-}
-TArray<FString> FExportReleaseSettings::GetAssetIgnoreFiltersPaths()const
-{
-	TArray<FString> Result;
-	for (const auto& Filter : AssetIgnoreFilters)
-	{
-		if (!Filter.Path.IsEmpty())
-		{
-			Result.AddUnique(Filter.Path);
-		}
-	}
-	return Result;
-}
 
-TArray<FExternFileInfo> FExportReleaseSettings::GetAllExternFiles(bool InGeneratedHash)const
-{
-	TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
-	
-	for (auto& ExFile : GetAddExternFiles())
-	{
-		if (!AllExternFiles.Contains(ExFile))
-		{
-			AllExternFiles.Add(ExFile);
-		}
-	}
-	if (InGeneratedHash)
-	{
-		for (auto& ExFile : AllExternFiles)
-		{
-			ExFile.GenerateFileHash();
-		}
-	}
-	return AllExternFiles;
-}

@@ -199,4 +199,5 @@ public:
 	static TArray<FString> DirectoryPathsToStrings(const TArray<FDirectoryPath>& DirectoryPaths);
 	static TArray<FString> SoftObjectPathsToStrings(const TArray<FSoftObjectPath>& SoftObjectPaths);
 	
+	static FString NormalizeContentDir(const FString& Dir);
 };

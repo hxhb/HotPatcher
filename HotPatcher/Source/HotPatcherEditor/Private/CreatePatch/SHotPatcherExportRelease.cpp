@@ -156,11 +156,11 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 	if (ExportReleaseSettings)
 	{
 		bool bHasVersion = !ExportReleaseSettings->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFiltersPaths().Num();
+		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFilters().Num();
 		bool bHasSpecifyAssets = !!ExportReleaseSettings->GetSpecifyAssets().Num();
 		bool bHasSavePath = !(ExportReleaseSettings->GetSaveAbsPath().IsEmpty());
 		bool bHasPakInfo = !!ExportReleaseSettings->GetPlatformsPakListFiles().Num();
-		bCanExport = bHasVersion && (bHasFilter || bHasSpecifyAssets || bHasPakInfo) && bHasSavePath;
+		bCanExport = bHasVersion && (ExportReleaseSettings->IsImportProjectSettings() || bHasFilter || bHasSpecifyAssets || bHasPakInfo) && bHasSavePath;
 	}
 	return bCanExport;
 }
@@ -194,7 +194,7 @@ FText SHotPatcherExportRelease::GetGenerateTooltipText() const
 	if (GetMutableDefault<UHotPatcherSettings>()->bPreviewTooltips && ExportReleaseSettings)
 	{
 		bool bHasVersion = !ExportReleaseSettings->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFiltersPaths().Num();
+		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFilters().Num();
 		bool bHasSpecifyAssets = !!ExportReleaseSettings->GetSpecifyAssets().Num();
 		bool bHasExternFiles = !!ExportReleaseSettings->GetAddExternAssetsToPlatform().Num();
 		bool bHasPakInfo = !!ExportReleaseSettings->GetPlatformsPakListFiles().Num();
@@ -212,7 +212,7 @@ FText SHotPatcherExportRelease::GetGenerateTooltipText() const
 		};
 		TArray<FStatus> AllStatus;
 		AllStatus.Emplace(bHasVersion,TEXT("HasVersion"));
-		AllStatus.Emplace((bHasFilter||bHasSpecifyAssets||bHasExternFiles||bHasPakInfo),TEXT("HasFilter or HasSpecifyAssets or bHasExternFiles or bHasPakInfo"));
+		AllStatus.Emplace((ExportReleaseSettings->IsImportProjectSettings()||bHasFilter||bHasSpecifyAssets||bHasExternFiles||bHasPakInfo),TEXT("ImportProjectSettings or HasFilter or HasSpecifyAssets or bHasExternFiles or bHasPakInfo"));
 		AllStatus.Emplace(bHasSavePath,TEXT("HasSavePath"));
 		
 		for(const auto& Status:AllStatus)

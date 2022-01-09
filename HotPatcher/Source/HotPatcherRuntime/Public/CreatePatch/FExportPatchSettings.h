@@ -127,7 +127,6 @@ public:
 
 	FExportPatchSettings();
 	virtual void Init() override;
-
 	
 	FORCEINLINE static FExportPatchSettings* Get()
 	{
@@ -135,18 +134,10 @@ public:
 
 		return &StaticIns;
 	}
-
-	// override
-	FORCEINLINE virtual TArray<FDirectoryPath>& GetAssetIncludeFilters() override{ return AssetIncludeFilters; }
-	FORCEINLINE virtual TArray<FPatcherSpecifyAsset>& GetIncludeSpecifyAssets()override { return IncludeSpecifyAssets; }
-	FORCEINLINE virtual TArray<FDirectoryPath>& GetAssetIgnoreFilters() override { return AssetIgnoreFilters; }
-	FORCEINLINE virtual TArray<FPlatformExternAssets>& GetAddExternAssetsToPlatform()override{return AddExternAssetsToPlatform;}
 	
-	TArray<FString> GetAssetIgnoreFiltersPaths()const;
-	FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
+	FORCEINLINE virtual TArray<FPlatformExternAssets>& GetAddExternAssetsToPlatform()override{return AddExternAssetsToPlatform;}
+
 	FORCEINLINE bool IsAnalysisDiffAssetDependenciesOnly()const {return bAnalysisDiffAssetDependenciesOnly;}
-	FORCEINLINE bool IsRecursiveWidgetTree()const {return bRecursiveWidgetTree;}
-	FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return AssetRegistryDependencyTypes; }
 	
 	FORCEINLINE FString GetVersionId()const { return VersionId; }
 	FString GetBaseVersion()const;
@@ -155,15 +146,10 @@ public:
 	FORCEINLINE TArray<FString> GetUnrealPakCommandletOptions()const { return GetUnrealPakSettings().UnrealCommandletOptions; }
 	FORCEINLINE TArray<ETargetPlatform> GetPakTargetPlatforms()const { return PakTargetPlatforms; }
 	TArray<FString> GetPakTargetPlatformNames()const;
-
-	// FORCEINLINE bool IsSavePakList()const { return bStoragePakList; }
+	
 	FORCEINLINE bool IsSaveDiffAnalysis()const { return IsByBaseVersion() && bStorageDiffAnalysisResults; }
 	FORCEINLINE TArray<FString> GetIgnoreDeletionModulesAsset()const{return IgnoreDeletionModulesAsset;}
 
-	FORCEINLINE bool IsForceSkipContent()const{return bForceSkipContent;}
-	FORCEINLINE TArray<FDirectoryPath> GetForceSkipContentRules()const {return ForceSkipContentRules;}
-	FORCEINLINE TArray<FSoftObjectPath> GetForceSkipAssets()const {return ForceSkipAssets;}
-	
 	FORCEINLINE bool IsPackageTracker()const { return bPackageTracker; }
 	FORCEINLINE bool IsIncludeAssetRegistry()const { return bIncludeAssetRegistry; }
 	FORCEINLINE bool IsIncludeGlobalShaderCache()const { return bIncludeGlobalShaderCache; }
@@ -177,7 +163,6 @@ public:
 	FORCEINLINE bool IsEnableExternFilesDiff()const { return bEnableExternFilesDiff; }
 	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
 	FORCEINLINE bool IsIncludePakVersion()const { return bIncludePakVersionFile; }
-	// FORCEINLINE bool IsSaveAssetRelatedInfo()const { return bStorageAssetDependencies; }
 
 	// chunk infomation
 	FORCEINLINE bool IsEnableChunk()const { return bEnableChunk; }
@@ -198,7 +183,7 @@ public:
 	FORCEINLINE bool IsIgnoreDeletedAssetsInfo()const {return bIgnoreDeletedAssetsInfo;}
 	FORCEINLINE bool IsSaveDeletedAssetsToNewReleaseJson()const {return bStorageDeletedAssetsToNewReleaseJson;}
 	
-	TArray<FString> GetAssetIncludeFiltersPaths()const;
+	
 	
 	FORCEINLINE FIoStoreSettings GetIoStoreSettings()const { return IoStoreSettings; }
 	FORCEINLINE FUnrealPakSettings GetUnrealPakSettings()const {return UnrealPakSettings;}
@@ -222,7 +207,7 @@ public:
 	FString GetShaderLibraryName()const;
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
-		bool bByBaseVersion = true;
+		bool bByBaseVersion = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "BaseVersion",meta = (RelativeToGameContentDir, EditCondition="bByBaseVersion"))
 		FFilePath BaseVersion;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchBaseSettings")
@@ -234,34 +219,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch", meta=(EditCondition="bBinariesPatch"))
 		FBinariesPatchConfig BinariesPatchConfig;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Asset Filter",meta = (RelativeToGameContentDir, LongPackageName))
-		TArray<FDirectoryPath> AssetIncludeFilters;
-	// Ignore directories in AssetIncludeFilters 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter", meta = (RelativeToGameContentDir, LongPackageName))
-		TArray<FDirectoryPath> AssetIgnoreFilters;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
-		bool bForceSkipContent = true;
-	// force exclude asset folder e.g. Exclude editor content when cooking in Project Settings
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Asset Filter",meta = (RelativeToGameContentDir, LongPackageName, EditCondition="bForceSkipContent"))
-    	TArray<FDirectoryPath> ForceSkipContentRules;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Asset Filter",meta = (EditCondition="bForceSkipContent"))
-		TArray<FSoftObjectPath> ForceSkipAssets;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
-		bool bIncludeHasRefAssetsOnly = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter",meta = (EditCondition = "!bAnalysisDiffAssetDependenciesOnly"))
-		bool bAnalysisFilterDependencies=true;
 	// 只对与基础包有差异的资源进行依赖分析，提高依赖分析的速度
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter",meta = (EditCondition = "!bAnalysisFilterDependencies"))
-		bool bAnalysisDiffAssetDependenciesOnly=false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter",meta = (EditCondition="bAnalysisFilterDependencies || bAnalysisDiffAssetDependenciesOnly"))
-		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
-		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
-	bool bRecursiveWidgetTree = true;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filters",meta = (EditCondition = "!bAnalysisFilterDependencies"))
+	bool bAnalysisDiffAssetDependenciesOnly = false;
 	// allow tracking load asset when cooking
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filter")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filters")
 		bool bPackageTracker = true;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
 		bool bIncludeAssetRegistry = false;
@@ -280,15 +242,22 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ini Config Files")
 		bool bIncludeProjectIni = false;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "External Files")
 		bool bEnableExternFilesDiff = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "External Files")
 		TArray<FString> IgnoreDeletionModulesAsset;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "External Files")
 		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files")
+	// record patch infomation to pak
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "External Files")
 		bool bIncludePakVersionFile = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern Files",meta=(EditCondition = "bIncludePakVersionFile"))
+	// {
+	// 	"versionId": "1.1",
+	// 	"baseVersionId": "1.0",
+	// 	"date": "2022.01.09-02.52.34",
+	// 	"checkCode": "D13EFFEB5716F00CBB823E8E8546FB610531FE37"
+	// }
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "External Files",meta=(EditCondition = "bIncludePakVersionFile"))
 		FString PakVersionFileMountPoint;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chunk Options")
 		bool bEnableChunk = false;

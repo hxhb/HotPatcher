@@ -271,7 +271,7 @@ bool SHotPatcherExportPatch::CanDiff()const
 	{
 		bool bHasBase = !ExportPatchSetting->GetBaseVersion().IsEmpty() && FPaths::FileExists(ExportPatchSetting->GetBaseVersion());
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFiltersPaths().Num();
+		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
 		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
 
 		bCanDiff = bHasBase && bHasVersionId && (bHasFilter || bHasSpecifyAssets);
@@ -302,8 +302,9 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		ExportPatchSetting->GetVersionId(),
 		BaseVersion.VersionId,
 		FDateTime::UtcNow().ToString(),
-		ExportPatchSetting->GetAssetIncludeFiltersPaths(),
-		ExportPatchSetting->GetAssetIgnoreFiltersPaths(),
+		UFlibAssetManageHelper::DirectoryPathsToStrings(ExportPatchSetting->GetAssetIncludeFilters()),
+			UFlibAssetManageHelper::DirectoryPathsToStrings(ExportPatchSetting->GetAssetIgnoreFilters()),
+		ExportPatchSetting->GetAllSkipContents(),
 		ExportPatchSetting->GetAssetRegistryDependencyTypes(),
 		ExportPatchSetting->GetIncludeSpecifyAssets(),
 		ExportPatchSetting->GetAddExternAssetsToPlatform(),
@@ -462,7 +463,7 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 		else
 			bHasBase = true;
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFiltersPaths().Num();
+		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
 		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
 		// bool bHasExternFiles = !!ExportPatchSetting->GetAddExternFiles().Num();
 		// bool bHasExDirs = !!ExportPatchSetting->GetAddExternDirectory().Num();
@@ -522,7 +523,7 @@ FText SHotPatcherExportPatch::GetGenerateTooltipText() const
 		else
 			bHasBase = true;
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFiltersPaths().Num();
+		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
 		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
 		// bool bHasExternFiles = !!ExportPatchSetting->GetAddExternFiles().Num();
 		// bool bHasExDirs = !!ExportPatchSetting->GetAddExternDirectory().Num();
@@ -569,7 +570,7 @@ FText SHotPatcherExportPatch::GetGenerateTooltipText() const
 
 bool SHotPatcherExportPatch::CanPreviewPatch() const
 {
-	bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFiltersPaths().Num();
+	bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
 	bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
 	
 	auto HasExFilesLambda = [this]()

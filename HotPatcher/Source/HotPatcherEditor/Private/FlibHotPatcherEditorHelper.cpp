@@ -133,6 +133,9 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(const FExport
 	Chunk.AssetIgnoreFilters = const_cast<FExportPatchSettings*>(InPatchSetting)->GetAssetIgnoreFilters();
 	Chunk.bAnalysisFilterDependencies = InPatchSetting->IsAnalysisFilterDependencies();
 	Chunk.IncludeSpecifyAssets = const_cast<FExportPatchSettings*>(InPatchSetting)->GetIncludeSpecifyAssets();
+	Chunk.bForceSkipContent = const_cast<FExportPatchSettings*>(InPatchSetting)->IsForceSkipContent();
+	Chunk.ForceSkipContentRules = const_cast<FExportPatchSettings*>(InPatchSetting)->GetForceSkipContentRules();
+	Chunk.ForceSkipAssets = const_cast<FExportPatchSettings*>(InPatchSetting)->GetForceSkipAssets();
 	Chunk.AddExternAssetsToPlatform = const_cast<FExportPatchSettings*>(InPatchSetting)->GetAddExternAssetsToPlatform();
 	Chunk.AssetRegistryDependencyTypes = InPatchSetting->GetAssetRegistryDependencyTypes();
 	Chunk.InternalFiles.bIncludeAssetRegistry = InPatchSetting->IsIncludeAssetRegistry();
@@ -1770,14 +1773,30 @@ void UFlibHotPatcherEditorHelper::WaitForAsyncFileWrites()
 bool UFlibHotPatcherEditorHelper::IsCanCookPackage(const FString& LongPackageName)
 {
 	bool bResult = false;
-	
-	FString LongPackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(LongPackageName);
 	PRAGMA_DISABLE_DEPRECATION_WARNINGS
-	if (!LongPackagePath.IsEmpty() && UAssetManager::Get().VerifyCanCookPackage(FName(*LongPackageName),false)
-		&& !FPackageName::IsScriptPackage(LongPackagePath) && !FPackageName::IsMemoryPackage(LongPackagePath))
+	if (!LongPackageName.IsEmpty() && !FPackageName::IsScriptPackage(LongPackageName) && !FPackageName::IsMemoryPackage(LongPackageName))
 	{
-		bResult = true;
+		bResult = UAssetManager::Get().VerifyCanCookPackage(FName(*LongPackageName),false);
 	}
 	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	return bResult;
+}
+
+void UFlibHotPatcherEditorHelper::ImportProjectSettingsToSettingBase(FHotPatcherSettingBase* HotPatcherSettingBase)
+{
+	FProjectPackageAssetCollection AssetCollection = UFlibHotPatcherEditorHelper::ImportProjectSettingsPackages();
+	HotPatcherSettingBase->AssetIncludeFilters.Append(AssetCollection.DirectoryPaths);
+
+	for(const auto& Asset:AssetCollection.NeedCookPackages)
+	{
+		FPatcherSpecifyAsset CurrentAsset;
+		CurrentAsset.Asset = Asset;
+		CurrentAsset.bAnalysisAssetDependencies = true;
+		CurrentAsset.AssetRegistryDependencyTypes = {EAssetRegistryDependencyTypeEx::Packages};
+		HotPatcherSettingBase->IncludeSpecifyAssets.Add(CurrentAsset);
+	}
+	// NEVER COOK
+	HotPatcherSettingBase->AssetIgnoreFilters.Append(AssetCollection.NeverCookPaths);
+	HotPatcherSettingBase->ForceSkipContentRules.Append(AssetCollection.NeverCookPaths);
+	HotPatcherSettingBase->ForceSkipAssets.Append(AssetCollection.NeverCookPackages);
 }

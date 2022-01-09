@@ -8,6 +8,8 @@
 #include "FlibAssetManageHelper.h"
 #include "HotPatcherLog.h"
 #include "CreatePatch/FExportPatchSettings.h"
+#include "DependenciesParser/FDefaultAssetDependenciesParser.h"
+#include "DependenciesParser/FOldAssetDependenciesParser.h"
 
 // engine header
 #include "Misc/App.h"
@@ -1224,14 +1226,14 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 
 	return CollectPakCommandsByChunkLambda(DiffInfo, Chunk, PlatformName/*, PakOptions*/);
 }
-#include "DependenciesParser/FDefaultAssetDependenciesParser.h"
-#include "DependenciesParser/FOldAssetDependenciesParser.h"
+
 FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	const FString& InVersionId,
 	const FString& InBaseVersion,
 	const FString& InDate,
 	const TArray<FString>& InIncludeFilter,
 	const TArray<FString>& InIgnoreFilter,
+	const TArray<FString>& ForceSkipContents,
 	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
 	const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
 	const TArray<FPlatformExternAssets>& AddToPlatformExFiles,
@@ -1281,6 +1283,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	AssetConfig.IgnoreFilters = ExportVersion.IgnoreFilter;
 	AssetConfig.AssetRegistryDependencyTypes = AssetRegistryDependencyTypes;
 	AssetConfig.InIncludeSpecifyAsset = InIncludeSpecifyAsset;
+	AssetConfig.ForceSkipContents = ForceSkipContents;
 	AssetConfig.bRedirector = true;
 	AssetConfig.AnalysicFilterDependencies = bInAnalysisFilterDependencies;
 	AssetConfig.IncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
@@ -1344,12 +1347,20 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 	bool InIncludeHasRefAssetsOnly /*= false */,
 	bool bInAnalysisFilterDependencies /* = true*/)
 {
+	TArray<FString> AllSkipContents;;
+	if(InChunkInfo.bForceSkipContent)
+	{
+		AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(InChunkInfo.ForceSkipContentRules));
+		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(InChunkInfo.ForceSkipAssets));
+	}
+	
 	return UFlibPatchParserHelper::ExportReleaseVersionInfo(
         InVersionId,
         InBaseVersion,
         InDate,
         UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIncludeFilters),
         UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIgnoreFilters),
+        AllSkipContents,
         InChunkInfo.AssetRegistryDependencyTypes,
         InChunkInfo.IncludeSpecifyAssets,
         InChunkInfo.AddExternAssetsToPlatform,
