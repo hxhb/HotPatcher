@@ -97,27 +97,33 @@ FPlatformExternAssets* FHotPatcherPatchContext::GetPatcherChunkInfoByName(const 
 	}
 }
 
-void FHotPatcherPatchContext::AddAsset(const FString ChunkName, const FAssetDetail& AssetDetail)
+bool FHotPatcherPatchContext::AddAsset(const FString ChunkName, const FAssetDetail& AssetDetail)
 {
+	bool bRet = false;
+
+	if(!AssetDetail.IsValid())
+		return false;
+	
 	FString PackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(AssetDetail.PackagePath.ToString());
 	if(!(VersionDiff.AssetDiffInfo.ModifyAssetDependInfo.HasAsset(PackageName) ||
 	   VersionDiff.AssetDiffInfo.AddAssetDependInfo.HasAsset(PackageName))
 	   )
 	{
-          	UE_LOG(LogHotPatcher,Display,TEXT("Add %s to Chunk %s"),*AssetDetail.PackagePath.ToString(),*ChunkName);
-          	VersionDiff.AssetDiffInfo.ModifyAssetDependInfo.AddAssetsDetail(AssetDetail);
-          	for(auto& ChunkInfo:PakChunks)
-          	{
-          		if(ChunkInfo.ChunkName.Equals(ChunkName))
-          		{
-          			FPatcherSpecifyAsset CurrentAsset;
-          
-          			CurrentAsset.Asset = AssetDetail.PackagePath.ToString();
-          			CurrentAsset.bAnalysisAssetDependencies = false;
-          			CurrentAsset.AssetRegistryDependencyTypes = {EAssetRegistryDependencyTypeEx::None};
-          			ChunkInfo.IncludeSpecifyAssets.AddUnique(CurrentAsset);
-          		}
-          	} 
+		UE_LOG(LogHotPatcher,Display,TEXT("Add %s to Chunk %s"),*AssetDetail.PackagePath.ToString(),*ChunkName);
+		VersionDiff.AssetDiffInfo.ModifyAssetDependInfo.AddAssetsDetail(AssetDetail);
+		for(auto& ChunkInfo:PakChunks)
+		{
+			if(ChunkInfo.ChunkName.Equals(ChunkName))
+			{
+				FPatcherSpecifyAsset CurrentAsset;
+				CurrentAsset.Asset = AssetDetail.PackagePath.ToString();
+				CurrentAsset.bAnalysisAssetDependencies = false;
+				CurrentAsset.AssetRegistryDependencyTypes = {EAssetRegistryDependencyTypeEx::None};
+				ChunkInfo.IncludeSpecifyAssets.AddUnique(CurrentAsset);
+				bRet = true;
+			}
+		}
 	}
+	return bRet;
 }
  

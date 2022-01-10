@@ -18,7 +18,7 @@ struct FAssetDependenciesParser : public IAssetDependenciesParser
 		bool bRecursively,
 		const TArray<FString>& IgnoreDirectories,
 		TSet<FName> IgnorePackageNames,
-		TSet<FName> IgnoreAssetTypes,
+		const TSet<FName>& IgnoreAssetTypes,
 		FScanedCachesType& ScanedCaches
 	);
 protected:

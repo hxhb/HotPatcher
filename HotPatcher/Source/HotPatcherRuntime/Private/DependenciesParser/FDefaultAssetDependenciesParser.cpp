@@ -81,7 +81,9 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 			FString AssetPackageNameStr = AssetPackageName.ToString();
 			if(AssetPackageNameStr.StartsWith(SkipContent))
 			{
+#if ASSET_DEPENDENCIES_DEBUG_LOG
 				UE_LOG(LogHotPatcher,Display,TEXT("Force Skip %s (match %s)"),*AssetPackageNameStr,*SkipContent);
+#endif
 				ForceSkipPackages.Add(AssetPackageName);
 			}
 		}
@@ -106,7 +108,7 @@ bool IsValidPackageName(const FString& LongPackageName)
 
 TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAssetRegistryModule& InAssetRegistryModule,
 	FName InLongPackageName, const TArray<EAssetRegistryDependencyTypeEx>& InAssetDependencyTypes,
-	bool bRecursively, const TArray<FString>& IgnoreDirectories,TSet<FName> IgnorePackageNames,TSet<FName> IgnoreAssetTypes,FScanedCachesType& ScanedCaches)
+	bool bRecursively, const TArray<FString>& IgnoreDirectories,TSet<FName> IgnorePackageNames,const TSet<FName>& IgnoreAssetTypes,FScanedCachesType& ScanedCaches)
 {
 	TSet<FName> AssetDependencies;
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("GatherAssetDependicesInfoRecursively"),FColor::Red);
@@ -125,60 +127,74 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 	TArray<FName> CurrentAssetDependencies;
 	
 	// AssetTypes.AddUnique(UFlibAssetManageHelper::ConvAssetRegistryDependencyToInternal(DepType));
-	PRAGMA_DISABLE_DEPRECATION_WARNINGS
-	bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(InLongPackageName, CurrentAssetDependencies, TotalType);
-	PRAGMA_ENABLE_DEPRECATION_WARNINGS
-	if (!bGetDependenciesSuccess)
-		return AssetDependencies;
-	
-	for (auto &LongPackageName : CurrentAssetDependencies)
 	{
-		FString LongPackageNameStr = LongPackageName.ToString();
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("GetDependencies"),FColor::Red);
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS
+		bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(InLongPackageName, CurrentAssetDependencies, TotalType);
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS
+		if (!bGetDependenciesSuccess)
+			return AssetDependencies;
+	}
+	
+	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("check valid package and ignore rule"),FColor::Red);
+		for (auto &LongPackageName : CurrentAssetDependencies)
+		{
+			FString LongPackageNameStr = LongPackageName.ToString();
 		
-		// ignore /Script/ and self
-		if(LongPackageName.IsNone() || !IsValidPackageName(LongPackageNameStr) || LongPackageName == InLongPackageName)
-		{
-			continue;
-		}
-
-		// check is ignore directories
-		{
-			bool bIgnoreDirectories = false;
-			for(const auto& IgnoreDirectory:IgnoreDirectories)
+			// ignore /Script/ and self
+			if(LongPackageName.IsNone() || !IsValidPackageName(LongPackageNameStr) || LongPackageName == InLongPackageName)
 			{
-				if(LongPackageNameStr.StartsWith(IgnoreDirectory))
-				{
-					bIgnoreDirectories = true;
-					break;
-				}
-			}
-			if(bIgnoreDirectories)
-			{
-				UE_LOG(LogHotPatcher,Display,TEXT("Ignore %s (match ignore dirctories)"),*LongPackageNameStr);
-				continue;;
-			}
-		}
-
-		// check is ignore types
-		{
-			bool bIgnoreType = false;
-			FString AssetTypeName;
-			{
-				FAssetData AssetData;
-				if(UFlibAssetManageHelper::GetAssetsDataByPackageName(LongPackageNameStr,AssetData))
-				{
-					AssetTypeName = AssetData.AssetClass.ToString();
-					bIgnoreType = IgnoreAssetTypes.Contains(AssetData.AssetClass);
-				}
-			}
-			if(!bIgnoreType)
-			{
-				AssetDependencies.Add(LongPackageName);
-			}
-			else
-			{
-				UE_LOG(LogHotPatcher,Display,TEXT("Ignore %s by %s dependencies (%s)"),*LongPackageName.ToString(),*InLongPackageName.ToString(),*AssetTypeName);
 				continue;
+			}
+
+			// check is ignore directories
+			{
+				SCOPED_NAMED_EVENT_TCHAR(TEXT("check ignore directories"),FColor::Red);
+				bool bIgnoreDirectories = false;
+				for(const auto& IgnoreDirectory:IgnoreDirectories)
+				{
+					if(LongPackageNameStr.StartsWith(IgnoreDirectory))
+					{
+						bIgnoreDirectories = true;
+						break;
+					}
+				}
+				if(bIgnoreDirectories)
+				{
+#if ASSET_DEPENDENCIES_DEBUG_LOG
+					UE_LOG(LogHotPatcher,Display,TEXT("Ignore %s (match ignore dirctories)"),*LongPackageNameStr);
+#endif
+					continue;;
+				}
+			}
+
+			// check is ignore types
+			{
+				SCOPED_NAMED_EVENT_TCHAR(TEXT("check ignore types"),FColor::Red);
+				bool bIgnoreType = false;
+				FString AssetTypeName;
+				{
+					FAssetData AssetData;
+					if(UFlibAssetManageHelper::GetAssetsDataByPackageName(LongPackageNameStr,AssetData))
+					{
+						SCOPED_NAMED_EVENT_TCHAR(TEXT("is ignore types"),FColor::Red);
+						AssetTypeName = AssetData.AssetClass.ToString();
+						bIgnoreType = IgnoreAssetTypes.Contains(AssetData.AssetClass);
+					}
+				}
+				if(!bIgnoreType)
+				{
+					AssetDependencies.Add(LongPackageName);
+				}
+				else
+				{
+#if ASSET_DEPENDENCIES_DEBUG_LOG
+					SCOPED_NAMED_EVENT_TCHAR(TEXT("display ignore log"),FColor::Red);
+					UE_LOG(LogHotPatcher,Display,TEXT("Ignore %s by %s dependencies (%s)"),*LongPackageName.ToString(),*InLongPackageName.ToString(),*AssetTypeName);
+#endif
+					continue;
+				}
 			}
 		}
 	}

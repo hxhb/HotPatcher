@@ -124,7 +124,8 @@ struct HOTPATCHERRUNTIME_API FHotPatcherPatchContext:public FHotPatcherContext
         GetPatcherDiffInfoByName(PlatformName)->AddExternalFiles.Add(AddShaderLib);
         GetPatcherChunkInfoByName(PlatformName,ChunkName)->AddExternFileToPak.Add(AddShaderLib);
     }
-    void AddAsset(const FString ChunkName,const FAssetDetail& AssetDetail);
+
+    bool AddAsset(const FString ChunkName, const FAssetDetail& AssetDetail);
 };
 
 USTRUCT(BlueprintType)

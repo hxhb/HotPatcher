@@ -1261,6 +1261,11 @@ bool UFlibHotPatcherEditorHelper::SerializeAssetRegistry(const FString& Platform
 	AssetRegistry.InitializeTemporaryAssetRegistryState(State, SaveOptions, true);
 	for(const auto& AssetPackagePath:PackagePaths)
 	{
+		if(State.GetAssetByObjectPath(FName(*AssetPackagePath)))
+		{
+			UE_LOG(LogHotPatcherEditorHelper,Warning,TEXT("%s Alway add to AssetRegistryState!"),*AssetPackagePath);
+			continue;
+		}
 		FAssetData* AssetData = new FAssetData();
 		if(UFlibAssetManageHelper::GetSingleAssetsData(AssetPackagePath,*AssetData))
 		{

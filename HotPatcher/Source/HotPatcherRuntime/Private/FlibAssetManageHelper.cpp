@@ -318,6 +318,7 @@ bool UFlibAssetManageHelper::GetRedirectorList(const TArray<FString>& InFilterPa
 
 bool UFlibAssetManageHelper::GetSpecifyAssetData(const FString& InLongPackageName, TArray<FAssetData>& OutAssetData, bool InIncludeOnlyOnDiskAssets)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetSpecifyAssetData"),FColor::Red);
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 	return AssetRegistryModule.Get().GetAssetsByPackageName(*InLongPackageName, OutAssetData, InIncludeOnlyOnDiskAssets);
 }
@@ -404,6 +405,7 @@ bool UFlibAssetManageHelper::GetSingleAssetsData(const FString& InPackagePath, F
 
 bool UFlibAssetManageHelper::GetAssetsDataByPackageName(const FString& InPackageName, FAssetData& OutAssetData)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetsDataByPackageName"),FColor::Red);
 	FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InPackageName);
 	return UFlibAssetManageHelper::GetSingleAssetsData(PackagePath,OutAssetData);
 }
@@ -452,7 +454,10 @@ bool UFlibAssetManageHelper::GetSpecifyAssetDetail(const FString& InLongPackageN
 	}
 	if(!bRunStatus)
 	{
+#if ASSET_DEPENDENCIES_DEBUG_LOG
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("display GetSpecifyAssetDetail failed log"),FColor::Red);
 		UE_LOG(LogHotPatcher,Display,TEXT("Get %s AssetDetail failed!"),*InLongPackageName);
+#endif
 	}
 	return bRunStatus;
 }
@@ -1001,6 +1006,7 @@ void UFlibAssetManageHelper::GetAssetDataInPaths(const TArray<FString>& Paths, T
 
 FString UFlibAssetManageHelper::LongPackageNameToPackagePath(const FString& InLongPackageName)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::LongPackageNameToPackagePath"),FColor::Red);
 	if(InLongPackageName.Contains(TEXT(".")))
 	{
 		UE_LOG(LogHotPatcher,Warning,TEXT("LongPackageNameToPackagePath %s alway is PackagePath!"),*InLongPackageName);
@@ -1021,6 +1027,7 @@ FString UFlibAssetManageHelper::LongPackageNameToPackagePath(const FString& InLo
 
 FString UFlibAssetManageHelper::PackagePathToLongPackageName(const FString& PackagePath)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::PackagePathToLongPackageName"),FColor::Red);
 	FSoftObjectPath ObjectPath = PackagePath;
 	return ObjectPath.GetLongPackageName();
 }
