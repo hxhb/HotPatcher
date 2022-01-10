@@ -908,7 +908,6 @@ TMap<ETargetPlatform,FPlatformExternFiles> UFlibPatchParserHelper::GetAllPlatfor
 	return result;
 }
 
-#include "DependenciesParser/FDefaultAssetDependenciesParser.h"
 FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 	const FPatchVersionDiff& DiffInfo,
 	const FChunkInfo& Chunk,
@@ -936,7 +935,6 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 		FAssetDependenciesParser Parser;
 		FAssetDependencies Conf;
 		Conf.InIncludeSpecifyAsset = Chunk.IncludeSpecifyAssets;
-		Conf.IgnoreDependenciesAseetTypes = { FName(TEXT("World")) };
 		
 		Parser.Parse(Conf);
 		TSet<FName> AssetLongPackageNames = Parser.GetrParseResults();
@@ -1287,7 +1285,6 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	AssetConfig.bRedirector = true;
 	AssetConfig.AnalysicFilterDependencies = bInAnalysisFilterDependencies;
 	AssetConfig.IncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
-	AssetConfig.IgnoreDependenciesAseetTypes = { FName(TEXT("World")) };
 	
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("parser all uasset dependencies(optimized)"),FColor::Red);

@@ -106,14 +106,24 @@ public class HotPatcherEditor : ModuleRules
 		
 		switch (Target.Configuration)
 		{
+			case UnrealTargetConfiguration.Debug:
+			{
+				PublicDefinitions.Add("COMPILER_CONFIGURATION_NAME=\"Debug\"");
+				break;
+			}
 			case UnrealTargetConfiguration.DebugGame:
 			{
-				PublicDefinitions.Add("WITH_HOTPATCHER_DEBUGGAME");
+				PublicDefinitions.Add("COMPILER_CONFIGURATION_NAME=\"DebugGame\"");
 				break;
 			}
 			case UnrealTargetConfiguration.Development:
 			{
-				PublicDefinitions.Add("WITH_HOTPATCHER_DEVELOPMENT");
+				PublicDefinitions.Add("COMPILER_CONFIGURATION_NAME=\"Development\"");
+				break;
+			}
+			default:
+			{
+				PublicDefinitions.Add("COMPILER_CONFIGURATION_NAME=\"\"");
 				break;
 			}
 		};

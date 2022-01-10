@@ -113,6 +113,9 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 	TSet<FName> AssetDependencies;
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("GatherAssetDependicesInfoRecursively"),FColor::Red);
 	IgnorePackageNames.Add(InLongPackageName);
+
+	FAssetData CurrentAssetData;
+	UFlibAssetManageHelper::GetAssetsDataByPackageName(InLongPackageName.ToString(),CurrentAssetData);
 	
 	// TArray<EAssetRegistryDependencyType::Type> AssetTypes;
 	

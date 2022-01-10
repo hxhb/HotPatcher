@@ -689,38 +689,28 @@ FString UFlibHotPatcherEditorHelper::GetUECmdBinary()
 	Binary = TEXT("UE4Editor");
 #endif
 
+	FString ConfigutationName = ANSI_TO_TCHAR(COMPILER_CONFIGURATION_NAME);
+	bool bIsDevelopment = ConfigutationName.Equals(TEXT("Development"));
 	
 #if PLATFORM_WINDOWS
+	FString PlatformName;
+	#if PLATFORM_64BITS	
+		PlatformName = TEXT("Win64");
+	#else
+		PlatformName = TEXT("Win32");
+	#endif
+
 	return FPaths::Combine(
         FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
-        TEXT("Binaries"),
-#if PLATFORM_64BITS	
-        TEXT("Win64"),
-#else
-        TEXT("Win32"),
+        TEXT("Binaries"),PlatformName,FString::Printf(TEXT("%s%s-Cmd.exe"),*Binary,bIsDevelopment ? TEXT("") : *ConfigutationName));
 #endif
-#ifdef WITH_HOTPATCHER_DEBUGGAME
-	#if PLATFORM_64BITS
-			FString::Printf(TEXT("%s-Win64-DebugGame-Cmd.exe"),*Binary)
-	        // TEXT("UE4Editor-Win64-DebugGame-Cmd.exe")
-	#else
-			FString::Printf(TEXT("%s-Win32-DebugGame-Cmd.exe"),*Binary)
-	        // TEXT("UE4Editor-Win32-DebugGame-Cmd.exe")
-	#endif
-#else
-		FString::Printf(TEXT("%s-Cmd.exe"),*Binary)
-        // TEXT("UE4Editor-Cmd.exe")
-#endif
-    );
-#endif
+	
 #if PLATFORM_MAC
 	return FPaths::Combine(
-        FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
-        TEXT("Binaries"),
-        TEXT("Mac"),
-        FString::Printf(TEXT("%s-Cmd"),*Binary)
-        //TEXT("UE4Editor-Cmd")
-    );
+			FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
+			TEXT("Binaries"),TEXT("Mac"),
+			FString::Printf(TEXT("%s%s-Cmd"),*Binary,
+				bIsDevelopment ? TEXT("") : *FString::Printf(TEXT("-Mac-%s"),*ConfigutationName)));
 #endif
 	return TEXT("");
 }
