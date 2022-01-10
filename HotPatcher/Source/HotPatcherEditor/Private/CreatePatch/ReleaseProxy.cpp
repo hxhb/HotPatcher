@@ -90,7 +90,11 @@ namespace ReleaseWorker
 
 	bool ImportProjectSettingsWorker(FHotPatcherReleaseContext& Context)
 	{
-		UFlibHotPatcherEditorHelper::ImportProjectSettingsToSettingBase(Context.GetSettingObject());
+		if(Context.GetSettingObject()->IsImportProjectSettings())
+		{
+			UFlibHotPatcherEditorHelper::ImportProjectSettingsToSettingBase(Context.GetSettingObject());
+		}
+		
 		return true;
 	}
 	bool ExportNewReleaseWorker(FHotPatcherReleaseContext& Context)
