@@ -118,7 +118,7 @@ public:
 	FCookerShaderOptions ShaderOptions;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
-	bool bSerializeAssetRegistry;
+	bool bSerializeAssetRegistry = false;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	// FAssetRegistryOptions SerializeAssetRegistryOptions;
 
@@ -126,7 +126,7 @@ public:
 	FIoStoreSettings IoStoreSettings;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
-	bool bDisplayConfig;
+	bool bDisplayConfig = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool bPreGeneratePlatformData = true;
 

@@ -58,6 +58,7 @@ FPatchVersionExternDiff* FHotPatcherPatchContext::GetPatcherDiffInfoByName(const
 };
 FPlatformExternAssets* FHotPatcherPatchContext::GetPatcherChunkInfoByName(const FString& PlatformName,const FString& ChunkName)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("FHotPatcherPatchContext::GetPatcherChunkInfoByName"),FColor::Red);
 	ETargetPlatform Platform;
 	THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
 	FPlatformExternAssets* PlatformExternAssetsPtr = NULL;
@@ -99,18 +100,26 @@ FPlatformExternAssets* FHotPatcherPatchContext::GetPatcherChunkInfoByName(const 
 
 bool FHotPatcherPatchContext::AddAsset(const FString ChunkName, const FAssetDetail& AssetDetail)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("FHotPatcherPatchContext::AddAsset"),FColor::Red);
 	bool bRet = false;
 
 	if(!AssetDetail.IsValid())
 		return false;
 	
 	FString PackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(AssetDetail.PackagePath.ToString());
-	if(!(VersionDiff.AssetDiffInfo.ModifyAssetDependInfo.HasAsset(PackageName) ||
-	   VersionDiff.AssetDiffInfo.AddAssetDependInfo.HasAsset(PackageName))
-	   )
+
+	bool bInBaseVersion = false;
+	// has base version
+	if(GetSettingObject()->bByBaseVersion)
+	{
+		bInBaseVersion = BaseVersion.AssetInfo.HasAsset(PackageName);
+	}
+	FAssetDependenciesInfo& AddtoDependencies = bInBaseVersion ? VersionDiff.AssetDiffInfo.ModifyAssetDependInfo : VersionDiff.AssetDiffInfo.AddAssetDependInfo;
+	
+	if(!AddtoDependencies.HasAsset(PackageName))
 	{
 		UE_LOG(LogHotPatcher,Display,TEXT("Add %s to Chunk %s"),*AssetDetail.PackagePath.ToString(),*ChunkName);
-		VersionDiff.AssetDiffInfo.ModifyAssetDependInfo.AddAssetsDetail(AssetDetail);
+		AddtoDependencies.AddAssetsDetail(AssetDetail);
 		for(auto& ChunkInfo:PakChunks)
 		{
 			if(ChunkInfo.ChunkName.Equals(ChunkName))

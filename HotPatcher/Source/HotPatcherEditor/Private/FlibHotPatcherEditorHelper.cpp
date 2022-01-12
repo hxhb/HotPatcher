@@ -144,7 +144,7 @@ FChunkInfo UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(const FExport
 	Chunk.InternalFiles.bIncludeEngineIni = InPatchSetting->IsIncludeEngineIni();
 	Chunk.InternalFiles.bIncludePluginIni = InPatchSetting->IsIncludePluginIni();
 	Chunk.InternalFiles.bIncludeProjectIni = InPatchSetting->IsIncludeProjectIni();
-
+	Chunk.CookShaderOptions = InPatchSetting->GetCookShaderOptions();
 	return Chunk;
 }
 

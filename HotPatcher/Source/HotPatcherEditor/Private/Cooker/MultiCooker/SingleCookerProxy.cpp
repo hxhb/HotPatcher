@@ -22,11 +22,11 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 #if WITH_PACKAGE_CONTEXT
 	if(GetSettingObject()->bOverrideSavePackageContext)
 	{
-		PlatformSavePackageContexts = UFlibHotPatcherEditorHelper::CreatePlatformsPackageContexts(GetSettingObject()->CookTargetPlatforms,GetSettingObject()->IoStoreSettings.bIoStore);
+		PlatformSavePackageContexts = GetSettingObject()->PlatformSavePackageContexts;
 	}
 	else
 	{
-		PlatformSavePackageContexts = GetSettingObject()->PlatformSavePackageContexts;
+		PlatformSavePackageContexts = UFlibHotPatcherEditorHelper::CreatePlatformsPackageContexts(GetSettingObject()->CookTargetPlatforms,GetSettingObject()->IoStoreSettings.bIoStore);
 	}
 #endif
 	InitShaderLibConllections();
@@ -40,6 +40,7 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 		}
 		PackageTracker = MakeShareable(new FPackageTracker(PackagePathSet.PackagePaths));
 	}
+	IFileManager::Get().DeleteDirectory(*GetSettingObject()->StorageMetadataDir);
 }
 
 void USingleCookerProxy::Shutdown()
@@ -416,6 +417,15 @@ TMap<ETargetPlatform, FSavePackageContext*> USingleCookerProxy::GetPlatformSaveP
 TArray<FName>& USingleCookerProxy::GetPlatformCookAssetOrders(ETargetPlatform Platform)
 {
 	return CookAssetOrders.FindOrAdd(Platform);
+}
+
+TSet<FName> USingleCookerProxy::GetAdditionalAssets()
+{
+	if(GetSettingObject()->bPackageTracker && PackageTracker.IsValid())
+	{
+		return PackageTracker->GetPendingPackageSet();
+	}
+	return TSet<FName>{};
 }
 
 void USingleCookerProxy::MarkAssetCooked(const FSoftObjectPath& PackagePath, ETargetPlatform Platform)

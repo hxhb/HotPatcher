@@ -17,8 +17,8 @@ void FAssetDependenciesInfo::AddAssetsDetail(const FAssetDetail& AssetDetail)
 	else
 	{
 		FAssetDependenciesDetail& CurrentCategory = *AssetsDependenciesMap.Find(CurrAssetModuleName);
-			
-		if (!AssetsDependenciesMap.Contains(CurrAssetLongPackageName))
+		
+		if (!CurrentCategory.AssetDependencyDetails.Contains(CurrAssetLongPackageName))
 		{
 			CurrentCategory.AssetDependencyDetails.Add(CurrAssetLongPackageName,AssetDetail);
 		}

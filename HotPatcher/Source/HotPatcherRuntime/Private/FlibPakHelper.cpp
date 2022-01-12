@@ -242,6 +242,11 @@ bool UFlibPakHelper::LoadShaderbytecode(const FString& LibraryName, const FStrin
 	return result;
 }
 
+bool UFlibPakHelper::LoadShaderbytecodeInDefaultDir(const FString& LibraryName)
+{
+	return LoadShaderbytecode(LibraryName,FPaths::Combine(FPaths::ProjectDir(),TEXT("ShaderLibs")));
+}
+
 void UFlibPakHelper::CloseShaderbytecode(const FString& LibraryName)
 {
 	FShaderCodeLibrary::CloseLibrary(LibraryName);

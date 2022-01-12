@@ -152,14 +152,6 @@ namespace PatchWorker
 					TrackerAssetDetails.AddUnique(TrackPackage.Value);
 					Context.AddAsset(ChunkInfo.ChunkName,TrackPackage.Value);
 				}
-				UFlibHotPatcherEditorHelper::CookChunkAssets(
-					TrackerAssetDetails,
-					Platforms
-					,[](const FSoftObjectPath&,ETargetPlatform){}
-					#if WITH_PACKAGE_CONTEXT
-					,Context.PatchProxy->GetPlatformSavePackageContextsRaw()
-					#endif
-					);
 			}
 		}
 	private:

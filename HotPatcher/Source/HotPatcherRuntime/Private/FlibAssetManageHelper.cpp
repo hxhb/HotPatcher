@@ -614,7 +614,7 @@ SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAllInValidAssetInProje
 }
 const FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackagePath(const FString& InPackagePath)
 {
-
+	FAssetPackageData* AssetPackageData = nullptr;
 	if (InPackagePath.IsEmpty())
 		return NULL;
 	if (!InPackagePath.IsEmpty())
@@ -622,24 +622,27 @@ const FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackagePath(con
 		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 		FString TargetLongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(InPackagePath);
 
-		if(FPackageName::DoesPackageExist(TargetLongPackageName))
+		//  if(FPackageName::DoesPackageExist(TargetLongPackageName))
 		{
 #if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
 			TOptional<FAssetPackageData> PackageDataOpt = AssetRegistryModule.Get().GetAssetPackageDataCopy(*TargetLongPackageName);
-			const FAssetPackageData* PackageData = &PackageDataOpt.GetValue();
-#else
-			const FAssetPackageData* PackageData = AssetRegistryModule.Get().GetAssetPackageData(*TargetLongPackageName);
-#endif
-			FAssetPackageData* AssetPackageData = const_cast<FAssetPackageData*>(PackageData);
-			if (AssetPackageData != nullptr)
+			if(PackageDataOpt.IsSet())
 			{
-				return AssetPackageData;
+				const FAssetPackageData* PackageData = &PackageDataOpt.GetValue();
+#else
+				const FAssetPackageData* PackageData = AssetRegistryModule.Get().GetAssetPackageData(*TargetLongPackageName);
+#endif
+				AssetPackageData = const_cast<FAssetPackageData*>(PackageData);
+				if (AssetPackageData != nullptr)
+				{
+					return AssetPackageData;
+				}
 			}
 		}
-		else
-		{
-			UE_LOG(LogHotPatcher,Warning,TEXT("GetPackageDataByPackagePath %s Failed!"),*InPackagePath);
-		}
+		// else
+		// {
+		// 	UE_LOG(LogHotPatcher,Warning,TEXT("GetPackageDataByPackagePath %s Failed!"),*InPackagePath);
+		// }
 	}
 
 	return NULL;

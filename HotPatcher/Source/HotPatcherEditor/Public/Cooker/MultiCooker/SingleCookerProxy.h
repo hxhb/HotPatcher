@@ -59,6 +59,8 @@ public:
     void AddCluster(const FCookCluster& CookCluster);
 
     TArray<FName>& GetPlatformCookAssetOrders(ETargetPlatform Platform);
+    TSet<FName> GetAdditionalAssets();
+    
 public:
     FSingleCookerEvent OnCookBegin;
     FSingleCookerEvent OnCookFinished;
