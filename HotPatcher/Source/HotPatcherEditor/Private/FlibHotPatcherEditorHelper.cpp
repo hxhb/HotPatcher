@@ -780,7 +780,7 @@ void UFlibHotPatcherEditorHelper::BackupMetadataDir(const FString& ProjectDir, c
 	for(const auto& Platform:Platforms)
 	{
 		FString MetadataDir = FPaths::ConvertRelativePathToFull(UFlibHotPatcherEditorHelper::GetMetadataDir(ProjectDir,ProjectName,Platform));
-		FString OutMetadir = FPaths::Combine(OutDir,TEXT("BackupMatedatas"),THotPatcherTemplateHelper::GetEnumNameByValue(Platform,false));
+		FString OutMetadir = FPaths::Combine(OutDir,TEXT("BackupMetadatas"),THotPatcherTemplateHelper::GetEnumNameByValue(Platform,false));
 		if(FPaths::DirectoryExists(MetadataDir))
 		{
 			PlatformFile.CreateDirectoryTree(*OutMetadir);

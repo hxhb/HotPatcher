@@ -176,7 +176,7 @@ void SHotPatcherGameFeaturePackager::FeaturePackager()
 	{
 		UGameFeatureProxy* GameFeatureProxy = NewObject<UGameFeatureProxy>();
 		GameFeatureProxy->AddToRoot();
-		GameFeatureProxy->SetProxySettings(GetConfigSettings());
+		GameFeatureProxy->Init(GetConfigSettings());
 		GameFeatureProxy->DoExport();
 	}
 	else

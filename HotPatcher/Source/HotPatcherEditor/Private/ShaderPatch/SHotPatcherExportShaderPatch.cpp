@@ -102,7 +102,7 @@ void SHotPatcherExportShaderPatch::DoGenerate()
 {
 	UShaderPatchProxy* ShaderPatchProxy = NewObject<UShaderPatchProxy>();
 	ShaderPatchProxy->AddToRoot();
-	ShaderPatchProxy->SetProxySettings(ExportShaderPatchSettings.Get());
+	ShaderPatchProxy->Init(ExportShaderPatchSettings.Get());
 	if(!ShaderPatchProxy->GetSettingObject()->bStandaloneMode)
 	{
 		ShaderPatchProxy->DoExport();

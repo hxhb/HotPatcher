@@ -494,7 +494,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	{
 		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
 		PatcherProxy->AddToRoot();
-		PatcherProxy->SetProxySettings(ExportPatchSetting.Get());
+		PatcherProxy->Init(ExportPatchSetting.Get());
 		PatcherProxy->OnShowMsg.AddRaw(this,&SHotPatcherExportPatch::ShowMsg);
 		PatcherProxy->DoExport();
 	}

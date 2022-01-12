@@ -21,6 +21,7 @@
 #include "FHotPatcherVersion.h"
 #include "FPakVersion.h"
 #include "FPlatformExternAssets.h"
+#include "BaseTypes/FCookShaderOptions.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -43,42 +44,9 @@ struct FEncryptSetting
 	bool bSign = false;
 };
 
-UENUM(BlueprintType)
-enum class EShaderLibNameRule : uint8
-{
-	VERSION_ID,
-	PROJECT_NAME,
-	CUSTOM
-};
-
-
-#define AS_PROJECTDIR_MARK TEXT("[PROJECTDIR]")
 #define AS_PLUGINDIR_MARK TEXT("[PLUGINDIR]")
 
-USTRUCT(BlueprintType)
-struct FCookShaderOptions
-{
-	GENERATED_BODY()
-	FCookShaderOptions()
-	{
-		ShderLibMountPointRegular = FString::Printf(TEXT("%s/ShaderLibs"),AS_PROJECTDIR_MARK);
-	}
-	FString GetShaderLibMountPointRegular()const { return ShderLibMountPointRegular; }
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bSharedShaderLibrary = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bNativeShader = false;
-	// metallib and metalmap to pak?
-	bool bNativeShaderToPak = false;
-	// if name is StartContent to ShaderArchive-StarterContent-PCD3D_SM5.ushaderbytecode
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EShaderLibNameRule ShaderNameRule = EShaderLibNameRule::VERSION_ID;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="ShaderNameRule==EShaderLibNameRule::CUSTOM"))
-	FString CustomShaderName;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString ShderLibMountPointRegular;
-};
 
 UENUM(BlueprintType)
 enum class EAssetRegistryRule : uint8
@@ -204,7 +172,6 @@ public:
 	FORCEINLINE bool IsSharedShaderLibrary()const { return GetCookShaderOptions().bSharedShaderLibrary; }
 	FORCEINLINE FCookShaderOptions GetCookShaderOptions()const {return CookShaderOptions;}
 	FORCEINLINE FAssetRegistryOptions GetSerializeAssetRegistryOptions()const{return SerializeAssetRegistryOptions;}
-	FString GetShaderLibraryName()const;
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = false;

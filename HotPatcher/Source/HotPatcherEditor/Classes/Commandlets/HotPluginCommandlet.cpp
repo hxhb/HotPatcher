@@ -60,7 +60,7 @@ int32 UHotPluginCommandlet::Main(const FString& Params)
 		
 		UGameFeatureProxy* GameFeatureProxy = NewObject<UGameFeatureProxy>();
 		GameFeatureProxy->AddToRoot();
-		GameFeatureProxy->SetProxySettings(PluginPackagerSetting.Get());
+		GameFeatureProxy->Init(PluginPackagerSetting.Get());
 		GameFeatureProxy->OnPaking.AddStatic(&::CommandletHelper::NSPatch::ReceiveMsg);
 		GameFeatureProxy->OnShowMsg.AddStatic(&::CommandletHelper::NSPatch::ReceiveShowMsg);
 		bExportStatus = GameFeatureProxy->DoExport();

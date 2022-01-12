@@ -15,15 +15,20 @@ class HOTPATCHEREDITOR_API UHotPatcherProxyBase : public UObject
 public:
     GENERATED_BODY()
 
+
+    virtual void Init(FPatcherEntitySettingBase* InSetting)
+    {
+        SetProxySettings(InSetting);
+    };
+    virtual void Shutdown(){};
+    FORCEINLINE virtual bool DoExport(){return false;};
+    FORCEINLINE virtual FPatcherEntitySettingBase* GetSettingObject(){return Setting;};
+
+protected:
     FORCEINLINE virtual void SetProxySettings(FPatcherEntitySettingBase* InSetting)
     {
         Setting = InSetting;
     }
-    virtual void Init(){};
-    virtual void Shutdown(){};
-    FORCEINLINE virtual bool DoExport(){return false;};
-    FORCEINLINE virtual FPatcherEntitySettingBase* GetSettingObject(){return Setting;};
-    
 public:
     FExportPakProcess OnPaking;
     FExportPakShowMsg OnShowMsg;

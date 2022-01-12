@@ -608,7 +608,7 @@ namespace PatchWorker
 						FSingleCookerSettings EmptySetting;
 						EmptySetting.MissionID = 0;
 						EmptySetting.MissionName = FString::Printf(TEXT("%s_Cooker_%s"),FApp::GetProjectName(),*Chunk.ChunkName);
-						EmptySetting.ShaderLibName = Chunk.ChunkName;
+						EmptySetting.ShaderLibName = Chunk.GetShaderLibraryName();
 						EmptySetting.CookTargetPlatforms = TArray<ETargetPlatform>{Platform};
 						EmptySetting.CookAssets = ChunkAssets;
 						EmptySetting.bPackageTracker = Context.GetSettingObject()->IsPackageTracker();
@@ -621,12 +621,11 @@ namespace PatchWorker
 						EmptySetting.bPreGeneratePlatformData = false;
 						EmptySetting.bDisplayConfig = false;
 						EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
-						EmptySetting.StorageMetadataDir = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,TEXT("Metedatas"),Chunk.ChunkName);
+						EmptySetting.StorageMetadataDir = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,TEXT("Metadatas"),Chunk.ChunkName);
 
 						USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
 						SingleCookerProxy->AddToRoot();
-						SingleCookerProxy->SetProxySettings(&EmptySetting);
-						SingleCookerProxy->Init();
+						SingleCookerProxy->Init(&EmptySetting);
 						bool bExportStatus = SingleCookerProxy->DoExport();
 						SingleCookerProxy->Shutdown();
 						SingleCookerProxy->RemoveFromRoot();

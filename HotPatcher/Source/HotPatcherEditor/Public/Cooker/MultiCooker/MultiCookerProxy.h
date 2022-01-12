@@ -23,7 +23,7 @@ class HOTPATCHEREDITOR_API UMultiCookerProxy:public UHotPatcherProxyBase
 {
     GENERATED_BODY()
 public:
-    virtual void Init()override;
+    virtual void Init(FPatcherEntitySettingBase* InSetting)override;
     virtual void Shutdown() override;
     virtual bool DoExport()override;
     virtual FMultiCookerSettings* GetSettingObject()override {return (FMultiCookerSettings*)(Setting);};

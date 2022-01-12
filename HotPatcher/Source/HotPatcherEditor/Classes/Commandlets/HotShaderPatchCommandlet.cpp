@@ -52,7 +52,7 @@ int32 UHotShaderPatchCommandlet::Main(const FString& Params)
 		
 	UShaderPatchProxy* ShaderPatchProxy = NewObject<UShaderPatchProxy>();
 	ShaderPatchProxy->AddToRoot();
-	ShaderPatchProxy->SetProxySettings(ExportShaderPatchSetting.Get());
+	ShaderPatchProxy->Init(ExportShaderPatchSetting.Get());
 	bool bExportStatus = ShaderPatchProxy->DoExport();
 
 	UE_LOG(LogHotShaderPatchCommandlet,Display,TEXT("Export Shader Patch Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));

@@ -11,14 +11,14 @@
 #include "Async/Async.h"
 #include "ShaderPatch/FlibShaderPatchHelper.h"
 
-void UMultiCookerProxy::Init()
+void UMultiCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 {
+	Super::Init(InSetting);
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::Init"),FColor::Red);
 	if(GetSettingObject()->bImportProjectSettings)
 	{
 		UFlibHotPatcherEditorHelper::ImportProjectSettingsToSettingBase(GetSettingObject());
 	}
-	Super::Init();
 }
 
 void UMultiCookerProxy::Shutdown()
@@ -266,7 +266,7 @@ void UMultiCookerProxy::RecookFailedAssets()
 
 	if(RecookerProxy)
 	{
-		RecookerProxy->SetProxySettings(&SingleCookerSetting);
+		RecookerProxy->Init(&SingleCookerSetting);
 		RecookerProxy->DoExport();
 	}
 	// remove child process failed assets

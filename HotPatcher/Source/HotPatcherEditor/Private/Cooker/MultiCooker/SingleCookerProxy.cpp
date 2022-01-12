@@ -16,8 +16,9 @@
 #endif
 
 
-void USingleCookerProxy::Init()
+void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 {
+	Super::Init(InSetting);
 #if WITH_PACKAGE_CONTEXT
 	if(GetSettingObject()->bOverrideSavePackageContext)
 	{
@@ -33,9 +34,12 @@ void USingleCookerProxy::Init()
 	if(GetSettingObject()->bPackageTracker)
 	{
 		PackagePathSet.PackagePaths.Append(GetSettingObject()->SkipLoadedAssets);
+		for(const auto& Asset:GetSettingObject()->CookAssets)
+		{
+			PackagePathSet.PackagePaths.Add(Asset.PackagePath);
+		}
 		PackageTracker = MakeShareable(new FPackageTracker(PackagePathSet.PackagePaths));
 	}
-	Super::Init();
 }
 
 void USingleCookerProxy::Shutdown()

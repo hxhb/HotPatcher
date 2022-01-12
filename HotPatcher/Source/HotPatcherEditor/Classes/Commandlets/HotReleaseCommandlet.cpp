@@ -105,7 +105,7 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 		
 	UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
 	ReleaseProxy->AddToRoot();
-	ReleaseProxy->SetProxySettings(ExportReleaseSetting.Get());
+	ReleaseProxy->Init(ExportReleaseSetting.Get());
 	ReleaseProxy->OnPaking.AddStatic(&::CommandletHelper::NSPatch::ReceiveMsg);
 	ReleaseProxy->OnShowMsg.AddStatic(&::CommandletHelper::NSPatch::ReceiveShowMsg);
 	bool bExportStatus = ReleaseProxy->DoExport();

@@ -56,8 +56,7 @@ int32 UHotMultiCookerCommandlet::Main(const FString& Params)
 	GAlwaysReportCrash = false;
 	UMultiCookerProxy* MultiCookerProxy = NewObject<UMultiCookerProxy>();
 	MultiCookerProxy->AddToRoot();
-	MultiCookerProxy->SetProxySettings(ExportMultiCookerSetting.Get());
-	MultiCookerProxy->Init();
+	MultiCookerProxy->Init(ExportMultiCookerSetting.Get());
 	bool bExportStatus = MultiCookerProxy->DoExport();
 
 	if(IsRunningCommandlet())

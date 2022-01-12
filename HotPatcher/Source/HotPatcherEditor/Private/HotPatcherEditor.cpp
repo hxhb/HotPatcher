@@ -469,7 +469,7 @@ void FHotPatcherEditorModule::OnPakPreset(FExportPatchSettings Config)
 	PatcherProxy->AddToRoot();
 	Proxys.Add(PatcherProxy);
 	
-	PatcherProxy->SetProxySettings(&Config);
+	PatcherProxy->Init(&Config);
 
 	if(!Config.IsStandaloneMode())
 	{
@@ -540,8 +540,7 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 
 	USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
 	SingleCookerProxy->AddToRoot();
-	SingleCookerProxy->SetProxySettings(&EmptySetting);
-	SingleCookerProxy->Init();
+	SingleCookerProxy->Init(&EmptySetting);
 	SingleCookerProxy->OnCookAssetSuccessed.AddLambda([CookNotifyLambda](const FSoftObjectPath& ObjectPath,ETargetPlatform Platform)
 	{
 		CookNotifyLambda(ObjectPath.GetAssetPathString(),Platform,true);
@@ -567,7 +566,7 @@ void FHotPatcherEditorModule::OnPakExternal(FPakExternalInfo PakExternConfig)
 	);
 
 	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-	PatcherProxy->SetProxySettings(PatchSettings.Get());
+	PatcherProxy->Init(PatchSettings.Get());
 
 	PatcherProxy->DoExport();
 }
@@ -581,7 +580,7 @@ void FHotPatcherEditorModule::CookAndPakByAssetsAndFilters(TArray<FPatcherSpecif
 	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
 	PatcherProxy->AddToRoot();
 	Proxys.Add(PatcherProxy);
-	PatcherProxy->SetProxySettings(PatchSettings.Get());
+	PatcherProxy->Init(PatchSettings.Get());
 
 	if(bForceStandalone || PatchSettings->IsStandaloneMode())
 	{

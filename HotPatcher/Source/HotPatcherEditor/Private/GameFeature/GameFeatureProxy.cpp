@@ -69,7 +69,7 @@ bool UGameFeatureProxy::DoExport()
 	}
 	PatcherProxy = NewObject<UPatcherProxy>();
 	PatcherProxy->AddToRoot();
-	PatcherProxy->SetProxySettings(PatchSettings.Get());
+	PatcherProxy->Init(PatchSettings.Get());
 	PatcherProxy->DoExport();
 
 	if(GetSettingObject()->IsSaveConfig())

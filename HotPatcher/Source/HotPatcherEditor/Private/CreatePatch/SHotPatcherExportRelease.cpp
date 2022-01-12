@@ -171,7 +171,7 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 	{
 		UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
 		ReleaseProxy->AddToRoot();
-		ReleaseProxy->SetProxySettings(ExportReleaseSettings.Get());
+		ReleaseProxy->Init(ExportReleaseSettings.Get());
 		ReleaseProxy->DoExport();
 	}
 	else

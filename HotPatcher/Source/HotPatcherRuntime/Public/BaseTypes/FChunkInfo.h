@@ -8,6 +8,8 @@
 #include "FlibAssetManageHelper.h"
 #include "FPlatformExternFiles.h"
 #include "ETargetPlatform.h"
+#include "BaseTypes/FCookShaderOptions.h"
+
 // engine header
 #include "CoreMinimal.h"
 
@@ -143,8 +145,39 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Internal", meta = (EditCondition = "!bMonolithic"))
 		FPakInternalInfo InternalFiles;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shader", meta=(EditCondition = "bCookPatchAssets"))
+		FCookShaderOptions CookShaderOptions;
+	
+	FORCEINLINE FCookShaderOptions GetCookShaderOptions()const {return CookShaderOptions;}
+	FString GetShaderLibraryName() const;
+	
 	TArray<FPakFileProxy> PakFileProxys;
 };
+
+FORCEINLINE FString FChunkInfo::GetShaderLibraryName() const
+{
+	FString ShaderLibraryName;
+	switch (GetCookShaderOptions().ShaderNameRule)
+	{
+	case EShaderLibNameRule::CHUNK_NAME:
+		{
+			ShaderLibraryName = ChunkName;
+			break;
+		}
+	case EShaderLibNameRule::PROJECT_NAME:
+		{
+			ShaderLibraryName = FApp::GetProjectName();
+			break;
+		}
+	case EShaderLibNameRule::CUSTOM:
+		{
+			ShaderLibraryName = GetCookShaderOptions().CustomShaderName;
+			break;
+		}
+	}
+	return ShaderLibraryName;
+}
+
 
 USTRUCT(BlueprintType)
 struct FChunkPakCommand
