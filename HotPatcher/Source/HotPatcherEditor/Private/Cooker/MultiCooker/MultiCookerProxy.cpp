@@ -186,7 +186,8 @@ bool UMultiCookerProxy::MergeShader()
 		
 		for(const auto& Cooker:CookerConfigMap)
 		{
-			FString CurrentCookerDir = FPaths::Combine(BaseDir,Cooker.Key,PlatformName,TEXT("Metadata/ShaderLibrarySource"));
+			FString CurrentCookerMetadataDir = Cooker.Value.StorageMetadataDir;
+			FString CurrentCookerDir = FPaths::Combine(CurrentCookerMetadataDir,Cooker.Key,PlatformName,TEXT("Metadata/ShaderLibrarySource"));
 			
 			TArray<FString> PlatformSCLCSVPaths;
 			for(auto& ShaderFormat:ShaderFormats)
@@ -205,10 +206,10 @@ bool UMultiCookerProxy::MergeShader()
 					FString ShaderStableInfoFileName = UFlibShaderPatchHelper::GetShaderStableInfoFileNameByShaderArchiveFileName(ShaderArchiveFileName);
 					
 					FString CopyShaderInfoFileTo = UFlibShaderPatchHelper::GetShaderAssetInfoFilename(ShaderCodeFormatMap.SaveBaseDir,FApp::GetProjectName(),ShaderFormat);
-					FString ChildShaderInfoFile = FPaths::Combine(BaseDir,Cooker.Key,PlatformName,TEXT(""),ShaderInfoFileName);
+					FString ChildShaderInfoFile = FPaths::Combine(CurrentCookerMetadataDir,Cooker.Key,PlatformName,TEXT(""),ShaderInfoFileName);
 					FString CopyToDefaultShaderInfoFile =  UFlibShaderPatchHelper::GetShaderAssetInfoFilename(ShaderIntermediateLocation,FApp::GetProjectName(),ShaderFormat);
 					
-					FString ChildShaderStableInfoFile = FPaths::Combine(BaseDir,Cooker.Key,PlatformName,TEXT("Metadata/PipelineCaches"),ShaderStableInfoFileName);
+					FString ChildShaderStableInfoFile = FPaths::Combine(CurrentCookerMetadataDir,Cooker.Key,PlatformName,TEXT("Metadata/PipelineCaches"),ShaderStableInfoFileName);
 					
 					FString CopyShaderArchiveTo = UFlibShaderPatchHelper::GetCodeArchiveFilename(ShaderCodeFormatMap.SaveBaseDir,FApp::GetProjectName(),ShaderFormat);
 					FString ChildShaderArchive = FPaths::Combine(CurrentCookerDir,ShaderArchiveFileName);
@@ -250,7 +251,7 @@ void UMultiCookerProxy::RecookFailedAssets()
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::RecookFailedAssets"),FColor::Red);
 	TMap<ETargetPlatform,TArray<FAssetDetail>> AllFailedAssetsMap;
 	FSingleCookerSettings SingleCookerSetting;
-	SingleCookerSetting.MultiCookerSettings.ShaderOptions.bSharedShaderLibrary = false;
+	SingleCookerSetting.ShaderOptions.bSharedShaderLibrary = false;
 	TArray<FAssetDetail>& AllFailedAssets = SingleCookerSetting.CookAssets;
 	for(const auto& CookFailedCollection:CookerFailedCollectionMap)
 	{
@@ -261,7 +262,7 @@ void UMultiCookerProxy::RecookFailedAssets()
 		}
 	}
 	
-	AllFailedAssetsMap.GetKeys(SingleCookerSetting.MultiCookerSettings.CookTargetPlatforms);
+	AllFailedAssetsMap.GetKeys(SingleCookerSetting.CookTargetPlatforms);
 
 	if(RecookerProxy)
 	{
@@ -560,23 +561,28 @@ void UMultiCookerProxy::OnCookProcSuccessed(FProcWorkerThread* ProcWorker)
 void UMultiCookerProxy::OnCookProcFailed(FProcWorkerThread* ProcWorker)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::OnCookProcFailed"),FColor::Red);
-	FScopeLock Lock(&SynchronizationObject);
-	FString CookerProcName = ProcWorker->GetThreadName();
-	UE_LOG(LogHotPatcher,Display,TEXT("Single Cooker Proc %s Failure!"),*CookerProcName);
-	FSingleCookerSettings* CookerSettings =  CookerConfigMap.Find(CookerProcName);
-	FString CookFailedResultPath = UFlibMultiCookerHelper::GetCookerProcFailedResultPath(CookerSettings->MissionName,CookerSettings->MissionID);
-	FAssetsCollection FailedMissionCollection;
-	if(FPaths::FileExists(CookFailedResultPath))
+	if(ProcWorker && CookerConfigMap.Contains(ProcWorker->GetThreadName()))
 	{
-		FString FailedContent;
-		if(FFileHelper::LoadFileToString(FailedContent,*CookFailedResultPath))
+		FSingleCookerSettings* CookerSetting = CookerConfigMap.Find(ProcWorker->GetThreadName());
+		FScopeLock Lock(&SynchronizationObject);
+		FString CookerProcName = ProcWorker->GetThreadName();
+		UE_LOG(LogHotPatcher,Display,TEXT("Single Cooker Proc %s Failure!"),*CookerProcName);
+		FSingleCookerSettings* CookerSettings =  CookerConfigMap.Find(CookerProcName);
+		FString CookFailedResultPath = UFlibMultiCookerHelper::GetCookerProcFailedResultPath(CookerSetting->StorageMetadataDir,CookerSettings->MissionName,CookerSettings->MissionID);
+		FAssetsCollection FailedMissionCollection;
+		if(FPaths::FileExists(CookFailedResultPath))
 		{
-			THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(FailedContent,FailedMissionCollection);
+			FString FailedContent;
+			if(FFileHelper::LoadFileToString(FailedContent,*CookFailedResultPath))
+			{
+				THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(FailedContent,FailedMissionCollection);
+			}
 		}
+		// CookerProcessMap.Remove(CookerProcName);
+		UpdateSingleCookerStatus(ProcWorker,false, FailedMissionCollection);
+		UpdateMultiCookerStatus();
 	}
-	// CookerProcessMap.Remove(CookerProcName);
-	UpdateSingleCookerStatus(ProcWorker,false, FailedMissionCollection);
-	UpdateMultiCookerStatus();
+	
 }
 
 TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateProcMissionThread(const FString& Bin,

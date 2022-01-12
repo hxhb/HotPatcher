@@ -95,13 +95,52 @@ public:
 	int32 MissionID = -1;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString ShaderLibName;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	TArray<FAssetDetail> CookAssets;
-	// UPROPERTY()
-	// TArray<FAssetDetail> FaildAssets;
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	FMultiCookerSettings MultiCookerSettings;
+	TArray<FAssetDetail> CookAssets;
+
+	// skip loaded assets when cooking(package path)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	TSet<FName> SkipLoadedAssets;
+	
+	// Directories or asset package path
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	TArray<FString> SkipCookContents;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	TArray<ETargetPlatform> CookTargetPlatforms;
+
+	// track load asset when cooking
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bPackageTracker = true;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	FCookerShaderOptions ShaderOptions;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bSerializeAssetRegistry;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	// FAssetRegistryOptions SerializeAssetRegistryOptions;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	FIoStoreSettings IoStoreSettings;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
+	bool bDisplayConfig;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
+	bool bPreGeneratePlatformData = true;
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	FString StorageCookedDir;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	FString StorageMetadataDir;
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "SavePackageContext")
+	bool bOverrideSavePackageContext = false;
+	TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
+	
+	bool IsSkipAsset(const FString& PackageName);
 };
 
 

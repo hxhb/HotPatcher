@@ -28,10 +28,10 @@ FString UFlibMultiCookerHelper::GetCookerProcConfigPath(const FString& MissionNa
 	return SaveConfigTo;
 }
 
-FString UFlibMultiCookerHelper::GetCookerProcFailedResultPath(const FString& MissionName, int32 MissionID)
+FString UFlibMultiCookerHelper::GetCookerProcFailedResultPath(const FString& BaseDir,const FString& MissionName, int32 MissionID)
 {
 	FString SaveConfigTo = FPaths::Combine(
-			UFlibMultiCookerHelper::GetMultiCookerBaseDir(),
+			BaseDir,
 			FString::Printf(TEXT("%s_Cooker_%d_failed.json"),*MissionName,MissionID)
 			);
 	return SaveConfigTo;

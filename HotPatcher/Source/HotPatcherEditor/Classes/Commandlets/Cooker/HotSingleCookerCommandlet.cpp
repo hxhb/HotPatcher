@@ -46,7 +46,7 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 	TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Params);
 	THotPatcherTemplateHelper::ReplaceProperty(*ExportSingleCookerSetting, KeyValues);
 	
-	if(ExportSingleCookerSetting->MultiCookerSettings.bDisplayMissionConfig)
+	if(ExportSingleCookerSetting->bDisplayConfig)
 	{
 		FString FinalConfig;
 		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*ExportSingleCookerSetting,FinalConfig);

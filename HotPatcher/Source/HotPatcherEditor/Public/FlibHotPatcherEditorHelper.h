@@ -5,8 +5,8 @@
 #include "FExternFileInfo.h"
 #include "FExternDirectoryInfo.h"
 #include "FPatcherSpecifyAsset.h"
+#include "HotPatcherBaseTypes.h"
 
-// RUNTIME
 #include "FHotPatcherVersion.h"
 #include "FChunkInfo.h"
 #include "CreatePatch/FExportPatchSettings.h"
@@ -18,7 +18,16 @@
 #include "Widgets/Notifications/SNotificationList.h"
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+
+#if WITH_PACKAGE_CONTEXT
+	#include "UObject/SavePackage.h"
+	#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
+	 #include "Serialization/BulkDataManifest.h"
+	#endif
+#endif
+
 #include "FlibHotPatcherEditorHelper.generated.h"
+
 
 DECLARE_LOG_CATEGORY_EXTERN(LogHotPatcherEditorHelper, Log, All);
 
@@ -61,40 +70,45 @@ public:
 	static bool CookAssets(
 			const TArray<FSoftObjectPath>& Assets,
 			const TArray<ETargetPlatform>& Platforms,
-			TFunction<void(const FString&)> PackageSavedCallback = [](const FString&){},
-			TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback = [](const FString&,ETargetPlatform){},
-			class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext = TMap<ETargetPlatform,FSavePackageContext*>{}
+			FCookResultEvent PackageSavedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
+			FCookResultEvent CookFailedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
+			class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext = TMap<ETargetPlatform,FSavePackageContext*>{},
+		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"))
 		);
 	static bool CookPackages(
 		const TArray<FAssetData>& AssetDatas,
 		const TArray<UPackage*>& InPackage,
 		const TArray<FString>& Platforms,
-		TFunction<void(const FString&)> PackageSavedCallback,
-		TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback,
-		class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext
+		FCookResultEvent PackageSavedCallback,
+		FCookResultEvent CookFailedCallback,
+		class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext,
+		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"))
 	);
 	static bool CookPackages(
 		const TArray<FAssetData>& AssetDatas,
 		const TArray<UPackage*>& Packages,
 		const TArray<FString>& Platforms,
-		TFunction<void(const FString&)> PackageSavedCallback = [](const FString&){},
-		TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback = [](const FString&,ETargetPlatform){},
-		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{}
+		FCookResultEvent PackageSavedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
+		FCookResultEvent CookFailedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
+		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{},
+		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"))
 	);
 	static bool CookPackage(
 		const FAssetData& AssetData,
 		UPackage* Package,
 		const TArray<FString>& Platforms,
-		TFunction<void(const FString&)> PackageSavedCallback = [](const FString&){},
-		TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback = [](const FString&,ETargetPlatform){},
-		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{}
+		FCookResultEvent PackageSavedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
+		FCookResultEvent CookFailedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
+		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{},
+		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"))
 	);
 
 	static void CookChunkAssets(
 		TArray<FAssetDetail> Assets,
 		const TArray<ETargetPlatform>& Platforms,
-		TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback = [](const FString&,ETargetPlatform){},
-		class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext = TMap<ETargetPlatform,FSavePackageContext*>{}
+		FCookResultEvent CookFailedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
+		class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext = TMap<ETargetPlatform,FSavePackageContext*>{},
+		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"))
 	);
 	
 	static ITargetPlatform* GetTargetPlatformByName(const FString& PlatformName);
@@ -190,4 +204,8 @@ public:
 	static bool IsCanCookPackage(const FString& LongPackageName);
 
 	static void ImportProjectSettingsToSettingBase(FHotPatcherSettingBase* HotPatcherSettingBase);
+
+	static TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> CreatePlatformsPackageContexts(const TArray<ETargetPlatform>& Platforms,bool bIoStore);
+	static bool SavePlatformBulkDataManifest(TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>>&PlatformSavePackageContexts,ETargetPlatform Platform);
+	
 };

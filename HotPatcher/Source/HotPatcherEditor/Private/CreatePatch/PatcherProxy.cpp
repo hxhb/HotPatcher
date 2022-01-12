@@ -24,6 +24,9 @@
 #include "Templates/Function.h"
 #include "BinariesPatchFeature.h"
 #include "Async/ParallelFor.h"
+#include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
+#include "Cooker/MultiCooker/FMultiCookerSettings.h"
+#include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "Misc/DataDrivenPlatformInfoRegistry.h"
 #include "Serialization/ArrayWriter.h"
 
@@ -152,7 +155,7 @@ namespace PatchWorker
 				UFlibHotPatcherEditorHelper::CookChunkAssets(
 					TrackerAssetDetails,
 					Platforms
-					,[](const FString&,ETargetPlatform){}
+					,[](const FSoftObjectPath&,ETargetPlatform){}
 					#if WITH_PACKAGE_CONTEXT
 					,Context.PatchProxy->GetPlatformSavePackageContextsRaw()
 					#endif
@@ -170,7 +173,7 @@ namespace PatchWorker
 bool UPatcherProxy::DoExport()
 {
 #if WITH_PACKAGE_CONTEXT
-	InitPlatformPackageContexts();
+	PlatformSavePackageContexts = UFlibHotPatcherEditorHelper::CreatePlatformsPackageContexts(GetSettingObject()->GetPakTargetPlatforms(),GetSettingObject()->IoStoreSettings.bIoStore);
 #endif
 	UFlibAssetManageHelper::UpdateAssetMangerDatabase(true);
 	GetSettingObject()->Init();
@@ -527,76 +530,46 @@ namespace PatchWorker
 		// wait global / compiling shader by load asset
 		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
 		
-		if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
-		{
-			FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId);
-			FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
-			FString ShaderLibraryName = Context.GetSettingObject()->GetShaderLibraryName();
-			Context.PatchProxy->GetCookShaderCollectionProxy() = MakeShareable(
-				new FCookShaderCollectionProxy(
-					Context.GetSettingObject()->GetPakTargetPlatformNames(),
-					ShaderLibraryName,
-					Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary,
-					Context.GetSettingObject()->GetCookShaderOptions().bNativeShader,
-					true,
-					SavePath
-					));
-			if(Context.PatchProxy->GetCookShaderCollectionProxy().IsValid())
-			{
-				Context.PatchProxy->GetCookShaderCollectionProxy()->Init();
-			}
-		}
 		return true;
 	}
 	
 	bool PostCookPatchAssets(FHotPatcherPatchContext& Context)
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("PostCookPatchAssets"),FColor::Red);
-		if(Context.PatchProxy->GetCookShaderCollectionProxy().IsValid())
+		if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
 		{
-			if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
+			for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
 			{
-				Context.PatchProxy->GetCookShaderCollectionProxy()->Shutdown();
-				if(Context.PatchProxy->GetCookShaderCollectionProxy()->IsSuccessed())
+				for(auto& Chunk:Context.PakChunks)
 				{
-					for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
+					FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,TEXT("Metadatas"),Chunk.ChunkName,PlatformName);
+					TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath);
+		
+					if(Context.PakChunks.Num())
 					{
-						for(auto& Chunk:Context.PakChunks)
+						for(const auto& FilePath:FoundShaderLibs)
 						{
-							FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,PlatformName);
-							TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath);
-
-							if(Context.PakChunks.Num())
+							if(!Context.GetSettingObject()->GetCookShaderOptions().bNativeShaderToPak &&
+								(FilePath.EndsWith(TEXT("metallib")) || FilePath.EndsWith(TEXT("metalmap"))))
 							{
-								for(const auto& FilePath:FoundShaderLibs)
-								{
-									if(!Context.GetSettingObject()->GetCookShaderOptions().bNativeShaderToPak &&
-										(FilePath.EndsWith(TEXT("metallib")) || FilePath.EndsWith(TEXT("metalmap"))))
-									{
-										// don't add metalib and metalmap to pak
-										continue;
-									}
-									FExternFileInfo AddShaderLib;
-									{
-										FString FileName = FPaths::GetBaseFilename(FilePath,true);
-										FString FileExtersion = FPaths::GetExtension(FilePath,false);
-									
-										AddShaderLib.Type = EPatchAssetType::NEW;
-										AddShaderLib.FilePath.FilePath = FPaths::ConvertRelativePathToFull(FilePath);
-										AddShaderLib.MountPath = FPaths::Combine(
-											UFlibPatchParserHelper::ParserMountPointRegular(Context.GetSettingObject()->CookShaderOptions.GetShaderLibMountPointRegular()),
-											FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion)
-											);
-									}
-									Context.AddExternalFile(PlatformName,Chunk.ChunkName,AddShaderLib);
-								}
+								// don't add metalib and metalmap to pak
+								continue;
 							}
+							FExternFileInfo AddShaderLib;
+							{
+								FString FileName = FPaths::GetBaseFilename(FilePath,true);
+								FString FileExtersion = FPaths::GetExtension(FilePath,false);
+									
+								AddShaderLib.Type = EPatchAssetType::NEW;
+								AddShaderLib.FilePath.FilePath = FPaths::ConvertRelativePathToFull(FilePath);
+								AddShaderLib.MountPath = FPaths::Combine(
+									UFlibPatchParserHelper::ParserMountPointRegular(Context.GetSettingObject()->CookShaderOptions.GetShaderLibMountPointRegular()),
+									FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion)
+									);
+							}
+							Context.AddExternalFile(PlatformName,Chunk.ChunkName,AddShaderLib);
 						}
 					}
-				}
-				else
-				{
-					UE_LOG(LogHotPatcher,Error,TEXT("This mission generate shader library faild!"));
 				}
 			}
 		}
@@ -632,75 +605,33 @@ namespace PatchWorker
 					if(Context.GetSettingObject()->IsCookPatchAssets())
 					{
 						FTrackPackageAction TrackChunkPackageAction(Context,Chunk,TArray<ETargetPlatform>{Platform});
-						
-						UFlibHotPatcherEditorHelper::CookChunkAssets(
-							ChunkAssets,
-							TArray<ETargetPlatform>{Platform}
-							,[](const FString&,ETargetPlatform){}
-	#if WITH_PACKAGE_CONTEXT
-							,Context.PatchProxy->GetPlatformSavePackageContextsRaw()
-	#endif
-						);
-						if(Context.GetSettingObject()->GetIoStoreSettings().bStorageBulkDataInfo)
-						{
-#if WITH_PACKAGE_CONTEXT
-							Context.PatchProxy->SavePlatformBulkDataManifest(Platform);
-#endif
-						}
-						
-					}
-				
-					if(Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
-					{
-						TimeRecorder StorageCookOpenOrderTR(FString::Printf(TEXT("Storage CookOpenOrder.txt for %s, time:"),*PlatformName));
-						struct CookOpenOrder
-						{
-							CookOpenOrder()=default;
-							CookOpenOrder(const FString& InPath,int32 InOrder):uasset_relative_path(InPath),order(InOrder){}
-							FString uasset_relative_path;
-							int32 order;
-						};
-						auto MakeCookOpenOrder = [](const TArray<FAssetDetail>& Assets)->TArray<CookOpenOrder>
-						{
-							TArray<CookOpenOrder> result;
-							TArray<FAssetData> AssetsData;
-							TArray<FString> AssetPackagePaths;
-							for (auto Asset : Assets)
-							{
-								FSoftObjectPath ObjectPath;
-								ObjectPath.SetPath(Asset.PackagePath);
-								TArray<FAssetData> AssetData;
-								UFlibAssetManageHelper::GetSpecifyAssetData(ObjectPath.GetLongPackageName(),AssetData,true);
-								AssetsData.Append(AssetData);
-							}
+						FSingleCookerSettings EmptySetting;
+						EmptySetting.MissionID = 0;
+						EmptySetting.MissionName = FString::Printf(TEXT("%s_Cooker_%s"),FApp::GetProjectName(),*Chunk.ChunkName);
+						EmptySetting.ShaderLibName = Chunk.ChunkName;
+						EmptySetting.CookTargetPlatforms = TArray<ETargetPlatform>{Platform};
+						EmptySetting.CookAssets = ChunkAssets;
+						EmptySetting.bPackageTracker = Context.GetSettingObject()->IsPackageTracker();
+						EmptySetting.ShaderOptions.bSharedShaderLibrary = Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary;
+						EmptySetting.ShaderOptions.bNativeShader = Context.GetSettingObject()->GetCookShaderOptions().bNativeShader;
+						EmptySetting.ShaderOptions.bMergeShaderLibrary = false;
+						EmptySetting.IoStoreSettings = Context.GetSettingObject()->GetIoStoreSettings();
+						EmptySetting.IoStoreSettings.bStorageBulkDataInfo = false;// dont save platform context data to disk
+						EmptySetting.bSerializeAssetRegistry = Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry;
+						EmptySetting.bPreGeneratePlatformData = false;
+						EmptySetting.bDisplayConfig = false;
+						EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
+						EmptySetting.StorageMetadataDir = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,TEXT("Metedatas"),Chunk.ChunkName);
 
-							// UFlibAssetManageHelper::GetAssetsData(AssetPackagePaths,AssetsData);
-					
-							for(int32 index=0;index<AssetsData.Num();++index)
-							{
-								UPackage* Package = AssetsData[index].GetPackage();
-								FString LocalPath;
-								const FString* PackageExtension = Package->ContainsMap() ? &FPackageName::GetMapPackageExtension() : &FPackageName::GetAssetPackageExtension();
-								FPackageName::TryConvertLongPackageNameToFilename(AssetsData[index].PackageName.ToString(), LocalPath, *PackageExtension);
-								result.Emplace(LocalPath,index);
-							}
-							return result;
-						};
-						TArray<CookOpenOrder> CookOpenOrders = MakeCookOpenOrder(ChunkAssets);
-
-						auto SaveCookOpenOrder = [](const TArray<CookOpenOrder>& CookOpenOrders,const FString& File)
-						{
-							TArray<FString> result;
-							for(const auto& OrderFile:CookOpenOrders)
-							{
-								result.Emplace(FString::Printf(TEXT("\"%s\" %d"),*OrderFile.uasset_relative_path,OrderFile.order));
-							}
-							FFileHelper::SaveStringArrayToFile(result,*FPaths::ConvertRelativePathToFull(File));
-						};
-						SaveCookOpenOrder(CookOpenOrders,FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.NewVersionChunk.ChunkName,PlatformName,TEXT("CookOpenOrder.txt")));
+						USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
+						SingleCookerProxy->AddToRoot();
+						SingleCookerProxy->SetProxySettings(&EmptySetting);
+						SingleCookerProxy->Init();
+						bool bExportStatus = SingleCookerProxy->DoExport();
+						SingleCookerProxy->Shutdown();
+						SingleCookerProxy->RemoveFromRoot();
 					}
 				}
-				
 			}
 		}
 
@@ -1595,56 +1526,5 @@ namespace PatchWorker
 	};
 
 };
-
-
-#if WITH_PACKAGE_CONTEXT
-// // engine header
-#include "UObject/SavePackage.h"
-
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
- #include "Serialization/BulkDataManifest.h"
-#endif
-
-void UPatcherProxy::InitPlatformPackageContexts()
-{
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("InitPlatformPackageContexts"),FColor::Red);
-	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
-	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
-	TArray<ITargetPlatform*> CookPlatforms;
-	const FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-	for (ITargetPlatform *TargetPlatform : TargetPlatforms)
-	{
-		if (GetSettingObject()->GetPakTargetPlatformNames().Contains(TargetPlatform->PlatformName()))
-		{
-			CookPlatforms.AddUnique(TargetPlatform);
-			const FString PlatformString = TargetPlatform->PlatformName();
-			
-			ETargetPlatform Platform;
-			THotPatcherTemplateHelper::GetEnumValueByName(TargetPlatform->PlatformName(),Platform);
-			PlatformSavePackageContexts.Add(Platform,MakeShareable(UFlibHotPatcherEditorHelper::CreateSaveContext(TargetPlatform,GetSettingObject()->IoStoreSettings.bIoStore)));
-		}
-	}
-
-}
-
-bool UPatcherProxy::SavePlatformBulkDataManifest(ETargetPlatform Platform)
-{
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("SavePlatformBulkDataManifest"),FColor::Red);
-	bool bRet = false;
-	if(!GetPlatformSavePackageContexts().Contains(Platform))
-		return bRet;
-	TSharedPtr<FSavePackageContext> PackageContext = *GetPlatformSavePackageContexts().Find(Platform);
-#if ENGINE_MAJOR_VERSION < 5 && ENGINE_MINOR_VERSION > 25
-	if (PackageContext != nullptr && PackageContext->BulkDataManifest != nullptr)
-	{
-		PackageContext->BulkDataManifest->Save();
-		bRet = true;
-	}
-#endif
-	return bRet;
-}
-
-
-#endif
 
 #undef LOCTEXT_NAMESPACE

@@ -5,7 +5,6 @@
 #include "HotPatcherCommands.h"
 #include "SHotPatcher.h"
 #include "HotPatcherSettings.h"
-#include "CookManager.h"
 
 // ENGINE HEADER
 
@@ -23,6 +22,9 @@
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "PakFileUtilities.h"
+#include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
+#include "Cooker/MultiCooker/FMultiCookerSettings.h"
+#include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "CreatePatch/PatcherProxy.h"
 
 #if ENGINE_MAJOR_VERSION < 5
@@ -96,7 +98,6 @@ void FHotPatcherEditorModule::StartupModule()
 	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	FCoreUObjectDelegates::OnObjectSaved.AddRaw(this,&FHotPatcherEditorModule::OnObjectSaved);
 	PRAGMA_ENABLE_DEPRECATION_WARNINGS
-	FCookManager::Get().Init();
 	MakeProjectSettingsForHotPatcher();
 
 	MissionNotifyProay = NewObject<UMissionNotificationProxy>();
@@ -143,7 +144,6 @@ void FHotPatcherEditorModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
-	FCookManager::Get().Shutdown();
 	if(DockTab.IsValid())
 	{
 		DockTab->RequestCloseTab();
@@ -493,20 +493,28 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 {
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
 	Settings->ReloadConfig();
-	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
+	TArray<FAssetData> AssetsDatas = GetSelectedAssetsInBrowserContent();
 	TArray<FString> SelectedFolder = GetSelectedFolderInBrowserContent();
 	TArray<FAssetData> FolderAssetDatas;
 	
 	UFlibAssetManageHelper::GetAssetDataInPaths(SelectedFolder,FolderAssetDatas);
-	AssetsData.Append(FolderAssetDatas);
-	
-	FCookManager::FCookMission CookMission;
-	
-	auto CookNotifyLambda = [](ETargetPlatform Platform,const FString& PackageName,const FString& CookedSavePath)
+	AssetsDatas.Append(FolderAssetDatas);
+
+	TArray<FAssetDetail> AllSelectedAssetDetails;
+
+	for(const auto& AssetData:AssetsDatas)
 	{
-		bool bSuccessed = true;
+		AllSelectedAssetDetails.AddUnique(UFlibAssetManageHelper::GetAssetDetailByPackageName(AssetData.PackageName.ToString()));
+	}
+	
+	auto CookNotifyLambda = [](const FString& PackagePath,ETargetPlatform Platform,bool bSuccessed)
+	{
+		FString CookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
+		FString PackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(PackagePath);
+		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookedDir,PackageName, THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
+		
 		auto Msg = FText::Format(
-			LOCTEXT("CookAssetsNotify", "Cook {1} for {0} {2}!"),
+			LOCTEXT("CookAssetsNotify", "Cook {0} for {1} {2}!"),
 			UKismetTextLibrary::Conv_StringToText(PackageName),
 			UKismetTextLibrary::Conv_StringToText(THotPatcherTemplateHelper::GetEnumNameByValue(Platform)),
 			bSuccessed ? UKismetTextLibrary::Conv_StringToText(TEXT("Successfuly")):UKismetTextLibrary::Conv_StringToText(TEXT("Faild"))
@@ -515,41 +523,35 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 		UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,CookedSavePath,CookStatus);
 	};
 	
-	for(int32 index=0;index < AssetsData.Num();++index)
-	{
-		FCookManager::FCookPackageInfo CurrentPackage;
-		CurrentPackage.AssetData = AssetsData[index];
-		CurrentPackage.PackageName = AssetsData[index].PackageName.ToString();
-		CurrentPackage.CookPlatforms = TArray<ETargetPlatform>{Platform};
-		CurrentPackage.Callback = CookNotifyLambda;
-		CookMission.MissionPackages.Add(CurrentPackage);
-		if(!GCookLog)
-		{
-			UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*AssetsData[index].PackagePath.ToString(),*THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
-		}
-	}
-	CookMission.Callback = [](bool){};
-	TFunction<void(TArray<FCookManager::FCookPackageInfo>)> OnCookFaildLambda = [](TArray<FCookManager::FCookPackageInfo> FaildPackages)
-	{
-		for(const auto& Package:FaildPackages)
-		{
-			FString PlatformsStr;
-			for(const auto& Platform:Package.CookPlatforms)
-			{
-				PlatformsStr += FString::Printf(TEXT("%s/"),*THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
-			}
-			PlatformsStr.RemoveFromEnd(TEXT("/"));
-			auto Msg = FText::Format(
-						LOCTEXT("CookAssetsNotify", "Cook {1} for {0} {2}!"),
-						UKismetTextLibrary::Conv_StringToText(Package.PackageName),
-						UKismetTextLibrary::Conv_StringToText(PlatformsStr),
-						UKismetTextLibrary::Conv_StringToText(TEXT("Faild"))
-						);
-			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,Package.PackageName,SNotificationItem::ECompletionState::CS_Fail);
-		}
-	};
-	FCookManager::Get().AddCookMission(CookMission,OnCookFaildLambda);
+	FSingleCookerSettings EmptySetting;
+	EmptySetting.MissionID = 0;
+	EmptySetting.MissionName = FString::Printf(TEXT("%s_Cooker_%d"),FApp::GetProjectName(),EmptySetting.MissionID);
+	EmptySetting.ShaderLibName = FString::Printf(TEXT("%s_Shader_%d"),FApp::GetProjectName(),EmptySetting.MissionID);
+	EmptySetting.CookTargetPlatforms = TArray<ETargetPlatform>{Platform};
+	EmptySetting.CookAssets = AllSelectedAssetDetails;
+	// EmptySetting.ShaderLibName = FApp::GetProjectName();
+	EmptySetting.bPackageTracker = false;
+	EmptySetting.ShaderOptions.bSharedShaderLibrary = false;
+	EmptySetting.IoStoreSettings.bIoStore = false;
+	EmptySetting.bSerializeAssetRegistry = false;
+	EmptySetting.bDisplayConfig = false;
+	EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
+	EmptySetting.StorageMetadataDir = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),EmptySetting.MissionName);
 
+	USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
+	SingleCookerProxy->AddToRoot();
+	SingleCookerProxy->SetProxySettings(&EmptySetting);
+	SingleCookerProxy->Init();
+	SingleCookerProxy->OnCookAssetSuccessed.AddLambda([CookNotifyLambda](const FSoftObjectPath& ObjectPath,ETargetPlatform Platform)
+	{
+		CookNotifyLambda(ObjectPath.GetAssetPathString(),Platform,true);
+	});
+	SingleCookerProxy->OnCookAssetFailed.AddLambda([CookNotifyLambda](const FSoftObjectPath& ObjectPath,ETargetPlatform Platform)
+	{
+		CookNotifyLambda(ObjectPath.GetAssetPathString(),Platform,false);
+	});
+	bool bExportStatus = SingleCookerProxy->DoExport();
+	SingleCookerProxy->Shutdown();
 }
 
 void FHotPatcherEditorModule::OnPakExternal(FPakExternalInfo PakExternConfig)

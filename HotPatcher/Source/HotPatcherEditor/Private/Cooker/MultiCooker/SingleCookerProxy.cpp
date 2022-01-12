@@ -7,28 +7,33 @@
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 #include "Misc/ScopeExit.h"
 
+#if WITH_PACKAGE_CONTEXT
+// // engine header
+#include "UObject/SavePackage.h"
+
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
+#include "Serialization/BulkDataManifest.h"
+#endif
+
+
 void USingleCookerProxy::Init()
 {
 #if WITH_PACKAGE_CONTEXT
-	InitPlatformPackageContexts();
+	if(GetSettingObject()->bOverrideSavePackageContext)
+	{
+		PlatformSavePackageContexts = UFlibHotPatcherEditorHelper::CreatePlatformsPackageContexts(GetSettingObject()->CookTargetPlatforms,GetSettingObject()->IoStoreSettings.bIoStore);
+	}
+	else
+	{
+		PlatformSavePackageContexts = GetSettingObject()->PlatformSavePackageContexts;
+	}
 #endif
 	InitShaderLibConllections();
 	// cook package tracker
-	if(GetSettingObject()->MultiCookerSettings.bPackageTracker)
+	if(GetSettingObject()->bPackageTracker)
 	{
-		FMultiCookerAssets MultiCookerAssets;
-		FString Path = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("../"),FString::Printf(TEXT("%s_MultiCookerAssets.json"),FApp::GetProjectName()));
-		if(FPaths::FileExists(Path))
-		{
-			FString Content;
-			FFileHelper::LoadFileToString(Content,*Path);
-			THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(Content,MultiCookerAssets);
-			for(const auto& Asset:MultiCookerAssets.Assets)
-			{
-				PackagePathSet.PackagePaths.Add(Asset.PackagePath);
-			}
-			PackageTracker = MakeShareable(new FPackageTracker(PackagePathSet.PackagePaths));
-		}
+		PackagePathSet.PackagePaths.Append(GetSettingObject()->SkipLoadedAssets);
+		PackageTracker = MakeShareable(new FPackageTracker(PackagePathSet.PackagePaths));
 	}
 	Super::Init();
 }
@@ -41,189 +46,140 @@ void USingleCookerProxy::Shutdown()
 	{
 		FPackagePathSet AdditionalPackageSet;
 		AdditionalPackageSet.PackagePaths.Append(PackageTracker->GetPendingPackageSet());
-		FString OutString;
-		THotPatcherTemplateHelper::TSerializeStructAsJsonString(AdditionalPackageSet,OutString);
+		if(AdditionalPackageSet.PackagePaths.Num())
+		{
+			FString OutString;
+			THotPatcherTemplateHelper::TSerializeStructAsJsonString(AdditionalPackageSet,OutString);
 
-		FFileHelper::SaveStringToFile(OutString,*FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),GetSettingObject()->MissionName,TEXT("AdditionalPackageSet.json")));
+			FFileHelper::SaveStringToFile(OutString,*FPaths::Combine(GetSettingObject()->StorageMetadataDir,TEXT("AdditionalPackageSet.json")));
+		}
 	}
 	Super::Shutdown();
 }
 
-
 void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::DoCookMission"),FColor::Red);
-
-	TArray<FSoftObjectPath> SoftObjectPaths;
-	TArray<UPackage*> AllObjects;
-	
-	TArray<ITargetPlatform*> TargetPlatforms;
-	TArray<FString> TargetPlatformNames;
-	for(const auto& Platform:GetSettingObject()->MultiCookerSettings.CookTargetPlatforms)
+	FCookResultEvent PackageSavedCallback = [this](const FSoftObjectPath& PackagePath,ETargetPlatform Platform)
 	{
-		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
-		TargetPlatformNames.AddUnique(PlatformName);
-		ITargetPlatform* TargetPlatform = UFlibHotPatcherEditorHelper::GetTargetPlatformByName(PlatformName);
-		if(TargetPlatform)
-		{
-			TargetPlatforms.AddUnique(TargetPlatform);
-		}
-	}
-	
-	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("BeginCacheForCookedPlatformData for Assets"),FColor::Red);
-		GIsCookerLoadingPackage = true;
-		for (const auto& Asset : Assets)
-		{
-			if(Asset.PackagePath.IsNone())
-				continue;
-			FSoftObjectPath AssetSoftPath;
-			AssetSoftPath.SetPath(Asset.PackagePath);
-			// PackagePathSet.PackagePaths.Add(Asset.PackagePath);
-
-			if(GetSettingObject()->MultiCookerSettings.IsSkipAssets(*AssetSoftPath.GetAssetName()))
-			{
-				UE_LOG(LogHotPatcher,Display,TEXT("Skip Cook %s"),*Asset.PackagePath.ToString());
-				continue;
-			}
-			UPackage* Package = LoadPackage(nullptr, *Asset.PackagePath.ToString(), LOAD_None);;
-			SoftObjectPaths.AddUnique(AssetSoftPath);
-			AllObjects.AddUnique(Package);
-
-			TArray<UObject*> ExportMap;
-			GetObjectsWithOuter(Package,ExportMap);
-			for(const auto& ExportObj:ExportMap)
-			{
-				for(const auto& Platform:TargetPlatforms)
-				{
-					ExportObj->BeginCacheForCookedPlatformData(Platform);
-				}
-			}
-			if (GShaderCompilingManager)
-			{
-				GShaderCompilingManager->ProcessAsyncResults(true, false);
-			}
-		}
-		GIsCookerLoadingPackage = false;
-	}
-
-	TArray<UObject*> ObjectsToWaitForCookedPlatformData;
-	ObjectsToWaitForCookedPlatformData.Reserve(65536);
-	
-	for (const auto& Obj : AllObjects)
-	{
-		bool bAllPlatformDataLoaded = true;
-		bool bIsTexture = Obj->IsA(UTexture::StaticClass());
- 		for (const ITargetPlatform* TargetPlatform : TargetPlatforms)
-		{
-			if (!bIsTexture)
-			{
-				Obj->BeginCacheForCookedPlatformData(TargetPlatform);
-				if (!Obj->IsCachedCookedPlatformDataLoaded(TargetPlatform))
-				{
-					bAllPlatformDataLoaded = false;
-				}
-			}
-		}
-		if (!bAllPlatformDataLoaded)
-		{
-			ObjectsToWaitForCookedPlatformData.Add(Obj);
-		}
-	}
-	
-	// Wait for all shaders to finish compiling
-	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
-	
-	// Wait for all platform data to be loaded
-	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("Wait for all platform data to be loaded"),FColor::Red);
-		UE_LOG(LogHotPatcher, Display, TEXT("Waiting for ObjectsToWaitForCookedPlatformData compilation..."));
-		while (ObjectsToWaitForCookedPlatformData.Num() > 0)
-		{
-			for (int32 ObjIdx = ObjectsToWaitForCookedPlatformData.Num() - 1; ObjIdx >= 0; --ObjIdx)
-			{
-				UObject* Obj = ObjectsToWaitForCookedPlatformData[ObjIdx];
-				bool bAllPlatformDataLoaded = true;
-				for (const ITargetPlatform* TargetPlatform : TargetPlatforms)
-				{
-					if (!Obj->IsCachedCookedPlatformDataLoaded(TargetPlatform))
-					{
-						bAllPlatformDataLoaded = false;
-						break;
-					}
-				}
-
-				if (bAllPlatformDataLoaded)
-				{
-					ObjectsToWaitForCookedPlatformData.RemoveAtSwap(ObjIdx, 1, false);
-				}
-			}
-
-			FPlatformProcess::Sleep(0.001f);
-		}
-
-		ObjectsToWaitForCookedPlatformData.Empty();
-		UE_LOG(LogHotPatcher, Display, TEXT("ObjectsToWaitForCookedPlatformData compilated!"));
-	}
-	TFunction<void(const FString&)> PackageSavedCallback = [](const FString&){};
-	TFunction<void(const FString&,ETargetPlatform)> CookFailedCallback = [this](const FString& PackagePath,ETargetPlatform Platform)
-	{
-		OnCookAssetFailed(PackagePath,Platform);						
+		OnCookAssetSuccessed.Broadcast(PackagePath,Platform);
 	};
-
-	UFlibHotPatcherEditorHelper::CookAssets(SoftObjectPaths,GetSettingObject()->MultiCookerSettings.CookTargetPlatforms,PackageSavedCallback,CookFailedCallback
-#if WITH_PACKAGE_CONTEXT
-	,GetPlatformSavePackageContextsRaw()
-#endif
-	);
+	FCookResultEvent CookFailedCallback = [this](const FSoftObjectPath& PackagePath,ETargetPlatform Platform)
+	{
+		OnCookAssetFailedHandle(PackagePath,Platform);
+		OnCookAssetFailed.Broadcast(PackagePath,Platform);
+	};
+	FCookCluster DefaultCluser;
+	for(const auto& AssetDetail:Assets)
+	{
+		DefaultCluser.Assets.AddUnique(FSoftObjectPath{AssetDetail.PackagePath});
+	}
+	DefaultCluser.Platforms = GetSettingObject()->CookTargetPlatforms;
+	DefaultCluser.bPreGeneratePlatformData = GetSettingObject()->bPreGeneratePlatformData;
+	DefaultCluser.CookFailedCallback = CookFailedCallback;
+	DefaultCluser.PackageSavedCallback = PackageSavedCallback;
 	
-	UFlibHotPatcherEditorHelper::WaitForAsyncFileWrites();
+	CookCluster(DefaultCluser);
 
 	if(PackageTracker)
 	{
-		TArray<FSoftObjectPath> AdditionAssets;
+		DefaultCluser.Assets.Empty();
 		for(FName PackagePath:PackageTracker->GetPendingPackageSet())
 		{
-			// FSoftObjectPath ObjectPath{PackagePath};
-			//
-			// if(GetSettingObject()->MultiCookerSettings.IsSkipAssets(*ObjectPath.GetAssetName()))
-			// {
-			// 	UE_LOG(LogHotPatcher,Display,TEXT("Skip Cook Runtime Loaded %s"),*PackagePath.ToString());
-			// 	continue;
-			// }
-			AdditionAssets.Emplace(PackagePath);
+			DefaultCluser.Assets.Emplace(PackagePath);
 		}
-		UFlibHotPatcherEditorHelper::CookAssets(AdditionAssets,GetSettingObject()->MultiCookerSettings.CookTargetPlatforms,PackageSavedCallback,CookFailedCallback
-		#if WITH_PACKAGE_CONTEXT
-		,GetPlatformSavePackageContextsRaw()
-		#endif
-		);
+		// cook all additional assets
+		CookCluster(DefaultCluser);
 	}
-	
-	UFlibHotPatcherEditorHelper::WaitForAsyncFileWrites();
-	
+}
+
+void USingleCookerProxy::BulkDataManifest()
+{
 	// save bulk data manifest
-	for(auto& Platform:GetSettingObject()->MultiCookerSettings.CookTargetPlatforms)
+	for(auto& Platform:GetSettingObject()->CookTargetPlatforms)
 	{
-		if(GetSettingObject()->MultiCookerSettings.IoStoreSettings.bStorageBulkDataInfo)
+		if(GetSettingObject()->IoStoreSettings.bStorageBulkDataInfo)
 		{
 #if WITH_PACKAGE_CONTEXT
-			SavePlatformBulkDataManifest(Platform);
+			UFlibHotPatcherEditorHelper::SavePlatformBulkDataManifest(GetPlatformSavePackageContexts(),Platform);
 #endif
 		}
 	}
+}
 
+void USingleCookerProxy::IoStoreManifest()
+{
+	if(GetSettingObject()->IoStoreSettings.bIoStore)
+	{
+		TSet<ETargetPlatform> Platforms;
+		for(const auto& Cluser:CookClusters)
+		{
+			for(auto Platform:Cluser.Platforms)
+			{
+				Platforms.Add(Platform);
+			}
+		}
+
+		for(auto Platform:Platforms)
+		{
+			FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
+			TimeRecorder StorageCookOpenOrderTR(FString::Printf(TEXT("Storage CookOpenOrder.txt for %s, time:"),*PlatformName));
+			struct CookOpenOrder
+			{
+				CookOpenOrder()=default;
+				CookOpenOrder(const FString& InPath,int32 InOrder):uasset_relative_path(InPath),order(InOrder){}
+				FString uasset_relative_path;
+				int32 order;
+			};
+			auto MakeCookOpenOrder = [](const TArray<FName>& Assets)->TArray<CookOpenOrder>
+			{
+				TArray<CookOpenOrder> result;
+				TArray<FAssetData> AssetsData;
+				TArray<FString> AssetPackagePaths;
+				for (auto AssetPackagePath : Assets)
+				{
+					FSoftObjectPath ObjectPath{ AssetPackagePath };
+					TArray<FAssetData> AssetData;
+					UFlibAssetManageHelper::GetSpecifyAssetData(ObjectPath.GetLongPackageName(),AssetData,true);
+					AssetsData.Append(AssetData);
+				}
+
+				// UFlibAssetManageHelper::GetAssetsData(AssetPackagePaths,AssetsData);
+					
+				for(int32 index=0;index<AssetsData.Num();++index)
+				{
+					UPackage* Package = AssetsData[index].GetPackage();
+					FString LocalPath;
+					const FString* PackageExtension = Package->ContainsMap() ? &FPackageName::GetMapPackageExtension() : &FPackageName::GetAssetPackageExtension();
+					FPackageName::TryConvertLongPackageNameToFilename(AssetsData[index].PackageName.ToString(), LocalPath, *PackageExtension);
+					result.Emplace(LocalPath,index);
+				}
+				return result;
+			};
+			TArray<CookOpenOrder> CookOpenOrders = MakeCookOpenOrder(GetPlatformCookAssetOrders(Platform));
+
+			auto SaveCookOpenOrder = [](const TArray<CookOpenOrder>& CookOpenOrders,const FString& File)
+			{
+				TArray<FString> result;
+				for(const auto& OrderFile:CookOpenOrders)
+				{
+					result.Emplace(FString::Printf(TEXT("\"%s\" %d"),*OrderFile.uasset_relative_path,OrderFile.order));
+				}
+				FFileHelper::SaveStringArrayToFile(result,*FPaths::ConvertRelativePathToFull(File));
+			};
+			SaveCookOpenOrder(CookOpenOrders,FPaths::Combine(GetSettingObject()->StorageMetadataDir,GetSettingObject()->MissionName,PlatformName,TEXT("CookOpenOrder.txt")));
+		}
+	}
 }
 
 void USingleCookerProxy::InitShaderLibConllections()
 {
-	FString SavePath = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),GetSettingObject()->MissionName);
+	FString SavePath = GetSettingObject()->StorageMetadataDir;
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::InitShaderLibConllections"),FColor::Red);
 	PlatformCookShaderCollection = UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform(
 		GetSettingObject()->ShaderLibName,
-		GetSettingObject()->MultiCookerSettings.CookTargetPlatforms,
-		GetSettingObject()->MultiCookerSettings.ShaderOptions.bSharedShaderLibrary,
-		GetSettingObject()->MultiCookerSettings.ShaderOptions.bNativeShader,
+		GetSettingObject()->CookTargetPlatforms,
+		GetSettingObject()->ShaderOptions.bSharedShaderLibrary,
+		GetSettingObject()->ShaderOptions.bNativeShader,
 		true,
 		SavePath
 	);
@@ -237,7 +193,7 @@ void USingleCookerProxy::InitShaderLibConllections()
 void USingleCookerProxy::ShutdowShaderLibCollections()
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::ShutdowShaderLibCollections"),FColor::Red);
-	if(GetSettingObject()->MultiCookerSettings.ShaderOptions.bSharedShaderLibrary)
+	if(GetSettingObject()->ShaderOptions.bSharedShaderLibrary)
 	{
 		if(PlatformCookShaderCollection.IsValid())
 		{
@@ -253,17 +209,164 @@ bool USingleCookerProxy::DoExport()
 	GetCookFailedAssetsCollection().MissionID = GetSettingObject()->MissionID;
 	GetCookFailedAssetsCollection().CookFailedAssets.Empty();
 
+	OnCookAssetFailed.AddUObject(this,&USingleCookerProxy::OnCookAssetFailedHandle);
+	OnCookAssetSuccessed.AddUObject(this,&USingleCookerProxy::OnCookAssetSuccessedHandle);
+	
 	DoCookMission(GetSettingObject()->CookAssets);
+
+	BulkDataManifest();
+	IoStoreManifest();
 	
 	if(HasError())
 	{
 		FString FailedJsonString;
 		THotPatcherTemplateHelper::TSerializeStructAsJsonString(GetCookFailedAssetsCollection(),FailedJsonString);
 		UE_LOG(LogHotPatcher,Warning,TEXT("Single Cooker Proxy %s:\n%s"),*GetSettingObject()->MissionName,*FailedJsonString);
-		FString SaveTo = UFlibMultiCookerHelper::GetCookerProcFailedResultPath(GetSettingObject()->MissionName,GetSettingObject()->MissionID);
+		FString SaveTo = UFlibMultiCookerHelper::GetCookerProcFailedResultPath(GetSettingObject()->StorageMetadataDir,GetSettingObject()->MissionName,GetSettingObject()->MissionID);
 		FFileHelper::SaveStringToFile(FailedJsonString,*SaveTo);
 	}
+	
 	return !HasError();
+}
+
+void USingleCookerProxy::CookCluster(const FCookCluster& CookCluster)
+{
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::CookCluster"),FColor::Red);
+
+	// TArray<FSoftObjectPath> SoftObjectPaths;
+	TArray<UPackage*> AllObjects;
+	
+	TArray<ITargetPlatform*> TargetPlatforms;
+	TArray<FString> TargetPlatformNames;
+	for(const auto& Platform:CookCluster.Platforms)
+	{
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
+		TargetPlatformNames.AddUnique(PlatformName);
+		ITargetPlatform* TargetPlatform = UFlibHotPatcherEditorHelper::GetTargetPlatformByName(PlatformName);
+		if(TargetPlatform)
+		{
+			TargetPlatforms.AddUnique(TargetPlatform);
+		}
+	}
+
+	if(CookCluster.bPreGeneratePlatformData)
+	{
+		{
+			SCOPED_NAMED_EVENT_TCHAR(TEXT("BeginCacheForCookedPlatformData for Assets"),FColor::Red);
+			GIsCookerLoadingPackage = true;
+			for (const auto& AssetObjectPath : CookCluster.Assets)
+			{
+				if(!AssetObjectPath.IsValid())
+					continue;
+				if(GetSettingObject()->IsSkipAsset(*AssetObjectPath.GetAssetName()))
+				{
+					UE_LOG(LogHotPatcher,Display,TEXT("Skip Cook %s"),*AssetObjectPath.GetAssetName());
+					continue;
+				}
+				UPackage* Package = LoadPackage(nullptr, *AssetObjectPath.GetAssetPathString(), LOAD_None);
+				if(!Package)
+				{
+					UE_LOG(LogHotPatcher,Warning,TEXT("CookCluster LodPackage %s is null!"),*AssetObjectPath.GetAssetPathString());
+					continue;
+				}
+				AllObjects.AddUnique(Package);
+
+				TArray<UObject*> ExportMap;
+				GetObjectsWithOuter(Package,ExportMap);
+				for(const auto& ExportObj:ExportMap)
+				{
+					for(const auto& Platform:TargetPlatforms)
+					{
+						ExportObj->BeginCacheForCookedPlatformData(Platform);
+					}
+				}
+				if (GShaderCompilingManager)
+				{
+					GShaderCompilingManager->ProcessAsyncResults(true, false);
+				}
+			}
+			GIsCookerLoadingPackage = false;
+		}
+
+		TArray<UObject*> ObjectsToWaitForCookedPlatformData;
+		ObjectsToWaitForCookedPlatformData.Reserve(65536);
+	
+		for (const auto& Obj : AllObjects)
+		{
+			bool bAllPlatformDataLoaded = true;
+			bool bIsTexture = Obj->IsA(UTexture::StaticClass());
+			for (const ITargetPlatform* TargetPlatform : TargetPlatforms)
+			{
+				if (!bIsTexture)
+				{
+					Obj->BeginCacheForCookedPlatformData(TargetPlatform);
+					if (!Obj->IsCachedCookedPlatformDataLoaded(TargetPlatform))
+					{
+						bAllPlatformDataLoaded = false;
+					}
+				}
+			}
+			if (!bAllPlatformDataLoaded)
+			{
+				ObjectsToWaitForCookedPlatformData.Add(Obj);
+			}
+		}
+	
+		// Wait for all shaders to finish compiling
+		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+	
+		// Wait for all platform data to be loaded
+		{
+			SCOPED_NAMED_EVENT_TCHAR(TEXT("Wait for all platform data to be loaded"),FColor::Red);
+			UE_LOG(LogHotPatcher, Display, TEXT("Waiting for ObjectsToWaitForCookedPlatformData compilation..."));
+			while (ObjectsToWaitForCookedPlatformData.Num() > 0)
+			{
+				for (int32 ObjIdx = ObjectsToWaitForCookedPlatformData.Num() - 1; ObjIdx >= 0; --ObjIdx)
+				{
+					UObject* Obj = ObjectsToWaitForCookedPlatformData[ObjIdx];
+					bool bAllPlatformDataLoaded = true;
+					for (const ITargetPlatform* TargetPlatform : TargetPlatforms)
+					{
+						if (!Obj->IsCachedCookedPlatformDataLoaded(TargetPlatform))
+						{
+							bAllPlatformDataLoaded = false;
+							break;
+						}
+					}
+
+					if (bAllPlatformDataLoaded)
+					{
+						ObjectsToWaitForCookedPlatformData.RemoveAtSwap(ObjIdx, 1, false);
+					}
+				}
+
+				FPlatformProcess::Sleep(0.001f);
+			}
+
+			ObjectsToWaitForCookedPlatformData.Empty();
+			UE_LOG(LogHotPatcher, Display, TEXT("ObjectsToWaitForCookedPlatformData compilated!"));
+		}
+	}
+	UFlibHotPatcherEditorHelper::CookAssets(CookCluster.Assets,CookCluster.Platforms,CookCluster.PackageSavedCallback,CookCluster.CookFailedCallback
+#if WITH_PACKAGE_CONTEXT
+	,GetPlatformSavePackageContextsRaw()
+#endif
+	,GetSettingObject()->StorageCookedDir
+	);
+	UFlibHotPatcherEditorHelper::WaitForAsyncFileWrites();
+}
+
+void USingleCookerProxy::AddCluster(const FCookCluster& CookCluster)
+{
+	for(auto Platform:CookCluster.Platforms)
+	{
+		if(!GetPlatformSavePackageContexts().Contains(Platform))
+		{
+			
+			GetPlatformSavePackageContexts().Append(UFlibHotPatcherEditorHelper::CreatePlatformsPackageContexts(TArray<ETargetPlatform>{Platform},GetSettingObject()->IoStoreSettings.bIoStore));
+		}
+	}
+	CookClusters.Add(CookCluster);
 }
 
 bool USingleCookerProxy::HasError()
@@ -274,50 +377,26 @@ bool USingleCookerProxy::HasError()
 	return !!TargetPlatforms.Num();
 }
 
-void USingleCookerProxy::OnCookAssetFailed(const FString& PackagePath, ETargetPlatform Platform)
+void USingleCookerProxy::OnCookAssetFailedHandle(const FSoftObjectPath& PackagePath, ETargetPlatform Platform)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::OnCookAssetFailed"),FColor::Red);
 	FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
-	UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s for %s Failed!"),*PackagePath,*PlatformName);
+	UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s for %s Failed!"),*PackagePath.GetAssetPathString(),*PlatformName);
 	FAssetsCollection& AssetsCollection = GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform);
 	AssetsCollection.TargetPlatform = Platform;
 	FAssetData AssetData;
 	FAssetDetail AssetDetail;
-	UFlibAssetManageHelper::GetSingleAssetsData(PackagePath,AssetData);
+	UFlibAssetManageHelper::GetSingleAssetsData(PackagePath.GetAssetPathString(),AssetData);
 	UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(AssetData,AssetDetail);
 	AssetsCollection.Assets.AddUnique(AssetDetail);
 }
 
-#if WITH_PACKAGE_CONTEXT
-// // engine header
-#include "UObject/SavePackage.h"
-
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
-#include "Serialization/BulkDataManifest.h"
-#endif
-
-
-void USingleCookerProxy::InitPlatformPackageContexts()
+void USingleCookerProxy::OnCookAssetSuccessedHandle(const FSoftObjectPath& PackagePath, ETargetPlatform Platform)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::InitPlatformPackageContexts"),FColor::Red);
-	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
-	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
-	TArray<ITargetPlatform*> CookPlatforms;
-	const FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-	for (ITargetPlatform *TargetPlatform : TargetPlatforms)
-	{
-		ETargetPlatform Platform;
-		THotPatcherTemplateHelper::GetEnumValueByName(TargetPlatform->PlatformName(),Platform);
-		if (GetSettingObject()->MultiCookerSettings.CookTargetPlatforms.Contains(Platform))
-		{
-			CookPlatforms.AddUnique(TargetPlatform);
-			const FString PlatformString = TargetPlatform->PlatformName();
-			PlatformSavePackageContexts.Add(Platform,MakeShareable(UFlibHotPatcherEditorHelper::CreateSaveContext(TargetPlatform,GetSettingObject()->MultiCookerSettings.IoStoreSettings.bIoStore)));
-		}
-	}
+	MarkAssetCooked(PackagePath,Platform);
 }
 
-TMap<ETargetPlatform, FSavePackageContext*> USingleCookerProxy::GetPlatformSavePackageContextsRaw() const
+TMap<ETargetPlatform, FSavePackageContext*> USingleCookerProxy::GetPlatformSavePackageContextsRaw()
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::GetPlatformSavePackageContextsRaw"),FColor::Red);
 	TMap<ETargetPlatform,FSavePackageContext*> result;
@@ -330,21 +409,14 @@ TMap<ETargetPlatform, FSavePackageContext*> USingleCookerProxy::GetPlatformSaveP
 	return result;
 }
 
-bool USingleCookerProxy::SavePlatformBulkDataManifest(ETargetPlatform Platform)
+TArray<FName>& USingleCookerProxy::GetPlatformCookAssetOrders(ETargetPlatform Platform)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::SavePlatformBulkDataManifest"),FColor::Red);
-	bool bRet = false;
-	if(!GetPlatformSavePackageContexts().Contains(Platform))
-		return bRet;
-	TSharedPtr<FSavePackageContext> PackageContext = *GetPlatformSavePackageContexts().Find(Platform);
-#if ENGINE_MAJOR_VERSION < 5 && ENGINE_MINOR_VERSION > 25
-	if (PackageContext != nullptr && PackageContext->BulkDataManifest != nullptr)
-	{
-		PackageContext->BulkDataManifest->Save();
-		bRet = true;
-	}
-#endif
-	return bRet;
+	return CookAssetOrders.FindOrAdd(Platform);
+}
+
+void USingleCookerProxy::MarkAssetCooked(const FSoftObjectPath& PackagePath, ETargetPlatform Platform)
+{
+	GetPlatformCookAssetOrders(Platform).Add(PackagePath.GetAssetPathName());
 }
 
 #endif

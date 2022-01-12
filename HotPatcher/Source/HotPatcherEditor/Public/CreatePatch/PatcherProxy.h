@@ -34,7 +34,7 @@ public:
     FOnPakListGenerated OnPakListGenerated;
 
 #if WITH_PACKAGE_CONTEXT
-    virtual void InitPlatformPackageContexts();
+    // virtual void InitPlatformPackageContexts();
     FORCEINLINE TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
     FORCEINLINE TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContextsRaw()const
     {
@@ -47,14 +47,14 @@ public:
         }
         return result;
     }
-    bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
+    // bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
     // FSavePackageContext* CreateSaveContext(const ITargetPlatform* TargetPlatform,bool bUseZenLoader);
 #endif
-    FORCEINLINE TSharedPtr<FCookShaderCollectionProxy>& GetCookShaderCollectionProxy(){ return CookShaderCollection; }
+    // FORCEINLINE TSharedPtr<FCookShaderCollectionProxy>& GetCookShaderCollectionProxy(){ return CookShaderCollection; }
     
 private:
     TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
-    TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
+    // TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
 private:
     TSharedPtr<FHotPatcherPatchContext> PatchContext;
 };

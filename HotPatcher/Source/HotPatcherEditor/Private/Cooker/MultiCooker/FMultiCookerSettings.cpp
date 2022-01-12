@@ -31,3 +31,17 @@ bool FMultiCookerSettings::IsSkipAssets(FName LongPacakgeName)
 {
 	return GetAllSkipContents().Contains(LongPacakgeName.ToString());
 }
+
+bool FSingleCookerSettings::IsSkipAsset(const FString& PackageName)
+{
+	bool bRet = false;
+	for(const auto& SkipCookContent:SkipCookContents)
+	{
+		if(PackageName.StartsWith(SkipCookContent))
+		{
+			bRet = true;
+			break;
+		}
+	}
+	return bRet;
+}

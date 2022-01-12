@@ -18,7 +18,7 @@ class HOTPATCHEREDITOR_API UFlibMultiCookerHelper : public UBlueprintFunctionLib
 public:
 	static FString GetMultiCookerBaseDir();
 	static FString GetCookerProcConfigPath(const FString& MissionName,int32 MissionID);
-	static FString GetCookerProcFailedResultPath(const FString& MissionName, int32 MissionID);
+	static FString GetCookerProcFailedResultPath(const FString& BaseDir,const FString& MissionName, int32 MissionID);
 	static FString GetProfilingCmd();
 	static TSharedPtr<FCookShaderCollectionProxy> CreateCookShaderCollectionProxyByPlatform(const FString& ShaderLibraryName, TArray<ETargetPlatform> Platforms, bool bShareShader, bool bNativeShader, bool bMaster, const
 		FString& InSavePath);

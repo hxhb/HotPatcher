@@ -3,6 +3,8 @@
 
 #include "Cooker/MultiCooker/MultiCookScheduler.h"
 
+#include "FlibMultiCookerHelper.h"
+
 TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementation(FMultiCookerSettings MultiCookerSettings,const TArray<FAssetDetail>& AllDetails)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookScheduler::MultiCookScheduler"),FColor::Red);
@@ -11,23 +13,34 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 	TArray<FSingleCookerSettings> AllSingleCookerSettings;
 
 	TMap<FName,TArray<FAssetDetail>> TypeAssetDetails;
-
+	TSet<FName> AllPackagePaths;
+	for(const auto& AssetDetail:AllDetails)
+	{
+		TArray<FAssetDetail>& Assets = TypeAssetDetails.FindOrAdd(AssetDetail.AssetType);
+		Assets.AddUnique(AssetDetail);
+		AllPackagePaths.Add(AssetDetail.PackagePath);
+	}
+	
 	for(int32 index = 0;index<ProcessNumber;++index)
 	{
 		FSingleCookerSettings EmptySetting;
 		EmptySetting.MissionID = index;
 		EmptySetting.MissionName = FString::Printf(TEXT("%s_Cooker_%d"),FApp::GetProjectName(),EmptySetting.MissionID);
 		EmptySetting.ShaderLibName = FString::Printf(TEXT("%s_Shader_%d"),FApp::GetProjectName(),EmptySetting.MissionID);
+		EmptySetting.CookTargetPlatforms = MultiCookerSettings.CookTargetPlatforms;
 		// EmptySetting.ShaderLibName = FApp::GetProjectName();
-		EmptySetting.MultiCookerSettings = MultiCookerSettings;
+		EmptySetting.bPackageTracker = MultiCookerSettings.bPackageTracker;
+		EmptySetting.ShaderOptions = MultiCookerSettings.ShaderOptions;
+		EmptySetting.IoStoreSettings = MultiCookerSettings.IoStoreSettings;
+		EmptySetting.bSerializeAssetRegistry = MultiCookerSettings.bSerializeAssetRegistry;
+		EmptySetting.SkipCookContents = MultiCookerSettings.GetAllSkipContents();
+		EmptySetting.SkipLoadedAssets = AllPackagePaths;
+		EmptySetting.bDisplayConfig = MultiCookerSettings.bDisplayMissionConfig;
+		EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
+		EmptySetting.StorageMetadataDir = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),EmptySetting.MissionName);
 		AllSingleCookerSettings.Add(EmptySetting);
 	}
 	
-	for(const auto& AssetDetail:AllDetails)
-	{
-		TArray<FAssetDetail>& Assets = TypeAssetDetails.FindOrAdd(AssetDetail.AssetType);
-		Assets.AddUnique(AssetDetail);
-	}
 	for(auto& TypeAssets:TypeAssetDetails)
 	{
 		TArray<TArray<FAssetDetail>> SplitInfo = THotPatcherTemplateHelper::SplitArray(TypeAssets.Value,ProcessNumber);
