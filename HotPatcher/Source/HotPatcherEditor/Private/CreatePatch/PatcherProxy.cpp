@@ -162,14 +162,49 @@ namespace PatchWorker
 	};
 }
 
-bool UPatcherProxy::DoExport()
+#define ADD_PATCH_WORKER(FUNC_NAME) AddPatchWorker(ANSI_TO_TCHAR(#FUNC_NAME),&FUNC_NAME);
+
+void UPatcherProxy::Init(FPatcherEntitySettingBase* InSetting)
 {
+	Super::Init(InSetting);
 #if WITH_PACKAGE_CONTEXT
 	PlatformSavePackageContexts = UFlibHotPatcherEditorHelper::CreatePlatformsPackageContexts(GetSettingObject()->GetPakTargetPlatforms(),GetSettingObject()->IoStoreSettings.bIoStore);
 #endif
 	UFlibAssetManageHelper::UpdateAssetMangerDatabase(true);
 	GetSettingObject()->Init();
-	
+
+	ADD_PATCH_WORKER(PatchWorker::BaseVersionReader);
+	ADD_PATCH_WORKER(PatchWorker::MakeCurrentVersionWorker);
+	ADD_PATCH_WORKER(PatchWorker::ParseVersionDiffWorker);
+	ADD_PATCH_WORKER(PatchWorker::ParseDiffAssetOnlyWorker);
+	ADD_PATCH_WORKER(PatchWorker::PatchRequireChekerWorker);
+	ADD_PATCH_WORKER(PatchWorker::SavePakVersionWorker);
+	ADD_PATCH_WORKER(PatchWorker::ParserChunkWorker);
+	ADD_PATCH_WORKER(PatchWorker::PreCookPatchAssets);
+	ADD_PATCH_WORKER(PatchWorker::CookPatchAssetsWorker);
+	// cook finished
+	ADD_PATCH_WORKER(PatchWorker::PostCookPatchAssets);
+	ADD_PATCH_WORKER(PatchWorker::PatchAssetRegistryWorker);
+	ADD_PATCH_WORKER(PatchWorker::GenerateGlobalAssetRegistryData);
+	ADD_PATCH_WORKER(PatchWorker::GeneratePakProxysWorker);
+	ADD_PATCH_WORKER(PatchWorker::CreatePakWorker);
+	ADD_PATCH_WORKER(PatchWorker::CreateIoStoreWorker);
+	ADD_PATCH_WORKER(PatchWorker::SaveDifferenceWorker);
+	ADD_PATCH_WORKER(PatchWorker::SaveNewReleaseWorker);
+	ADD_PATCH_WORKER(PatchWorker::SavePakFileInfoWorker);
+	ADD_PATCH_WORKER(PatchWorker::SavePatchConfigWorker);
+	ADD_PATCH_WORKER(PatchWorker::BackupMetadataWorker);
+	ADD_PATCH_WORKER(PatchWorker::ShowSummaryWorker);
+	ADD_PATCH_WORKER(PatchWorker::OnFaildDispatchWorker);
+}
+
+void UPatcherProxy::Shutdown()
+{
+	Super::Shutdown();
+}
+
+bool UPatcherProxy::DoExport()
+{
 	PatchContext = MakeShareable(new FHotPatcherPatchContext);
 	PatchContext->PatchProxy = this;
 	PatchContext->OnPaking.AddLambda([this](const FString& One,const FString& Msg){this->OnPaking.Broadcast(One,Msg);});
@@ -178,70 +213,45 @@ bool UPatcherProxy::DoExport()
 	PatchContext->UnrealPakSlowTask->AddToRoot();
 	PatchContext->ContextSetting = GetSettingObject();
 	PatchContext->Init();
-	// TimeRecorder TotalTimeTR(TEXT("Generate the patch total time"));
-
-	TArray<TFunction<bool(FHotPatcherPatchContext&)>> PreCookPatchWorkers;
-	TArray<TFunction<bool(FHotPatcherPatchContext&)>> PostCookPatchWorkers;
-	PreCookPatchWorkers.Emplace(&PatchWorker::BaseVersionReader);
-	PreCookPatchWorkers.Emplace(&PatchWorker::MakeCurrentVersionWorker);
-	PreCookPatchWorkers.Emplace(&PatchWorker::ParseVersionDiffWorker);
-	PreCookPatchWorkers.Emplace(&PatchWorker::ParseDiffAssetOnlyWorker);
-	PreCookPatchWorkers.Emplace(&PatchWorker::PatchRequireChekerWorker);
-	PreCookPatchWorkers.Emplace(&PatchWorker::SavePakVersionWorker);
-	PreCookPatchWorkers.Emplace(&PatchWorker::ParserChunkWorker);
-	PreCookPatchWorkers.Emplace(&PatchWorker::PreCookPatchAssets);
-	PreCookPatchWorkers.Emplace(&PatchWorker::CookPatchAssetsWorker);
-
+	
 	// wait cook complete
 	if(PatchContext->GetSettingObject()->IsBinariesPatch())
 	{
 		this->OnPakListGenerated.AddStatic(&PatchWorker::GenerateBinariesPatch);
 	}
-	PostCookPatchWorkers.Emplace(&PatchWorker::PostCookPatchAssets);
-	PostCookPatchWorkers.Emplace(&PatchWorker::PatchAssetRegistryWorker);
-	PostCookPatchWorkers.Emplace(&PatchWorker::GenerateGlobalAssetRegistryData);
-	PostCookPatchWorkers.Emplace(&PatchWorker::GeneratePakProxysWorker);
-	PostCookPatchWorkers.Emplace(&PatchWorker::CreatePakWorker);
-	PostCookPatchWorkers.Emplace(&PatchWorker::CreateIoStoreWorker);
-	PostCookPatchWorkers.Emplace(&PatchWorker::SaveDifferenceWorker);
-	PostCookPatchWorkers.Emplace(&PatchWorker::SaveNewReleaseWorker);
-	PostCookPatchWorkers.Emplace(&PatchWorker::SavePakFileInfoWorker);
-	PostCookPatchWorkers.Emplace(&PatchWorker::SavePatchConfigWorker);
-	PostCookPatchWorkers.Emplace(&PatchWorker::BackupMetadataWorker);
-	PostCookPatchWorkers.Emplace(&PatchWorker::ShowSummaryWorker);
-	PostCookPatchWorkers.Emplace(&PatchWorker::OnFaildDispatchWorker);
 	
-	float AmountOfWorkProgress =  (float)PreCookPatchWorkers.Num() + (float)PostCookPatchWorkers.Num() + (float)(GetSettingObject()->GetPakTargetPlatforms().Num() * FMath::Max(PatchContext->PakChunks.Num(),1));
+	float AmountOfWorkProgress =  (float)GetPatchWorkers().Num() + (float)(GetSettingObject()->GetPakTargetPlatforms().Num() * FMath::Max(PatchContext->PakChunks.Num(),1));
 	PatchContext->UnrealPakSlowTask->init(AmountOfWorkProgress);
-
+	
 	bool bRet = true;
-	for(TFunction<bool(FHotPatcherPatchContext&)> Worker:PreCookPatchWorkers)
+	for(auto Worker:GetPatchWorkers())
 	{
-		if(!Worker(*PatchContext))
+		if(!Worker.Value(*PatchContext))
 		{
 			bRet = false;
-			PatchContext->UnrealPakSlowTask->Final();
 			break;
 		}
 	}
 	
-	if(bRet)
-	{
-		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
-		UFlibHotPatcherEditorHelper::WaitForAsyncFileWrites();
-		for(TFunction<bool(FHotPatcherPatchContext&)> Worker:PostCookPatchWorkers)
-		{
-			if(!Worker(*PatchContext))
-			{
-				bRet = false;
-				break;
-			}
-		}
-	}
 	PatchContext->UnrealPakSlowTask->Final();
 	PatchContext->Shurdown();
 	return bRet;
 }
+
+
+#if WITH_PACKAGE_CONTEXT
+TMap<ETargetPlatform, FSavePackageContext*> UPatcherProxy::GetPlatformSavePackageContextsRaw() const
+{
+	TMap<ETargetPlatform,FSavePackageContext*> result;
+	TArray<ETargetPlatform> Keys;
+	GetPlatformSavePackageContexts().GetKeys(Keys);
+	for(const auto& Key:Keys)
+	{
+		result.Add(Key,GetPlatformSavePackageContexts().Find(Key)->Get());
+	}
+	return result;
+}
+#endif
 
 namespace PatchWorker
 {
@@ -555,7 +565,7 @@ namespace PatchWorker
 								AddShaderLib.Type = EPatchAssetType::NEW;
 								AddShaderLib.FilePath.FilePath = FPaths::ConvertRelativePathToFull(FilePath);
 								AddShaderLib.MountPath = FPaths::Combine(
-									UFlibPatchParserHelper::ParserMountPointRegular(Context.GetSettingObject()->CookShaderOptions.GetShaderLibMountPointRegular()),
+									UFlibPatchParserHelper::ParserMountPointRegular(Chunk.CookShaderOptions.GetShaderLibMountPointRegular()),
 									FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion)
 									);
 							}

@@ -59,6 +59,8 @@ void USingleCookerProxy::Shutdown()
 			FFileHelper::SaveStringToFile(OutString,*FPaths::Combine(GetSettingObject()->StorageMetadataDir,TEXT("AdditionalPackageSet.json")));
 		}
 	}
+	BulkDataManifest();
+	IoStoreManifest();
 	Super::Shutdown();
 }
 
@@ -85,7 +87,7 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 	
 	CookCluster(DefaultCluser);
 
-	if(PackageTracker)
+	if(PackageTracker && GetSettingObject()->bCookAdditionalAssets)
 	{
 		DefaultCluser.Assets.Empty();
 		for(FName PackagePath:PackageTracker->GetPendingPackageSet())
@@ -218,9 +220,6 @@ bool USingleCookerProxy::DoExport()
 	OnCookAssetSuccessed.AddUObject(this,&USingleCookerProxy::OnCookAssetSuccessedHandle);
 	
 	DoCookMission(GetSettingObject()->CookAssets);
-
-	BulkDataManifest();
-	IoStoreManifest();
 	
 	if(HasError())
 	{
@@ -239,7 +238,7 @@ void USingleCookerProxy::CookCluster(const FCookCluster& CookCluster)
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::CookCluster"),FColor::Red);
 
 	// TArray<FSoftObjectPath> SoftObjectPaths;
-	TArray<UPackage*> AllObjects;
+	
 	
 	TArray<ITargetPlatform*> TargetPlatforms;
 	TArray<FString> TargetPlatformNames;
@@ -256,6 +255,7 @@ void USingleCookerProxy::CookCluster(const FCookCluster& CookCluster)
 
 	if(CookCluster.bPreGeneratePlatformData)
 	{
+		TArray<UPackage*> AllObjects;
 		{
 			SCOPED_NAMED_EVENT_TCHAR(TEXT("BeginCacheForCookedPlatformData for Assets"),FColor::Red);
 			GIsCookerLoadingPackage = true;
@@ -276,19 +276,7 @@ void USingleCookerProxy::CookCluster(const FCookCluster& CookCluster)
 				}
 				AllObjects.AddUnique(Package);
 
-				TArray<UObject*> ExportMap;
-				GetObjectsWithOuter(Package,ExportMap);
-				for(const auto& ExportObj:ExportMap)
-				{
-					for(const auto& Platform:TargetPlatforms)
-					{
-						ExportObj->BeginCacheForCookedPlatformData(Platform);
-					}
-				}
-				if (GShaderCompilingManager)
-				{
-					GShaderCompilingManager->ProcessAsyncResults(true, false);
-				}
+				UFlibHotPatcherEditorHelper::BeginPackageObjectsCacheForCookedPlatformData(Package,TargetPlatforms,true);
 			}
 			GIsCookerLoadingPackage = false;
 		}
@@ -354,10 +342,13 @@ void USingleCookerProxy::CookCluster(const FCookCluster& CookCluster)
 	}
 	UFlibHotPatcherEditorHelper::CookAssets(CookCluster.Assets,CookCluster.Platforms,CookCluster.PackageSavedCallback,CookCluster.CookFailedCallback
 #if WITH_PACKAGE_CONTEXT
-	,GetPlatformSavePackageContextsRaw()
+	                                        ,GetPlatformSavePackageContextsRaw()
 #endif
-	,GetSettingObject()->StorageCookedDir
+	                                        ,GetSettingObject()->StorageCookedDir
 	);
+	
+	// Wait for all shaders to finish compiling
+	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
 	UFlibHotPatcherEditorHelper::WaitForAsyncFileWrites();
 }
 

@@ -18,8 +18,6 @@
 #include "Resources/Version.h"
 #include "HotPatcherLog.h"
 
-bool GScanCacheOptimize = true;
-
 // PRAGMA_DISABLE_DEPRECATION_WARNINGS
 FString UFlibAssetManageHelper::PackagePathToFilename(const FString& InPackagePath)
 {
@@ -622,27 +620,22 @@ const FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackagePath(con
 		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 		FString TargetLongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(InPackagePath);
 
-		//  if(FPackageName::DoesPackageExist(TargetLongPackageName))
-		{
 #if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
-			TOptional<FAssetPackageData> PackageDataOpt = AssetRegistryModule.Get().GetAssetPackageDataCopy(*TargetLongPackageName);
-			if(PackageDataOpt.IsSet())
-			{
-				const FAssetPackageData* PackageData = &PackageDataOpt.GetValue();
+		TOptional<FAssetPackageData> PackageDataOpt = AssetRegistryModule.Get().GetAssetPackageDataCopy(*TargetLongPackageName);
+		if(PackageDataOpt.IsSet())
+		{
+			const FAssetPackageData* PackageData = &PackageDataOpt.GetValue();
 #else
-				const FAssetPackageData* PackageData = AssetRegistryModule.Get().GetAssetPackageData(*TargetLongPackageName);
+			const FAssetPackageData* PackageData = AssetRegistryModule.Get().GetAssetPackageData(*TargetLongPackageName);
 #endif
-				AssetPackageData = const_cast<FAssetPackageData*>(PackageData);
-				if (AssetPackageData != nullptr)
-				{
-					return AssetPackageData;
-				}
+			AssetPackageData = const_cast<FAssetPackageData*>(PackageData);
+			if (AssetPackageData != nullptr)
+			{
+				return AssetPackageData;
 			}
+#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
 		}
-		// else
-		// {
-		// 	UE_LOG(LogHotPatcher,Warning,TEXT("GetPackageDataByPackagePath %s Failed!"),*InPackagePath);
-		// }
+#endif
 	}
 
 	return NULL;

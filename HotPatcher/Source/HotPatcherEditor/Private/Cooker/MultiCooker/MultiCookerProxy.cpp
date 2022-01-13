@@ -26,6 +26,11 @@ void UMultiCookerProxy::Shutdown()
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::Shutdown"),FColor::Red);
 
 	ShutdownShaderCollection();
+
+	SerializeConfig();
+	SerializeMultiCookerAssets();
+	SerializeCookVersion();
+	
 	Super::Shutdown();
 }
 
@@ -450,7 +455,7 @@ bool UMultiCookerProxy::DoExport()
 	ScanedCaches.Empty();
 	
 	FString TempDir = UFlibMultiCookerHelper::GetMultiCookerBaseDir();
-	FString SaveConfigDir = UFlibPatchParserHelper::ReplaceMark(GetSettingObject()->SavePath.Path);
+
 
 	PreMission();
 	// for cook global shader
@@ -474,46 +479,14 @@ bool UMultiCookerProxy::DoExport()
 	{
 		IFileManager::Get().DeleteDirectory(*TempDir);
 	}
-	
-	FExportPatchSettings CookPatchSettings = MakePatchSettings();
-	FChunkInfo CookChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(&CookPatchSettings);
-	
-	FHotPatcherVersion CurrentVersion;
-	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportReleaseVersionInfoByChunk"),FColor::Red);
-		CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
-		   TEXT("MultiCooker"),
-		   TEXT(""),
-		   FDateTime::UtcNow().ToString(),
-		   CookChunk,
-		   CookPatchSettings.IsIncludeHasRefAssetsOnly(),
-		   CookPatchSettings.IsAnalysisFilterDependencies()
-	   );
-	}
-	
-	if(CookPatchSettings.IsForceSkipContent())
-	{
-		TArray<FString> AllSkipContents;
-		AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(CookPatchSettings.GetForceSkipContentRules()));
-		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(CookPatchSettings.GetForceSkipAssets()));
-		UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(CurrentVersion.AssetInfo,AllSkipContents);
-	}
-	
-	FMultiCookerAssets MultiCookerAssets;
-	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("GetAssetDetailsByAssetDependenciesInfo and Serialize to json"),FColor::Red);
-		MultiCookerAssets.Assets = CurrentVersion.AssetInfo.GetAssetDetails();
-		FString SaveNeedCookAssets;
-		THotPatcherTemplateHelper::TSerializeStructAsJsonString(MultiCookerAssets,SaveNeedCookAssets);
-		FString SaveMultiCookerAssetsTo= FPaths::ConvertRelativePathToFull(SaveConfigDir,FString::Printf(TEXT("%s_MultiCookerAssets.json"),FApp::GetProjectName()));
-		FFileHelper::SaveStringToFile(SaveNeedCookAssets,*SaveMultiCookerAssetsTo);
-	}
+
+	CalcCookAssets();
 	
 	if(!GetSettingObject()->bSkipCook)
 	{
 		OnMultiCookerBegining.Broadcast(this);
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("MakeSingleCookerSettings and Execute"),FColor::Red);
-		TArray<FSingleCookerSettings> SingleCookerSettings = MakeSingleCookerSettings(MultiCookerAssets.Assets);
+		TArray<FSingleCookerSettings> SingleCookerSettings = MakeSingleCookerSettings(GetMultiCookerAssets().Assets);
 
 		for(const auto& CookerSetting:SingleCookerSettings)
 		{
@@ -522,15 +495,6 @@ bool UMultiCookerProxy::DoExport()
 		}
 	}
 
-	
-	if(GetSettingObject()->IsSaveConfig())
-	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("Save Multi Cooker Config"),FColor::Red);
-		FString CurrentConfig;
-		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*GetSettingObject(),CurrentConfig);
-		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(SaveConfigDir,FString::Printf(TEXT("%s_MultiCookerConfig.json"),FApp::GetProjectName()));
-		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
-	}
 	return !HasError();
 }
 
@@ -607,11 +571,12 @@ TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateSingleCookWroker(const FS
 	
 	FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 	FString ProfilingCmd = GetSettingObject()->bProfilingPerSingleCooker ? UFlibMultiCookerHelper::GetProfilingCmd() : TEXT("");
-	
+	FString ConcurrentSave = GetSettingObject()->bConcurrentSave ? TEXT("-ConcurrentSave") : TEXT("");
 	FString MissionCommand = FString::Printf(
-		TEXT("\"%s\" -run=HotSingleCooker -config=\"%s\" -DDCNOSAVEBOOT -NoAssetRegistryCache -stdout -CrashForUAT -unattended -NoLogTimes -UTF8Output -norenderthread %s %s"),
+		TEXT("\"%s\" -run=HotSingleCooker -config=\"%s\" -DDCNOSAVEBOOT -NoAssetRegistryCache -stdout -CrashForUAT -unattended -NoLogTimes -UTF8Output -norenderthread %s %s %s"),
 		*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,
 		*ProfilingCmd,
+		*ConcurrentSave,
 		*GetSettingObject()->GetCombinedAdditionalCommandletArgs()
 		);
 	
@@ -620,4 +585,106 @@ TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateSingleCookWroker(const FS
 	CookerConfigMap.Add(SingleCookerSettings.MissionName,SingleCookerSettings);
 	CookerProcessMap.Add(SingleCookerSettings.MissionName,CookerProcThread);
 	return CookerProcThread;
+}
+
+void UMultiCookerProxy::SerializeConfig()
+{	
+	if(GetSettingObject()->IsSaveConfig())
+	{
+		FString SaveConfigDir = UFlibPatchParserHelper::ReplaceMark(GetSettingObject()->SavePath.Path);
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("Save Multi Cooker Config"),FColor::Red);
+		FString CurrentConfig;
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*GetSettingObject(),CurrentConfig);
+		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(SaveConfigDir,FString::Printf(TEXT("%s_MultiCookerConfig.json"),FApp::GetProjectName()));
+		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
+	}
+}
+
+void UMultiCookerProxy::SerializeMultiCookerAssets()
+{
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("Serialize MultiCookerAssets to json"),FColor::Red);
+	FString SaveConfigDir = UFlibPatchParserHelper::ReplaceMark(GetSettingObject()->SavePath.Path);
+	FString SaveNeedCookAssets;
+	THotPatcherTemplateHelper::TSerializeStructAsJsonString(GetMultiCookerAssets(),SaveNeedCookAssets);
+	FString SaveMultiCookerAssetsTo= FPaths::ConvertRelativePathToFull(SaveConfigDir,FString::Printf(TEXT("%s_MultiCookerAssets.json"),FApp::GetProjectName()));
+	FFileHelper::SaveStringToFile(SaveNeedCookAssets,*SaveMultiCookerAssetsTo);
+}
+void UMultiCookerProxy::SerializeCookVersion()
+{
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("Serialize MultiCooker CookVersion to json"),FColor::Red);
+	FString SaveConfigDir = UFlibPatchParserHelper::ReplaceMark(GetSettingObject()->SavePath.Path);
+	FString SaveMultiCookerVersionContent;
+	THotPatcherTemplateHelper::TSerializeStructAsJsonString(GetCookerVersion(),SaveMultiCookerVersionContent);
+	FString SaveMultiCookerAssetsTo= FPaths::ConvertRelativePathToFull(SaveConfigDir,FString::Printf(TEXT("%s_MultiCookerVersion_%s.json"),FApp::GetProjectName(),*GetSettingObject()->CookVersionID));
+	FFileHelper::SaveStringToFile(SaveMultiCookerVersionContent,*SaveMultiCookerAssetsTo);
+}
+
+void UMultiCookerProxy::CalcCookAssets()
+{
+	// calc need cook assets
+	{
+		FExportPatchSettings CookPatchSettings = MakePatchSettings();
+		FChunkInfo CookChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(&CookPatchSettings);
+
+		FHotPatcherVersion BaseVersion;
+		if(GetSettingObject()->bIterateCook)
+		{
+			FString BaseVersionContent;
+			FString BaseVersionFile = UFlibPatchParserHelper::ReplaceMarkPath(GetSettingObject()->RecentCookVersion.FilePath);
+			if (UFlibAssetManageHelper::LoadFileToString(BaseVersionFile, BaseVersionContent))
+			{
+				THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(BaseVersionContent, BaseVersion);
+			}
+		}
+		
+		FHotPatcherVersion CurrentVersion;
+		{
+			SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportReleaseVersionInfoByChunk"),FColor::Red);
+			CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
+			   GetSettingObject()->bIterateCook ? GetSettingObject()->CookVersionID : TEXT("MultiCooker"),
+			   GetSettingObject()->bIterateCook ? BaseVersion.VersionId : TEXT(""),
+			   FDateTime::UtcNow().ToString(),
+			   CookChunk,
+			   CookPatchSettings.IsIncludeHasRefAssetsOnly(),
+			   CookPatchSettings.IsAnalysisFilterDependencies()
+		   );
+		}
+
+		FPatchVersionDiff VersionDiffInfo;
+		const FAssetDependenciesInfo& BaseVersionAssetDependInfo = BaseVersion.AssetInfo;
+		const FAssetDependenciesInfo& CurrentVersionAssetDependInfo = CurrentVersion.AssetInfo;
+		
+		if(CookPatchSettings.IsForceSkipContent())
+		{
+			TArray<FString> AllSkipContents;
+			AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(CookPatchSettings.GetForceSkipContentRules()));
+			AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(CookPatchSettings.GetForceSkipAssets()));
+			UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(CurrentVersion.AssetInfo,AllSkipContents);
+		}
+
+		UFlibPatchParserHelper::DiffVersionAssets(
+			CurrentVersionAssetDependInfo,
+			BaseVersionAssetDependInfo,
+			VersionDiffInfo.AssetDiffInfo.AddAssetDependInfo,
+			VersionDiffInfo.AssetDiffInfo.ModifyAssetDependInfo,
+			VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo
+		);
+
+		if(GetSettingObject()->bIterateCook && GetSettingObject()->bRecursiveWidgetTree)
+		{
+			UFlibHotPatcherEditorHelper::AnalysisWidgetTree(BaseVersion,CurrentVersion,VersionDiffInfo);
+		}
+		
+		GetMultiCookerAssets().Assets.Append(VersionDiffInfo.AssetDiffInfo.AddAssetDependInfo.GetAssetDetails());
+		GetMultiCookerAssets().Assets.Append(VersionDiffInfo.AssetDiffInfo.ModifyAssetDependInfo.GetAssetDetails());
+
+		if(GetSettingObject()->bIterateCook)
+		{
+			CookVersion = UFlibHotPatcherEditorHelper::MakeNewReleaseByDiff(BaseVersion,VersionDiffInfo,NULL);
+		}
+		else
+		{
+			CookVersion = CurrentVersion;
+		}
+	}
 }

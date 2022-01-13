@@ -67,40 +67,28 @@ public:
 	static FSavePackageContext* CreateSaveContext(const ITargetPlatform* TargetPlatform,bool bUseZenLoader);
 	
 	//UFUNCTION(BlueprintCallable)
-	static bool CookAssets(
-			const TArray<FSoftObjectPath>& Assets,
-			const TArray<ETargetPlatform>& Platforms,
-			FCookResultEvent PackageSavedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
-			FCookResultEvent CookFailedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
-			class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext = TMap<ETargetPlatform,FSavePackageContext*>{},
-		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"))
-		);
-	static bool CookPackages(
-		const TArray<FAssetData>& AssetDatas,
-		const TArray<UPackage*>& InPackage,
-		const TArray<FString>& Platforms,
-		FCookResultEvent PackageSavedCallback,
-		FCookResultEvent CookFailedCallback,
-		class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext,
-		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"))
-	);
-	static bool CookPackages(
-		const TArray<FAssetData>& AssetDatas,
-		const TArray<UPackage*>& Packages,
-		const TArray<FString>& Platforms,
-		FCookResultEvent PackageSavedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
-		FCookResultEvent CookFailedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
-		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{},
-		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"))
+	static void CookAssets(
+		const TArray<FSoftObjectPath>& Assets,
+		const TArray<ETargetPlatform>& Platforms,
+		FCookResultEvent PackageSavedCallback = [](const FSoftObjectPath&, ETargetPlatform)
+		{
+		},
+		FCookResultEvent CookFailedCallback = [](const FSoftObjectPath&, ETargetPlatform)
+		{
+		},
+		class TMap<ETargetPlatform, FSavePackageContext*> PlatformSavePackageContext = TMap<
+			ETargetPlatform, FSavePackageContext*>{},
+		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),
+		                                            TEXT("Cooked"))
 	);
 	static bool CookPackage(
-		const FAssetData& AssetData,
-		UPackage* Package,
-		const TArray<FString>& Platforms,
+		const FSoftObjectPath& AssetObjectPath,
+		TArray<ITargetPlatform*> CookPlatforms,
 		FCookResultEvent PackageSavedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
 		FCookResultEvent CookFailedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{},
-		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"))
+		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked")),
+		bool bStorageConcurrent = false
 	);
 
 	static void CookChunkAssets(
@@ -150,7 +138,7 @@ public:
 	* 0x1 Add
 	* 0x2 Modyfy
 	*/
-	static void AnalysisWidgetTree(const FExportPatchSettings& PatchSetting,const FHotPatcherVersion& Base, const FHotPatcherVersion& New,FPatchVersionDiff& PakDiff,int32 flags = 0x1|0x2);
+	static void AnalysisWidgetTree(const FHotPatcherVersion& Base, const FHotPatcherVersion& New,FPatchVersionDiff& PakDiff,int32 flags = 0x1|0x2);
 	
 	static FPatchVersionDiff DiffPatchVersionWithPatchSetting(const struct FExportPatchSettings& PatchSetting, const FHotPatcherVersion& Base, const FHotPatcherVersion& New);
 
@@ -173,7 +161,7 @@ public:
 	static bool SerializeAssetRegistry(const FString& PlatformName,const TArray<FString>& PackagePaths,const FString& SavePath);
 	
 	static FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings);
-	static FHotPatcherVersion MakeNewReleaseByDiff(const FHotPatcherVersion& InBaseVersion, const FPatchVersionDiff& InDiff, FExportPatchSettings* InPatchSettings);
+	static FHotPatcherVersion MakeNewReleaseByDiff(const FHotPatcherVersion& InBaseVersion, const FPatchVersionDiff& InDiff, FExportPatchSettings* InPatchSettings = NULL);
 
 public:
 	// In: "C:\Users\lipengzha\Documents\UnrealProjects\Blank425\Intermediate\Staging\Blank425.upluginmanifest" "../../../Blank425/Plugins/Blank425.upluginmanifest
@@ -207,5 +195,5 @@ public:
 
 	static TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> CreatePlatformsPackageContexts(const TArray<ETargetPlatform>& Platforms,bool bIoStore);
 	static bool SavePlatformBulkDataManifest(TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>>&PlatformSavePackageContexts,ETargetPlatform Platform);
-	
+	static void BeginPackageObjectsCacheForCookedPlatformData(UPackage* Package,TArray<ITargetPlatform*> TargetPlatforms,bool bWaitShaderFinished);
 };

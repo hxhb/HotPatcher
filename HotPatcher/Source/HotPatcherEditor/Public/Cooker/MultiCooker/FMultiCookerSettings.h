@@ -72,15 +72,27 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(ClampMin=1,ClampMax=20))
 	int32 ProcessNumber = 3;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bIterateCook;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	FFilePath RecentCookVersion;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bConcurrentSave = false;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
 	bool bProfilingMultiCooker = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
 	bool bProfilingPerSingleCooker = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
 	bool bDisplayMissionConfig = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
+	bool bPreGeneratePlatformData = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool bSkipCook = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+	bool bStorageCookVersion = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bStorageCookVersion"))
+	FString CookVersionID = TEXT("1.0.0.0");
 };
 
 
@@ -125,6 +137,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	FIoStoreSettings IoStoreSettings;
 
+	// cook load in cooking assets by SingleCookder side
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bCookAdditionalAssets = true;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool bDisplayConfig = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")

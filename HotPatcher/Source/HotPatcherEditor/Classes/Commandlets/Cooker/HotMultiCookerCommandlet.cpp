@@ -13,6 +13,7 @@ DEFINE_LOG_CATEGORY(LogHotMultiCookerCommandlet);
 
 int32 UHotMultiCookerCommandlet::Main(const FString& Params)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("MultiCookCommandlet::Main"),FColor::Red);
 	UE_LOG(LogHotMultiCookerCommandlet, Display, TEXT("UHotMultiCookerCommandlet::Main"));
 
 	FString config_path;
@@ -31,6 +32,7 @@ int32 UHotMultiCookerCommandlet::Main(const FString& Params)
 
 	if(IsRunningCommandlet())
 	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("SearchAllAssets"),FColor::Red);
 		// load asset registry
 		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 		AssetRegistryModule.Get().SearchAllAssets(true);

@@ -21,40 +21,42 @@
 
 #include "PatcherProxy.generated.h"
 
+using FPatchWorkerType = TFunction<bool(FHotPatcherPatchContext&)>;
+using FPatchWorkers = TMap<FString,FPatchWorkerType>;
+
 DECLARE_MULTICAST_DELEGATE_FourParams(FOnPakListGenerated,FHotPatcherPatchContext&,FChunkInfo&,ETargetPlatform,TArray<FPakCommand>&);
+DECLARE_MULTICAST_DELEGATE_FourParams(FAddPatchWorkerEvent,FHotPatcherPatchContext&,FChunkInfo&,ETargetPlatform,TArray<FPakCommand>&);
 
 UCLASS()
 class HOTPATCHEREDITOR_API UPatcherProxy:public UHotPatcherProxyBase
 {
     GENERATED_UCLASS_BODY()
 public:
-    bool CanExportPatch() const;
+    virtual void Init(FPatcherEntitySettingBase* InSetting)override;
+    virtual void Shutdown() override;
+    
     virtual bool DoExport() override;
     virtual FExportPatchSettings* GetSettingObject()override{ return (FExportPatchSettings*)Setting; }
-    FOnPakListGenerated OnPakListGenerated;
+    bool CanExportPatch() const;
 
+    FORCEINLINE_DEBUGGABLE void AddPatchWorker(const FString& WorkerName,const FPatchWorkerType& Worker)
+    {
+        PatchWorkers.Add(WorkerName,Worker);
+    }
+    FORCEINLINE const FPatchWorkers& GetPatchWorkers()const{ return PatchWorkers; }
+public:
+    FOnPakListGenerated OnPakListGenerated;
+    
+protected:
 #if WITH_PACKAGE_CONTEXT
     // virtual void InitPlatformPackageContexts();
     FORCEINLINE TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
-    FORCEINLINE TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContextsRaw()const
-    {
-        TMap<ETargetPlatform,FSavePackageContext*> result;
-        TArray<ETargetPlatform> Keys;
-        GetPlatformSavePackageContexts().GetKeys(Keys);
-        for(const auto& Key:Keys)
-        {
-            result.Add(Key,GetPlatformSavePackageContexts().Find(Key)->Get());
-        }
-        return result;
-    }
-    // bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
-    // FSavePackageContext* CreateSaveContext(const ITargetPlatform* TargetPlatform,bool bUseZenLoader);
+    TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContextsRaw()const;
 #endif
-    // FORCEINLINE TSharedPtr<FCookShaderCollectionProxy>& GetCookShaderCollectionProxy(){ return CookShaderCollection; }
-    
+
+protected:
+    FPatchWorkers PatchWorkers;
 private:
     TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
-    // TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
-private:
     TSharedPtr<FHotPatcherPatchContext> PatchContext;
 };

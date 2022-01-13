@@ -1,6 +1,7 @@
 #include "DependenciesParser/FOldAssetDependenciesParser.h"
 #include "HotPatcherLog.h"
 
+bool GScanCacheOptimize = false;
 namespace NSOldAssetDependenciesParser
 {
 		/*

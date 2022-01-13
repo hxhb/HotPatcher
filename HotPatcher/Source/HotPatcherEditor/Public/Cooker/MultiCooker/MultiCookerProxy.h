@@ -61,11 +61,24 @@ protected:
     TMap<FString,FAssetDependenciesInfo>& GetAssetsDependenciesScanedCaches(){ return ScanedCaches; };
     TSharedPtr<FProcWorkerThread> CreateProcMissionThread(const FString& Bin, const FString& Command, const FString& MissionName);
     TSharedPtr<FProcWorkerThread> CreateSingleCookWroker(const FSingleCookerSettings& SingleCookerSettings);
-
+    FMultiCookerAssets& GetMultiCookerAssets(){ return MultiCookerAssets; }
+    FMultiCookerAssets& GetAdditionalAssets(){ return AdditionalAssets; }
+    FHotPatcherVersion& GetCookerVersion(){ return CookVersion; }
+protected:
+    void SerializeConfig();
+    void SerializeMultiCookerAssets();
+    void SerializeCookVersion();
+    void CalcCookAssets();
 protected:
     UPROPERTY()
     class USingleCookerProxy* RecookerProxy;
     bool bMissionFinished = false;
+protected:
+    // recorder
+    FMultiCookerAssets MultiCookerAssets;
+    FMultiCookerAssets AdditionalAssets;
+    FHotPatcherVersion CookVersion;
+    
 private:
     FCriticalSection	SynchronizationObject;
     TSharedPtr<FMultiCookerSettings> MultiCookerSettings;
@@ -74,6 +87,8 @@ private:
     TMap<FString,FSingleCookerSettings> CookerConfigMap;
     TMap<FString,FAssetsCollection> CookerFailedCollectionMap;
 
+
+    
     TSharedPtr<struct FCookShaderCollectionProxy> GlobalShaderCollectionProxy;
     int32 FinishedCount = 0;
 };

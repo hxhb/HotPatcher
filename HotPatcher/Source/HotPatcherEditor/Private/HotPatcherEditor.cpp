@@ -40,7 +40,7 @@
 
 FExportPatchSettings* GPatchSettings = nullptr;
 FExportReleaseSettings* GReleaseSettings = nullptr;
-bool GCookLog = true;
+bool GCookLog = (bool)ENABLE_COOK_LOG;
 
 static const FName HotPatcherTabName("HotPatcher");
 

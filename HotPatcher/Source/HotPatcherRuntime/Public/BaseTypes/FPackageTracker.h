@@ -75,7 +75,7 @@ struct FPackageTracker : public FPackageTrackerBase
 
 	virtual void OnPackageCreated(UPackage* Package) override
 	{
-		FName AssetPathName = FName(UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetName()));
+		FName AssetPathName = FName(Package->GetPathName());
 		if(!ExisitAssets.Contains(AssetPathName))
 		{
 			PackagesPendingSave.Add(AssetPathName);
@@ -83,7 +83,7 @@ struct FPackageTracker : public FPackageTrackerBase
 	}
 	virtual void OnPackageDeleted(UPackage* Package) override
 	{
-		FName AssetPathName = FName(UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetName()));
+		FName AssetPathName = FName(Package->GetPathName());
 		if(PackagesPendingSave.Contains(AssetPathName))
 		{
 			PackagesPendingSave.Remove(AssetPathName);

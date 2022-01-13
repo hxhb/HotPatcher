@@ -19,8 +19,7 @@ TArray<FPlatformExternAssets>& FHotPatcherSettingBase::GetAddExternAssetsToPlatf
 
 void FHotPatcherSettingBase::Init()
 {
-    UE_LOG(LogHotPatcher, Display, TEXT("Enable Scan Cache Optimize %s"),GScanCacheOptimize?TEXT("true"):TEXT("false"));
-    	
+	
 }
 
 TArray<FExternFileInfo> FHotPatcherSettingBase::GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash)

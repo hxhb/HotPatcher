@@ -11,6 +11,12 @@ public class HotPatcherEditor : ModuleRules
 	public HotPatcherEditor(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+		bLegacyPublicIncludePaths = false;
+		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
+		if (Target.Version.MajorVersion < 5 && Target.Version.MinorVersion <= 21)
+		{
+			bUseRTTI = true;
+		}
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
@@ -53,6 +59,25 @@ public class HotPatcherEditor : ModuleRules
 			}
 			);
 		
+		PrivateDependencyModuleNames.AddRange(
+			new string[]
+			{
+				"Core",
+				"UnrealEd",
+				"Projects",
+				"DesktopPlatform",
+				"InputCore",
+				"EditorStyle",
+				"LevelEditor",
+				"CoreUObject",
+				"Engine",
+				"Slate",
+				"SlateCore",
+				"RenderCore"
+				// ... add private dependencies that you statically link with here ...	
+			}
+		);
+		
 		// only in UE5
 		if (Target.Version.MajorVersion > 4)
 		{
@@ -67,43 +92,6 @@ public class HotPatcherEditor : ModuleRules
 			PublicDependencyModuleNames.Add("ToolMenus");
 		}
 
-		System.Func<string, bool,bool> AddPublicDefinitions = (string MacroName,bool bEnable) =>
-		{
-			PublicDefinitions.Add(string.Format("{0}={1}",MacroName, bEnable ? 1 : 0));
-			return true;
-		};
-		
-		AddPublicDefinitions("GENERATE_ASSET_REGISTRY_DATA", false);
-		
-		bool bIOStoreSupport = Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 25;
-		if (bIOStoreSupport)
-		{
-			PublicDependencyModuleNames.AddRange(new string[]
-			{
-				"IoStoreUtilities"
-			});
-		}
-		AddPublicDefinitions("WITH_IO_STORE_SUPPORT", bIOStoreSupport);
-
-		PrivateDependencyModuleNames.AddRange(
-			new string[]
-			{
-                "Core",
-                "UnrealEd",
-                "Projects",
-                "DesktopPlatform",
-				"InputCore",
-                "EditorStyle",
-                "LevelEditor",
-				"CoreUObject",
-				"Engine",
-				"Slate",
-				"SlateCore",
-				"RenderCore"
-				// ... add private dependencies that you statically link with here ...	
-			}
-			);
-		
 		switch (Target.Configuration)
 		{
 			case UnrealTargetConfiguration.Debug:
@@ -128,33 +116,30 @@ public class HotPatcherEditor : ModuleRules
 			}
 		};
 		
-		PublicDefinitions.AddRange(new string[]
+		System.Func<string, bool,bool> AddPublicDefinitions = (string MacroName,bool bEnable) =>
 		{
-			"ENABLE_COOK_ENGINE_MAP=0",
-			"ENABLE_COOK_PLUGIN_MAP=0"
-		});
+			PublicDefinitions.Add(string.Format("{0}={1}",MacroName, bEnable ? 1 : 0));
+			return true;
+		};
 		
-		DynamicallyLoadedModuleNames.AddRange(
-			new string[]
-			{
-				// ... add any modules that your module loads dynamically here ...
-			}
-			);
-		if (Target.Version.MajorVersion < 5 && Target.Version.MinorVersion <= 21)
+		bool bIOStoreSupport = Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 25;
+		if (bIOStoreSupport)
 		{
-			bUseRTTI = true;
+			PublicDependencyModuleNames.AddRange(new string[]
+			{
+				"IoStoreUtilities"
+			});
 		}
-
-
+		AddPublicDefinitions("WITH_IO_STORE_SUPPORT", bIOStoreSupport);
+		AddPublicDefinitions("GENERATE_ASSET_REGISTRY_DATA", false);
+		AddPublicDefinitions("ENABLE_COOK_LOG", true);
+		AddPublicDefinitions("ENABLE_COOK_ENGINE_MAP", false);
+		AddPublicDefinitions("ENABLE_COOK_PLUGIN_MAP", false);
 		BuildVersion Version;
 		BuildVersion.TryRead(BuildVersion.GetDefaultFileName(), out Version);
-		// PackageContext
-
 		AddPublicDefinitions("WITH_EDITOR_SECTION", Version.MajorVersion > 4 || Version.MinorVersion > 24);
-		
 		System.Console.WriteLine("MajorVersion {0} MinorVersion: {1} PatchVersion {2}",Target.Version.MajorVersion,Target.Version.MinorVersion,Target.Version.PatchVersion);
-		bLegacyPublicIncludePaths = false;
-		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
+		
 
 		// Game feature
 		bool bEnableGameFeature = true;
