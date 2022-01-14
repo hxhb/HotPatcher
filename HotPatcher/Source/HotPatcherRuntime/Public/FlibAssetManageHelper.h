@@ -6,6 +6,8 @@
 #include "AssetManager/FAssetDetail.h"
 
 // engine
+#include "Engine/StreamableManager.h"
+
 #include "Engine/EngineTypes.h"
 #include "Dom/JsonValue.h"
 #include "Templates/SharedPointer.h"

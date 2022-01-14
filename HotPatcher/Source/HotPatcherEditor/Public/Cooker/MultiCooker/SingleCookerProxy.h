@@ -113,7 +113,6 @@ private:
 private:
     // async
     TMap<FName,FName> AssetTypeMapping;
-    bool bFinished = false;
     TSet<FName>& GetPaendingCookAssetsSet(){ return PaendingCookAssetsSet; }
     TSet<FName> PaendingCookAssetsSet;
 };
