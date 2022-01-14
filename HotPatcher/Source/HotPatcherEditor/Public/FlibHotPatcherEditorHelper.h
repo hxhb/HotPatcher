@@ -70,12 +70,7 @@ public:
 	static void CookAssets(
 		const TArray<FSoftObjectPath>& Assets,
 		const TArray<ETargetPlatform>& Platforms,
-		FCookResultEvent PackageSavedCallback = [](const FSoftObjectPath&, ETargetPlatform)
-		{
-		},
-		FCookResultEvent CookFailedCallback = [](const FSoftObjectPath&, ETargetPlatform)
-		{
-		},
+		FCookActionCallback CookActionCallback,
 		class TMap<ETargetPlatform, FSavePackageContext*> PlatformSavePackageContext = TMap<
 			ETargetPlatform, FSavePackageContext*>{},
 		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),
@@ -84,8 +79,7 @@ public:
 	static bool CookPackage(
 		const FSoftObjectPath& AssetObjectPath,
 		TArray<ITargetPlatform*> CookPlatforms,
-		FCookResultEvent PackageSavedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
-		FCookResultEvent CookFailedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
+		FCookActionCallback CookActionCallback,
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{},
 		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked")),
 		bool bStorageConcurrent = false
@@ -94,7 +88,7 @@ public:
 	static void CookChunkAssets(
 		TArray<FAssetDetail> Assets,
 		const TArray<ETargetPlatform>& Platforms,
-		FCookResultEvent CookFailedCallback = [](const FSoftObjectPath&,ETargetPlatform){},
+		FCookActionCallback CookActionCallback,
 		class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext = TMap<ETargetPlatform,FSavePackageContext*>{},
 		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"))
 	);

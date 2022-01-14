@@ -81,7 +81,9 @@ public:
 		static const FAssetPackageData* GetPackageDataByPackagePath(const FString& InShortPackagePath);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerExEx")
 		static bool GetAssetPackageGUID(const FString& InPackagePath, FName& OutGUID);
-
+	
+	static FName GetAssetType(FSoftObjectPath InPackageName);
+	
 	// Combine AssetDependencies Filter repeat asset
 	UFUNCTION(BlueprintPure, Category = "GWorld|Flib|AssetManager", meta = (CommutativeAssociativeBinaryOperator = "true"))
 		static FAssetDependenciesInfo CombineAssetDependencies(const FAssetDependenciesInfo& A, const FAssetDependenciesInfo& B);
@@ -198,4 +200,12 @@ public:
 	static TArray<FString> SoftObjectPathsToStrings(const TArray<FSoftObjectPath>& SoftObjectPaths);
 	
 	static FString NormalizeContentDir(const FString& Dir);
+	static FStreamableManager& UFlibAssetManageHelper::GetStreamableManager();
+
+	// Default priority for all async loads
+	static const uint32 DefaultAsyncLoadPriority = 0;
+	// Priority to try and load immediately
+	static const uint32 AsyncLoadHighPriority = 100;
+	static void LoadObjectAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath)> Callback,uint32 Priority);
+	static UPackage* GetPackage(FName PackageName);
 };

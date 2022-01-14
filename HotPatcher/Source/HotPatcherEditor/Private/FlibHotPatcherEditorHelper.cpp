@@ -358,8 +358,7 @@ FSavePackageContext* UFlibHotPatcherEditorHelper::CreateSaveContext(const ITarge
 void UFlibHotPatcherEditorHelper::CookAssets(
 	const TArray<FSoftObjectPath>& Assets,
 	const TArray<ETargetPlatform>& Platforms,
-	FCookResultEvent PackageSavedCallback,
-	FCookResultEvent CookFailedCallback,
+	FCookActionCallback CookActionCallback,
 	class TMap<ETargetPlatform, FSavePackageContext*> PlatformSavePackageContext,
 	const FString& InSavePath
 )
@@ -389,7 +388,7 @@ void UFlibHotPatcherEditorHelper::CookAssets(
 	const bool bStorageConcurrent = FParse::Param(FCommandLine::Get(), TEXT("ConcurrentSave"));
 	for(const auto& AssetObjectPath:Assets)
 	{
-		CookPackage(AssetObjectPath,CookPlatforms,PackageSavedCallback,CookFailedCallback,FinalPlatformSavePackageContext,InSavePath,bStorageConcurrent);
+		CookPackage(AssetObjectPath,CookPlatforms,CookActionCallback,FinalPlatformSavePackageContext,InSavePath,bStorageConcurrent);
 	}
 }
 
@@ -422,8 +421,7 @@ struct FFilterEditorOnlyFlag
 bool UFlibHotPatcherEditorHelper::CookPackage(
 	const FSoftObjectPath& AssetObjectPath,
 	TArray<ITargetPlatform*> CookPlatforms,
-	FCookResultEvent PackageSavedCallback,
-	FCookResultEvent CookFailedCallback,
+	FCookActionCallback CookActionCallback,
 	class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
 	const FString& InSavePath,
 	bool bStorageConcurrent 
@@ -432,7 +430,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("CookPackage"),FColor::Red);
 	bool bSuccessed = false;
 	
-	UPackage* Package = Cast<UPackage>(AssetObjectPath.TryLoad());
+	UPackage* Package = UFlibAssetManageHelper::GetPackage(FName(AssetObjectPath.GetLongPackageName()));
 	if(!Package)
 	{
 		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s UPackage is null!"),*AssetObjectPath.GetAssetPathString());
@@ -523,11 +521,20 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 			CurrentPlatformPackageContext->PackageWriter->BeginPackage(BeginInfo);
 	#endif
 #endif
+
+		if(CookActionCallback.BeginCookCallback)
+		{
+			CookActionCallback.BeginCookCallback(PackageName,TargetPlatform);
+		}
+		
 		GIsCookerLoadingPackage = true;
 		PRAGMA_DISABLE_DEPRECATION_WARNINGS
-		auto PackageSavedHandle = UPackage::PackageSavedEvent.AddLambda([PackageSavedCallback,TargetPlatform](const FString& InFilePath,UObject* Object)
+		auto PackageSavedHandle = UPackage::PackageSavedEvent.AddLambda([CookActionCallback,TargetPlatform](const FString& InFilePath,UObject* Object)
 		{
-			PackageSavedCallback(Object->GetPathName(),TargetPlatform);
+			if (CookActionCallback.PackageSavedCallback)
+			{
+				CookActionCallback.PackageSavedCallback(Object->GetPathName(),TargetPlatform);
+			}
 		});
 		PRAGMA_ENABLE_DEPRECATION_WARNINGS
 		FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, CookedFlags, *CookedSavePath, 
@@ -568,7 +575,10 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 
 		if(!bSuccessed && !Package->HasAnyPackageFlags(PKG_FilterEditorOnly))
 		{
-			CookFailedCallback(PackageName,TargetPlatform);
+			if(CookActionCallback.CookFailedCallback)
+			{
+				CookActionCallback.CookFailedCallback(PackageName,TargetPlatform);
+			}
 		}
 	}
 	return bSuccessed;
@@ -577,7 +587,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 void UFlibHotPatcherEditorHelper::CookChunkAssets(
 	TArray<FAssetDetail> Assets,
 	const TArray<ETargetPlatform>& Platforms,
-	FCookResultEvent CookFailedCallback,
+	FCookActionCallback CookActionCallback,
 	class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext,
 	const FString& InSavePath
 )
@@ -591,7 +601,7 @@ void UFlibHotPatcherEditorHelper::CookChunkAssets(
 	}
 	if(!!SoftObjectPaths.Num())
 	{
-		UFlibHotPatcherEditorHelper::CookAssets(SoftObjectPaths,Platforms,[](const FSoftObjectPath&,ETargetPlatform){},CookFailedCallback,PlatformSavePackageContext,InSavePath);
+		UFlibHotPatcherEditorHelper::CookAssets(SoftObjectPaths,Platforms,CookActionCallback,PlatformSavePackageContext,InSavePath);
 	}
 }
 

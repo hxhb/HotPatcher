@@ -39,7 +39,7 @@ FString UFlibMultiCookerHelper::GetCookerProcFailedResultPath(const FString& Bas
 
 FString UFlibMultiCookerHelper::GetProfilingCmd()
 {
-	return FString::Printf(TEXT("-trace=cpu,loadtimetrace"));
+	return FString::Printf(TEXT("-trace=cpu,memory,loadtime -statnamedevents implies -llm"));
 }
 
 TSharedPtr<FCookShaderCollectionProxy> UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform(const FString& ShaderLibraryName, TArray<ETargetPlatform> Platforms, bool bShareShader, bool bNativeShader, bool bMaster, const

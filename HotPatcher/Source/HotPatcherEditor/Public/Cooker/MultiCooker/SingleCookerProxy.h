@@ -39,10 +39,10 @@ struct FCookCluster
     TArray<ETargetPlatform> Platforms;
     UPROPERTY()
     bool bPreGeneratePlatformData = false;
-    
-    FCookResultEvent PackageSavedCallback = nullptr;
-    FCookResultEvent CookFailedCallback = nullptr;
+
+    FCookActionCallback CookActionCallback;
 };
+
 
 UCLASS()
 class HOTPATCHEREDITOR_API USingleCookerProxy:public UHotPatcherProxyBase
@@ -55,7 +55,9 @@ public:
     
     virtual FSingleCookerSettings* GetSettingObject()override {return (FSingleCookerSettings*)(Setting);};
     FCookerFailedCollection& GetCookFailedAssetsCollection(){return CookFailedAssetsCollection;};
-    void CookCluster(const FCookCluster& CookCluster);
+    void CookClusterAsync(const FCookCluster& CookCluster);
+    void CookClusterSync(const FCookCluster& CookCluster);
+    void CookCluster(const FCookCluster& CookCluster, bool bAsync);
     void AddCluster(const FCookCluster& CookCluster);
 
     TArray<FName>& GetPlatformCookAssetOrders(ETargetPlatform Platform);
@@ -64,6 +66,7 @@ public:
 public:
     FSingleCookerEvent OnCookBegin;
     FSingleCookerEvent OnCookFinished;
+    FSingleCookResultEvent OnCookAssetBegin;
     FSingleCookResultEvent OnCookAssetFailed;
     FSingleCookResultEvent OnCookAssetSuccessed;
     
@@ -77,16 +80,25 @@ protected:
     
     void InitShaderLibConllections();
     void ShutdowShaderLibCollections();
+
+    void MarkAssetCooked(const FSoftObjectPath& PackagePath,ETargetPlatform Platform);
+
+    FORCEINLINE_DEBUGGABLE bool IsFinsihed()
+    {
+        return !GetPaendingCookAssetsSet().Num();
+    }
+    
+    FORCEINLINE_DEBUGGABLE TMap<FName,FName>& GetAssetTypeMapping(){ return AssetTypeMapping; }
+    void OnAsyncObjectLoaded(FSoftObjectPath ObjectPath,const TArray<ITargetPlatform*>& Platforms,FCookActionCallback CookActionCallback);
+
+    void WaitCookerFinished();
+    
 private:
 #if WITH_PACKAGE_CONTEXT
-    // virtual void InitPlatformPackageContexts();
     FORCEINLINE TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>>& GetPlatformSavePackageContexts() {return PlatformSavePackageContexts;}
     TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContextsRaw();
-    // bool SavePlatformBulkDataManifest(ETargetPlatform Platform);
+    TMap<FString, FSavePackageContext*> GetPlatformSavePackageContextsNameMapping();
 #endif
-
-    
-    void MarkAssetCooked(const FSoftObjectPath& PackagePath,ETargetPlatform Platform);
     
 private:
     TArray<FCookCluster> CookClusters;
@@ -97,4 +109,11 @@ private:
     TSharedPtr<struct FCookShaderCollectionProxy> PlatformCookShaderCollection;
     FPackagePathSet PackagePathSet;
     TMap<ETargetPlatform,TArray<FName>> CookAssetOrders;
+
+private:
+    // async
+    TMap<FName,FName> AssetTypeMapping;
+    bool bFinished = false;
+    TSet<FName>& GetPaendingCookAssetsSet(){ return PaendingCookAssetsSet; }
+    TSet<FName> PaendingCookAssetsSet;
 };

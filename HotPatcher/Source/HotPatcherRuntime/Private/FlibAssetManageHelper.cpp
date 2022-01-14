@@ -271,6 +271,16 @@ bool UFlibAssetManageHelper::GetAssetReferenceEx(const FAssetDetail& InAsset, co
 	return UFlibAssetManageHelper::GetAssetReference(InAsset, local_SearchAssetDepTypes, OutRefAsset);
 }
 
+FName UFlibAssetManageHelper::GetAssetType(FSoftObjectPath SoftObjectPath)
+{
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetTypeByPackageName"),FColor::Red);
+	
+	FAssetData OutAssetData;
+	UAssetManager::Get().GetAssetDataForPath(SoftObjectPath, OutAssetData) && OutAssetData.IsValid();
+	
+	return OutAssetData.AssetClass;
+}
+
 FAssetDetail UFlibAssetManageHelper::GetAssetDetailByPackageName(const FString& InPackageName)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetDetailByPackageName"),FColor::Red);
@@ -1093,4 +1103,42 @@ FString UFlibAssetManageHelper::NormalizeContentDir(const FString& Dir)
 	}
 	return result;
 }
+
+
+FStreamableManager& UFlibAssetManageHelper::GetStreamableManager()
+{
+	return UAssetManager::GetStreamableManager();
+}
+
+void UFlibAssetManageHelper::LoadObjectAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath)> Callback,uint32 Priority)
+{
+	GetStreamableManager().RequestAsyncLoad(ObjectPath, FStreamableDelegate::CreateLambda([=]()
+	{
+		if(Callback)
+		{
+			Callback(ObjectPath);
+		}
+	}), Priority, true);
+}
+
+UPackage* UFlibAssetManageHelper::GetPackage(FName PackageName)
+{
+	if (PackageName == NAME_None)
+	{
+		return NULL;
+	}
+
+	UPackage* Package = FindPackage(NULL, *PackageName.ToString());
+	if (Package)
+	{
+		Package->FullyLoad();
+	}
+	else
+	{
+		Package = LoadPackage(NULL, *PackageName.ToString(), LOAD_None);
+	}
+
+	return Package;
+}
+
 // PRAGMA_ENABLE_DEPRECATION_WARNINGS
