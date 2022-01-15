@@ -1438,7 +1438,7 @@ FProjectPackageAssetCollection UFlibHotPatcherEditorHelper::ImportProjectSetting
 		// PRAGMA_DISABLE_DEPRECATION_WARNINGS
 		if (UFlibHotPatcherEditorHelper::IsCanCookPackage(LongPackageName))
 		{
-			FString LongPackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(LongPackageName);
+			FString LongPackagePath = LongPackageName.Contains(TEXT(".")) ? LongPackageName : UFlibAssetManageHelper::LongPackageNameToPackagePath(LongPackageName);
 			FSoftObjectPath CurrentObject(LongPackagePath);
 			if(FPackageName::DoesPackageExist(LongPackagePath) && CurrentObject.IsValid()) 
 			{

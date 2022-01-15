@@ -1276,6 +1276,10 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	// 	}
 	// }
 
+	TSet<FName> IgnoreType = 
+	{
+		TEXT("EditorUtilityBlueprint")
+	};
 	FAssetDependencies AssetConfig;
 	AssetConfig.IncludeFilters = ExportVersion.IncludeFilter;
 	AssetConfig.IgnoreFilters = ExportVersion.IgnoreFilter;
@@ -1285,6 +1289,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	AssetConfig.bRedirector = true;
 	AssetConfig.AnalysicFilterDependencies = bInAnalysisFilterDependencies;
 	AssetConfig.IncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
+	AssetConfig.IgnoreAseetTypes = IgnoreType;
 	
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("parser all uasset dependencies(optimized)"),FColor::Red);

@@ -8,8 +8,9 @@ struct FAssetDependenciesParser : public IAssetDependenciesParser
 {
 	using FScanedCachesType = TMap<FName, TSet<FName>>;
 	
-	virtual void Parse(const FAssetDependencies& ParseConfig) override;
+	virtual void Parse(const FAssetDependencies& InParseConfig) override;
 	virtual const TSet<FName>& GetrParseResults()const { return Results; };
+	bool IsIgnoreAsset(const FAssetData& AssetData);
 	
 	static TSet<FName> GatherAssetDependicesInfoRecursively(
 		FAssetRegistryModule& InAssetRegistryModule,
@@ -24,5 +25,6 @@ struct FAssetDependenciesParser : public IAssetDependenciesParser
 protected:
 	TSet<FName> Results;
 	FScanedCachesType ScanedCaches;
+	FAssetDependencies ParseConfig;
 };
 

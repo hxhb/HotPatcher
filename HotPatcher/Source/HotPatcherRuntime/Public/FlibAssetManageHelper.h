@@ -211,4 +211,7 @@ public:
 	static TSharedPtr<FStreamableHandle> LoadObjectAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath)> Callback,uint32 Priority);
 	static void LoadPackageAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath)> Callback,uint32 Priority);
 	static UPackage* GetPackage(FName PackageName);
+
+	static bool MatchIgnoreTypes(const FString& LongPackageName, TSet<FName> IgnoreTypes, FString& MatchTypeStr);
+	static bool MatchIgnoreFilters(const FString& LongPackageName, const TArray<FString>& IgnoreDirs, FString& MatchDir);
 };

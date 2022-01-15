@@ -1154,4 +1154,31 @@ UPackage* UFlibAssetManageHelper::GetPackage(FName PackageName)
 	return Package;
 }
 
+bool UFlibAssetManageHelper::MatchIgnoreTypes(const FString& LongPackageName, TSet<FName> IgnoreTypes, FString& MatchTypeStr)
+{
+	bool bIgnoreType = false;
+	FAssetData AssetData;
+	if(UFlibAssetManageHelper::GetAssetsDataByPackageName(LongPackageName,AssetData))
+	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("is ignore types"),FColor::Red);
+		MatchTypeStr = AssetData.AssetClass.ToString();
+		bIgnoreType = AssetData.HasAnyPackageFlags(PKG_EditorOnly) || IgnoreTypes.Contains(AssetData.AssetClass);
+	}
+	return bIgnoreType;
+}
+
+bool UFlibAssetManageHelper::MatchIgnoreFilters(const FString& LongPackageName, const TArray<FString>& IgnoreDirs,
+	FString& MatchDir)
+{
+	for(const auto& IgnoreFilter:IgnoreDirs)
+	{
+		if(LongPackageName.StartsWith(IgnoreFilter))
+		{
+			MatchDir = IgnoreFilter;
+			return true;
+		}
+	}
+	return false;
+}
+
 // PRAGMA_ENABLE_DEPRECATION_WARNINGS
