@@ -77,17 +77,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	FFilePath RecentCookVersion;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bPreGeneratePlatformData = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
 	bool bConcurrentSave = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
-    bool bAsyncLoad = false;
+	bool bAsyncLoad = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
 	bool bProfilingMultiCooker = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
 	bool bProfilingPerSingleCooker = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
 	bool bDisplayMissionConfig = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
-	bool bPreGeneratePlatformData = false;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool bSkipCook = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
@@ -142,12 +143,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bCookAdditionalAssets = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bPreGeneratePlatformData = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
+	bool bConcurrentSave = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bAsyncLoad = false;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool bDisplayConfig = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
-	bool bPreGeneratePlatformData = true;
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString StorageCookedDir;

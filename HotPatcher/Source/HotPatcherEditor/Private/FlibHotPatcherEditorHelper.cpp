@@ -431,9 +431,19 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 	bool bSuccessed = false;
 	
 	UPackage* Package = UFlibAssetManageHelper::GetPackage(FName(AssetObjectPath.GetLongPackageName()));
+
+	bool bIsFailedPackage = !Package || Package->HasAnyPackageFlags(PKG_EditorOnly);
 	if(!Package)
 	{
 		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s UPackage is null!"),*AssetObjectPath.GetAssetPathString());
+	}
+	if(Package->HasAnyPackageFlags(PKG_EditorOnly))
+	{
+		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s Failed! It is EditorOnly Package!"),*AssetObjectPath.GetAssetPathString());
+	}
+	if(bIsFailedPackage)
+	{
+		CookActionCallback.CookFailedCallback(AssetObjectPath,ETargetPlatform::AllPlatforms,ESavePackageResult::Error);
 		return false;
 	}
 	
@@ -533,7 +543,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 		{
 			if (CookActionCallback.PackageSavedCallback)
 			{
-				CookActionCallback.PackageSavedCallback(Object->GetPathName(),TargetPlatform);
+				CookActionCallback.PackageSavedCallback(Object,TargetPlatform,ESavePackageResult::Success);
 			}
 		});
 		PRAGMA_ENABLE_DEPRECATION_WARNINGS
@@ -573,11 +583,11 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 	#endif
 #endif
 
-		if(!bSuccessed && !Package->HasAnyPackageFlags(PKG_FilterEditorOnly))
+		if(!bSuccessed)
 		{
 			if(CookActionCallback.CookFailedCallback)
 			{
-				CookActionCallback.CookFailedCallback(PackageName,TargetPlatform);
+				CookActionCallback.CookFailedCallback(PackageName,TargetPlatform,Result.Result);
 			}
 		}
 	}

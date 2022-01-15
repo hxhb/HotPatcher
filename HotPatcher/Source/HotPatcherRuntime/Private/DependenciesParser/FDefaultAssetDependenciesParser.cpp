@@ -26,7 +26,7 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 			bool bIsIgnore = false;
 			for(const auto& IgnoreFilter:ParseConfig.IgnoreFilters)
 			{
-				if(AssetData.PackageName.ToString().StartsWith(IgnoreFilter))
+				if(AssetData.HasAnyPackageFlags(PKG_EditorOnly) || AssetData.PackageName.ToString().StartsWith(IgnoreFilter))
 				{
 					bIsIgnore = true;
 					break;
@@ -60,14 +60,24 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("Get dependencies for SpecifyAsset"),FColor::Red);
 		for(const auto& SpecifyAsset:ParseConfig.InIncludeSpecifyAsset)
 		{
+			FString LongPackageName = SpecifyAsset.Asset.GetLongPackageName();
 			if(!SpecifyAsset.Asset.IsValid())
 			{
 				continue;
 			}
+			FAssetData AssetData;
+			if(UFlibAssetManageHelper::GetAssetsDataByPackageName(LongPackageName,AssetData))
+			{
+				if(AssetData.HasAnyPackageFlags(PKG_EditorOnly))
+				{
+					UE_LOG(LogHotPatcher,Log,TEXT("Skip %s.It is EditorOnly Package"),*LongPackageName);
+					continue;
+				}
+			}
 			Results.Add(FName(SpecifyAsset.Asset.GetLongPackageName()));
 			if(SpecifyAsset.bAnalysisAssetDependencies)
 			{
-				Results.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,FName(SpecifyAsset.Asset.GetLongPackageName()),SpecifyAsset.AssetRegistryDependencyTypes,SpecifyAsset.bAnalysisAssetDependencies,IngnoreFilters,TSet<FName>{},ParseConfig.IgnoreDependenciesAseetTypes,ScanedCaches));
+				Results.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,FName(LongPackageName),SpecifyAsset.AssetRegistryDependencyTypes,SpecifyAsset.bAnalysisAssetDependencies,IngnoreFilters,TSet<FName>{},ParseConfig.IgnoreDependenciesAseetTypes,ScanedCaches));
 			}
 		}
 	}
@@ -82,7 +92,7 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 			if(AssetPackageNameStr.StartsWith(SkipContent))
 			{
 #if ASSET_DEPENDENCIES_DEBUG_LOG
-				UE_LOG(LogHotPatcher,Display,TEXT("Force Skip %s (match %s)"),*AssetPackageNameStr,*SkipContent);
+				UE_LOG(LogHotPatcher,Log,TEXT("Force Skip %s (match %s)"),*AssetPackageNameStr,*SkipContent);
 #endif
 				ForceSkipPackages.Add(AssetPackageName);
 			}
@@ -166,7 +176,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 				if(bIgnoreDirectories)
 				{
 #if ASSET_DEPENDENCIES_DEBUG_LOG
-					UE_LOG(LogHotPatcher,Display,TEXT("Ignore %s (match ignore dirctories)"),*LongPackageNameStr);
+					UE_LOG(LogHotPatcher,Log,TEXT("Ignore %s (match ignore dirctories)"),*LongPackageNameStr);
 #endif
 					continue;;
 				}
@@ -183,7 +193,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 					{
 						SCOPED_NAMED_EVENT_TCHAR(TEXT("is ignore types"),FColor::Red);
 						AssetTypeName = AssetData.AssetClass.ToString();
-						bIgnoreType = IgnoreAssetTypes.Contains(AssetData.AssetClass);
+						bIgnoreType = AssetData.HasAnyPackageFlags(PKG_EditorOnly) || IgnoreAssetTypes.Contains(AssetData.AssetClass);
 					}
 				}
 				if(!bIgnoreType)
@@ -194,7 +204,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 				{
 #if ASSET_DEPENDENCIES_DEBUG_LOG
 					SCOPED_NAMED_EVENT_TCHAR(TEXT("display ignore log"),FColor::Red);
-					UE_LOG(LogHotPatcher,Display,TEXT("Ignore %s by %s dependencies (%s)"),*LongPackageName.ToString(),*InLongPackageName.ToString(),*AssetTypeName);
+					UE_LOG(LogHotPatcher,Log,TEXT("Ignore %s by %s dependencies (%s)"),*LongPackageName.ToString(),*InLongPackageName.ToString(),*AssetTypeName);
 #endif
 					continue;
 				}

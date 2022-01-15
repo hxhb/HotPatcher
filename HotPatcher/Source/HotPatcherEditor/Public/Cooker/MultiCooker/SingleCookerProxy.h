@@ -27,7 +27,8 @@ struct FPackagePathSet
 };
 
 DECLARE_MULTICAST_DELEGATE(FSingleCookerEvent);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FSingleCookResultEvent,const FSoftObjectPath&,ETargetPlatform);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FSingleCookActionEvent,const FSoftObjectPath&,ETargetPlatform);
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FSingleCookResultEvent,const FSoftObjectPath&,ETargetPlatform,ESavePackageResult);
 
 USTRUCT()
 struct FCookCluster
@@ -55,9 +56,9 @@ public:
     
     virtual FSingleCookerSettings* GetSettingObject()override {return (FSingleCookerSettings*)(Setting);};
     FCookerFailedCollection& GetCookFailedAssetsCollection(){return CookFailedAssetsCollection;};
-    void CookClusterAsync(const FCookCluster& CookCluster);
+
     void CookClusterSync(const FCookCluster& CookCluster);
-    void CookCluster(const FCookCluster& CookCluster, bool bAsync);
+    void CookCluster(const FCookCluster& CookCluster, bool bAsync = false);
     void AddCluster(const FCookCluster& CookCluster);
 
     TArray<FName>& GetPlatformCookAssetOrders(ETargetPlatform Platform);
@@ -66,14 +67,14 @@ public:
 public:
     FSingleCookerEvent OnCookBegin;
     FSingleCookerEvent OnCookFinished;
-    FSingleCookResultEvent OnCookAssetBegin;
-    FSingleCookResultEvent OnCookAssetFailed;
+    FSingleCookActionEvent OnCookAssetBegin;
     FSingleCookResultEvent OnCookAssetSuccessed;
+    FSingleCookResultEvent OnCookAssetFailed;
     
 protected:
     bool HasError();
-    void OnCookAssetFailedHandle(const FSoftObjectPath& PackagePath,ETargetPlatform Platform);
-    void OnCookAssetSuccessedHandle(const FSoftObjectPath& PackagePath,ETargetPlatform Platform);
+    void OnCookAssetFailedHandle(const FSoftObjectPath& PackagePath,ETargetPlatform Platform,ESavePackageResult Result);
+    void OnCookAssetSuccessedHandle(const FSoftObjectPath& PackagePath,ETargetPlatform Platform,ESavePackageResult Result);
     void DoCookMission(const TArray<FAssetDetail>& Assets);
     void BulkDataManifest();
     void IoStoreManifest();
@@ -83,14 +84,8 @@ protected:
 
     void MarkAssetCooked(const FSoftObjectPath& PackagePath,ETargetPlatform Platform);
 
-    FORCEINLINE_DEBUGGABLE bool IsFinsihed()
-    {
-        return !GetPaendingCookAssetsSet().Num();
-    }
-    
-    FORCEINLINE_DEBUGGABLE TMap<FName,FName>& GetAssetTypeMapping(){ return AssetTypeMapping; }
-    void OnAsyncObjectLoaded(FSoftObjectPath ObjectPath,const TArray<ITargetPlatform*>& Platforms,FCookActionCallback CookActionCallback);
 
+    void PreGeneratePlatformData(const FCookCluster& CookCluster);
     void WaitCookerFinished();
     
 private:
@@ -110,8 +105,14 @@ private:
     FPackagePathSet PackagePathSet;
     TMap<ETargetPlatform,TArray<FName>> CookAssetOrders;
 
+public:
+    bool IsFinsihed();
 private:
     // async
+    void CookClusterAsync(const FCookCluster& CookCluster);
+    FORCEINLINE_DEBUGGABLE TMap<FName,FName>& GetAssetTypeMapping(){ return AssetTypeMapping; }
+    void OnAsyncObjectLoaded(FSoftObjectPath ObjectPath,const TArray<ITargetPlatform*>& Platforms,FCookActionCallback CookActionCallback);
+    
     TMap<FName,FName> AssetTypeMapping;
     TSet<FName>& GetPaendingCookAssetsSet(){ return PaendingCookAssetsSet; }
     TSet<FName> PaendingCookAssetsSet;

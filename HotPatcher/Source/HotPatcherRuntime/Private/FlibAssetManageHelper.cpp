@@ -337,6 +337,7 @@ bool UFlibAssetManageHelper::GetAssetsData(const TArray<FString>& InFilterPaths,
 	OutAssetData.Reset();
 
 	FARFilter Filter;
+	Filter.WithoutPackageFlags = PKG_FilterEditorOnly;
 	Filter.bIncludeOnlyOnDiskAssets = bIncludeOnlyOnDiskAssets;
 	Filter.bRecursivePaths = true;
 	for(const auto& FilterPackageName: InFilterPaths)
@@ -1110,15 +1111,27 @@ FStreamableManager& UFlibAssetManageHelper::GetStreamableManager()
 	return UAssetManager::GetStreamableManager();
 }
 
-void UFlibAssetManageHelper::LoadObjectAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath)> Callback,uint32 Priority)
+TSharedPtr<FStreamableHandle> UFlibAssetManageHelper::LoadObjectAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath)> Callback,uint32 Priority)
 {
-	GetStreamableManager().RequestAsyncLoad(ObjectPath, FStreamableDelegate::CreateLambda([=]()
+	TSharedPtr<FStreamableHandle> Handle = GetStreamableManager().RequestAsyncLoad(ObjectPath, FStreamableDelegate::CreateLambda([=]()
 	{
 		if(Callback)
 		{
 			Callback(ObjectPath);
 		}
-	}), Priority, true);
+	}), Priority, false);
+	return Handle;
+}
+
+void UFlibAssetManageHelper::LoadPackageAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath)> Callback,uint32 Priority)
+{
+	::LoadPackageAsync(ObjectPath.GetLongPackageName(), nullptr,nullptr,FLoadPackageAsyncDelegate::CreateLambda([=](const FName& PackageName, UPackage* Package, EAsyncLoadingResult::Type Result)
+	{
+		if(Callback)
+		{
+			Callback(Package);
+		}
+	}));
 }
 
 UPackage* UFlibAssetManageHelper::GetPackage(FName PackageName)

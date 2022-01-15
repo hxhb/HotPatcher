@@ -37,8 +37,9 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 		EmptySetting.SkipLoadedAssets = AllPackagePaths;
 		EmptySetting.bDisplayConfig = MultiCookerSettings.bDisplayMissionConfig;
 		EmptySetting.bPreGeneratePlatformData = MultiCookerSettings.bPreGeneratePlatformData;
-		EmptySetting.bCookAdditionalAssets = false;
+		EmptySetting.bConcurrentSave = MultiCookerSettings.bConcurrentSave;
 		EmptySetting.bAsyncLoad = MultiCookerSettings.bAsyncLoad;
+		EmptySetting.bCookAdditionalAssets = false;
 		EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 		EmptySetting.StorageMetadataDir = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),EmptySetting.MissionName);
 		AllSingleCookerSettings.Add(EmptySetting);

@@ -13,11 +13,12 @@ enum class EPatchAssetType:uint8
 };
 
 using FCookActionEvent = TFunction<void(const FSoftObjectPath&,ETargetPlatform)>;
+using FCookActionResultEvent = TFunction<void(const FSoftObjectPath&,ETargetPlatform,ESavePackageResult)>;
 
 
 struct HOTPATCHERRUNTIME_API  FCookActionCallback
 {
 	FCookActionEvent BeginCookCallback = nullptr;
-	FCookActionEvent PackageSavedCallback = nullptr;
-	FCookActionEvent CookFailedCallback = nullptr;
+	FCookActionResultEvent PackageSavedCallback = nullptr;
+	FCookActionResultEvent CookFailedCallback = nullptr;
 };

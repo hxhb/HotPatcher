@@ -208,6 +208,7 @@ public:
 	static const uint32 DefaultAsyncLoadPriority = 0;
 	// Priority to try and load immediately
 	static const uint32 AsyncLoadHighPriority = 100;
-	static void LoadObjectAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath)> Callback,uint32 Priority);
+	static TSharedPtr<FStreamableHandle> LoadObjectAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath)> Callback,uint32 Priority);
+	static void LoadPackageAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath)> Callback,uint32 Priority);
 	static UPackage* GetPackage(FName PackageName);
 };

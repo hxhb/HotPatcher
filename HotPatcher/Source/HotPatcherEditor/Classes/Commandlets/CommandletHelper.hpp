@@ -62,4 +62,54 @@ namespace CommandletHelper
 		}
 		return Result;
 	}
+
+	void MainTick(TFunction<bool()> IsRequestExit)
+	{
+		GIsRunning = true;
+
+		//@todo abstract properly or delete
+		#if PLATFORM_WINDOWS// Windows only
+		// Used by the .com wrapper to notify that the Ctrl-C handler was triggered.
+		// This shared event is checked each tick so that the log file can be cleanly flushed.
+		FEvent* ComWrapperShutdownEvent = FPlatformProcess::GetSynchEventFromPool(true);
+		#endif
+		
+		// main loop
+		FDateTime LastConnectionTime = FDateTime::UtcNow();
+
+		while (GIsRunning && !IsEngineExitRequested() && !IsRequestExit())
+		{
+			GEngine->UpdateTimeAndHandleMaxTickRate();
+			GEngine->Tick(FApp::GetDeltaTime(), false);
+
+			// update task graph
+			FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
+
+			// execute deferred commands
+			for (int32 DeferredCommandsIndex=0; DeferredCommandsIndex<GEngine->DeferredCommands.Num(); DeferredCommandsIndex++)
+			{
+				GEngine->Exec( GWorld, *GEngine->DeferredCommands[DeferredCommandsIndex], *GLog);
+			}
+
+			GEngine->DeferredCommands.Empty();
+
+			// flush log
+			GLog->FlushThreadedLogs();
+
+#if PLATFORM_WINDOWS
+			if (ComWrapperShutdownEvent->Wait(0))
+			{
+				RequestEngineExit(TEXT("GeneralCommandlet ComWrapperShutdownEvent"));
+			}
+#endif
+		}
+		
+		//@todo abstract properly or delete 
+		#if PLATFORM_WINDOWS
+		FPlatformProcess::ReturnSynchEventToPool(ComWrapperShutdownEvent);
+		ComWrapperShutdownEvent = nullptr;
+#endif
+
+		GIsRunning = false;
+	}
 }
