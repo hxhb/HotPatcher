@@ -408,6 +408,32 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 void USingleCookerProxy::CookCluster(const FCookCluster& CookCluster, bool bAsync)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::CookCluster"),FColor::Red);
+	TArray<ITargetPlatform*> CookPlatfotms = UFlibHotPatcherEditorHelper::GetTargetPlatformsByNames(CookCluster.Platforms);
+	
+	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("Delete Old Cooked Files"),FColor::Red);
+		FString CookBaseDir = GetSettingObject()->StorageCookedDir;
+		TArray<FString> PaddingDeleteFiles;
+		for(const auto& Asset:CookCluster.Assets)
+		{
+			FString PackageName = Asset.GetLongPackageName();
+			for(const auto& TargetPlatform:CookPlatfotms)
+			{
+				FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookBaseDir,PackageName, TargetPlatform->PlatformName());
+				PaddingDeleteFiles.AddUnique(CookedSavePath);
+			}
+		}
+	
+		ParallelFor(PaddingDeleteFiles.Num(),[PaddingDeleteFiles](int32 Index)
+		{
+			
+			if(FPaths::FileExists(PaddingDeleteFiles[Index]))
+			{
+				IFileManager::Get().Delete(*PaddingDeleteFiles[Index],true,true,true);
+			}
+		},false);
+	}
+	
 	if(CookCluster.bPreGeneratePlatformData)
 	{
 		PreGeneratePlatformData(CookCluster);
@@ -473,6 +499,7 @@ void USingleCookerProxy::OnCookAssetSuccessedHandle(const FSoftObjectPath& Packa
 
 void USingleCookerProxy::OnAsyncObjectLoaded(FSoftObjectPath ObjectPath,const TArray<ITargetPlatform*>& Platforms,FCookActionCallback CookActionCallback)
 {
+	FScopeLock Lock(&SynchronizationObject);
 	UFlibHotPatcherEditorHelper::CookPackage(ObjectPath,Platforms,CookActionCallback,GetPlatformSavePackageContextsNameMapping(),GetSettingObject()->StorageCookedDir,true);
 }
 

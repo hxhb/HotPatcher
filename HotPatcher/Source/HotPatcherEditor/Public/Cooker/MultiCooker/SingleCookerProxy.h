@@ -116,4 +116,7 @@ private:
     TMap<FName,FName> AssetTypeMapping;
     TSet<FName>& GetPaendingCookAssetsSet(){ return PaendingCookAssetsSet; }
     TSet<FName> PaendingCookAssetsSet;
+
+    /** Critical section for synchronizing access to sink. */
+    mutable FCriticalSection SynchronizationObject;
 };

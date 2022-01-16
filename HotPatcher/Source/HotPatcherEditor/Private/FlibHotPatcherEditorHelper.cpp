@@ -447,8 +447,9 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 	if(!Package)
 	{
 		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s UPackage is null!"),*LongPackageName);
+		return false;
 	}
-	if(Package->HasAnyPackageFlags(PKG_EditorOnly))
+	if(Package && Package->HasAnyPackageFlags(PKG_EditorOnly))
 	{
 		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s Failed! It is EditorOnly Package!"),*LongPackageName);
 	}
@@ -496,11 +497,11 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 		THotPatcherTemplateHelper::GetEnumValueByName(Platform->PlatformName(),TargetPlatform);
 		
 		// delete old cooked assets
-		if(FPaths::FileExists(CookedSavePath))
-		{
-			SCOPED_NAMED_EVENT_TCHAR(TEXT("Delete Old Cooked Files"),FColor::Red);
-			IFileManager::Get().Delete(*CookedSavePath);
-		}
+		// if(FPaths::FileExists(CookedSavePath))
+		// {
+		// 	SCOPED_NAMED_EVENT_TCHAR(TEXT("Delete Old Cooked Files"),FColor::Red);
+		// 	IFileManager::Get().Delete(*CookedSavePath);
+		// }
 		// UE_LOG(LogHotPatcherEditorHelper,Log,TEXT("Cook Assets:%s"),*Package->GetName());
 		{
 			SCOPED_NAMED_EVENT_TCHAR(TEXT("BeginCacheForCookedPlatformData"),FColor::Red);
@@ -511,20 +512,31 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 			{
 				ExportObj->BeginCacheForCookedPlatformData(Platform);
 			}
+			
+			bool bIsTexture = Package->IsA(UTexture::StaticClass());
+			if (!bIsTexture)
+			{
+				Package->BeginCacheForCookedPlatformData(Platform);
+			}
+			GIsCookerLoadingPackage = true;
+			{
+				Package->PreSave(Platform);
+			}
+			GIsCookerLoadingPackage = false;
 		}
 
-		// if(!bStorageConcurrent)
-		// {
-		// 	TArray<UObject*> TagExpObjects;
-		// 	GetObjectsWithAnyMarks(TagExpObjects,OBJECTMARK_TagExp);
-		// 	for(const auto& TagExportObj:TagExpObjects)
-		// 	{
-		// 		if(TagExportObj->HasAnyMarks(OBJECTMARK_TagExp))
-		// 		{
-		// 			TagExportObj->BeginCacheForCookedPlatformData(Platform);
-		// 		}
-		// 	}
-		// }
+		if(!bStorageConcurrent)
+		{
+			TArray<UObject*> TagExpObjects;
+			GetObjectsWithAnyMarks(TagExpObjects,OBJECTMARK_TagExp);
+			for(const auto& TagExportObj:TagExpObjects)
+			{
+				if(TagExportObj->HasAnyMarks(OBJECTMARK_TagExp))
+				{
+					TagExportObj->BeginCacheForCookedPlatformData(Platform);
+				}
+			}
+		}
 		if(GCookLog)
 		{
 			UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*Package->GetName(),*Platform->PlatformName());
@@ -570,6 +582,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 		UPackage::PackageSavedEvent.Remove(PackageSavedHandle);
 		
 		bSuccessed = Result == ESavePackageResult::Success;
+		
 #if WITH_PACKAGE_CONTEXT
 		// in UE5.1
 	#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0

@@ -507,10 +507,10 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 		AllSelectedAssetDetails.AddUnique(UFlibAssetManageHelper::GetAssetDetailByPackageName(AssetData.PackageName.ToString()));
 	}
 	
-	auto CookNotifyLambda = [](const FString& PackagePath,ETargetPlatform Platform,bool bSuccessed)
+	auto CookNotifyLambda = [](const FString& PackageName,ETargetPlatform Platform,bool bSuccessed)
 	{
 		FString CookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
-		FString PackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(PackagePath);
+		// FString PackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(PackagePath);
 		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(CookedDir,PackageName, THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
 		
 		auto Msg = FText::Format(

@@ -79,7 +79,7 @@ public:
 	
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
 	bool bConcurrentSave = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bAsyncLoad = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bAsyncLoad"))
 	bool bPreGeneratePlatformData = false;
@@ -145,7 +145,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bCookAdditionalAssets = true;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bPreGeneratePlatformData"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bAsyncLoad = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bAsyncLoad"))
 	bool bPreGeneratePlatformData = false;
