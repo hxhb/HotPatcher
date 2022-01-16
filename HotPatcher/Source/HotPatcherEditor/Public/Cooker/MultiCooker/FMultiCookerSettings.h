@@ -76,12 +76,14 @@ public:
 	bool bIterateCook;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	FFilePath RecentCookVersion;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
-	bool bPreGeneratePlatformData = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
+	
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
 	bool bConcurrentSave = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
 	bool bAsyncLoad = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bAsyncLoad"))
+	bool bPreGeneratePlatformData = false;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
 	bool bProfilingMultiCooker = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
@@ -142,12 +144,14 @@ public:
 	// cook load in cooking assets by SingleCookder side
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bCookAdditionalAssets = true;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
-	bool bPreGeneratePlatformData = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
-	bool bConcurrentSave = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bPreGeneratePlatformData"))
 	bool bAsyncLoad = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bAsyncLoad"))
+	bool bPreGeneratePlatformData = false;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
+	bool bConcurrentSave = false;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool bDisplayConfig = false;
 

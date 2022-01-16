@@ -548,7 +548,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 			CookActionCallback.BeginCookCallback(PackageName,TargetPlatform);
 		}
 		
-		GIsCookerLoadingPackage = true;
+		
 		PRAGMA_DISABLE_DEPRECATION_WARNINGS
 		auto PackageSavedHandle = UPackage::PackageSavedEvent.AddLambda([CookActionCallback,TargetPlatform](const FString& InFilePath,UObject* Object)
 		{
@@ -557,6 +557,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 				CookActionCallback.PackageSavedCallback(Object,TargetPlatform,ESavePackageResult::Success);
 			}
 		});
+		GIsCookerLoadingPackage = true;
 		PRAGMA_ENABLE_DEPRECATION_WARNINGS
 		FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, CookedFlags, *CookedSavePath, 
                                                 GError, nullptr, false, false, SaveFlags, Platform, 
@@ -565,8 +566,9 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
                                                 ,CurrentPlatformPackageContext
 #endif
                                                 );
-		UPackage::PackageSavedEvent.Remove(PackageSavedHandle);
 		GIsCookerLoadingPackage = false;
+		UPackage::PackageSavedEvent.Remove(PackageSavedHandle);
+		
 		bSuccessed = Result == ESavePackageResult::Success;
 #if WITH_PACKAGE_CONTEXT
 		// in UE5.1
