@@ -194,8 +194,10 @@ TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByShaderFrmat(c
 	}
 	return result;
 }
+
 TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory, bool bRecursive)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform"),FColor::Red);
 	TArray<FString> FoundFiles;
 	auto GetMetalShaderFormatLambda = [](const FString& Directory,const FString& Extersion, bool bRecursive)
 	{

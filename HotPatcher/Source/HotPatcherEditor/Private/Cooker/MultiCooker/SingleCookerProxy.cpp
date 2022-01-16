@@ -48,6 +48,7 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 
 void USingleCookerProxy::Shutdown()
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::Shutdown"),FColor::Red);
 	WaitCookerFinished();
 	ShutdowShaderLibCollections();
 	
@@ -70,6 +71,7 @@ void USingleCookerProxy::Shutdown()
 
 void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::DoCookMission"),FColor::Red);
 	const FCookActionResultEvent PackageSavedCallback = [this](const FSoftObjectPath& PackagePath,ETargetPlatform Platform,ESavePackageResult Result)
 	{
 		OnCookAssetSuccessed.Broadcast(PackagePath,Platform,Result);
@@ -444,6 +446,7 @@ void USingleCookerProxy::OnAsyncObjectLoaded(FSoftObjectPath ObjectPath,const TA
 
 void USingleCookerProxy::WaitCookerFinished()
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::WaitCookerFinished"),FColor::Red);
 	// Wait for all shaders to finish compiling
 	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
 	UFlibHotPatcherEditorHelper::WaitForAsyncFileWrites();

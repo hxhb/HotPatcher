@@ -24,6 +24,7 @@
 #include "Serialization/ArrayWriter.h"
 #include "Settings/ProjectPackagingSettings.h"
 #include "ShaderCompiler.h"
+#include "ProfilingDebugging/LoadTimeTracker.h"
 
 DEFINE_LOG_CATEGORY(LogHotPatcherEditorHelper);
 
@@ -418,6 +419,10 @@ struct FFilterEditorOnlyFlag
 	ITargetPlatform* Platform;
 };
 
+UE_TRACE_EVENT_BEGIN(CUSTOM_LOADTIMER_LOG, CookPackage, NoSync)
+	UE_TRACE_EVENT_FIELD(Trace::WideString, PackageName)
+UE_TRACE_EVENT_END()
+
 bool UFlibHotPatcherEditorHelper::CookPackage(
 	const FSoftObjectPath& AssetObjectPath,
 	TArray<ITargetPlatform*> CookPlatforms,
@@ -427,19 +432,25 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 	bool bStorageConcurrent 
 )
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("CookPackage"),FColor::Red);
+	// SCOPED_NAMED_EVENT_TCHAR(TEXT("CookPackage"),FColor::Red);
 	bool bSuccessed = false;
+
+	FString LongPackageName = AssetObjectPath.GetLongPackageName();
+	FString FakePackageName = FString(TEXT("Package ")) + LongPackageName;
+	// LLM_SCOPED_TAG_WITH_STAT_NAME_IN_SET(FLowLevelMemTracker::Get().IsTagSetActive(ELLMTagSet::Assets) ? FDynamicStats::CreateMemoryStatId<FStatGroup_STATGROUP_LLMAssets>(FName(*FakePackageName)).GetName() : NAME_None, ELLMTagSet::Assets, ELLMTracker::Default);
+	SCOPED_CUSTOM_LOADTIMER(CookPackage)
+		ADD_CUSTOM_LOADTIMER_META(CookPackage, PackageName, *FakePackageName);
 	
-	UPackage* Package = UFlibAssetManageHelper::GetPackage(FName(AssetObjectPath.GetLongPackageName()));
+	UPackage* Package = UFlibAssetManageHelper::GetPackage(FName(LongPackageName));
 
 	bool bIsFailedPackage = !Package || Package->HasAnyPackageFlags(PKG_EditorOnly);
 	if(!Package)
 	{
-		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s UPackage is null!"),*AssetObjectPath.GetAssetPathString());
+		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s UPackage is null!"),*LongPackageName);
 	}
 	if(Package->HasAnyPackageFlags(PKG_EditorOnly))
 	{
-		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s Failed! It is EditorOnly Package!"),*AssetObjectPath.GetAssetPathString());
+		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s Failed! It is EditorOnly Package!"),*LongPackageName);
 	}
 	if(bIsFailedPackage)
 	{
@@ -479,7 +490,7 @@ bool UFlibHotPatcherEditorHelper::CookPackage(
 	{
 		FFilterEditorOnlyFlag SetPackageEditorOnlyFlag(Package,Platform);
 
-		FString PackageName = PackageFileName.IsNone() ? AssetObjectPath.GetLongPackageName():PackageFileName.ToString();
+		FString PackageName = PackageFileName.IsNone() ? LongPackageName :PackageFileName.ToString();
 		FString CookedSavePath = UFlibHotPatcherEditorHelper::GetCookAssetsSaveDir(InSavePath,PackageName, Platform->PlatformName());
 		ETargetPlatform TargetPlatform;
 		THotPatcherTemplateHelper::GetEnumValueByName(Platform->PlatformName(),TargetPlatform);

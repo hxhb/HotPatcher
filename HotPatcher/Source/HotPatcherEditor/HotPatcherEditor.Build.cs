@@ -52,6 +52,7 @@ public class HotPatcherEditor : ModuleRules
                 "RHI",
                 "EngineSettings",
                 "AssetRegistry",
+                "TraceLog",
                 "PakFileUtilities",
                 "HotPatcherRuntime",
                 "BinariesPatchFeature"

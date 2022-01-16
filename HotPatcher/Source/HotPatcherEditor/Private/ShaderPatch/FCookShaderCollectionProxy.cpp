@@ -37,6 +37,7 @@ void FCookShaderCollectionProxy::Init()
 
 bool IsAppleMetalPlatform(ITargetPlatform* TargetPlatform)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("IsAppleMetalPlatform"),FColor::Red);
 	bool bIsMatched = false;
 	TArray<FString> ApplePlatforms = {TEXT("IOS"),TEXT("Mac"),TEXT("TVOS")};
 	for(const auto& Platform:ApplePlatforms)
@@ -52,6 +53,7 @@ bool IsAppleMetalPlatform(ITargetPlatform* TargetPlatform)
 
 void FCookShaderCollectionProxy::Shutdown()
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("FCookShaderCollectionProxy::Shutdown"),FColor::Red);
 	if(bShareShader)
 	{
 		for(const auto& TargetPlatform:TargetPlatforms)
