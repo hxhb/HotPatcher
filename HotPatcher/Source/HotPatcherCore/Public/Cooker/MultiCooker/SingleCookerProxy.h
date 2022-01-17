@@ -68,13 +68,12 @@ public:
     FSingleCookerEvent OnCookBegin;
     FSingleCookerEvent OnCookFinished;
     FSingleCookActionEvent OnCookAssetBegin;
-    FSingleCookResultEvent OnCookAssetSuccessed;
-    FSingleCookResultEvent OnCookAssetFailed;
+    FSingleCookResultEvent OnAssetCooked;
+    // FSingleCookResultEvent OnCookAssetFailed;
     
 protected:
     bool HasError();
-    void OnCookAssetFailedHandle(const FSoftObjectPath& PackagePath,ETargetPlatform Platform,ESavePackageResult Result);
-    void OnCookAssetSuccessedHandle(const FSoftObjectPath& PackagePath,ETargetPlatform Platform,ESavePackageResult Result);
+    void OnAssetCookedHandle(const FSoftObjectPath& PackagePath,ETargetPlatform Platform,ESavePackageResult Result);
     void DoCookMission(const TArray<FAssetDetail>& Assets);
     void BulkDataManifest();
     void IoStoreManifest();

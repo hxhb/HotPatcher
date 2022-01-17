@@ -80,6 +80,14 @@ public:
 		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked")),
 		bool bStorageConcurrent = false
 	);
+	static bool CookPackage(
+		UPackage* Package,
+		TArray<ITargetPlatform*> CookPlatforms,
+		FCookActionCallback CookActionCallback,
+		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
+		const FString& InSavePath,
+		bool bStorageConcurrent 
+	);
 
 	static void CookChunkAssets(
 		TArray<FAssetDetail> Assets,

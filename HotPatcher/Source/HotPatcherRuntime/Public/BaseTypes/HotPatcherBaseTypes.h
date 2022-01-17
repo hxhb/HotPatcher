@@ -18,7 +18,6 @@ using FCookActionResultEvent = TFunction<void(const FSoftObjectPath&,ETargetPlat
 
 struct HOTPATCHERRUNTIME_API  FCookActionCallback
 {
-	FCookActionEvent BeginCookCallback = nullptr;
-	FCookActionResultEvent PackageSavedCallback = nullptr;
-	FCookActionResultEvent CookFailedCallback = nullptr;
+	FCookActionEvent OnCookBegin = nullptr;
+	FCookActionResultEvent OnAssetCooked = nullptr;
 };

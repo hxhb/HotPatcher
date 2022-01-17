@@ -409,9 +409,23 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	bool bStorageConcurrent 
 )
 {
+		UPackage* Package = UFlibAssetManageHelper::GetPackage(*AssetObjectPath.GetLongPackageName());
+		return UFlibHotPatcherCoreHelper::CookPackage(Package,CookPlatforms,CookActionCallback,PlatformSavePackageContext,InSavePath,bStorageConcurrent);
+}
+
+
+bool UFlibHotPatcherCoreHelper::CookPackage(
+	UPackage* Package,
+	TArray<ITargetPlatform*> CookPlatforms,
+	FCookActionCallback CookActionCallback,
+	class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
+	const FString& InSavePath,
+	bool bStorageConcurrent 
+)
+{
 	bool bSuccessed = false;
 
-	FString LongPackageName = AssetObjectPath.GetLongPackageName();
+	FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
 	FString FakePackageName = FString(TEXT("Package ")) + LongPackageName;
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
@@ -424,7 +438,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 #if ENGINE_MINOR_VERSION < 26
 		FScopedNamedEvent CookPackageEvent(FColor::Red,*FString::Printf(TEXT("%s"),*LongPackageName));
 #endif
-		UPackage* Package = UFlibAssetManageHelper::GetPackage(FName(LongPackageName));
+		// UPackage* Package = UFlibAssetManageHelper::GetPackage(FName(LongPackageName));
 
 		bool bIsFailedPackage = !Package || Package->HasAnyPackageFlags(PKG_EditorOnly);
 		if(!Package)
@@ -438,7 +452,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 		}
 		if(bIsFailedPackage)
 		{
-			CookActionCallback.CookFailedCallback(AssetObjectPath,ETargetPlatform::AllPlatforms,ESavePackageResult::Error);
+			CookActionCallback.OnAssetCooked(Package,ETargetPlatform::AllPlatforms,ESavePackageResult::Error);
 			return false;
 		}
 		
@@ -468,7 +482,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	#else
 		FName PackageFileName = Package->FileName;
 	#endif
-		if(PackageFileName.IsNone() && AssetObjectPath.GetAssetPathName().IsNone())
+		if(PackageFileName.IsNone() && LongPackageName.IsEmpty())
 			return bSuccessed;
 		for(auto& Platform:CookPlatforms)
 		{
@@ -501,9 +515,9 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 		#endif
 	#endif
 
-			if(CookActionCallback.BeginCookCallback)
+			if(CookActionCallback.OnCookBegin)
 			{
-				CookActionCallback.BeginCookCallback(PackageName,TargetPlatform);
+				CookActionCallback.OnCookBegin(PackageName,TargetPlatform);
 			}
 			
 			
@@ -529,20 +543,11 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			
 			bSuccessed = Result == ESavePackageResult::Success;
 
-			if(bSuccessed)
+			if (CookActionCallback.OnAssetCooked)
 			{
-				if (CookActionCallback.PackageSavedCallback)
-				{
-					CookActionCallback.PackageSavedCallback(Package,TargetPlatform,ESavePackageResult::Success);
-				}
+				CookActionCallback.OnAssetCooked(Package,TargetPlatform,Result.Result);
 			}
-			else
-			{
-				if(CookActionCallback.CookFailedCallback)
-				{
-					CookActionCallback.CookFailedCallback(PackageName,TargetPlatform,Result.Result);
-				}
-			}
+			
 	#if WITH_PACKAGE_CONTEXT
 			// in UE5.1
 		#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
@@ -1866,11 +1871,11 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 		UE_LOG(LogHotPatcher,Warning,TEXT("BeginPackageObjectsCacheForCookedPlatformData Package is null!"));
 		return;
 	}
-	
+	TArray<UObject*> ExportMap;
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportMap BeginCacheForCookedPlatformData"),FColor::Red);
-		TArray<UObject*> ExportMap;
-		GetObjectsWithOuter(Package,ExportMap);
+		
+		GetObjectsWithOuter(Package,ExportMap,true);
 		for(const auto& ExportObj:ExportMap)
 		{
 			for(const auto& Platform:TargetPlatforms)
@@ -1879,21 +1884,11 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 			}
 		}
 	}
-	if (bStorageConcurrent)
-	{
-		for (const ITargetPlatform* TargetPlatform : TargetPlatforms)
-		{
-			GIsCookerLoadingPackage = true;
-			{
-				Package->PreSave(TargetPlatform);
-			}
-			GIsCookerLoadingPackage = false;
-		}
-	}
+
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("Texture BeginCacheForCookedPlatformData"),FColor::Red);
 		bool bIsTexture = Package->IsA(UTexture::StaticClass());
-		// if (!bIsTexture)
+		if (!bIsTexture || bStorageConcurrent)
 		{
 			for(auto& Platform:TargetPlatforms)
 			{
@@ -1902,13 +1897,6 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 		}
 	}
 
-	if (GShaderCompilingManager && bWaitShaderComplate)
-	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitShaderCompilingComplate"),FColor::Red);
-		// Wait for all shaders to finish compiling
-		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
-	}
-	
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("Wait CachedCookedPlatformDataLoaded"),FColor::Red);
 		while(true)
@@ -1930,5 +1918,43 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 			FPlatformProcess::Sleep(0.001f);
 		}
 	}
+
+	if (GShaderCompilingManager && bWaitShaderComplate)
+	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitShaderCompilingComplate"),FColor::Red);
+		// Wait for all shaders to finish compiling
+		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+	}
+	
+	// When saving concurrently, flush async loading since that is normally done internally in SavePackage
+	if (bStorageConcurrent)
+	{
+		FlushAsyncLoading();
+		FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
+	}
+
+	for(auto& Platform:TargetPlatforms)
+	{
+		if (bStorageConcurrent)
+		{
+			for(const auto& Obj : ExportMap)
+			{
+				GIsCookerLoadingPackage = true;
+				{
+					Obj->PreSave(Platform);
+				}
+				GIsCookerLoadingPackage = false;
+			}
+		}
+	}
+	if (bStorageConcurrent)
+	{
+		// Precache the metadata so we don't risk rehashing the map in the parallelfor below
+		Package->GetMetaData();
+	}
+	
+
+	
+
 	
 }

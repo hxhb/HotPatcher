@@ -530,14 +530,11 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 	USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
 	SingleCookerProxy->AddToRoot();
 	SingleCookerProxy->Init(&EmptySetting);
-	SingleCookerProxy->OnCookAssetSuccessed.AddLambda([CookNotifyLambda](const FSoftObjectPath& ObjectPath,ETargetPlatform Platform,ESavePackageResult Result)
+	SingleCookerProxy->OnAssetCooked.AddLambda([CookNotifyLambda](const FSoftObjectPath& ObjectPath,ETargetPlatform Platform,ESavePackageResult Result)
 	{
-		CookNotifyLambda(ObjectPath.GetAssetPathString(),Platform,true);
+		CookNotifyLambda(ObjectPath.GetAssetPathString(),Platform,Result == ESavePackageResult::Success);
 	});
-	SingleCookerProxy->OnCookAssetFailed.AddLambda([CookNotifyLambda](const FSoftObjectPath& ObjectPath,ETargetPlatform Platform,ESavePackageResult Result)
-	{
-		CookNotifyLambda(ObjectPath.GetAssetPathString(),Platform,false);
-	});
+	
 	bool bExportStatus = SingleCookerProxy->DoExport();
 	SingleCookerProxy->Shutdown();
 }

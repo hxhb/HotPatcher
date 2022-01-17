@@ -23,6 +23,7 @@
 #include "Misc/FileHelper.h"
 #include "Templates/Function.h"
 #include "BinariesPatchFeature.h"
+#include "HotPatcherCore.h"
 #include "HotPatcherDelegates.h"
 #include "HotPatcherSettings.h"
 #include "Async/ParallelFor.h"
@@ -31,6 +32,7 @@
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "Misc/DataDrivenPlatformInfoRegistry.h"
 #include "Serialization/ArrayWriter.h"
+#include "ThreadUtils/FProcWorkerThread.hpp"
 
 #if WITH_IO_STORE_SUPPORT
 #include "IoStoreUtilities.h"

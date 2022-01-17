@@ -5,6 +5,7 @@
 
 // engine header
 #include "CoreMinimal.h"
+#include "HotPatcherCore.h"
 #include "Commandlets/CommandletHelper.hpp"
 #include "Misc/FileHelper.h"
 #include "Misc/CommandLine.h"
@@ -56,7 +57,7 @@ int32 UHotCookerCommandlet::Main(const FString& Params)
 		if (FPaths::FileExists(CookConfig.EngineBin) && FPaths::FileExists(CookConfig.ProjectPath))
 		{
 			CookerProc = MakeShareable(new FProcWorkerThread(TEXT("CookThread"), CookConfig.EngineBin, CookCommand));
-			CookerProc->ProcOutputMsgDelegate.BindStatic(&CommandletHelper::ReceiveOutputMsg);
+			CookerProc->ProcOutputMsgDelegate.BindStatic(&::ReceiveOutputMsg);
 
 			CookerProc->Execute();
 			CookerProc->Join();
