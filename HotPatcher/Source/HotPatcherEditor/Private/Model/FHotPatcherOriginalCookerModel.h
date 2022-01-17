@@ -8,7 +8,7 @@
 #include "Misc/App.h"
 #include "CoreMinimal.h"
 
-#include "FlibHotPatcherEditorHelper.h"
+#include "FlibHotPatcherCoreHelper.h"
 #include "Engine/Engine.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Delegates/DelegateCombinations.h"
@@ -190,7 +190,7 @@ public:
 	{
 		FCookerConfig result;
 		FString ProjectFilePath = UFlibPatchParserHelper::GetProjectFilePath();
-		FString EngineBin = UFlibHotPatcherEditorHelper::GetUECmdBinary();
+		FString EngineBin = UFlibHotPatcherCoreHelper::GetUECmdBinary();
 
 		result.EngineBin = EngineBin;
 		result.ProjectPath = ProjectFilePath;

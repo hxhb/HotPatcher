@@ -209,7 +209,7 @@ public:
 	// Priority to try and load immediately
 	static const uint32 AsyncLoadHighPriority = 100;
 	static TSharedPtr<FStreamableHandle> LoadObjectAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath)> Callback,uint32 Priority);
-	static void LoadPackageAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath)> Callback,uint32 Priority);
+	static void LoadPackageAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath,bool)> Callback = nullptr,uint32 Priority = DefaultAsyncLoadPriority);
 	static UPackage* GetPackage(FName PackageName);
 
 	static bool MatchIgnoreTypes(const FString& LongPackageName, TSet<FName> IgnoreTypes, FString& MatchTypeStr);

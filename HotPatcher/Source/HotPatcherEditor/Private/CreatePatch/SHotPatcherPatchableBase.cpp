@@ -2,7 +2,7 @@
 
 // #include "HotPatcherPrivatePCH.h"
 #include "CreatePatch/SHotPatcherPatchableBase.h"
-#include "FlibHotPatcherEditorHelper.h"
+#include "FlibHotPatcherCoreHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "FHotPatcherVersion.h"
 #include "FlibAssetManageHelper.h"
@@ -33,7 +33,7 @@ void SHotPatcherPatchableBase::Construct(const FArguments& InArgs, TSharedPtr<FH
 void SHotPatcherPatchableBase::ImportProjectConfig()
 {
 	// import uasset
-	UFlibHotPatcherEditorHelper::ImportProjectSettingsToSettingBase(GetConfigSettings());
+	UFlibHotPatcherCoreHelper::ImportProjectSettingsToSettingBase(GetConfigSettings());
 	
 	FString DefaultEditorIni = FPaths::ProjectConfigDir()/TEXT("DefaultEditor.ini");
 	FString DefaultGameIni = FPaths::ProjectConfigDir()/TEXT("DefaultGame.ini");

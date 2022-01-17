@@ -137,5 +137,5 @@ struct HOTPATCHERRUNTIME_API FHotPatcherReleaseContext:public FHotPatcherContext
     virtual FString GetTotalTimeRecorderName()const{return TEXT("Generate the release total time");}
     UPROPERTY(BlueprintReadOnly)
     FHotPatcherVersion NewReleaseVersion;
-    
+    class UReleaseProxy* ReleaseProxy;
 };

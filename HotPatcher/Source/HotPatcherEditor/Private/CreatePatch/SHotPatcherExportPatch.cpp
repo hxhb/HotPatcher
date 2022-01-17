@@ -6,7 +6,7 @@
 #include "CreatePatch/PatcherProxy.h"
 #include "CreatePatch/ScopedSlowTaskContext.h"
 
-#include "FlibHotPatcherEditorHelper.h"
+#include "FlibHotPatcherCoreHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "FHotPatcherVersion.h"
 #include "FlibAssetManageHelper.h"
@@ -16,6 +16,7 @@
 #include "HotPatcherEditor.h"
 
 // engine header
+#include "FlibHotPatcherEditorHelper.h"
 #include "Misc/FileHelper.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
@@ -311,7 +312,7 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
 	);
 
-	FPatchVersionDiff VersionDiffInfo = UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
+	FPatchVersionDiff VersionDiffInfo = UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
 	
 	bool bShowDeleteAsset = false;
 	FString SerializeDiffInfo;
@@ -369,7 +370,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 	}
 	ExportPatchSetting->Init();
 	UFlibAssetManageHelper::UpdateAssetMangerDatabase(true);
-	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
+	FChunkInfo NewVersionChunk = UFlibHotPatcherCoreHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
 
 	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 		ExportPatchSetting->GetVersionId(),
@@ -380,7 +381,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 	);
 
 	FString CurrentVersionSavePath = ExportPatchSetting->GetCurrentVersionSavePath();
-	FPatchVersionDiff VersionDiffInfo = UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
+	FPatchVersionDiff VersionDiffInfo = UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
 
 	TArray<FChunkInfo> PatchChunks = ExportPatchSetting->GetChunkInfos();
 	
@@ -389,7 +390,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 	{
 		FChunkInfo TotalChunk = UFlibPatchParserHelper::CombineChunkInfos(ExportPatchSetting->GetChunkInfos());
 
-		FChunkAssetDescribe ChunkDiffInfo = UFlibHotPatcherEditorHelper::DiffChunkWithPatchSetting(
+		FChunkAssetDescribe ChunkDiffInfo = UFlibHotPatcherCoreHelper::DiffChunkWithPatchSetting(
 			*ExportPatchSetting,
 			NewVersionChunk,
 			TotalChunk
@@ -506,8 +507,8 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString ProfilingCmd = GetConfigSettings()->IsEnableProfiling() ? TEXT("-trace=cpu,loadtimetrace") : TEXT("");
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs(),*ProfilingCmd);
-		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
-		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);
+		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
 	}
 	return FReply::Handled();
 }
@@ -618,16 +619,16 @@ FReply SHotPatcherExportPatch::DoPreviewPatch()
 	if (ExportPatchSetting->IsByBaseVersion())
 	{
 		ExportPatchSetting->GetBaseVersionInfo(BaseVersion);
-		DefaultChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchVerison(BaseVersion);
+		DefaultChunk = UFlibHotPatcherCoreHelper::MakeChunkFromPatchVerison(BaseVersion);
 		if (!ExportPatchSetting->IsEnableExternFilesDiff())
 		{
 			BaseVersion.PlatformAssets.Empty();
 		}
 	}
 
-	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
+	FChunkInfo NewVersionChunk = UFlibHotPatcherCoreHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
 	
-	FChunkAssetDescribe ChunkAssetsDescrible = UFlibHotPatcherEditorHelper::DiffChunkByBaseVersionWithPatchSetting(*ExportPatchSetting.Get(),NewVersionChunk, DefaultChunk, BaseVersion);
+	FChunkAssetDescribe ChunkAssetsDescrible = UFlibHotPatcherCoreHelper::DiffChunkByBaseVersionWithPatchSetting(*ExportPatchSetting.Get(),NewVersionChunk, DefaultChunk, BaseVersion);
 
 	TArray<FName> AllUnselectedAssets = ChunkAssetsDescrible.GetAssetsStrings();
 	TArray<FName> UnSelectedInternalFiles = ChunkAssetsDescrible.GetInternalFileNames();

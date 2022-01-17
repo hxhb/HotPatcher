@@ -39,23 +39,23 @@ public class HotPatcherEditor : ModuleRules
 				"UMG",
 				"UMGEditor",
 				"Core",
-                "Json",
-                "ContentBrowser",
-                "SandboxFile",
-                "JsonUtilities",
-                "TargetPlatform",
-                "PropertyEditor",
-                "DesktopPlatform",
-                "Projects",
-                "Settings",
-                "HTTP",
-                "RHI",
-                "EngineSettings",
-                "AssetRegistry",
-                "TraceLog",
-                "PakFileUtilities",
-                "HotPatcherRuntime",
-                "BinariesPatchFeature"
+				"Json",
+				"ContentBrowser",
+				"SandboxFile",
+				"JsonUtilities",
+				"TargetPlatform",
+				"DesktopPlatform",
+				"Projects",
+				"Settings",
+				"HTTP",
+				"RHI",
+				"EngineSettings",
+				"AssetRegistry",
+				"TraceLog",
+				"PakFileUtilities",
+				"HotPatcherRuntime",
+				"BinariesPatchFeature",
+                "HotPatcherCore"
                 // ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -79,7 +79,7 @@ public class HotPatcherEditor : ModuleRules
 			}
 		);
 		
-		// only in UE5
+		// // only in UE5
 		if (Target.Version.MajorVersion > 4)
 		{
 			PublicDependencyModuleNames.AddRange(new string[]
@@ -93,70 +93,22 @@ public class HotPatcherEditor : ModuleRules
 			PublicDependencyModuleNames.Add("ToolMenus");
 		}
 
-		switch (Target.Configuration)
-		{
-			case UnrealTargetConfiguration.Debug:
-			{
-				PublicDefinitions.Add("COMPILER_CONFIGURATION_NAME=\"Debug\"");
-				break;
-			}
-			case UnrealTargetConfiguration.DebugGame:
-			{
-				PublicDefinitions.Add("COMPILER_CONFIGURATION_NAME=\"DebugGame\"");
-				break;
-			}
-			case UnrealTargetConfiguration.Development:
-			{
-				PublicDefinitions.Add("COMPILER_CONFIGURATION_NAME=\"Development\"");
-				break;
-			}
-			default:
-			{
-				PublicDefinitions.Add("COMPILER_CONFIGURATION_NAME=\"\"");
-				break;
-			}
-		};
-		
 		System.Func<string, bool,bool> AddPublicDefinitions = (string MacroName,bool bEnable) =>
 		{
 			PublicDefinitions.Add(string.Format("{0}={1}",MacroName, bEnable ? 1 : 0));
 			return true;
 		};
 		
-		bool bIOStoreSupport = Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 25;
-		if (bIOStoreSupport)
-		{
-			PublicDependencyModuleNames.AddRange(new string[]
-			{
-				"IoStoreUtilities"
-			});
-		}
-		AddPublicDefinitions("WITH_IO_STORE_SUPPORT", bIOStoreSupport);
-		AddPublicDefinitions("GENERATE_ASSET_REGISTRY_DATA", false);
-		AddPublicDefinitions("ENABLE_COOK_LOG", true);
 		AddPublicDefinitions("ENABLE_COOK_ENGINE_MAP", false);
 		AddPublicDefinitions("ENABLE_COOK_PLUGIN_MAP", false);
 		BuildVersion Version;
 		BuildVersion.TryRead(BuildVersion.GetDefaultFileName(), out Version);
 		AddPublicDefinitions("WITH_EDITOR_SECTION", Version.MajorVersion > 4 || Version.MinorVersion > 24);
-		System.Console.WriteLine("MajorVersion {0} MinorVersion: {1} PatchVersion {2}",Target.Version.MajorVersion,Target.Version.MinorVersion,Target.Version.PatchVersion);
-		
-
 		// Game feature
-		bool bEnableGameFeature = true;
-		if (bEnableGameFeature || (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 26))
-		{
-			PublicDefinitions.AddRange(new string[]
-			{
-				"ENGINE_GAME_FEATURE"
-			});
-			PublicDependencyModuleNames.AddRange(new string[]
-			{
-				// "GameFeatures",
-				// "ModularGameplay",
-			});
-		}
+		AddPublicDefinitions("ENGINE_GAME_FEATURE", true || (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 26));
 		
+		System.Console.WriteLine("MajorVersion {0} MinorVersion: {1} PatchVersion {2}",Target.Version.MajorVersion,Target.Version.MinorVersion,Target.Version.PatchVersion);
+
 		PublicDefinitions.AddRange(new string[]
 		{
 			"ENABLE_UPDATER_CHECK=1",
@@ -174,18 +126,6 @@ public class HotPatcherEditor : ModuleRules
 			{
 				"IoStoreUtilities",
 				"UnrealEd"
-			});
-		}
-		
-		if (Version.MajorVersion > 4 && Version.MinorVersion > 0)
-		{
-			PublicIncludePaths.AddRange(new List<string>()
-			{
-				// Path.Combine(EngineDirectory,"Source/Developer/IoStoreUtilities/Internal"),
-				// Path.Combine(EngineDirectory,"Source/Editor/UnrealEd/Private/Cooker"),
-				// Path.Combine(EngineDirectory,"Source/Editor/UnrealEd/Private"),
-				// Path.Combine(EngineDirectory,"Source/Runtime/CoreUObject/Internal"),
-				Path.Combine(ModuleDirectory,"../CookerWriterForUE5")
 			});
 		}
 	}

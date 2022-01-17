@@ -7,7 +7,7 @@
 #include "Widgets/Layout/SSeparator.h"
 #include "Kismet/KismetTextLibrary.h"
 
-#include "FlibHotPatcherEditorHelper.h"
+#include "FlibHotPatcherCoreHelper.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCookSetting"
 
@@ -135,7 +135,7 @@ void SHotPatcherCookSetting::RefreshSettingsList()
 	SettingList.Reset();
 
 
-	TArray<FString> AllSettings = UFlibHotPatcherEditorHelper::GetAllCookOption();
+	TArray<FString> AllSettings = UFlibHotPatcherCoreHelper::GetAllCookOption();
 	for (int32 OptionIndex = 0; OptionIndex < AllSettings.Num(); ++OptionIndex)
 	{
 		FString& Option = AllSettings[OptionIndex];

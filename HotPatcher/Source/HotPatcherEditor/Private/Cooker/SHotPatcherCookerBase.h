@@ -7,7 +7,7 @@
 #include "CreatePatch/IPatchableInterface.h"
 #include "Model/FHotPatcherCookerModel.h"
 // engine header
-#include "HotPatcherCookerSettingBase.h"
+#include "Cooker/HotPatcherCookerSettingBase.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Templates/SharedPointer.h"
 #include "IDetailsView.h"

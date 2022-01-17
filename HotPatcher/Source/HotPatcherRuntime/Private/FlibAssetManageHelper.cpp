@@ -337,7 +337,9 @@ bool UFlibAssetManageHelper::GetAssetsData(const TArray<FString>& InFilterPaths,
 	OutAssetData.Reset();
 
 	FARFilter Filter;
+#if ENGINE_MAJOR_VERSION > 25
 	Filter.WithoutPackageFlags = PKG_FilterEditorOnly;
+#endif
 	Filter.bIncludeOnlyOnDiskAssets = bIncludeOnlyOnDiskAssets;
 	Filter.bRecursivePaths = true;
 	for(const auto& FilterPackageName: InFilterPaths)
@@ -1123,13 +1125,14 @@ TSharedPtr<FStreamableHandle> UFlibAssetManageHelper::LoadObjectAsync(FSoftObjec
 	return Handle;
 }
 
-void UFlibAssetManageHelper::LoadPackageAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath)> Callback,uint32 Priority)
+void UFlibAssetManageHelper::LoadPackageAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath,bool)> Callback,uint32 Priority)
 {
 	::LoadPackageAsync(ObjectPath.GetLongPackageName(), nullptr,nullptr,FLoadPackageAsyncDelegate::CreateLambda([=](const FName& PackageName, UPackage* Package, EAsyncLoadingResult::Type Result)
 	{
-		if(Callback)
+		if(Callback && Result == EAsyncLoadingResult::Succeeded)
 		{
-			Callback(Package);
+			Package->AddToRoot();
+			Callback(UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName()),Result == EAsyncLoadingResult::Succeeded);
 		}
 	}));
 }
@@ -1162,7 +1165,14 @@ bool UFlibAssetManageHelper::MatchIgnoreTypes(const FString& LongPackageName, TS
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("is ignore types"),FColor::Red);
 		MatchTypeStr = AssetData.AssetClass.ToString();
-		bIgnoreType = AssetData.HasAnyPackageFlags(PKG_EditorOnly) || IgnoreTypes.Contains(AssetData.AssetClass);
+		bIgnoreType = IgnoreTypes.Contains(AssetData.AssetClass);
+#if ENGINE_MAJOR_VERSION > 25
+		if(!bIgnoreType)
+		{
+			bIgnoreType = AssetData.HasAnyPackageFlags(PKG_EditorOnly);
+		}
+#endif
+		
 	}
 	return bIgnoreType;
 }

@@ -2,13 +2,15 @@
 
 // #include "HotPatcherPrivatePCH.h"
 #include "SHotPatcherMultiCookerPage.h"
+#include "FlibHotPatcherCoreHelper.h"
 #include "FlibHotPatcherEditorHelper.h"
 #include "FlibAssetManageHelper.h"
 #include "HotPatcherLog.h"
 #include "HotPatcherEditor.h"
 #include "Cooker/MultiCooker/FMultiCookerSettings.h"
 // engine header
-#include "FlibMultiCookerHelper.h"
+#include "FlibHotPatcherEditorHelper.h"
+#include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
 #include "Cooker/MultiCooker/MultiCookerProxy.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
@@ -73,7 +75,7 @@ void SHotPatcherMultiCookerPage::ImportConfig()
 	FString JsonContent;
 	if (UFlibAssetManageHelper::LoadFileToString(LoadFile, JsonContent))
 	{
-		// UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
+		// UFlibHotPatcherCoreHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
 		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*CookerSettings);
 		SettingsView->GetDetailsView()->ForceRefresh();
 	}
@@ -117,7 +119,7 @@ void SHotPatcherMultiCookerPage::DoGenerate()
 
 void SHotPatcherMultiCookerPage::ImportProjectConfig()
 {
-	UFlibHotPatcherEditorHelper::ImportProjectSettingsToSettingBase(CookerSettings.Get());
+	UFlibHotPatcherCoreHelper::ImportProjectSettingsToSettingBase(CookerSettings.Get());
 	SHotPatcherCookerBase::ImportProjectConfig();
 }
 
@@ -216,8 +218,8 @@ FReply SHotPatcherMultiCookerPage::RunCook()
 			*GetConfigSettings()->GetCombinedAdditionalCommandletArgs()
 			);
 		
-		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
-		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);
+		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
     
 	}
 	return FReply::Handled();

@@ -9,7 +9,7 @@
 
 #include "HotPatcherSettings.h"
 #include "ETargetPlatform.h"
-#include "FlibHotPatcherEditorHelper.h"
+#include "FlibHotPatcherCoreHelper.h"
 #include "HotPatcherSettings.h"
 #include "Modules/ModuleManager.h"
 #include "CreatePatch/FExportPatchSettings.h"

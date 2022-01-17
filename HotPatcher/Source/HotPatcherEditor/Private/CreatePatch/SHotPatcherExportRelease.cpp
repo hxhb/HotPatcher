@@ -2,7 +2,7 @@
 
 // #include "HotPatcherPrivatePCH.h"
 #include "CreatePatch/SHotPatcherExportRelease.h"
-#include "FlibHotPatcherEditorHelper.h"
+#include "FlibHotPatcherCoreHelper.h"
 #include "FlibAssetManageHelper.h"
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "FHotPatcherVersion.h"
@@ -12,6 +12,7 @@
 #include "HotPatcherEditor.h"
 
 // engine header
+#include "FlibHotPatcherEditorHelper.h"
 #include "CreatePatch/ReleaseProxy.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
@@ -74,7 +75,7 @@ void SHotPatcherExportRelease::ImportConfig()
 	FString JsonContent;
 	if (UFlibAssetManageHelper::LoadFileToString(LoadFile, JsonContent))
 	{
-		// UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
+		// UFlibHotPatcherCoreHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
 		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportReleaseSettings);
 		SettingsView->GetDetailsView()->ForceRefresh();
 	}
@@ -182,8 +183,8 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString NoShaderCompile = GetConfigSettings()->bNoShaderCompile ? TEXT("-NoShaderCompile") : TEXT("");
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotRelease -config=\"%s\" %s %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs(),*NoShaderCompile);
-		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
-		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);
+		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
 	}
 	return FReply::Handled();
 }
