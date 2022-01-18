@@ -96,18 +96,44 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 
 	DefaultCluser.CookActionCallback.OnAssetCooked = PackageSavedCallback;
 	DefaultCluser.CookActionCallback.OnCookBegin = CookAssetBegin;
+
+	auto GetPackageTrackerClusterLambda = [&]()->FCookCluster
+	{
+		FCookCluster PackageTrackerCluster;
+	
+		PackageTrackerCluster.Platforms = GetSettingObject()->CookTargetPlatforms;
+		PackageTrackerCluster.bPreGeneratePlatformData = GetSettingObject()->bPreGeneratePlatformData;
+
+		PackageTrackerCluster.CookActionCallback.OnAssetCooked = PackageSavedCallback;
+		PackageTrackerCluster.CookActionCallback.OnCookBegin = CookAssetBegin;
+		
+		if(PackageTracker && GetSettingObject()->bCookAdditionalAssets)
+		{
+			PackageTrackerCluster.Assets.Empty();
+			for(FName PackagePath:PackageTracker->GetPendingPackageSet())
+			{
+				PackageTrackerCluster.Assets.Emplace(UFlibAssetManageHelper::LongPackageNameToPackagePath(PackagePath.ToString()));
+			}
+		}
+		return PackageTrackerCluster;
+	};
+	
+	if(DefaultCluser.bPreGeneratePlatformData)
+	{
+		PreGeneratePlatformData(DefaultCluser);
+		if(PackageTracker && GetSettingObject()->bCookAdditionalAssets)
+		{
+			FCookCluster PackageTracker = GetPackageTrackerClusterLambda();
+			PreGeneratePlatformData(PackageTracker);
+		}
+	}
 	
 	CookCluster(DefaultCluser, GetSettingObject()->bAsyncLoad);
-
 	if(PackageTracker && GetSettingObject()->bCookAdditionalAssets)
 	{
-		DefaultCluser.Assets.Empty();
-		for(FName PackagePath:PackageTracker->GetPendingPackageSet())
-		{
-			DefaultCluser.Assets.Emplace(PackagePath);
-		}
+		FCookCluster PackageTracker = GetPackageTrackerClusterLambda();
 		// cook all additional assets
-		CookCluster(DefaultCluser, GetSettingObject()->bAsyncLoad);
+		CookCluster(PackageTracker, GetSettingObject()->bAsyncLoad);
 	}
 }
 
@@ -350,10 +376,6 @@ void USingleCookerProxy::CookCluster(const FCookCluster& CookCluster, bool bAsyn
 		},false);
 	}
 	
-	if(CookCluster.bPreGeneratePlatformData)
-	{
-		PreGeneratePlatformData(CookCluster);
-	}
 	if(bAsync)
 	{
 		CookClusterAsync(CookCluster);
@@ -406,13 +428,13 @@ void USingleCookerProxy::OnAssetCookedHandle(const FSoftObjectPath& PackagePath,
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::OnCookAssetFailed"),FColor::Red);
 		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
 		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s for %s Failed!"),*PackagePath.GetAssetPathString(),*PlatformName);
-		FAssetsCollection& AssetsCollection = GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform);
-		AssetsCollection.TargetPlatform = Platform;
-		FAssetData AssetData;
-		FAssetDetail AssetDetail;
-		UFlibAssetManageHelper::GetSingleAssetsData(PackagePath.GetAssetPathString(),AssetData);
-		UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(AssetData,AssetDetail);
-		AssetsCollection.Assets.AddUnique(AssetDetail);
+		// FAssetsCollection& AssetsCollection = GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform);
+		// AssetsCollection.TargetPlatform = Platform;
+		// FAssetData AssetData;
+		// FAssetDetail AssetDetail;
+		// UFlibAssetManageHelper::GetSingleAssetsData(PackagePath.GetAssetPathString(),AssetData);
+		// UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(AssetData,AssetDetail);
+		// AssetsCollection.Assets.AddUnique(AssetDetail);
 		GetPaendingCookAssetsSet().Remove(PackagePath.GetAssetPathName());
 	}
 }

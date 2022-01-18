@@ -25,6 +25,7 @@
 #include "Settings/ProjectPackagingSettings.h"
 #include "ShaderCompiler.h"
 #include "ProfilingDebugging/LoadTimeTracker.h"
+#include "UObject/ConstructorHelpers.h"
 
 DEFINE_LOG_CATEGORY(LogHotPatcherCoreHelper);
 
@@ -457,25 +458,10 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 		}
 		
 		bool bUnversioned = true;
-		uint32 SaveFlags = SAVE_KeepGUID | SAVE_Async| SAVE_ComputeHash | (bUnversioned ? SAVE_Unversioned : 0);
-
-	#if ENGINE_MAJOR_VERSION >4 || ENGINE_MINOR_VERSION >25
 		bool CookLinkerDiff = false;
-		if(CookLinkerDiff)
-		{
-			SaveFlags |= SAVE_CompareLinker;
-		}
-	#endif
+		uint32 SaveFlags = UFlibHotPatcherCoreHelper::GetCookSaveFlag(Package,bUnversioned,bStorageConcurrent,CookLinkerDiff);
+		EObjectFlags CookedFlags = UFlibHotPatcherCoreHelper::GetObjectFlagForCooked(Package);
 		
-		EObjectFlags CookedFlags = RF_Public;
-		if(UWorld::FindWorldInPackage(Package))
-		{
-			CookedFlags = RF_NoFlags;
-		}
-		if (bStorageConcurrent)
-		{
-			SaveFlags |= SAVE_Concurrent;
-		}
 		
 	#if ENGINE_MAJOR_VERSION > 4
 		FName PackageFileName = Package->GetLoadedPath().GetPackageFName();
@@ -522,13 +508,6 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			
 			
 			PRAGMA_DISABLE_DEPRECATION_WARNINGS
-			// auto PackageSavedHandle = UPackage::PackageSavedEvent.AddLambda([CookActionCallback,TargetPlatform](const FString& InFilePath,UObject* Object)
-			// {
-			// 	if (CookActionCallback.PackageSavedCallback)
-			// 	{
-			// 		CookActionCallback.PackageSavedCallback(Object,TargetPlatform,ESavePackageResult::Success);
-			// 	}
-			// });
 			GIsCookerLoadingPackage = true;
 			PRAGMA_ENABLE_DEPRECATION_WARNINGS
 			FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, CookedFlags, *CookedSavePath, 
@@ -539,7 +518,6 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	#endif
 	                                                );
 			GIsCookerLoadingPackage = false;
-			// UPackage::PackageSavedEvent.Remove(PackageSavedHandle);
 			
 			bSuccessed = Result == ESavePackageResult::Success;
 
@@ -1734,8 +1712,8 @@ FProjectPackageAssetCollection UFlibHotPatcherCoreHelper::ImportProjectSettingsP
 
 void UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites()
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("Waiting Cook Assets Compilation"),FColor::Red);
-	UE_LOG(LogHotPatcher, Display, TEXT("Waiting Cook Assets Compilation..."));
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitForAsyncFileWrites"),FColor::Red);
+	UE_LOG(LogHotPatcher, Display, TEXT("Wait For Async File Writes..."));
 	TSharedPtr<FThreadWorker> WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("WaitCookComplete"),[]()
 		{
 			UPackage::WaitForAsyncFileWrites();
@@ -1844,7 +1822,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObj
 				continue;
 			}
 
-			UPackage* Package = LoadPackage(nullptr, *PackageName, LOAD_None);
+			UPackage* Package = UFlibAssetManageHelper::LoadPackage(nullptr, *PackageName, LOAD_None);
 			if(!Package)
 			{
 				UE_LOG(LogHotPatcher,Warning,TEXT("CookCluster LodPackage %s is null!"),*PackageName);
@@ -1861,6 +1839,38 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObj
 		// Wait for all shaders to finish compiling
 		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
 	}
+	{
+		UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+	}
+}
+
+uint32 UFlibHotPatcherCoreHelper::GetCookSaveFlag(UPackage* Package, bool bUnversioned, bool bStorageConcurrent,
+	bool CookLinkerDiff)
+{
+	uint32 SaveFlags = SAVE_KeepGUID | SAVE_Async| SAVE_ComputeHash | (bUnversioned ? SAVE_Unversioned : 0);
+
+#if ENGINE_MAJOR_VERSION >4 || ENGINE_MINOR_VERSION >25
+	// bool CookLinkerDiff = false;
+	if(CookLinkerDiff)
+	{
+		SaveFlags |= SAVE_CompareLinker;
+	}
+#endif
+	if (bStorageConcurrent)
+	{
+		SaveFlags |= SAVE_Concurrent;
+	}
+	return SaveFlags;
+}
+
+EObjectFlags UFlibHotPatcherCoreHelper::GetObjectFlagForCooked(UPackage* Package)
+{
+	EObjectFlags CookedFlags = RF_Public;
+	if(UWorld::FindWorldInPackage(Package))
+	{
+		CookedFlags = RF_NoFlags;
+	}
+	return CookedFlags;
 }
 
 void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent, bool bWaitShaderComplate)
@@ -1871,90 +1881,217 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 		UE_LOG(LogHotPatcher,Warning,TEXT("BeginPackageObjectsCacheForCookedPlatformData Package is null!"));
 		return;
 	}
+	// Package->FullyLoad();
+
+	for(auto Platform:TargetPlatforms)
+	{
+		if (!Platform->HasEditorOnlyData())
+		{
+			Package->SetPackageFlags(PKG_FilterEditorOnly);
+		}
+		else
+		{
+			Package->ClearPackageFlags(PKG_FilterEditorOnly);
+		}
+	}
+	
+	TMap<UWorld*, bool> WorldsToPostSaveRoot;
+	WorldsToPostSaveRoot.Reserve(1024);
+	
 	TArray<UObject*> ExportMap;
+	ExportMap.Add(Package);
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportMap BeginCacheForCookedPlatformData"),FColor::Red);
+
+		uint32 SaveFlags = UFlibHotPatcherCoreHelper::GetCookSaveFlag(Package,true,bStorageConcurrent,false);
 		
 		GetObjectsWithOuter(Package,ExportMap,true);
 		for(const auto& ExportObj:ExportMap)
 		{
+			if (ExportObj->HasAnyFlags(RF_Transient))
+			{
+				continue;
+			}
+
+			bool bInitializedPhysicsSceneForSave = false;
+			bool bForceInitializedWorld = false;
+			UWorld* World = Cast<UWorld>(ExportObj);
+			if (World && bStorageConcurrent)
+			{
+				// We need a physics scene at save time in case code does traces during onsave events.
+				bInitializedPhysicsSceneForSave = GEditor->InitializePhysicsSceneForSaveIfNecessary(World, bForceInitializedWorld);
+
+				GIsCookerLoadingPackage = true;
+				{
+					GEditor->OnPreSaveWorld(SaveFlags, World);
+				}
+				{
+					bool bCleanupIsRequired = World->PreSaveRoot(TEXT(""));
+					WorldsToPostSaveRoot.Add(World, bCleanupIsRequired);
+				}
+				GIsCookerLoadingPackage = false;
+			}
+			
 			for(const auto& Platform:TargetPlatforms)
 			{
-				ExportObj->BeginCacheForCookedPlatformData(Platform);
-			}
-		}
-	}
-
-	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("Texture BeginCacheForCookedPlatformData"),FColor::Red);
-		bool bIsTexture = Package->IsA(UTexture::StaticClass());
-		if (!bIsTexture || bStorageConcurrent)
-		{
-			for(auto& Platform:TargetPlatforms)
-			{
-				Package->BeginCacheForCookedPlatformData(Platform);
-			}
-		}
-	}
-
-	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("Wait CachedCookedPlatformDataLoaded"),FColor::Red);
-		while(true)
-		{
-			bool bAllPlatformDataLoaded = true;
-			for (const ITargetPlatform* TargetPlatform : TargetPlatforms)
-			{
-				if (!Package->IsCachedCookedPlatformDataLoaded(TargetPlatform))
+				if (bStorageConcurrent)
 				{
-					bAllPlatformDataLoaded = false;
-					break;
+					GIsCookerLoadingPackage = true;
+					{
+						ExportObj->PreSave(Platform);
+					}
+					GIsCookerLoadingPackage = false;
+				}
+				
+				// bool bIsTexture = ExportObj->IsA(UTexture::StaticClass());
+				// if (!bIsTexture || bStorageConcurrent)
+				{
+					ExportObj->BeginCacheForCookedPlatformData(Platform);
 				}
 			}
-	
-			if (bAllPlatformDataLoaded)
+
+			if (World && bInitializedPhysicsSceneForSave)
 			{
-				break;
+				GEditor->CleanupPhysicsSceneThatWasInitializedForSave(World, bForceInitializedWorld);
 			}
-			FPlatformProcess::Sleep(0.001f);
 		}
 	}
 
-	if (GShaderCompilingManager && bWaitShaderComplate)
-	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitShaderCompilingComplate"),FColor::Red);
-		// Wait for all shaders to finish compiling
-		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
-	}
-	
 	// When saving concurrently, flush async loading since that is normally done internally in SavePackage
 	if (bStorageConcurrent)
 	{
 		FlushAsyncLoading();
 		FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
 	}
-
-	for(auto& Platform:TargetPlatforms)
+	
+	if (GShaderCompilingManager && bWaitShaderComplate)
 	{
-		if (bStorageConcurrent)
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitShaderCompilingComplate"),FColor::Red);
+		// Wait for all shaders to finish compiling
+		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+	}
+
+	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("Wait CachedCookedPlatformDataLoaded"),FColor::Red);
+		while(ExportMap.Num() > 0)
 		{
-			for(const auto& Obj : ExportMap)
+			for(int32 ExportObjIndex = ExportMap.Num() - 1 ;ExportObjIndex >= 0;--ExportObjIndex)
 			{
-				GIsCookerLoadingPackage = true;
+				bool bAllPlatformDataLoaded = true;
+				for (const ITargetPlatform* TargetPlatform : TargetPlatforms)
 				{
-					Obj->PreSave(Platform);
+					if (!ExportMap[ExportObjIndex]->IsCachedCookedPlatformDataLoaded(TargetPlatform))
+					{
+						bAllPlatformDataLoaded = false;
+						break;
+					}
 				}
-				GIsCookerLoadingPackage = false;
+				if (bAllPlatformDataLoaded)
+				{
+					ExportMap.RemoveAtSwap(ExportObjIndex,1,false);
+				}
 			}
+			FPlatformProcess::Sleep(0.001f);
 		}
 	}
+	
 	if (bStorageConcurrent)
 	{
 		// Precache the metadata so we don't risk rehashing the map in the parallelfor below
 		Package->GetMetaData();
 	}
 	
+	if (bStorageConcurrent)
+	{
+		// UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("Calling PostSaveRoot on worlds..."));
+		for (auto WorldIt = WorldsToPostSaveRoot.CreateConstIterator(); WorldIt; ++WorldIt)
+		{
+			UWorld* World = WorldIt.Key();
+			check(World);
+			World->PostSaveRoot(WorldIt.Value());
+		}
+	}
+}
 
-	
 
-	
+bool UFlibHotPatcherCoreHelper::ContainsRedirector(const FName& PackageName, TMap<FName, FName>& RedirectedPaths)
+{
+	bool bFoundRedirector = false;
+	TArray<FAssetData> Assets;
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	IAssetRegistry* AssetRegistry = &AssetRegistryModule.Get();
+	ensure(AssetRegistry->GetAssetsByPackageName(PackageName, Assets, true));
+
+	for (const FAssetData& Asset : Assets)
+	{
+		if (Asset.IsRedirector())
+		{
+			FName RedirectedPath;
+			FString RedirectedPathString;
+			if (Asset.GetTagValue("DestinationObject", RedirectedPathString))
+			{
+				ConstructorHelpers::StripObjectClass(RedirectedPathString);
+				RedirectedPath = FName(*RedirectedPathString);
+				FAssetData DestinationData = AssetRegistry->GetAssetByObjectPath(RedirectedPath, true);
+				TSet<FName> SeenPaths;
+
+				SeenPaths.Add(RedirectedPath);
+
+				// Need to follow chain of redirectors
+				while (DestinationData.IsRedirector())
+				{
+					if (DestinationData.GetTagValue("DestinationObject", RedirectedPathString))
+					{
+						ConstructorHelpers::StripObjectClass(RedirectedPathString);
+						RedirectedPath = FName(*RedirectedPathString);
+
+						if (SeenPaths.Contains(RedirectedPath))
+						{
+							// Recursive, bail
+							DestinationData = FAssetData();
+						}
+						else
+						{
+							SeenPaths.Add(RedirectedPath);
+							DestinationData = AssetRegistry->GetAssetByObjectPath(RedirectedPath, true);
+						}
+					}
+					else
+					{
+						// Can't extract
+						DestinationData = FAssetData();						
+					}
+				}
+
+				// DestinationData may be invalid if this is a subobject, check package as well
+				bool bDestinationValid = DestinationData.IsValid();
+
+				// if (!bDestinationValid)
+				// {
+				// 	// we can;t call GetCachedStandardPackageFileFName with None
+				// 	if (RedirectedPath != NAME_None)
+				// 	{
+				// 		FName StandardPackageName = PackageNameCache->GetCachedStandardPackageFileFName(FName(*FPackageName::ObjectPathToPackageName(RedirectedPathString)));
+				// 		if (StandardPackageName != NAME_None)
+				// 		{
+				// 			bDestinationValid = true;
+				// 		}
+				// 	}
+				// }
+
+				if (bDestinationValid)
+				{
+					RedirectedPaths.Add(Asset.ObjectPath, RedirectedPath);
+				}
+				else
+				{
+					RedirectedPaths.Add(Asset.ObjectPath, NAME_None);
+					UE_LOG(LogHotPatcherCoreHelper, Log, TEXT("Found redirector in package %s pointing to deleted object %s"), *PackageName.ToString(), *RedirectedPathString);
+				}
+
+				bFoundRedirector = true;
+			}
+		}
+	}
+	return bFoundRedirector;
 }

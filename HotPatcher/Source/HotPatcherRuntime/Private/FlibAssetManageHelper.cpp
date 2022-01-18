@@ -1137,8 +1137,20 @@ void UFlibAssetManageHelper::LoadPackageAsync(FSoftObjectPath ObjectPath,TFuncti
 	}));
 }
 
+UPackage* UFlibAssetManageHelper::LoadPackage(UPackage* InOuter, const TCHAR* InLongPackageName, uint32 LoadFlags,
+	FArchive* InReaderOverride, FUObjectSerializeContext* InLoadContext)
+{
+#if ENGINE_MINOR_VERSION < 26
+	FScopedNamedEvent CookPackageEvent(FColor::Red,*FString::Printf(TEXT("LoadPackage %s"),InLongPackageName));
+#endif
+	return ::LoadPackage(InOuter,InLongPackageName,LoadFlags,InReaderOverride,InLoadContext);
+}
+
 UPackage* UFlibAssetManageHelper::GetPackage(FName PackageName)
 {
+#if ENGINE_MINOR_VERSION < 26
+	FScopedNamedEvent CookPackageEvent(FColor::Red,*FString::Printf(TEXT("GetPackage %s"),*PackageName.ToString()));
+#endif
 	if (PackageName == NAME_None)
 	{
 		return NULL;
@@ -1151,7 +1163,7 @@ UPackage* UFlibAssetManageHelper::GetPackage(FName PackageName)
 	}
 	else
 	{
-		Package = LoadPackage(NULL, *PackageName.ToString(), LOAD_None);
+		Package = UFlibAssetManageHelper::LoadPackage(NULL, *PackageName.ToString(), LOAD_None);
 	}
 
 	return Package;

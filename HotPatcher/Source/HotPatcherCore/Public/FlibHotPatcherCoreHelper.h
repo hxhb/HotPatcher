@@ -195,4 +195,9 @@ public:
 	static bool SavePlatformBulkDataManifest(TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>>&PlatformSavePackageContexts,ETargetPlatform Platform);
 	static void CacheForCookedPlatformData(UPackage* Package, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent = false, bool bWaitShaderComplate = true);
 	static void CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent,TFunction<bool(const FString&)> IsSkipAsset = nullptr);
+
+	static uint32 GetCookSaveFlag(UPackage* Package,bool bUnversioned = true,bool bStorageConcurrent = false,bool CookLinkerDiff = false);
+	static EObjectFlags GetObjectFlagForCooked(UPackage* Package);
+
+	static bool ContainsRedirector(const FName& PackageName, TMap<FName, FName>& RedirectedPaths);
 };
