@@ -1829,9 +1829,13 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObj
 				continue;
 			}
 			AllObjects.AddUnique(Package);
-			UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(Package,TargetPlatforms,bStorageConcurrent, false);
 		}
 		GIsCookerLoadingPackage = false;
+
+		for(auto Package:AllObjects)
+		{
+			UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(Package,TargetPlatforms,bStorageConcurrent, false);
+		}
 	}
 
 	{
@@ -1881,8 +1885,8 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 		UE_LOG(LogHotPatcher,Warning,TEXT("BeginPackageObjectsCacheForCookedPlatformData Package is null!"));
 		return;
 	}
-	// Package->FullyLoad();
-
+	Package->FullyLoad();
+	
 	for(auto Platform:TargetPlatforms)
 	{
 		if (!Platform->HasEditorOnlyData())
@@ -1898,13 +1902,13 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 	TMap<UWorld*, bool> WorldsToPostSaveRoot;
 	WorldsToPostSaveRoot.Reserve(1024);
 	
-	TArray<UObject*> ExportMap;
-	ExportMap.Add(Package);
+	TArray<UObject*> AllPackage;
+	AllPackage.Add(Package);
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportMap BeginCacheForCookedPlatformData"),FColor::Red);
-
+	
 		uint32 SaveFlags = UFlibHotPatcherCoreHelper::GetCookSaveFlag(Package,true,bStorageConcurrent,false);
-		
+		TArray<UObject*> ExportMap;
 		GetObjectsWithOuter(Package,ExportMap,true);
 		for(const auto& ExportObj:ExportMap)
 		{
@@ -1912,7 +1916,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 			{
 				continue;
 			}
-
+	
 			bool bInitializedPhysicsSceneForSave = false;
 			bool bForceInitializedWorld = false;
 			UWorld* World = Cast<UWorld>(ExportObj);
@@ -1920,7 +1924,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 			{
 				// We need a physics scene at save time in case code does traces during onsave events.
 				bInitializedPhysicsSceneForSave = GEditor->InitializePhysicsSceneForSaveIfNecessary(World, bForceInitializedWorld);
-
+	
 				GIsCookerLoadingPackage = true;
 				{
 					GEditor->OnPreSaveWorld(SaveFlags, World);
@@ -1949,14 +1953,14 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 					ExportObj->BeginCacheForCookedPlatformData(Platform);
 				}
 			}
-
+	
 			if (World && bInitializedPhysicsSceneForSave)
 			{
 				GEditor->CleanupPhysicsSceneThatWasInitializedForSave(World, bForceInitializedWorld);
 			}
 		}
 	}
-
+	
 	// When saving concurrently, flush async loading since that is normally done internally in SavePackage
 	if (bStorageConcurrent)
 	{
@@ -1970,17 +1974,17 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 		// Wait for all shaders to finish compiling
 		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
 	}
-
+	
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("Wait CachedCookedPlatformDataLoaded"),FColor::Red);
-		while(ExportMap.Num() > 0)
+		while(AllPackage.Num() > 0)
 		{
-			for(int32 ExportObjIndex = ExportMap.Num() - 1 ;ExportObjIndex >= 0;--ExportObjIndex)
+			for(int32 ExportObjIndex = AllPackage.Num() - 1 ;ExportObjIndex >= 0;--ExportObjIndex)
 			{
 				bool bAllPlatformDataLoaded = true;
 				for (const ITargetPlatform* TargetPlatform : TargetPlatforms)
 				{
-					if (!ExportMap[ExportObjIndex]->IsCachedCookedPlatformDataLoaded(TargetPlatform))
+					if (!AllPackage[ExportObjIndex]->IsCachedCookedPlatformDataLoaded(TargetPlatform))
 					{
 						bAllPlatformDataLoaded = false;
 						break;
@@ -1988,7 +1992,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 				}
 				if (bAllPlatformDataLoaded)
 				{
-					ExportMap.RemoveAtSwap(ExportObjIndex,1,false);
+					AllPackage.RemoveAtSwap(ExportObjIndex,1,false);
 				}
 			}
 			FPlatformProcess::Sleep(0.001f);
@@ -2012,7 +2016,6 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 		}
 	}
 }
-
 
 bool UFlibHotPatcherCoreHelper::ContainsRedirector(const FName& PackageName, TMap<FName, FName>& RedirectedPaths)
 {

@@ -200,4 +200,5 @@ public:
 	static EObjectFlags GetObjectFlagForCooked(UPackage* Package);
 
 	static bool ContainsRedirector(const FName& PackageName, TMap<FName, FName>& RedirectedPaths);
+
 };

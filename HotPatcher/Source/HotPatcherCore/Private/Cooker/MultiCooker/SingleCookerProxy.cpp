@@ -123,17 +123,15 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 		PreGeneratePlatformData(DefaultCluser);
 		if(PackageTracker && GetSettingObject()->bCookAdditionalAssets)
 		{
-			FCookCluster PackageTracker = GetPackageTrackerClusterLambda();
-			PreGeneratePlatformData(PackageTracker);
+			PreGeneratePlatformData(GetPackageTrackerClusterLambda());
 		}
 	}
 	
 	CookCluster(DefaultCluser, GetSettingObject()->bAsyncLoad);
 	if(PackageTracker && GetSettingObject()->bCookAdditionalAssets)
 	{
-		FCookCluster PackageTracker = GetPackageTrackerClusterLambda();
 		// cook all additional assets
-		CookCluster(PackageTracker, GetSettingObject()->bAsyncLoad);
+		CookCluster(GetPackageTrackerClusterLambda(), GetSettingObject()->bAsyncLoad);
 	}
 }
 
