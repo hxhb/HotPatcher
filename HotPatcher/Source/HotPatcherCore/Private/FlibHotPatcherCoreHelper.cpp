@@ -1995,7 +1995,10 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 					AllPackage.RemoveAtSwap(ExportObjIndex,1,false);
 				}
 			}
-			FPlatformProcess::Sleep(0.001f);
+			if(AllPackage.Num() > 0)
+			{
+				FPlatformProcess::Sleep(0.001f);	
+			}
 		}
 	}
 	
