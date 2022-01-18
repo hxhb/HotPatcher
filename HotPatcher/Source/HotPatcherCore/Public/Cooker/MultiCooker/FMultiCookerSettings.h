@@ -73,13 +73,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(ClampMin=1,ClampMax=20))
 	int32 ProcessNumber = 3;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
-	bool bIterateCook;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bIterateCook = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bIterateCook"))
 	FFilePath RecentCookVersion;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bAsyncLoad = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bAsyncLoad"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bPreGeneratePlatformData = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
 	bool bConcurrentSave = false;

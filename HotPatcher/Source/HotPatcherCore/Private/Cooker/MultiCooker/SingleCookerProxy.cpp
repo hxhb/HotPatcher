@@ -40,7 +40,7 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 		PackagePathSet.PackagePaths.Append(GetSettingObject()->SkipLoadedAssets);
 		for(const auto& Asset:GetSettingObject()->CookAssets)
 		{
-			PackagePathSet.PackagePaths.Add(Asset.PackagePath);
+			PackagePathSet.PackagePaths.Add(*UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString()));
 		}
 		PackageTracker = MakeShareable(new FPackageTracker(PackagePathSet.PackagePaths));
 	}

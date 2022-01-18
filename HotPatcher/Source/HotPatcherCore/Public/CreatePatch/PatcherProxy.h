@@ -43,7 +43,7 @@ public:
 public:
     FOnPakListGenerated OnPakListGenerated;
     
-protected:
+public:
 #if WITH_PACKAGE_CONTEXT
     // virtual void InitPlatformPackageContexts();
     FORCEINLINE TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
