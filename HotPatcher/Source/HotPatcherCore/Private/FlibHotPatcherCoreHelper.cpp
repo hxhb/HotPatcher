@@ -410,8 +410,9 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	bool bStorageConcurrent 
 )
 {
-		UPackage* Package = UFlibAssetManageHelper::GetPackage(*AssetObjectPath.GetLongPackageName());
-		return UFlibHotPatcherCoreHelper::CookPackage(Package,CookPlatforms,CookActionCallback,PlatformSavePackageContext,InSavePath,bStorageConcurrent);
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("CookPackageForObjectPath"),FColor::Red);
+	UPackage* Package = UFlibAssetManageHelper::GetPackage(*AssetObjectPath.GetLongPackageName());
+	return UFlibHotPatcherCoreHelper::CookPackage(Package,CookPlatforms,CookActionCallback,PlatformSavePackageContext,InSavePath,bStorageConcurrent);
 }
 
 
