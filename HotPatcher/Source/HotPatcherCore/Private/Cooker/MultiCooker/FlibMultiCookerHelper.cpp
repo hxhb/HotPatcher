@@ -23,7 +23,8 @@ FString UFlibMultiCookerHelper::GetCookerProcConfigPath(const FString& MissionNa
 {
 	FString SaveConfigTo = FPaths::Combine(
 			UFlibMultiCookerHelper::GetMultiCookerBaseDir(),
-			FString::Printf(TEXT("%s_Cooker_%d.json"),*MissionName,MissionID)
+			// FString::Printf(TEXT("%s_Cooker_%d.json"),*MissionName,MissionID)
+			FString::Printf(TEXT("%s.json"),*MissionName)
 			);
 	return SaveConfigTo;
 }
@@ -32,7 +33,7 @@ FString UFlibMultiCookerHelper::GetCookerProcFailedResultPath(const FString& Bas
 {
 	FString SaveConfigTo = FPaths::Combine(
 			BaseDir,
-			FString::Printf(TEXT("%s_Cooker_%d_failed.json"),*MissionName,MissionID)
+			FString::Printf(TEXT("%s.json"),*MissionName)
 			);
 	return SaveConfigTo;
 }

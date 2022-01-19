@@ -195,7 +195,7 @@ bool UMultiCookerProxy::MergeShader()
 		for(const auto& Cooker:CookerConfigMap)
 		{
 			FString CurrentCookerMetadataDir = Cooker.Value.StorageMetadataDir;
-			FString CurrentCookerDir = FPaths::Combine(CurrentCookerMetadataDir,Cooker.Key,PlatformName,TEXT("Metadata/ShaderLibrarySource"));
+			FString CurrentCookerDir = FPaths::Combine(CurrentCookerMetadataDir,PlatformName,TEXT("Metadata/ShaderLibrarySource"));
 			
 			TArray<FString> PlatformSCLCSVPaths;
 			for(auto& ShaderFormat:ShaderFormats)
@@ -214,10 +214,10 @@ bool UMultiCookerProxy::MergeShader()
 					FString ShaderStableInfoFileName = UFlibShaderPatchHelper::GetShaderStableInfoFileNameByShaderArchiveFileName(ShaderArchiveFileName);
 					
 					FString CopyShaderInfoFileTo = UFlibShaderPatchHelper::GetShaderAssetInfoFilename(ShaderCodeFormatMap.SaveBaseDir,FApp::GetProjectName(),ShaderFormat);
-					FString ChildShaderInfoFile = FPaths::Combine(CurrentCookerMetadataDir,Cooker.Key,PlatformName,TEXT(""),ShaderInfoFileName);
+					FString ChildShaderInfoFile = FPaths::Combine(CurrentCookerMetadataDir,PlatformName,TEXT(""),ShaderInfoFileName);
 					FString CopyToDefaultShaderInfoFile =  UFlibShaderPatchHelper::GetShaderAssetInfoFilename(ShaderIntermediateLocation,FApp::GetProjectName(),ShaderFormat);
 					
-					FString ChildShaderStableInfoFile = FPaths::Combine(CurrentCookerMetadataDir,Cooker.Key,PlatformName,TEXT("Metadata/PipelineCaches"),ShaderStableInfoFileName);
+					FString ChildShaderStableInfoFile = FPaths::Combine(CurrentCookerMetadataDir,PlatformName,TEXT("Metadata/PipelineCaches"),ShaderStableInfoFileName);
 					
 					FString CopyShaderArchiveTo = UFlibShaderPatchHelper::GetCodeArchiveFilename(ShaderCodeFormatMap.SaveBaseDir,FApp::GetProjectName(),ShaderFormat);
 					FString ChildShaderArchive = FPaths::Combine(CurrentCookerDir,ShaderArchiveFileName);

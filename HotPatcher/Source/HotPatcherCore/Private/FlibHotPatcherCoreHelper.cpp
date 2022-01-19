@@ -471,6 +471,9 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	#endif
 		if(PackageFileName.IsNone() && LongPackageName.IsEmpty())
 			return bSuccessed;
+
+		uint32 OriginalPackageFlags = Package->GetPackageFlags();
+		
 		for(auto& Platform:CookPlatforms)
 		{
 			FFilterEditorOnlyFlag SetPackageEditorOnlyFlag(Package,Platform);
@@ -507,6 +510,14 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 				CookActionCallback.OnCookBegin(PackageName,TargetPlatform);
 			}
 			
+			if (!Platform->HasEditorOnlyData())
+			{
+				Package->SetPackageFlags(PKG_FilterEditorOnly);
+			}
+			else
+			{
+				Package->ClearPackageFlags(PKG_FilterEditorOnly);
+			}
 			
 			PRAGMA_DISABLE_DEPRECATION_WARNINGS
 			GIsCookerLoadingPackage = true;
@@ -553,6 +564,8 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 		#endif
 	#endif
 		}
+
+		Package->SetPackageFlagsTo(OriginalPackageFlags);
 	}
 	return bSuccessed;
 }
@@ -1807,9 +1820,10 @@ bool UFlibHotPatcherCoreHelper::SavePlatformBulkDataManifest(TMap<ETargetPlatfor
 
 void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent,TFunction<bool(const FString&)> IsSkipAsset)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("CacheForCookedPlatformData"),FColor::Red);
 	TArray<UPackage*> AllObjects;
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("BeginCacheForCookedPlatformData for Assets"),FColor::Red);
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("LoadPackages"),FColor::Red);
 		GIsCookerLoadingPackage = true;
 		for (const auto& AssetObjectPath : ObjectPaths)
 		{
@@ -1832,10 +1846,12 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObj
 			AllObjects.AddUnique(Package);
 		}
 		GIsCookerLoadingPackage = false;
-
+	}
+	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("BeginCacheForCookedPlatformData for Assets"),FColor::Red);
 		for(auto Package:AllObjects)
 		{
-			UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(Package,TargetPlatforms,bStorageConcurrent, false);
+			UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(Package,TargetPlatforms,bStorageConcurrent, true);
 		}
 	}
 
@@ -1888,23 +1904,10 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 	}
 	Package->FullyLoad();
 	
-	for(auto Platform:TargetPlatforms)
-	{
-		if (!Platform->HasEditorOnlyData())
-		{
-			Package->SetPackageFlags(PKG_FilterEditorOnly);
-		}
-		else
-		{
-			Package->ClearPackageFlags(PKG_FilterEditorOnly);
-		}
-	}
-	
 	TMap<UWorld*, bool> WorldsToPostSaveRoot;
 	WorldsToPostSaveRoot.Reserve(1024);
 	
 	TArray<UObject*> AllPackage;
-	AllPackage.Add(Package);
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportMap BeginCacheForCookedPlatformData"),FColor::Red);
 	
@@ -1951,7 +1954,14 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 				// bool bIsTexture = ExportObj->IsA(UTexture::StaticClass());
 				// if (!bIsTexture || bStorageConcurrent)
 				{
+					UPackage* Outermost = ExportObj->GetOutermost();
+					bool bHasFilterEditorOnly = Outermost->HasAnyPackageFlags(PKG_FilterEditorOnly);
+					
 					ExportObj->BeginCacheForCookedPlatformData(Platform);
+					if(!ExportObj->IsCachedCookedPlatformDataLoaded(Platform))
+					{
+						AllPackage.Add(ExportObj);
+					}
 				}
 			}
 	
@@ -1978,7 +1988,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 	
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("Wait CachedCookedPlatformDataLoaded"),FColor::Red);
-		while(AllPackage.Num() > 0)
+		while(!!AllPackage.Num())
 		{
 			for(int32 ExportObjIndex = AllPackage.Num() - 1 ;ExportObjIndex >= 0;--ExportObjIndex)
 			{
@@ -1996,7 +2006,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 					AllPackage.RemoveAtSwap(ExportObjIndex,1,false);
 				}
 			}
-			if(AllPackage.Num() > 0)
+			if(!!AllPackage.Num())
 			{
 				FPlatformProcess::Sleep(0.001f);	
 			}
