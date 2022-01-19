@@ -485,7 +485,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 
 			if(!bStorageConcurrent)
 			{
-				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(Package,TArray<ITargetPlatform*>{Platform},bStorageConcurrent, true);
+				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TArray<ITargetPlatform*>{Platform},bStorageConcurrent, true);
 			}
 			if(GCookLog)
 			{
@@ -1821,7 +1821,7 @@ bool UFlibHotPatcherCoreHelper::SavePlatformBulkDataManifest(TMap<ETargetPlatfor
 void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent,TFunction<bool(const FString&)> IsSkipAsset)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("CacheForCookedPlatformData"),FColor::Red);
-	TArray<UPackage*> AllObjects;
+	TArray<UPackage*> AllPackages;
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("LoadPackages"),FColor::Red);
 		GIsCookerLoadingPackage = true;
@@ -1843,16 +1843,13 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObj
 				UE_LOG(LogHotPatcher,Warning,TEXT("CookCluster LodPackage %s is null!"),*PackageName);
 				continue;
 			}
-			AllObjects.AddUnique(Package);
+			AllPackages.AddUnique(Package);
 		}
 		GIsCookerLoadingPackage = false;
 	}
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("BeginCacheForCookedPlatformData for Assets"),FColor::Red);
-		for(auto Package:AllObjects)
-		{
-			UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(Package,TargetPlatforms,bStorageConcurrent, true);
-		}
+		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(AllPackages,TargetPlatforms,bStorageConcurrent, true);
 	}
 
 	{
@@ -1860,9 +1857,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObj
 		// Wait for all shaders to finish compiling
 		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
 	}
-	{
-		UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
-	}
+	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 }
 
 uint32 UFlibHotPatcherCoreHelper::GetCookSaveFlag(UPackage* Package, bool bUnversioned, bool bStorageConcurrent,
@@ -1894,82 +1889,85 @@ EObjectFlags UFlibHotPatcherCoreHelper::GetObjectFlagForCooked(UPackage* Package
 	return CookedFlags;
 }
 
-void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent, bool bWaitShaderComplate)
+void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent, bool bWaitShaderComplate)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("CacheForCookedPlatformData"),FColor::Red);
-	if(!Package)
-	{
-		UE_LOG(LogHotPatcher,Warning,TEXT("BeginPackageObjectsCacheForCookedPlatformData Package is null!"));
-		return;
-	}
-	Package->FullyLoad();
-	
+	TArray<UObject*> ObjectsToWaitForCookedPlatformData;
 	TMap<UWorld*, bool> WorldsToPostSaveRoot;
 	WorldsToPostSaveRoot.Reserve(1024);
 	
-	TArray<UObject*> AllPackage;
+	for(auto Package:Packages)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportMap BeginCacheForCookedPlatformData"),FColor::Red);
-	
-		uint32 SaveFlags = UFlibHotPatcherCoreHelper::GetCookSaveFlag(Package,true,bStorageConcurrent,false);
-		TArray<UObject*> ExportMap;
-		GetObjectsWithOuter(Package,ExportMap,true);
-		for(const auto& ExportObj:ExportMap)
-		{
-			if (ExportObj->HasAnyFlags(RF_Transient))
-			{
-				continue;
-			}
-	
-			bool bInitializedPhysicsSceneForSave = false;
-			bool bForceInitializedWorld = false;
-			UWorld* World = Cast<UWorld>(ExportObj);
-			if (World && bStorageConcurrent)
-			{
-				// We need a physics scene at save time in case code does traces during onsave events.
-				bInitializedPhysicsSceneForSave = GEditor->InitializePhysicsSceneForSaveIfNecessary(World, bForceInitializedWorld);
-	
-				GIsCookerLoadingPackage = true;
-				{
-					GEditor->OnPreSaveWorld(SaveFlags, World);
-				}
-				{
-					bool bCleanupIsRequired = World->PreSaveRoot(TEXT(""));
-					WorldsToPostSaveRoot.Add(World, bCleanupIsRequired);
-				}
-				GIsCookerLoadingPackage = false;
-			}
-			
-			for(const auto& Platform:TargetPlatforms)
-			{
-				if (bStorageConcurrent)
-				{
-					GIsCookerLoadingPackage = true;
-					{
-						ExportObj->PreSave(Platform);
-					}
-					GIsCookerLoadingPackage = false;
-				}
-				
-				// bool bIsTexture = ExportObj->IsA(UTexture::StaticClass());
-				// if (!bIsTexture || bStorageConcurrent)
-				{
-					UPackage* Outermost = ExportObj->GetOutermost();
-					bool bHasFilterEditorOnly = Outermost->HasAnyPackageFlags(PKG_FilterEditorOnly);
-					
-					ExportObj->BeginCacheForCookedPlatformData(Platform);
-					if(!ExportObj->IsCachedCookedPlatformDataLoaded(Platform))
-					{
-						AllPackage.Add(ExportObj);
-					}
-				}
-			}
-	
-			if (World && bInitializedPhysicsSceneForSave)
-			{
-				GEditor->CleanupPhysicsSceneThatWasInitializedForSave(World, bForceInitializedWorld);
-			}
-		}
+		if(!Package)
+    	{
+    		UE_LOG(LogHotPatcher,Warning,TEXT("BeginPackageObjectsCacheForCookedPlatformData Package is null!"));
+    		continue;
+    	}
+    	Package->FullyLoad();
+    	
+    	{
+    		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportMap BeginCacheForCookedPlatformData"),FColor::Red);
+    	
+    		uint32 SaveFlags = UFlibHotPatcherCoreHelper::GetCookSaveFlag(Package,true,bStorageConcurrent,false);
+    		TArray<UObject*> ExportMap;
+    		GetObjectsWithOuter(Package,ExportMap,true);
+    		for(const auto& ExportObj:ExportMap)
+    		{
+    			if (ExportObj->HasAnyFlags(RF_Transient))
+    			{
+    				continue;
+    			}
+    	
+    			bool bInitializedPhysicsSceneForSave = false;
+    			bool bForceInitializedWorld = false;
+    			UWorld* World = Cast<UWorld>(ExportObj);
+    			if (World && bStorageConcurrent)
+    			{
+    				// We need a physics scene at save time in case code does traces during onsave events.
+    				bInitializedPhysicsSceneForSave = GEditor->InitializePhysicsSceneForSaveIfNecessary(World, bForceInitializedWorld);
+    	
+    				GIsCookerLoadingPackage = true;
+    				{
+    					GEditor->OnPreSaveWorld(SaveFlags, World);
+    				}
+    				{
+    					bool bCleanupIsRequired = World->PreSaveRoot(TEXT(""));
+    					WorldsToPostSaveRoot.Add(World, bCleanupIsRequired);
+    				}
+    				GIsCookerLoadingPackage = false;
+    			}
+    			
+    			for(const auto& Platform:TargetPlatforms)
+    			{
+    				if (bStorageConcurrent)
+    				{
+    					GIsCookerLoadingPackage = true;
+    					{
+    						ExportObj->PreSave(Platform);
+    					}
+    					GIsCookerLoadingPackage = false;
+    				}
+    				
+    				// bool bIsTexture = ExportObj->IsA(UTexture::StaticClass());
+    				// if (!bIsTexture || bStorageConcurrent)
+    				{
+    					UPackage* Outermost = ExportObj->GetOutermost();
+    					bool bHasFilterEditorOnly = Outermost->HasAnyPackageFlags(PKG_FilterEditorOnly);
+    					
+    					ExportObj->BeginCacheForCookedPlatformData(Platform);
+    					if(!ExportObj->IsCachedCookedPlatformDataLoaded(Platform))
+    					{
+    						ObjectsToWaitForCookedPlatformData.Add(ExportObj);
+    					}
+    				}
+    			}
+    	
+    			if (World && bInitializedPhysicsSceneForSave)
+    			{
+    				GEditor->CleanupPhysicsSceneThatWasInitializedForSave(World, bForceInitializedWorld);
+    			}
+    		}
+    	}
 	}
 	
 	// When saving concurrently, flush async loading since that is normally done internally in SavePackage
@@ -1988,14 +1986,14 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 	
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("Wait CachedCookedPlatformDataLoaded"),FColor::Red);
-		while(!!AllPackage.Num())
+		while(!!ObjectsToWaitForCookedPlatformData.Num())
 		{
-			for(int32 ExportObjIndex = AllPackage.Num() - 1 ;ExportObjIndex >= 0;--ExportObjIndex)
+			for(int32 ExportObjIndex = ObjectsToWaitForCookedPlatformData.Num() - 1 ;ExportObjIndex >= 0;--ExportObjIndex)
 			{
 				bool bAllPlatformDataLoaded = true;
 				for (const ITargetPlatform* TargetPlatform : TargetPlatforms)
 				{
-					if (!AllPackage[ExportObjIndex]->IsCachedCookedPlatformDataLoaded(TargetPlatform))
+					if (!ObjectsToWaitForCookedPlatformData[ExportObjIndex]->IsCachedCookedPlatformDataLoaded(TargetPlatform))
 					{
 						bAllPlatformDataLoaded = false;
 						break;
@@ -2003,10 +2001,10 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 				}
 				if (bAllPlatformDataLoaded)
 				{
-					AllPackage.RemoveAtSwap(ExportObjIndex,1,false);
+					ObjectsToWaitForCookedPlatformData.RemoveAtSwap(ExportObjIndex,1,false);
 				}
 			}
-			if(!!AllPackage.Num())
+			if(!!ObjectsToWaitForCookedPlatformData.Num())
 			{
 				FPlatformProcess::Sleep(0.001f);	
 			}
@@ -2016,11 +2014,10 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(UPackage* Package, TA
 	if (bStorageConcurrent)
 	{
 		// Precache the metadata so we don't risk rehashing the map in the parallelfor below
-		Package->GetMetaData();
-	}
-	
-	if (bStorageConcurrent)
-	{
+    	for(auto Package:Packages)
+    	{
+    		Package->GetMetaData();
+    	}
 		// UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("Calling PostSaveRoot on worlds..."));
 		for (auto WorldIt = WorldsToPostSaveRoot.CreateConstIterator(); WorldIt; ++WorldIt)
 		{
