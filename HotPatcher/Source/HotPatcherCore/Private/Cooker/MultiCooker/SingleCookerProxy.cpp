@@ -44,7 +44,7 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 		}
 		PackageTracker = MakeShareable(new FPackageTracker(PackagePathSet.PackagePaths));
 	}
-	IFileManager::Get().DeleteDirectory(*GetSettingObject()->StorageMetadataDir);
+	IFileManager::Get().DeleteDirectory(*GetSettingObject()->StorageMetadataDir,true,true);
 }
 
 void USingleCookerProxy::Shutdown()

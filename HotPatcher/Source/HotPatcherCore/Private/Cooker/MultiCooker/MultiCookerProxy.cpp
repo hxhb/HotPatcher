@@ -173,7 +173,7 @@ bool UMultiCookerProxy::MergeShader()
 				if(FPaths::DirectoryExists(Path))
 				{
 					UE_LOG(LogHotPatcher,Display,TEXT("delete shader dir %s"),*Path);
-					IFileManager::Get().DeleteDirectory(*Path,true);
+					IFileManager::Get().DeleteDirectory(*Path,true,true);
 				}
 			}
 		}
@@ -480,7 +480,7 @@ bool UMultiCookerProxy::DoExport()
 	
 	if(FPaths::DirectoryExists(TempDir))
 	{
-		IFileManager::Get().DeleteDirectory(*TempDir);
+		IFileManager::Get().DeleteDirectory(*TempDir,true,true);
 	}
 
 	CalcCookAssets();
