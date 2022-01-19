@@ -87,8 +87,11 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 	for(const auto& AssetDetail:Assets)
 	{
 		FSoftObjectPath SoftObjectPath{AssetDetail.PackagePath};
-		DefaultCluser.Assets.AddUnique(SoftObjectPath);
-		GetAssetTypeMapping().Add(SoftObjectPath.GetAssetPathName(),AssetDetail.AssetType);
+		if(!GetSettingObject()->IsSkipAsset(SoftObjectPath.GetLongPackageName()))
+		{
+			DefaultCluser.Assets.AddUnique(SoftObjectPath);
+			GetAssetTypeMapping().Add(SoftObjectPath.GetAssetPathName(),AssetDetail.AssetType);
+		}
 	}
 	
 	DefaultCluser.Platforms = GetSettingObject()->CookTargetPlatforms;
