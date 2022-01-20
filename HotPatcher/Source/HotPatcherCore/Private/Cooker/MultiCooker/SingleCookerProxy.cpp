@@ -6,6 +6,7 @@
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
 #include "ThreadUtils/FThreadUtils.hpp"
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
+#include "Materials/MaterialInstance.h"
 #include "Misc/ScopeExit.h"
 
 #if WITH_PACKAGE_CONTEXT
@@ -90,6 +91,7 @@ void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 		if(!GetSettingObject()->IsSkipAsset(SoftObjectPath.GetLongPackageName()))
 		{
 			DefaultCluser.Assets.AddUnique(SoftObjectPath);
+			DefaultCluser.AssetDetails.AddUnique(AssetDetail);
 			GetAssetTypeMapping().Add(SoftObjectPath.GetAssetPathName(),AssetDetail.AssetType);
 		}
 	}
@@ -272,29 +274,6 @@ bool USingleCookerProxy::DoExport()
 }
 FName WorldType = TEXT("World");
 
-bool USingleCookerProxy::IsFinsihed()
-{
-	return !GetPaendingCookAssetsSet().Num();
-}
-
-void USingleCookerProxy::CookClusterAsync(const FCookCluster& CookCluster)
-{
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::CookClusterASync"),FColor::Red);
-	TArray<ITargetPlatform*> CookPlatfotms = UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(CookCluster.Platforms);
-	FCookActionCallback CookActionCallback = CookCluster.CookActionCallback;
-	for(const auto& Asset:CookCluster.Assets)
-	{
-		uint32 Priority = GetAssetTypeMapping().Find(Asset.GetAssetPathName())->IsEqual(WorldType) ? UFlibAssetManageHelper::AsyncLoadHighPriority : UFlibAssetManageHelper::DefaultAsyncLoadPriority;
-		UFlibAssetManageHelper::LoadPackageAsync(Asset,[this,CookPlatfotms,CookActionCallback](FSoftObjectPath ObjectPath,bool bSuccessed)
-		{
-			if(bSuccessed)
-			{
-				OnAsyncObjectLoaded(ObjectPath,CookPlatfotms,CookActionCallback);
-			}
-		},Priority);
-		GetPaendingCookAssetsSet().Add(*Asset.GetLongPackageName());
-	}
-}
 
 void USingleCookerProxy::CookClusterSync(const FCookCluster& CookCluster)
 {
@@ -307,11 +286,8 @@ void USingleCookerProxy::CookClusterSync(const FCookCluster& CookCluster)
 		FString CookBaseDir = GetSettingObject()->StorageCookedDir;
 		TMap<FString, FSavePackageContext*> SavePackageContextsNameMapping = GetPlatformSavePackageContextsNameMapping();
 		
-		TArray<UPackage*> AllPackages;
-		for(const auto& Asset:CookCluster.Assets)
-		{
-			AllPackages.AddUnique(UFlibAssetManageHelper::GetPackage(*Asset.GetLongPackageName()));
-		}
+		TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(CookCluster.Assets);
+		
 		GIsSavingPackage = true;
 		ParallelFor(AllPackages.Num(), [=](int32 AssetIndex)
 		{
@@ -341,10 +317,25 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 	bool bConcurrentSave = GetSettingObject()->bConcurrentSave;
 	if(CookCluster.bPreGeneratePlatformData)
 	{
-		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(CookCluster.Assets,TargetPlatforms,GetSettingObject()->bConcurrentSave,[this](const FString& PackageName)->bool
-		{
-			return GetSettingObject()->IsSkipAsset(PackageName);
-		});
+		TArray<UPackage*> Packages = UFlibAssetManageHelper::LoadPackagesForCooking(CookCluster.Assets);
+		TArray<UClass*> Classes{
+			UTexture::StaticClass(),
+			UMaterial::StaticClass(),
+			UMaterialInstance::StaticClass()
+		};
+		
+		// for(auto Class:Classes)
+		// {
+		// 	
+		// 	UFlibHotPatcherCoreHelper::GeneratePlatformCacheAndWaitFinsihed(
+		// 		THotPatcherTemplateHelper::GetArrayBySrcWithCondition<UPackage*>(Packages,[&](UPackage* Package)->bool
+		// 		{
+		// 			return Package->IsA(Class);
+		// 		},true),
+		// 		TArray<UClass*>{Class} ,
+		// 		TargetPlatforms);
+		// }
+		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(Packages,TargetPlatforms,GetSettingObject()->bConcurrentSave,true,true);
 	}
 }
 
@@ -407,6 +398,7 @@ void USingleCookerProxy::AddCluster(const FCookCluster& CookCluster)
 	CookClusters.Add(CookCluster);
 }
 
+
 bool USingleCookerProxy::HasError()
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::HasError"),FColor::Red);
@@ -440,6 +432,29 @@ void USingleCookerProxy::OnAssetCookedHandle(const FSoftObjectPath& PackagePath,
 	}
 }
 
+bool USingleCookerProxy::IsFinsihed()
+{
+	return !GetPaendingCookAssetsSet().Num();
+}
+
+void USingleCookerProxy::CookClusterAsync(const FCookCluster& CookCluster)
+{
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::CookClusterASync"),FColor::Red);
+	TArray<ITargetPlatform*> CookPlatfotms = UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(CookCluster.Platforms);
+	FCookActionCallback CookActionCallback = CookCluster.CookActionCallback;
+	for(const auto& Asset:CookCluster.Assets)
+	{
+		uint32 Priority = GetAssetTypeMapping().Find(Asset.GetAssetPathName())->IsEqual(WorldType) ? UFlibAssetManageHelper::AsyncLoadHighPriority : UFlibAssetManageHelper::DefaultAsyncLoadPriority;
+		UFlibAssetManageHelper::LoadPackageAsync(Asset,[this,CookPlatfotms,CookActionCallback](FSoftObjectPath ObjectPath,bool bSuccessed)
+		{
+			if(bSuccessed)
+			{
+				OnAsyncObjectLoaded(ObjectPath,CookPlatfotms,CookActionCallback);
+			}
+		},Priority);
+		GetPaendingCookAssetsSet().Add(*Asset.GetLongPackageName());
+	}
+}
 
 void USingleCookerProxy::OnAsyncObjectLoaded(FSoftObjectPath ObjectPath,const TArray<ITargetPlatform*>& Platforms,FCookActionCallback CookActionCallback)
 {

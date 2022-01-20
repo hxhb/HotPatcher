@@ -485,7 +485,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 
 			if(!bStorageConcurrent)
 			{
-				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TArray<ITargetPlatform*>{Platform},bStorageConcurrent, true);
+				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TArray<ITargetPlatform*>{Platform},bStorageConcurrent, true, false);
 			}
 			if(GCookLog)
 			{
@@ -1818,38 +1818,13 @@ bool UFlibHotPatcherCoreHelper::SavePlatformBulkDataManifest(TMap<ETargetPlatfor
 	return bRet;
 }
 
-void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent,TFunction<bool(const FString&)> IsSkipAsset)
+void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("CacheForCookedPlatformData"),FColor::Red);
-	TArray<UPackage*> AllPackages;
-	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("LoadPackages"),FColor::Red);
-		GIsCookerLoadingPackage = true;
-		for (const auto& AssetObjectPath : ObjectPaths)
-		{
-			if(!AssetObjectPath.IsValid())
-				continue;
-
-			FString PackageName = AssetObjectPath.GetLongPackageName();
-			if(IsSkipAsset && IsSkipAsset(PackageName))
-			{
-				UE_LOG(LogHotPatcher,Display,TEXT("Skip Cook %s"),*PackageName);
-				continue;
-			}
-
-			UPackage* Package = UFlibAssetManageHelper::LoadPackage(nullptr, *PackageName, LOAD_None);
-			if(!Package)
-			{
-				UE_LOG(LogHotPatcher,Warning,TEXT("CookCluster LodPackage %s is null!"),*PackageName);
-				continue;
-			}
-			AllPackages.AddUnique(Package);
-		}
-		GIsCookerLoadingPackage = false;
-	}
+	TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths);
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("BeginCacheForCookedPlatformData for Assets"),FColor::Red);
-		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(AllPackages,TargetPlatforms,bStorageConcurrent, true);
+		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(AllPackages,TargetPlatforms,bStorageConcurrent, true, false);
 	}
 
 	{
@@ -1857,7 +1832,9 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObj
 		// Wait for all shaders to finish compiling
 		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
 	}
-	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+	{
+		UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+	}
 }
 
 uint32 UFlibHotPatcherCoreHelper::GetCookSaveFlag(UPackage* Package, bool bUnversioned, bool bStorageConcurrent,
@@ -1889,7 +1866,14 @@ EObjectFlags UFlibHotPatcherCoreHelper::GetObjectFlagForCooked(UPackage* Package
 	return CookedFlags;
 }
 
-void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent, bool bWaitShaderComplate)
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+UE_TRACE_EVENT_BEGIN(CUSTOM_LOADTIMER_LOG, CachePackagePlatformData, NoSync)
+	UE_TRACE_EVENT_FIELD(Trace::WideString, PackageName)
+UE_TRACE_EVENT_END()
+
+#endif
+void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent, bool bWaitShaderComplate, bool
+                                                           bWaitAsyncFileWrite)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("CacheForCookedPlatformData"),FColor::Red);
 	TArray<UObject*> ObjectsToWaitForCookedPlatformData;
@@ -1898,6 +1882,16 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
 	
 	for(auto Package:Packages)
 	{
+		FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
+		FString FakePackageName = FString(TEXT("Package ")) + LongPackageName;
+
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+		SCOPED_CUSTOM_LOADTIMER(CachePackage)
+			ADD_CUSTOM_LOADTIMER_META(CachePackagePlatformData, PackageName, *FakePackageName);
+#else
+		FScopedNamedEvent CachePackagePlatformDataEvent(FColor::Red,*FString::Printf(TEXT("%s"),*LongPackageName));
+#endif
+		
 		if(!Package)
     	{
     		UE_LOG(LogHotPatcher,Warning,TEXT("BeginPackageObjectsCacheForCookedPlatformData Package is null!"));
@@ -1907,7 +1901,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
     	
     	{
     		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportMap BeginCacheForCookedPlatformData"),FColor::Red);
-    	
+			
     		uint32 SaveFlags = UFlibHotPatcherCoreHelper::GetCookSaveFlag(Package,true,bStorageConcurrent,false);
     		TArray<UObject*> ExportMap;
     		GetObjectsWithOuter(Package,ExportMap,true);
@@ -1917,7 +1911,6 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
     			{
     				continue;
     			}
-    	
     			bool bInitializedPhysicsSceneForSave = false;
     			bool bForceInitializedWorld = false;
     			UWorld* World = Cast<UWorld>(ExportObj);
@@ -2028,6 +2021,11 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
 			World->PostSaveRoot(WorldIt.Value());
 		}
 	}
+
+	if(bWaitAsyncFileWrite)
+	{
+		UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+	}
 }
 
 bool UFlibHotPatcherCoreHelper::ContainsRedirector(const FName& PackageName, TMap<FName, FName>& RedirectedPaths)
@@ -2110,4 +2108,25 @@ bool UFlibHotPatcherCoreHelper::ContainsRedirector(const FName& PackageName, TMa
 		}
 	}
 	return bFoundRedirector;
+}
+
+void UFlibHotPatcherCoreHelper::GeneratePlatformCacheAndWaitFinsihed(const TArray<UPackage*>& Packages,const TArray<UClass*> Classes,const TArray<ITargetPlatform*>& TargetPlatforms)
+{
+	for(const auto& Package:Packages)
+	{
+		bool bIsAllowClass = false;
+		for(const auto& ClassType:Classes)
+		{
+			if(Package->IsA(ClassType))
+			{
+				bIsAllowClass = true;
+				break;
+			}
+		}
+		if(bIsAllowClass)
+		{
+			UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TargetPlatforms,true,true, true);
+		}
+	}
+
 }

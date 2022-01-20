@@ -105,6 +105,8 @@ public:
 	
 
 	static FAssetDetail GetAssetDetailByPackageName(const FString& InPackageName);
+	
+	
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetRedirectorList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutRedirector);
 		static bool GetSpecifyAssetData(const FString& InLongPackageName, TArray<FAssetData>& OutAssetData,bool InIncludeOnlyOnDiskAssets);
@@ -213,6 +215,12 @@ public:
 	static UPackage* LoadPackage( UPackage* InOuter, const TCHAR* InLongPackageName, uint32 LoadFlags, FArchive* InReaderOverride = nullptr);
 	static UPackage* GetPackage(FName PackageName);
 
+	// static TArray<UPackage*> GetPackagesByClass(TArray<UPackage*>& Packages, UClass* Class, bool RemoveFromSrc);
+	
+	static TArray<UPackage*> LoadPackagesForCooking(const TArray<FSoftObjectPath>& SoftObjectPaths);
+	
 	static bool MatchIgnoreTypes(const FString& LongPackageName, TSet<FName> IgnoreTypes, FString& MatchTypeStr);
 	static bool MatchIgnoreFilters(const FString& LongPackageName, const TArray<FString>& IgnoreDirs, FString& MatchDir);
 };
+
+

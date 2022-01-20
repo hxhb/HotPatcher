@@ -37,6 +37,8 @@ struct FCookCluster
     UPROPERTY()
     TArray<FSoftObjectPath> Assets;
     UPROPERTY()
+    TArray<FAssetDetail> AssetDetails;
+    UPROPERTY()
     TArray<ETargetPlatform> Platforms;
     UPROPERTY()
     bool bPreGeneratePlatformData = false;
@@ -60,7 +62,7 @@ public:
     void CookClusterSync(const FCookCluster& CookCluster);
     void CookCluster(const FCookCluster& CookCluster, bool bAsync = false);
     void AddCluster(const FCookCluster& CookCluster);
-
+    
     TArray<FName>& GetPlatformCookAssetOrders(ETargetPlatform Platform);
     TSet<FName> GetAdditionalAssets();
     
@@ -113,6 +115,7 @@ private:
     void OnAsyncObjectLoaded(FSoftObjectPath ObjectPath,const TArray<ITargetPlatform*>& Platforms,FCookActionCallback CookActionCallback);
     
     TMap<FName,FName> AssetTypeMapping;
+private:
     TSet<FName>& GetPaendingCookAssetsSet(){ return PaendingCookAssetsSet; }
     TSet<FName> PaendingCookAssetsSet;
 

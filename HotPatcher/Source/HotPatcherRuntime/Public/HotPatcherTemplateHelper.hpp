@@ -246,4 +246,22 @@ namespace THotPatcherTemplateHelper
 		}
 		return result;
 	}
+
+	template <typename T>
+	TArray<T> GetArrayBySrcWithCondition(TArray<T>& SrcArray, TFunction<bool(T)> Matcher, bool RemoveFromSrc)
+	{
+		TArray<T> result;
+		for(int32 Index = SrcArray.Num() - 1 ;Index >= 0;--Index)
+		{
+			if(Matcher(SrcArray[Index]))
+			{
+				result.Add(SrcArray[Index]);
+				if(RemoveFromSrc)
+				{
+					SrcArray.RemoveAtSwap(Index,1,false);
+				}
+			}
+		}
+		return result;
+	}
 }

@@ -193,12 +193,14 @@ public:
 
 	static TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> CreatePlatformsPackageContexts(const TArray<ETargetPlatform>& Platforms,bool bIoStore);
 	static bool SavePlatformBulkDataManifest(TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>>&PlatformSavePackageContexts,ETargetPlatform Platform);
-	static void CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent = false, bool bWaitShaderComplate = true);
-	static void CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent,TFunction<bool(const FString&)> IsSkipAsset = nullptr);
+	static void CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent = false, bool bWaitShaderComplate = true, bool
+	                                       bWaitAsyncFileWrite = false);
+	static void CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent);
 
 	static uint32 GetCookSaveFlag(UPackage* Package,bool bUnversioned = true,bool bStorageConcurrent = false,bool CookLinkerDiff = false);
 	static EObjectFlags GetObjectFlagForCooked(UPackage* Package);
 
 	static bool ContainsRedirector(const FName& PackageName, TMap<FName, FName>& RedirectedPaths);
 
+	static void GeneratePlatformCacheAndWaitFinsihed(const TArray<UPackage*>& TexturePackages,const TArray<UClass*> Classes,const TArray<ITargetPlatform*>& TargetPlatforms);
 };

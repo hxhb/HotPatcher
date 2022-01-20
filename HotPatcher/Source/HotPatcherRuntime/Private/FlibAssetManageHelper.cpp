@@ -17,6 +17,7 @@
 #include "AssetData.h"
 #include "Resources/Version.h"
 #include "HotPatcherLog.h"
+#include "HotPatcherTemplateHelper.hpp"
 
 // PRAGMA_DISABLE_DEPRECATION_WARNINGS
 FString UFlibAssetManageHelper::PackagePathToFilename(const FString& InPackagePath)
@@ -1167,6 +1168,48 @@ UPackage* UFlibAssetManageHelper::GetPackage(FName PackageName)
 	}
 
 	return Package;
+}
+
+// TArray<UPackage*> UFlibAssetManageHelper::GetPackagesByClass(TArray<UPackage*>& Packages, UClass* Class, bool RemoveFromSrc)
+// {
+// 	// TArray<UPackage*> result;
+// 	// for(int32 PkgIndex = Packages.Num() - 1 ;PkgIndex >= 0;--PkgIndex)
+// 	// {
+// 	// 	if(Packages[PkgIndex]->IsA(Class))
+// 	// 	{
+// 	// 		result.Add(Packages[PkgIndex]);
+// 	// 		if(RemoveFromSrc)
+// 	// 		{
+// 	// 			Packages.RemoveAtSwap(PkgIndex,1,false);
+// 	// 		}
+// 	// 		
+// 	// 	}
+// 	// }
+// 	// return result;
+// 	return THotPatcherTemplateHelper::GetArrayBySrcWithCondition<UPackage*>(Packages,[&](UPackage* Package)->bool
+// 	{
+// 		return Package->IsA(Class);
+// 	},true);
+// };
+
+TArray<UPackage*> UFlibAssetManageHelper::LoadPackagesForCooking(const TArray<FSoftObjectPath>& SoftObjectPaths)
+{
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("LoadPackagesForCooking"),FColor::Red);
+	TArray<UPackage*> AllPackages;
+	GIsCookerLoadingPackage = true;
+	for(const auto& Asset:SoftObjectPaths)
+	{
+		UPackage* Package = UFlibAssetManageHelper::GetPackage(*Asset.GetLongPackageName());
+		if(!Package)
+		{
+			UE_LOG(LogHotPatcher,Warning,TEXT("LodPackage %s is null!"),*Asset.GetLongPackageName());
+			continue;
+		}
+		AllPackages.AddUnique(Package);
+		
+	}
+	GIsCookerLoadingPackage = false;
+	return AllPackages;
 }
 
 bool UFlibAssetManageHelper::MatchIgnoreTypes(const FString& LongPackageName, TSet<FName> IgnoreTypes, FString& MatchTypeStr)
