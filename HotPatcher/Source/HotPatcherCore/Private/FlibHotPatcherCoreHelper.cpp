@@ -395,7 +395,7 @@ struct FFilterEditorOnlyFlag
 	UPackage* Package;
 	ITargetPlatform* Platform;
 };
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION == 4 || ENGINE_MINOR_VERSION > 25
 UE_TRACE_EVENT_BEGIN(CUSTOM_LOADTIMER_LOG, CookPackage, NoSync)
 	UE_TRACE_EVENT_FIELD(Trace::WideString, PackageName)
 UE_TRACE_EVENT_END()
@@ -430,7 +430,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
 	FString FakePackageName = FString(TEXT("Package ")) + LongPackageName;
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION == 4 || ENGINE_MINOR_VERSION > 25
 	SCOPED_CUSTOM_LOADTIMER(CookPackage)
 		ADD_CUSTOM_LOADTIMER_META(CookPackage, PackageName, *FakePackageName);
 #else
@@ -1866,7 +1866,7 @@ EObjectFlags UFlibHotPatcherCoreHelper::GetObjectFlagForCooked(UPackage* Package
 	return CookedFlags;
 }
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION == 4 || ENGINE_MINOR_VERSION > 25
 UE_TRACE_EVENT_BEGIN(CUSTOM_LOADTIMER_LOG, CachePackagePlatformData, NoSync)
 	UE_TRACE_EVENT_FIELD(Trace::WideString, PackageName)
 UE_TRACE_EVENT_END()
@@ -1885,7 +1885,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
 		FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
 		FString FakePackageName = FString(TEXT("Package ")) + LongPackageName;
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION == 4 || ENGINE_MINOR_VERSION > 25
 		SCOPED_CUSTOM_LOADTIMER(CachePackage)
 			ADD_CUSTOM_LOADTIMER_META(CachePackagePlatformData, PackageName, *FakePackageName);
 #else
@@ -2028,105 +2028,3 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
 	}
 }
 
-bool UFlibHotPatcherCoreHelper::ContainsRedirector(const FName& PackageName, TMap<FName, FName>& RedirectedPaths)
-{
-	bool bFoundRedirector = false;
-	TArray<FAssetData> Assets;
-	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-	IAssetRegistry* AssetRegistry = &AssetRegistryModule.Get();
-	ensure(AssetRegistry->GetAssetsByPackageName(PackageName, Assets, true));
-
-	for (const FAssetData& Asset : Assets)
-	{
-		if (Asset.IsRedirector())
-		{
-			FName RedirectedPath;
-			FString RedirectedPathString;
-			if (Asset.GetTagValue("DestinationObject", RedirectedPathString))
-			{
-				ConstructorHelpers::StripObjectClass(RedirectedPathString);
-				RedirectedPath = FName(*RedirectedPathString);
-				FAssetData DestinationData = AssetRegistry->GetAssetByObjectPath(RedirectedPath, true);
-				TSet<FName> SeenPaths;
-
-				SeenPaths.Add(RedirectedPath);
-
-				// Need to follow chain of redirectors
-				while (DestinationData.IsRedirector())
-				{
-					if (DestinationData.GetTagValue("DestinationObject", RedirectedPathString))
-					{
-						ConstructorHelpers::StripObjectClass(RedirectedPathString);
-						RedirectedPath = FName(*RedirectedPathString);
-
-						if (SeenPaths.Contains(RedirectedPath))
-						{
-							// Recursive, bail
-							DestinationData = FAssetData();
-						}
-						else
-						{
-							SeenPaths.Add(RedirectedPath);
-							DestinationData = AssetRegistry->GetAssetByObjectPath(RedirectedPath, true);
-						}
-					}
-					else
-					{
-						// Can't extract
-						DestinationData = FAssetData();						
-					}
-				}
-
-				// DestinationData may be invalid if this is a subobject, check package as well
-				bool bDestinationValid = DestinationData.IsValid();
-
-				// if (!bDestinationValid)
-				// {
-				// 	// we can;t call GetCachedStandardPackageFileFName with None
-				// 	if (RedirectedPath != NAME_None)
-				// 	{
-				// 		FName StandardPackageName = PackageNameCache->GetCachedStandardPackageFileFName(FName(*FPackageName::ObjectPathToPackageName(RedirectedPathString)));
-				// 		if (StandardPackageName != NAME_None)
-				// 		{
-				// 			bDestinationValid = true;
-				// 		}
-				// 	}
-				// }
-
-				if (bDestinationValid)
-				{
-					RedirectedPaths.Add(Asset.ObjectPath, RedirectedPath);
-				}
-				else
-				{
-					RedirectedPaths.Add(Asset.ObjectPath, NAME_None);
-					UE_LOG(LogHotPatcherCoreHelper, Log, TEXT("Found redirector in package %s pointing to deleted object %s"), *PackageName.ToString(), *RedirectedPathString);
-				}
-
-				bFoundRedirector = true;
-			}
-		}
-	}
-	return bFoundRedirector;
-}
-
-void UFlibHotPatcherCoreHelper::GeneratePlatformCacheAndWaitFinsihed(const TArray<UPackage*>& Packages,const TArray<UClass*> Classes,const TArray<ITargetPlatform*>& TargetPlatforms)
-{
-	for(const auto& Package:Packages)
-	{
-		bool bIsAllowClass = false;
-		for(const auto& ClassType:Classes)
-		{
-			if(Package->IsA(ClassType))
-			{
-				bIsAllowClass = true;
-				break;
-			}
-		}
-		if(bIsAllowClass)
-		{
-			UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TargetPlatforms,true,true, true);
-		}
-	}
-
-}

@@ -78,16 +78,7 @@ public class HotPatcherEditor : ModuleRules
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);
-		
-		// // only in UE5
-		if (Target.Version.MajorVersion > 4)
-		{
-			PublicDependencyModuleNames.AddRange(new string[]
-			{
-				"DeveloperToolSettings"
-			});
-		}
-		
+
 		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 23)
 		{
 			PublicDependencyModuleNames.Add("ToolMenus");
@@ -105,7 +96,8 @@ public class HotPatcherEditor : ModuleRules
 		BuildVersion.TryRead(BuildVersion.GetDefaultFileName(), out Version);
 		AddPublicDefinitions("WITH_EDITOR_SECTION", Version.MajorVersion > 4 || Version.MinorVersion > 24);
 		// Game feature
-		AddPublicDefinitions("ENGINE_GAME_FEATURE", true || (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 26));
+		bool bEnableGameFeature = false;
+		AddPublicDefinitions("ENGINE_GAME_FEATURE", bEnableGameFeature || (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 26));
 		
 		System.Console.WriteLine("MajorVersion {0} MinorVersion: {1} PatchVersion {2}",Target.Version.MajorVersion,Target.Version.MinorVersion,Target.Version.PatchVersion);
 

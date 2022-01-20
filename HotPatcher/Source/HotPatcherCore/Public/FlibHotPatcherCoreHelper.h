@@ -199,8 +199,5 @@ public:
 
 	static uint32 GetCookSaveFlag(UPackage* Package,bool bUnversioned = true,bool bStorageConcurrent = false,bool CookLinkerDiff = false);
 	static EObjectFlags GetObjectFlagForCooked(UPackage* Package);
-
-	static bool ContainsRedirector(const FName& PackageName, TMap<FName, FName>& RedirectedPaths);
-
-	static void GeneratePlatformCacheAndWaitFinsihed(const TArray<UPackage*>& TexturePackages,const TArray<UClass*> Classes,const TArray<ITargetPlatform*>& TargetPlatforms);
+	
 };

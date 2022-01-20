@@ -72,6 +72,15 @@ public class HotPatcherCore : ModuleRules
 			}
 		);
 		
+		// // only in UE5
+		if (Target.Version.MajorVersion > 4)
+		{
+			PublicDependencyModuleNames.AddRange(new string[]
+			{
+				"DeveloperToolSettings"
+			});
+		}
+		
 		switch (Target.Configuration)
 		{
 			case UnrealTargetConfiguration.Debug:
