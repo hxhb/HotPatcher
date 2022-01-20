@@ -1953,9 +1953,11 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
     				{
     					UPackage* Outermost = ExportObj->GetOutermost();
     					bool bHasFilterEditorOnly = Outermost->HasAnyPackageFlags(PKG_FilterEditorOnly);
+    					bool bIsTransient = (Outermost == GetTransientPackage());
+    					bool bIsTexture = ExportObj->IsA(UTexture::StaticClass());
     					
     					ExportObj->BeginCacheForCookedPlatformData(Platform);
-    					if(!ExportObj->IsCachedCookedPlatformDataLoaded(Platform))
+    					if(!(bIsTexture && bHasFilterEditorOnly) && !ExportObj->IsCachedCookedPlatformDataLoaded(Platform))
     					{
     						ObjectsToWaitForCookedPlatformData.Add(ExportObj);
     					}
