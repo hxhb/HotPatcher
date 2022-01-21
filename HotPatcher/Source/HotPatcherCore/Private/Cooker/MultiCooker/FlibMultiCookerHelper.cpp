@@ -53,12 +53,7 @@ TSharedPtr<FCookShaderCollectionProxy> UFlibMultiCookerHelper::CreateCookShaderC
 	{
 		PlatformNames.AddUnique(THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
 	}
-	
-	FString SavePath = InSavePath;
-	if(FPaths::DirectoryExists(SavePath))
-	{
-		IFileManager::Get().DeleteDirectory(*SavePath,true,true);
-	}
+	UFlibHotPatcherCoreHelper::DeleteDirectory(InSavePath);
 	FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
 	CookShaderCollection = MakeShareable(
 		new FCookShaderCollectionProxy(

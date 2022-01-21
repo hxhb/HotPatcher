@@ -203,4 +203,6 @@ public:
 	static TArray<FAssetDetail> GetReferenceRecursivelyByClassName(const FAssetDetail& AssetDetail,const TArray<FString>& AssetTypeNames,const TArray<EAssetRegistryDependencyTypeEx>& RefType);
 
 	static TArray<UClass*> GetDerivedClasses(UClass* BaseClass,bool bRecursive,bool bContainSelf = false);
+
+	static void DeleteDirectory(const FString& Dir);
 };

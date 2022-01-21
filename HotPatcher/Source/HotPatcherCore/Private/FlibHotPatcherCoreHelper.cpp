@@ -1173,6 +1173,15 @@ TArray<UClass*> UFlibHotPatcherCoreHelper::GetDerivedClasses(UClass* BaseClass,b
 	return AllDerivedClass;
 }
 
+void UFlibHotPatcherCoreHelper::DeleteDirectory(const FString& Dir)
+{
+	if(!Dir.IsEmpty() && FPaths::DirectoryExists(Dir))
+	{
+		UE_LOG(LogHotPatcher,Display,TEXT("delete dir %s"),*Dir);
+		IFileManager::Get().DeleteDirectory(*Dir,true,true);
+	}
+}
+
 FChunkAssetDescribe UFlibHotPatcherCoreHelper::DiffChunkWithPatchSetting(
 	const FExportPatchSettings& PatchSetting,
 	const FChunkInfo& CurrentVersionChunk,
@@ -1929,7 +1938,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
 		FString FakePackageName = FString(TEXT("Package ")) + LongPackageName;
 
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
-		SCOPED_CUSTOM_LOADTIMER(CachePackage)
+		SCOPED_CUSTOM_LOADTIMER(CachePackagePlatformData)
 			ADD_CUSTOM_LOADTIMER_META(CachePackagePlatformData, PackageName, *FakePackageName);
 #else
 		FScopedNamedEvent CachePackagePlatformDataEvent(FColor::Red,*FString::Printf(TEXT("%s"),*LongPackageName));
@@ -1952,7 +1961,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
     		{
     			if (ExportObj->HasAnyFlags(RF_Transient))
     			{
-    				UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("%s is PreCached."),*ExportObj->GetFullName());
+    				// UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("%s is PreCached."),*ExportObj->GetFullName());
     				continue;
     			}
     			if(ProcessedObjs.Contains(ExportObj))

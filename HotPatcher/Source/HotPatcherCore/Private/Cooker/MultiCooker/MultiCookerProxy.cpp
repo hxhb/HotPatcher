@@ -170,11 +170,7 @@ bool UMultiCookerProxy::MergeShader()
 			for(const auto& ShaderFormat:ShaderFormats)
 			{
 				FString Path = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Shaders"),ShaderFormat.ToString()));
-				if(FPaths::DirectoryExists(Path))
-				{
-					UE_LOG(LogHotPatcher,Display,TEXT("delete shader dir %s"),*Path);
-					IFileManager::Get().DeleteDirectory(*Path,true,true);
-				}
+				UFlibHotPatcherCoreHelper::DeleteDirectory(Path,true,true);
 			}
 		}
 		
@@ -478,10 +474,7 @@ bool UMultiCookerProxy::DoExport()
 	// for project shader
 	CreateShaderCollectionByName(FApp::GetProjectName());
 	
-	if(FPaths::DirectoryExists(TempDir))
-	{
-		IFileManager::Get().DeleteDirectory(*TempDir,true,true);
-	}
+	UFlibHotPatcherCoreHelper::DeleteDirectory(TempDir);
 
 	CalcCookAssets();
 	

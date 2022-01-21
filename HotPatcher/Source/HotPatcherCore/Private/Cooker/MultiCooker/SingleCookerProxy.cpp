@@ -45,7 +45,7 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 		}
 		PackageTracker = MakeShareable(new FPackageTracker(PackagePathSet.PackagePaths));
 	}
-	IFileManager::Get().DeleteDirectory(*GetSettingObject()->StorageMetadataDir,true,true);
+	UFlibHotPatcherCoreHelper::DeleteDirectory(GetSettingObject()->StorageMetadataDir);
 }
 
 void USingleCookerProxy::Shutdown()
@@ -364,10 +364,11 @@ void USingleCookerProxy::CookCluster(const FCookCluster& CookCluster)
 	
 		ParallelFor(PaddingDeleteFiles.Num(),[PaddingDeleteFiles](int32 Index)
 		{
-			
-			if(FPaths::FileExists(PaddingDeleteFiles[Index]))
+			FString FileName = PaddingDeleteFiles[Index];
+			if(!FileName.IsEmpty() && FPaths::FileExists(FileName))
 			{
-				IFileManager::Get().Delete(*PaddingDeleteFiles[Index],true,true,true);
+				UE_LOG(LogHotPatcher,Warning,TEXT("delete %s"),*FileName);
+				IFileManager::Get().Delete(*FileName,true,true,true);
 			}
 		},false);
 	}
