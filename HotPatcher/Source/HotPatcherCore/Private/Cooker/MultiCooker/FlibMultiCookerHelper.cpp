@@ -3,6 +3,7 @@
 
 #include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
 
+#include "FlibHotPatcherCoreHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 #include "Interfaces/IPluginManager.h"
@@ -62,7 +63,7 @@ TSharedPtr<FCookShaderCollectionProxy> UFlibMultiCookerHelper::CreateCookShaderC
 			bShareShader,
 			bNativeShader,
 			bMaster,
-			SavePath
+			InSavePath
 			));
 	
 	return CookShaderCollection;
