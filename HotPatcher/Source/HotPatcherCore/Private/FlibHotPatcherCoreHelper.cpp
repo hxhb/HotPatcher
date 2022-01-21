@@ -395,7 +395,7 @@ struct FFilterEditorOnlyFlag
 	UPackage* Package;
 	ITargetPlatform* Platform;
 };
-#if ENGINE_MAJOR_VERSION == 4 || ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
 UE_TRACE_EVENT_BEGIN(CUSTOM_LOADTIMER_LOG, CookPackage, NoSync)
 	UE_TRACE_EVENT_FIELD(Trace::WideString, PackageName)
 UE_TRACE_EVENT_END()
@@ -430,7 +430,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
 	FString FakePackageName = FString(TEXT("Package ")) + LongPackageName;
 
-#if ENGINE_MAJOR_VERSION == 4 || ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
 	SCOPED_CUSTOM_LOADTIMER(CookPackage)
 		ADD_CUSTOM_LOADTIMER_META(CookPackage, PackageName, *FakePackageName);
 #else
@@ -485,7 +485,8 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 
 			if(!bStorageConcurrent)
 			{
-				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TArray<ITargetPlatform*>{Platform},bStorageConcurrent, true, false);
+				TSet<UObject*> ProcessedObjs;
+				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TArray<ITargetPlatform*>{Platform},ProcessedObjs,bStorageConcurrent, true, false);
 			}
 			if(GCookLog)
 			{
@@ -1130,6 +1131,48 @@ void UFlibHotPatcherCoreHelper::AnalysisWidgetTree(const FHotPatcherVersion& Bas
 		}
 	}
 }
+
+TArray<FAssetDetail> UFlibHotPatcherCoreHelper::GetReferenceRecursivelyByClassName(const FAssetDetail& AssetDetail,const TArray<FString>& AssetTypeNames,const TArray<EAssetRegistryDependencyTypeEx>& RefType)
+{
+	TArray<FAssetDetail> Results;
+
+	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDepTypes {EAssetRegistryDependencyTypeEx::Hard};
+	// FName AssetType = TEXT("WidgetBlueprint");
+	
+	TArray<EAssetRegistryDependencyType::Type> SearchType{EAssetRegistryDependencyType::Hard};
+	
+	TArray<FAssetDetail> CurrentAssetsRef;
+	UFlibAssetManageHelper::GetAssetReferenceRecursively(AssetDetail, SearchType, AssetTypeNames, CurrentAssetsRef);
+	UE_LOG(LogHotPatcher,Display,TEXT("Reference %s Widgets:"),*AssetDetail.PackagePath.ToString());
+	for(const auto& Asset:CurrentAssetsRef)
+	{
+		if(!AssetTypeNames.Contains(Asset.AssetType.ToString()))
+		{
+			continue;
+		}
+		Results.AddUnique(Asset);
+	}
+	
+	return Results;
+}
+
+TArray<UClass*> UFlibHotPatcherCoreHelper::GetDerivedClasses(UClass* BaseClass,bool bRecursive, bool bContainSelf)
+{
+	TArray<UClass*> Classes;
+	if(bContainSelf)
+	{
+		Classes.AddUnique(BaseClass);
+	}
+	
+	TArray<UClass*> AllDerivedClass;
+	::GetDerivedClasses(BaseClass,AllDerivedClass,bRecursive);
+	for(auto classIns:AllDerivedClass)
+	{
+		Classes.AddUnique(classIns);
+	}
+	return AllDerivedClass;
+}
+
 FChunkAssetDescribe UFlibHotPatcherCoreHelper::DiffChunkWithPatchSetting(
 	const FExportPatchSettings& PatchSetting,
 	const FChunkInfo& CurrentVersionChunk,
@@ -1727,7 +1770,7 @@ FProjectPackageAssetCollection UFlibHotPatcherCoreHelper::ImportProjectSettingsP
 void UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites()
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitForAsyncFileWrites"),FColor::Red);
-	UE_LOG(LogHotPatcher, Display, TEXT("Wait For Async File Writes..."));
+	// UE_LOG(LogHotPatcher, Display, TEXT("Wait For Async File Writes..."));
 	TSharedPtr<FThreadWorker> WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("WaitCookComplete"),[]()
 		{
 			UPackage::WaitForAsyncFileWrites();
@@ -1818,13 +1861,13 @@ bool UFlibHotPatcherCoreHelper::SavePlatformBulkDataManifest(TMap<ETargetPlatfor
 	return bRet;
 }
 
-void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent)
+void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("CacheForCookedPlatformData"),FColor::Red);
 	TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths);
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("BeginCacheForCookedPlatformData for Assets"),FColor::Red);
-		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(AllPackages,TargetPlatforms,bStorageConcurrent, true, false);
+		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(AllPackages,TargetPlatforms,ProcessedObjs,bStorageConcurrent, true, false);
 	}
 
 	{
@@ -1866,13 +1909,13 @@ EObjectFlags UFlibHotPatcherCoreHelper::GetObjectFlagForCooked(UPackage* Package
 	return CookedFlags;
 }
 
-#if ENGINE_MAJOR_VERSION == 4 || ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
 UE_TRACE_EVENT_BEGIN(CUSTOM_LOADTIMER_LOG, CachePackagePlatformData, NoSync)
 	UE_TRACE_EVENT_FIELD(Trace::WideString, PackageName)
 UE_TRACE_EVENT_END()
 
 #endif
-void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent, bool bWaitShaderComplate, bool
+void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent, bool bWaitShaderComplate, bool
                                                            bWaitAsyncFileWrite)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("CacheForCookedPlatformData"),FColor::Red);
@@ -1885,7 +1928,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
 		FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
 		FString FakePackageName = FString(TEXT("Package ")) + LongPackageName;
 
-#if ENGINE_MAJOR_VERSION == 4 || ENGINE_MINOR_VERSION > 25
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
 		SCOPED_CUSTOM_LOADTIMER(CachePackage)
 			ADD_CUSTOM_LOADTIMER_META(CachePackagePlatformData, PackageName, *FakePackageName);
 #else
@@ -1909,8 +1952,15 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
     		{
     			if (ExportObj->HasAnyFlags(RF_Transient))
     			{
+    				UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("%s is PreCached."),*ExportObj->GetFullName());
     				continue;
     			}
+    			if(ProcessedObjs.Contains(ExportObj))
+    			{
+    				continue;;
+    			}
+    			ProcessedObjs.Add(ExportObj);
+    			
     			bool bInitializedPhysicsSceneForSave = false;
     			bool bForceInitializedWorld = false;
     			UWorld* World = Cast<UWorld>(ExportObj);

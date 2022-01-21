@@ -302,17 +302,20 @@ void USingleCookerProxy::CookClusterSync(const FCookCluster& CookCluster)
 	}
 }
 
-
 void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster)
 {
 	TArray<ITargetPlatform*> TargetPlatforms = UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(CookCluster.Platforms);
 	bool bConcurrentSave = GetSettingObject()->bConcurrentSave;
+	TSet<UObject*> ProcessedObjects;
 	if(CookCluster.bPreGeneratePlatformData)
 	{
 		FCookCluster Cluster = CookCluster;
 		
 		for(auto Class:GetPreCacheClasses())
 		{
+			FString DisplayStr = FString::Printf(TEXT("PreCache DDC For %s"),*Class->GetName());
+			FScopedNamedEvent CacheClassEvent(FColor::Red,*DisplayStr);
+			UE_LOG(LogHotPatcher,Log,TEXT("%s"),*DisplayStr);
 			TArray<FAssetDetail> ClassAssetDetails = THotPatcherTemplateHelper::GetArrayBySrcWithCondition<FAssetDetail>(Cluster.AssetDetails,[&](FAssetDetail AssetDetail)->bool
 				{
 					return AssetDetail.AssetType.IsEqual(*Class->GetName());
@@ -322,14 +325,21 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 			{
 				ObjectPaths.Emplace(AssetDetail.PackagePath);
 			}
-
-			for(auto* Package:UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths))
+			
+			TArray<UPackage*> PreCachePackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths);
+			for(int32 Index = PreCachePackages.Num() - 1 ;Index >= 0;--Index)
 			{
-				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TargetPlatforms,true,true, true);
+				UE_LOG(LogHotPatcher,Log,TEXT("%d resources waiting to be PreCache DDC"),PreCachePackages.Num());
+				UPackage* CurrentPackage = PreCachePackages[Index];
+				UE_LOG(LogHotPatcher,Log,TEXT("Start PreCache for %s"),*CurrentPackage->GetPathName());
+				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{CurrentPackage},TargetPlatforms,ProcessedObjects,true,true, false);
+				PreCachePackages.RemoveAtSwap(Index,1,false);
 			}
+			UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+			UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 		}
 		TArray<UPackage*> OthesPackages = UFlibAssetManageHelper::LoadPackagesForCooking(Cluster.AsSoftObjectPaths());
-		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(OthesPackages,TargetPlatforms,GetSettingObject()->bConcurrentSave,true,true);
+		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(OthesPackages,TargetPlatforms,ProcessedObjects,GetSettingObject()->bConcurrentSave,true,true);
 	}
 }
 
@@ -472,14 +482,20 @@ TSet<FName> USingleCookerProxy::GetAdditionalAssets()
 
 TArray<UClass*> USingleCookerProxy::GetPreCacheClasses() const
 {
-	TArray<UClass*> Classes{
+	TArray<UClass*> Classes;
+
+	TSet<UClass*> ParentClasses = {
 		UTexture::StaticClass(),
-		UTexture2D::StaticClass(),
-		UMaterial::StaticClass(),
-		UMaterialInstance::StaticClass(),
-		UMaterialFunction::StaticClass(),
+		UMaterialInterface::StaticClass(),
+		UMaterialFunctionInterface::StaticClass(),
 		UMaterialExpression::StaticClass()
 	};
+
+	for(auto& ParentClass:ParentClasses)
+	{
+		Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,true,true));
+	}
+	
 	return Classes;
 }
 

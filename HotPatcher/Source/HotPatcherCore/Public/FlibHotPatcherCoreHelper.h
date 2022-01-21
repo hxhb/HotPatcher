@@ -193,11 +193,14 @@ public:
 
 	static TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> CreatePlatformsPackageContexts(const TArray<ETargetPlatform>& Platforms,bool bIoStore);
 	static bool SavePlatformBulkDataManifest(TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>>&PlatformSavePackageContexts,ETargetPlatform Platform);
-	static void CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent = false, bool bWaitShaderComplate = true, bool
+	static void CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent = false, bool bWaitShaderComplate = true, bool
 	                                       bWaitAsyncFileWrite = false);
-	static void CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms, bool bStorageConcurrent);
+	static void CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent);
 
 	static uint32 GetCookSaveFlag(UPackage* Package,bool bUnversioned = true,bool bStorageConcurrent = false,bool CookLinkerDiff = false);
 	static EObjectFlags GetObjectFlagForCooked(UPackage* Package);
 	
+	static TArray<FAssetDetail> GetReferenceRecursivelyByClassName(const FAssetDetail& AssetDetail,const TArray<FString>& AssetTypeNames,const TArray<EAssetRegistryDependencyTypeEx>& RefType);
+
+	static TArray<UClass*> GetDerivedClasses(UClass* BaseClass,bool bRecursive,bool bContainSelf = false);
 };

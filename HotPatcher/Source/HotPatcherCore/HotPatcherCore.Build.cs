@@ -134,10 +134,6 @@ public class HotPatcherCore : ModuleRules
 		bool bEnableGameFeature = true;
 		if (bEnableGameFeature || (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 26))
 		{
-			PublicDefinitions.AddRange(new string[]
-			{
-				"ENGINE_GAME_FEATURE"
-			});
 			PublicDependencyModuleNames.AddRange(new string[]
 			{
 				// "GameFeatures",

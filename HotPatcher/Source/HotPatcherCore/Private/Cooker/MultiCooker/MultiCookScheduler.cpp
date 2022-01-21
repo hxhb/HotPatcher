@@ -2,7 +2,11 @@
 
 
 #include "Cooker/MultiCooker/MultiCookScheduler.h"
+
+#include "FlibHotPatcherCoreHelper.h"
+#include "Algo/ForEach.h"
 #include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
+#include "Materials/MaterialInstance.h"
 
 TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementation(FMultiCookerSettings MultiCookerSettings,const TArray<FAssetDetail>& AllDetails)
 {
@@ -19,7 +23,7 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 		Assets.AddUnique(AssetDetail);
 		AllPackagePaths.Add(FName(UFlibAssetManageHelper::PackagePathToLongPackageName(AssetDetail.PackagePath.ToString())));
 	}
-	
+
 	for(int32 index = 0;index<ProcessNumber;++index)
 	{
 		FSingleCookerSettings EmptySetting;
@@ -42,6 +46,43 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 		EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 		EmptySetting.StorageMetadataDir = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),EmptySetting.MissionName);
 		AllSingleCookerSettings.Add(EmptySetting);
+	}
+
+	// parser Material & MaterialInstance to same cooker
+	{
+		FString MaterialName = *UMaterial::StaticClass()->GetName();
+		
+		TArray<FAssetDetail>& MaterialAsets = *TypeAssetDetails.Find(*MaterialName);
+		TArray<TArray<FAssetDetail>> MaterialSplitInfo = THotPatcherTemplateHelper::SplitArray(MaterialAsets,ProcessNumber);
+		TypeAssetDetails.Remove(*MaterialName);
+		TArray<UClass*> MatInsClasses = UFlibHotPatcherCoreHelper::GetDerivedClasses(UMaterialInstance::StaticClass(),true,true);
+		TArray<FString> MatInsClassesNames;
+		Algo::ForEach(MatInsClasses,[&MatInsClassesNames](UClass* Class)
+		{
+			MatInsClassesNames.AddUnique(Class->GetName());
+		});
+		TArray<EAssetRegistryDependencyTypeEx> RefTypes = {
+			EAssetRegistryDependencyTypeEx::Hard
+		};
+		
+		for(int32 Idx=0;Idx < ProcessNumber;++Idx)
+		{
+			AllSingleCookerSettings[Idx].CookAssets.Append(MaterialSplitInfo[Idx]);
+
+			for(const auto& MaterialAsset:MaterialSplitInfo[Idx])
+			{
+				const TArray<FAssetDetail>& RefAssets = UFlibHotPatcherCoreHelper::GetReferenceRecursivelyByClassName(MaterialAsset,MatInsClassesNames,RefTypes);
+				AllSingleCookerSettings[Idx].CookAssets.Append(RefAssets);
+				for(const auto& Asset:RefAssets)
+				{
+					FName AssetType = Asset.AssetType;
+					if(TypeAssetDetails.Contains(AssetType))
+					{
+						TypeAssetDetails.Find(AssetType)->Remove(Asset);
+					}
+				}
+			}
+		}
 	}
 	
 	for(auto& TypeAssets:TypeAssetDetails)
