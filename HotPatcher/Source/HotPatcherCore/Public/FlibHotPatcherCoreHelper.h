@@ -56,7 +56,7 @@ public:
 
 	static FChunkInfo MakeChunkFromPatchSettings(struct FExportPatchSettings const* InPatchSetting);
 	static FChunkInfo MakeChunkFromPatchVerison(const FHotPatcherVersion& InPatchVersion);
-	static FString GetCookAssetsSaveDir(const FString& BaseDir, const FString PacakgeName, const FString& Platform);
+	static FString GetAssetCookedSavePath(const FString& BaseDir, const FString PacakgeName, const FString& Platform);
 
 	static FString GetProjectCookedDir();
 
@@ -86,6 +86,15 @@ public:
 		FCookActionCallback CookActionCallback,
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
 		const FString& InSavePath,
+		bool bStorageConcurrent 
+	);
+
+	static bool CookPackage(
+		UPackage* Package,
+		TArray<ITargetPlatform*> CookPlatforms,
+		FCookActionCallback CookActionCallback,
+		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
+		const TMap<FName,FString>& CookedPlatformSavePaths,
 		bool bStorageConcurrent 
 	);
 

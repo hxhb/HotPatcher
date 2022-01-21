@@ -281,13 +281,27 @@ void USingleCookerProxy::CookClusterSync(const FCookCluster& CookCluster)
 		TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(CookCluster.AsSoftObjectPaths());
 		
 		GIsSavingPackage = true;
+		TMap<FName,TMap<FName,FString>> PackageCookedSavePaths;
+		for(const auto& Package:AllPackages)
+		{
+			FName PackagePathName = *Package->GetPathName();
+			PackageCookedSavePaths.Add(PackagePathName,TMap<FName,FString>{});
+			for(auto Platform:TargetPlatforms)
+			{
+				FString CookedSavePath = UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(CookBaseDir,PackagePathName.ToString(), Platform->PlatformName());
+				PackageCookedSavePaths.Find(PackagePathName)->Add(*Platform->PlatformName(),CookedSavePath);
+			}
+		}
+		
 		ParallelFor(AllPackages.Num(), [=](int32 AssetIndex)
 		{
 			UFlibHotPatcherCoreHelper::CookPackage(
 				AllPackages[AssetIndex],
 				TargetPlatforms,
 				CookCluster.CookActionCallback,
-				SavePackageContextsNameMapping,CookBaseDir,true);
+				SavePackageContextsNameMapping,
+				*PackageCookedSavePaths.Find(*AllPackages[AssetIndex]->GetPathName()),
+				true);
 		},!GetSettingObject()->bConcurrentSave);
 		GIsSavingPackage = false;
 	}
@@ -357,7 +371,7 @@ void USingleCookerProxy::CookCluster(const FCookCluster& CookCluster)
 			FString PackageName = Asset.GetLongPackageName();
 			for(const auto& TargetPlatform:CookPlatfotms)
 			{
-				FString CookedSavePath = UFlibHotPatcherCoreHelper::GetCookAssetsSaveDir(CookBaseDir,PackageName, TargetPlatform->PlatformName());
+				FString CookedSavePath = UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(CookBaseDir,PackageName, TargetPlatform->PlatformName());
 				PaddingDeleteFiles.AddUnique(CookedSavePath);
 			}
 		}

@@ -500,7 +500,7 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 	{
 		FString CookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
 		// FString PackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(PackagePath);
-		FString CookedSavePath = UFlibHotPatcherCoreHelper::GetCookAssetsSaveDir(CookedDir,PackageName, THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
+		FString CookedSavePath = UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(CookedDir,PackageName, THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
 		
 		auto Msg = FText::Format(
 			LOCTEXT("CookAssetsNotify", "Cook {0} for {1} {2}!"),

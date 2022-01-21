@@ -245,7 +245,7 @@ FString ConvertToFullSandboxPath( const FString &FileName, bool bForWrite )
 	return Result;
 }
 
-FString UFlibHotPatcherCoreHelper::GetCookAssetsSaveDir(const FString& BaseDir, const FString PacakgeName, const FString& Platform)
+FString UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(const FString& BaseDir, const FString PacakgeName, const FString& Platform)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibHotPatcherCoreHelper::GetCookAssetsSaveDir"),FColor::Red);
 	FString Filename;
@@ -425,6 +425,26 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	bool bStorageConcurrent 
 )
 {
+	FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
+	TMap<FName,FString> PlatformSavePaths;
+	for(auto Platform: CookPlatforms)
+	{
+		FString SavePath = UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(InSavePath,LongPackageName, Platform->PlatformName());
+		PlatformSavePaths.Add(*Platform->PlatformName(),SavePath);
+	}
+	
+	return UFlibHotPatcherCoreHelper::CookPackage(Package,CookPlatforms,CookActionCallback,PlatformSavePackageContext,PlatformSavePaths,bStorageConcurrent);
+}
+
+bool UFlibHotPatcherCoreHelper::CookPackage(
+	UPackage* Package,
+	TArray<ITargetPlatform*> CookPlatforms,
+	FCookActionCallback CookActionCallback,
+	class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
+	const TMap<FName,FString>& CookedPlatformSavePaths,
+	bool bStorageConcurrent 
+)
+{
 	bool bSuccessed = false;
 
 	FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
@@ -479,7 +499,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			FFilterEditorOnlyFlag SetPackageEditorOnlyFlag(Package,Platform);
 
 			FString PackageName = PackageFileName.IsNone() ? LongPackageName :PackageFileName.ToString();
-			FString CookedSavePath = UFlibHotPatcherCoreHelper::GetCookAssetsSaveDir(InSavePath,PackageName, Platform->PlatformName());
+			FString CookedSavePath = *CookedPlatformSavePaths.Find(*Platform->PlatformName());
 			ETargetPlatform TargetPlatform;
 			THotPatcherTemplateHelper::GetEnumValueByName(Platform->PlatformName(),TargetPlatform);
 
