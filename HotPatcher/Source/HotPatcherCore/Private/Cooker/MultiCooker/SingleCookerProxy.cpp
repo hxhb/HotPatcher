@@ -343,11 +343,13 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 			}
 			
 			TArray<UPackage*> PreCachePackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths);
+			uint32 TotalPackagesNum = PreCachePackages.Num();
 			for(int32 Index = PreCachePackages.Num() - 1 ;Index >= 0;--Index)
 			{
-				UE_LOG(LogHotPatcher,Log,TEXT("%d resources waiting to be PreCache DDC"),PreCachePackages.Num());
+				UE_LOG(LogHotPatcher,Log,TEXT("%d assets (%s) waiting to be PreCache DDC, total %d."), PreCachePackages.Num(), *Class->GetName(), TotalPackagesNum);
 				UPackage* CurrentPackage = PreCachePackages[Index];
 				UE_LOG(LogHotPatcher,Log,TEXT("Start PreCache for %s"),*CurrentPackage->GetPathName());
+				
 				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{CurrentPackage},TargetPlatforms,ProcessedObjects,true,true, false);
 				PreCachePackages.RemoveAtSwap(Index,1,false);
 			}

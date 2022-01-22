@@ -365,9 +365,10 @@ void UFlibHotPatcherCoreHelper::CookAssets(
 		}
 	}
 	
-	for(const auto& AssetObjectPath:Assets)
+	for(int32 index = 0; index < Assets.Num();++index)
 	{
-		CookPackage(AssetObjectPath,CookPlatforms,CookActionCallback,FinalPlatformSavePackageContext,InSavePath,false);
+		UE_LOG(LogHotPatcherCoreHelper,Display,TEXT("Cooked packages %d Packages Remain %d Total %d"), index, Assets.Num() - index, Assets.Num());
+		CookPackage(Assets[index],CookPlatforms,CookActionCallback,FinalPlatformSavePackageContext,InSavePath,false);
 	}
 	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
 	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
