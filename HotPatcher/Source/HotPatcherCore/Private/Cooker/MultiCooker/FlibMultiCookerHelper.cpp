@@ -44,8 +44,14 @@ FString UFlibMultiCookerHelper::GetProfilingCmd()
 	return FString::Printf(TEXT("-trace=cpu,memory,loadtime -statnamedevents implies -llm"));
 }
 
-TSharedPtr<FCookShaderCollectionProxy> UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform(const FString& ShaderLibraryName, TArray<ETargetPlatform> Platforms, bool bShareShader, bool bNativeShader, bool bMaster, const
-	FString& InSavePath)
+TSharedPtr<FCookShaderCollectionProxy> UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform(
+	const FString& ShaderLibraryName,
+	TArray<ETargetPlatform> Platforms,
+	bool bShareShader,
+	bool bNativeShader,
+	bool bMaster,
+	const FString& InSavePath,
+	bool bCleanSavePath)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform"),FColor::Red);
 	TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
@@ -54,8 +60,12 @@ TSharedPtr<FCookShaderCollectionProxy> UFlibMultiCookerHelper::CreateCookShaderC
 	{
 		PlatformNames.AddUnique(THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
 	}
-	UFlibHotPatcherCoreHelper::DeleteDirectory(InSavePath);
+	
 	FString ActualLibraryName = UFlibShaderCodeLibraryHelper::GenerateShaderCodeLibraryName(FApp::GetProjectName(),false);
+	if(bCleanSavePath)
+	{
+		UFlibHotPatcherCoreHelper::DeleteDirectory(InSavePath);
+	}
 	CookShaderCollection = MakeShareable(
 		new FCookShaderCollectionProxy(
 			PlatformNames,

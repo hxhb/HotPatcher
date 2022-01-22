@@ -24,6 +24,7 @@
 #include "Serialization/ArrayWriter.h"
 #include "Settings/ProjectPackagingSettings.h"
 #include "ShaderCompiler.h"
+#include "Algo/ForEach.h"
 #include "ProfilingDebugging/LoadTimeTracker.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -363,11 +364,13 @@ void UFlibHotPatcherCoreHelper::CookAssets(
 			CookPlatforms.Add(PlatformIns);
 		}
 	}
-	const bool bStorageConcurrent = FParse::Param(FCommandLine::Get(), TEXT("ConcurrentSave"));
+	
 	for(const auto& AssetObjectPath:Assets)
 	{
-		CookPackage(AssetObjectPath,CookPlatforms,CookActionCallback,FinalPlatformSavePackageContext,InSavePath,bStorageConcurrent);
+		CookPackage(AssetObjectPath,CookPlatforms,CookActionCallback,FinalPlatformSavePackageContext,InSavePath,false);
 	}
+	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 }
 
 struct FFilterEditorOnlyFlag
@@ -1123,20 +1126,17 @@ void UFlibHotPatcherCoreHelper::AnalysisWidgetTree(const FHotPatcherVersion& Bas
 		AnalysisAssets.Append(ModifyAssets);
 	}
 	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDepTypes {EAssetRegistryDependencyTypeEx::Hard};
-	FName AssetType = TEXT("WidgetBlueprint");
-	
-	TArray<EAssetRegistryDependencyType::Type> SearchType{EAssetRegistryDependencyType::Hard};
+
+	FName WidgetBlueprintName = UWidgetBlueprint::StaticClass()->GetFName();;
 	
 	for(const auto& OriginAsset:AnalysisAssets)
 	{
-		if(OriginAsset.AssetType == AssetType)
+		if(OriginAsset.AssetType.IsEqual(WidgetBlueprintName))
 		{
-			TArray<FAssetDetail> CurrentAssetsRef;
-			UFlibAssetManageHelper::GetAssetReferenceRecursively(OriginAsset, SearchType, TArray<FString>{AssetType.ToString()}, CurrentAssetsRef);
-			UE_LOG(LogHotPatcher,Display,TEXT("Reference %s Widgets:"),*OriginAsset.PackagePath.ToString());
-			for(const auto& Asset:CurrentAssetsRef)
+			TArray<FAssetDetail> RefAssets = UFlibHotPatcherCoreHelper::GetReferenceRecursivelyByClassName(OriginAsset,TArray<FString>{WidgetBlueprintName.ToString()},AssetRegistryDepTypes);
+			for(const auto& Asset:RefAssets)
 			{
-				if(!(Asset.AssetType == AssetType))
+				if(!(Asset.AssetType.IsEqual(WidgetBlueprintName)))
 				{
 					continue;
 				}
@@ -1145,7 +1145,7 @@ void UFlibHotPatcherCoreHelper::AnalysisWidgetTree(const FHotPatcherVersion& Bas
 				if(bInBaseVersion)
 				{
 					PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AddAssetsDetail(Asset);
-					UE_LOG(LogHotPatcher,Display,TEXT("Widget: %s"),*Asset.PackagePath.ToString());
+					UE_LOG(LogHotPatcher,Log,TEXT("Add Parent Widget: %s"),*Asset.PackagePath.ToString());
 				}
 			}
 		}
@@ -1155,15 +1155,16 @@ void UFlibHotPatcherCoreHelper::AnalysisWidgetTree(const FHotPatcherVersion& Bas
 TArray<FAssetDetail> UFlibHotPatcherCoreHelper::GetReferenceRecursivelyByClassName(const FAssetDetail& AssetDetail,const TArray<FString>& AssetTypeNames,const TArray<EAssetRegistryDependencyTypeEx>& RefType)
 {
 	TArray<FAssetDetail> Results;
-
-	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDepTypes {EAssetRegistryDependencyTypeEx::Hard};
-	// FName AssetType = TEXT("WidgetBlueprint");
 	
-	TArray<EAssetRegistryDependencyType::Type> SearchType{EAssetRegistryDependencyType::Hard};
+	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDepTypes {EAssetRegistryDependencyTypeEx::Hard};
+	TArray<EAssetRegistryDependencyType::Type> SearchTypes;
+	Algo::ForEach(AssetRegistryDepTypes,[&SearchTypes](EAssetRegistryDependencyTypeEx TypeEx)
+	{
+		SearchTypes.AddUnique(UFlibAssetManageHelper::ConvAssetRegistryDependencyToInternal(TypeEx));
+	});
 	
 	TArray<FAssetDetail> CurrentAssetsRef;
-	UFlibAssetManageHelper::GetAssetReferenceRecursively(AssetDetail, SearchType, AssetTypeNames, CurrentAssetsRef);
-	UE_LOG(LogHotPatcher,Display,TEXT("Reference %s Widgets:"),*AssetDetail.PackagePath.ToString());
+	UFlibAssetManageHelper::GetAssetReferenceRecursively(AssetDetail, SearchTypes, AssetTypeNames, CurrentAssetsRef);
 	for(const auto& Asset:CurrentAssetsRef)
 	{
 		if(!AssetTypeNames.Contains(Asset.AssetType.ToString()))

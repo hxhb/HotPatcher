@@ -10,6 +10,7 @@
 #include "Templates/SharedPointer.h"
 #include "IDetailsView.h"
 #include "PropertyEditorModule.h"
+#include "SingleCookerProxy.h"
 #include "Widgets/Text/SMultiLineEditableText.h"
 
 #include "MultiCookerProxy.generated.h"
@@ -34,10 +35,10 @@ public:
     bool IsRunning()const;
     void Cancel();
     bool HasError();
-    // void CompileGlobalShader(const TArray<ITargetPlatform*> Platforms);
     void OnCookMissionsFinished(bool bSuccessed);
     bool MergeShader();
-    void RecookFailedAssets();
+    void CookFailedAndAdditionalAssets();
+
     FORCEINLINE bool IsFinished()const{return bMissionFinished;}
 public:
     void WaitMissionFinished();
@@ -45,8 +46,13 @@ public:
     void PostMission();
     
 protected:
-    void CreateShaderCollectionByName(const FString& Name);
+    void CreateShaderCollectionByName(const FString& Name, bool bCleanDir);
     void ShutdownShaderCollection();
+
+protected:
+    TArray<FAssetDetail> GetCookFailedAssetsByCookers()const;
+    TArray<FAssetDetail> GetPackageTrackerAssetsByCookers()const;
+
 protected:
     FExportPatchSettings MakePatchSettings();
     TArray<FSingleCookerSettings> MakeSingleCookerSettings(const TArray<FAssetDetail>& AllDetails);

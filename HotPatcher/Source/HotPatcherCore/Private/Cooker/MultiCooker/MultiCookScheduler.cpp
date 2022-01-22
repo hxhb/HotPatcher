@@ -72,13 +72,17 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 			for(const auto& MaterialAsset:MaterialSplitInfo[Idx])
 			{
 				const TArray<FAssetDetail>& RefAssets = UFlibHotPatcherCoreHelper::GetReferenceRecursivelyByClassName(MaterialAsset,MatInsClassesNames,RefTypes);
-				AllSingleCookerSettings[Idx].CookAssets.Append(RefAssets);
+				
 				for(const auto& Asset:RefAssets)
 				{
 					FName AssetType = Asset.AssetType;
 					if(TypeAssetDetails.Contains(AssetType))
 					{
-						TypeAssetDetails.Find(AssetType)->Remove(Asset);
+						if(TypeAssetDetails.Find(AssetType)->Contains(Asset))
+						{
+							AllSingleCookerSettings[Idx].CookAssets.AddUnique(Asset);
+							TypeAssetDetails.Find(AssetType)->Remove(Asset);
+						}
 					}
 				}
 			}

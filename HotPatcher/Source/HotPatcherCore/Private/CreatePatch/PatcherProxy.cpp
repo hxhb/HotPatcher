@@ -243,20 +243,6 @@ bool UPatcherProxy::DoExport()
 }
 
 
-#if WITH_PACKAGE_CONTEXT
-TMap<ETargetPlatform, FSavePackageContext*> UPatcherProxy::GetPlatformSavePackageContextsRaw() const
-{
-	TMap<ETargetPlatform,FSavePackageContext*> result;
-	TArray<ETargetPlatform> Keys;
-	GetPlatformSavePackageContexts().GetKeys(Keys);
-	for(const auto& Key:Keys)
-	{
-		result.Add(Key,GetPlatformSavePackageContexts().Find(Key)->Get());
-	}
-	return result;
-}
-#endif
-
 namespace PatchWorker
 {
 	// setup 1

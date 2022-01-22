@@ -47,7 +47,10 @@ struct FCookCluster
         TArray<FSoftObjectPath> SoftObjectPaths;
         for(const auto& AssetDetail:AssetDetails)
         {
-            SoftObjectPaths.Emplace(AssetDetail.PackagePath);
+            if(AssetDetail.IsValid())
+            {
+                SoftObjectPaths.Emplace(AssetDetail.PackagePath);
+            }
         }
         return SoftObjectPaths;
     }

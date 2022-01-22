@@ -42,17 +42,9 @@ public:
     FORCEINLINE const FPatchWorkers& GetPatchWorkers()const{ return PatchWorkers; }
 public:
     FOnPakListGenerated OnPakListGenerated;
-    
-public:
-#if WITH_PACKAGE_CONTEXT
-    // virtual void InitPlatformPackageContexts();
-    FORCEINLINE TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
-    TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContextsRaw()const;
-#endif
 
 protected:
     FPatchWorkers PatchWorkers;
 private:
-    TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
     TSharedPtr<FHotPatcherPatchContext> PatchContext;
 };

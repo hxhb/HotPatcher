@@ -32,6 +32,15 @@ protected:
     {
         Setting = InSetting;
     }
+
+public:
+#if WITH_PACKAGE_CONTEXT
+    // virtual void InitPlatformPackageContexts();
+    FORCEINLINE TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> GetPlatformSavePackageContexts()const {return PlatformSavePackageContexts;}
+    FORCEINLINE TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContextsRaw()const;
+    TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
+#endif
+
 public:
     FExportPakProcess OnPaking;
     FExportPakShowMsg OnShowMsg;
@@ -39,3 +48,16 @@ protected:
     FPatcherEntitySettingBase* Setting;
 };
 
+#if WITH_PACKAGE_CONTEXT
+FORCEINLINE TMap<ETargetPlatform, FSavePackageContext*> UHotPatcherProxyBase::GetPlatformSavePackageContextsRaw() const
+{
+    TMap<ETargetPlatform,FSavePackageContext*> result;
+    TArray<ETargetPlatform> Keys;
+    GetPlatformSavePackageContexts().GetKeys(Keys);
+    for(const auto& Key:Keys)
+    {
+        result.Add(Key,GetPlatformSavePackageContexts().Find(Key)->Get());
+    }
+    return result;
+}
+#endif

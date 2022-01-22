@@ -78,6 +78,7 @@ struct FPackageTracker : public FPackageTrackerBase
 		FName AssetPathName = FName(Package->GetPathName());
 		if(!ExisitAssets.Contains(AssetPathName))
 		{
+			UE_LOG(LogHotPatcher,Display,TEXT("[PackageTracker] Add %s"),*AssetPathName.ToString());
 			PackagesPendingSave.Add(AssetPathName);
 		}
 	}

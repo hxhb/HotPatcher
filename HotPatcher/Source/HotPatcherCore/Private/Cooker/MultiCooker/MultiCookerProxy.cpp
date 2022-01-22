@@ -22,6 +22,11 @@ void UMultiCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 	{
 		UFlibHotPatcherCoreHelper::ImportProjectSettingsToSettingBase(GetSettingObject());
 	}
+
+#if WITH_PACKAGE_CONTEXT
+	PlatformSavePackageContexts = UFlibHotPatcherCoreHelper::CreatePlatformsPackageContexts(GetSettingObject()->CookTargetPlatforms,GetSettingObject()->IoStoreSettings.bIoStore);
+#endif
+	
 }
 
 void UMultiCookerProxy::Shutdown()
@@ -33,7 +38,38 @@ void UMultiCookerProxy::Shutdown()
 	SerializeConfig();
 	SerializeMultiCookerAssets();
 	SerializeCookVersion();
-	
+
+	{
+		// serialize cook failed and package track assets
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("Serialize Failed & Additional Assets"),FColor::Red);
+		FPackagePathSet CookFailedSet;
+		FPackagePathSet PackageTrackerAdditionalSet;
+		
+		for(auto PlatformAsset:CookerFailedCollectionMap)
+		{
+			for(auto& Asset:PlatformAsset.Value.Assets)
+			{
+				CookFailedSet.PackagePaths.Add(Asset.PackagePath);
+			}
+		}
+		FString CookFailedJsonContent;
+		if(!!CookFailedSet.PackagePaths.Num() && THotPatcherTemplateHelper::TSerializeStructAsJsonString(CookFailedSet,CookFailedJsonContent))
+		{
+			FString SaveTo = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),FString::Printf(TEXT("%s_CookFailedAssets.json"),FApp::GetProjectName()));
+			FFileHelper::SaveStringToFile(CookFailedJsonContent,*SaveTo);
+		}
+		
+		for(auto Asset:GetPackageTrackerAssetsByCookers())
+		{
+			PackageTrackerAdditionalSet.PackagePaths.Add(Asset.PackagePath);
+		}
+		FString PackageTrackerAdditionalJsonContent;
+		if(!!PackageTrackerAdditionalSet.PackagePaths.Num() && THotPatcherTemplateHelper::TSerializeStructAsJsonString(PackageTrackerAdditionalSet,PackageTrackerAdditionalJsonContent))
+		{
+			FString SaveTo = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),FString::Printf(TEXT("%s_PackageTrackerAssets.json"),FApp::GetProjectName()));
+			FFileHelper::SaveStringToFile(PackageTrackerAdditionalJsonContent,*SaveTo);
+		}
+	}
 	Super::Shutdown();
 }
 
@@ -109,25 +145,6 @@ void SaveGlobalShaderMapFiles(const TArrayView<const ITargetPlatform* const>& Pl
 	}
 }
 
-// void UMultiCookerProxy::CompileGlobalShader(const TArray<ITargetPlatform*> Platforms)
-// {
-// 	// don't resave the global shader map files in dlc
-// 	if(GetSettingObject()->ShaderOptions.bSharedShaderLibrary)
-// 	{
-// 		// FShaderCodeLibrary::OpenLibrary(TEXT("Global"), TEXT(""));
-// 		SaveGlobalShaderMapFiles(Platforms,UFlibMultiCookerHelper::GetMultiCookerBaseDir());
-// 		
-// 		// for(const auto& Platform:Platforms)
-// 		// {
-// 		// 	FString SavePath = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("Shaders"),Platform->PlatformName());
-// 		// 	TArray<FName> OutFormats;
-// 		// 	Platform->GetAllTargetedShaderFormats(OutFormats);
-// 		// 	UFlibShaderCodeLibraryHelper::SaveShaderLibrary(Platform,NULL, TEXT("Global"),SavePath,true);
-// 		// }
-// 		// FShaderCodeLibrary::CloseLibrary(TEXT("Global"));
-// 	}
-// }
-
 void UMultiCookerProxy::OnCookMissionsFinished(bool bSuccessed)
 {
 	FScopeLock Lock(&SynchronizationObject);
@@ -137,10 +154,8 @@ void UMultiCookerProxy::OnCookMissionsFinished(bool bSuccessed)
 		MergeShader();
 	}
 	
-	if(!bSuccessed)
-	{
-		RecookFailedAssets();
-	}
+	CookFailedAndAdditionalAssets();
+	
 	OnMultiCookerFinished.Broadcast(this);
 	bMissionFinished = true;
 	PostMission();
@@ -247,30 +262,40 @@ bool UMultiCookerProxy::MergeShader()
 	return true;
 }
 
-void UMultiCookerProxy::RecookFailedAssets()
+void UMultiCookerProxy::CookFailedAndAdditionalAssets()
 {
 	FScopeLock Lock(&SynchronizationObject);
 	RecookerProxy = NewObject<USingleCookerProxy>();
 	RecookerProxy->AddToRoot();
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::RecookFailedAssets"),FColor::Red);
-	TMap<ETargetPlatform,TArray<FAssetDetail>> AllFailedAssetsMap;
-	FSingleCookerSettings SingleCookerSetting;
-	SingleCookerSetting.ShaderOptions.bSharedShaderLibrary = false;
-	TArray<FAssetDetail>& AllFailedAssets = SingleCookerSetting.CookAssets;
-	for(const auto& CookFailedCollection:CookerFailedCollectionMap)
-	{
-		AllFailedAssetsMap.FindOrAdd(CookFailedCollection.Value.TargetPlatform).Append(CookFailedCollection.Value.Assets);
-		for(const auto& FailedAsset:CookFailedCollection.Value.Assets)
-		{
-			AllFailedAssets.AddUnique(FailedAsset);
-		}
-	}
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::CookFailedAndAdditionalAssets"),FColor::Red);
 	
-	AllFailedAssetsMap.GetKeys(SingleCookerSetting.CookTargetPlatforms);
+	FSingleCookerSettings EmptySetting;
+	EmptySetting.MissionID = 9999;
+	EmptySetting.ShaderLibName = TEXT("AdditionalPackages");
+	EmptySetting.MissionName = FString::Printf(TEXT("%s_Cooker_%s"),FApp::GetProjectName(),*EmptySetting.ShaderLibName);
+	EmptySetting.CookTargetPlatforms = GetSettingObject()->CookTargetPlatforms;
+	EmptySetting.bPackageTracker = false;
+	EmptySetting.ShaderOptions.bSharedShaderLibrary = false;
+	EmptySetting.ShaderOptions.bNativeShader = false;
+	EmptySetting.ShaderOptions.bMergeShaderLibrary = false;
+	EmptySetting.IoStoreSettings = GetSettingObject()->IoStoreSettings;
+	EmptySetting.IoStoreSettings.bStorageBulkDataInfo = false;
+	EmptySetting.bSerializeAssetRegistry = false;
+	EmptySetting.bPreGeneratePlatformData = false;
+	EmptySetting.bConcurrentSave = false;
+	EmptySetting.bDisplayConfig = false;
+	EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
+	EmptySetting.bOverrideSavePackageContext = false;
+	EmptySetting.PlatformSavePackageContexts = GetPlatformSavePackageContexts();
+	
+	EmptySetting.ShaderOptions.bSharedShaderLibrary = false;
+
+	EmptySetting.CookAssets.Append(GetPackageTrackerAssetsByCookers());
+	EmptySetting.CookAssets.Append(GetCookFailedAssetsByCookers());
 
 	if(RecookerProxy)
 	{
-		RecookerProxy->Init(&SingleCookerSetting);
+		RecookerProxy->Init(&EmptySetting);
 		RecookerProxy->DoExport();
 	}
 	// remove child process failed assets
@@ -295,8 +320,65 @@ void UMultiCookerProxy::RecookFailedAssets()
 	}
 }
 
+TArray<FAssetDetail> UMultiCookerProxy::GetCookFailedAssetsByCookers()const
+{
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::GetCookFailedAssetsByCookers"),FColor::Red);
+	TMap<ETargetPlatform,TArray<FAssetDetail>> AllFailedAssetsMap;
+	TArray<FAssetDetail> AllFailedAssets;
+	for(const auto& CookFailedCollection:CookerFailedCollectionMap)
+	{
+		AllFailedAssetsMap.FindOrAdd(CookFailedCollection.Value.TargetPlatform).Append(CookFailedCollection.Value.Assets);
+		for(const auto& FailedAsset:CookFailedCollection.Value.Assets)
+		{
+			AllFailedAssets.AddUnique(FailedAsset);
+		}
+	}
+	return AllFailedAssets;
+}
+
+TArray<FAssetDetail> UMultiCookerProxy::GetPackageTrackerAssetsByCookers()const
+{
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::GetPackageTrackerAssetsByCookers"),FColor::Red);
+	TArray<FAssetDetail> AdditionalAssetDetails;
+	FPackagePathSet TotalAdditionPackageSet;
+	
+	for(const auto& Cooker:CookerConfigMap)
+	{
+		FPackagePathSet AdditionalPackageSet;
+		FString CurrentCookerMetadataDir = Cooker.Value.StorageMetadataDir;
+		FString CurrentCookerAdditionPackageSetFile = FPaths::Combine(CurrentCookerMetadataDir,TEXT("AdditionalPackageSet.json"));
+
+		if(FPaths::FileExists(CurrentCookerAdditionPackageSetFile))
+		{
+			FString JsonContent;
+			FFileHelper::LoadFileToString(JsonContent,*CurrentCookerAdditionPackageSetFile);
+			if(THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,AdditionalPackageSet))
+			{
+				for(auto LongPackageName:AdditionalPackageSet.PackagePaths)
+				{
+					TotalAdditionPackageSet.PackagePaths.Add(LongPackageName);
+				}
+			}
+		}
+	}
+	for(const auto LongPackageName:TotalAdditionPackageSet.PackagePaths)
+	{
+		FAssetDetail AssetDetail = UFlibAssetManageHelper::GetAssetDetailByPackageName(LongPackageName.ToString());
+		if(AssetDetail.IsValid())
+		{
+			AdditionalAssetDetails.AddUnique(AssetDetail);
+		}
+		else
+		{
+			UE_LOG(LogHotPatcher,Log,TEXT("Get %s FAssetDetail Failed!"),*LongPackageName.ToString());
+		}
+	}
+	return AdditionalAssetDetails;
+}
+
 void UMultiCookerProxy::WaitMissionFinished()
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::WaitMissionFinished"),FColor::Red);
 	TSharedPtr<FThreadWorker> WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("SingleCooker_WaitCookComplete"),[this]()
 		{
 			while(IsRunning())
@@ -311,11 +393,27 @@ void UMultiCookerProxy::WaitMissionFinished()
 
 void UMultiCookerProxy::PreMission()
 {
-	
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::PreMission"),FColor::Red);
+
+	// for cook global shader
+	if(GetSettingObject()->bCompileGlobalShader)
+	{
+		CreateShaderCollectionByName(TEXT("Global"),true);
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("Compile Global Shader"),FColor::Red);
+		// CompileGlobalShader(UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(GetSettingObject()->CookTargetPlatforms));
+		SaveGlobalShaderMapFiles(UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(GetSettingObject()->CookTargetPlatforms),UFlibMultiCookerHelper::GetMultiCookerBaseDir());
+		UE_LOG(LogHotPatcher,Display,TEXT("MultiCookerProxy: Wait Global Shader Compile complate!"));
+		
+		// Wait for all shaders to finish compiling
+		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+		ShutdownShaderCollection();
+	}
 }
 
 void UMultiCookerProxy::PostMission()
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::PostMission"),FColor::Red);
+	
 	FString ShaderLibBaseDir = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("Shaders"));
 	
 	for(const auto& Platform:GetSettingObject()->CookTargetPlatforms)
@@ -367,16 +465,18 @@ void UMultiCookerProxy::PostMission()
 	}
 }
 
-void UMultiCookerProxy::CreateShaderCollectionByName(const FString& Name)
+void UMultiCookerProxy::CreateShaderCollectionByName(const FString& Name, bool bCleanDir)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::CreateShaderCollectionByName"),FColor::Red);
 	GlobalShaderCollectionProxy = UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform(
-	Name,
-	GetSettingObject()->CookTargetPlatforms,
-	GetSettingObject()->ShaderOptions.bSharedShaderLibrary,
-	GetSettingObject()->ShaderOptions.bNativeShader,
-	true,
-	FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("Shaders"))
-);
+		Name,
+		GetSettingObject()->CookTargetPlatforms,
+		GetSettingObject()->ShaderOptions.bSharedShaderLibrary,
+		GetSettingObject()->ShaderOptions.bNativeShader,
+		true,
+		FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("Shaders")),
+		bCleanDir
+	);
 	if(GlobalShaderCollectionProxy.IsValid())
 	{
 		GlobalShaderCollectionProxy->Init();
@@ -385,6 +485,7 @@ void UMultiCookerProxy::CreateShaderCollectionByName(const FString& Name)
 
 void UMultiCookerProxy::ShutdownShaderCollection()
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::ShutdownShaderCollection"),FColor::Red);
 	if(GlobalShaderCollectionProxy.IsValid())
 	{
 		GlobalShaderCollectionProxy->Shutdown();
@@ -431,6 +532,7 @@ void UMultiCookerProxy::UpdateMultiCookerStatus()
 void UMultiCookerProxy::UpdateSingleCookerStatus(FProcWorkerThread* ProcWorker, bool bSuccessed, const FAssetsCollection& FailedCollection)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::UpdateSingleCookerStatus"),FColor::Red);
+	UE_LOG(LogHotPatcher,Display,TEXT("Single Cooker %s Mission %s!"),*ProcWorker->GetThreadName(), bSuccessed ? TEXT("Finished") : TEXT("Failed"));
 	if(!bSuccessed)
 	{
 		CookerFailedCollectionMap.FindOrAdd(ProcWorker->GetThreadName(),FailedCollection);
@@ -454,27 +556,12 @@ bool UMultiCookerProxy::DoExport()
 	ScanedCaches.Empty();
 	
 	FString TempDir = UFlibMultiCookerHelper::GetMultiCookerBaseDir();
-
-
-	PreMission();
-	// for cook global shader
-	if(GetSettingObject()->bCompileGlobalShader)
-	{
-		CreateShaderCollectionByName(TEXT("Global"));
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::DoExport Compile Global Shader"),FColor::Red);
-		// CompileGlobalShader(UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(GetSettingObject()->CookTargetPlatforms));
-		SaveGlobalShaderMapFiles(UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(GetSettingObject()->CookTargetPlatforms),UFlibMultiCookerHelper::GetMultiCookerBaseDir());
-		UE_LOG(LogHotPatcher,Display,TEXT("MultiCookerProxy: Wait Global Shader Compile complate!"));
-		
-		// Wait for all shaders to finish compiling
-		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
-		ShutdownShaderCollection();
-	}
-
-	// for project shader
-	CreateShaderCollectionByName(FApp::GetProjectName());
-	
 	UFlibHotPatcherCoreHelper::DeleteDirectory(TempDir);
+	
+	PreMission();
+	
+	// for project shader
+	CreateShaderCollectionByName(FApp::GetProjectName(), false);
 
 	CalcCookAssets();
 	
@@ -566,12 +653,10 @@ TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateSingleCookWroker(const FS
 	
 	FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 	FString ProfilingCmd = GetSettingObject()->bProfilingPerSingleCooker ? UFlibMultiCookerHelper::GetProfilingCmd() : TEXT("");
-	FString ConcurrentSave = GetSettingObject()->bConcurrentSave ? TEXT("-ConcurrentSave") : TEXT("");
 	FString MissionCommand = FString::Printf(
-		TEXT("\"%s\" -run=HotSingleCooker -config=\"%s\" -DDCNOSAVEBOOT -NoAssetRegistryCache -stdout -CrashForUAT -unattended -NoLogTimes -UTF8Output -norenderthread %s %s %s"),
+		TEXT("\"%s\" -run=HotSingleCooker -config=\"%s\" -DDCNOSAVEBOOT -NoAssetRegistryCache -stdout -CrashForUAT -unattended -NoLogTimes -UTF8Output -norenderthread %s %s"),
 		*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,
 		*ProfilingCmd,
-		*ConcurrentSave,
 		*GetSettingObject()->GetCombinedAdditionalCommandletArgs()
 		);
 	

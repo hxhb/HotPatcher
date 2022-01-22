@@ -221,7 +221,8 @@ void USingleCookerProxy::InitShaderLibConllections()
 		GetSettingObject()->ShaderOptions.bSharedShaderLibrary,
 		GetSettingObject()->ShaderOptions.bNativeShader,
 		true,
-		SavePath
+		SavePath,
+		true
 	);
 	
 	if(PlatformCookShaderCollection.IsValid())
@@ -314,6 +315,7 @@ void USingleCookerProxy::CookClusterSync(const FCookCluster& CookCluster)
 									,GetSettingObject()->StorageCookedDir
 );
 	}
+	
 }
 
 void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster)
@@ -381,7 +383,6 @@ void USingleCookerProxy::CookCluster(const FCookCluster& CookCluster)
 			FString FileName = PaddingDeleteFiles[Index];
 			if(!FileName.IsEmpty() && FPaths::FileExists(FileName))
 			{
-				UE_LOG(LogHotPatcher,Warning,TEXT("delete %s"),*FileName);
 				IFileManager::Get().Delete(*FileName,true,true,true);
 			}
 		},false);
