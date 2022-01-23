@@ -217,7 +217,7 @@ public:
 
 	// static TArray<UPackage*> GetPackagesByClass(TArray<UPackage*>& Packages, UClass* Class, bool RemoveFromSrc);
 	
-	static TArray<UPackage*> LoadPackagesForCooking(const TArray<FSoftObjectPath>& SoftObjectPaths);
+	static TArray<UPackage*> LoadPackagesForCooking(const TArray<FSoftObjectPath>& SoftObjectPaths, bool bStorageConcurrent);
 	
 	static bool MatchIgnoreTypes(const FString& LongPackageName, TSet<FName> IgnoreTypes, FString& MatchTypeStr);
 	static bool MatchIgnoreFilters(const FString& LongPackageName, const TArray<FString>& IgnoreDirs, FString& MatchDir);

@@ -520,7 +520,7 @@ namespace PatchWorker
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("PreCookPatchAssets"),FColor::Red);
 		// wait global / compiling shader by load asset
-		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 		
 		return true;
 	}
@@ -611,6 +611,8 @@ namespace PatchWorker
 						EmptySetting.IoStoreSettings.bStorageBulkDataInfo = false;// dont save platform context data to disk
 						EmptySetting.bSerializeAssetRegistry = Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry;
 						EmptySetting.bPreGeneratePlatformData = false;
+						EmptySetting.bWaitEveryAssetCompleted = false;
+						EmptySetting.bConcurrentSave = false;
 						EmptySetting.bDisplayConfig = false;
 						EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 						EmptySetting.StorageMetadataDir = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,TEXT("Metadatas"),Chunk.ChunkName);

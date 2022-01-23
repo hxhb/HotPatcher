@@ -202,7 +202,7 @@ public:
 
 	static TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> CreatePlatformsPackageContexts(const TArray<ETargetPlatform>& Platforms,bool bIoStore);
 	static bool SavePlatformBulkDataManifest(TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>>&PlatformSavePackageContexts,ETargetPlatform Platform);
-	static void CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent = false, bool bWaitShaderComplate = true, bool
+	static void CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent = false, bool bWaitShaderComplete = true, bool
 	                                       bWaitAsyncFileWrite = false);
 	static void CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent);
 

@@ -279,7 +279,7 @@ void USingleCookerProxy::CookClusterSync(const FCookCluster& CookCluster)
 		FString CookBaseDir = GetSettingObject()->StorageCookedDir;
 		TMap<FString, FSavePackageContext*> SavePackageContextsNameMapping = GetPlatformSavePackageContextsNameMapping();
 		
-		TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(CookCluster.AsSoftObjectPaths());
+		TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(CookCluster.AsSoftObjectPaths(),GetSettingObject()->bConcurrentSave);
 		
 		GIsSavingPackage = true;
 		TMap<FName,TMap<FName,FString>> PackageCookedSavePaths;
@@ -326,6 +326,28 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 	if(CookCluster.bPreGeneratePlatformData)
 	{
 		FCookCluster Cluster = CookCluster;
+
+		auto PreCachePlatformDataForPackages = [&](TArray<UPackage*>& PreCachePackages,const FString& Display)
+		{
+			uint32 TotalPackagesNum = PreCachePackages.Num();
+			for(int32 Index = PreCachePackages.Num() - 1 ;Index >= 0;--Index)
+			{
+				UE_LOG(LogHotPatcher,Log,TEXT("%d assets (%s) waiting to be PreCache DDC, total %d."), PreCachePackages.Num(), *Display, TotalPackagesNum);
+				UPackage* CurrentPackage = PreCachePackages[Index];
+				UE_LOG(LogHotPatcher,Log,TEXT("Start PreCache for %s"),*CurrentPackage->GetPathName());
+				
+				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
+					TArray<UPackage*>{CurrentPackage},
+					TargetPlatforms,
+					ProcessedObjects,
+					bConcurrentSave,
+					GetSettingObject()->bWaitEveryAssetCompleted,
+					GetSettingObject()->bWaitEveryAssetCompleted);
+				PreCachePackages.RemoveAtSwap(Index,1,false);
+			}
+			UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
+			UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+		};
 		
 		for(auto Class:GetPreCacheClasses())
 		{
@@ -342,22 +364,15 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 				ObjectPaths.Emplace(AssetDetail.PackagePath);
 			}
 			
-			TArray<UPackage*> PreCachePackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths);
-			uint32 TotalPackagesNum = PreCachePackages.Num();
-			for(int32 Index = PreCachePackages.Num() - 1 ;Index >= 0;--Index)
-			{
-				UE_LOG(LogHotPatcher,Log,TEXT("%d assets (%s) waiting to be PreCache DDC, total %d."), PreCachePackages.Num(), *Class->GetName(), TotalPackagesNum);
-				UPackage* CurrentPackage = PreCachePackages[Index];
-				UE_LOG(LogHotPatcher,Log,TEXT("Start PreCache for %s"),*CurrentPackage->GetPathName());
-				
-				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{CurrentPackage},TargetPlatforms,ProcessedObjects,true,true, false);
-				PreCachePackages.RemoveAtSwap(Index,1,false);
-			}
-			UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+			TArray<UPackage*> PreCachePackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths,GetSettingObject()->bConcurrentSave);
+			PreCachePlatformDataForPackages(PreCachePackages,Class->GetName());
+		}
+		TArray<UPackage*> OthesPackages = UFlibAssetManageHelper::LoadPackagesForCooking(Cluster.AsSoftObjectPaths(),GetSettingObject()->bConcurrentSave);
+		PreCachePlatformDataForPackages(OthesPackages,TEXT("Global"));
+		{
+			UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 			UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 		}
-		TArray<UPackage*> OthesPackages = UFlibAssetManageHelper::LoadPackagesForCooking(Cluster.AsSoftObjectPaths());
-		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(OthesPackages,TargetPlatforms,ProcessedObjects,GetSettingObject()->bConcurrentSave,true,true);
 	}
 }
 
@@ -450,7 +465,7 @@ void USingleCookerProxy::WaitCookerFinished()
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::WaitCookerFinished"),FColor::Red);
 	// Wait for all shaders to finish compiling
-	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 }
 

@@ -370,7 +370,7 @@ void UFlibHotPatcherCoreHelper::CookAssets(
 		UE_LOG(LogHotPatcherCoreHelper,Display,TEXT("Cooked packages %d Packages Remain %d Total %d"), index, Assets.Num() - index, Assets.Num());
 		CookPackage(Assets[index],CookPlatforms,CookActionCallback,FinalPlatformSavePackageContext,InSavePath,false);
 	}
-	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 }
 
@@ -1895,16 +1895,16 @@ bool UFlibHotPatcherCoreHelper::SavePlatformBulkDataManifest(TMap<ETargetPlatfor
 void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("CacheForCookedPlatformData"),FColor::Red);
-	TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths);
+	TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths,bStorageConcurrent);
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("BeginCacheForCookedPlatformData for Assets"),FColor::Red);
-		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(AllPackages,TargetPlatforms,ProcessedObjs,bStorageConcurrent, true, false);
+		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(AllPackages,TargetPlatforms,ProcessedObjs,bStorageConcurrent, false, false);
 	}
 
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitShaderCompilingComplate"),FColor::Red);
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitShaderCompilingComplete"),FColor::Red);
 		// Wait for all shaders to finish compiling
-		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 	}
 	{
 		UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
@@ -1946,7 +1946,7 @@ UE_TRACE_EVENT_BEGIN(CUSTOM_LOADTIMER_LOG, CachePackagePlatformData, NoSync)
 UE_TRACE_EVENT_END()
 
 #endif
-void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent, bool bWaitShaderComplate, bool
+void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent, bool bWaitShaderComplete, bool
                                                            bWaitAsyncFileWrite)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("CacheForCookedPlatformData"),FColor::Red);
@@ -1971,7 +1971,6 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
     		UE_LOG(LogHotPatcher,Warning,TEXT("BeginPackageObjectsCacheForCookedPlatformData Package is null!"));
     		continue;
     	}
-    	Package->FullyLoad();
     	
     	{
     		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportMap BeginCacheForCookedPlatformData"),FColor::Red);
@@ -2053,11 +2052,11 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
 		FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
 	}
 	
-	if (GShaderCompilingManager && bWaitShaderComplate)
+	if (GShaderCompilingManager && bWaitShaderComplete)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitShaderCompilingComplate"),FColor::Red);
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitShaderCompilingComplete"),FColor::Red);
 		// Wait for all shaders to finish compiling
-		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 	}
 	
 	{
@@ -2082,18 +2081,13 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
 			}
 			if(!!ObjectsToWaitForCookedPlatformData.Num())
 			{
-				FPlatformProcess::Sleep(0.001f);	
+				FPlatformProcess::Sleep(0.01f);	
 			}
 		}
 	}
 	
 	if (bStorageConcurrent)
 	{
-		// Precache the metadata so we don't risk rehashing the map in the parallelfor below
-    	for(auto Package:Packages)
-    	{
-    		Package->GetMetaData();
-    	}
 		// UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("Calling PostSaveRoot on worlds..."));
 		for (auto WorldIt = WorldsToPostSaveRoot.CreateConstIterator(); WorldIt; ++WorldIt)
 		{

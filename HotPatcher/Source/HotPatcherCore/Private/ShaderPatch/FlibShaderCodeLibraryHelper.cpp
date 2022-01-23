@@ -230,17 +230,17 @@ TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(cons
 	return FoundFiles;
 }
 
-void UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate()
+void UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete()
 {
 	// Wait for all shaders to finish compiling
 	if (GShaderCompilingManager)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("Compile Shader for Assets"),FColor::Red);
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("Wait Compile Shader Complete!"),FColor::Red);
 		// UE_LOG(LogHotPatcher, Display, TEXT("Waiting for shader compilation..."));
 		while(GShaderCompilingManager->IsCompiling())
 		{
 			GShaderCompilingManager->ProcessAsyncResults(false, false);
-			UE_LOG(LogHotPatcher,Display,TEXT("Remaining Shader %d"),GShaderCompilingManager->GetNumRemainingJobs())
+			// UE_LOG(LogHotPatcher,Display,TEXT("Remaining Shader %d"),GShaderCompilingManager->GetNumRemainingJobs())
 			FPlatformProcess::Sleep(0.5f);
 		}
 

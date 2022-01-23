@@ -402,10 +402,9 @@ void UMultiCookerProxy::PreMission()
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("Compile Global Shader"),FColor::Red);
 		// CompileGlobalShader(UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(GetSettingObject()->CookTargetPlatforms));
 		SaveGlobalShaderMapFiles(UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(GetSettingObject()->CookTargetPlatforms),UFlibMultiCookerHelper::GetMultiCookerBaseDir());
-		UE_LOG(LogHotPatcher,Display,TEXT("MultiCookerProxy: Wait Global Shader Compile complate!"));
+		UE_LOG(LogHotPatcher,Display,TEXT("MultiCookerProxy: Wait Global Shader Compile Complete!"));
 		
-		// Wait for all shaders to finish compiling
-		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+		
 		ShutdownShaderCollection();
 	}
 }
@@ -486,6 +485,9 @@ void UMultiCookerProxy::CreateShaderCollectionByName(const FString& Name, bool b
 void UMultiCookerProxy::ShutdownShaderCollection()
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookerProxy::ShutdownShaderCollection"),FColor::Red);
+	// Wait for all shaders to finish compiling
+	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
+	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 	if(GlobalShaderCollectionProxy.IsValid())
 	{
 		GlobalShaderCollectionProxy->Shutdown();
@@ -654,7 +656,7 @@ TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateSingleCookWroker(const FS
 	FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 	FString ProfilingCmd = GetSettingObject()->bProfilingPerSingleCooker ? UFlibMultiCookerHelper::GetProfilingCmd() : TEXT("");
 	FString MissionCommand = FString::Printf(
-		TEXT("\"%s\" -run=HotSingleCooker -config=\"%s\" -DDCNOSAVEBOOT -NoAssetRegistryCache -stdout -CrashForUAT -unattended -NoLogTimes -UTF8Output -norenderthread %s %s"),
+		TEXT("\"%s\" -run=HotSingleCooker -config=\"%s\" -DDCNOSAVEBOOT -NoAssetRegistryCache -stdout -CrashForUAT -unattended -NoLogTimes -UTF8Output -norenderthread -NoCompileGlobalShader %s %s"),
 		*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,
 		*ProfilingCmd,
 		*GetSettingObject()->GetCombinedAdditionalCommandletArgs()

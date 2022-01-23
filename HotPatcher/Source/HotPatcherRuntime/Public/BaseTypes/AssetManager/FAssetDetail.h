@@ -14,8 +14,10 @@ struct HOTPATCHERRUNTIME_API FAssetDetail
 	FAssetDetail() = default;
 	FAssetDetail(const FAssetDetail&) = default;
 	FAssetDetail& operator=(const FAssetDetail&) = default;
-	FORCEINLINE FAssetDetail(const FString& InAssetPackagePath, const FString& InAsetType,const FString& InGuid)
+	FORCEINLINE FAssetDetail(const FName& InAssetPackagePath, const FString& InAsetType,const FString& InGuid)
 		: PackagePath(InAssetPackagePath), AssetType(InAsetType), Guid(InGuid){}
+	FORCEINLINE FAssetDetail(const FString& InAssetPackagePath, const FString& InAsetType,const FString& InGuid)
+		: FAssetDetail(FName(*InAssetPackagePath),InAsetType,InGuid){}
 
 	bool operator==(const FAssetDetail& InRight)const
 	{
