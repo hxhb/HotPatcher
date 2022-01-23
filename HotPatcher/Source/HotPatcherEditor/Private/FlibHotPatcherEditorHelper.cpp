@@ -696,6 +696,15 @@ FString UFlibHotPatcherEditorHelper::GetUECmdBinary()
 #else
         TEXT("Win32"),
 #endif
+#ifdef WITH_HOTPATCHER_DEBUG
+	#if PLATFORM_64BITS
+			FString::Printf(TEXT("%s-Win64-Debug-Cmd.exe"),*Binary)
+			// TEXT("UE4Editor-Win64-Debug-Cmd.exe")
+	#else
+			FString::Printf(TEXT("%s-Win32-Debug-Cmd.exe"),*Binary)
+			// TEXT("UE4Editor-Win32-Debug-Cmd.exe")
+	#endif
+#else
 #ifdef WITH_HOTPATCHER_DEBUGGAME
 	#if PLATFORM_64BITS
 			FString::Printf(TEXT("%s-Win64-DebugGame-Cmd.exe"),*Binary)
@@ -707,6 +716,7 @@ FString UFlibHotPatcherEditorHelper::GetUECmdBinary()
 #else
 		FString::Printf(TEXT("%s-Cmd.exe"),*Binary)
         // TEXT("UE4Editor-Cmd.exe")
+#endif
 #endif
     );
 #endif
