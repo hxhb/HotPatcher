@@ -106,6 +106,11 @@ public class HotPatcherEditor : ModuleRules
 		
 		switch (Target.Configuration)
 		{
+			case UnrealTargetConfiguration.Debug:
+			{
+				PublicDefinitions.Add("WITH_HOTPATCHER_DEBUG");
+				break;
+			}
 			case UnrealTargetConfiguration.DebugGame:
 			{
 				PublicDefinitions.Add("WITH_HOTPATCHER_DEBUGGAME");
