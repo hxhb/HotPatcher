@@ -698,7 +698,7 @@ FString UFlibHotPatcherCoreHelper::GetUECmdBinary()
 
 	return FPaths::Combine(
         FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
-        TEXT("Binaries"),PlatformName,FString::Printf(TEXT("%s%s-Cmd.exe"),*Binary,bIsDevelopment ? TEXT("") : *ConfigutationName));
+        TEXT("Binaries"),PlatformName,FString::Printf(TEXT("%s-%s-%s-Cmd.exe"),*Binary,*PlatformName,bIsDevelopment ? TEXT("") : *ConfigutationName));
 #endif
 	
 #if PLATFORM_MAC
