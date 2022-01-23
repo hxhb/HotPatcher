@@ -279,7 +279,7 @@ void USingleCookerProxy::CookClusterSync(const FCookCluster& CookCluster)
 		FString CookBaseDir = GetSettingObject()->StorageCookedDir;
 		TMap<FString, FSavePackageContext*> SavePackageContextsNameMapping = GetPlatformSavePackageContextsNameMapping();
 		
-		TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(CookCluster.AsSoftObjectPaths());
+		TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(CookCluster.AsSoftObjectPaths(),GetSettingObject()->bConcurrentSave);
 		
 		GIsSavingPackage = true;
 		TMap<FName,TMap<FName,FString>> PackageCookedSavePaths;
@@ -320,13 +320,39 @@ void USingleCookerProxy::CookClusterSync(const FCookCluster& CookCluster)
 
 void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster)
 {
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::PreGeneratePlatformData"),FColor::Red);
 	TArray<ITargetPlatform*> TargetPlatforms = UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(CookCluster.Platforms);
 	bool bConcurrentSave = GetSettingObject()->bConcurrentSave;
 	TSet<UObject*> ProcessedObjects;
 	if(CookCluster.bPreGeneratePlatformData)
 	{
-		FCookCluster Cluster = CookCluster;
+		auto PreCachePackagesLambda = [&](TArray<UPackage*>& PreCachePackages,const FString& Display)
+		{
+			uint32 TotalPackagesNum = PreCachePackages.Num();
+			for(int32 Index = PreCachePackages.Num() - 1 ;Index >= 0;--Index)
+			{
+				UE_LOG(LogHotPatcher,Log,TEXT("%d assets (%s) waiting to be PreCache DDC, total %d."), PreCachePackages.Num(), *Display, TotalPackagesNum);
+				UPackage* CurrentPackage = PreCachePackages[Index];
+				UE_LOG(LogHotPatcher,Log,TEXT("Start PreCache for %s"),*CurrentPackage->GetPathName());
+				
+				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
+					TArray<UPackage*>{CurrentPackage},
+					TargetPlatforms,
+					ProcessedObjects,
+					GetSettingObject()->bConcurrentSave,
+					GetSettingObject()->bWaitEachAssetComplete,
+					GetSettingObject()->bWaitEachAssetComplete
+					);
+				PreCachePackages.RemoveAtSwap(Index,1,false);
+			}
+			{
+				UE_LOG(LogHotPatcher,Log,TEXT("Wait PreCache Platform Data Finished for %s"),*Display);
+				UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+				UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+			}
+		};
 		
+		FCookCluster Cluster = CookCluster;
 		for(auto Class:GetPreCacheClasses())
 		{
 			FString DisplayStr = FString::Printf(TEXT("PreCache DDC For %s"),*Class->GetName());
@@ -342,22 +368,11 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 				ObjectPaths.Emplace(AssetDetail.PackagePath);
 			}
 			
-			TArray<UPackage*> PreCachePackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths);
-			uint32 TotalPackagesNum = PreCachePackages.Num();
-			for(int32 Index = PreCachePackages.Num() - 1 ;Index >= 0;--Index)
-			{
-				UE_LOG(LogHotPatcher,Log,TEXT("%d assets (%s) waiting to be PreCache DDC, total %d."), PreCachePackages.Num(), *Class->GetName(), TotalPackagesNum);
-				UPackage* CurrentPackage = PreCachePackages[Index];
-				UE_LOG(LogHotPatcher,Log,TEXT("Start PreCache for %s"),*CurrentPackage->GetPathName());
-				
-				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{CurrentPackage},TargetPlatforms,ProcessedObjects,true,true, false);
-				PreCachePackages.RemoveAtSwap(Index,1,false);
-			}
-			UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
-			UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+			TArray<UPackage*> PreCachePackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths,GetSettingObject()->bConcurrentSave);
+			PreCachePackagesLambda(PreCachePackages,Class->GetName());
 		}
-		TArray<UPackage*> OthesPackages = UFlibAssetManageHelper::LoadPackagesForCooking(Cluster.AsSoftObjectPaths());
-		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(OthesPackages,TargetPlatforms,ProcessedObjects,GetSettingObject()->bConcurrentSave,true,true);
+		TArray<UPackage*> OthesPackages = UFlibAssetManageHelper::LoadPackagesForCooking(Cluster.AsSoftObjectPaths(),GetSettingObject()->bConcurrentSave);
+		PreCachePackagesLambda(OthesPackages,TEXT("GlobalPackages"));
 	}
 }
 

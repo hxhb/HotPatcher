@@ -611,6 +611,7 @@ namespace PatchWorker
 						EmptySetting.IoStoreSettings.bStorageBulkDataInfo = false;// dont save platform context data to disk
 						EmptySetting.bSerializeAssetRegistry = Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry;
 						EmptySetting.bPreGeneratePlatformData = false;
+						EmptySetting.bWaitEachAssetComplete = false;
 						EmptySetting.bDisplayConfig = false;
 						EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 						EmptySetting.StorageMetadataDir = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,TEXT("Metadatas"),Chunk.ChunkName);

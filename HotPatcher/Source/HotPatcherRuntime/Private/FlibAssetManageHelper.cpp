@@ -18,6 +18,8 @@
 #include "Resources/Version.h"
 #include "HotPatcherLog.h"
 #include "HotPatcherTemplateHelper.hpp"
+#include "Algo/ForEach.h"
+#include "UObject/MetaData.h"
 
 // PRAGMA_DISABLE_DEPRECATION_WARNINGS
 FString UFlibAssetManageHelper::PackagePathToFilename(const FString& InPackagePath)
@@ -1192,7 +1194,8 @@ UPackage* UFlibAssetManageHelper::GetPackage(FName PackageName)
 // 	},true);
 // };
 
-TArray<UPackage*> UFlibAssetManageHelper::LoadPackagesForCooking(const TArray<FSoftObjectPath>& SoftObjectPaths)
+
+TArray<UPackage*> UFlibAssetManageHelper::LoadPackagesForCooking(const TArray<FSoftObjectPath>& SoftObjectPaths,bool bStorageConcurrent)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("LoadPackagesForCooking"),FColor::Red);
 	TArray<UPackage*> AllPackages;
@@ -1207,6 +1210,26 @@ TArray<UPackage*> UFlibAssetManageHelper::LoadPackagesForCooking(const TArray<FS
 		}
 		AllPackages.AddUnique(Package);
 		
+	}
+	{
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("PreCache Packages Metadata"),FColor::Red);
+		Algo::ForEach(AllPackages,[bStorageConcurrent](UPackage* Package)
+		{
+			if(!bStorageConcurrent && Package->IsFullyLoaded())
+			{
+				UMetaData* MetaData = Package->GetMetaData();
+				MetaData->RemoveMetaDataOutsidePackage();
+			}
+			// Precache the metadata so we don't risk rehashing the map in the parallelfor below
+			if(bStorageConcurrent)
+			{
+				if(!Package->IsFullyLoaded())
+				{
+					Package->FullyLoad();
+				}
+				Package->GetMetaData();
+			}
+		});
 	}
 	GIsCookerLoadingPackage = false;
 	return AllPackages;

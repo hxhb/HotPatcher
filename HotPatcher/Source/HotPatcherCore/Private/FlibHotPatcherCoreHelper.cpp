@@ -27,6 +27,7 @@
 #include "Algo/ForEach.h"
 #include "ProfilingDebugging/LoadTimeTracker.h"
 #include "UObject/ConstructorHelpers.h"
+#include "UObject/MetaData.h"
 
 DEFINE_LOG_CATEGORY(LogHotPatcherCoreHelper);
 
@@ -1895,7 +1896,7 @@ bool UFlibHotPatcherCoreHelper::SavePlatformBulkDataManifest(TMap<ETargetPlatfor
 void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("CacheForCookedPlatformData"),FColor::Red);
-	TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths);
+	TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths,bStorageConcurrent);
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("BeginCacheForCookedPlatformData for Assets"),FColor::Red);
 		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(AllPackages,TargetPlatforms,ProcessedObjs,bStorageConcurrent, true, false);
@@ -1971,8 +1972,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
     		UE_LOG(LogHotPatcher,Warning,TEXT("BeginPackageObjectsCacheForCookedPlatformData Package is null!"));
     		continue;
     	}
-    	Package->FullyLoad();
-    	
+		
     	{
     		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportMap BeginCacheForCookedPlatformData"),FColor::Red);
 			
@@ -2089,11 +2089,6 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
 	
 	if (bStorageConcurrent)
 	{
-		// Precache the metadata so we don't risk rehashing the map in the parallelfor below
-    	for(auto Package:Packages)
-    	{
-    		Package->GetMetaData();
-    	}
 		// UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("Calling PostSaveRoot on worlds..."));
 		for (auto WorldIt = WorldsToPostSaveRoot.CreateConstIterator(); WorldIt; ++WorldIt)
 		{

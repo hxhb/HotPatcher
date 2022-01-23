@@ -40,6 +40,7 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 		EmptySetting.SkipLoadedAssets = AllPackagePaths;
 		EmptySetting.bDisplayConfig = MultiCookerSettings.bDisplayMissionConfig;
 		EmptySetting.bPreGeneratePlatformData = MultiCookerSettings.bPreGeneratePlatformData;
+		EmptySetting.bWaitEachAssetComplete = MultiCookerSettings.bWaitEachAssetComplete;
 		EmptySetting.bConcurrentSave = MultiCookerSettings.bConcurrentSave;
 		EmptySetting.bAsyncLoad = MultiCookerSettings.bAsyncLoad;
 		EmptySetting.bCookAdditionalAssets = false;
