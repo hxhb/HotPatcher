@@ -27,7 +27,6 @@
 #include "Algo/ForEach.h"
 #include "ProfilingDebugging/LoadTimeTracker.h"
 #include "UObject/ConstructorHelpers.h"
-#include "UObject/MetaData.h"
 
 DEFINE_LOG_CATEGORY(LogHotPatcherCoreHelper);
 
@@ -371,7 +370,7 @@ void UFlibHotPatcherCoreHelper::CookAssets(
 		UE_LOG(LogHotPatcherCoreHelper,Display,TEXT("Cooked packages %d Packages Remain %d Total %d"), index, Assets.Num() - index, Assets.Num());
 		CookPackage(Assets[index],CookPlatforms,CookActionCallback,FinalPlatformSavePackageContext,InSavePath,false);
 	}
-	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 }
 
@@ -1899,13 +1898,13 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObj
 	TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths,bStorageConcurrent);
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("BeginCacheForCookedPlatformData for Assets"),FColor::Red);
-		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(AllPackages,TargetPlatforms,ProcessedObjs,bStorageConcurrent, true, false);
+		UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(AllPackages,TargetPlatforms,ProcessedObjs,bStorageConcurrent, false, false);
 	}
 
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitShaderCompilingComplate"),FColor::Red);
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitShaderCompilingComplete"),FColor::Red);
 		// Wait for all shaders to finish compiling
-		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 	}
 	{
 		UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
@@ -1947,7 +1946,7 @@ UE_TRACE_EVENT_BEGIN(CUSTOM_LOADTIMER_LOG, CachePackagePlatformData, NoSync)
 UE_TRACE_EVENT_END()
 
 #endif
-void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent, bool bWaitShaderComplate, bool
+void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent, bool bWaitShaderComplete, bool
                                                            bWaitAsyncFileWrite)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("CacheForCookedPlatformData"),FColor::Red);
@@ -1972,7 +1971,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
     		UE_LOG(LogHotPatcher,Warning,TEXT("BeginPackageObjectsCacheForCookedPlatformData Package is null!"));
     		continue;
     	}
-		
+    	
     	{
     		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportMap BeginCacheForCookedPlatformData"),FColor::Red);
 			
@@ -2053,11 +2052,11 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
 		FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
 	}
 	
-	if (GShaderCompilingManager && bWaitShaderComplate)
+	if (GShaderCompilingManager && bWaitShaderComplete)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitShaderCompilingComplate"),FColor::Red);
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitShaderCompilingComplete"),FColor::Red);
 		// Wait for all shaders to finish compiling
-		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplate();
+		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 	}
 	
 	{
@@ -2082,7 +2081,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
 			}
 			if(!!ObjectsToWaitForCookedPlatformData.Num())
 			{
-				FPlatformProcess::Sleep(0.001f);	
+				FPlatformProcess::Sleep(0.01f);	
 			}
 		}
 	}

@@ -1194,8 +1194,7 @@ UPackage* UFlibAssetManageHelper::GetPackage(FName PackageName)
 // 	},true);
 // };
 
-
-TArray<UPackage*> UFlibAssetManageHelper::LoadPackagesForCooking(const TArray<FSoftObjectPath>& SoftObjectPaths,bool bStorageConcurrent)
+TArray<UPackage*> UFlibAssetManageHelper::LoadPackagesForCooking(const TArray<FSoftObjectPath>& SoftObjectPaths, bool bStorageConcurrent)
 {
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("LoadPackagesForCooking"),FColor::Red);
 	TArray<UPackage*> AllPackages;
@@ -1211,26 +1210,26 @@ TArray<UPackage*> UFlibAssetManageHelper::LoadPackagesForCooking(const TArray<FS
 		AllPackages.AddUnique(Package);
 		
 	}
+	Algo::ForEach(AllPackages,[bStorageConcurrent](UPackage* Package)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("PreCache Packages Metadata"),FColor::Red);
-		Algo::ForEach(AllPackages,[bStorageConcurrent](UPackage* Package)
+		if(!bStorageConcurrent && Package->IsFullyLoaded())
 		{
-			if(!bStorageConcurrent && Package->IsFullyLoaded())
+			UMetaData* MetaData = Package->GetMetaData();
+			if(MetaData)
 			{
-				UMetaData* MetaData = Package->GetMetaData();
 				MetaData->RemoveMetaDataOutsidePackage();
 			}
-			// Precache the metadata so we don't risk rehashing the map in the parallelfor below
-			if(bStorageConcurrent)
+		}
+		// Precache the metadata so we don't risk rehashing the map in the parallelfor below
+		if(bStorageConcurrent)
+		{
+			if(!Package->IsFullyLoaded())
 			{
-				if(!Package->IsFullyLoaded())
-				{
-					Package->FullyLoad();
-				}
-				Package->GetMetaData();
+				Package->FullyLoad();
 			}
-		});
-	}
+			Package->GetMetaData();
+		}
+	});
 	GIsCookerLoadingPackage = false;
 	return AllPackages;
 }

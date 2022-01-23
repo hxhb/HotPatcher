@@ -1,12 +1,16 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Cooker/MultiCooker/MultiCookScheduler.h"
-#include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
+#include "Cooker/MultiCooker/MultiCookScheduler_MatCulster.h"
 
-TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementation(FMultiCookerSettings MultiCookerSettings,const TArray<FAssetDetail>& AllDetails)
+#include "FlibHotPatcherCoreHelper.h"
+#include "Algo/ForEach.h"
+#include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
+#include "Materials/MaterialInstance.h"
+
+TArray<FSingleCookerSettings> UMultiCookScheduler_MatCulster::MultiCookScheduler_Implementation(FMultiCookerSettings MultiCookerSettings,const TArray<FAssetDetail>& AllDetails)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookScheduler::MultiCookScheduler"),FColor::Red);
+	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookScheduler_MatCulster::MultiCookScheduler"),FColor::Red);
 	int32 ProcessNumber = MultiCookerSettings.ProcessNumber;
 	
 	TArray<FSingleCookerSettings> AllSingleCookerSettings;
@@ -19,7 +23,7 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 		Assets.AddUnique(AssetDetail);
 		AllPackagePaths.Add(FName(UFlibAssetManageHelper::PackagePathToLongPackageName(AssetDetail.PackagePath.ToString())));
 	}
-	
+
 	for(int32 index = 0;index<ProcessNumber;++index)
 	{
 		FSingleCookerSettings EmptySetting;
@@ -36,13 +40,53 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 		EmptySetting.SkipLoadedAssets = AllPackagePaths;
 		EmptySetting.bDisplayConfig = MultiCookerSettings.bDisplayMissionConfig;
 		EmptySetting.bPreGeneratePlatformData = MultiCookerSettings.bPreGeneratePlatformData;
-		EmptySetting.bWaitEveryAssetCompleted = MultiCookerSettings.bWaitEveryAssetCompleted;
 		EmptySetting.bConcurrentSave = MultiCookerSettings.bConcurrentSave;
 		EmptySetting.bAsyncLoad = MultiCookerSettings.bAsyncLoad;
 		EmptySetting.bCookAdditionalAssets = false;
 		EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 		EmptySetting.StorageMetadataDir = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),EmptySetting.MissionName);
 		AllSingleCookerSettings.Add(EmptySetting);
+	}
+
+	// parser Material & MaterialInstance to same cooker
+	{
+		FString MaterialName = *UMaterial::StaticClass()->GetName();
+		
+		TArray<FAssetDetail>& MaterialAsets = *TypeAssetDetails.Find(*MaterialName);
+		TArray<TArray<FAssetDetail>> MaterialSplitInfo = THotPatcherTemplateHelper::SplitArray(MaterialAsets,ProcessNumber);
+		TypeAssetDetails.Remove(*MaterialName);
+		TArray<UClass*> MatInsClasses = UFlibHotPatcherCoreHelper::GetDerivedClasses(UMaterialInstance::StaticClass(),true,true);
+		TArray<FString> MatInsClassesNames;
+		Algo::ForEach(MatInsClasses,[&MatInsClassesNames](UClass* Class)
+		{
+			MatInsClassesNames.AddUnique(Class->GetName());
+		});
+		TArray<EAssetRegistryDependencyTypeEx> RefTypes = {
+			EAssetRegistryDependencyTypeEx::Hard
+		};
+		
+		for(int32 Idx=0;Idx < ProcessNumber;++Idx)
+		{
+			AllSingleCookerSettings[Idx].CookAssets.Append(MaterialSplitInfo[Idx]);
+
+			for(const auto& MaterialAsset:MaterialSplitInfo[Idx])
+			{
+				const TArray<FAssetDetail>& RefAssets = UFlibHotPatcherCoreHelper::GetReferenceRecursivelyByClassName(MaterialAsset,MatInsClassesNames,RefTypes);
+				
+				for(const auto& Asset:RefAssets)
+				{
+					FName AssetType = Asset.AssetType;
+					if(TypeAssetDetails.Contains(AssetType))
+					{
+						if(TypeAssetDetails.Find(AssetType)->Contains(Asset))
+						{
+							AllSingleCookerSettings[Idx].CookAssets.AddUnique(Asset);
+							TypeAssetDetails.Find(AssetType)->Remove(Asset);
+						}
+					}
+				}
+			}
+		}
 	}
 	
 	for(auto& TypeAssets:TypeAssetDetails)
