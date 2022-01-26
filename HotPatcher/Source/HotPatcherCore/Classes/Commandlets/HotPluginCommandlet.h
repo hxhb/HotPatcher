@@ -1,12 +1,13 @@
 #pragma once
 
+#include "HotPatcherCommandletBase.h"
 #include "Commandlets/Commandlet.h"
 #include "HotPluginCommandlet.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogHotPluginCommandlet, Log, All);
 
 UCLASS()
-class UHotPluginCommandlet :public UCommandlet
+class UHotPluginCommandlet :public UHotPatcherCommandletBase
 {
 	GENERATED_BODY()
 

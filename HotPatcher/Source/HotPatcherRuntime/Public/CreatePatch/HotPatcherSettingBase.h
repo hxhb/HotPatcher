@@ -52,6 +52,7 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase:public FPatcherEntitySetting
     FORCEINLINE virtual TArray<FDirectoryPath>& GetAssetIgnoreFilters()  { return AssetIgnoreFilters; }
     FORCEINLINE TArray<FPatcherSpecifyAsset> GetSpecifyAssets()const { return IncludeSpecifyAssets; }
     FORCEINLINE bool AddSpecifyAsset(FPatcherSpecifyAsset const& InAsset){ return IncludeSpecifyAssets.AddUnique(InAsset) != INDEX_NONE; }
+    FORCEINLINE virtual TArray<UClass*>& GetForceSkipClasses() { return ForceSkipClasses; }
     // virtual TArray<FString> GetAssetIgnoreFiltersPaths()const;
     FORCEINLINE bool IsAnalysisFilterDependencies()const { return bAnalysisFilterDependencies; }
     FORCEINLINE bool IsRecursiveWidgetTree()const {return bRecursiveWidgetTree;}
@@ -80,11 +81,14 @@ public:
     bool bRecursiveWidgetTree = true;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filters")
     bool bForceSkipContent = false;
+    
     // force exclude asset folder e.g. Exclude editor content when cooking in Project Settings
     UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Asset Filters",meta = (RelativeToGameContentDir, LongPackageName, EditCondition="bForceSkipContent"))
     TArray<FDirectoryPath> ForceSkipContentRules;
     UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Asset Filters",meta = (EditCondition="bForceSkipContent"))
     TArray<FSoftObjectPath> ForceSkipAssets;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filters",meta = (EditCondition="bForceSkipContent"))
+    TArray<UClass*> ForceSkipClasses;
     
     // backup current project Cooked/PLATFORM/PROJECTNAME/Metadata directory
     UPROPERTY(EditAnywhere, Category = "SaveTo")

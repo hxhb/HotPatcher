@@ -115,6 +115,7 @@ namespace ReleaseWorker
 			UFlibAssetManageHelper::DirectoryPathsToStrings(Context.GetSettingObject()->GetAssetIncludeFilters()),
 			UFlibAssetManageHelper::DirectoryPathsToStrings(Context.GetSettingObject()->GetAssetIgnoreFilters()),
 			AllSkipContent,
+			Context.GetSettingObject()->GetForceSkipClasses(),
 			Context.GetSettingObject()->GetAssetRegistryDependencyTypes(),
 			Context.GetSettingObject()->GetSpecifyAssets(),
 			Context.GetSettingObject()->GetAddExternAssetsToPlatform(),

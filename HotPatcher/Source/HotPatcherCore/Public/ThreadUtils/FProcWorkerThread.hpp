@@ -23,7 +23,7 @@ public:
 			FPlatformProcess::CreatePipe(mReadPipe, mWritePipe);
 			// std::cout << TCHAR_TO_ANSI(*mProgramPath) << " " << TCHAR_TO_ANSI(*mPragramParams) << std::endl;
 
-			mProcessHandle = FPlatformProcess::CreateProc(*mProgramPath, *mPragramParams, false, true, true, &mProcessID, 0, NULL, mWritePipe,mReadPipe);
+			mProcessHandle = FPlatformProcess::CreateProc(*mProgramPath, *mPragramParams, false, true, true, &mProcessID, 1, NULL, mWritePipe,mReadPipe);
 			if (mProcessHandle.IsValid() && FPlatformProcess::IsApplicationRunning(mProcessID))
 			{
 				if (ProcBeginDelegate.IsBound())

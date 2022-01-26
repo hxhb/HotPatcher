@@ -306,6 +306,7 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		UFlibAssetManageHelper::DirectoryPathsToStrings(ExportPatchSetting->GetAssetIncludeFilters()),
 			UFlibAssetManageHelper::DirectoryPathsToStrings(ExportPatchSetting->GetAssetIgnoreFilters()),
 		ExportPatchSetting->GetAllSkipContents(),
+		ExportPatchSetting->GetForceSkipClasses(),
 		ExportPatchSetting->GetAssetRegistryDependencyTypes(),
 		ExportPatchSetting->GetIncludeSpecifyAssets(),
 		ExportPatchSetting->GetAddExternAssetsToPlatform(),

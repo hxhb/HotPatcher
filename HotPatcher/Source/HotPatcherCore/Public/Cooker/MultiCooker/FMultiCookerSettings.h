@@ -48,7 +48,7 @@ public:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filters")
 	bool bImportProjectSettings;
-
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	TSubclassOf<class UMultiCookScheduler> Scheduler;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
@@ -82,9 +82,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bPreGeneratePlatformData = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
-	bool bWaitEveryAssetCompleted = true;
+	bool bWaitEachAssetCompleted = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
 	bool bConcurrentSave = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker|Performance")
+	bool bLocalHostMode = true;
+	// real time shader compile worker process priority
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker|Performance")
+	bool bRealTimeSCWPriority = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
 	bool bProfilingMultiCooker = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
@@ -124,6 +129,9 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TArray<FString> SkipCookContents;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<UClass*> ForceSkipClasses;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	TArray<ETargetPlatform> CookTargetPlatforms;
 
@@ -151,7 +159,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bAsyncLoad"))
 	bool bPreGeneratePlatformData = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
-	bool bWaitEveryAssetCompleted = true;
+	bool bWaitEachAssetCompleted = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
 	bool bConcurrentSave = false;
 	

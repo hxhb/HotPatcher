@@ -603,6 +603,7 @@ namespace PatchWorker
 						EmptySetting.ShaderLibName = Chunk.GetShaderLibraryName();
 						EmptySetting.CookTargetPlatforms = TArray<ETargetPlatform>{Platform};
 						EmptySetting.CookAssets = ChunkAssets;
+						// EmptySetting.ForceSkipClasses = {};
 						EmptySetting.bPackageTracker = Context.GetSettingObject()->IsPackageTracker();
 						EmptySetting.ShaderOptions.bSharedShaderLibrary = Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary;
 						EmptySetting.ShaderOptions.bNativeShader = Context.GetSettingObject()->GetCookShaderOptions().bNativeShader;
@@ -611,7 +612,7 @@ namespace PatchWorker
 						EmptySetting.IoStoreSettings.bStorageBulkDataInfo = false;// dont save platform context data to disk
 						EmptySetting.bSerializeAssetRegistry = Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry;
 						EmptySetting.bPreGeneratePlatformData = false;
-						EmptySetting.bWaitEveryAssetCompleted = false;
+						EmptySetting.bWaitEachAssetCompleted = false;
 						EmptySetting.bConcurrentSave = false;
 						EmptySetting.bDisplayConfig = false;
 						EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));

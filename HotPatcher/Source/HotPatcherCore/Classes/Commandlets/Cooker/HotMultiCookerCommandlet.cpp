@@ -1,7 +1,7 @@
 #include "HotMultiCookerCommandlet.h"
 // engine header
 #include "CoreMinimal.h"
-#include "Commandlets/CommandletHelper.hpp"
+#include "Commandlets/CommandletHelper.h"
 #include "Cooker/MultiCooker/FMultiCookerSettings.h"
 #include "Cooker/MultiCooker/MultiCookerProxy.h"
 #include "HAL/ExceptionHandling.h"
@@ -13,6 +13,7 @@ DEFINE_LOG_CATEGORY(LogHotMultiCookerCommandlet);
 
 int32 UHotMultiCookerCommandlet::Main(const FString& Params)
 {
+	Super::Main(Params);
 	SCOPED_NAMED_EVENT_TCHAR(TEXT("MultiCookCommandlet::Main"),FColor::Red);
 	UE_LOG(LogHotMultiCookerCommandlet, Display, TEXT("UHotMultiCookerCommandlet::Main"));
 

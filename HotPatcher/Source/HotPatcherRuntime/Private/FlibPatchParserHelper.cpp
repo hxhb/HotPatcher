@@ -1232,6 +1232,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	const TArray<FString>& InIncludeFilter,
 	const TArray<FString>& InIgnoreFilter,
 	const TArray<FString>& ForceSkipContents,
+	const TArray<UClass*>& ForceSkipClasses,
 	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
 	const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
 	const TArray<FPlatformExternAssets>& AddToPlatformExFiles,
@@ -1276,10 +1277,14 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	// 	}
 	// }
 
-	TSet<FName> IgnoreType = 
+	TSet<FName> IgnoreTypes = 
 	{
 		TEXT("EditorUtilityBlueprint")
 	};
+	for(auto Class:ForceSkipClasses)
+	{
+		IgnoreTypes.Add(*Class->GetName());
+	}
 	FAssetDependencies AssetConfig;
 	AssetConfig.IncludeFilters = ExportVersion.IncludeFilter;
 	AssetConfig.IgnoreFilters = ExportVersion.IgnoreFilter;
@@ -1289,7 +1294,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	AssetConfig.bRedirector = true;
 	AssetConfig.AnalysicFilterDependencies = bInAnalysisFilterDependencies;
 	AssetConfig.IncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
-	AssetConfig.IgnoreAseetTypes = IgnoreType;
+	AssetConfig.IgnoreAseetTypes = IgnoreTypes;
 	
 	{
 		SCOPED_NAMED_EVENT_TCHAR(TEXT("parser all uasset dependencies(optimized)"),FColor::Red);
@@ -1363,6 +1368,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
         UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIncludeFilters),
         UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIgnoreFilters),
         AllSkipContents,
+        InChunkInfo.ForceSkipClasses,
         InChunkInfo.AssetRegistryDependencyTypes,
         InChunkInfo.IncludeSpecifyAssets,
         InChunkInfo.AddExternAssetsToPlatform,

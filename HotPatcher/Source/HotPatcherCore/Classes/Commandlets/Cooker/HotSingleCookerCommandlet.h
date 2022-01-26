@@ -1,12 +1,13 @@
 #pragma once
 
 #include "Commandlets/Commandlet.h"
+#include "Commandlets/HotPatcherCommandletBase.h"
 #include "HotSingleCookerCommandlet.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogHotSingleCookerCommandlet, All, All);
 
 UCLASS()
-class UHotSingleCookerCommandlet :public UCommandlet
+class UHotSingleCookerCommandlet :public UHotPatcherCommandletBase
 {
 	GENERATED_BODY()
 

@@ -2,11 +2,11 @@
 #include "ThreadUtils/FProcWorkerThread.hpp"
 #include "FCookerConfig.h"
 #include "FlibPatchParserHelper.h"
+#include "Commandlets/CommandletHelper.h"
 
-// engine header
+// / engine header
 #include "CoreMinimal.h"
 #include "HotPatcherCore.h"
-#include "Commandlets/CommandletHelper.hpp"
 #include "Misc/FileHelper.h"
 #include "Misc/CommandLine.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -20,6 +20,7 @@ TSharedPtr<FProcWorkerThread> CookerProc;
 
 int32 UHotCookerCommandlet::Main(const FString& Params)
 {
+	Super::Main(Params);
 	UE_LOG(LogHotCookerCommandlet, Display, TEXT("UHotCookerCommandlet::Main"));
 	FString config_path;
 	bool bStatus = FParse::Value(*Params, *FString(COOKER_CONFIG_PARAM_NAME).ToLower(), config_path);

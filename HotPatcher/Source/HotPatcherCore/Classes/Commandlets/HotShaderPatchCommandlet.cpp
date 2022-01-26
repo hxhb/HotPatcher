@@ -1,6 +1,6 @@
 #include "HotShaderPatchCommandlet.h"
 #include "ShaderPatch/FExportShaderPatchSettings.h"
-#include "CommandletHelper.hpp"
+#include "CommandletHelper.h"
 // engine header
 #include "CoreMinimal.h"
 #include "Misc/FileHelper.h"
@@ -13,6 +13,7 @@ DEFINE_LOG_CATEGORY(LogHotShaderPatchCommandlet);
 
 int32 UHotShaderPatchCommandlet::Main(const FString& Params)
 {
+	Super::Main(Params);
 	UE_LOG(LogHotShaderPatchCommandlet, Display, TEXT("UHotShaderPatchCommandlet::Main"));
 
 	FString config_path;

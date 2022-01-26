@@ -1,12 +1,13 @@
 #pragma once
 
+#include "HotPatcherCommandletBase.h"
 #include "Commandlets/Commandlet.h"
 #include "HotShaderPatchCommandlet.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogHotShaderPatchCommandlet, All, All);
 
 UCLASS()
-class UHotShaderPatchCommandlet :public UCommandlet
+class UHotShaderPatchCommandlet :public UHotPatcherCommandletBase
 {
 	GENERATED_BODY()
 

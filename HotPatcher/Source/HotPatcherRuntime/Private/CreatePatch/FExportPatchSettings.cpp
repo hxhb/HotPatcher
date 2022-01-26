@@ -87,6 +87,7 @@ FHotPatcherVersion FExportPatchSettings::GetNewPatchVersionInfo()
         UFlibAssetManageHelper::DirectoryPathsToStrings(GetAssetIncludeFilters()),
 			 UFlibAssetManageHelper::DirectoryPathsToStrings(GetAssetIgnoreFilters()),
         GetAllSkipContents(),
+        GetForceSkipClasses(),
         GetAssetRegistryDependencyTypes(),
         GetIncludeSpecifyAssets(),
         GetAddExternAssetsToPlatform(),

@@ -202,10 +202,11 @@ public:
 
 	static TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> CreatePlatformsPackageContexts(const TArray<ETargetPlatform>& Platforms,bool bIoStore);
 	static bool SavePlatformBulkDataManifest(TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>>&PlatformSavePackageContexts,ETargetPlatform Platform);
-	static void CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent = false, bool bWaitShaderComplete = true, bool
-	                                       bWaitAsyncFileWrite = false);
-	static void CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, bool bStorageConcurrent);
+	static void CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms, TSet<UObject*>& ProcessedObjs, TSet<UObject*>& PendingCachePlatformDataObjects, bool bStorageConcurrent = false, bool bWaitComplete = false);
+	static void CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, TSet<UObject*>& PendingCachePlatformDataObjects, bool bStorageConcurrent, bool bWaitComplete = false);
 
+	static void WaitObjectsCachePlatformDataComplete(TSet<UObject*>& CachedPlatformDataObjects,TSet<UObject*>& PendingCachePlatformDataObjects,TArray<ITargetPlatform*> TargetPlatforms);
+	
 	static uint32 GetCookSaveFlag(UPackage* Package,bool bUnversioned = true,bool bStorageConcurrent = false,bool CookLinkerDiff = false);
 	static EObjectFlags GetObjectFlagForCooked(UPackage* Package);
 	

@@ -3,7 +3,7 @@
 #include "GameFeature/FGameFeaturePackagerSettings.h"
 #include "FlibPatchParserHelper.h"
 
-#include "CommandletHelper.hpp"
+#include "CommandletHelper.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -19,6 +19,7 @@ TSharedPtr<FProcWorkerThread> PluginProc;
 
 int32 UHotPluginCommandlet::Main(const FString& Params)
 {
+	Super::Main(Params);
 	UE_LOG(LogHotPluginCommandlet, Display, TEXT("UHotPluginCommandlet::Main"));
 
 	FString config_path;
@@ -61,8 +62,8 @@ int32 UHotPluginCommandlet::Main(const FString& Params)
 		UGameFeatureProxy* GameFeatureProxy = NewObject<UGameFeatureProxy>();
 		GameFeatureProxy->AddToRoot();
 		GameFeatureProxy->Init(PluginPackagerSetting.Get());
-		GameFeatureProxy->OnPaking.AddStatic(&::CommandletHelper::NSPatch::ReceiveMsg);
-		GameFeatureProxy->OnShowMsg.AddStatic(&::CommandletHelper::NSPatch::ReceiveShowMsg);
+		GameFeatureProxy->OnPaking.AddStatic(&::CommandletHelper::ReceiveMsg);
+		GameFeatureProxy->OnShowMsg.AddStatic(&::CommandletHelper::ReceiveShowMsg);
 		bExportStatus = GameFeatureProxy->DoExport();
 		
 		UE_LOG(LogHotPluginCommandlet,Display,TEXT("Generate Game Feature Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));

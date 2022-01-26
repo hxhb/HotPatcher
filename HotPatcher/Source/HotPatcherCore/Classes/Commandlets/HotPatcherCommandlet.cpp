@@ -1,7 +1,7 @@
 #include "HotPatcherCommandlet.h"
 // #include "CreatePatch/FExportPatchSettingsEx.h"
 #include "CreatePatch/PatcherProxy.h"
-#include "CommandletHelper.hpp"
+#include "CommandletHelper.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -13,6 +13,11 @@ DEFINE_LOG_CATEGORY(LogHotPatcherCommandlet);
 
 int32 UHotPatcherCommandlet::Main(const FString& Params)
 {
+	Super::Main(Params);
+
+	FCommandLine::Append(TEXT(" -buildmachine"));
+	GIsBuildMachine = true;
+	
 	UE_LOG(LogHotPatcherCommandlet, Display, TEXT("UHotPatcherCommandlet::Main"));
 
 	FString config_path;
@@ -65,8 +70,8 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
 		PatcherProxy->AddToRoot();
 		PatcherProxy->Init(ExportPatchSetting.Get());
-		PatcherProxy->OnPaking.AddStatic(&::CommandletHelper::NSPatch::ReceiveMsg);
-		PatcherProxy->OnShowMsg.AddStatic(&::CommandletHelper::NSPatch::ReceiveShowMsg);
+		PatcherProxy->OnPaking.AddStatic(&::CommandletHelper::ReceiveMsg);
+		PatcherProxy->OnShowMsg.AddStatic(&::CommandletHelper::ReceiveShowMsg);
 		bExportStatus = PatcherProxy->DoExport();
 		
 		UE_LOG(LogHotPatcherCommandlet,Display,TEXT("Export Patch Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));

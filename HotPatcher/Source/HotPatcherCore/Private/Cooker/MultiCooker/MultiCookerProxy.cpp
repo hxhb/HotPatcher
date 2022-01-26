@@ -501,7 +501,7 @@ FExportPatchSettings UMultiCookerProxy::MakePatchSettings()
 	CookPatchSettings.AssetIncludeFilters = GetSettingObject()->AssetIncludeFilters;
 	CookPatchSettings.AssetIgnoreFilters = GetSettingObject()->AssetIgnoreFilters;
 	CookPatchSettings.IncludeSpecifyAssets = GetSettingObject()->IncludeSpecifyAssets;
-	
+	CookPatchSettings.ForceSkipClasses = GetSettingObject()->GetForceSkipClasses();
 	CookPatchSettings.bIncludeHasRefAssetsOnly = GetSettingObject()->bIncludeHasRefAssetsOnly;
 	CookPatchSettings.bAnalysisFilterDependencies = GetSettingObject()->bAnalysisFilterDependencies;
 	CookPatchSettings.bForceSkipContent = GetSettingObject()->bForceSkipContent;
@@ -655,10 +655,25 @@ TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateSingleCookWroker(const FS
 	
 	FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 	FString ProfilingCmd = GetSettingObject()->bProfilingPerSingleCooker ? UFlibMultiCookerHelper::GetProfilingCmd() : TEXT("");
+	
+	FString ShaderPerformanceCmd;
+	if(GetSettingObject()->bLocalHostMode)
+	{
+		const int32 NumVirtualCores = FPlatformMisc::NumberOfCoresIncludingHyperthreads();
+		int32 SingleCookerShaderWorker = (int32)((NumVirtualCores - GetSettingObject()->ProcessNumber) / 7);
+		SingleCookerShaderWorker = FMath::Max(SingleCookerShaderWorker,3);
+		ShaderPerformanceCmd = FString::Printf(TEXT("-MaxShaderWorker=%d"),SingleCookerShaderWorker);
+	}
+	if(GetSettingObject()->bRealTimeSCWPriority)
+	{
+		ShaderPerformanceCmd.Append(TEXT(" -rtshaderworker"));
+	}
+	
 	FString MissionCommand = FString::Printf(
-		TEXT("\"%s\" -run=HotSingleCooker -config=\"%s\" -DDCNOSAVEBOOT -NoAssetRegistryCache -stdout -CrashForUAT -unattended -NoLogTimes -UTF8Output -norenderthread -NoCompileGlobalShader %s %s"),
+		TEXT("\"%s\" -run=HotSingleCooker -config=\"%s\" -DDCNOSAVEBOOT -NoAssetRegistryCache -stdout -CrashForUAT -unattended -NoLogTimes -UTF8Output -norenderthread -NoCompileGlobalShader %s %s %s"),
 		*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,
 		*ProfilingCmd,
+		*ShaderPerformanceCmd,
 		*GetSettingObject()->GetCombinedAdditionalCommandletArgs()
 		);
 	

@@ -235,7 +235,7 @@ void UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete()
 	// Wait for all shaders to finish compiling
 	if (GShaderCompilingManager)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("Wait Compile Shader Complete!"),FColor::Red);
+		SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitShaderCompileComplete"),FColor::Red);
 		// UE_LOG(LogHotPatcher, Display, TEXT("Waiting for shader compilation..."));
 		while(GShaderCompilingManager->IsCompiling())
 		{

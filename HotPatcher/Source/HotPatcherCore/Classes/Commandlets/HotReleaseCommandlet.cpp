@@ -1,7 +1,7 @@
 #include "HotReleaseCommandlet.h"
 #include "CreatePatch/FExportReleaseSettings.h"
 #include "CreatePatch/ReleaseProxy.h"
-#include "CommandletHelper.hpp"
+#include "CommandletHelper.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -51,6 +51,7 @@ TArray<FPlatformPakListFiles> ParserPlatformPakList(const FString& Commandline)
 
 int32 UHotReleaseCommandlet::Main(const FString& Params)
 {
+	Super::Main(Params);
 	UE_LOG(LogHotReleaseCommandlet, Display, TEXT("UHotReleaseCommandlet::Main:%s"), *Params);
 
 	FString config_path;
@@ -106,8 +107,8 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 	UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
 	ReleaseProxy->AddToRoot();
 	ReleaseProxy->Init(ExportReleaseSetting.Get());
-	ReleaseProxy->OnPaking.AddStatic(&::CommandletHelper::NSPatch::ReceiveMsg);
-	ReleaseProxy->OnShowMsg.AddStatic(&::CommandletHelper::NSPatch::ReceiveShowMsg);
+	ReleaseProxy->OnPaking.AddStatic(&::CommandletHelper::ReceiveMsg);
+	ReleaseProxy->OnShowMsg.AddStatic(&::CommandletHelper::ReceiveShowMsg);
 	bool bExportStatus = ReleaseProxy->DoExport();
 		
 	UE_LOG(LogHotReleaseCommandlet,Display,TEXT("Export Release Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));

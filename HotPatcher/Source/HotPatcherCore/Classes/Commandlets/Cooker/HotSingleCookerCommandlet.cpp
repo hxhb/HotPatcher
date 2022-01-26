@@ -1,5 +1,5 @@
 #include "HotSingleCookerCommandlet.h"
-#include "Commandlets/CommandletHelper.hpp"
+#include "Commandlets/CommandletHelper.h"
 // engine header
 #include "CoreMinimal.h"
 #include "Cooker/MultiCooker/FMultiCookerSettings.h"
@@ -13,6 +13,11 @@ DEFINE_LOG_CATEGORY(LogHotSingleCookerCommandlet);
 
 int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 {
+	Super::Main(Params);
+	
+	FCommandLine::Append(TEXT(" -buildmachine"));
+	GIsBuildMachine = true;
+	
 	UE_LOG(LogHotSingleCookerCommandlet, Display, TEXT("UHotSingleCookerCommandlet::Main"));
 
 	FString config_path;

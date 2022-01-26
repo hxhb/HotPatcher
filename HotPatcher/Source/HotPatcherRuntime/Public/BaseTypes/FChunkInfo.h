@@ -140,6 +140,8 @@ public:
 		TArray<FDirectoryPath> ForceSkipContentRules;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Assets",meta = (EditCondition="bForceSkipContent"))
 		TArray<FSoftObjectPath> ForceSkipAssets;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Assets",meta = (EditCondition="bForceSkipContent"))
+		TArray<UClass*> ForceSkipClasses;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "External")
 		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Internal", meta = (EditCondition = "!bMonolithic"))

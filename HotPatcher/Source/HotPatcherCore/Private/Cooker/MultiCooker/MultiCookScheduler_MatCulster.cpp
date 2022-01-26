@@ -37,6 +37,7 @@ TArray<FSingleCookerSettings> UMultiCookScheduler_MatCulster::MultiCookScheduler
 		EmptySetting.IoStoreSettings = MultiCookerSettings.IoStoreSettings;
 		EmptySetting.bSerializeAssetRegistry = MultiCookerSettings.bSerializeAssetRegistry;
 		EmptySetting.SkipCookContents = MultiCookerSettings.GetAllSkipContents();
+		EmptySetting.ForceSkipClasses = MultiCookerSettings.ForceSkipClasses;
 		EmptySetting.SkipLoadedAssets = AllPackagePaths;
 		EmptySetting.bDisplayConfig = MultiCookerSettings.bDisplayMissionConfig;
 		EmptySetting.bPreGeneratePlatformData = MultiCookerSettings.bPreGeneratePlatformData;
