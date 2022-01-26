@@ -14,7 +14,7 @@ DEFINE_LOG_CATEGORY(LogHotMultiCookerCommandlet);
 int32 UHotMultiCookerCommandlet::Main(const FString& Params)
 {
 	Super::Main(Params);
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("MultiCookCommandlet::Main"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("MultiCookCommandlet::Main",FColor::Red);
 	UE_LOG(LogHotMultiCookerCommandlet, Display, TEXT("UHotMultiCookerCommandlet::Main"));
 
 	FString config_path;
@@ -33,7 +33,7 @@ int32 UHotMultiCookerCommandlet::Main(const FString& Params)
 
 	if(IsRunningCommandlet())
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("SearchAllAssets"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("SearchAllAssets",FColor::Red);
 		// load asset registry
 		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 		AssetRegistryModule.Get().SearchAllAssets(true);
@@ -64,7 +64,7 @@ int32 UHotMultiCookerCommandlet::Main(const FString& Params)
 
 	if(IsRunningCommandlet())
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("wait Cook mission is completed"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("wait Cook mission is completed",FColor::Red);
 		MultiCookerProxy->WaitMissionFinished();
 	}
 

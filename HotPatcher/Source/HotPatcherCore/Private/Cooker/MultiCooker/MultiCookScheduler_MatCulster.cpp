@@ -4,13 +4,12 @@
 #include "Cooker/MultiCooker/MultiCookScheduler_MatCulster.h"
 
 #include "FlibHotPatcherCoreHelper.h"
-#include "Algo/ForEach.h"
 #include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
 #include "Materials/MaterialInstance.h"
 
 TArray<FSingleCookerSettings> UMultiCookScheduler_MatCulster::MultiCookScheduler_Implementation(FMultiCookerSettings MultiCookerSettings,const TArray<FAssetDetail>& AllDetails)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookScheduler_MatCulster::MultiCookScheduler"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UMultiCookScheduler_MatCulster::MultiCookScheduler",FColor::Red);
 	int32 ProcessNumber = MultiCookerSettings.ProcessNumber;
 	
 	TArray<FSingleCookerSettings> AllSingleCookerSettings;
@@ -21,7 +20,7 @@ TArray<FSingleCookerSettings> UMultiCookScheduler_MatCulster::MultiCookScheduler
 	{
 		TArray<FAssetDetail>& Assets = TypeAssetDetails.FindOrAdd(AssetDetail.AssetType);
 		Assets.AddUnique(AssetDetail);
-		AllPackagePaths.Add(FName(UFlibAssetManageHelper::PackagePathToLongPackageName(AssetDetail.PackagePath.ToString())));
+		AllPackagePaths.Add(FName(*UFlibAssetManageHelper::PackagePathToLongPackageName(AssetDetail.PackagePath.ToString())));
 	}
 
 	for(int32 index = 0;index<ProcessNumber;++index)
@@ -58,10 +57,11 @@ TArray<FSingleCookerSettings> UMultiCookScheduler_MatCulster::MultiCookScheduler
 		TypeAssetDetails.Remove(*MaterialName);
 		TArray<UClass*> MatInsClasses = UFlibHotPatcherCoreHelper::GetDerivedClasses(UMaterialInstance::StaticClass(),true,true);
 		TArray<FString> MatInsClassesNames;
-		Algo::ForEach(MatInsClasses,[&MatInsClassesNames](UClass* Class)
+		
+		for(auto Class:MatInsClasses)
 		{
 			MatInsClassesNames.AddUnique(Class->GetName());
-		});
+		}
 		TArray<EAssetRegistryDependencyTypeEx> RefTypes = {
 			EAssetRegistryDependencyTypeEx::Hard
 		};

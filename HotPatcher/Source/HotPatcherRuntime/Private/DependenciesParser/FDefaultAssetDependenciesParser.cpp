@@ -7,7 +7,7 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 {
 	ParseConfig = InParseConfig;
 	
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("FAssetDependenciesParser::Parse"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("FAssetDependenciesParser::Parse",FColor::Red);
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 	TSet<FName> AssetPackageNames;
 	
@@ -19,7 +19,7 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 	}
 	
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("Get AssetPackageNames by filter"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("Get AssetPackageNames by filter",FColor::Red);
 		TArray<FAssetData> AssetDatas;
 		UFlibAssetManageHelper::GetAssetsData(ParseConfig.IncludeFilters,AssetDatas);
 
@@ -42,7 +42,7 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 	Results.Append(AssetPackageNames);
 	
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("Get dependencies for filters"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("Get dependencies for filters",FColor::Red);
 		for(FName PackageName:AssetPackageNames)
 		{
 			Results.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,PackageName,ParseConfig.AssetRegistryDependencyTypes,true,IngnoreFilters,TSet<FName>{},ParseConfig.IgnoreAseetTypes,ScanedCaches));
@@ -50,7 +50,7 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 	}
 	
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("Get dependencies for SpecifyAsset"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("Get dependencies for SpecifyAsset",FColor::Red);
 		for(const auto& SpecifyAsset:ParseConfig.InIncludeSpecifyAsset)
 		{
 			FString LongPackageName = SpecifyAsset.Asset.GetLongPackageName();
@@ -66,10 +66,10 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 					continue;
 				}
 			}
-			Results.Add(FName(SpecifyAsset.Asset.GetLongPackageName()));
+			Results.Add(FName(*SpecifyAsset.Asset.GetLongPackageName()));
 			if(SpecifyAsset.bAnalysisAssetDependencies)
 			{
-				Results.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,FName(LongPackageName),SpecifyAsset.AssetRegistryDependencyTypes,SpecifyAsset.bAnalysisAssetDependencies,IngnoreFilters,TSet<FName>{},ParseConfig.IgnoreAseetTypes,ScanedCaches));
+				Results.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,FName(*LongPackageName),SpecifyAsset.AssetRegistryDependencyTypes,SpecifyAsset.bAnalysisAssetDependencies,IngnoreFilters,TSet<FName>{},ParseConfig.IgnoreAseetTypes,ScanedCaches));
 			}
 		}
 	}
@@ -99,7 +99,7 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 
 bool IsValidPackageName(const FString& LongPackageName)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("GatherAssetDependicesInfoRecursively"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("GatherAssetDependicesInfoRecursively",FColor::Red);
 	bool bStatus = false;
 	if (!LongPackageName.IsEmpty() && !FPackageName::IsScriptPackage(LongPackageName) && !FPackageName::IsMemoryPackage(LongPackageName))
 	{
@@ -139,7 +139,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
                                                                            bool bRecursively, const TArray<FString>& IgnoreDirectories,TSet<FName> IgnorePackageNames,const TSet<FName>& IgnoreAssetTypes,FScanedCachesType& ScanedCaches)
 {
 	TSet<FName> AssetDependencies;
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("GatherAssetDependicesInfoRecursively"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("GatherAssetDependicesInfoRecursively",FColor::Red);
 	IgnorePackageNames.Add(InLongPackageName);
 
 	FAssetData CurrentAssetData;
@@ -159,7 +159,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 	
 	// AssetTypes.AddUnique(UFlibAssetManageHelper::ConvAssetRegistryDependencyToInternal(DepType));
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("GetDependencies"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("GetDependencies",FColor::Red);
 		PRAGMA_DISABLE_DEPRECATION_WARNINGS
 		bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(InLongPackageName, CurrentAssetDependencies, TotalType);
 		PRAGMA_ENABLE_DEPRECATION_WARNINGS
@@ -168,7 +168,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 	}
 	
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("check valid package and ignore rule"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("check valid package and ignore rule",FColor::Red);
 		for (auto &LongPackageName : CurrentAssetDependencies)
 		{
 			FString LongPackageNameStr = LongPackageName.ToString();
@@ -180,7 +180,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 			}
 			// check is ignore directories or ingore types
 			{
-				SCOPED_NAMED_EVENT_TCHAR(TEXT("check ignore directories"),FColor::Red);
+				SCOPED_NAMED_EVENT_TEXT("check ignore directories",FColor::Red);
 				bool bIsIgnore = false;
 				FString MatchIgnoreStr;
 				

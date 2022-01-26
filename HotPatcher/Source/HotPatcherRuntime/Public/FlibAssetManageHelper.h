@@ -204,7 +204,7 @@ public:
 	static TArray<FString> SoftObjectPathsToStrings(const TArray<FSoftObjectPath>& SoftObjectPaths);
 	
 	static FString NormalizeContentDir(const FString& Dir);
-	static FStreamableManager& UFlibAssetManageHelper::GetStreamableManager();
+	static FStreamableManager& GetStreamableManager();
 
 	// Default priority for all async loads
 	static const uint32 DefaultAsyncLoadPriority = 0;

@@ -172,10 +172,11 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString StorageMetadataDir;
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "SavePackageContext")
+	// UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "SavePackageContext")
+#if WITH_PACKAGE_CONTEXT
 	bool bOverrideSavePackageContext = false;
 	TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
-	
+#endif
 	bool IsSkipAsset(const FString& PackageName);
 };
 

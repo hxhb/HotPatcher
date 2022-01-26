@@ -667,7 +667,7 @@ TArray<FAssetDetail> UFlibPatchParserHelper::ParserExFilesInfoAsAssetDetailInfo(
 	{
 		FAssetDetail CurrentFile;
 		CurrentFile.AssetType = TEXT("ExternalFile");
-		CurrentFile.PackagePath = FName(File.MountPath);
+		CurrentFile.PackagePath = FName(*File.MountPath);
 		//CurrentFile.mGuid = File.GetFileHash();
 		result.Add(CurrentFile);
 	}
@@ -1240,7 +1240,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	bool bInAnalysisFilterDependencies
 )
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportReleaseVersionInfo"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("ExportReleaseVersionInfo",FColor::Red);
 	FHotPatcherVersion ExportVersion;
 	{
 		ExportVersion.VersionId = InVersionId;
@@ -1297,14 +1297,14 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	AssetConfig.IgnoreAseetTypes = IgnoreTypes;
 	
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("parser all uasset dependencies(optimized)"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("parser all uasset dependencies(optimized)",FColor::Red);
 		FAssetDependenciesParser Parser;
 		Parser.Parse(AssetConfig);
 
 		UE_LOG(LogHotPatcher,Display,TEXT("FAssetDependenciteParser Asset Num (Optimized) %d"),Parser.GetrParseResults().Num());
 
 		{
-			SCOPED_NAMED_EVENT_TCHAR(TEXT("combine all assets to FAssetDependenciesInfo"),FColor::Red);
+			SCOPED_NAMED_EVENT_TEXT("combine all assets to FAssetDependenciesInfo",FColor::Red);
 			for(FName LongPackageName:Parser.GetrParseResults())
 			{
 				if(LongPackageName.IsNone())
@@ -1319,12 +1319,12 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	}
 	
 	// {
-	// 	SCOPED_NAMED_EVENT_TCHAR(TEXT("parser all uasset dependencies(Old)"),FColor::Red);
+	// 	SCOPED_NAMED_EVENT_TEXT("parser all uasset dependencies(Old)",FColor::Red);
 	// 	FOldAssetDependenciesParser Parser;
 	// 	Parser.Parse(AssetConfig);
 	//
 	// 	{
-	// 		SCOPED_NAMED_EVENT_TCHAR(TEXT("calac all uasset num (old)"),FColor::Red);
+	// 		SCOPED_NAMED_EVENT_TEXT("calac all uasset num (old)",FColor::Red);
 	// 		TArray<FAssetDetail> AssetDetails;
 	// 		UFlibAssetManageHelper::GetAssetDetailsByAssetDependenciesInfo(Parser.GetrParseResults(),AssetDetails);
 	// 		UE_LOG(LogHotPatcher,Display,TEXT("FAssetDependenciteParser Asset Num (old) %d"),AssetDetails.Num());
@@ -1333,7 +1333,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	// }
 	
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportReleaseVersionInfo parser external files"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("ExportReleaseVersionInfo parser external files",FColor::Red);
 		for(const auto& PlatformExInfo:AddToPlatformExFiles)
 		{
 			FPlatformExternFiles PlatformFileInfo = UFlibPatchParserHelper::GetAllExFilesByPlatform(PlatformExInfo);

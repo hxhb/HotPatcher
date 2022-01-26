@@ -59,16 +59,20 @@ public:
 	static FString GetAssetCookedSavePath(const FString& BaseDir, const FString PacakgeName, const FString& Platform);
 
 	static FString GetProjectCookedDir();
-
+#if WITH_PACKAGE_CONTEXT
 	static FSavePackageContext* CreateSaveContext(const ITargetPlatform* TargetPlatform,bool bUseZenLoader);
-	
+	static TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> CreatePlatformsPackageContexts(const TArray<ETargetPlatform>& Platforms,bool bIoStore);
+	static bool SavePlatformBulkDataManifest(TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>>&PlatformSavePackageContexts,ETargetPlatform Platform);
+#endif
 	//UFUNCTION(BlueprintCallable)
 	static void CookAssets(
 		const TArray<FSoftObjectPath>& Assets,
 		const TArray<ETargetPlatform>& Platforms,
 		FCookActionCallback CookActionCallback,
+#if WITH_PACKAGE_CONTEXT
 		class TMap<ETargetPlatform, FSavePackageContext*> PlatformSavePackageContext = TMap<
 			ETargetPlatform, FSavePackageContext*>{},
+#endif
 		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),
 		                                            TEXT("Cooked"))
 	);
@@ -76,7 +80,9 @@ public:
 		const FSoftObjectPath& AssetObjectPath,
 		TArray<ITargetPlatform*> CookPlatforms,
 		FCookActionCallback CookActionCallback,
+#if WITH_PACKAGE_CONTEXT
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{},
+#endif
 		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked")),
 		bool bStorageConcurrent = false
 	);
@@ -84,7 +90,9 @@ public:
 		UPackage* Package,
 		TArray<ITargetPlatform*> CookPlatforms,
 		FCookActionCallback CookActionCallback,
+#if WITH_PACKAGE_CONTEXT
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
+#endif
 		const FString& InSavePath,
 		bool bStorageConcurrent 
 	);
@@ -93,7 +101,9 @@ public:
 		UPackage* Package,
 		TArray<ITargetPlatform*> CookPlatforms,
 		FCookActionCallback CookActionCallback,
+#if WITH_PACKAGE_CONTEXT
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
+#endif
 		const TMap<FName,FString>& CookedPlatformSavePaths,
 		bool bStorageConcurrent 
 	);
@@ -102,7 +112,9 @@ public:
 		TArray<FAssetDetail> Assets,
 		const TArray<ETargetPlatform>& Platforms,
 		FCookActionCallback CookActionCallback,
+#if WITH_PACKAGE_CONTEXT
 		class TMap<ETargetPlatform,FSavePackageContext*> PlatformSavePackageContext = TMap<ETargetPlatform,FSavePackageContext*>{},
+#endif
 		const FString& InSavePath = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"))
 	);
 	
@@ -200,8 +212,7 @@ public:
 
 	static void ImportProjectSettingsToSettingBase(FHotPatcherSettingBase* HotPatcherSettingBase);
 
-	static TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> CreatePlatformsPackageContexts(const TArray<ETargetPlatform>& Platforms,bool bIoStore);
-	static bool SavePlatformBulkDataManifest(TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>>&PlatformSavePackageContexts,ETargetPlatform Platform);
+
 	static void CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms, TSet<UObject*>& ProcessedObjs, TSet<UObject*>& PendingCachePlatformDataObjects, bool bStorageConcurrent = false, bool bWaitComplete = false);
 	static void CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, TSet<UObject*>& PendingCachePlatformDataObjects, bool bStorageConcurrent, bool bWaitComplete = false);
 
@@ -215,4 +226,6 @@ public:
 	static TArray<UClass*> GetDerivedClasses(UClass* BaseClass,bool bRecursive,bool bContainSelf = false);
 
 	static void DeleteDirectory(const FString& Dir);
+
+	static int32 GetMemoryMappingAlignment(const FString& PlatformName);
 };

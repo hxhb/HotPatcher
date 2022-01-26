@@ -15,10 +15,10 @@
 #include "Interfaces/IPluginManager.h"
 #include "Engine/AssetManager.h"
 #include "AssetData.h"
+#include "UObject/ConstructorHelpers.h"
 #include "Resources/Version.h"
 #include "HotPatcherLog.h"
 #include "HotPatcherTemplateHelper.hpp"
-#include "Algo/ForEach.h"
 #include "UObject/MetaData.h"
 
 // PRAGMA_DISABLE_DEPRECATION_WARNINGS
@@ -80,7 +80,7 @@ void UFlibAssetManageHelper::UpdateAssetMangerDatabase(bool bForceRefresh)
 
 bool UFlibAssetManageHelper::GetAssetPackageGUID(const FString& InPackagePath, FName& OutGUID)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetPackageGUID"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetPackageGUID",FColor::Red);
 	bool bResult = false;
 	if (InPackagePath.IsEmpty())
 		return false;
@@ -92,7 +92,7 @@ bool UFlibAssetManageHelper::GetAssetPackageGUID(const FString& InPackagePath, F
 		PRAGMA_DISABLE_DEPRECATION_WARNINGS
 		const FGuid& AssetGuid = AssetPackageData->PackageGuid;
 		PRAGMA_ENABLE_DEPRECATION_WARNINGS
-		OutGUID = FName(AssetGuid.ToString());
+		OutGUID = FName(*AssetGuid.ToString());
 		bResult = true;
 	}
 #else
@@ -127,7 +127,7 @@ bool UFlibAssetManageHelper::GetAssetPackageGUID(const FString& InPackagePath, F
 
 FAssetDependenciesInfo UFlibAssetManageHelper::CombineAssetDependencies(const FAssetDependenciesInfo& A, const FAssetDependenciesInfo& B)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::CombineAssetDependencies"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::CombineAssetDependencies",FColor::Red);
 	FAssetDependenciesInfo resault;
 
 	auto CombineLambda = [&resault](const FAssetDependenciesInfo& InDependencies)
@@ -173,7 +173,7 @@ FAssetDependenciesInfo UFlibAssetManageHelper::CombineAssetDependencies(const FA
 
 bool UFlibAssetManageHelper::GetAssetReference(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyType::Type>& SearchAssetDepTypes, TArray<FAssetDetail>& OutRefAsset)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetReference"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetReference",FColor::Red);
 	bool bStatus = false;
 	FString LongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(InAsset.PackagePath.ToString());
 	
@@ -224,7 +224,7 @@ void UFlibAssetManageHelper::GetAssetReferenceRecursively(const FAssetDetail& In
                                                             const TArray<FString>& SearchAssetsTypes,
                                                             TArray<FAssetDetail>& OutRefAsset)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetReferenceRecursively"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetReferenceRecursively",FColor::Red);
 	TArray<FAssetDetail> CurrentAssetsRef;
 	UFlibAssetManageHelper::GetAssetReference(InAsset,SearchAssetDepTypes,CurrentAssetsRef);
 
@@ -235,7 +235,7 @@ void UFlibAssetManageHelper::GetAssetReferenceRecursively(const FAssetDetail& In
 		{
 			for(const auto& AssetType:SearchAssetsTypes)
 			{
-				if(InAsset.AssetType == FName(AssetType))
+				if(InAsset.AssetType == FName(*AssetType))
 				{
 					bresult = true;
 					break;
@@ -264,7 +264,7 @@ void UFlibAssetManageHelper::GetAssetReferenceRecursively(const FAssetDetail& In
 
 bool UFlibAssetManageHelper::GetAssetReferenceEx(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& SearchAssetDepTypes, TArray<FAssetDetail>& OutRefAsset)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetReferenceEx"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetReferenceEx",FColor::Red);
 	TArray<EAssetRegistryDependencyType::Type> local_SearchAssetDepTypes;
 	for (const auto& type : SearchAssetDepTypes)
 	{
@@ -276,7 +276,7 @@ bool UFlibAssetManageHelper::GetAssetReferenceEx(const FAssetDetail& InAsset, co
 
 FName UFlibAssetManageHelper::GetAssetType(FSoftObjectPath SoftObjectPath)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetTypeByPackageName"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetTypeByPackageName",FColor::Red);
 	
 	FAssetData OutAssetData;
 	UAssetManager::Get().GetAssetDataForPath(SoftObjectPath, OutAssetData) && OutAssetData.IsValid();
@@ -286,7 +286,7 @@ FName UFlibAssetManageHelper::GetAssetType(FSoftObjectPath SoftObjectPath)
 
 FAssetDetail UFlibAssetManageHelper::GetAssetDetailByPackageName(const FString& InPackageName)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetDetailByPackageName"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetDetailByPackageName",FColor::Red);
 	FAssetDetail AssetDetail;
 	UAssetManager& AssetManager = UAssetManager::Get();
 	if (AssetManager.IsValid())
@@ -309,7 +309,7 @@ FAssetDetail UFlibAssetManageHelper::GetAssetDetailByPackageName(const FString& 
 
 bool UFlibAssetManageHelper::GetRedirectorList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutRedirector)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetRedirectorList"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetRedirectorList",FColor::Red);
 	TArray<FAssetData> AllAssetData;
 	if (UFlibAssetManageHelper::GetAssetsData(InFilterPackagePaths, AllAssetData,true))
 	{
@@ -329,14 +329,14 @@ bool UFlibAssetManageHelper::GetRedirectorList(const TArray<FString>& InFilterPa
 
 bool UFlibAssetManageHelper::GetSpecifyAssetData(const FString& InLongPackageName, TArray<FAssetData>& OutAssetData, bool InIncludeOnlyOnDiskAssets)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetSpecifyAssetData"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetSpecifyAssetData",FColor::Red);
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 	return AssetRegistryModule.Get().GetAssetsByPackageName(*InLongPackageName, OutAssetData, InIncludeOnlyOnDiskAssets);
 }
 
 bool UFlibAssetManageHelper::GetAssetsData(const TArray<FString>& InFilterPaths, TArray<FAssetData>& OutAssetData, bool bIncludeOnlyOnDiskAssets)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetsData"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetsData",FColor::Red);
 	OutAssetData.Reset();
 
 	FARFilter Filter;
@@ -364,7 +364,7 @@ bool UFlibAssetManageHelper::GetAssetsData(const TArray<FString>& InFilterPaths,
 // /Game 
 TArray<FString> UFlibAssetManageHelper::GetAssetsByFilter(const FString& InFilter)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetsByFilter"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetsByFilter",FColor::Red);
 	TArray<FString> result;
 	FString ContentPath = FPackageName::LongPackageNameToFilename(InFilter);
 	TArray<FString> AssetFiles;
@@ -379,7 +379,7 @@ TArray<FString> UFlibAssetManageHelper::GetAssetsByFilter(const FString& InFilte
 bool UFlibAssetManageHelper::GetAssetsDataByDisk(const TArray<FString>& InFilterPaths,
 	TArray<FAssetData>& OutAssetData)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetsDataByDisk"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetsDataByDisk",FColor::Red);
 	TSet<FName> PackageNames;
 	{
 		TArray<FString> AssetPaths;
@@ -393,7 +393,7 @@ bool UFlibAssetManageHelper::GetAssetsDataByDisk(const TArray<FString>& InFilter
 			FString PackageName;
 			if(FPackageName::TryConvertFilenameToLongPackageName(Asset,PackageName))
 			{
-				PackageNames.Add(FName(PackageName));
+				PackageNames.Add(FName(*PackageName));
 			}
 		}
 	}
@@ -411,7 +411,7 @@ bool UFlibAssetManageHelper::GetAssetsDataByDisk(const TArray<FString>& InFilter
 
 bool UFlibAssetManageHelper::GetSingleAssetsData(const FString& InPackagePath, FAssetData& OutAssetData)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetSingleAssetsData"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetSingleAssetsData",FColor::Red);
 	UAssetManager& AssetManager = UAssetManager::Get();
 
 	return AssetManager.GetAssetDataForPath(FSoftObjectPath{ InPackagePath }, OutAssetData);
@@ -419,14 +419,14 @@ bool UFlibAssetManageHelper::GetSingleAssetsData(const FString& InPackagePath, F
 
 bool UFlibAssetManageHelper::GetAssetsDataByPackageName(const FString& InPackageName, FAssetData& OutAssetData)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetsDataByPackageName"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetsDataByPackageName",FColor::Red);
 	FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InPackageName);
 	return UFlibAssetManageHelper::GetSingleAssetsData(PackagePath,OutAssetData);
 }
 
 bool UFlibAssetManageHelper::GetClassStringFromFAssetData(const FAssetData& InAssetData, FString& OutAssetType)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetClassStringFromFAssetData"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetClassStringFromFAssetData",FColor::Red);
 	bool bRunState = false;
 	if (InAssetData.IsValid())
 	{
@@ -439,13 +439,13 @@ bool UFlibAssetManageHelper::GetClassStringFromFAssetData(const FAssetData& InAs
 
 bool UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(const FAssetData& InAssetData, FAssetDetail& OutAssetDetail)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail",FColor::Red);
 	if (!InAssetData.IsValid())
 		return false;
 	FAssetDetail AssetDetail;
-	AssetDetail.AssetType = FName(InAssetData.AssetClass.ToString());
+	AssetDetail.AssetType = FName(*InAssetData.AssetClass.ToString());
 	FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InAssetData.PackageName.ToString());
-	AssetDetail.PackagePath = FName(PackagePath);
+	AssetDetail.PackagePath = FName(*PackagePath);
 	UFlibAssetManageHelper::GetAssetPackageGUID(PackagePath, AssetDetail.Guid);
 
 	OutAssetDetail = AssetDetail;
@@ -455,7 +455,7 @@ bool UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(const FAssetData& InAs
 bool UFlibAssetManageHelper::GetSpecifyAssetDetail(const FString& InLongPackageName, FAssetDetail& OutAssetDetail)
 {
 
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetSpecifyAssetDetail"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetSpecifyAssetDetail",FColor::Red);
 	bool bRunStatus = false;
 	TArray<FAssetData> AssetData;
 	if (UFlibAssetManageHelper::GetSpecifyAssetData(InLongPackageName, AssetData, true))
@@ -469,7 +469,7 @@ bool UFlibAssetManageHelper::GetSpecifyAssetDetail(const FString& InLongPackageN
 	if(!bRunStatus)
 	{
 #if ASSET_DEPENDENCIES_DEBUG_LOG
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("display GetSpecifyAssetDetail failed log"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("display GetSpecifyAssetDetail failed log",FColor::Red);
 		UE_LOG(LogHotPatcher,Display,TEXT("Get %s AssetDetail failed!"),*InLongPackageName);
 #endif
 	}
@@ -478,13 +478,13 @@ bool UFlibAssetManageHelper::GetSpecifyAssetDetail(const FString& InLongPackageN
 
 void UFlibAssetManageHelper::FilterNoRefAssets(const TArray<FAssetDetail>& InAssetsDetail, TArray<FAssetDetail>& OutHasRefAssetsDetail, TArray<FAssetDetail>& OutDontHasRefAssetsDetail)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::FilterNoRefAssets"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::FilterNoRefAssets",FColor::Red);
 	OutHasRefAssetsDetail.Reset();
 	OutDontHasRefAssetsDetail.Reset();
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 	for (const auto& AssetDetail : InAssetsDetail)
 	{
-		FSoftObjectPath CurrentObjectSoftRef{ AssetDetail.PackagePath };
+		FSoftObjectPath CurrentObjectSoftRef{ AssetDetail.PackagePath.ToString() };
 		FAssetIdentifier CurrentAssetId{ *CurrentObjectSoftRef.GetLongPackageName() };
 		
 		// ignore scan Map Asset reference
@@ -517,13 +517,13 @@ void UFlibAssetManageHelper::FilterNoRefAssets(const TArray<FAssetDetail>& InAss
 
 void UFlibAssetManageHelper::FilterNoRefAssetsWithIgnoreFilter(const TArray<FAssetDetail>& InAssetsDetail, const TArray<FString>& InIgnoreFilters, TArray<FAssetDetail>& OutHasRefAssetsDetail, TArray<FAssetDetail>& OutDontHasRefAssetsDetail)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::FilterNoRefAssetsWithIgnoreFilter"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::FilterNoRefAssetsWithIgnoreFilter",FColor::Red);
 	OutHasRefAssetsDetail.Reset();
 	OutDontHasRefAssetsDetail.Reset();
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 	for (const auto& AssetDetail : InAssetsDetail)
 	{
-		FSoftObjectPath CurrentObjectSoftRef{ AssetDetail.PackagePath };
+		FSoftObjectPath CurrentObjectSoftRef{ AssetDetail.PackagePath.ToString() };
 		FAssetIdentifier CurrentAssetId{ *CurrentObjectSoftRef.GetLongPackageName() };
 
 		// ignore scan Map Asset reference
@@ -568,13 +568,13 @@ void UFlibAssetManageHelper::FilterNoRefAssetsWithIgnoreFilter(const TArray<FAss
 }
 bool UFlibAssetManageHelper::CombineAssetsDetailAsFAssetDepenInfo(const TArray<FAssetDetail>& InAssetsDetailList, FAssetDependenciesInfo& OutAssetInfo)
 {
-SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::CombineAssetsDetailAsFAssetDepenInfo"),FColor::Red);
+SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::CombineAssetsDetailAsFAssetDepenInfo",FColor::Red);
 	FAssetDependenciesInfo result;
 
 	for (const auto& AssetDetail : InAssetsDetailList)
 	{
 		FString CurrAssetModuleName = UFlibAssetManageHelper::GetAssetBelongModuleName(AssetDetail.PackagePath.ToString());
-		FSoftObjectPath CurrAssetObjectPath(AssetDetail.PackagePath);
+		FSoftObjectPath CurrAssetObjectPath(AssetDetail.PackagePath.ToString());
 		FString CurrAssetLongPackageName = CurrAssetObjectPath.GetLongPackageName();
 		if (!result.AssetsDependenciesMap.Contains(CurrAssetModuleName))
 		{
@@ -601,7 +601,7 @@ SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::CombineAssetsDetailAsFAss
 
 void UFlibAssetManageHelper::GetAllInValidAssetInProject(FAssetDependenciesInfo InAllDependencies, TArray<FString> &OutInValidAsset,TArray<FString> InIgnoreModules)
 {
-SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAllInValidAssetInProject"),FColor::Red);
+SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAllInValidAssetInProject",FColor::Red);
 	TArray<FString> Keys;
 	InAllDependencies.AssetsDependenciesMap.GetKeys(Keys);
 
@@ -735,7 +735,7 @@ bool UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 	TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset
 )
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::MakePakCommandFromAssetDependencies"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::MakePakCommandFromAssetDependencies",FColor::Red);
 	if (!FPaths::DirectoryExists(InProjectDir) /*|| !UFlibAssetManageHelper::IsValidPlatform(InPlatformName)*/)
 		return false;
 	OutCookCommand.Empty();
@@ -772,7 +772,7 @@ bool UFlibAssetManageHelper::MakePakCommandFromLongPackageName(
 	TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset
 )
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::MakePakCommandFromLongPackageName"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::MakePakCommandFromLongPackageName",FColor::Red);
 	OutCookCommand.Empty();
 	bool bStatus = false;
 	TArray<FString> CookedAssetAbsPath;
@@ -803,7 +803,7 @@ bool UFlibAssetManageHelper::CombineCookedAssetCommand(
 	TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset
 )
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::CombineCookedAssetCommand"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::CombineCookedAssetCommand",FColor::Red);
 	if (!(!!InAbsPath.Num() && !!InRelativePath.Num()))
 	{
 		return false;
@@ -860,7 +860,7 @@ bool UFlibAssetManageHelper::GetPluginModuleAbsDir(const FString& InPluginModule
 
 void UFlibAssetManageHelper::GetAllEnabledModuleName(TMap<FString, FString>& OutModules)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAllEnabledModuleName"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAllEnabledModuleName",FColor::Red);
 	OutModules.Add(TEXT("Game"), FPaths::ProjectDir());
 	OutModules.Add(TEXT("Engine"), FPaths::EngineDir());
 
@@ -875,7 +875,7 @@ void UFlibAssetManageHelper::GetAllEnabledModuleName(TMap<FString, FString>& Out
 
 bool UFlibAssetManageHelper::ModuleIsEnabled(const FString& InModuleName)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::ModuleIsEnabled"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::ModuleIsEnabled",FColor::Red);
 	TMap<FString,FString> AllEnabledModules;
 	UFlibAssetManageHelper::GetAllEnabledModuleName(AllEnabledModules);
 	TArray<FString> AllEnableModuleNames;
@@ -885,7 +885,7 @@ bool UFlibAssetManageHelper::ModuleIsEnabled(const FString& InModuleName)
 
 bool UFlibAssetManageHelper::GetModuleNameByRelativePath(const FString& InRelativePath, FString& OutModuleName)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetModuleNameByRelativePath"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetModuleNameByRelativePath",FColor::Red);
 	if (InRelativePath.IsEmpty()) return false;
 	FString BelongModuleName = InRelativePath;
 	{
@@ -915,7 +915,7 @@ bool UFlibAssetManageHelper::GetEnableModuleAbsDir(const FString& InModuleName, 
 
 FString UFlibAssetManageHelper::GetAssetBelongModuleName(const FString& InAssetRelativePath)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetBelongModuleName"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetBelongModuleName",FColor::Red);
 	FString LongDependentPackageName = InAssetRelativePath;
 
 	int32 BelongModuleNameEndIndex = LongDependentPackageName.Find(TEXT("/"), ESearchCase::IgnoreCase, ESearchDir::FromStart, 1);
@@ -953,7 +953,7 @@ bool UFlibAssetManageHelper::ConvRelativeDirToAbsDir(const FString& InRelativePa
 
 bool UFlibAssetManageHelper::FindFilesRecursive(const FString& InStartDir, TArray<FString>& OutFileList, bool InRecursive)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::FindFilesRecursive"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::FindFilesRecursive",FColor::Red);
 	TArray<FString> CurrentFolderFileList;
 	if (!FPaths::DirectoryExists(InStartDir))
 		return false;
@@ -968,7 +968,7 @@ bool UFlibAssetManageHelper::FindFilesRecursive(const FString& InStartDir, TArra
 
 uint32 UFlibAssetManageHelper::ParserAssetDependenciesInfoNumber(const FAssetDependenciesInfo& AssetDependenciesInfo, TMap<FString, uint32> ModuleAssetsNumMaps)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::ParserAssetDependenciesInfoNumber"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::ParserAssetDependenciesInfoNumber",FColor::Red);
 	uint32 TotalAssetNum = 0;
 	TArray<FString> ModuleCategorys;
 	AssetDependenciesInfo.AssetsDependenciesMap.GetKeys(ModuleCategorys);
@@ -984,7 +984,7 @@ uint32 UFlibAssetManageHelper::ParserAssetDependenciesInfoNumber(const FAssetDep
 
 FString UFlibAssetManageHelper::ParserModuleAssetsNumMap(const TMap<FString, uint32>& InMap)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::ParserModuleAssetsNumMap"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::ParserModuleAssetsNumMap",FColor::Red);
 	FString result;
 	TArray<FString> Keys;
 	InMap.GetKeys(Keys);
@@ -1003,7 +1003,7 @@ EAssetRegistryDependencyType::Type UFlibAssetManageHelper::ConvAssetRegistryDepe
 
 void UFlibAssetManageHelper::GetAssetDataInPaths(const TArray<FString>& Paths, TArray<FAssetData>& OutAssetData)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetDataInPaths"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetDataInPaths",FColor::Red);
 	// Form a filter from the paths
 	FARFilter Filter;
 	Filter.bRecursivePaths = true;
@@ -1018,7 +1018,7 @@ void UFlibAssetManageHelper::GetAssetDataInPaths(const TArray<FString>& Paths, T
 
 FString UFlibAssetManageHelper::LongPackageNameToPackagePath(const FString& InLongPackageName)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::LongPackageNameToPackagePath"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::LongPackageNameToPackagePath",FColor::Red);
 	if(InLongPackageName.Contains(TEXT(".")))
 	{
 		UE_LOG(LogHotPatcher,Warning,TEXT("LongPackageNameToPackagePath %s alway is PackagePath!"),*InLongPackageName);
@@ -1039,7 +1039,7 @@ FString UFlibAssetManageHelper::LongPackageNameToPackagePath(const FString& InLo
 
 FString UFlibAssetManageHelper::PackagePathToLongPackageName(const FString& PackagePath)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::PackagePathToLongPackageName"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::PackagePathToLongPackageName",FColor::Red);
 	FSoftObjectPath ObjectPath = PackagePath;
 	return ObjectPath.GetLongPackageName();
 }
@@ -1196,7 +1196,7 @@ UPackage* UFlibAssetManageHelper::GetPackage(FName PackageName)
 
 TArray<UPackage*> UFlibAssetManageHelper::LoadPackagesForCooking(const TArray<FSoftObjectPath>& SoftObjectPaths, bool bStorageConcurrent)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("LoadPackagesForCooking"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("LoadPackagesForCooking",FColor::Red);
 	TArray<UPackage*> AllPackages;
 	GIsCookerLoadingPackage = true;
 	for(const auto& Asset:SoftObjectPaths)
@@ -1210,7 +1210,8 @@ TArray<UPackage*> UFlibAssetManageHelper::LoadPackagesForCooking(const TArray<FS
 		AllPackages.AddUnique(Package);
 		
 	}
-	Algo::ForEach(AllPackages,[bStorageConcurrent](UPackage* Package)
+	
+	for(auto Package:AllPackages)
 	{
 		if(!bStorageConcurrent && Package->IsFullyLoaded())
 		{
@@ -1229,7 +1230,7 @@ TArray<UPackage*> UFlibAssetManageHelper::LoadPackagesForCooking(const TArray<FS
 			}
 			Package->GetMetaData();
 		}
-	});
+	}
 	GIsCookerLoadingPackage = false;
 	return AllPackages;
 }
@@ -1240,7 +1241,7 @@ bool UFlibAssetManageHelper::MatchIgnoreTypes(const FString& LongPackageName, TS
 	FAssetData AssetData;
 	if(UFlibAssetManageHelper::GetAssetsDataByPackageName(LongPackageName,AssetData))
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("is ignore types"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("is ignore types",FColor::Red);
 		MatchTypeStr = AssetData.AssetClass.ToString();
 		bIgnoreType = IgnoreTypes.Contains(AssetData.AssetClass);
 #if ENGINE_MAJOR_VERSION > 25

@@ -3,8 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
 #include "Styling/SlateStyle.h"
 
 class FVersionUpdaterStyle

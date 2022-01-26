@@ -2,7 +2,7 @@
 
 #include "AssetData.h"
 // #include "FlibAssetManageHelper.h"
-
+#include "UObject/NameTypes.h"
 #include "CoreMinimal.h"
 #include "FAssetDetail.generated.h"
 
@@ -14,10 +14,10 @@ struct HOTPATCHERRUNTIME_API FAssetDetail
 	FAssetDetail() = default;
 	FAssetDetail(const FAssetDetail&) = default;
 	FAssetDetail& operator=(const FAssetDetail&) = default;
-	FORCEINLINE FAssetDetail(const FName& InAssetPackagePath, const FString& InAsetType,const FString& InGuid)
+	FORCEINLINE FAssetDetail(const FName& InAssetPackagePath, const FName& InAsetType,const FName& InGuid)
 		: PackagePath(InAssetPackagePath), AssetType(InAsetType), Guid(InGuid){}
 	FORCEINLINE FAssetDetail(const FString& InAssetPackagePath, const FString& InAsetType,const FString& InGuid)
-		: FAssetDetail(FName(*InAssetPackagePath),InAsetType,InGuid){}
+		: FAssetDetail(FName(*InAssetPackagePath),FName(*InAsetType),FName(*InGuid)){}
 
 	bool operator==(const FAssetDetail& InRight)const
 	{

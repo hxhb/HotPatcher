@@ -5,6 +5,7 @@
 #include "FlibPatchParserHelper.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
 #include "HotPatcherLog.h"
+#include "Engine/Engine.h"
 
 void CommandletHelper::ReceiveMsg(const FString& InMsgType,const FString& InMsg)
 {
@@ -69,7 +70,7 @@ void CommandletHelper::MainTick(TFunction<bool()> IsRequestExit)
 	// main loop
 	FDateTime LastConnectionTime = FDateTime::UtcNow();
 
-	while (GIsRunning && !IsEngineExitRequested() && !IsRequestExit())
+	while (GIsRunning && !GIsRequestingExit && !IsRequestExit())
 	{
 		GEngine->UpdateTimeAndHandleMaxTickRate();
 		GEngine->Tick(FApp::GetDeltaTime(), false);
@@ -91,7 +92,8 @@ void CommandletHelper::MainTick(TFunction<bool()> IsRequestExit)
 #if PLATFORM_WINDOWS
 		if (ComWrapperShutdownEvent->Wait(0))
 		{
-			RequestEngineExit(TEXT("GeneralCommandlet ComWrapperShutdownEvent"));
+			GIsRequestingExit  = true;
+			// RequestEngineExit(TEXT("GeneralCommandlet ComWrapperShutdownEvent"));
 		}
 #endif
 	}

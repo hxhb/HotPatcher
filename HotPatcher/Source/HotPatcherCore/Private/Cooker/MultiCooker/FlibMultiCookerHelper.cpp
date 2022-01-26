@@ -53,7 +53,7 @@ TSharedPtr<FCookShaderCollectionProxy> UFlibMultiCookerHelper::CreateCookShaderC
 	const FString& InSavePath,
 	bool bCleanSavePath)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform",FColor::Red);
 	TSharedPtr<FCookShaderCollectionProxy> CookShaderCollection;
 	TArray<FString> PlatformNames;
 	for(const auto& Platform:Platforms)

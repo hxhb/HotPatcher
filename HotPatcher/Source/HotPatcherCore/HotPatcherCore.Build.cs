@@ -4,7 +4,6 @@ using UnrealBuildTool;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 public class HotPatcherCore : ModuleRules
 {
@@ -51,7 +50,6 @@ public class HotPatcherCore : ModuleRules
                 "RHI",
                 "EngineSettings",
                 "AssetRegistry",
-                "TraceLog",
                 "PakFileUtilities",
                 "HotPatcherRuntime",
                 "BinariesPatchFeature"
@@ -71,6 +69,14 @@ public class HotPatcherCore : ModuleRules
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);
+		
+		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 23)
+		{
+			PublicDependencyModuleNames.AddRange(new string[]{
+				"TraceLog"
+			});
+		}
+
 		
 		// // only in UE5
 		if (Target.Version.MajorVersion > 4)

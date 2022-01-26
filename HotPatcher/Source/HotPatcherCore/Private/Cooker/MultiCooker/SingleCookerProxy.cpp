@@ -6,12 +6,15 @@
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
 #include "ThreadUtils/FThreadUtils.hpp"
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
+#include "Engine/Engine.h"
+#include "Engine/Texture.h"
 #include "Materials/MaterialInstance.h"
 #include "Misc/ScopeExit.h"
 
 #if WITH_PACKAGE_CONTEXT
 // // engine header
 #include "UObject/SavePackage.h"
+#endif
 
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
 #include "Serialization/BulkDataManifest.h"
@@ -50,7 +53,7 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 
 void USingleCookerProxy::Shutdown()
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::Shutdown"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::Shutdown",FColor::Red);
 	WaitCookerFinished();
 	ShutdowShaderLibCollections();
 	
@@ -73,7 +76,7 @@ void USingleCookerProxy::Shutdown()
 
 void USingleCookerProxy::DoCookMission(const TArray<FAssetDetail>& Assets)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::DoCookMission"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::DoCookMission",FColor::Red);
 	const FCookActionResultEvent PackageSavedCallback = [this](const FSoftObjectPath& PackagePath,ETargetPlatform Platform,ESavePackageResult Result)
 	{
 		OnAssetCooked.Broadcast(PackagePath,Platform,Result);
@@ -177,7 +180,7 @@ void USingleCookerProxy::IoStoreManifest()
 				TArray<FString> AssetPackagePaths;
 				for (auto AssetPackagePath : Assets)
 				{
-					FSoftObjectPath ObjectPath{ AssetPackagePath };
+					FSoftObjectPath ObjectPath{ AssetPackagePath.ToString() };
 					TArray<FAssetData> AssetData;
 					UFlibAssetManageHelper::GetSpecifyAssetData(ObjectPath.GetLongPackageName(),AssetData,true);
 					AssetsData.Append(AssetData);
@@ -214,7 +217,7 @@ void USingleCookerProxy::IoStoreManifest()
 void USingleCookerProxy::InitShaderLibConllections()
 {
 	FString SavePath = GetSettingObject()->StorageMetadataDir;
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::InitShaderLibConllections"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::InitShaderLibConllections",FColor::Red);
 	PlatformCookShaderCollection = UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform(
 		GetSettingObject()->ShaderLibName,
 		GetSettingObject()->CookTargetPlatforms,
@@ -233,7 +236,7 @@ void USingleCookerProxy::InitShaderLibConllections()
 
 void USingleCookerProxy::ShutdowShaderLibCollections()
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::ShutdowShaderLibCollections"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::ShutdowShaderLibCollections",FColor::Red);
 	if(GetSettingObject()->ShaderOptions.bSharedShaderLibrary)
 	{
 		if(PlatformCookShaderCollection.IsValid())
@@ -245,7 +248,7 @@ void USingleCookerProxy::ShutdowShaderLibCollections()
 
 bool USingleCookerProxy::DoExport()
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::DoExport"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::DoExport",FColor::Red);
 	GetCookFailedAssetsCollection().MissionName = GetSettingObject()->MissionName;
 	GetCookFailedAssetsCollection().MissionID = GetSettingObject()->MissionID;
 	GetCookFailedAssetsCollection().CookFailedAssets.Empty();
@@ -270,15 +273,16 @@ FName WorldType = TEXT("World");
 
 void USingleCookerProxy::CookClusterSync(const FCookCluster& CookCluster)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::CookClusterSync"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::CookClusterSync",FColor::Red);
 	
 	TArray<ITargetPlatform*> TargetPlatforms = UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(CookCluster.Platforms);
 
 	if(GetSettingObject()->bConcurrentSave)
 	{
 		FString CookBaseDir = GetSettingObject()->StorageCookedDir;
+#if WITH_PACKAGE_CONTEXT
 		TMap<FString, FSavePackageContext*> SavePackageContextsNameMapping = GetPlatformSavePackageContextsNameMapping();
-		
+#endif
 		TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(CookCluster.AsSoftObjectPaths(),GetSettingObject()->bConcurrentSave);
 		
 		GIsSavingPackage = true;
@@ -300,7 +304,9 @@ void USingleCookerProxy::CookClusterSync(const FCookCluster& CookCluster)
 				AllPackages[AssetIndex],
 				TargetPlatforms,
 				CookCluster.CookActionCallback,
+#if WITH_PACKAGE_CONTEXT
 				SavePackageContextsNameMapping,
+#endif
 				*PackageCookedSavePaths.Find(*AllPackages[AssetIndex]->GetPathName()),
 				true);
 		},!GetSettingObject()->bConcurrentSave);
@@ -361,7 +367,7 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 			TArray<FSoftObjectPath> ObjectPaths;
 			for(const auto& AssetDetail:ClassAssetDetails)
 			{
-				ObjectPaths.Emplace(AssetDetail.PackagePath);
+				ObjectPaths.Emplace(AssetDetail.PackagePath.ToString());
 			}
 			
 			TArray<UPackage*> PreCachePackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths,GetSettingObject()->bConcurrentSave);
@@ -374,11 +380,11 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 
 void USingleCookerProxy::CookCluster(const FCookCluster& CookCluster)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::CookCluster"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::CookCluster",FColor::Red);
 	TArray<ITargetPlatform*> CookPlatfotms = UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(CookCluster.Platforms);
 	
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("Delete Old Cooked Files"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("Delete Old Cooked Files",FColor::Red);
 		FString CookBaseDir = GetSettingObject()->StorageCookedDir;
 		TArray<FString> PaddingDeleteFiles;
 		for(const auto& Asset:CookCluster.AsSoftObjectPaths())
@@ -406,6 +412,7 @@ void USingleCookerProxy::CookCluster(const FCookCluster& CookCluster)
 
 void USingleCookerProxy::AddCluster(const FCookCluster& CookCluster)
 {
+#if WITH_PACKAGE_CONTEXT
 	for(auto Platform:CookCluster.Platforms)
 	{
 		if(!GetPlatformSavePackageContexts().Contains(Platform))
@@ -413,9 +420,11 @@ void USingleCookerProxy::AddCluster(const FCookCluster& CookCluster)
 			GetPlatformSavePackageContexts().Append(UFlibHotPatcherCoreHelper::CreatePlatformsPackageContexts(TArray<ETargetPlatform>{Platform},GetSettingObject()->IoStoreSettings.bIoStore));
 		}
 	}
+#endif
+	
 	for(const auto& AssetDetail:CookCluster.AssetDetails)
 	{
-		FSoftObjectPath SoftObjectPath(AssetDetail.PackagePath);
+		FSoftObjectPath SoftObjectPath(AssetDetail.PackagePath.ToString());
 		FName AssetType = UFlibAssetManageHelper::GetAssetType(SoftObjectPath);
 		if(!AssetType.IsNone())
 		{
@@ -428,7 +437,7 @@ void USingleCookerProxy::AddCluster(const FCookCluster& CookCluster)
 
 bool USingleCookerProxy::HasError()
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::HasError"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::HasError",FColor::Red);
 	TArray<ETargetPlatform> TargetPlatforms;
 	GetCookFailedAssetsCollection().CookFailedAssets.GetKeys(TargetPlatforms);
 	return !!TargetPlatforms.Num();
@@ -445,7 +454,7 @@ void USingleCookerProxy::OnAssetCookedHandle(const FSoftObjectPath& PackagePath,
 	}
 	else
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::OnCookAssetFailed"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::OnCookAssetFailed",FColor::Red);
 		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
 		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s for %s Failed!"),*PackagePath.GetAssetPathString(),*PlatformName);
 		GetPaendingCookAssetsSet().Remove(PackagePath.GetAssetPathName());
@@ -459,16 +468,16 @@ bool USingleCookerProxy::IsFinsihed()
 
 void USingleCookerProxy::WaitCookerFinished()
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::WaitCookerFinished"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::WaitCookerFinished",FColor::Red);
 	// Wait for all shaders to finish compiling
 	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 }
-
+#if WITH_PACKAGE_CONTEXT
 TMap<ETargetPlatform, FSavePackageContext*> USingleCookerProxy::GetPlatformSavePackageContextsRaw()
 {
 	FScopeLock Lock(&SynchronizationObject);
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::GetPlatformSavePackageContextsRaw"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::GetPlatformSavePackageContextsRaw",FColor::Red);
 	TMap<ETargetPlatform,FSavePackageContext*> result;
 	TArray<ETargetPlatform> Keys;
 	GetPlatformSavePackageContexts().GetKeys(Keys);
@@ -483,7 +492,7 @@ TMap<ETargetPlatform, FSavePackageContext*> USingleCookerProxy::GetPlatformSaveP
 TMap<FString, FSavePackageContext*> USingleCookerProxy::GetPlatformSavePackageContextsNameMapping()
 {
 	FScopeLock Lock(&SynchronizationObject);
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("USingleCookerProxy::GetPlatformSavePackageContextsNameMapping"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::GetPlatformSavePackageContextsNameMapping",FColor::Red);
 	TMap<FString,FSavePackageContext*> result;
 	TArray<ETargetPlatform> Keys;
 	GetPlatformSavePackageContexts().GetKeys(Keys);
@@ -493,6 +502,7 @@ TMap<FString, FSavePackageContext*> USingleCookerProxy::GetPlatformSavePackageCo
 	}
 	return result;
 }
+#endif
 
 TArray<FName>& USingleCookerProxy::GetPlatformCookAssetOrders(ETargetPlatform Platform)
 {
@@ -533,6 +543,3 @@ void USingleCookerProxy::MarkAssetCooked(const FSoftObjectPath& PackagePath, ETa
 	FScopeLock Lock(&SynchronizationObject);
 	GetPlatformCookAssetOrders(Platform).Add(PackagePath.GetAssetPathName());
 }
-
-
-#endif

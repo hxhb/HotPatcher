@@ -197,7 +197,7 @@ TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByShaderFrmat(c
 
 TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory, bool bRecursive)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform",FColor::Red);
 	TArray<FString> FoundFiles;
 	auto GetMetalShaderFormatLambda = [](const FString& Directory,const FString& Extersion, bool bRecursive)
 	{
@@ -235,7 +235,7 @@ void UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete()
 	// Wait for all shaders to finish compiling
 	if (GShaderCompilingManager)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("WaitShaderCompileComplete"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("WaitShaderCompileComplete",FColor::Red);
 		// UE_LOG(LogHotPatcher, Display, TEXT("Waiting for shader compilation..."));
 		while(GShaderCompilingManager->IsCompiling())
 		{

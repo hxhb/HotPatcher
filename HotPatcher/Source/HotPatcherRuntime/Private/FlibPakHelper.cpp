@@ -402,7 +402,16 @@ bool PreLoadPak(const FString& InPakPath,const FString& AesKey)
 			PrimaryIndexData.SetNum(Info.IndexSize);
 			Reader->Serialize(PrimaryIndexData.GetData(), Info.IndexSize);
 
-			if (!ValidateEncryptionKey(PrimaryIndexData, Info.IndexHash, AESKey))
+			FSHAHash Hash;
+			FMemory::Memcpy(Hash.Hash,
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 23
+				Info.IndexHash.Hash,
+#else
+				Info.IndexHash,
+#endif
+				20);
+
+			if (!ValidateEncryptionKey(PrimaryIndexData, Hash, AESKey))
 			{
 				UE_LOG(LogHotPatcher, Error, TEXT("AES encryption key base64[%s] is not correct!"), *KeyString);
 				bShouldLoad = false;

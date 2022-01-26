@@ -7,7 +7,7 @@ void FAssetDependenciesInfo::AddAssetsDetail(const FAssetDetail& AssetDetail)
 	if(!AssetDetail.IsValid())
 		return;
 	FString CurrAssetModuleName = UFlibAssetManageHelper::GetAssetBelongModuleName(AssetDetail.PackagePath.ToString());
-	FSoftObjectPath CurrAssetObjectPath(AssetDetail.PackagePath);
+	FSoftObjectPath CurrAssetObjectPath(AssetDetail.PackagePath.ToString());
 	FString CurrAssetLongPackageName = CurrAssetObjectPath.GetLongPackageName();
 	if (!AssetsDependenciesMap.Contains(CurrAssetModuleName))
 	{
@@ -27,7 +27,7 @@ void FAssetDependenciesInfo::AddAssetsDetail(const FAssetDetail& AssetDetail)
 
 bool FAssetDependenciesInfo::HasAsset(const FString& InAssetPackageName)const
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("IsHasAsset"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("IsHasAsset",FColor::Red);
 	bool bHas = false;
 	FString BelongModuleName = UFlibAssetManageHelper::GetAssetBelongModuleName(InAssetPackageName);
 	if (AssetsDependenciesMap.Contains(BelongModuleName))
@@ -40,7 +40,7 @@ bool FAssetDependenciesInfo::HasAsset(const FString& InAssetPackageName)const
 TArray<FAssetDetail> FAssetDependenciesInfo::GetAssetDetails()const
 {
 	TArray<FAssetDetail> OutAssetDetails;
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("FAssetDependenciesInfo::GetAssetDetails"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("FAssetDependenciesInfo::GetAssetDetails",FColor::Red);
 	OutAssetDetails.Empty();
 	TArray<FString> Keys;
 	AssetsDependenciesMap.GetKeys(Keys);
@@ -73,7 +73,7 @@ bool FAssetDependenciesInfo::GetAssetDetailByPackageName(const FString& InAssetP
 
 TArray<FString> FAssetDependenciesInfo::GetAssetLongPackageNames()const
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("FAssetDependenciesInfo::GetAssetLongPackageNames"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("FAssetDependenciesInfo::GetAssetLongPackageNames",FColor::Red);
 	TArray<FString> OutAssetLongPackageName;
 	const TArray<FAssetDetail>& OutAssetDetails = GetAssetDetails();
 

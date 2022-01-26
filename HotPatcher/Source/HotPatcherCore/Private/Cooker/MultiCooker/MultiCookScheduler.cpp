@@ -6,7 +6,7 @@
 
 TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementation(FMultiCookerSettings MultiCookerSettings,const TArray<FAssetDetail>& AllDetails)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UMultiCookScheduler::MultiCookScheduler"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UMultiCookScheduler::MultiCookScheduler",FColor::Red);
 	int32 ProcessNumber = MultiCookerSettings.ProcessNumber;
 	
 	TArray<FSingleCookerSettings> AllSingleCookerSettings;
@@ -17,7 +17,7 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 	{
 		TArray<FAssetDetail>& Assets = TypeAssetDetails.FindOrAdd(AssetDetail.AssetType);
 		Assets.AddUnique(AssetDetail);
-		AllPackagePaths.Add(FName(UFlibAssetManageHelper::PackagePathToLongPackageName(AssetDetail.PackagePath.ToString())));
+		AllPackagePaths.Add(FName(*UFlibAssetManageHelper::PackagePathToLongPackageName(AssetDetail.PackagePath.ToString())));
 	}
 	
 	for(int32 index = 0;index<ProcessNumber;++index)

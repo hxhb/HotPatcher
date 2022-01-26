@@ -57,7 +57,7 @@ struct FPackageTrackerBase : public FUObjectArray::FUObjectCreateListener, publi
 		}
 	}
 
-	virtual void OnUObjectArrayShutdown() override
+	virtual void OnUObjectArrayShutdown()
 	{
 		GUObjectArray.RemoveUObjectDeleteListener(this);
 		GUObjectArray.RemoveUObjectCreateListener(this);
@@ -75,7 +75,7 @@ struct FPackageTracker : public FPackageTrackerBase
 
 	virtual void OnPackageCreated(UPackage* Package) override
 	{
-		FName AssetPathName = FName(Package->GetPathName());
+		FName AssetPathName = FName(*Package->GetPathName());
 		if(!ExisitAssets.Contains(AssetPathName))
 		{
 			UE_LOG(LogHotPatcher,Display,TEXT("[PackageTracker] Add %s"),*AssetPathName.ToString());
@@ -84,7 +84,7 @@ struct FPackageTracker : public FPackageTrackerBase
 	}
 	virtual void OnPackageDeleted(UPackage* Package) override
 	{
-		FName AssetPathName = FName(Package->GetPathName());
+		FName AssetPathName = FName(*Package->GetPathName());
 		if(PackagesPendingSave.Contains(AssetPathName))
 		{
 			PackagesPendingSave.Remove(AssetPathName);

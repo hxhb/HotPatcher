@@ -1,6 +1,7 @@
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 #include "FlibHotPatcherCoreHelper.h"
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
+#include "Interfaces/ITargetPlatform.h"
 
 FCookShaderCollectionProxy::FCookShaderCollectionProxy(const TArray<FString>& InPlatformNames,const FString& InLibraryName,bool bInShareShader,bool InIsNative,bool bInMaster,const FString& InSaveBaseDir)
 :PlatformNames(InPlatformNames),LibraryName(InLibraryName),bShareShader(bInShareShader),bIsNative(InIsNative),bMaster(bInMaster),SaveBaseDir(InSaveBaseDir){}
@@ -22,11 +23,15 @@ void FCookShaderCollectionProxy::Init()
 	#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 				TArray<SHADER_COOKER_CLASS::FShaderFormatDescriptor> ShaderFormatsWithStableKeys = UFlibShaderCodeLibraryHelper::GetShaderFormatsWithStableKeys(ShaderFormats);
 	#else
-				TArray<TPair<FName, bool>> ShaderFormatsWithStableKeys;
-				for (FName& Format : ShaderFormats)
-				{
-					ShaderFormatsWithStableKeys.Push(MakeTuple(Format, true));
-				}
+		#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 22
+						TArray<TPair<FName, bool>> ShaderFormatsWithStableKeys;
+						for (FName& Format : ShaderFormats)
+						{
+							ShaderFormatsWithStableKeys.Push(MakeTuple(Format, true));
+						}
+		#else
+						TArray<FName> ShaderFormatsWithStableKeys =  ShaderFormats;
+		#endif
 	#endif
 				SHADER_COOKER_CLASS::CookShaderFormats(ShaderFormatsWithStableKeys);
 			}
@@ -37,7 +42,7 @@ void FCookShaderCollectionProxy::Init()
 
 bool IsAppleMetalPlatform(ITargetPlatform* TargetPlatform)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("IsAppleMetalPlatform"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("IsAppleMetalPlatform",FColor::Red);
 	bool bIsMatched = false;
 	TArray<FString> ApplePlatforms = {TEXT("IOS"),TEXT("Mac"),TEXT("TVOS")};
 	for(const auto& Platform:ApplePlatforms)
@@ -53,7 +58,7 @@ bool IsAppleMetalPlatform(ITargetPlatform* TargetPlatform)
 
 void FCookShaderCollectionProxy::Shutdown()
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("FCookShaderCollectionProxy::Shutdown"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("FCookShaderCollectionProxy::Shutdown",FColor::Red);
 	if(bShareShader)
 	{
 		for(const auto& TargetPlatform:TargetPlatforms)

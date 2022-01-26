@@ -4,7 +4,6 @@ using UnrealBuildTool;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 public class HotPatcherEditor : ModuleRules
 {
@@ -51,7 +50,6 @@ public class HotPatcherEditor : ModuleRules
 				"RHI",
 				"EngineSettings",
 				"AssetRegistry",
-				"TraceLog",
 				"PakFileUtilities",
 				"HotPatcherRuntime",
 				"BinariesPatchFeature",
@@ -81,9 +79,16 @@ public class HotPatcherEditor : ModuleRules
 
 		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 23)
 		{
-			PublicDependencyModuleNames.Add("ToolMenus");
+			PublicDependencyModuleNames.AddRange(new string[]{
+				"ToolMenus",
+				"TraceLog"
+			});
 		}
 
+		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 23)
+		{
+			
+		}
 		System.Func<string, bool,bool> AddPublicDefinitions = (string MacroName,bool bEnable) =>
 		{
 			PublicDefinitions.Add(string.Format("{0}={1}",MacroName, bEnable ? 1 : 0));

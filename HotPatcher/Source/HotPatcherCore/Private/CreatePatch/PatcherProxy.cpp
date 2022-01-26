@@ -26,6 +26,7 @@
 #include "HotPatcherCore.h"
 #include "HotPatcherDelegates.h"
 #include "HotPatcherSettings.h"
+#include "Features/IModularFeatures.h"
 #include "Async/ParallelFor.h"
 #include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
 #include "Cooker/MultiCooker/FMultiCookerSettings.h"
@@ -248,7 +249,7 @@ namespace PatchWorker
 	// setup 1
 	bool BaseVersionReader(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("BaseVersionReader"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("BaseVersionReader",FColor::Red);
 		TimeRecorder ReadBaseVersionTR(TEXT("Deserialize Base Version"));
 		if (Context.GetSettingObject()->IsByBaseVersion() && !Context.GetSettingObject()->GetBaseVersionInfo(Context.BaseVersion))
 		{
@@ -269,7 +270,7 @@ namespace PatchWorker
 	// setup 2
 	bool MakeCurrentVersionWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("MakeCurrentVersionWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("MakeCurrentVersionWorker",FColor::Red);
 		UE_LOG(LogHotPatcher,Display,TEXT("Make Patch Setting..."));
 		TimeRecorder ExportNewVersionTR(TEXT("Make Release Chunk/Export Release Version Info By Chunk"));
 		Context.NewVersionChunk = UFlibHotPatcherCoreHelper::MakeChunkFromPatchSettings(Context.GetSettingObject());
@@ -289,7 +290,7 @@ namespace PatchWorker
 	// setup 3
 	bool ParseVersionDiffWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("ParseVersionDiffWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("ParseVersionDiffWorker",FColor::Red);
 		TimeRecorder DiffVersionTR(TEXT("Diff Base Version And Current Project Version"));
 		Context.VersionDiff = UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(*Context.GetSettingObject(), Context.BaseVersion, Context.CurrentVersion);
 		return true;
@@ -297,7 +298,7 @@ namespace PatchWorker
 
 	bool ParseDiffAssetOnlyWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("ParseDiffAssetOnlyWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("ParseDiffAssetOnlyWorker",FColor::Red);
 		TimeRecorder DiffVersionAssetOnlyTR(TEXT("Parse Diff Asset Dependencies Only Worker"));
 		if(Context.GetSettingObject()->IsAnalysisDiffAssetDependenciesOnly())
 		{
@@ -308,7 +309,7 @@ namespace PatchWorker
 			for(const auto& AssetDetail:DiffAssetDetails)
 			{
 				FPatcherSpecifyAsset CurrentAsets;
-				CurrentAsets.Asset = FSoftObjectPath(AssetDetail.PackagePath);
+				CurrentAsets.Asset = FSoftObjectPath(AssetDetail.PackagePath.ToString());
 				CurrentAsets.bAnalysisAssetDependencies = true;
 				CurrentAsets.AssetRegistryDependencyTypes.AddUnique(EAssetRegistryDependencyTypeEx::Packages);
 				DiffChunk.IncludeSpecifyAssets.Add(CurrentAsets);
@@ -334,7 +335,7 @@ namespace PatchWorker
 	// setup 4
 	bool PatchRequireChekerWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("PatchRequireChekerWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("PatchRequireChekerWorker",FColor::Red);
 		bool result = true;
 		TimeRecorder CheckRequireTR(TEXT("Check Patch Require"));
 		FString ReceiveMsg;
@@ -349,7 +350,7 @@ namespace PatchWorker
 	// setup 5
 	bool SavePakVersionWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("SavePakVersionWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("SavePakVersionWorker",FColor::Red);
 		// save pakversion.json
 		TimeRecorder SavePakVersionTR(TEXT("Save Pak Version"));
 		if(Context.GetSettingObject()->IsIncludePakVersion())
@@ -392,7 +393,7 @@ namespace PatchWorker
 	// setup 6
 	bool ParserChunkWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("ParserChunkWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("ParserChunkWorker",FColor::Red);
 		// Check Chunk
 		if(Context.GetSettingObject()->IsEnableChunk())
 		{
@@ -518,7 +519,7 @@ namespace PatchWorker
 	
 	bool PreCookPatchAssets(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("PreCookPatchAssets"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("PreCookPatchAssets",FColor::Red);
 		// wait global / compiling shader by load asset
 		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 		
@@ -527,7 +528,7 @@ namespace PatchWorker
 	
 	bool PostCookPatchAssets(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("PostCookPatchAssets"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("PostCookPatchAssets",FColor::Red);
 		if(Context.GetSettingObject()->GetCookShaderOptions().bSharedShaderLibrary)
 		{
 			for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
@@ -571,7 +572,7 @@ namespace PatchWorker
 	// setup 7
 	bool CookPatchAssetsWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("CookPatchAssetsWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("CookPatchAssetsWorker",FColor::Red);
 		TimeRecorder CookAssetsTotalTR(FString::Printf(TEXT("Cook All Assets in Patch Total time:")));
 		
 		for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
@@ -617,8 +618,10 @@ namespace PatchWorker
 						EmptySetting.bDisplayConfig = false;
 						EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 						EmptySetting.StorageMetadataDir = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,TEXT("Metadatas"),Chunk.ChunkName);
+#if WITH_PACKAGE_CONTEXT
 						EmptySetting.bOverrideSavePackageContext = true;
 						EmptySetting.PlatformSavePackageContexts = Context.PatchProxy->GetPlatformSavePackageContexts();
+#endif
 						USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
 						SingleCookerProxy->AddToRoot();
 						SingleCookerProxy->Init(&EmptySetting);
@@ -635,7 +638,7 @@ namespace PatchWorker
 	
 	bool PatchAssetRegistryWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("PatchAssetRegistryWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("PatchAssetRegistryWorker",FColor::Red);
 		if(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry)
 		{
 			auto SerializeAssetRegistry = [](FHotPatcherPatchContext& Context,const FChunkInfo& Chunk,const FString& PlatformName)
@@ -701,7 +704,7 @@ namespace PatchWorker
 	};
 	bool GenerateGlobalAssetRegistryData(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("GenerateGlobalAssetRegistryData"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("GenerateGlobalAssetRegistryData",FColor::Red);
 		FAssetDependenciesInfo TotalDiffAssets = UFlibAssetManageHelper::CombineAssetDependencies(Context.VersionDiff.AssetDiffInfo.AddAssetDependInfo,Context.VersionDiff.AssetDiffInfo.ModifyAssetDependInfo);
 		const TArray<FAssetDetail>& AllAssets = TotalDiffAssets.GetAssetDetails();
 
@@ -722,7 +725,7 @@ namespace PatchWorker
 
 	void GenerateBinariesPatch(FHotPatcherPatchContext& Context,FChunkInfo& Chunk,ETargetPlatform Platform,TArray<FPakCommand>& PakCommands)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("GenerateBinariesPatch"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("GenerateBinariesPatch",FColor::Red);
 		TArray<IBinariesDiffPatchFeature*> ModularFeatures = IModularFeatures::Get().GetModularFeatureImplementations<IBinariesDiffPatchFeature>(BINARIES_DIFF_PATCH_FEATURE_NAME);
 		if(!ModularFeatures.Num())
 			return;
@@ -874,7 +877,7 @@ namespace PatchWorker
 	// setup 8
 	bool GeneratePakProxysWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("GeneratePakProxysWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("GeneratePakProxysWorker",FColor::Red);
 		TimeRecorder PakChunkToralTR(FString::Printf(TEXT("Generate all platform pakproxys of all chunks Total Time:")));
 		TArray<ETargetPlatform> PakPlatforms = Context.GetSettingObject()->GetPakTargetPlatforms();
 		for(const auto& Platform :PakPlatforms)
@@ -1029,7 +1032,7 @@ namespace PatchWorker
 	// setup 9
 	bool CreatePakWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("CreatePakWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("CreatePakWorker",FColor::Red);
 		TimeRecorder CreateAllPakToralTR(FString::Printf(TEXT("Generate all platform pak of all chunks Total Time:")));
 		// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
 		for (const auto& Chunk : Context.PakChunks)
@@ -1056,7 +1059,7 @@ namespace PatchWorker
 			{
 				FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(PakFileProxy.Platform);
 				TArray<FString> UnrealPakCommandletOptions;
-				UnrealPakCommandletOptions.Add(FString::Printf(TEXT("-AlignForMemoryMapping=%d"),UFlibHotPatcherCoreHelper::GetPlatformByName(PlatformName)->GetMemoryMappingAlignment()));
+				UnrealPakCommandletOptions.Add(FString::Printf(TEXT("-AlignForMemoryMapping=%d"),UFlibHotPatcherCoreHelper::GetMemoryMappingAlignment(PlatformName)));
 				// can override
 				UnrealPakCommandletOptions.Append(UnrealPakCommandletGeneralOptions);
 				UnrealPakCommandletOptions.Add(UFlibHotPatcherCoreHelper::GetEncryptSettingsCommandlineOptions(Context.GetSettingObject()->GetEncryptSettings(),UFlibHotPatcherCoreHelper::Conv2IniPlatform(PlatformName)));
@@ -1138,7 +1141,7 @@ namespace PatchWorker
 	// setup 9
 	bool CreateIoStoreWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("CreateIoStoreWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("CreateIoStoreWorker",FColor::Red);
 #if WITH_IO_STORE_SUPPORT
 		if(!Context.GetSettingObject()->GetIoStoreSettings().bIoStore)
 			return true;
@@ -1282,7 +1285,7 @@ namespace PatchWorker
 	// setup 11 save difference to file
 	bool SaveDifferenceWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("SaveDifferenceWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("SaveDifferenceWorker",FColor::Red);
 		if(Context.GetPakFileNum())
 		{
 			TimeRecorder SaveDiffTR(FString::Printf(TEXT("Save Patch Diff info")));
@@ -1337,7 +1340,7 @@ namespace PatchWorker
 	// setup 12
 	bool SaveNewReleaseWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("SaveNewReleaseWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("SaveNewReleaseWorker",FColor::Red);
 		if(!Context.GetSettingObject()->IsStorageNewRelease())
 			return true;
 		// save Patch Tracked asset info to file
@@ -1382,7 +1385,7 @@ namespace PatchWorker
 	// setup 13 serialize all pak file info
 	bool SavePakFileInfoWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("SavePakFileInfoWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("SavePakFileInfoWorker",FColor::Red);
 		if(!Context.GetSettingObject()->IsStoragePakFileInfo())
 			return true;
 		if(Context.GetSettingObject())
@@ -1426,7 +1429,7 @@ namespace PatchWorker
 	// setup 14 serialize patch config
 	bool SavePatchConfigWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("SavePatchConfigWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("SavePatchConfigWorker",FColor::Red);
 		if(Context.GetPakFileNum())
 		{
 			TimeRecorder TR(FString::Printf(TEXT("Save patch config")));
@@ -1469,7 +1472,7 @@ namespace PatchWorker
 	// setup 15
 	bool BackupMetadataWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("BackupMetadataWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("BackupMetadataWorker",FColor::Red);
 		// backup Metadata
 		if(Context.GetPakFileNum())
 		{
@@ -1493,7 +1496,7 @@ namespace PatchWorker
 	// setup 16
 	bool ShowSummaryWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("ShowSummaryWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("ShowSummaryWorker",FColor::Red);
 		// show summary infomation
 		if(Context.GetPakFileNum())
 		{
@@ -1506,7 +1509,7 @@ namespace PatchWorker
 	// setup 17
 	bool OnFaildDispatchWorker(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("OnFaildDispatchWorker"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("OnFaildDispatchWorker",FColor::Red);
 		if (!Context.GetPakFileNum())
 		{
 			UE_LOG(LogHotPatcher, Error, TEXT("The Patch not contain any invalie file!"));

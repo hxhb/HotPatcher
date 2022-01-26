@@ -36,7 +36,7 @@ void FPackageTrackerByDiff::OnPackageCreated(UPackage* Package)
 	
 	if(bNeedAdd)
 	{
-		TrackedAssets.Add(FName(PackageName),CurrentVersionAssetDetail);
+		TrackedAssets.Add(FName(*PackageName),CurrentVersionAssetDetail);
 	}
 }
 
@@ -58,7 +58,7 @@ FPatchVersionExternDiff* FHotPatcherPatchContext::GetPatcherDiffInfoByName(const
 };
 FPlatformExternAssets* FHotPatcherPatchContext::GetPatcherChunkInfoByName(const FString& PlatformName,const FString& ChunkName)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("FHotPatcherPatchContext::GetPatcherChunkInfoByName"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("FHotPatcherPatchContext::GetPatcherChunkInfoByName",FColor::Red);
 	ETargetPlatform Platform;
 	THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
 	FPlatformExternAssets* PlatformExternAssetsPtr = NULL;
@@ -100,7 +100,7 @@ FPlatformExternAssets* FHotPatcherPatchContext::GetPatcherChunkInfoByName(const 
 
 bool FHotPatcherPatchContext::AddAsset(const FString ChunkName, const FAssetDetail& AssetDetail)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("FHotPatcherPatchContext::AddAsset"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("FHotPatcherPatchContext::AddAsset",FColor::Red);
 	bool bRet = false;
 
 	if(!AssetDetail.IsValid())

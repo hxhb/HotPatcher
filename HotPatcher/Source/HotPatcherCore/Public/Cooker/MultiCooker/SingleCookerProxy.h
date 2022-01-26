@@ -49,7 +49,7 @@ struct FCookCluster
         {
             if(AssetDetail.IsValid())
             {
-                SoftObjectPaths.Emplace(AssetDetail.PackagePath);
+                SoftObjectPaths.Emplace(AssetDetail.PackagePath.ToString());
             }
         }
         return SoftObjectPaths;
@@ -97,6 +97,7 @@ private:
     FORCEINLINE TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>>& GetPlatformSavePackageContexts() {return PlatformSavePackageContexts;}
     TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContextsRaw();
     TMap<FString, FSavePackageContext*> GetPlatformSavePackageContextsNameMapping();
+    TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
 #endif
 
 public:
@@ -120,7 +121,6 @@ private:
     FCookerFailedCollection CookFailedAssetsCollection;
     TSharedPtr<FPackageTracker> PackageTracker;
     TSharedPtr<FThreadWorker> WaitThreadWorker;
-    TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
     TSharedPtr<struct FCookShaderCollectionProxy> PlatformCookShaderCollection;
     FPackagePathSet PackagePathSet;
     TMap<ETargetPlatform,TArray<FName>> CookAssetOrders;
