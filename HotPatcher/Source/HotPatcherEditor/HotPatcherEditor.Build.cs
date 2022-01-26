@@ -17,19 +17,8 @@ public class HotPatcherEditor : ModuleRules
 			bUseRTTI = true;
 		}
 		
-		PublicIncludePaths.AddRange(
-			new string[] {
-				// ... add public include paths required here ...
-			}
-			);
-				
-		
-		PrivateIncludePaths.AddRange(
-			new string[] {
-				// ... add other private include paths required here ...
-			}
-			);
-			
+		PublicIncludePaths.AddRange(new string[] { });
+		PrivateIncludePaths.AddRange(new string[] {});
 		
 		PublicDependencyModuleNames.AddRange(
 			new string[]
@@ -85,10 +74,6 @@ public class HotPatcherEditor : ModuleRules
 			});
 		}
 
-		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 23)
-		{
-			
-		}
 		System.Func<string, bool,bool> AddPublicDefinitions = (string MacroName,bool bEnable) =>
 		{
 			PublicDefinitions.Add(string.Format("{0}={1}",MacroName, bEnable ? 1 : 0));
