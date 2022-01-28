@@ -1,10 +1,10 @@
 #include "AssetTypeActions_PrimaryAssetLabel.h"
 #include "Engine/PrimaryAssetLabel.h"
-#include "ToolMenuSection.h"
 #include "HotPatcherEditor.h"
 #include "FlibAssetManageHelper.h"
 
 #if WITH_EDITOR_SECTION
+#include "ToolMenuSection.h"
 void FAssetTypeActions_PrimaryAssetLabel::GetActions(const TArray<UObject*>& InObjects,
 	FToolMenuSection& Section)
 {

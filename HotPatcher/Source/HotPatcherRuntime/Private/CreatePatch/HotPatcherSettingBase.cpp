@@ -3,21 +3,13 @@
 #include "FPlatformExternFiles.h"
 #include "HotPatcherLog.h"
 
-TArray<FDirectoryPath>& FHotPatcherSettingBase::GetAssetIncludeFilters()
+FHotPatcherSettingBase::FHotPatcherSettingBase():bAnalysisFilterDependencies(true),
+	AssetRegistryDependencyTypes(TArray<EAssetRegistryDependencyTypeEx>{EAssetRegistryDependencyTypeEx::Packages})
 {
-	static TArray<FDirectoryPath> TempDir;
-	return TempDir;
-};
-TArray<FDirectoryPath>& FHotPatcherSettingBase::GetAssetIgnoreFilters()
-{
-	static TArray<FDirectoryPath> TempDir;
-	return TempDir;
+	ForceSkipContentRules.Append(UFlibPatchParserHelper::GetDefaultForceSkipContentDir());
 }
-TArray<FPatcherSpecifyAsset>& FHotPatcherSettingBase::GetIncludeSpecifyAssets()
-{
-	static TArray<FPatcherSpecifyAsset> TempAssets;
-	return TempAssets;
-};
+
+
 TArray<FPlatformExternAssets>& FHotPatcherSettingBase::GetAddExternAssetsToPlatform()
 {
 	static TArray<FPlatformExternAssets> PlatformNoAssets;
@@ -27,8 +19,7 @@ TArray<FPlatformExternAssets>& FHotPatcherSettingBase::GetAddExternAssetsToPlatf
 
 void FHotPatcherSettingBase::Init()
 {
-    UE_LOG(LogHotPatcher, Display, TEXT("Enable Scan Cache Optimize %s"),GScanCacheOptimize?TEXT("true"):TEXT("false"));
-    	
+	
 }
 
 TArray<FExternFileInfo> FHotPatcherSettingBase::GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash)
@@ -107,3 +98,13 @@ FString FHotPatcherSettingBase::GetSaveAbsPath()const
 	}
 	return TEXT("");
 }
+
+TArray<FString> FHotPatcherSettingBase::GetAllSkipContents() const
+
+{
+	TArray<FString> AllSkipContents;;
+	AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(GetForceSkipContentRules()));
+	AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(GetForceSkipAssets()));
+	return AllSkipContents;
+}
+

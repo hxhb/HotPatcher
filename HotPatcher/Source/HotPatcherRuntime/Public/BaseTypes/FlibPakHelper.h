@@ -72,12 +72,13 @@ public:
 #endif
 
 public:
-		
 	// reload Global&Project shaderbytecode
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable,Exec)
 		static void ReloadShaderbytecode();
 	UFUNCTION(BlueprintCallable,Exec)
-		static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir);	
+		static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir);
+	UFUNCTION(BlueprintCallable,Exec)
+		static bool LoadShaderbytecodeInDefaultDir(const FString& LibraryName);	
 	UFUNCTION(BlueprintCallable,Exec)
 		static void CloseShaderbytecode(const FString& LibraryName);
 	

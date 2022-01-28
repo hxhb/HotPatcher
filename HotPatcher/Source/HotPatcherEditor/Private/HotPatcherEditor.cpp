@@ -5,7 +5,6 @@
 #include "HotPatcherCommands.h"
 #include "SHotPatcher.h"
 #include "HotPatcherSettings.h"
-#include "CookManager.h"
 
 // ENGINE HEADER
 
@@ -15,6 +14,7 @@
 #include "Misc/MessageDialog.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "DesktopPlatformModule.h"
+#include "FlibHotPatcherCoreHelper.h"
 #include "FlibHotPatcherEditorHelper.h"
 #include "HotPatcherLog.h"
 #include "ISettingsModule.h"
@@ -23,6 +23,9 @@
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "PakFileUtilities.h"
+#include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
+#include "Cooker/MultiCooker/FMultiCookerSettings.h"
+#include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "CreatePatch/PatcherProxy.h"
 
 #if ENGINE_MAJOR_VERSION < 5
@@ -38,29 +41,12 @@
 
 FExportPatchSettings* GPatchSettings = nullptr;
 FExportReleaseSettings* GReleaseSettings = nullptr;
-bool GCookLog = true;
+bool GCookLog = (bool)ENABLE_COOK_LOG;
 
 static const FName HotPatcherTabName("HotPatcher");
 
 #define LOCTEXT_NAMESPACE "FHotPatcherEditorModule"
 
-void ReceiveOutputMsg(FProcWorkerThread* Worker,const FString& InMsg)
-{
-	FString FindItem(TEXT("Display:"));
-	int32 Index= InMsg.Len() - InMsg.Find(FindItem)- FindItem.Len();
-	if (InMsg.Contains(TEXT("Error:")))
-	{
-		UE_LOG(LogHotPatcher, Error, TEXT("%s"), *InMsg);
-	}
-	else if (InMsg.Contains(TEXT("Warning:")))
-	{
-		UE_LOG(LogHotPatcher, Warning, TEXT("%s"), *InMsg);
-	}
-	else
-	{
-		UE_LOG(LogHotPatcher, Display, TEXT("%s"), *InMsg.Right(Index));
-	}
-}
 
 void MakeProjectSettingsForHotPatcher()
 {
@@ -87,6 +73,11 @@ void FHotPatcherEditorModule::StartupModule()
 	FHotPatcherStyle::ReloadTextures();
 	FHotPatcherCommands::Register();
 
+	FHotPatcherDelegates::Get().GetNotifyFileGenerated().AddLambda([](FText Msg,const FString& File)
+	{
+		UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,File);
+	});
+	
 	FParse::Bool(FCommandLine::Get(),TEXT("-cooklog"),GCookLog);
 	UE_LOG(LogHotPatcher,Log,TEXT("GCookLog is %s!!!"),GCookLog ? TEXT("TRUE"): TEXT("FALSE"));
 	
@@ -96,7 +87,6 @@ void FHotPatcherEditorModule::StartupModule()
 	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	FCoreUObjectDelegates::OnObjectSaved.AddRaw(this,&FHotPatcherEditorModule::OnObjectSaved);
 	PRAGMA_ENABLE_DEPRECATION_WARNINGS
-	FCookManager::Get().Init();
 	MakeProjectSettingsForHotPatcher();
 
 	MissionNotifyProay = NewObject<UMissionNotificationProxy>();
@@ -143,7 +133,6 @@ void FHotPatcherEditorModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
-	FCookManager::Get().Shutdown();
 	if(DockTab.IsValid())
 	{
 		DockTab->RequestCloseTab();
@@ -469,7 +458,7 @@ void FHotPatcherEditorModule::OnPakPreset(FExportPatchSettings Config)
 	PatcherProxy->AddToRoot();
 	Proxys.Add(PatcherProxy);
 	
-	PatcherProxy->SetProxySettings(&Config);
+	PatcherProxy->Init(&Config);
 
 	if(!Config.IsStandaloneMode())
 	{
@@ -482,8 +471,8 @@ void FHotPatcherEditorModule::OnPakPreset(FExportPatchSettings Config)
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("PatchConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*Config.GetCombinedAdditionalCommandletArgs());
-		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*Config.VersionId,*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
-		RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,FString::Printf(TEXT("Mission: %s"),*Config.VersionId));
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*Config.VersionId,*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);
+		RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,FString::Printf(TEXT("Mission: %s"),*Config.VersionId));
 	}
 }
 
@@ -493,20 +482,28 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 {
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
 	Settings->ReloadConfig();
-	TArray<FAssetData> AssetsData = GetSelectedAssetsInBrowserContent();
+	TArray<FAssetData> AssetsDatas = GetSelectedAssetsInBrowserContent();
 	TArray<FString> SelectedFolder = GetSelectedFolderInBrowserContent();
 	TArray<FAssetData> FolderAssetDatas;
 	
 	UFlibAssetManageHelper::GetAssetDataInPaths(SelectedFolder,FolderAssetDatas);
-	AssetsData.Append(FolderAssetDatas);
-	
-	FCookManager::FCookMission CookMission;
-	
-	auto CookNotifyLambda = [](ETargetPlatform Platform,const FString& PackageName,const FString& CookedSavePath)
+	AssetsDatas.Append(FolderAssetDatas);
+
+	TArray<FAssetDetail> AllSelectedAssetDetails;
+
+	for(const auto& AssetData:AssetsDatas)
 	{
-		bool bSuccessed = true;
+		AllSelectedAssetDetails.AddUnique(UFlibAssetManageHelper::GetAssetDetailByPackageName(AssetData.PackageName.ToString()));
+	}
+	
+	auto CookNotifyLambda = [](const FString& PackageName,ETargetPlatform Platform,bool bSuccessed)
+	{
+		FString CookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
+		// FString PackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(PackagePath);
+		FString CookedSavePath = UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(CookedDir,PackageName, THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
+		
 		auto Msg = FText::Format(
-			LOCTEXT("CookAssetsNotify", "Cook {1} for {0} {2}!"),
+			LOCTEXT("CookAssetsNotify", "Cook {0} for {1} {2}!"),
 			UKismetTextLibrary::Conv_StringToText(PackageName),
 			UKismetTextLibrary::Conv_StringToText(THotPatcherTemplateHelper::GetEnumNameByValue(Platform)),
 			bSuccessed ? UKismetTextLibrary::Conv_StringToText(TEXT("Successfuly")):UKismetTextLibrary::Conv_StringToText(TEXT("Faild"))
@@ -515,41 +512,31 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 		UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,CookedSavePath,CookStatus);
 	};
 	
-	for(int32 index=0;index < AssetsData.Num();++index)
-	{
-		FCookManager::FCookPackageInfo CurrentPackage;
-		CurrentPackage.AssetData = AssetsData[index];
-		CurrentPackage.PackageName = AssetsData[index].PackageName.ToString();
-		CurrentPackage.CookPlatforms = TArray<ETargetPlatform>{Platform};
-		CurrentPackage.Callback = CookNotifyLambda;
-		CookMission.MissionPackages.Add(CurrentPackage);
-		if(!GCookLog)
-		{
-			UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*AssetsData[index].PackagePath.ToString(),*THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
-		}
-	}
-	CookMission.Callback = [](bool){};
-	TFunction<void(TArray<FCookManager::FCookPackageInfo>)> OnCookFaildLambda = [](TArray<FCookManager::FCookPackageInfo> FaildPackages)
-	{
-		for(const auto& Package:FaildPackages)
-		{
-			FString PlatformsStr;
-			for(const auto& Platform:Package.CookPlatforms)
-			{
-				PlatformsStr += FString::Printf(TEXT("%s/"),*THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
-			}
-			PlatformsStr.RemoveFromEnd(TEXT("/"));
-			auto Msg = FText::Format(
-						LOCTEXT("CookAssetsNotify", "Cook {1} for {0} {2}!"),
-						UKismetTextLibrary::Conv_StringToText(Package.PackageName),
-						UKismetTextLibrary::Conv_StringToText(PlatformsStr),
-						UKismetTextLibrary::Conv_StringToText(TEXT("Faild"))
-						);
-			UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,Package.PackageName,SNotificationItem::ECompletionState::CS_Fail);
-		}
-	};
-	FCookManager::Get().AddCookMission(CookMission,OnCookFaildLambda);
+	FSingleCookerSettings EmptySetting;
+	EmptySetting.MissionID = 0;
+	EmptySetting.MissionName = FString::Printf(TEXT("%s_Cooker_%d"),FApp::GetProjectName(),EmptySetting.MissionID);
+	EmptySetting.ShaderLibName = FString::Printf(TEXT("%s_Shader_%d"),FApp::GetProjectName(),EmptySetting.MissionID);
+	EmptySetting.CookTargetPlatforms = TArray<ETargetPlatform>{Platform};
+	EmptySetting.CookAssets = AllSelectedAssetDetails;
+	// EmptySetting.ShaderLibName = FApp::GetProjectName();
+	EmptySetting.bPackageTracker = false;
+	EmptySetting.ShaderOptions.bSharedShaderLibrary = false;
+	EmptySetting.IoStoreSettings.bIoStore = false;
+	EmptySetting.bSerializeAssetRegistry = false;
+	EmptySetting.bDisplayConfig = false;
+	EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
+	EmptySetting.StorageMetadataDir = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),EmptySetting.MissionName);
 
+	USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
+	SingleCookerProxy->AddToRoot();
+	SingleCookerProxy->Init(&EmptySetting);
+	SingleCookerProxy->OnAssetCooked.AddLambda([CookNotifyLambda](const FSoftObjectPath& ObjectPath,ETargetPlatform Platform,ESavePackageResult Result)
+	{
+		CookNotifyLambda(ObjectPath.GetAssetPathString(),Platform,Result == ESavePackageResult::Success);
+	});
+	
+	bool bExportStatus = SingleCookerProxy->DoExport();
+	SingleCookerProxy->Shutdown();
 }
 
 void FHotPatcherEditorModule::OnPakExternal(FPakExternalInfo PakExternConfig)
@@ -565,7 +552,7 @@ void FHotPatcherEditorModule::OnPakExternal(FPakExternalInfo PakExternConfig)
 	);
 
 	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-	PatcherProxy->SetProxySettings(PatchSettings.Get());
+	PatcherProxy->Init(PatchSettings.Get());
 
 	PatcherProxy->DoExport();
 }
@@ -579,7 +566,7 @@ void FHotPatcherEditorModule::CookAndPakByAssetsAndFilters(TArray<FPatcherSpecif
 	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
 	PatcherProxy->AddToRoot();
 	Proxys.Add(PatcherProxy);
-	PatcherProxy->SetProxySettings(PatchSettings.Get());
+	PatcherProxy->Init(PatchSettings.Get());
 
 	if(bForceStandalone || PatchSettings->IsStandaloneMode())
 	{
@@ -588,8 +575,8 @@ void FHotPatcherEditorModule::CookAndPakByAssetsAndFilters(TArray<FPatcherSpecif
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("PatchConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*PatchSettings->GetCombinedAdditionalCommandletArgs());
-		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*PatchSettings->VersionId,*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
-		RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,FString::Printf(TEXT("Mission: %s"),*PatchSettings->VersionId));
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*PatchSettings->VersionId,*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);
+		RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,FString::Printf(TEXT("Mission: %s"),*PatchSettings->VersionId));
 	}
 	else
 	{

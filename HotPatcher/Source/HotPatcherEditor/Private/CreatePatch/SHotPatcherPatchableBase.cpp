@@ -2,7 +2,7 @@
 
 // #include "HotPatcherPrivatePCH.h"
 #include "CreatePatch/SHotPatcherPatchableBase.h"
-#include "FlibHotPatcherEditorHelper.h"
+#include "FlibHotPatcherCoreHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "FHotPatcherVersion.h"
 #include "FlibAssetManageHelper.h"
@@ -32,6 +32,9 @@ void SHotPatcherPatchableBase::Construct(const FArguments& InArgs, TSharedPtr<FH
 
 void SHotPatcherPatchableBase::ImportProjectConfig()
 {
+	// import uasset
+	UFlibHotPatcherCoreHelper::ImportProjectSettingsToSettingBase(GetConfigSettings());
+	
 	FString DefaultEditorIni = FPaths::ProjectConfigDir()/TEXT("DefaultEditor.ini");
 	FString DefaultGameIni = FPaths::ProjectConfigDir()/TEXT("DefaultGame.ini");
 	auto GameConingLoader = [](const FString& Section,const FString& Key,const FString& Ini)->TArray<FString>
@@ -57,21 +60,8 @@ void SHotPatcherPatchableBase::ImportProjectConfig()
 		}
 		return result;
 	};
-
-	TArray<FString> NotUFSDirsToPackage = GameConingLoader(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("+DirectoriesToAlwaysStageAsUFS"),DefaultGameIni);
-
-	const FProjectPackageAssetCollection& ProjectPackageAssetCollection = UFlibHotPatcherEditorHelper::ImportProjectSettingsPackages();
-	GetConfigSettings()->GetAssetIncludeFilters().Append(ProjectPackageAssetCollection.DirectoryPaths);
-	GetConfigSettings()->GetAssetIgnoreFilters().Append(ProjectPackageAssetCollection.NeverCookPaths);
-	for(const auto& CookPackage:ProjectPackageAssetCollection.NeedCookPackages)
-	{
-		FPatcherSpecifyAsset SpecifyAsset;
-		SpecifyAsset.Asset = CookPackage;
-		SpecifyAsset.bAnalysisAssetDependencies = true;
-		SpecifyAsset.AssetRegistryDependencyTypes = {EAssetRegistryDependencyTypeEx::Packages};
-		GetConfigSettings()->GetIncludeSpecifyAssets().AddUnique(SpecifyAsset);
-	}
 	
+	TArray<FString> NotUFSDirsToPackage = GameConingLoader(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("+DirectoriesToAlwaysStageAsUFS"),DefaultGameIni);
 	FPlatformExternAssets AddToAllPlatform;
 	AddToAllPlatform.TargetPlatform = ETargetPlatform::AllPlatforms;
 	for(const auto& UFSDir:CleanPath(NotUFSDirsToPackage))
@@ -122,7 +112,6 @@ TArray<FString> SHotPatcherPatchableBase::SaveFileDialog()const
 	TArray<FString> SaveFilenames;
 	if (DesktopPlatform)
 	{
-		
 		const bool bOpened = DesktopPlatform->SaveFileDialog(
 			nullptr,
 			LOCTEXT("SvedHotPatcherConfig", "Save .json").ToString(),

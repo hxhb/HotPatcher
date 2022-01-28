@@ -8,6 +8,8 @@
 #include "FlibAssetManageHelper.h"
 #include "HotPatcherLog.h"
 #include "CreatePatch/FExportPatchSettings.h"
+#include "DependenciesParser/FDefaultAssetDependenciesParser.h"
+#include "DependenciesParser/FOldAssetDependenciesParser.h"
 
 // engine header
 #include "Misc/App.h"
@@ -665,7 +667,7 @@ TArray<FAssetDetail> UFlibPatchParserHelper::ParserExFilesInfoAsAssetDetailInfo(
 	{
 		FAssetDetail CurrentFile;
 		CurrentFile.AssetType = TEXT("ExternalFile");
-		CurrentFile.PackagePath = FName(File.MountPath);
+		CurrentFile.PackagePath = FName(*File.MountPath);
 		//CurrentFile.mGuid = File.GetFileHash();
 		result.Add(CurrentFile);
 	}
@@ -906,7 +908,6 @@ TMap<ETargetPlatform,FPlatformExternFiles> UFlibPatchParserHelper::GetAllPlatfor
 	return result;
 }
 
-#include "DependenciesParser/FDefaultAssetDependenciesParser.h"
 FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 	const FPatchVersionDiff& DiffInfo,
 	const FChunkInfo& Chunk,
@@ -934,7 +935,7 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 		FAssetDependenciesParser Parser;
 		FAssetDependencies Conf;
 		Conf.InIncludeSpecifyAsset = Chunk.IncludeSpecifyAssets;
-
+		
 		Parser.Parse(Conf);
 		TSet<FName> AssetLongPackageNames = Parser.GetrParseResults();
 		
@@ -1223,32 +1224,30 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 
 	return CollectPakCommandsByChunkLambda(DiffInfo, Chunk, PlatformName/*, PakOptions*/);
 }
-#include "DependenciesParser/FDefaultAssetDependenciesParser.h"
-#include "DependenciesParser/FOldAssetDependenciesParser.h"
+
 FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	const FString& InVersionId,
 	const FString& InBaseVersion,
 	const FString& InDate,
 	const TArray<FString>& InIncludeFilter,
 	const TArray<FString>& InIgnoreFilter,
+	const TArray<FString>& ForceSkipContents,
+	const TArray<UClass*>& ForceSkipClasses,
 	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
 	const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
-	// const TArray<FExternAssetFileInfo>& InAllExternFiles,
 	const TArray<FPlatformExternAssets>& AddToPlatformExFiles,
-	// TMap<FString, FAssetDependenciesInfo>& ScanedCaches,
 	bool InIncludeHasRefAssetsOnly,
 	bool bInAnalysisFilterDependencies
 )
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportReleaseVersionInfo"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("ExportReleaseVersionInfo",FColor::Red);
 	FHotPatcherVersion ExportVersion;
 	{
 		ExportVersion.VersionId = InVersionId;
 		ExportVersion.Date = InDate;
 		ExportVersion.BaseVersionId = InBaseVersion;
 	}
-
-
+	
 	// add Include Filter
 	{
 		TArray<FString> AllIncludeFilter;
@@ -1278,24 +1277,34 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	// 	}
 	// }
 
+	TSet<FName> IgnoreTypes = 
+	{
+		TEXT("EditorUtilityBlueprint")
+	};
+	for(auto Class:ForceSkipClasses)
+	{
+		IgnoreTypes.Add(*Class->GetName());
+	}
 	FAssetDependencies AssetConfig;
 	AssetConfig.IncludeFilters = ExportVersion.IncludeFilter;
 	AssetConfig.IgnoreFilters = ExportVersion.IgnoreFilter;
 	AssetConfig.AssetRegistryDependencyTypes = AssetRegistryDependencyTypes;
 	AssetConfig.InIncludeSpecifyAsset = InIncludeSpecifyAsset;
+	AssetConfig.ForceSkipContents = ForceSkipContents;
 	AssetConfig.bRedirector = true;
 	AssetConfig.AnalysicFilterDependencies = bInAnalysisFilterDependencies;
 	AssetConfig.IncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
+	AssetConfig.IgnoreAseetTypes = IgnoreTypes;
 	
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("parser all uasset dependencies(optimized)"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("parser all uasset dependencies(optimized)",FColor::Red);
 		FAssetDependenciesParser Parser;
 		Parser.Parse(AssetConfig);
 
 		UE_LOG(LogHotPatcher,Display,TEXT("FAssetDependenciteParser Asset Num (Optimized) %d"),Parser.GetrParseResults().Num());
 
 		{
-			SCOPED_NAMED_EVENT_TCHAR(TEXT("combine all assets to FAssetDependenciesInfo"),FColor::Red);
+			SCOPED_NAMED_EVENT_TEXT("combine all assets to FAssetDependenciesInfo",FColor::Red);
 			for(FName LongPackageName:Parser.GetrParseResults())
 			{
 				if(LongPackageName.IsNone())
@@ -1310,12 +1319,12 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	}
 	
 	// {
-	// 	SCOPED_NAMED_EVENT_TCHAR(TEXT("parser all uasset dependencies(Old)"),FColor::Red);
+	// 	SCOPED_NAMED_EVENT_TEXT("parser all uasset dependencies(Old)",FColor::Red);
 	// 	FOldAssetDependenciesParser Parser;
 	// 	Parser.Parse(AssetConfig);
 	//
 	// 	{
-	// 		SCOPED_NAMED_EVENT_TCHAR(TEXT("calac all uasset num (old)"),FColor::Red);
+	// 		SCOPED_NAMED_EVENT_TEXT("calac all uasset num (old)",FColor::Red);
 	// 		TArray<FAssetDetail> AssetDetails;
 	// 		UFlibAssetManageHelper::GetAssetDetailsByAssetDependenciesInfo(Parser.GetrParseResults(),AssetDetails);
 	// 		UE_LOG(LogHotPatcher,Display,TEXT("FAssetDependenciteParser Asset Num (old) %d"),AssetDetails.Num());
@@ -1324,7 +1333,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	// }
 	
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportReleaseVersionInfo parser external files"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("ExportReleaseVersionInfo parser external files",FColor::Red);
 		for(const auto& PlatformExInfo:AddToPlatformExFiles)
 		{
 			FPlatformExternFiles PlatformFileInfo = UFlibPatchParserHelper::GetAllExFilesByPlatform(PlatformExInfo);
@@ -1345,12 +1354,21 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 	bool InIncludeHasRefAssetsOnly /*= false */,
 	bool bInAnalysisFilterDependencies /* = true*/)
 {
+	TArray<FString> AllSkipContents;;
+	if(InChunkInfo.bForceSkipContent)
+	{
+		AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(InChunkInfo.ForceSkipContentRules));
+		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(InChunkInfo.ForceSkipAssets));
+	}
+	
 	return UFlibPatchParserHelper::ExportReleaseVersionInfo(
         InVersionId,
         InBaseVersion,
         InDate,
         UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIncludeFilters),
         UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIgnoreFilters),
+        AllSkipContents,
+        InChunkInfo.ForceSkipClasses,
         InChunkInfo.AssetRegistryDependencyTypes,
         InChunkInfo.IncludeSpecifyAssets,
         InChunkInfo.AddExternAssetsToPlatform,
@@ -1493,41 +1511,10 @@ bool UFlibPatchParserHelper::GetCookProcCommandParams(const FCookerConfig& InCon
 
 void UFlibPatchParserHelper::ExcludeContentForVersionDiff(FPatchVersionDiff& VersionDiff,const TArray<FString>& ExcludeRules)
 {
-	auto ExcludeEditorContent = [&ExcludeRules](TMap<FString,FAssetDependenciesDetail>& AssetCategorys)
-	{
-		TArray<FString> Keys;
-		AssetCategorys.GetKeys(Keys);
-		for(const auto& Key:Keys)
-		{
-			FAssetDependenciesDetail&  ModuleAssetList = *AssetCategorys.Find(Key);
-			TArray<FString> AssetKeys;
-			
-			ModuleAssetList.AssetDependencyDetails.GetKeys(AssetKeys);
-			for(const auto& AssetKey:AssetKeys)
-			{
-				bool customStartWith = false;
-                for(const auto& Rule:ExcludeRules)
-                {
-                	if(AssetKey.StartsWith(Rule))
-                	{
-                		customStartWith = true;
-                		break;
-                	}
-                }
-                			
-                if( customStartWith )
-                {
-                	ModuleAssetList.AssetDependencyDetails.Remove(AssetKey);
-                }
-			}
-		}
-	};
-
-	ExcludeEditorContent(VersionDiff.AssetDiffInfo.AddAssetDependInfo.AssetsDependenciesMap);
-	ExcludeEditorContent(VersionDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap);
-	ExcludeEditorContent(VersionDiff.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.AddAssetDependInfo,ExcludeRules);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.ModifyAssetDependInfo,ExcludeRules);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.DeleteAssetDependInfo,ExcludeRules);
 }
-
 
 FString UFlibPatchParserHelper::MountPathToRelativePath(const FString& InMountPath)
 {

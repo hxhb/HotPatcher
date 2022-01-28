@@ -10,9 +10,12 @@ struct FAssetDependencies
 	TArray<FString> IgnoreFilters;
 	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 	TArray<FPatcherSpecifyAsset> InIncludeSpecifyAsset;
+	// like /Game/EditorOnly /Engine/VREditor
+	TArray<FString> ForceSkipContents;
 	bool bRedirector = true;
 	bool AnalysicFilterDependencies = true;
 	bool IncludeHasRefAssetsOnly = false;
+	TSet<FName> IgnoreAseetTypes;
 };
 
 struct IAssetDependenciesParser

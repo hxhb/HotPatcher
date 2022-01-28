@@ -53,6 +53,8 @@ public:
         const FString& InDate,
         const TArray<FString>& InIncludeFilter,
         const TArray<FString>& InIgnoreFilter,
+        const TArray<FString>& ForceSkipContents,
+        const TArray<UClass*>& ForceSkipClasses,
         const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
         const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
         const TArray<FPlatformExternAssets>& AddToPlatformExFiles,

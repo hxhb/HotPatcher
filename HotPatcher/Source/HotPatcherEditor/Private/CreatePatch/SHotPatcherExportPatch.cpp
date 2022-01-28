@@ -6,7 +6,7 @@
 #include "CreatePatch/PatcherProxy.h"
 #include "CreatePatch/ScopedSlowTaskContext.h"
 
-#include "FlibHotPatcherEditorHelper.h"
+#include "FlibHotPatcherCoreHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "FHotPatcherVersion.h"
 #include "FlibAssetManageHelper.h"
@@ -16,6 +16,7 @@
 #include "HotPatcherEditor.h"
 
 // engine header
+#include "FlibHotPatcherEditorHelper.h"
 #include "Misc/FileHelper.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
@@ -271,7 +272,7 @@ bool SHotPatcherExportPatch::CanDiff()const
 	{
 		bool bHasBase = !ExportPatchSetting->GetBaseVersion().IsEmpty() && FPaths::FileExists(ExportPatchSetting->GetBaseVersion());
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFiltersPaths().Num();
+		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
 		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
 
 		bCanDiff = bHasBase && bHasVersionId && (bHasFilter || bHasSpecifyAssets);
@@ -302,15 +303,17 @@ FReply SHotPatcherExportPatch::DoDiff()const
 		ExportPatchSetting->GetVersionId(),
 		BaseVersion.VersionId,
 		FDateTime::UtcNow().ToString(),
-		ExportPatchSetting->GetAssetIncludeFiltersPaths(),
-		ExportPatchSetting->GetAssetIgnoreFiltersPaths(),
+		UFlibAssetManageHelper::DirectoryPathsToStrings(ExportPatchSetting->GetAssetIncludeFilters()),
+			UFlibAssetManageHelper::DirectoryPathsToStrings(ExportPatchSetting->GetAssetIgnoreFilters()),
+		ExportPatchSetting->GetAllSkipContents(),
+		ExportPatchSetting->GetForceSkipClasses(),
 		ExportPatchSetting->GetAssetRegistryDependencyTypes(),
 		ExportPatchSetting->GetIncludeSpecifyAssets(),
 		ExportPatchSetting->GetAddExternAssetsToPlatform(),
 		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
 	);
 
-	FPatchVersionDiff VersionDiffInfo = UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
+	FPatchVersionDiff VersionDiffInfo = UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
 	
 	bool bShowDeleteAsset = false;
 	FString SerializeDiffInfo;
@@ -368,7 +371,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 	}
 	ExportPatchSetting->Init();
 	UFlibAssetManageHelper::UpdateAssetMangerDatabase(true);
-	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
+	FChunkInfo NewVersionChunk = UFlibHotPatcherCoreHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
 
 	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 		ExportPatchSetting->GetVersionId(),
@@ -379,7 +382,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 	);
 
 	FString CurrentVersionSavePath = ExportPatchSetting->GetCurrentVersionSavePath();
-	FPatchVersionDiff VersionDiffInfo = UFlibHotPatcherEditorHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
+	FPatchVersionDiff VersionDiffInfo = UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
 
 	TArray<FChunkInfo> PatchChunks = ExportPatchSetting->GetChunkInfos();
 	
@@ -388,7 +391,7 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 	{
 		FChunkInfo TotalChunk = UFlibPatchParserHelper::CombineChunkInfos(ExportPatchSetting->GetChunkInfos());
 
-		FChunkAssetDescribe ChunkDiffInfo = UFlibHotPatcherEditorHelper::DiffChunkWithPatchSetting(
+		FChunkAssetDescribe ChunkDiffInfo = UFlibHotPatcherCoreHelper::DiffChunkWithPatchSetting(
 			*ExportPatchSetting,
 			NewVersionChunk,
 			TotalChunk
@@ -462,7 +465,7 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 		else
 			bHasBase = true;
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFiltersPaths().Num();
+		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
 		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
 		// bool bHasExternFiles = !!ExportPatchSetting->GetAddExternFiles().Num();
 		// bool bHasExDirs = !!ExportPatchSetting->GetAddExternDirectory().Num();
@@ -493,7 +496,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	{
 		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
 		PatcherProxy->AddToRoot();
-		PatcherProxy->SetProxySettings(ExportPatchSetting.Get());
+		PatcherProxy->Init(ExportPatchSetting.Get());
 		PatcherProxy->OnShowMsg.AddRaw(this,&SHotPatcherExportPatch::ShowMsg);
 		PatcherProxy->DoExport();
 	}
@@ -505,8 +508,8 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString ProfilingCmd = GetConfigSettings()->IsEnableProfiling() ? TEXT("-trace=cpu,loadtimetrace") : TEXT("");
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs(),*ProfilingCmd);
-		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
-		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);
+		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
 	}
 	return FReply::Handled();
 }
@@ -522,7 +525,7 @@ FText SHotPatcherExportPatch::GetGenerateTooltipText() const
 		else
 			bHasBase = true;
 		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFiltersPaths().Num();
+		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
 		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
 		// bool bHasExternFiles = !!ExportPatchSetting->GetAddExternFiles().Num();
 		// bool bHasExDirs = !!ExportPatchSetting->GetAddExternDirectory().Num();
@@ -569,7 +572,7 @@ FText SHotPatcherExportPatch::GetGenerateTooltipText() const
 
 bool SHotPatcherExportPatch::CanPreviewPatch() const
 {
-	bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFiltersPaths().Num();
+	bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
 	bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
 	
 	auto HasExFilesLambda = [this]()
@@ -617,16 +620,16 @@ FReply SHotPatcherExportPatch::DoPreviewPatch()
 	if (ExportPatchSetting->IsByBaseVersion())
 	{
 		ExportPatchSetting->GetBaseVersionInfo(BaseVersion);
-		DefaultChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchVerison(BaseVersion);
+		DefaultChunk = UFlibHotPatcherCoreHelper::MakeChunkFromPatchVerison(BaseVersion);
 		if (!ExportPatchSetting->IsEnableExternFilesDiff())
 		{
 			BaseVersion.PlatformAssets.Empty();
 		}
 	}
 
-	FChunkInfo NewVersionChunk = UFlibHotPatcherEditorHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
+	FChunkInfo NewVersionChunk = UFlibHotPatcherCoreHelper::MakeChunkFromPatchSettings(ExportPatchSetting.Get());
 	
-	FChunkAssetDescribe ChunkAssetsDescrible = UFlibHotPatcherEditorHelper::DiffChunkByBaseVersionWithPatchSetting(*ExportPatchSetting.Get(),NewVersionChunk, DefaultChunk, BaseVersion);
+	FChunkAssetDescribe ChunkAssetsDescrible = UFlibHotPatcherCoreHelper::DiffChunkByBaseVersionWithPatchSetting(*ExportPatchSetting.Get(),NewVersionChunk, DefaultChunk, BaseVersion);
 
 	TArray<FName> AllUnselectedAssets = ChunkAssetsDescrible.GetAssetsStrings();
 	TArray<FName> UnSelectedInternalFiles = ChunkAssetsDescrible.GetInternalFileNames();

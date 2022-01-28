@@ -6,6 +6,9 @@
 #include "AssetManager/FAssetDetail.h"
 
 // engine
+#include "Engine/StreamableManager.h"
+
+#include "Engine/EngineTypes.h"
 #include "Dom/JsonValue.h"
 #include "Templates/SharedPointer.h"
 #include "AssetRegistryModule.h"
@@ -18,8 +21,6 @@
 #define JSON_ALL_INVALID_ASSET_SECTION_NAME TEXT("InValidAsset")
 #define JSON_ALL_ASSETS_LIST_SECTION_NAME TEXT("AssetsList")
 #define JSON_ALL_ASSETS_Detail_SECTION_NAME TEXT("AssetsDetail")
-
-HOTPATCHERRUNTIME_API extern bool GScanCacheOptimize;
 
 USTRUCT(BlueprintType)
 struct FPackageInfo
@@ -82,7 +83,9 @@ public:
 		static const FAssetPackageData* GetPackageDataByPackagePath(const FString& InShortPackagePath);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerExEx")
 		static bool GetAssetPackageGUID(const FString& InPackagePath, FName& OutGUID);
-
+	
+	static FName GetAssetType(FSoftObjectPath InPackageName);
+	
 	// Combine AssetDependencies Filter repeat asset
 	UFUNCTION(BlueprintPure, Category = "GWorld|Flib|AssetManager", meta = (CommutativeAssociativeBinaryOperator = "true"))
 		static FAssetDependenciesInfo CombineAssetDependencies(const FAssetDependenciesInfo& A, const FAssetDependenciesInfo& B);
@@ -102,6 +105,8 @@ public:
 	
 
 	static FAssetDetail GetAssetDetailByPackageName(const FString& InPackageName);
+	
+	
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetRedirectorList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutRedirector);
 		static bool GetSpecifyAssetData(const FString& InLongPackageName, TArray<FAssetData>& OutAssetData,bool InIncludeOnlyOnDiskAssets);
@@ -110,6 +115,7 @@ public:
 		static bool GetAssetsData(const TArray<FString>& InFilterPaths, TArray<FAssetData>& OutAssetData, bool bIncludeOnlyOnDiskAssets = true);
 		static bool GetAssetsDataByDisk(const TArray<FString>& InFilterPaths, TArray<FAssetData>& OutAssetData);
 		static bool GetSingleAssetsData(const FString& InPackagePath, FAssetData& OutAssetData);
+		static bool GetAssetsDataByPackageName(const FString& InPackageName, FAssetData& OutAssetData);
 		static bool GetClassStringFromFAssetData(const FAssetData& InAssetData,FString& OutAssetType);
 		static bool ConvFAssetDataToFAssetDetail(const FAssetData& InAssetData,FAssetDetail& OutAssetDetail);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
@@ -190,4 +196,33 @@ public:
 	static EAssetRegistryDependencyType::Type ConvAssetRegistryDependencyToInternal(const EAssetRegistryDependencyTypeEx& InType);
 
 	static void GetAssetDataInPaths(const TArray<FString>& Paths, TArray<FAssetData>& OutAssetData);
+
+	static void ExcludeContentForAssetDependenciesDetail(FAssetDependenciesInfo& AssetDependencies,const TArray<FString>& ExcludeRules = {TEXT("")});
+
+	
+	static TArray<FString> DirectoryPathsToStrings(const TArray<FDirectoryPath>& DirectoryPaths);
+	static TArray<FString> SoftObjectPathsToStrings(const TArray<FSoftObjectPath>& SoftObjectPaths);
+	
+	static FString NormalizeContentDir(const FString& Dir);
+	static FStreamableManager& GetStreamableManager();
+
+	// Default priority for all async loads
+	static const uint32 DefaultAsyncLoadPriority = 0;
+	// Priority to try and load immediately
+	static const uint32 AsyncLoadHighPriority = 100;
+	static TSharedPtr<FStreamableHandle> LoadObjectAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath)> Callback,uint32 Priority);
+	static void LoadPackageAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath,bool)> Callback = nullptr,uint32 Priority = DefaultAsyncLoadPriority);
+	static UPackage* LoadPackage( UPackage* InOuter, const TCHAR* InLongPackageName, uint32 LoadFlags, FArchive* InReaderOverride = nullptr);
+	static UPackage* GetPackage(FName PackageName);
+
+	// static TArray<UPackage*> GetPackagesByClass(TArray<UPackage*>& Packages, UClass* Class, bool RemoveFromSrc);
+	
+	static TArray<UPackage*> LoadPackagesForCooking(const TArray<FSoftObjectPath>& SoftObjectPaths, bool bStorageConcurrent);
+	
+	static bool MatchIgnoreTypes(const FString& LongPackageName, TSet<FName> IgnoreTypes, FString& MatchTypeStr);
+	static bool MatchIgnoreFilters(const FString& LongPackageName, const TArray<FString>& IgnoreDirs, FString& MatchDir);
+
+	static bool ContainsRedirector(const FName& PackageName, TMap<FName, FName>& RedirectedPaths);
 };
+
+

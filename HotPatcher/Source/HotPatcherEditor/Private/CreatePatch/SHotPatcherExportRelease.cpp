@@ -2,7 +2,7 @@
 
 // #include "HotPatcherPrivatePCH.h"
 #include "CreatePatch/SHotPatcherExportRelease.h"
-#include "FlibHotPatcherEditorHelper.h"
+#include "FlibHotPatcherCoreHelper.h"
 #include "FlibAssetManageHelper.h"
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "FHotPatcherVersion.h"
@@ -12,6 +12,7 @@
 #include "HotPatcherEditor.h"
 
 // engine header
+#include "FlibHotPatcherEditorHelper.h"
 #include "CreatePatch/ReleaseProxy.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
@@ -74,7 +75,7 @@ void SHotPatcherExportRelease::ImportConfig()
 	FString JsonContent;
 	if (UFlibAssetManageHelper::LoadFileToString(LoadFile, JsonContent))
 	{
-		// UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
+		// UFlibHotPatcherCoreHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
 		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportReleaseSettings);
 		SettingsView->GetDetailsView()->ForceRefresh();
 	}
@@ -156,11 +157,11 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 	if (ExportReleaseSettings)
 	{
 		bool bHasVersion = !ExportReleaseSettings->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFiltersPaths().Num();
+		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFilters().Num();
 		bool bHasSpecifyAssets = !!ExportReleaseSettings->GetSpecifyAssets().Num();
 		bool bHasSavePath = !(ExportReleaseSettings->GetSaveAbsPath().IsEmpty());
 		bool bHasPakInfo = !!ExportReleaseSettings->GetPlatformsPakListFiles().Num();
-		bCanExport = bHasVersion && (bHasFilter || bHasSpecifyAssets || bHasPakInfo) && bHasSavePath;
+		bCanExport = bHasVersion && (ExportReleaseSettings->IsImportProjectSettings() || bHasFilter || bHasSpecifyAssets || bHasPakInfo) && bHasSavePath;
 	}
 	return bCanExport;
 }
@@ -171,7 +172,7 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 	{
 		UReleaseProxy* ReleaseProxy = NewObject<UReleaseProxy>();
 		ReleaseProxy->AddToRoot();
-		ReleaseProxy->SetProxySettings(ExportReleaseSettings.Get());
+		ReleaseProxy->Init(ExportReleaseSettings.Get());
 		ReleaseProxy->DoExport();
 	}
 	else
@@ -182,8 +183,8 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString NoShaderCompile = GetConfigSettings()->bNoShaderCompile ? TEXT("-NoShaderCompile") : TEXT("");
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotRelease -config=\"%s\" %s %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs(),*NoShaderCompile);
-		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
-		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);
+		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
 	}
 	return FReply::Handled();
 }
@@ -194,7 +195,7 @@ FText SHotPatcherExportRelease::GetGenerateTooltipText() const
 	if (GetMutableDefault<UHotPatcherSettings>()->bPreviewTooltips && ExportReleaseSettings)
 	{
 		bool bHasVersion = !ExportReleaseSettings->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFiltersPaths().Num();
+		bool bHasFilter = !!ExportReleaseSettings->GetAssetIncludeFilters().Num();
 		bool bHasSpecifyAssets = !!ExportReleaseSettings->GetSpecifyAssets().Num();
 		bool bHasExternFiles = !!ExportReleaseSettings->GetAddExternAssetsToPlatform().Num();
 		bool bHasPakInfo = !!ExportReleaseSettings->GetPlatformsPakListFiles().Num();
@@ -212,7 +213,7 @@ FText SHotPatcherExportRelease::GetGenerateTooltipText() const
 		};
 		TArray<FStatus> AllStatus;
 		AllStatus.Emplace(bHasVersion,TEXT("HasVersion"));
-		AllStatus.Emplace((bHasFilter||bHasSpecifyAssets||bHasExternFiles||bHasPakInfo),TEXT("HasFilter or HasSpecifyAssets or bHasExternFiles or bHasPakInfo"));
+		AllStatus.Emplace((ExportReleaseSettings->IsImportProjectSettings()||bHasFilter||bHasSpecifyAssets||bHasExternFiles||bHasPakInfo),TEXT("ImportProjectSettings or HasFilter or HasSpecifyAssets or bHasExternFiles or bHasPakInfo"));
 		AllStatus.Emplace(bHasSavePath,TEXT("HasSavePath"));
 		
 		for(const auto& Status:AllStatus)

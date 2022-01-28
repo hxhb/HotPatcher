@@ -1,9 +1,10 @@
 #include "FReleasePaklistParser.h"
 
+#include "Misc/FileHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "HotPatcherLog.h"
 #include "Kismet/KismetStringLibrary.h"
-#include "Misc/PathViews.h"
+// #include "Misc/PathViews.h"
 
 
 FString NormalizePaklistPath(const FString& InStr)

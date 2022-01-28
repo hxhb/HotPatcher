@@ -63,6 +63,7 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 					.DeveloperWebsite(FText::FromString(TEXT("https://imzlp.com")))
 					.UpdateWebsite(FText::FromString(TEXT("https://imzlp.com/posts/17590/")))
 					.CurrentVersion(CURRENT_VERSION_ID)
+					.PatchVersion(CURRENT_PATCH_ID)
 				]
 #endif
 				+SVerticalBox::Slot()

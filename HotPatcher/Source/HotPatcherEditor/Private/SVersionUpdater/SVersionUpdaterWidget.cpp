@@ -33,6 +33,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 		InArgs._UpdateWebsite.Get().ToString()
 		);
 	CurrentVersion = InArgs._CurrentVersion.Get();
+	PatchVersion = InArgs._PatchVersion.Get();
 	
 	ChildSlot
 	[
@@ -180,13 +181,18 @@ void SVersionUpdaterWidget::OnRequestComplete(FHttpRequestPtr RequestPtr, FHttpR
 				const TSharedPtr<FJsonObject>* ToolJsonObject;
 				if(JsonObject->TryGetObjectField(GetToolName().ToString(),ToolJsonObject))
 				{
-					int32 Version = ToolJsonObject->Get()->GetIntegerField(TEXT("Version"));
+					LatstVersion = ToolJsonObject->Get()->GetIntegerField(TEXT("Version"));
 					FString Developer = ToolJsonObject->Get()->GetStringField(TEXT("Author"));
 					FString UpdateURL = ToolJsonObject->Get()->GetStringField(TEXT("URL"));
 					FString Website = ToolJsonObject->Get()->GetStringField(TEXT("Website"));
+					int32 RemotePatchVersion = 0;
+					if(ToolJsonObject->Get()->TryGetNumberField(TEXT("PatchVersion"),RemotePatchVersion))
+					{
+						LatstPatchVersion = RemotePatchVersion;
+					}
+					
 					SetToolUpdateInfo(GetToolName().ToString(),Developer,Website,UpdateURL);
-					LatstVersion = Version;
-					if(CurrentVersion < LatstVersion)
+					if(CurrentVersion < LatstVersion || (CurrentVersion == LatstVersion && LatstPatchVersion > PatchVersion))
 					{
 						UpdateInfoWidget->SetVisibility(EVisibility::Visible);
 					}

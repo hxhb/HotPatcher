@@ -2,7 +2,7 @@
 
 // #include "HotPatcherPrivatePCH.h"
 #include "SHotPatcherCookerBase.h"
-#include "FlibHotPatcherEditorHelper.h"
+#include "FlibHotPatcherCoreHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "FHotPatcherVersion.h"
 #include "FlibAssetManageHelper.h"

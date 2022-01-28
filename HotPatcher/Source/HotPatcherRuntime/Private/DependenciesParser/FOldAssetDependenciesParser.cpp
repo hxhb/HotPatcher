@@ -1,6 +1,7 @@
 #include "DependenciesParser/FOldAssetDependenciesParser.h"
 #include "HotPatcherLog.h"
 
+bool GScanCacheOptimize = false;
 namespace NSOldAssetDependenciesParser
 {
 		/*
@@ -60,7 +61,7 @@ void FOldAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 		{
 			TArray<FAssetDetail> AllNeedPakRefAssets;
 			{
-				SCOPED_NAMED_EVENT_TCHAR(TEXT("parser asset by filter"),FColor::Red);
+				SCOPED_NAMED_EVENT_TEXT("parser asset by filter",FColor::Red);
 				TArray<FAssetDetail> AllAssets;
 				NSOldAssetDependenciesParser::GetAssetsList(ParseConfig.IncludeFilters, ParseConfig.AssetRegistryDependencyTypes, AllAssets,ScanedCaches);
 				if (ParseConfig.IncludeHasRefAssetsOnly)
@@ -76,7 +77,7 @@ void FOldAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 			// 剔除ignore filter中指定的资源
 			if (ParseConfig.IgnoreFilters.Num() > 0)
 			{
-				SCOPED_NAMED_EVENT_TCHAR(TEXT("remove asset by IgnoreFilter"),FColor::Red);
+				SCOPED_NAMED_EVENT_TEXT("remove asset by IgnoreFilter",FColor::Red);
 				for (const auto& AssetDetail : AllNeedPakRefAssets)
 				{
 					bool bIsIgnore = false;
@@ -103,7 +104,7 @@ void FOldAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 		
 		auto AnalysisAssetDependency = [this](const TArray<FAssetDetail>& InAssetDetail, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, bool bInAnalysisDepend)->FAssetDependenciesInfo
 		{
-			SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportReleaseVersionInfo AnalysisAssetDependency"),FColor::Red);
+			SCOPED_NAMED_EVENT_TEXT("ExportReleaseVersionInfo AnalysisAssetDependency",FColor::Red);
 			FAssetDependenciesInfo RetAssetDepend;
 			if (InAssetDetail.Num())
 			{
@@ -126,7 +127,7 @@ void FOldAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 		// Specify Assets
 		FAssetDependenciesInfo SpecifyAssetDependencies;
 		{
-			SCOPED_NAMED_EVENT_TCHAR(TEXT("ExportReleaseVersionInfo parser Specify Assets"),FColor::Red);
+			SCOPED_NAMED_EVENT_TEXT("ExportReleaseVersionInfo parser Specify Assets",FColor::Red);
 			for (const auto& SpecifyAsset : ParseConfig.InIncludeSpecifyAsset)
 			{
 				FString AssetLongPackageName = SpecifyAsset.Asset.GetLongPackageName();
@@ -152,7 +153,7 @@ void NSOldAssetDependenciesParser::GetAssetDependencies(
 	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
 )
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("NSOldAssetDependenciesParser::GetAssetDependencies"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("NSOldAssetDependenciesParser::GetAssetDependencies",FColor::Red);
 	if (InLongPackageName.IsEmpty())
 		return;
 
@@ -193,7 +194,7 @@ bool NSOldAssetDependenciesParser::GetAssetDependency(
 	bool bRecursively
 )
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("NSOldAssetDependenciesParser::GetAssetDependency"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("NSOldAssetDependenciesParser::GetAssetDependency",FColor::Red);
 	bool bStatus = false;
 	if (FPackageName::DoesPackageExist(InLongPackageName))
 	{
@@ -215,7 +216,7 @@ void NSOldAssetDependenciesParser::GetAssetDependenciesForAssetDetail(
 	TMap<FString, FAssetDependenciesInfo>& ScandCaches
 )
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetDependenciesForAssetDetail"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetDependenciesForAssetDetail",FColor::Red);
 	FSoftObjectPath AssetObjectSoftRef{ InAssetDetail.PackagePath.ToString() };
 
 	NSOldAssetDependenciesParser::GetAssetDependencies(AssetObjectSoftRef.GetLongPackageName(), AssetRegistryDependencyTypes, OutDependices,ScandCaches);
@@ -228,7 +229,7 @@ void NSOldAssetDependenciesParser::GetAssetListDependenciesForAssetDetail(
 			TMap<FString, FAssetDependenciesInfo>& ScandCaches
 )
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("NSOldAssetDependenciesParser::GetAssetListDependenciesForAssetDetail"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("NSOldAssetDependenciesParser::GetAssetListDependenciesForAssetDetail",FColor::Red);
 	FAssetDependenciesInfo result;
 	for (const auto& AssetDetail : InAssetsDetailList)
 	{
@@ -264,7 +265,7 @@ void NSOldAssetDependenciesParser::GatherAssetDependicesInfoRecursively(
 	TSet<FString> IgnoreAssetsPackageNames
 )
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("NSOldAssetDependenciesParser::GatherAssetDependicesInfoRecursively"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("NSOldAssetDependenciesParser::GatherAssetDependicesInfoRecursively",FColor::Red);
 	IgnoreAssetsPackageNames.Add(InTargetLongPackageName);
 	TArray<FName> local_Dependencies;
 	// TArray<EAssetRegistryDependencyType::Type> AssetTypes;
@@ -357,7 +358,7 @@ bool NSOldAssetDependenciesParser::GetAssetsList(
 	bool bReTargetRedirector
 )
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("UFlibAssetManageHelper::GetAssetsList"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetsList",FColor::Red);
 	TArray<FAssetData> AllAssetData;
 	if (UFlibAssetManageHelper::GetAssetsData(InFilterPaths, AllAssetData,true))
 	{

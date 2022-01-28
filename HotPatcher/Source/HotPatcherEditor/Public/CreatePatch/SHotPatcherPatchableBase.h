@@ -6,7 +6,7 @@
 #include "Model/FHotPatcherCreatePatchModel.h"
 #include "CreatePatch/FExportPatchSettings.h"
 #include "SHotPatcherInformations.h"
-#include "IPatchableInterface.h"
+#include "CreatePatch/IPatchableInterface.h"
 
 // engine header
 #include "Interfaces/ITargetPlatform.h"

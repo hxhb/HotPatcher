@@ -124,7 +124,8 @@ struct HOTPATCHERRUNTIME_API FHotPatcherPatchContext:public FHotPatcherContext
         GetPatcherDiffInfoByName(PlatformName)->AddExternalFiles.Add(AddShaderLib);
         GetPatcherChunkInfoByName(PlatformName,ChunkName)->AddExternFileToPak.Add(AddShaderLib);
     }
-    void AddAsset(const FString ChunkName,const FAssetDetail& AssetDetail);
+
+    bool AddAsset(const FString ChunkName, const FAssetDetail& AssetDetail);
 };
 
 USTRUCT(BlueprintType)
@@ -136,5 +137,5 @@ struct HOTPATCHERRUNTIME_API FHotPatcherReleaseContext:public FHotPatcherContext
     virtual FString GetTotalTimeRecorderName()const{return TEXT("Generate the release total time");}
     UPROPERTY(BlueprintReadOnly)
     FHotPatcherVersion NewReleaseVersion;
-    
+    class UReleaseProxy* ReleaseProxy;
 };

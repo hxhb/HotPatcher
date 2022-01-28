@@ -7,9 +7,10 @@
 #include "SProjectCookPage.h"
 #include "FlibPatchParserHelper.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
-#include "FlibHotPatcherEditorHelper.h"
+#include "FlibHotPatcherCoreHelper.h"
 
 // Engine Header
+#include "FlibHotPatcherEditorHelper.h"
 #include "Serialization/JsonWriter.h"
 #include "Serialization/JsonReader.h"
 

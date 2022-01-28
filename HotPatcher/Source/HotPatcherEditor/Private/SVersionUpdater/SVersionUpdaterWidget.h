@@ -21,6 +21,7 @@ public:
 	_UpdateWebsite()
 	{}
 	SLATE_ATTRIBUTE( int32, CurrentVersion )
+	SLATE_ATTRIBUTE( int32, PatchVersion )
 	SLATE_ATTRIBUTE( FText, ToolName )
 	SLATE_ATTRIBUTE( FText, DeveloperName )
 	SLATE_ATTRIBUTE( FText, DeveloperWebsite )
@@ -37,26 +38,34 @@ public:
 	void HyLinkClickEventOpenUpdateWebsite();
 	void HyLinkClickEventOpenDeveloperWebsite();
 
-	FText GetCurrentVersionText() const {return FText::FromString(FString::Printf(TEXT("Current Version v%d."),GetCurrentVersion()));};
+	FText GetCurrentVersionText() const
+	{
+		return FText::FromString(
+			FString::Printf(TEXT("Current Version v%d.%d"),GetCurrentVersion(),GetPatchVersion())
+			);
+	};
 	FText GetToolName() const {return FText::FromString(ToolName);};
 	FText GetDeveloperName() const {return FText::FromString(DeveloperName);};
 	FText GetUpdateWebsite() const {return FText::FromString(UpdateWebsite);};
 	FText GetDeveloperWebsite() const {return FText::FromString(DeveloperWebsite);};
 	FText GetDeveloperDescrible() const {return FText::FromString(FString::Printf(TEXT("Developed by %s"),*GetDeveloperName().ToString()));};
-	FText GetLatstVersionText() const {return FText::FromString(FString::Printf(TEXT("A new version v%d is avaliable"),LatstVersion));};
+	FText GetLatstVersionText() const {return FText::FromString(FString::Printf(TEXT("A new version v%d.%d is avaliable"),LatstVersion,LatstPatchVersion));};
 	virtual void SetToolUpdateInfo(const FString& ToolName,const FString& DeveloperName,const FString& DeveloperWebsite,const FString& UpdateWebsite);
 	int32 GetCurrentVersion()const { return CurrentVersion; }
+	int32 GetPatchVersion()const { return PatchVersion; }
 
 	void OnRequestComplete(FHttpRequestPtr RequestPtr, FHttpResponsePtr ResponsePtr, bool bConnectedSuccessfully);
 	void RequestVersion(const FString& URL);
 private:
 	int32 CurrentVersion = 0;
+	int32 PatchVersion = 0;
 	FString ToolName;
 	FString UpdateWebsite;
 	FString DeveloperWebsite;
 	FString DeveloperName;
 	TSharedPtr<SHorizontalBox> UpdateInfoWidget;
 	int32 LatstVersion = 0;
+	int32 LatstPatchVersion = 0;
 	FHttpRequestPtr HttpHeadRequest;
 };
 

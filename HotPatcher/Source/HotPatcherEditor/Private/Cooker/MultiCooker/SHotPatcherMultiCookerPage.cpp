@@ -2,13 +2,15 @@
 
 // #include "HotPatcherPrivatePCH.h"
 #include "SHotPatcherMultiCookerPage.h"
+#include "FlibHotPatcherCoreHelper.h"
 #include "FlibHotPatcherEditorHelper.h"
 #include "FlibAssetManageHelper.h"
 #include "HotPatcherLog.h"
 #include "HotPatcherEditor.h"
 #include "Cooker/MultiCooker/FMultiCookerSettings.h"
 // engine header
-#include "FlibMultiCookerHelper.h"
+#include "FlibHotPatcherEditorHelper.h"
+#include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
 #include "Cooker/MultiCooker/MultiCookerProxy.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SSeparator.h"
@@ -73,7 +75,7 @@ void SHotPatcherMultiCookerPage::ImportConfig()
 	FString JsonContent;
 	if (UFlibAssetManageHelper::LoadFileToString(LoadFile, JsonContent))
 	{
-		// UFlibHotPatcherEditorHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
+		// UFlibHotPatcherCoreHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
 		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*CookerSettings);
 		SettingsView->GetDetailsView()->ForceRefresh();
 	}
@@ -117,7 +119,7 @@ void SHotPatcherMultiCookerPage::DoGenerate()
 
 void SHotPatcherMultiCookerPage::ImportProjectConfig()
 {
-	GetConfigSettings()->ImportProjectSettings();
+	UFlibHotPatcherCoreHelper::ImportProjectSettingsToSettingBase(CookerSettings.Get());
 	SHotPatcherCookerBase::ImportProjectConfig();
 }
 
@@ -167,7 +169,7 @@ FReply SHotPatcherMultiCookerPage::RunCook()
 	{
 		MultiCookerProxy = NewObject<UMultiCookerProxy>();
 		MultiCookerProxy->AddToRoot();
-		MultiCookerProxy->SetProxySettings(GetConfigSettings());
+		MultiCookerProxy->Init(GetConfigSettings());
 		MultiCookerProxy->OnMultiCookerBegining.AddLambda([this](UMultiCookerProxy*)
 		{
 			MissionNotifyProay->SpawnRuningMissionNotification(NULL);
@@ -199,7 +201,6 @@ FReply SHotPatcherMultiCookerPage::RunCook()
 			FText::FromString(FString::Printf(TEXT("%s Mission Finished!"),*MissionName)),
 			FText::FromString(FString::Printf(TEXT("%s Failed!"),*MissionName))
 		);
-		MultiCookerProxy->Init();
 		MultiCookerProxy->DoExport();
 	}
 	else
@@ -217,8 +218,8 @@ FReply SHotPatcherMultiCookerPage::RunCook()
 			*GetConfigSettings()->GetCombinedAdditionalCommandletArgs()
 			);
 		
-		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherEditorHelper::GetUECmdBinary(),*MissionCommand);
-		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherEditorHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);
+		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
     
 	}
 	return FReply::Handled();

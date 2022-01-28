@@ -8,6 +8,8 @@
 #include "FlibAssetManageHelper.h"
 #include "FPlatformExternFiles.h"
 #include "ETargetPlatform.h"
+#include "BaseTypes/FCookShaderOptions.h"
+
 // engine header
 #include "CoreMinimal.h"
 
@@ -131,13 +133,53 @@ public:
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets")
 		TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Extern")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Assets")
+		bool bForceSkipContent = false;
+	// force exclude asset folder e.g. Exclude editor content when cooking in Project Settings
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Assets",meta = (RelativeToGameContentDir, LongPackageName, EditCondition="bForceSkipContent"))
+		TArray<FDirectoryPath> ForceSkipContentRules;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Assets",meta = (EditCondition="bForceSkipContent"))
+		TArray<FSoftObjectPath> ForceSkipAssets;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Assets",meta = (EditCondition="bForceSkipContent"))
+		TArray<UClass*> ForceSkipClasses;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "External")
 		TArray<FPlatformExternAssets> AddExternAssetsToPlatform;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Internal", meta = (EditCondition = "!bMonolithic"))
 		FPakInternalInfo InternalFiles;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shader", meta=(EditCondition = "bCookPatchAssets"))
+		FCookShaderOptions CookShaderOptions;
+	
+	FORCEINLINE FCookShaderOptions GetCookShaderOptions()const {return CookShaderOptions;}
+	FString GetShaderLibraryName() const;
+	
 	TArray<FPakFileProxy> PakFileProxys;
 };
+
+FORCEINLINE FString FChunkInfo::GetShaderLibraryName() const
+{
+	FString ShaderLibraryName;
+	switch (GetCookShaderOptions().ShaderNameRule)
+	{
+	case EShaderLibNameRule::CHUNK_NAME:
+		{
+			ShaderLibraryName = ChunkName;
+			break;
+		}
+	case EShaderLibNameRule::PROJECT_NAME:
+		{
+			ShaderLibraryName = FApp::GetProjectName();
+			break;
+		}
+	case EShaderLibNameRule::CUSTOM:
+		{
+			ShaderLibraryName = GetCookShaderOptions().CustomShaderName;
+			break;
+		}
+	}
+	return ShaderLibraryName;
+}
+
 
 USTRUCT(BlueprintType)
 struct FChunkPakCommand
@@ -212,7 +254,7 @@ public:
 			TArray<FName> result;
 			for (const auto& File : InFiles)
 			{
-				result.AddUnique(FName(File.FilePath.FilePath));
+				result.AddUnique(FName(*File.FilePath.FilePath));
 			}
 			return result;
 		};

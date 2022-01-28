@@ -3,35 +3,36 @@
 #include "HotPatcherLog.h"
 
 
-void FAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
+void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("FAssetDependenciesParser::Parse"),FColor::Red);
+	ParseConfig = InParseConfig;
+	
+	SCOPED_NAMED_EVENT_TEXT("FAssetDependenciesParser::Parse",FColor::Red);
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 	TSet<FName> AssetPackageNames;
+	
+	// make /Game/XXX to /Game/XXX/
+	TArray<FString> IngnoreFilters;
+	for(const auto& IgnoreFilter:ParseConfig.IgnoreFilters)
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("Get AssetPackageNames by filter"),FColor::Red);
+		IngnoreFilters.AddUnique(UFlibAssetManageHelper::NormalizeContentDir(IgnoreFilter));
+	}
+	
+	{
+		SCOPED_NAMED_EVENT_TEXT("Get AssetPackageNames by filter",FColor::Red);
 		TArray<FAssetData> AssetDatas;
 		UFlibAssetManageHelper::GetAssetsData(ParseConfig.IncludeFilters,AssetDatas);
 
 		for(const auto& AssetData:AssetDatas)
 		{
-			bool bIsIgnore = false;
-			for(const auto& IgnoreFilter:ParseConfig.IgnoreFilters)
-			{
-				if(AssetData.PackageName.ToString().StartsWith(IgnoreFilter))
-				{
-					bIsIgnore = true;
-					break;
-				}
-			}
-			if(!bIsIgnore)
+			if(!IsIgnoreAsset(AssetData))
 			{
 				AssetPackageNames.Add(AssetData.PackageName);
 				if(ParseConfig.bRedirector && AssetData.IsRedirector())
 				{
 					if(!AssetData.PackageName.IsNone())
 					{
-						AssetPackageNames.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,AssetData.PackageName,ParseConfig.AssetRegistryDependencyTypes,false,TSet<FName>{},ScanedCaches));
+						AssetPackageNames.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,AssetData.PackageName,ParseConfig.AssetRegistryDependencyTypes,false,IngnoreFilters,TSet<FName>{},ParseConfig.IgnoreAseetTypes,ScanedCaches));
 					}
 				}
 			}
@@ -41,35 +42,64 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& ParseConfig)
 	Results.Append(AssetPackageNames);
 	
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("Get dependencies for filters"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("Get dependencies for filters",FColor::Red);
 		for(FName PackageName:AssetPackageNames)
 		{
-			Results.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,PackageName,ParseConfig.AssetRegistryDependencyTypes,true,TSet<FName>{},ScanedCaches));
+			Results.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,PackageName,ParseConfig.AssetRegistryDependencyTypes,true,IngnoreFilters,TSet<FName>{},ParseConfig.IgnoreAseetTypes,ScanedCaches));
 		}
 	}
 	
 	{
-		SCOPED_NAMED_EVENT_TCHAR(TEXT("Get dependencies for SpecifyAsset"),FColor::Red);
+		SCOPED_NAMED_EVENT_TEXT("Get dependencies for SpecifyAsset",FColor::Red);
 		for(const auto& SpecifyAsset:ParseConfig.InIncludeSpecifyAsset)
 		{
+			FString LongPackageName = SpecifyAsset.Asset.GetLongPackageName();
 			if(!SpecifyAsset.Asset.IsValid())
 			{
 				continue;
 			}
-			Results.Add(FName(SpecifyAsset.Asset.GetLongPackageName()));
+			FAssetData AssetData;
+			if(UFlibAssetManageHelper::GetAssetsDataByPackageName(LongPackageName,AssetData))
+			{
+				if(IsIgnoreAsset(AssetData))
+				{
+					continue;
+				}
+			}
+			Results.Add(FName(*SpecifyAsset.Asset.GetLongPackageName()));
 			if(SpecifyAsset.bAnalysisAssetDependencies)
 			{
-				Results.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,FName(SpecifyAsset.Asset.GetLongPackageName()),SpecifyAsset.AssetRegistryDependencyTypes,SpecifyAsset.bAnalysisAssetDependencies,TSet<FName>{},ScanedCaches));
+				Results.Append(FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(AssetRegistryModule,FName(*LongPackageName),SpecifyAsset.AssetRegistryDependencyTypes,SpecifyAsset.bAnalysisAssetDependencies,IngnoreFilters,TSet<FName>{},ParseConfig.IgnoreAseetTypes,ScanedCaches));
 			}
 		}
 	}
 
 	Results.Remove(FName(NAME_None));
+	TSet<FName> ForceSkipPackages;
+	for(const auto& SkipContent:ParseConfig.ForceSkipContents)
+	{
+		for(auto& AssetPackageName:Results)
+		{
+			FString AssetPackageNameStr = AssetPackageName.ToString();
+			if(AssetPackageNameStr.StartsWith(SkipContent))
+			{
+#if ASSET_DEPENDENCIES_DEBUG_LOG
+				UE_LOG(LogHotPatcher,Log,TEXT("Force Skip %s (match %s)"),*AssetPackageNameStr,*SkipContent);
+#endif
+				ForceSkipPackages.Add(AssetPackageName);
+			}
+		}
+	}
+
+	for(FName SkipPackage:ForceSkipPackages)
+	{
+		Results.Remove(SkipPackage);
+	}
 }
 
 bool IsValidPackageName(const FString& LongPackageName)
 {
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("GatherAssetDependicesInfoRecursively"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("GatherAssetDependicesInfoRecursively",FColor::Red);
 	bool bStatus = false;
 	if (!LongPackageName.IsEmpty() && !FPackageName::IsScriptPackage(LongPackageName) && !FPackageName::IsMemoryPackage(LongPackageName))
 	{
@@ -78,13 +108,42 @@ bool IsValidPackageName(const FString& LongPackageName)
 	return bStatus;
 }
 
+bool FAssetDependenciesParser::IsIgnoreAsset(const FAssetData& AssetData)
+{
+	FString LongPackageName = AssetData.PackageName.ToString();
+
+	bool bIsIgnore = false;
+	FString MatchIgnoreStr;
+	if(UFlibAssetManageHelper::UFlibAssetManageHelper::MatchIgnoreTypes(LongPackageName,ParseConfig.IgnoreAseetTypes,MatchIgnoreStr))
+	{
+
+		bIsIgnore = true;
+	}
+	
+	if(!bIsIgnore && UFlibAssetManageHelper::MatchIgnoreFilters(LongPackageName,ParseConfig.IgnoreFilters,MatchIgnoreStr))
+	{
+		bIsIgnore = true;
+	}
+
+	if(bIsIgnore)
+	{
+#if ASSET_DEPENDENCIES_DEBUG_LOG
+		UE_LOG(LogHotPatcher,Log,TEXT("Force Skip %s (match ignore rule %s)"),*AssetData.GetFullName(),*MatchIgnoreStr);
+#endif
+	}
+	return bIsIgnore;
+}
+
 TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAssetRegistryModule& InAssetRegistryModule,
-	FName InLongPackageName, const TArray<EAssetRegistryDependencyTypeEx>& InAssetDependencyTypes,
-	bool bRecursively, TSet<FName> IgnorePackageNames,FScanedCachesType& ScanedCaches)
+                                                                           FName InLongPackageName, const TArray<EAssetRegistryDependencyTypeEx>& InAssetDependencyTypes,
+                                                                           bool bRecursively, const TArray<FString>& IgnoreDirectories,TSet<FName> IgnorePackageNames,const TSet<FName>& IgnoreAssetTypes,FScanedCachesType& ScanedCaches)
 {
 	TSet<FName> AssetDependencies;
-	SCOPED_NAMED_EVENT_TCHAR(TEXT("GatherAssetDependicesInfoRecursively"),FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("GatherAssetDependicesInfoRecursively",FColor::Red);
 	IgnorePackageNames.Add(InLongPackageName);
+
+	FAssetData CurrentAssetData;
+	UFlibAssetManageHelper::GetAssetsDataByPackageName(InLongPackageName.ToString(),CurrentAssetData);
 	
 	// TArray<EAssetRegistryDependencyType::Type> AssetTypes;
 	
@@ -99,18 +158,55 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 	TArray<FName> CurrentAssetDependencies;
 	
 	// AssetTypes.AddUnique(UFlibAssetManageHelper::ConvAssetRegistryDependencyToInternal(DepType));
-	PRAGMA_DISABLE_DEPRECATION_WARNINGS
-	bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(InLongPackageName, CurrentAssetDependencies, TotalType);
-	PRAGMA_ENABLE_DEPRECATION_WARNINGS
-	if (!bGetDependenciesSuccess)
-		return AssetDependencies;
-	
-	for (auto &LongPackageName : CurrentAssetDependencies)
 	{
-		// ignore /Script/WeatherSystem and self
-		if(LongPackageName.IsNone() || !IsValidPackageName(LongPackageName.ToString()) || LongPackageName == InLongPackageName)
-			continue;
-		AssetDependencies.Add(LongPackageName);
+		SCOPED_NAMED_EVENT_TEXT("GetDependencies",FColor::Red);
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS
+		bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(InLongPackageName, CurrentAssetDependencies, TotalType);
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS
+		if (!bGetDependenciesSuccess)
+			return AssetDependencies;
+	}
+	
+	{
+		SCOPED_NAMED_EVENT_TEXT("check valid package and ignore rule",FColor::Red);
+		for (auto &LongPackageName : CurrentAssetDependencies)
+		{
+			FString LongPackageNameStr = LongPackageName.ToString();
+		
+			// ignore /Script/ and self
+			if(LongPackageName.IsNone() || !IsValidPackageName(LongPackageNameStr) || LongPackageName == InLongPackageName)
+			{
+				continue;
+			}
+			// check is ignore directories or ingore types
+			{
+				SCOPED_NAMED_EVENT_TEXT("check ignore directories",FColor::Red);
+				bool bIsIgnore = false;
+				FString MatchIgnoreStr;
+				
+				if(!bIsIgnore && UFlibAssetManageHelper::MatchIgnoreTypes(LongPackageNameStr,IgnoreAssetTypes,MatchIgnoreStr))
+				{
+					bIsIgnore = true;
+				}
+				
+				if(!bIsIgnore && UFlibAssetManageHelper::MatchIgnoreFilters(LongPackageNameStr,IgnoreDirectories,MatchIgnoreStr))
+				{
+					bIsIgnore = true;
+				}
+
+				if(bIsIgnore)
+				{
+#if ASSET_DEPENDENCIES_DEBUG_LOG
+					UE_LOG(LogHotPatcher,Log,TEXT("Force Skip %s (match ignore rule %s)"),*LongPackageNameStr,*MatchIgnoreStr);
+#endif
+					continue;
+				}
+				else
+				{
+					AssetDependencies.Add(LongPackageName);
+				}
+			}
+		}
 	}
 
 	if(bRecursively)
@@ -125,7 +221,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 				
 			if(!ScanedCaches.Contains(AssetPackageName))
 			{
-				ScanedCaches.Add(AssetPackageName,GatherAssetDependicesInfoRecursively(InAssetRegistryModule, AssetPackageName, InAssetDependencyTypes,true,IgnorePackageNames,ScanedCaches));
+				ScanedCaches.Add(AssetPackageName,GatherAssetDependicesInfoRecursively(InAssetRegistryModule, AssetPackageName, InAssetDependencyTypes,true,IgnoreDirectories,IgnorePackageNames,IgnoreAssetTypes,ScanedCaches));
 			}
 			Dependencies.Append(*ScanedCaches.Find(AssetPackageName));
 		}
