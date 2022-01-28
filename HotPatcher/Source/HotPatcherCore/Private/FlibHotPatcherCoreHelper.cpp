@@ -1400,7 +1400,9 @@ bool UFlibHotPatcherCoreHelper::SerializeAssetRegistry(const FString& PlatformNa
 		if(UFlibAssetManageHelper::GetSingleAssetsData(AssetPackagePath,*AssetData))
 		{
 			State.AddAssetData(AssetData);
+			continue;
 		}
+		delete AssetData;
 	}
 	// Create runtime registry data
 	FArrayWriter SerializedAssetRegistry;
