@@ -1391,14 +1391,20 @@ bool UFlibHotPatcherCoreHelper::SerializeAssetRegistry(const FString& PlatformNa
 	AssetRegistry.InitializeTemporaryAssetRegistryState(State, SaveOptions, true);
 	for(const auto& AssetPackagePath:PackagePaths)
 	{
-		if(State.GetAssetByObjectPath(FName(*AssetPackagePath)))
+		if (State.GetAssetByObjectPath(FName(*AssetPackagePath)))
 		{
-			UE_LOG(LogHotPatcherCoreHelper,Warning,TEXT("%s Alway add to AssetRegistryState!"),*AssetPackagePath);
+			UE_LOG(LogHotPatcherCoreHelper, Warning, TEXT("%s already add to AssetRegistryState!"), *AssetPackagePath);
 			continue;
 		}
 		FAssetData* AssetData = new FAssetData();
-		if(UFlibAssetManageHelper::GetSingleAssetsData(AssetPackagePath,*AssetData))
+		if (UFlibAssetManageHelper::GetSingleAssetsData(AssetPackagePath, *AssetData))
 		{
+			if (AssetPackagePath != AssetData->ObjectPath.ToString())
+			{
+				UE_LOG(LogHotPatcherCoreHelper, Warning, TEXT("%s is a redirector of %s, skip!"), *AssetPackagePath, *AssetData->ObjectPath.ToString());
+				delete AssetData;
+				continue;
+			}
 			State.AddAssetData(AssetData);
 			continue;
 		}
