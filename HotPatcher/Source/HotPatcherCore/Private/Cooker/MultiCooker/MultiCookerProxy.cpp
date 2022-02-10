@@ -581,7 +581,7 @@ bool UMultiCookerProxy::DoExport()
 
 		for(const auto& CookerSetting:SingleCookerSettings)
 		{
-			TSharedPtr<FThreadWorker> ProcWorker = CreateSingleCookWroker(CookerSetting);
+			TSharedPtr<FThreadWorker> ProcWorker = CreateSingleCookWorker(CookerSetting);
 			ProcWorker->Execute();
 		}
 	}
@@ -652,7 +652,7 @@ TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateProcMissionThread(const F
 	return ProcWorkingThread;
 }
 
-TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateSingleCookWroker(const FSingleCookerSettings& SingleCookerSettings)
+TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateSingleCookWorker(const FSingleCookerSettings& SingleCookerSettings)
 {
 	SCOPED_NAMED_EVENT_TEXT("UMultiCookerProxy::CreateSingleCookWroker",FColor::Red);
 	FString CurrentConfig;
@@ -674,12 +674,18 @@ TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateSingleCookWroker(const FS
 	{
 		ShaderPerformanceCmd.Append(TEXT(" -rtshaderworker"));
 	}
+	FString TraceFileCmd;
+	if(GetSettingObject()->bUseTraceFile)
+	{
+		TraceFileCmd = FString::Printf(TEXT("-tracefile=\"%s.utrace\""),*SingleCookerSettings.MissionName);
+	}
 	
 	FString MissionCommand = FString::Printf(
-		TEXT("\"%s\" -run=HotSingleCooker -config=\"%s\" -DDCNOSAVEBOOT -NoAssetRegistryCache -stdout -CrashForUAT -unattended -NoLogTimes -UTF8Output -norenderthread -NoCompileGlobalShader %s %s %s"),
+		TEXT("\"%s\" -run=HotSingleCooker -config=\"%s\" -DDCNOSAVEBOOT -NoAssetRegistryCache -stdout -CrashForUAT -unattended -NoLogTimes -UTF8Output -norenderthread -NoCompileGlobalShader %s %s %s %s"),
 		*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,
 		*ProfilingCmd,
 		*ShaderPerformanceCmd,
+		*TraceFileCmd,
 		*GetSettingObject()->GetCombinedAdditionalCommandletArgs()
 		);
 	

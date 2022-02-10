@@ -94,6 +94,9 @@ public:
 	bool bProfilingMultiCooker = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
 	bool bProfilingPerSingleCooker = false;
+	// -tracefile="MyTrace.utrace"
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
+	bool bUseTraceFile = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
 	bool bDisplayMissionConfig = false;
 	

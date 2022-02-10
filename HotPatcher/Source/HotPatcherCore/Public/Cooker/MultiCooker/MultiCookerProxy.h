@@ -66,7 +66,7 @@ protected:
 protected:
     TMap<FString,FAssetDependenciesInfo>& GetAssetsDependenciesScanedCaches(){ return ScanedCaches; };
     TSharedPtr<FProcWorkerThread> CreateProcMissionThread(const FString& Bin, const FString& Command, const FString& MissionName);
-    TSharedPtr<FProcWorkerThread> CreateSingleCookWroker(const FSingleCookerSettings& SingleCookerSettings);
+    TSharedPtr<FProcWorkerThread> CreateSingleCookWorker(const FSingleCookerSettings& SingleCookerSettings);
     FMultiCookerAssets& GetMultiCookerAssets(){ return MultiCookerAssets; }
     FMultiCookerAssets& GetAdditionalAssets(){ return AdditionalAssets; }
     FHotPatcherVersion& GetCookerVersion(){ return CookVersion; }
