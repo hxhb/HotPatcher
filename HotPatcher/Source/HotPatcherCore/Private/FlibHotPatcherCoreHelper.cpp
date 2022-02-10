@@ -2055,6 +2055,10 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
     					{
     						PendingCachePlatformDataObjects.Add(ExportObj);
     					}
+    					if(ExportObj->IsCachedCookedPlatformDataLoaded(Platform))
+    					{
+    						ProcessedObjs.Add(ExportObj);
+    					}
     				}
     			}
     	
@@ -2113,6 +2117,7 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 					// check cache status
 					if (!Object->IsCachedCookedPlatformDataLoaded(TargetPlatform))
 					{
+						UE_LOG(LogHotPatcherCoreHelper,Display,TEXT("PreCache ExportObj %s for %s"),*Object->GetFullName(),*TargetPlatform->PlatformName());
 						bAllPlatformDataLoaded = false;
 						break;
 					}
