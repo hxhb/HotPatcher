@@ -404,7 +404,7 @@ bool PreLoadPak(const FString& InPakPath,const FString& AesKey)
 
 			FSHAHash Hash;
 			FMemory::Memcpy(Hash.Hash,
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 23
+#if ENGINE_MAJOR_VERSION > 4 || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 23)
 				Info.IndexHash.Hash,
 #else
 				Info.IndexHash,
