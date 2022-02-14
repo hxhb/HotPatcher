@@ -925,7 +925,12 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 			{
 				if (!Filter.Path.IsEmpty())
 				{
-					Result.AddUnique(Filter.Path);
+					FString FinalFilter = Filter.Path;
+					if(!Filter.Path.EndsWith(TEXT("/")))
+					{
+						FinalFilter = FString::Printf(TEXT("%s/"),*FinalFilter);
+					}
+					Result.AddUnique(FinalFilter);
 				}
 			}
 			return Result;
