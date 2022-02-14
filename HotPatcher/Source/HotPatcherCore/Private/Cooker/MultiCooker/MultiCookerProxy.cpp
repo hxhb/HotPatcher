@@ -677,7 +677,8 @@ TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateSingleCookWorker(const FS
 	FString TraceFileCmd;
 	if(GetSettingObject()->bUseTraceFile)
 	{
-		TraceFileCmd = FString::Printf(TEXT("-tracefile=\"%s.utrace\""),*SingleCookerSettings.MissionName);
+		FString TraceFileTo = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),FString::Printf(TEXT("\"%s.utrace\""),*SingleCookerSettings.MissionName));
+		TraceFileCmd = FString::Printf(TEXT("-tracefile=\"%s\""),*TraceFileTo);
 	}
 	
 	FString MissionCommand = FString::Printf(
