@@ -97,7 +97,7 @@ public class HotPatcherEditor : ModuleRules
 			"ENABLE_MULTI_COOKER=0",
 			"TOOL_NAME=\"HotPatcher\"",
 			"CURRENT_VERSION_ID=75",
-			"CURRENT_PATCH_ID=1",
+			"CURRENT_PATCH_ID=2",
 			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
 		});
 
