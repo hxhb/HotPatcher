@@ -20,8 +20,7 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 	{
 		for(auto& ParentClass:MultiCookerSettings.CookClasses)
 		{
-			Classes.Add(ParentClass);
-			Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,true,true));
+			Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,MultiCookerSettings.bContainChildClasses,true));
 		}
 	}
 
@@ -43,8 +42,8 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 	for(int32 index = 0;index < AllDetails.Num();)
 	{
 		bool bIsMatchedClass = IsMatchClass(AllDetails[index].AssetType);
-		if(MultiCookerSettings.bIgnoreCookClasses && bIsMatchedClass && !!Classes.Num() ||
-		 !MultiCookerSettings.bIgnoreCookClasses && !bIsMatchedClass && !!Classes.Num()
+		if(MultiCookerSettings.CookClassesMode == ECookClassesMode::SKIP_CLASSES && bIsMatchedClass && !!Classes.Num() ||
+		 (MultiCookerSettings.CookClassesMode == ECookClassesMode::COOK_CLASSES_ONLY) && !bIsMatchedClass && !!Classes.Num()
 		)
 		{
 			AllDetails.RemoveAt(index);

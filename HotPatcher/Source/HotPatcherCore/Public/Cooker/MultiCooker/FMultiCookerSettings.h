@@ -31,6 +31,12 @@ struct HOTPATCHERCORE_API FCookerShaderOptions
 	bool bMergeShaderLibrary = false;
 };
 
+UENUM()
+enum class ECookClassesMode
+{
+	COOK_CLASSES_ONLY,
+	SKIP_CLASSES
+};
 
 /** Singleton wrapper to allow for using the setting structur e in SSettingsView */
 USTRUCT(BlueprintType)
@@ -79,13 +85,13 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bSkipCook = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bSkipCook"))
 	TArray<UClass*> CookClasses;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bSkipCook"))
 	bool bContainChildClasses = true;
 	// is true, ignore classes for cook, if false, only cook clases
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
-	bool bIgnoreCookClasses = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bSkipCook"))
+	ECookClassesMode CookClassesMode = ECookClassesMode::SKIP_CLASSES;
 	
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bAsyncLoad = false;

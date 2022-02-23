@@ -1274,7 +1274,7 @@ TArray<UClass*> UFlibHotPatcherCoreHelper::GetDerivedClasses(UClass* BaseClass,b
 	{
 		Classes.AddUnique(classIns);
 	}
-	return AllDerivedClass;
+	return Classes;
 }
 
 void UFlibHotPatcherCoreHelper::DeleteDirectory(const FString& Dir)

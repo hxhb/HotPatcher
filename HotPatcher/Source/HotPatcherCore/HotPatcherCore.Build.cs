@@ -60,7 +60,6 @@ public class HotPatcherCore : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
 				"DesktopPlatform",
 				"InputCore",
 				"CoreUObject",
