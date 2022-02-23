@@ -37,7 +37,6 @@ struct FPackageTrackerBase : public FUObjectArray::FUObjectCreateListener, publi
 
 			if (Package->GetOuter() == nullptr && !Package->GetFName().IsNone())
 			{
-				
 				OnPackageCreated(Package);
 			}
 		}
@@ -64,6 +63,10 @@ struct FPackageTrackerBase : public FUObjectArray::FUObjectCreateListener, publi
 	}
 	virtual void OnPackageCreated(UPackage* Package) = 0;
 	virtual void OnPackageDeleted(UPackage* Package) = 0;
+	virtual const TSet<FName>& GetLoadedPackages()const{ return LoadedPackages; }
+	
+protected:
+	TSet<FName>		LoadedPackages;
 };
 
 struct FPackageTracker : public FPackageTrackerBase
@@ -76,6 +79,7 @@ struct FPackageTracker : public FPackageTrackerBase
 	virtual void OnPackageCreated(UPackage* Package) override
 	{
 		FName AssetPathName = FName(*Package->GetPathName());
+		LoadedPackages.Add(AssetPathName);
 		if(!ExisitAssets.Contains(AssetPathName))
 		{
 			UE_LOG(LogHotPatcher,Display,TEXT("[PackageTracker] Add %s"),*AssetPathName.ToString());
@@ -95,6 +99,6 @@ public:
 	// typedef TSet<UPackage*> PendingPackageSet;
 	const TSet<FName>& GetPendingPackageSet()const {return PackagesPendingSave; }
 protected:
-	TSet<FName>		PackagesPendingSave;
+	TSet<FName>	 PackagesPendingSave;
 	TSet<FName>& ExisitAssets;
 };

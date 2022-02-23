@@ -31,7 +31,6 @@ class FToolBarBuilder;
 class FMenuBuilder;
 extern FExportPatchSettings* GPatchSettings;
 extern FExportReleaseSettings* GReleaseSettings;
-extern bool GCookLog;
 
 struct FContentBrowserSelectedInfo
 {

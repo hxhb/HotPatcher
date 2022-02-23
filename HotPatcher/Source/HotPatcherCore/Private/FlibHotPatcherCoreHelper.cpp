@@ -2117,9 +2117,13 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 					// check cache status
 					if (!Object->IsCachedCookedPlatformDataLoaded(TargetPlatform))
 					{
-						UE_LOG(LogHotPatcherCoreHelper,Display,TEXT("PreCache ExportObj %s for %s"),*Object->GetFullName(),*TargetPlatform->PlatformName());
 						bAllPlatformDataLoaded = false;
 						break;
+					}else{
+						if(GCookLog)
+						{
+							UE_LOG(LogHotPatcherCoreHelper,Display,TEXT("PreCached ExportObj %s for %s"),*Object->GetFullName(),*TargetPlatform->PlatformName());
+						}
 					}
 				}
 				// add to cched set

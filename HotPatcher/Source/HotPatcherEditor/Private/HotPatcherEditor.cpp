@@ -41,7 +41,6 @@
 
 FExportPatchSettings* GPatchSettings = nullptr;
 FExportReleaseSettings* GReleaseSettings = nullptr;
-bool GCookLog = (bool)ENABLE_COOK_LOG;
 
 static const FName HotPatcherTabName("HotPatcher");
 
@@ -77,9 +76,6 @@ void FHotPatcherEditorModule::StartupModule()
 	{
 		UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,File);
 	});
-	
-	FParse::Bool(FCommandLine::Get(),TEXT("-cooklog"),GCookLog);
-	UE_LOG(LogHotPatcher,Log,TEXT("GCookLog is %s!!!"),GCookLog ? TEXT("TRUE"): TEXT("FALSE"));
 	
 	if(::IsRunningCommandlet())
 		return;

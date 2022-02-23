@@ -5,7 +5,7 @@
 
 FMultiCookerSettings::FMultiCookerSettings()
 {
-	bImportProjectSettings = false;
+	bImportProjectSettings = true;
 	ShaderOptions.bSharedShaderLibrary = true;
 	ShaderOptions.bNativeShader = true;
 	ShaderOptions.bMergeShaderLibrary = true;
@@ -13,7 +13,7 @@ FMultiCookerSettings::FMultiCookerSettings()
 	Scheduler = UMultiCookScheduler::StaticClass();
 	bStorageConfig = true;
 	SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/MultiCooker");
-	bStandaloneMode = false;
+	bStandaloneMode = true;
 }
 
 FMultiCookerSettings* FMultiCookerSettings::Get()

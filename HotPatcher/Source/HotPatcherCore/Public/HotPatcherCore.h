@@ -13,6 +13,7 @@
 #include "CoreMinimal.h"
 
 extern bool GCookLog;
+
 HOTPATCHERCORE_API void ReceiveOutputMsg(class FProcWorkerThread* Worker,const FString& InMsg);
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FNotificationEvent,FText,const FString&)

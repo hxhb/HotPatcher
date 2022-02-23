@@ -2,9 +2,11 @@
 
 
 #include "Cooker/MultiCooker/MultiCookScheduler.h"
+
+#include "FlibHotPatcherCoreHelper.h"
 #include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
 
-TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementation(FMultiCookerSettings MultiCookerSettings,const TArray<FAssetDetail>& AllDetails)
+TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementation(FMultiCookerSettings& MultiCookerSettings, TArray<FAssetDetail>& AllDetails)
 {
 	SCOPED_NAMED_EVENT_TEXT("UMultiCookScheduler::MultiCookScheduler",FColor::Red);
 	int32 ProcessNumber = MultiCookerSettings.ProcessNumber;
@@ -13,11 +15,47 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 
 	TMap<FName,TArray<FAssetDetail>> TypeAssetDetails;
 	TSet<FName> AllPackagePaths;
-	for(const auto& AssetDetail:AllDetails)
+	
+	TSet<UClass*> Classes;
 	{
-		TArray<FAssetDetail>& Assets = TypeAssetDetails.FindOrAdd(AssetDetail.AssetType);
-		Assets.AddUnique(AssetDetail);
-		AllPackagePaths.Add(FName(*UFlibAssetManageHelper::PackagePathToLongPackageName(AssetDetail.PackagePath.ToString())));
+		for(auto& ParentClass:MultiCookerSettings.CookClasses)
+		{
+			Classes.Add(ParentClass);
+			Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,true,true));
+		}
+	}
+
+	auto IsMatchClass = [&](FName ClassName)->bool
+	{
+		bool bIsMatchedClass = false;
+		for(const auto ExcludeClass:Classes)
+		{
+			if(ClassName.IsEqual(*ExcludeClass->GetName()))
+			{
+				bIsMatchedClass = true;
+				break;
+			}
+		}
+		return bIsMatchedClass;
+	};
+	
+	// for(const auto& AssetDetail:AllDetails)
+	for(int32 index = 0;index < AllDetails.Num();)
+	{
+		bool bIsMatchedClass = IsMatchClass(AllDetails[index].AssetType);
+		if(MultiCookerSettings.bIgnoreCookClasses && bIsMatchedClass && !!Classes.Num() ||
+		 !MultiCookerSettings.bIgnoreCookClasses && !bIsMatchedClass && !!Classes.Num()
+		)
+		{
+			AllDetails.RemoveAt(index);
+			// UE_LOG(LogHotPatcher,Display,TEXT("Ignore %s (match ignore type %s)"),*AssetDetail.PackagePath.ToString(),*AssetDetail.AssetType.ToString());
+			continue;
+		}
+		
+		TArray<FAssetDetail>& Assets = TypeAssetDetails.FindOrAdd(AllDetails[index].AssetType);
+		Assets.AddUnique(AllDetails[index]);
+		AllPackagePaths.Add(FName(*UFlibAssetManageHelper::PackagePathToLongPackageName(AllDetails[index].PackagePath.ToString())));
+		++index;
 	}
 	
 	for(int32 index = 0;index<ProcessNumber;++index)

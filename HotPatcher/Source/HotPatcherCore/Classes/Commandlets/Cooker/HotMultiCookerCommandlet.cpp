@@ -64,8 +64,12 @@ int32 UHotMultiCookerCommandlet::Main(const FString& Params)
 
 	if(IsRunningCommandlet())
 	{
-		SCOPED_NAMED_EVENT_TEXT("wait Cook mission is completed",FColor::Red);
-		MultiCookerProxy->WaitMissionFinished();
+		// SCOPED_NAMED_EVENT_TEXT("wait Cook mission is completed",FColor::Red);
+		// MultiCookerProxy->WaitMissionFinished();
+		CommandletHelper::MainTick([&]()->bool
+		{
+			return !MultiCookerProxy->IsRunning();
+		});
 	}
 
 	MultiCookerProxy->Shutdown();

@@ -7,7 +7,7 @@
 #include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
 #include "Materials/MaterialInstance.h"
 
-TArray<FSingleCookerSettings> UMultiCookScheduler_MatCulster::MultiCookScheduler_Implementation(FMultiCookerSettings MultiCookerSettings,const TArray<FAssetDetail>& AllDetails)
+TArray<FSingleCookerSettings> UMultiCookScheduler_MatCulster::MultiCookScheduler_Implementation(FMultiCookerSettings& MultiCookerSettings, TArray<FAssetDetail>& AllDetails)
 {
 	SCOPED_NAMED_EVENT_TEXT("UMultiCookScheduler_MatCulster::MultiCookScheduler",FColor::Red);
 	int32 ProcessNumber = MultiCookerSettings.ProcessNumber;

@@ -16,8 +16,8 @@ class HOTPATCHERCORE_API UMultiCookScheduler : public UObject
 	GENERATED_BODY()
 public:
 	UFUNCTION(BlueprintNativeEvent,BlueprintCallable)
-	TArray<FSingleCookerSettings> MultiCookScheduler(FMultiCookerSettings MultiCookerSettings,const TArray<FAssetDetail>& AllDetails);
-	virtual TArray<FSingleCookerSettings> MultiCookScheduler_Implementation(FMultiCookerSettings MultiCookerSettings,const TArray<FAssetDetail>& AllDetails);
+	TArray<FSingleCookerSettings> MultiCookScheduler(FMultiCookerSettings& MultiCookerSettings,TArray<FAssetDetail>& AllDetails);
+	virtual TArray<FSingleCookerSettings> MultiCookScheduler_Implementation(FMultiCookerSettings& MultiCookerSettings,TArray<FAssetDetail>& AllDetails);
 };
 
 

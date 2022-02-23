@@ -210,12 +210,13 @@ FReply SHotPatcherMultiCookerPage::RunCook()
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher/MultiCooker/"),TEXT("MultiCookerConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString ProfilingCmd = GetConfigSettings()->bProfilingMultiCooker ? UFlibMultiCookerHelper::GetProfilingCmd() : TEXT("");
-		
+		FString OutLogPath = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher/MultiCooker/"),FApp::GetProjectName(),TEXT("Logs"),FString::Printf(TEXT("MultiCooker_%s.log"),*FDateTime::Now().ToString())));
 		FString MissionCommand = FString::Printf(
-			TEXT("\"%s\" -run=HotMultiCooker -config=\"%s\" -norenderthread %s %s"),
+			TEXT("\"%s\" -run=HotMultiCooker -config=\"%s\" -norenderthread %s %s -abslog=%s"),
 			*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,
 			*ProfilingCmd,
-			*GetConfigSettings()->GetCombinedAdditionalCommandletArgs()
+			*GetConfigSettings()->GetCombinedAdditionalCommandletArgs(),
+			*OutLogPath
 			);
 		
 		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);

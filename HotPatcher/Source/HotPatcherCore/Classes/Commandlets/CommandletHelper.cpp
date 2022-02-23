@@ -56,6 +56,24 @@ TArray<FDirectoryPath> CommandletHelper::ParserPatchFilters(const FString& Comma
 	return Result;
 }
 
+static bool IsRequestingExit()
+{
+#if ENGINE_MAJOR_VERSION > 4 || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 23)
+	return IsEngineExitRequested();
+#else
+	return GIsRequestingExit;
+#endif
+}
+
+static void RequestEngineExit()
+{
+#if ENGINE_MAJOR_VERSION > 4 || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 23)
+	RequestEngineExit(TEXT("GeneralCommandlet ComWrapperShutdownEvent"));
+#else
+	GIsRequestingExit  = true;
+#endif
+}
+
 void CommandletHelper::MainTick(TFunction<bool()> IsRequestExit)
 {
 	GIsRunning = true;
@@ -70,7 +88,7 @@ void CommandletHelper::MainTick(TFunction<bool()> IsRequestExit)
 	// main loop
 	FDateTime LastConnectionTime = FDateTime::UtcNow();
 
-	while (GIsRunning && !GIsRequestingExit && !IsRequestExit())
+	while (GIsRunning && !IsRequestingExit() && !IsRequestExit())
 	{
 		GEngine->UpdateTimeAndHandleMaxTickRate();
 		GEngine->Tick(FApp::GetDeltaTime(), false);
@@ -92,8 +110,7 @@ void CommandletHelper::MainTick(TFunction<bool()> IsRequestExit)
 #if PLATFORM_WINDOWS
 		if (ComWrapperShutdownEvent->Wait(0))
 		{
-			GIsRequestingExit  = true;
-			// RequestEngineExit(TEXT("GeneralCommandlet ComWrapperShutdownEvent"));
+			RequestEngineExit();
 		}
 #endif
 	}

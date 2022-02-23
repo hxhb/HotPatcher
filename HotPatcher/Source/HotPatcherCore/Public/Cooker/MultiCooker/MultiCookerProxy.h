@@ -41,7 +41,7 @@ public:
 
     FORCEINLINE bool IsFinished()const{return bMissionFinished;}
 public:
-    void WaitMissionFinished();
+    // void WaitMissionFinished();
     void PreMission();
     void PostMission();
     
@@ -55,7 +55,7 @@ protected:
 
 protected:
     FExportPatchSettings MakePatchSettings();
-    TArray<FSingleCookerSettings> MakeSingleCookerSettings(const TArray<FAssetDetail>& AllDetails);
+    TArray<FSingleCookerSettings> MakeSingleCookerSettings(TArray<FAssetDetail>& AllDetails);
 protected:
     void UpdateMultiCookerStatus();
     void UpdateSingleCookerStatus(FProcWorkerThread* ProcWorker, bool bSuccessed, const FAssetsCollection& FailedCollection);

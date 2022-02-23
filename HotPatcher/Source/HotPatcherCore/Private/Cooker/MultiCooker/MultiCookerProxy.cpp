@@ -381,21 +381,21 @@ TArray<FAssetDetail> UMultiCookerProxy::GetPackageTrackerAssetsByCookers()const
 	}
 	return AdditionalAssetDetails;
 }
+// void UMultiCookerProxy::WaitMissionFinished()
+// {
+// 	SCOPED_NAMED_EVENT_TEXT("UMultiCookerProxy::WaitMissionFinished",FColor::Red);
+// 	TSharedPtr<FThreadWorker> WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("SingleCooker_WaitCookComplete"),[this]()
+// 		{
+// 			while(IsRunning())
+// 			{
+// 				FPlatformProcess::Sleep(1.f);
+// 			}
+// 		}));
+// 	WaitThreadWorker->Execute();
+// 	WaitThreadWorker->Join();
+// 	OnCookMissionsFinished(!HasError());
+// }
 
-void UMultiCookerProxy::WaitMissionFinished()
-{
-	SCOPED_NAMED_EVENT_TEXT("UMultiCookerProxy::WaitMissionFinished",FColor::Red);
-	TSharedPtr<FThreadWorker> WaitThreadWorker = MakeShareable(new FThreadWorker(TEXT("SingleCooker_WaitCookComplete"),[this]()
-		{
-			while(IsRunning())
-			{
-				FPlatformProcess::Sleep(1.f);
-			}
-		}));
-	WaitThreadWorker->Execute();
-	WaitThreadWorker->Join();
-	OnCookMissionsFinished(!HasError());
-}
 
 void UMultiCookerProxy::PreMission()
 {
@@ -548,7 +548,7 @@ void UMultiCookerProxy::UpdateSingleCookerStatus(FProcWorkerThread* ProcWorker, 
 }
 
 
-TArray<FSingleCookerSettings> UMultiCookerProxy::MakeSingleCookerSettings(const TArray<FAssetDetail>& AllDetails)
+TArray<FSingleCookerSettings> UMultiCookerProxy::MakeSingleCookerSettings(TArray<FAssetDetail>& AllDetails)
 {
 	SCOPED_NAMED_EVENT_TEXT("UMultiCookerProxy::MakeSingleCookerSettings",FColor::Red);
 	UMultiCookScheduler* DefaultScheduler = Cast<UMultiCookScheduler>(GetSettingObject()->Scheduler->GetDefaultObject());
@@ -677,17 +677,19 @@ TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateSingleCookWorker(const FS
 	FString TraceFileCmd;
 	if(GetSettingObject()->bUseTraceFile)
 	{
-		FString TraceFileTo = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),FString::Printf(TEXT("%s.utrace"),*SingleCookerSettings.MissionName));
+		FString TraceFileTo = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),FApp::GetProjectName(),TEXT("Profiling"),FString::Printf(TEXT("%s.utrace"),*SingleCookerSettings.MissionName));
 		TraceFileCmd = FString::Printf(TEXT("-tracefile=\"%s\""),*TraceFileTo);
 	}
+	FString OutLogPath = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),FApp::GetProjectName(),TEXT("Logs"),FString::Printf(TEXT("%s_%s.log"),*SingleCookerSettings.MissionName,*FDateTime::Now().ToString()));
 	
 	FString MissionCommand = FString::Printf(
-		TEXT("\"%s\" -run=HotSingleCooker -config=\"%s\" -DDCNOSAVEBOOT -NoAssetRegistryCache -stdout -CrashForUAT -unattended -NoLogTimes -UTF8Output -norenderthread -NoCompileGlobalShader %s %s %s %s"),
+		TEXT("\"%s\" -run=HotSingleCooker -config=\"%s\" -DDCNOSAVEBOOT -NoAssetRegistryCache -stdout -CrashForUAT -unattended -NoLogTimes -UTF8Output -norenderthread -NoCompileGlobalShader %s %s %s %s -abslog=%s"),
 		*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,
 		*ProfilingCmd,
 		*ShaderPerformanceCmd,
 		*TraceFileCmd,
-		*GetSettingObject()->GetCombinedAdditionalCommandletArgs()
+		*GetSettingObject()->GetCombinedAdditionalCommandletArgs(),
+		*OutLogPath
 		);
 	
 	UE_LOG(LogHotPatcher,Display,TEXT("HotPatcher Cook Mission: %s %s"),*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);

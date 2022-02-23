@@ -47,7 +47,7 @@ public:
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filters")
-	bool bImportProjectSettings;
+	bool bImportProjectSettings = true;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	TSubclassOf<class UMultiCookScheduler> Scheduler;
@@ -76,13 +76,23 @@ public:
 	bool bIterateCook = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bIterateCook"))
 	FFilePath RecentCookVersion;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bSkipCook = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	TArray<UClass*> CookClasses;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bContainChildClasses = true;
+	// is true, ignore classes for cook, if false, only cook clases
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bIgnoreCookClasses = false;
 	
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bAsyncLoad = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bPreGeneratePlatformData = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
-	bool bWaitEachAssetCompleted = true;
+	bool bWaitEachAssetCompleted = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData"))
 	bool bConcurrentSave = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker|Performance")
@@ -91,17 +101,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker|Performance")
 	bool bRealTimeSCWPriority = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
-	bool bProfilingMultiCooker = false;
+	bool bProfilingMultiCooker = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
-	bool bProfilingPerSingleCooker = false;
+	bool bProfilingPerSingleCooker = true;
 	// -tracefile="MyTrace.utrace"
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
 	bool bUseTraceFile = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Profiling")
 	bool bDisplayMissionConfig = false;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
-	bool bSkipCook = false;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 	bool bStorageCookVersion = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bStorageCookVersion"))

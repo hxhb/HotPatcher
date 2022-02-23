@@ -60,7 +60,8 @@ FHotPatcherCoreModule& FHotPatcherCoreModule::Get()
 
 void FHotPatcherCoreModule::StartupModule()
 {
-
+	FParse::Bool(FCommandLine::Get(),TEXT("-cooklog"),GCookLog);
+	UE_LOG(LogHotPatcher,Log,TEXT("GCookLog is %s!!!"),GCookLog ? TEXT("TRUE"): TEXT("FALSE"));
 }
 
 

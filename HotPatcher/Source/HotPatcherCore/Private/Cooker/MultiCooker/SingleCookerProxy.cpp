@@ -1,5 +1,6 @@
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "FlibHotPatcherCoreHelper.h"
+#include "HotPatcherCore.h"
 #include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
 #include "ShaderCompiler.h"
 #include "Async/ParallelFor.h"
@@ -59,15 +60,20 @@ void USingleCookerProxy::Shutdown()
 	
 	if(PackageTracker)
 	{
-		FPackagePathSet AdditionalPackageSet;
-		AdditionalPackageSet.PackagePaths.Append(PackageTracker->GetPendingPackageSet());
-		if(AdditionalPackageSet.PackagePaths.Num())
+		auto SerializePackageSetToString = [](const TSet<FName>& Packages)->FString
 		{
 			FString OutString;
-			THotPatcherTemplateHelper::TSerializeStructAsJsonString(AdditionalPackageSet,OutString);
-
-			FFileHelper::SaveStringToFile(OutString,*FPaths::Combine(GetSettingObject()->StorageMetadataDir,TEXT("AdditionalPackageSet.json")));
-		}
+			FPackagePathSet AdditionalPackageSet;
+			AdditionalPackageSet.PackagePaths.Append(Packages);
+			if(AdditionalPackageSet.PackagePaths.Num())
+			{
+				THotPatcherTemplateHelper::TSerializeStructAsJsonString(AdditionalPackageSet,OutString);
+			}
+			return OutString;
+		};
+		
+		FFileHelper::SaveStringToFile(SerializePackageSetToString(PackageTracker->GetPendingPackageSet()),*FPaths::Combine(GetSettingObject()->StorageMetadataDir,TEXT("AdditionalPackageSet.json")));
+		FFileHelper::SaveStringToFile(SerializePackageSetToString(PackageTracker->GetLoadedPackages()),*FPaths::Combine(GetSettingObject()->StorageMetadataDir,TEXT("AllLoadedPackageSet.json")));
 	}
 	BulkDataManifest();
 	IoStoreManifest();
@@ -340,7 +346,10 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 			for(int32 Index = PreCachePackages.Num() - 1 ;Index >= 0;--Index)
 			{
 				UPackage* CurrentPackage = PreCachePackages[Index];
-				UE_LOG(LogHotPatcher,Display,TEXT("PreCache %s, pending %d total %d"),*CurrentPackage->GetPathName(),PreCachePackages.Num(),TotalPackagesNum);
+				if(GCookLog)
+				{
+					UE_LOG(LogHotPatcher,Display,TEXT("PreCache %s, pending %d total %d"),*CurrentPackage->GetPathName(),PreCachePackages.Num(),TotalPackagesNum);
+				}
 				
 				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
 					TArray<UPackage*>{CurrentPackage},
@@ -352,7 +361,7 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 				PreCachePackages.RemoveAtSwap(Index,1,false);
 			}
 			UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(ProcessedObjects,PendingCachePlatformDataObjects,TargetPlatforms);
-			GEngine->ForceGarbageCollection();
+			// GEngine->ForceGarbageCollection();
 		};
 		
 		for(auto Class:GetPreCacheClasses())

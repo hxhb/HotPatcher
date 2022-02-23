@@ -111,7 +111,7 @@ bool UFlibAssetManageHelper::GetAssetPackageGUID(const FString& InPackagePath, F
 	// 	bool bCovStatus = FPackageName::TryConvertLongPackageNameToFilename(LongPackageName,FileName,Extersion);
 	// }
 	
-	FileName = UFlibAssetManageHelper::ConvVirtualToAbsPath(InPackagePath);
+	FileName = UFlibAssetManageHelper::PackagePathToFilename(InPackagePath);
 
 	if(!FileName.IsEmpty() && FPaths::FileExists(FileName))
 	{

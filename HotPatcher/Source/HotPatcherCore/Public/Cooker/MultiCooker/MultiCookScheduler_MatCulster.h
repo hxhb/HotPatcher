@@ -15,7 +15,7 @@ class HOTPATCHERCORE_API UMultiCookScheduler_MatCulster : public UMultiCookSched
 {
 	GENERATED_BODY()
 public:
-	virtual TArray<FSingleCookerSettings> MultiCookScheduler_Implementation(FMultiCookerSettings MultiCookerSettings,const TArray<FAssetDetail>& AllDetails)override;
+	virtual TArray<FSingleCookerSettings> MultiCookScheduler_Implementation(FMultiCookerSettings& MultiCookerSettings, TArray<FAssetDetail>& AllDetails)override;
 };
 
 
