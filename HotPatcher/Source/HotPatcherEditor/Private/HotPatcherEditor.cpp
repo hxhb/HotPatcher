@@ -5,9 +5,13 @@
 #include "HotPatcherCommands.h"
 #include "SHotPatcher.h"
 #include "HotPatcherSettings.h"
+#include "Templates/HotPatcherTemplateHelper.hpp"
+#include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
+#include "Cooker/MultiCooker/FMultiCookerSettings.h"
+#include "Cooker/MultiCooker/SingleCookerProxy.h"
+#include "CreatePatch/PatcherProxy.h"
 
 // ENGINE HEADER
-
 #include "AssetToolsModule.h"
 #include "ContentBrowserModule.h"
 #include "IContentBrowserSingleton.h"
@@ -23,10 +27,6 @@
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "PakFileUtilities.h"
-#include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
-#include "Cooker/MultiCooker/FMultiCookerSettings.h"
-#include "Cooker/MultiCooker/SingleCookerProxy.h"
-#include "CreatePatch/PatcherProxy.h"
 
 #if ENGINE_MAJOR_VERSION < 5
 #include "Widgets/Docking/SDockableTab.h"
@@ -655,14 +655,13 @@ FExportPatchSettings FHotPatcherEditorModule::MakeTempPatchSettings(
 	return TempSettings;
 }
 
-
 TArray<ETargetPlatform> FHotPatcherEditorModule::GetAllCookPlatforms() const
 {
 	TArray<ETargetPlatform> TargetPlatforms;//{ETargetPlatform::Android_ASTC,ETargetPlatform::IOS,ETargetPlatform::WindowsNoEditor};
 	#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 21
 	UEnum* FoundEnum = StaticEnum<ETargetPlatform>();
 #else
-	FString EnumTypeName = ANSI_TO_TCHAR(UFlibPatchParserHelper::GetCPPTypeName<ETargetPlatform>().c_str());
+	FString EnumTypeName = ANSI_TO_TCHAR(THotPatcherTemplateHelper::GetCPPTypeName<ETargetPlatform>().c_str());
 	UEnum* FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true); 
 #endif
 	if (FoundEnum)

@@ -18,7 +18,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "Resources/Version.h"
 #include "HotPatcherLog.h"
-#include "HotPatcherTemplateHelper.hpp"
+#include "Templates/HotPatcherTemplateHelper.hpp"
 #include "UObject/MetaData.h"
 
 // PRAGMA_DISABLE_DEPRECATION_WARNINGS

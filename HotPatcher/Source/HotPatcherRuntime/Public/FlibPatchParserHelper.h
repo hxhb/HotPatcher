@@ -15,7 +15,7 @@
 #include "FHotPatcherAssetDependency.h"
 #include "FCookerConfig.h"
 #include "FPlatformExternFiles.h"
-#include "HotPatcherTemplateHelper.hpp"
+#include "Templates/HotPatcherTemplateHelper.hpp"
 
 // engine header
 #include "CoreMinimal.h"

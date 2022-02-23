@@ -13,7 +13,8 @@ public class BinariesPatchFeature : ModuleRules
 		PublicIncludePaths.AddRange(
 			new string[] {
 				Path.Combine(EngineDirectory,"Source/Runtime/Launch"),
-				Path.Combine(ModuleDirectory,"Public")
+				Path.Combine(ModuleDirectory,"Public"),
+				Path.Combine(ModuleDirectory,"../HotPatcherRuntime/Public/Templates")
 				// ... add public include paths required here ...
 			}
 			);

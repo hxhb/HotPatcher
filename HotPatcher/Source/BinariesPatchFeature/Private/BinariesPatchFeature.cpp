@@ -1,6 +1,7 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
 #include "BinariesPatchFeature.h"
+#include "HotPatcherTemplateHelper.hpp"
 
 #include "Resources/Version.h"
 #include "Features/IModularFeatures.h"
@@ -14,7 +15,7 @@ template<typename ENUM_TYPE>
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 21
 	UEnum* FoundEnum = StaticEnum<ENUM_TYPE>();
 #else
-	FString EnumTypeName = ANSI_TO_TCHAR(UFlibPatchParserHelper::GetCPPTypeName<ENUM_TYPE>().c_str());
+	FString EnumTypeName = ANSI_TO_TCHAR(THotPatcherTemplateHelper::GetCPPTypeName<ENUM_TYPE>().c_str());
 	UEnum* FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true); 
 #endif
 	return FoundEnum;

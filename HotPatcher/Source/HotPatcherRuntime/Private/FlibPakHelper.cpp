@@ -291,6 +291,7 @@ bool UFlibPakHelper::LoadAssetRegistryToState(const TCHAR* Path, FAssetRegistryS
 }
 #endif
 
+
 bool UFlibPakHelper::LoadAssetRegistry(const FString& LibraryName, const FString& LibraryDir)
 {
 	bool bStatus = false;
@@ -302,7 +303,11 @@ bool UFlibPakHelper::LoadAssetRegistry(const FString& LibraryName, const FString
 		if(LoadAssetRegistryToState(*AssetRegistryPath,State))
 		{
 			FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+#if ENGINE_MAJOR_VERSION > 4 || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 21)
 			AssetRegistryModule.Get().AppendState(State);
+#else
+			// todo support append state in 4.21
+#endif
 			bStatus = true;
 		}
 	}

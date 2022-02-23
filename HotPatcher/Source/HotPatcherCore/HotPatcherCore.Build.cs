@@ -70,6 +70,15 @@ public class HotPatcherCore : ModuleRules
 			}
 		);
 		
+		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 21)
+		{
+			PrivateDependencyModuleNames.Add("RenderCore");
+		}
+		else
+		{
+			PrivateDependencyModuleNames.Add("ShaderCore");
+		}
+
 		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 23)
 		{
 			PublicDependencyModuleNames.AddRange(new string[]{
