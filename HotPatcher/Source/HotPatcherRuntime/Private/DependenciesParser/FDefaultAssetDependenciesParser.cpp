@@ -169,7 +169,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 		if(CurrentAssetData.GetClass() == UWorld::StaticClass())
 		{
 			UWorld* World = UWorld::FindWorldInPackage(CurrentAssetData.GetAsset()->GetPackage());
-			if (!World)
+			if (World)
 			{
 				if(World->WorldComposition)
 				{
