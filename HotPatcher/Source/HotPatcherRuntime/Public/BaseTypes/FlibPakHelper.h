@@ -18,6 +18,44 @@
 	#define GetFilenames GetPrunedFilenames
 #endif
 
+
+USTRUCT(BlueprintType)
+struct FDumpPakEntry
+{
+	GENERATED_USTRUCT_BODY()
+	
+	UPROPERTY()
+	int64 Offset;
+	UPROPERTY()
+	int64 PakEntrySize;
+	UPROPERTY()
+	int64 ContentSize;
+};
+
+USTRUCT(BlueprintType)
+struct FDumpPakAsset
+{
+	GENERATED_USTRUCT_BODY()
+	
+	UPROPERTY()
+	TMap<FString,FDumpPakEntry> AssetEntrys;
+};
+
+
+USTRUCT(BlueprintType)
+struct FPakDumper
+{
+	GENERATED_USTRUCT_BODY()
+	UPROPERTY()
+	FString PakName;
+	UPROPERTY()
+	FString MountPoint;
+
+	UPROPERTY()
+	TMap<FString,FDumpPakAsset> PakEntrys;
+};
+
+
 UCLASS()
 class HOTPATCHERRUNTIME_API UFlibPakHelper : public UBlueprintFunctionLibrary
 {
@@ -63,6 +101,11 @@ public:
 		static bool OpenPSO(const FString& Name);
 
 	static TArray<FString> GetPakFileList(const FString& InPak, const FString& AESKey);
+	static TMap<FString,FPakEntry> GetPakEntrys(TRefCountPtr<FPakFile> InPakFile, const FString& AESKey);
+
+	UFUNCTION(BlueprintCallable)
+	static void DumpPakEntrys(const FString& InPak, const FString& AESKey,const FString& SaveTo);
+	
 	static FString GetPakFileMountPoint(const FString& InPak, const FString& AESKey);
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26

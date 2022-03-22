@@ -20,6 +20,7 @@
 #include "ShaderPipelineCache.h"
 #include "RHI.h"
 #include "AssetRegistryState.h"
+#include "HotPatcherTemplateHelper.hpp"
 #include "Misc/Base64.h"
 #include "Misc/CoreDelegates.h"
 #include "Serialization/LargeMemoryReader.h"
@@ -455,20 +456,63 @@ bool PreLoadPak(const FString& InPakPath,const FString& AesKey)
 TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FString& AESKey)
 {
 	TArray<FString> Records;
-	
-	auto PakFile = UFlibPakHelper::GetPakFileIns(InPak,AESKey);
-	if(PakFile.IsValid())
-	{
-		FString MountPoint = PakFile->GetMountPoint();
-		for (FPakFile::FFileIterator It(*PakFile, true); It; ++It)
-		{
-			const FString& Filename = It.Filename();
-			Records.Emplace(MountPoint + Filename);
-		}
-	}
-
+	UFlibPakHelper::GetPakEntrys(UFlibPakHelper::GetPakFileIns(InPak,AESKey),AESKey).GetKeys(Records);
 	return Records;
 }
+
+TMap<FString,FPakEntry> UFlibPakHelper::GetPakEntrys(TRefCountPtr<FPakFile> InPakFile, const FString& AESKey)
+{
+	TMap<FString,FPakEntry> Records;
+	
+	if(InPakFile.IsValid())
+	{
+		FString MountPoint = InPakFile->GetMountPoint();
+		for (FPakFile::FFileIterator It(*InPakFile, true); It; ++It)
+		{
+			const FString& Filename = It.Filename();
+			Records.Emplace(MountPoint + Filename,It.Info());
+		}
+		
+	}
+	return Records;
+}
+
+void UFlibPakHelper::DumpPakEntrys(const FString& InPak, const FString& AESKey, const FString& SaveTo)
+{
+	auto PakFile = UFlibPakHelper::GetPakFileIns(InPak,AESKey);
+	
+	TMap<FString,FPakEntry> Records = UFlibPakHelper::GetPakEntrys(PakFile,AESKey);
+	FString FileName = FPaths::GetBaseFilename(InPak,true);
+	FPakDumper Results;
+	Results.PakName = FileName;
+	Results.MountPoint = PakFile->GetMountPoint();
+	
+	for(const auto& Pair:Records)
+	{
+		FDumpPakEntry Entry;
+		FString PakFilename = Pair.Key;
+		FString PackageName;
+		FString RecordName;
+		if(FPackageName::TryConvertFilenameToLongPackageName(PakFilename,PackageName))
+		{
+			RecordName = PackageName;
+		}
+		else
+		{
+			RecordName = PakFilename;
+			
+		}
+		PakFilename = FPaths::GetBaseFilename(PakFilename,true) + FPaths::GetExtension(PakFilename,true);
+		Entry.ContentSize = Pair.Value.Size;
+		Entry.Offset = Pair.Value.Offset;
+		Entry.PakEntrySize = Pair.Value.GetSerializedSize(FPakInfo::PakFile_Version_Latest);
+		Results.PakEntrys.FindOrAdd(RecordName).AssetEntrys.Add(PakFilename,Entry);
+	}
+	FString OutString;
+	THotPatcherTemplateHelper::TSerializeStructAsJsonString(Results,OutString);
+	FFileHelper::SaveStringToFile(OutString,*SaveTo);
+}
+
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 TRefCountPtr<FPakFile> UFlibPakHelper::GetPakFileIns(const FString& InPak, const FString& AESKey)
 #else

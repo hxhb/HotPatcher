@@ -6,10 +6,10 @@
 FMultiCookerSettings::FMultiCookerSettings()
 {
 	bImportProjectSettings = true;
-	ShaderOptions.bSharedShaderLibrary = true;
-	ShaderOptions.bNativeShader = true;
-	ShaderOptions.bMergeShaderLibrary = true;
-	bSerializeAssetRegistry = true;
+	GetCookMetadata().ShaderOptions.bSharedShaderLibrary = true;
+	GetCookMetadata().ShaderOptions.bNativeShader = true;
+	GetCookMetadata().ShaderOptions.bMergeShaderLibrary = true;
+	GetCookMetadata().bSerializeAssetRegistry = true;
 	Scheduler = UMultiCookScheduler::StaticClass();
 	bStorageConfig = true;
 	SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/MultiCooker");

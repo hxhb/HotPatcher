@@ -209,7 +209,7 @@ FReply SHotPatcherMultiCookerPage::RunCook()
 		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher/MultiCooker/"),TEXT("MultiCookerConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
-		FString ProfilingCmd = GetConfigSettings()->bProfilingMultiCooker ? UFlibMultiCookerHelper::GetProfilingCmd() : TEXT("");
+		FString ProfilingCmd = GetConfigSettings()->GetCookProfiling().bProfilingMultiCooker ? UFlibMultiCookerHelper::GetProfilingCmd() : TEXT("");
 		FString OutLogPath = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher/MultiCooker/"),FApp::GetProjectName(),TEXT("Logs"),FString::Printf(TEXT("MultiCooker_%s.log"),*FDateTime::Now().ToString())));
 		FString MissionCommand = FString::Printf(
 			TEXT("\"%s\" -run=HotMultiCooker -config=\"%s\" -norenderthread %s %s -abslog=%s"),

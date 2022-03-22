@@ -24,7 +24,7 @@ void UMultiCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 	}
 
 #if WITH_PACKAGE_CONTEXT
-	PlatformSavePackageContexts = UFlibHotPatcherCoreHelper::CreatePlatformsPackageContexts(GetSettingObject()->CookTargetPlatforms,GetSettingObject()->IoStoreSettings.bIoStore);
+	PlatformSavePackageContexts = UFlibHotPatcherCoreHelper::CreatePlatformsPackageContexts(GetSettingObject()->CookTargetPlatforms,GetSettingObject()->GetCookMetadata().IoStoreSettings.bIoStore);
 #endif
 	
 }
@@ -152,7 +152,7 @@ void UMultiCookerProxy::OnCookMissionsFinished(bool bSuccessed)
 {
 	FScopeLock Lock(&SynchronizationObject);
 	SCOPED_NAMED_EVENT_TEXT("UMultiCookerProxy::OnCookMissionsFinished",FColor::Red);
-	if(bSuccessed && GetSettingObject()->ShaderOptions.bMergeShaderLibrary)
+	if(bSuccessed && GetSettingObject()->GetCookMetadata().ShaderOptions.bMergeShaderLibrary)
 	{
 		MergeShader();
 	}
@@ -281,7 +281,7 @@ void UMultiCookerProxy::CookFailedAndAdditionalAssets()
 	EmptySetting.ShaderOptions.bSharedShaderLibrary = false;
 	EmptySetting.ShaderOptions.bNativeShader = false;
 	EmptySetting.ShaderOptions.bMergeShaderLibrary = false;
-	EmptySetting.IoStoreSettings = GetSettingObject()->IoStoreSettings;
+	EmptySetting.IoStoreSettings = GetSettingObject()->GetCookMetadata().IoStoreSettings;
 	EmptySetting.IoStoreSettings.bStorageBulkDataInfo = false;
 	EmptySetting.bSerializeAssetRegistry = false;
 	EmptySetting.bPreGeneratePlatformData = false;
@@ -402,7 +402,7 @@ void UMultiCookerProxy::PreMission()
 	SCOPED_NAMED_EVENT_TEXT("UMultiCookerProxy::PreMission",FColor::Red);
 
 	// for cook global shader
-	if(GetSettingObject()->bCompileGlobalShader)
+	if(GetSettingObject()->GetCookMetadata().bCompileGlobalShader)
 	{
 		CreateShaderCollectionByName(TEXT("Global"),true);
 		SCOPED_NAMED_EVENT_TEXT("Compile Global Shader",FColor::Red);
@@ -476,8 +476,8 @@ void UMultiCookerProxy::CreateShaderCollectionByName(const FString& Name, bool b
 	GlobalShaderCollectionProxy = UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform(
 		Name,
 		GetSettingObject()->CookTargetPlatforms,
-		GetSettingObject()->ShaderOptions.bSharedShaderLibrary,
-		GetSettingObject()->ShaderOptions.bNativeShader,
+		GetSettingObject()->GetCookMetadata().ShaderOptions.bSharedShaderLibrary,
+		GetSettingObject()->GetCookMetadata().ShaderOptions.bNativeShader,
 		true,
 		FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),TEXT("Shaders")),
 		bCleanDir
@@ -660,22 +660,22 @@ TSharedPtr<FProcWorkerThread> UMultiCookerProxy::CreateSingleCookWorker(const FS
 	FString SaveConfigTo = UFlibMultiCookerHelper::GetCookerProcConfigPath(SingleCookerSettings.MissionName,SingleCookerSettings.MissionID);
 	
 	FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
-	FString ProfilingCmd = GetSettingObject()->bProfilingPerSingleCooker ? UFlibMultiCookerHelper::GetProfilingCmd() : TEXT("");
+	FString ProfilingCmd = GetSettingObject()->GetCookProfiling().bProfilingPerSingleCooker ? UFlibMultiCookerHelper::GetProfilingCmd() : TEXT("");
 	
 	FString ShaderPerformanceCmd;
-	if(GetSettingObject()->bLocalHostMode)
+	if(GetSettingObject()->GetCookPerformance().bLocalHostMode)
 	{
 		const int32 NumVirtualCores = FPlatformMisc::NumberOfCoresIncludingHyperthreads();
 		int32 SingleCookerShaderWorker = (int32)((NumVirtualCores - GetSettingObject()->ProcessNumber) / 7);
 		SingleCookerShaderWorker = FMath::Max(SingleCookerShaderWorker,3);
 		ShaderPerformanceCmd = FString::Printf(TEXT("-MaxShaderWorker=%d"),SingleCookerShaderWorker);
 	}
-	if(GetSettingObject()->bRealTimeSCWPriority)
+	if(GetSettingObject()->GetCookPerformance().bRealTimeSCWPriority)
 	{
 		ShaderPerformanceCmd.Append(TEXT(" -rtshaderworker"));
 	}
 	FString TraceFileCmd;
-	if(GetSettingObject()->bUseTraceFile)
+	if(GetSettingObject()->GetCookProfiling().bUseTraceFile)
 	{
 		FString TraceFileTo = FPaths::Combine(GetSettingObject()->GetSaveAbsPath(),FApp::GetProjectName(),TEXT("Profiling"),FString::Printf(TEXT("%s.utrace"),*SingleCookerSettings.MissionName));
 		TraceFileCmd = FString::Printf(TEXT("-tracefile=\"%s\""),*TraceFileTo);

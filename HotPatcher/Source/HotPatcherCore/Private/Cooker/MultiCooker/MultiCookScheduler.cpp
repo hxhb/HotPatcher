@@ -18,9 +18,9 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 	
 	TSet<UClass*> Classes;
 	{
-		for(auto& ParentClass:MultiCookerSettings.CookClasses)
+		for(auto& ParentClass:MultiCookerSettings.GetCookClasses().CookClasses)
 		{
-			Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,MultiCookerSettings.bContainChildClasses,true));
+			Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,MultiCookerSettings.GetCookClasses().bContainChildClasses,true));
 		}
 	}
 
@@ -42,8 +42,8 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 	for(int32 index = 0;index < AllDetails.Num();)
 	{
 		bool bIsMatchedClass = IsMatchClass(AllDetails[index].AssetType);
-		if(MultiCookerSettings.CookClassesMode == ECookClassesMode::SKIP_CLASSES && bIsMatchedClass && !!Classes.Num() ||
-		 (MultiCookerSettings.CookClassesMode == ECookClassesMode::COOK_CLASSES_ONLY) && !bIsMatchedClass && !!Classes.Num()
+		if(MultiCookerSettings.GetCookClasses().CookClassesMode == ECookClassesMode::SKIP_CLASSES && bIsMatchedClass && !!Classes.Num() ||
+		 (MultiCookerSettings.GetCookClasses().CookClassesMode == ECookClassesMode::COOK_CLASSES_ONLY) && !bIsMatchedClass && !!Classes.Num()
 		)
 		{
 			AllDetails.RemoveAt(index);
@@ -66,17 +66,17 @@ TArray<FSingleCookerSettings> UMultiCookScheduler::MultiCookScheduler_Implementa
 		EmptySetting.CookTargetPlatforms = MultiCookerSettings.CookTargetPlatforms;
 		// EmptySetting.ShaderLibName = FApp::GetProjectName();
 		EmptySetting.bPackageTracker = MultiCookerSettings.bPackageTracker;
-		EmptySetting.ShaderOptions = MultiCookerSettings.ShaderOptions;
-		EmptySetting.IoStoreSettings = MultiCookerSettings.IoStoreSettings;
-		EmptySetting.bSerializeAssetRegistry = MultiCookerSettings.bSerializeAssetRegistry;
+		EmptySetting.ShaderOptions = MultiCookerSettings.GetCookMetadata().ShaderOptions;
+		EmptySetting.IoStoreSettings = MultiCookerSettings.GetCookMetadata().IoStoreSettings;
+		EmptySetting.bSerializeAssetRegistry = MultiCookerSettings.GetCookMetadata().bSerializeAssetRegistry;
 		EmptySetting.SkipCookContents = MultiCookerSettings.GetAllSkipContents();
 		EmptySetting.ForceSkipClasses = MultiCookerSettings.ForceSkipClasses;
 		EmptySetting.SkipLoadedAssets = AllPackagePaths;
-		EmptySetting.bDisplayConfig = MultiCookerSettings.bDisplayMissionConfig;
-		EmptySetting.bPreGeneratePlatformData = MultiCookerSettings.bPreGeneratePlatformData;
-		EmptySetting.bWaitEachAssetCompleted = MultiCookerSettings.bWaitEachAssetCompleted;
-		EmptySetting.bConcurrentSave = MultiCookerSettings.bConcurrentSave;
-		EmptySetting.bAsyncLoad = MultiCookerSettings.bAsyncLoad;
+		EmptySetting.bDisplayConfig = MultiCookerSettings.GetCookProfiling().bDisplayMissionConfig;
+		EmptySetting.bPreGeneratePlatformData = MultiCookerSettings.GetCookOptimize().bPreGeneratePlatformData;
+		EmptySetting.bWaitEachAssetCompleted = MultiCookerSettings.GetCookOptimize().bWaitEachAssetCompleted;
+		EmptySetting.bConcurrentSave = MultiCookerSettings.GetCookOptimize().bConcurrentSave;
+		EmptySetting.bAsyncLoad = MultiCookerSettings.GetCookOptimize().bAsyncLoad;
 		EmptySetting.bCookAdditionalAssets = false;
 		EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 		EmptySetting.StorageMetadataDir = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),EmptySetting.MissionName);

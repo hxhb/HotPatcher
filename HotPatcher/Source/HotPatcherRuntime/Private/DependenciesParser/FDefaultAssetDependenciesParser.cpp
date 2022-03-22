@@ -168,6 +168,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 		// collect world composition tile packages to cook 
 		if(CurrentAssetData.GetClass() == UWorld::StaticClass())
 		{
+#if WITH_EDITOR
 			UWorld* World = UWorld::FindWorldInPackage(CurrentAssetData.GetAsset()->GetPackage());
 			if (World)
 			{
@@ -183,7 +184,9 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 						CurrentAssetDependencies.AddUnique(FName(*PackageName));
 					}
 				}
+
 			}
+#endif
 		}
 		
 		if (!bGetDependenciesSuccess)
