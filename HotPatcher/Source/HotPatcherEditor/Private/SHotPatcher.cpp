@@ -39,8 +39,10 @@
 void SHotPatcher::Construct(const FArguments& InArgs)
 {
 	// CookModel = MakeShareable(new FHotPatcherOriginalCookerModel);
-	CookerModel = MakeShareable(new FHotPatcherCookerModel);
-	CreatePatchModel = MakeShareable(new FHotPatcherCreatePatchModel);
+	// CookerModel = MakeShareable(new FHotPatcherCookerModel);
+	// CreatePatchModel = MakeShareable(new FHotPatcherCreatePatchModel);
+	HotPatcherModelsMap.Add(TEXT("Cooker"),MakeShareable(new FHotPatcherCookerModel));
+	HotPatcherModelsMap.Add(TEXT("Patch"),MakeShareable(new FHotPatcherCreatePatchModel));
 
 	ChildSlot
 	[
@@ -84,8 +86,8 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 					+ SGridPanel::Slot(1, 0)
 					.Padding(32.0f, 0.0f, 8.0f, 0.0f)
 					[
-					// SNew(SProjectCookPage,CookModel)
-					SNew(SProjectCookerPage,CookerModel)
+						// SNew(SProjectCookPage,CookModel)
+						SNew(SProjectCookerPage,*HotPatcherModelsMap.Find(TEXT("Cooker")))
 					]
 
 					+ SGridPanel::Slot(0, 1)
@@ -108,10 +110,9 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 					+ SGridPanel::Slot(1, 2)
 					.Padding(32.0f, 0.0f, 8.0f, 0.0f)
 					[
-						SNew(SProjectCreatePatchPage, CreatePatchModel)
+						SNew(SProjectCreatePatchPage, *HotPatcherModelsMap.Find(TEXT("Patch")))
 					]
 				]
-
 			]
 		]
 	];

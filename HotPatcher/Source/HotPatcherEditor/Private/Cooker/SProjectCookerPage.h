@@ -6,7 +6,7 @@
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Model/FHotPatcherCreatePatchModel.h"
-#include "SHotPatcherCookerBase.h"
+#include "Cooker/SHotPatcherCookerBase.h"
 
 // engine header
 #include "Interfaces/ITargetPlatform.h"
@@ -33,13 +33,11 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCookerModel> InCreatePatchModel);
+	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherModelBase> InCreatePatchModel);
 
 public:
 	FText HandleCookerModeComboButtonContentText() const;
-	void HandleHotPatcherMenuEntryClicked(EHotPatcherCookActionMode::Type InMode);
-	EVisibility HandleOriginalCookerVisibility() const;
-	EVisibility HandleMultiProcessCookerVisibility() const;
+	void HandleHotPatcherMenuEntryClicked(FString InModeName,TFunction<void(void)> ActionCallback);
 
 	EVisibility HandleOperatorConfigVisibility()const;
 	EVisibility HandleImportProjectConfigVisibility()const;
@@ -54,7 +52,12 @@ protected:
 private:
 	TSharedPtr<FHotPatcherOriginalCookerModel> OriginalCookModel;
 private:
-	TSharedPtr<FHotPatcherCookerModel> mCreateCookerModel;
-	TSharedPtr<SHotPatcherCookerBase> mOriginal;
-	TSharedPtr<SHotPatcherCookerBase> mMultiProcess;
+	FORCEINLINE FHotPatcherCookerModel* GetCookModelPtr()const
+	{
+		return (FHotPatcherCookerModel*)mCreateCookerModel.Get();
+	}
+	TSharedPtr<FHotPatcherModelBase> mCreateCookerModel;
+	// TSharedPtr<SHotPatcherCookerBase> mOriginal;
+	// TSharedPtr<SHotPatcherCookerBase> mMultiProcess;
+	TMap<FString,TSharedRef<SHotPatcherCookerBase>> CookActionMaps;
 };

@@ -101,7 +101,7 @@ public:
 		static bool OpenPSO(const FString& Name);
 
 	static TArray<FString> GetPakFileList(const FString& InPak, const FString& AESKey);
-	static TMap<FString,FPakEntry> GetPakEntrys(TRefCountPtr<FPakFile> InPakFile, const FString& AESKey);
+	static TMap<FString,FPakEntry> GetPakEntrys(TSharedPtr<FPakFile> InPakFile, const FString& AESKey);
 
 	UFUNCTION(BlueprintCallable)
 	static void DumpPakEntrys(const FString& InPak, const FString& AESKey,const FString& SaveTo);

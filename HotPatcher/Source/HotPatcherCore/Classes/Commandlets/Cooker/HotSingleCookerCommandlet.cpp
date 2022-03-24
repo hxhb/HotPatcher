@@ -1,8 +1,8 @@
 #include "HotSingleCookerCommandlet.h"
-#include "Commandlets/CommandletHelper.h"
+#include "CommandletBase/CommandletHelper.h"
 // engine header
 #include "CoreMinimal.h"
-#include "Cooker/MultiCooker/FMultiCookerSettings.h"
+#include "Cooker/MultiCooker/FSingleCookerSettings.h"
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "HAL/ExceptionHandling.h"
 #include "Misc/FileHelper.h"

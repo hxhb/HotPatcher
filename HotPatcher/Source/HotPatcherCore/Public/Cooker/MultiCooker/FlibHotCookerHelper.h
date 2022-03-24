@@ -6,18 +6,18 @@
 #include "ETargetPlatform.h"
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "FlibMultiCookerHelper.generated.h"
+#include "FlibHotCookerHelper.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class HOTPATCHERCORE_API UFlibMultiCookerHelper : public UBlueprintFunctionLibrary
+class HOTPATCHERCORE_API UFlibHotCookerHelper : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 public:
-	static FString GetMultiCookerBaseDir();
-	static FString GetCookerProcConfigPath(const FString& MissionName,int32 MissionID);
+	static FString GetCookerBaseDir();
+	// static FString GetCookerProcConfigPath(const FString& MissionName,int32 MissionID);
 	static FString GetCookerProcFailedResultPath(const FString& BaseDir,const FString& MissionName, int32 MissionID);
 	static FString GetProfilingCmd();
 	static TSharedPtr<FCookShaderCollectionProxy> CreateCookShaderCollectionProxyByPlatform(

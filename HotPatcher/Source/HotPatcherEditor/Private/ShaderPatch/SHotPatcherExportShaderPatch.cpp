@@ -12,7 +12,7 @@
 #define LOCTEXT_NAMESPACE "SHotPatcherShaderPatch"
 
 void SHotPatcherExportShaderPatch::Construct(const FArguments& InArgs,
-	TSharedPtr<FHotPatcherCreatePatchModel> InCreateModel)
+	TSharedPtr<FHotPatcherModelBase> InCreateModel)
 {
 	ExportShaderPatchSettings = MakeShareable(new FExportShaderPatchSettings);
 	CreateExportFilterListView();

@@ -94,7 +94,6 @@ public class HotPatcherEditor : ModuleRules
 		PublicDefinitions.AddRange(new string[]
 		{
 			"ENABLE_UPDATER_CHECK=1",
-			"ENABLE_MULTI_COOKER=0",
 			"TOOL_NAME=\"HotPatcher\"",
 			"CURRENT_VERSION_ID=75",
 			"CURRENT_PATCH_ID=2",

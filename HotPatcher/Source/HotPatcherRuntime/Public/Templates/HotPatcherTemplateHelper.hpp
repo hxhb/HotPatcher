@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "JsonObjectConverter.h"
 #include "HAL/PlatformMisc.h"
+#include "Misc/EnumRange.h"
 // cpp standard
 #include <typeinfo>
 #include <cctype>
@@ -278,5 +279,38 @@ namespace THotPatcherTemplateHelper
 			}
 		}
 		return result;
+	}
+
+	typedef TArray<TPair<FName, int64>> FEnumeratorPair;
+	template <typename T>
+	FEnumeratorPair AppendEnumeraters(const TArray<FString>& Enmueraters)
+	{
+		UEnum* UEnumIns = THotPatcherTemplateHelper::GetUEnum<T>();
+		uint64 MaxEnumValue = UEnumIns->GetMaxEnumValue()-2;
+		FString EnumName = UEnumIns->GetName();
+		FEnumeratorPair EnumNamePairs;
+	
+		TArray<FString> AppendEnumsCopy = Enmueraters;
+
+		for (T EnumeraterName:TEnumRange<T>())
+		{
+			FName EnumtorName = UEnumIns->GetNameByValue((int64)EnumeraterName);
+			EnumNamePairs.Emplace(EnumtorName,(int64)EnumeraterName);
+			AppendEnumsCopy.Remove(EnumtorName.ToString());
+		}
+		for(const auto& AppendEnumItem:AppendEnumsCopy)
+		{
+			++MaxEnumValue;
+			EnumNamePairs.Emplace(
+				FName(*FString::Printf(TEXT("%s::%s"),*EnumName,*AppendEnumItem)),
+				MaxEnumValue
+			);
+		}
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+		UEnumIns->SetEnums(EnumNamePairs,UEnum::ECppForm::EnumClass,EEnumFlags::None,true);
+#else
+		UEnumIns->SetEnums(EnumNamePairs,UEnum::ECppForm::EnumClass,true);
+#endif
+		return EnumNamePairs;
 	}
 }

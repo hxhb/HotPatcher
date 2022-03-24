@@ -23,7 +23,7 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcherExportRelease"
 
-void SHotPatcherExportRelease::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCreatePatchModel> InCreatePatchModel)
+void SHotPatcherExportRelease::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherModelBase> InCreatePatchModel)
 {
 	ExportReleaseSettings = MakeShareable(new FExportReleaseSettings);
 	GReleaseSettings = ExportReleaseSettings.Get();

@@ -13,13 +13,13 @@
 #include "IDetailsView.h"
 #include "MissionNotificationProxy.h"
 #include "PropertyEditorModule.h"
+#include "CreatePatch/SHotPatcherPatchableBase.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
 #include "Widgets/Text/SMultiLineEditableText.h"
 /**
  * Implements the cooked platforms panel.
  */
-class SHotPatcherCookerBase
-	: public SCompoundWidget, public IPatchableInterface
+class SHotPatcherCookerBase : public SHotPatcherPatchableInterface
 {
 public:
 
@@ -33,23 +33,15 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCookerModel> InCreateModel);
+	FORCEINLINE void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherModelBase> InCreateModel)
+	{
+		mCreatePatchModel = InCreateModel;
+	}
 
-	virtual void ImportProjectConfig();
-	FORCEINLINE virtual void ImportConfig() override {};
-	FORCEINLINE virtual void ExportConfig()const override {};
-	FORCEINLINE virtual void ResetConfig() override {};
-	FORCEINLINE virtual void DoGenerate() override {};
-
-	virtual FPatcherEntitySettingBase* GetConfigSettings(){return nullptr;};
-	virtual FString GetMissionName(){return TEXT("");};
-	
-	virtual FText GetGenerateTooltipText() const;
-	TArray<FString> OpenFileDialog()const;
-	TArray<FString> SaveFileDialog()const;
 
 protected:
-	TSharedPtr<FHotPatcherCookerModel> mCreatePatchModel;
+	FHotPatcherCookerModel* GetCookerModelPtr()const { return (FHotPatcherCookerModel*)mCreatePatchModel.Get(); }
+	TSharedPtr<FHotPatcherModelBase> mCreatePatchModel;
 
 };
 

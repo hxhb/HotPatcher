@@ -24,7 +24,7 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCreatePatch"
 
-void SHotPatcherPatchableBase::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCreatePatchModel> InCreatePatchModel)
+void SHotPatcherPatchableBase::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherModelBase> InCreatePatchModel)
 {
 	mCreatePatchModel = InCreatePatchModel;
 	// InitMissionNotificationProxy();
@@ -79,12 +79,12 @@ void SHotPatcherPatchableBase::ImportProjectConfig()
 	}
 }
 
-FText SHotPatcherPatchableBase::GetGenerateTooltipText() const
+FText SHotPatcherPatchableInterface::GetGenerateTooltipText() const
 {
 	return UKismetTextLibrary::Conv_StringToText(TEXT(""));
 }
 
-TArray<FString> SHotPatcherPatchableBase::OpenFileDialog()const
+TArray<FString> SHotPatcherPatchableInterface::OpenFileDialog()const
 {
 	IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
 	TArray<FString> SelectedFiles;
@@ -105,7 +105,7 @@ TArray<FString> SHotPatcherPatchableBase::OpenFileDialog()const
 }
 
 
-TArray<FString> SHotPatcherPatchableBase::SaveFileDialog()const
+TArray<FString> SHotPatcherPatchableInterface::SaveFileDialog()const
 {
 	IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
 

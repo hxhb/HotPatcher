@@ -16,11 +16,32 @@
 #include "PropertyEditorModule.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
 #include "Widgets/Text/SMultiLineEditableText.h"
+
+class HOTPATCHEREDITOR_API SHotPatcherPatchableInterface
+	: public SCompoundWidget, public IPatchableInterface
+{
+public:
+
+	SLATE_BEGIN_ARGS(SHotPatcherPatchableInterface) { }
+	SLATE_END_ARGS()
+
+	virtual void ImportProjectConfig(){};
+	FORCEINLINE virtual void ImportConfig() {};
+	FORCEINLINE virtual void ExportConfig()const {};
+	FORCEINLINE virtual void ResetConfig() {};
+	FORCEINLINE virtual void DoGenerate() {};
+	virtual FPatcherEntitySettingBase* GetConfigSettings(){return nullptr;};
+	virtual FString GetMissionName(){return TEXT("");};
+	
+	virtual FText GetGenerateTooltipText() const;
+	virtual TArray<FString> OpenFileDialog()const;
+	virtual TArray<FString> SaveFileDialog()const;
+};
 /**
  * Implements the cooked platforms panel.
  */
-class SHotPatcherPatchableBase
-	: public SCompoundWidget, public IPatchableInterface
+class HOTPATCHEREDITOR_API SHotPatcherPatchableBase
+	: public SHotPatcherPatchableInterface
 {
 public:
 
@@ -34,23 +55,20 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCreatePatchModel> InCreateModel);
-
-	virtual void ImportProjectConfig();
-	FORCEINLINE virtual void ImportConfig() override {};
-	FORCEINLINE virtual void ExportConfig()const override {};
-	FORCEINLINE virtual void ResetConfig() override {};
-	FORCEINLINE virtual void DoGenerate() override {};
+	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherModelBase> InCreateModel);
+	
+	virtual void ImportProjectConfig() override;
+	// FORCEINLINE virtual void ImportConfig() override {};
+	// FORCEINLINE virtual void ExportConfig()const override {};
+	// FORCEINLINE virtual void ResetConfig() override {};
+	// FORCEINLINE virtual void DoGenerate() override {};
 
 	virtual FHotPatcherSettingBase* GetConfigSettings(){return nullptr;};
-	virtual FString GetMissionName(){return TEXT("");};
-	
-	virtual FText GetGenerateTooltipText() const;
-	TArray<FString> OpenFileDialog()const;
-	TArray<FString> SaveFileDialog()const;
+
 
 protected:
-	TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
+	// FHotPatcherCreatePatchModel* GetPatchModel()const { return (FHotPatcherCreatePatchModel*)mCreatePatchModel.Get(); }
+	TSharedPtr<FHotPatcherModelBase> mCreatePatchModel;
 
 };
 

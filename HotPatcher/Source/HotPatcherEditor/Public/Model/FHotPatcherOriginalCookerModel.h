@@ -3,12 +3,14 @@
 #include "FlibAssetManageHelper.h"
 #include "FCookerConfig.h"
 #include "FlibPatchParserHelper.h"
+#include "FlibHotPatcherCoreHelper.h"
+#include "FHotPatcherModelBase.h"
 
 // engine header
 #include "Misc/App.h"
 #include "CoreMinimal.h"
 
-#include "FlibHotPatcherCoreHelper.h"
+
 #include "Engine/Engine.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Delegates/DelegateCombinations.h"
@@ -16,10 +18,11 @@
 DECLARE_DELEGATE_OneParam(FRequestExSettingsDlg, TArray<FString>&);
 DECLARE_DELEGATE_OneParam(FRequestSpecifyCookFilterDlg, TArray<FDirectoryPath>&);
 
-class FHotPatcherOriginalCookerModel
+struct HOTPATCHEREDITOR_API FHotPatcherOriginalCookerModel: public FHotPatcherModelBase
 {
 public:
-
+	virtual FName GetModelName()const override{ return TEXT("OriginalCooker"); }
+	virtual ~FHotPatcherOriginalCookerModel()override{}
 	void AddSelectedCookPlatform(const FString& InPlatfotm)
 	{
 		if (!mSelectedPlatform.Contains(InPlatfotm))

@@ -14,6 +14,7 @@
 #include "Modules/ModuleManager.h"
 #include "CreatePatch/FExportPatchSettings.h"
 #include "CreatePatch/FExportReleaseSettings.h"
+#include "Model/FHotPatcherModelBase.h"
 // engine header
 #include "CoreMinimal.h"
 
@@ -39,7 +40,19 @@ struct FContentBrowserSelectedInfo
 	TArray<FName> OutAllAssetPackages;
 };
 
-class FHotPatcherEditorModule : public IModuleInterface
+struct FHotPatcherAction
+{
+	TAttribute<FText> InLabel;
+	TAttribute<FText> InToolTip;
+	FSlateIcon InIcon;
+	// FUIAction InAction;
+	TFunction<void(void)> ActionCallback;
+	TFunction<TSharedRef<SCompoundWidget>(TSharedPtr<FHotPatcherModelBase>)> RequestWidget;
+};
+
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FHotPatcherActionDelegate,const FString&,const FString&,const FHotPatcherAction&);
+
+class HOTPATCHEREDITOR_API FHotPatcherEditorModule : public IModuleInterface
 {
 public:
 	static FHotPatcherEditorModule& Get();
@@ -49,6 +62,8 @@ public:
 	void OpenDockTab();
 	/** This function will be bound to Command. */
 	void PluginButtonClicked();
+
+	typedef TMap<FString,TMap<FString,FHotPatcherAction>> FHotPatcherActionsType;
 	
 public:
 	void AddToolbarExtension(FToolBarBuilder& Builder);
@@ -58,6 +73,13 @@ public:
 	
 	TSharedPtr<FProcWorkerThread> RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName);
 
+	void RegisteHotPatcherActions(const FString& Category,const FString& ActionName,const FHotPatcherAction& Action);
+	void UnRegisteHotPatcherActions(const FString& Category, const FString& ActionName);
+	FHotPatcherActionsType& GetHotPatcherActions() { return HotPatcherActions; }
+	FHotPatcherActionsType HotPatcherActions;
+	FHotPatcherActionDelegate OnHotPatcherActionRegisted;
+	FHotPatcherActionDelegate OnHotPatcherActionUnRegisted;
+	
 #if WITH_EDITOR_SECTION
 	void CreateRootMenu();
 	void CreateAssetContextMenu(FToolMenuSection& InSection);
@@ -99,4 +121,5 @@ private:
 	UMissionNotificationProxy* MissionNotifyProay;
 	TSharedPtr<FExportPatchSettings> PatchSettings;
 	TArray<class UPatcherProxy*> Proxys;
+
 };

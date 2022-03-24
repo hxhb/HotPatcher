@@ -36,7 +36,7 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCreatePatchModel> InCreateModel);
+	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherModelBase> InCreateModel);
 
 // IPatchableInterface
 public:

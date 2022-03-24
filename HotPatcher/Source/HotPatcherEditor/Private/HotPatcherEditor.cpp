@@ -6,8 +6,8 @@
 #include "SHotPatcher.h"
 #include "HotPatcherSettings.h"
 #include "Templates/HotPatcherTemplateHelper.hpp"
-#include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
-#include "Cooker/MultiCooker/FMultiCookerSettings.h"
+// #include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
+// #include "Cooker/MultiCooker/FMultiCookerSettings.h"
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "CreatePatch/PatcherProxy.h"
 
@@ -27,6 +27,7 @@
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "PakFileUtilities.h"
+#include "Cooker/MultiCooker/FlibHotCookerHelper.h"
 
 #if ENGINE_MAJOR_VERSION < 5
 #include "Widgets/Docking/SDockableTab.h"
@@ -521,7 +522,7 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 	EmptySetting.bSerializeAssetRegistry = false;
 	EmptySetting.bDisplayConfig = false;
 	EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
-	EmptySetting.StorageMetadataDir = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),EmptySetting.MissionName);
+	EmptySetting.StorageMetadataDir = FPaths::Combine(UFlibHotCookerHelper::GetCookerBaseDir(),EmptySetting.MissionName);
 
 	USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
 	SingleCookerProxy->AddToRoot();
@@ -707,6 +708,26 @@ TSharedPtr<FProcWorkerThread> FHotPatcherEditorModule::RunProcMission(const FStr
 	}
 	return mProcWorkingThread;
 }
+
+void FHotPatcherEditorModule::RegisteHotPatcherActions(const FString& Category, const FString& ActionName,
+	const FHotPatcherAction& Action)
+{
+	TMap<FString,FHotPatcherAction>& CategoryIns = HotPatcherActions.FindOrAdd(Category);
+	CategoryIns.Add(ActionName,Action);
+	OnHotPatcherActionRegisted.Broadcast(Category,ActionName,Action);
+}
+void FHotPatcherEditorModule::UnRegisteHotPatcherActions(const FString& Category, const FString& ActionName)
+{
+	TMap<FString,FHotPatcherAction>& CategoryIns = HotPatcherActions.FindOrAdd(Category);
+	FHotPatcherAction Action;
+	if(CategoryIns.Contains(ActionName))
+	{
+		Action = *CategoryIns.Find(ActionName);
+		CategoryIns.Remove(ActionName);
+	}
+	OnHotPatcherActionUnRegisted.Broadcast(Category,ActionName,Action);
+}
+
 #undef LOCTEXT_NAMESPACE
 	
 IMPLEMENT_MODULE(FHotPatcherEditorModule, HotPatcherEditor)

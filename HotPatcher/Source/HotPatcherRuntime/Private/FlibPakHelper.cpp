@@ -460,7 +460,7 @@ TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FStri
 	return Records;
 }
 
-TMap<FString,FPakEntry> UFlibPakHelper::GetPakEntrys(TRefCountPtr<FPakFile> InPakFile, const FString& AESKey)
+TMap<FString,FPakEntry> UFlibPakHelper::GetPakEntrys(TSharedPtr<FPakFile> InPakFile, const FString& AESKey)
 {
 	TMap<FString,FPakEntry> Records;
 	

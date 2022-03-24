@@ -7,6 +7,7 @@
 #include "GameFeature/SGameFeaturePackager.h"
 
 // engine header
+#include "HotPatcherEditor.h"
 #include "Framework/Commands/UIAction.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Widgets/SBoxPanel.h"
@@ -19,8 +20,9 @@
 /* SProjectCreatePatchPage interface
  *****************************************************************************/
 
-void SProjectCreatePatchPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCreatePatchModel> InCreatePatchModel)
+void SProjectCreatePatchPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherModelBase> InCreatePatchModel)
 {
+	// FORCEINLINE FHotPatcherCreatePatchModel* GetPatchModelPtr()const{ return (FHotPatcherCreatePatchModel*)mCreatePatchModel.Get(); }
 	mCreatePatchModel = InCreatePatchModel;
 
 	// create cook modes menu
@@ -40,9 +42,7 @@ void SProjectCreatePatchPage::Construct(const FArguments& InArgs, TSharedPtr<FHo
 #endif
 	}
 
-	ChildSlot
-	[
-		SNew(SVerticalBox)
+	auto Widget = SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		[
@@ -137,7 +137,25 @@ void SProjectCreatePatchPage::Construct(const FArguments& InArgs, TSharedPtr<FHo
 			[
 				SAssignNew(mGameFeature,SHotPatcherGameFeaturePackager, mCreatePatchModel)
 				.Visibility(this, &SProjectCreatePatchPage::HandleExportGameFeatureVisibility)
-			]
+			];
+
+	TMap<FString,FHotPatcherAction>* Patchers = FHotPatcherEditorModule::Get().GetHotPatcherActions().Find(TEXT("Patch"));
+	if(Patchers)
+	{
+		for(const auto& Patcher:*Patchers)
+		{
+			TSharedRef<SCompoundWidget> CookAction = Patcher.Value.RequestWidget(mCreatePatchModel);
+		
+			Widget->AddSlot().AutoHeight().Padding(0.0, 8.0, 0.0, 0.0)
+			[
+				CookAction
+			];
+		}
+	}
+	
+	ChildSlot
+	[
+		Widget
 	];
 
 	HandleHotPatcherMenuEntryClicked(EHotPatcherActionModes::ByPatch);
@@ -184,7 +202,7 @@ TSharedPtr<IPatchableInterface> SProjectCreatePatchPage::GetActivePatchable()con
 	if (mCreatePatchModel.IsValid())
 	{
 
-		switch (mCreatePatchModel->GetPatcherMode())
+		switch (GetPatchModelPtr()->GetPatcherMode())
 		{
 			case EHotPatcherActionModes::ByPatch:
 			{
@@ -215,7 +233,7 @@ EVisibility SProjectCreatePatchPage::HandleExportPatchVisibility() const
 {
 	if (mCreatePatchModel.IsValid())
 	{
-		if (mCreatePatchModel->GetPatcherMode() == EHotPatcherActionModes::ByPatch)
+		if (GetPatchModelPtr()->GetPatcherMode() == EHotPatcherActionModes::ByPatch)
 		{
 			return EVisibility::Visible;
 		}
@@ -227,7 +245,7 @@ EVisibility SProjectCreatePatchPage::HandleExportReleaseVisibility() const
 {
 	if (mCreatePatchModel.IsValid())
 	{
-		if (mCreatePatchModel->GetPatcherMode() == EHotPatcherActionModes::ByRelease)
+		if (GetPatchModelPtr()->GetPatcherMode() == EHotPatcherActionModes::ByRelease)
 		{
 			return EVisibility::Visible;
 		}
@@ -240,7 +258,7 @@ EVisibility SProjectCreatePatchPage::HandleExportShaderPatchVisibility() const
 {
 	if (mCreatePatchModel.IsValid())
 	{
-		if (mCreatePatchModel->GetPatcherMode() == EHotPatcherActionModes::ByShaderPatch)
+		if (GetPatchModelPtr()->GetPatcherMode() == EHotPatcherActionModes::ByShaderPatch)
 		{
 			return EVisibility::Visible;
 		}
@@ -253,7 +271,7 @@ EVisibility SProjectCreatePatchPage::HandleExportGameFeatureVisibility() const
 {
 	if (mGameFeature.IsValid())
 	{
-		if (mCreatePatchModel->GetPatcherMode() == EHotPatcherActionModes::ByGameFeature)
+		if (GetPatchModelPtr()->GetPatcherMode() == EHotPatcherActionModes::ByGameFeature)
 		{
 			return EVisibility::Visible;
 		}
@@ -268,7 +286,7 @@ EVisibility SProjectCreatePatchPage::HandleOperatorConfigVisibility()const
 
 EVisibility SProjectCreatePatchPage::HandleImportProjectConfigVisibility() const
 {
-	switch (mCreatePatchModel->GetPatcherMode())
+	switch (GetPatchModelPtr()->GetPatcherMode())
 	{
 		case EHotPatcherActionModes::ByShaderPatch:
 			{
@@ -283,7 +301,7 @@ void SProjectCreatePatchPage::HandleHotPatcherMenuEntryClicked(EHotPatcherAction
 {
 	if (mCreatePatchModel.IsValid())
 	{
-		mCreatePatchModel->SetPatcherMode(InMode);
+		GetPatchModelPtr()->SetPatcherMode(InMode);
 	}
 }
 
@@ -291,7 +309,7 @@ FText SProjectCreatePatchPage::HandlePatchModeComboButtonContentText() const
 {
 	if (mCreatePatchModel.IsValid())
 	{
-		EHotPatcherActionModes::Type PatcherMode = mCreatePatchModel->GetPatcherMode();
+		EHotPatcherActionModes::Type PatcherMode = GetPatchModelPtr()->GetPatcherMode();
 
 		if (PatcherMode == EHotPatcherActionModes::ByPatch)
 		{

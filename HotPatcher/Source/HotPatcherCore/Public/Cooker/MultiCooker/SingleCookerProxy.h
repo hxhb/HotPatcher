@@ -1,12 +1,10 @@
 #pragma once
-#include "FMultiCookerSettings.h"
+#include "FSingleCookerSettings.h"
 #include "Cooker/HotPatcherCookerSettingBase.h"
 #include "CreatePatch/HotPatcherProxyBase.h"
 #include "HotPatcherBaseTypes.h"
-
-// engine header
 #include "BaseTypes/FPackageTracker.h"
-#include "FMultiCookerSettings.h"
+// engine header
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Interfaces/ITargetPlatform.h"

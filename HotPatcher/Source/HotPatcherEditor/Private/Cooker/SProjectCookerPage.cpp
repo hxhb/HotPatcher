@@ -2,39 +2,55 @@
 
 #include "SProjectCookerPage.h"
 #include "Cooker/OriginalCooker/SProjectCookPage.h"
-#include "Cooker/MultiCooker/SHotPatcherMultiCookerPage.h"
+// #include "Cooker/MultiCooker/SHotPatcherMultiCookerPage.h"
 // engine header
 #include "Framework/Commands/UIAction.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SExpandableArea.h"
-
+#include "HotPatcherEditor.h"
 #define LOCTEXT_NAMESPACE "SProjectCookerPage"
 
 
 /* SProjectCookerPage interface
  *****************************************************************************/
 
-void SProjectCookerPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCookerModel> InCreatePatchModel)
+void SProjectCookerPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherModelBase> InCreatePatchModel)
 {
 	OriginalCookModel = MakeShareable(new FHotPatcherOriginalCookerModel);
 	mCreateCookerModel = InCreatePatchModel;
 
+	FHotPatcherEditorModule& EditorModule = FHotPatcherEditorModule::Get();
+	
 	// create cook modes menu
 	FMenuBuilder PatchModeMenuBuilder(true, NULL);
 	{
-		FUIAction ByOriginalAction(FExecuteAction::CreateSP(this, &SProjectCookerPage::HandleHotPatcherMenuEntryClicked, EHotPatcherCookActionMode::ByOriginal));
-		PatchModeMenuBuilder.AddMenuEntry(LOCTEXT("ByOriginal", "ByOriginal"), LOCTEXT("OriginalCookerActionHint", "Use single-process Cook Content(UE Default)"), FSlateIcon(), ByOriginalAction);
-#if ENABLE_MULTI_COOKER
-		FUIAction ByMultiProcessAction(FExecuteAction::CreateSP(this, &SProjectCookerPage::HandleHotPatcherMenuEntryClicked, EHotPatcherCookActionMode::ByMultiProcess));
-		PatchModeMenuBuilder.AddMenuEntry(LOCTEXT("ByMultiProcess", "ByMultiProcess"), LOCTEXT("MultiCookerActionHint", "Use multi-process Cook Content"), FSlateIcon(), ByMultiProcessAction);
-#endif
-	}
+		// FUIAction ByOriginalAction();
+		FHotPatcherAction OriginalAction;
+		OriginalAction.InLabel = LOCTEXT("ByOriginal", "ByOriginal");
+		OriginalAction.InToolTip = LOCTEXT("OriginalCookerActionHint", "Use single-process Cook Content(UE Default)");
+		OriginalAction.InIcon = FSlateIcon();
+		
+		OriginalAction.RequestWidget = [this](TSharedPtr<FHotPatcherModelBase>)->TSharedRef<SCompoundWidget>
+		{
+			return SNew(SProjectCookPage,OriginalCookModel).Visibility_Lambda([this]()->EVisibility
+			{
+				return GetCookModelPtr()->GetCookerMode() == EHotPatcherCookActionMode::ByOriginal ? EVisibility::Visible : EVisibility::Collapsed;
+			});
+		};
+		
+		FHotPatcherEditorModule::Get().RegisteHotPatcherActions(TEXT("Cooker"),TEXT("ByOriginal"),OriginalAction);
 
-	ChildSlot
-	[
-		SNew(SVerticalBox)
+		TMap<FString,FHotPatcherAction>* Cookers = FHotPatcherEditorModule::Get().GetHotPatcherActions().Find(TEXT("Cooker"));
+		
+		for(const auto& Cooker:*Cookers)
+		{
+			FUIAction Action = FExecuteAction::CreateSP(this, &SProjectCookerPage::HandleHotPatcherMenuEntryClicked, Cooker.Key,Cooker.Value.ActionCallback);
+			PatchModeMenuBuilder.AddMenuEntry(Cooker.Value.InLabel, Cooker.Value.InToolTip, Cooker.Value.InIcon, Action);
+		}
+	}
+	auto Widget = SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		[
@@ -100,25 +116,27 @@ void SProjectCookerPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatc
 						PatchModeMenuBuilder.MakeWidget()
 					]
 				]
-		]
+		];
 
-		+ SVerticalBox::Slot()
-			.AutoHeight()
-			.Padding(0.0, 8.0, 0.0, 0.0)
+	TMap<FString,FHotPatcherAction>* Cookers = FHotPatcherEditorModule::Get().GetHotPatcherActions().Find(TEXT("Cooker"));
+	if(Cookers)
+	{
+		for(const auto& Cooker:*Cookers)
+		{
+			TSharedRef<SCompoundWidget> CookAction = Cooker.Value.RequestWidget(mCreateCookerModel);
+		
+			Widget->AddSlot().AutoHeight().Padding(0.0, 8.0, 0.0, 0.0)
 			[
-				SAssignNew(mOriginal,SProjectCookPage,OriginalCookModel)
-				.Visibility(this,&SProjectCookerPage::HandleOriginalCookerVisibility)
-			]
-		+ SVerticalBox::Slot()
-			.AutoHeight()
-			.Padding(0.0, 8.0, 0.0, 0.0)
-			[
-				SAssignNew(mMultiProcess,SHotPatcherMultiCookerPage,mCreateCookerModel)
-				.Visibility(this, &SProjectCookerPage::HandleMultiProcessCookerVisibility)
-			]
+				CookAction
+			];
+		}
+	}
+	ChildSlot
+	[
+		Widget
 	];
-
-	HandleHotPatcherMenuEntryClicked(EHotPatcherCookActionMode::ByOriginal);
+	
+	HandleHotPatcherMenuEntryClicked(TEXT("ByOriginal"),nullptr);
 }
 
 FReply SProjectCookerPage::DoImportConfig()const
@@ -161,47 +179,9 @@ TSharedPtr<IPatchableInterface> SProjectCookerPage::GetActivePatchable()const
 	TSharedPtr<IPatchableInterface> result;
 	if (mCreateCookerModel.IsValid())
 	{
-
-		switch (mCreateCookerModel->GetCookerMode())
-		{
-			case EHotPatcherCookActionMode::ByOriginal:
-			{
-				result = mOriginal;
-				break;
-			}
-			case EHotPatcherCookActionMode::ByMultiProcess:
-			{
-				result = mMultiProcess;
-				break;
-			}
-		}
+		result = *CookActionMaps.Find(GetCookModelPtr()->GetCookerModeName());
 	}
 	return result;
-}
-
-EVisibility SProjectCookerPage::HandleOriginalCookerVisibility() const
-{
-	if (mCreateCookerModel.IsValid())
-	{
-		if (mCreateCookerModel->GetCookerMode() == EHotPatcherCookActionMode::ByOriginal)
-		{
-			return EVisibility::Visible;
-		}
-	}
-
-	return EVisibility::Collapsed;
-}
-EVisibility SProjectCookerPage::HandleMultiProcessCookerVisibility() const
-{
-	if (mCreateCookerModel.IsValid())
-	{
-		if (mCreateCookerModel->GetCookerMode() == EHotPatcherCookActionMode::ByMultiProcess)
-		{
-			return EVisibility::Visible;
-		}
-	}
-
-	return EVisibility::Collapsed;
 }
 
 
@@ -212,26 +192,24 @@ EVisibility SProjectCookerPage::HandleOperatorConfigVisibility()const
 
 EVisibility SProjectCookerPage::HandleImportProjectConfigVisibility() const
 {
-	switch (mCreateCookerModel->GetCookerMode())
+	EVisibility rVisibility = EVisibility::Hidden;
+	if(GetCookModelPtr()->GetCookerMode() != EHotPatcherCookActionMode::ByOriginal)
 	{
-		case EHotPatcherCookActionMode::ByMultiProcess:
-		{
-			return EVisibility::Visible;
-		}
-		case EHotPatcherCookActionMode::ByOriginal:
-			{
-				return EVisibility::Hidden;
-			}
-		default:
-			return EVisibility::Hidden;
+		rVisibility = EVisibility::Visible;
 	}
+	return rVisibility;
 }
 
-void SProjectCookerPage::HandleHotPatcherMenuEntryClicked(EHotPatcherCookActionMode::Type InMode)
+void SProjectCookerPage::HandleHotPatcherMenuEntryClicked(FString InModeName,TFunction<void(void)> ActionCallback)
 {
+	if(ActionCallback)
+	{
+		ActionCallback();
+	}
+	
 	if (mCreateCookerModel.IsValid())
 	{
-		mCreateCookerModel->SetCookerMode(InMode);
+		GetCookModelPtr()->SetCookerModeByName(FName(*InModeName));
 	}
 }
 
@@ -239,16 +217,7 @@ FText SProjectCookerPage::HandleCookerModeComboButtonContentText() const
 {
 	if (mCreateCookerModel.IsValid())
 	{
-		EHotPatcherCookActionMode::Type PatcherMode = mCreateCookerModel->GetCookerMode();
-
-		if (PatcherMode == EHotPatcherCookActionMode::ByOriginal)
-		{
-			return LOCTEXT("CookerModeComboButtoncess_ByOriginal", "By Original");
-		}
-		if (PatcherMode == EHotPatcherCookActionMode::ByMultiProcess)
-		{
-			return LOCTEXT("CookerModeComboButtoncess_ByMultiProcess", "By MultiProcess");
-		}
+		return FText::FromString(GetCookModelPtr()->GetCookerModeName());
 	}
 
 	return FText();

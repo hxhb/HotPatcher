@@ -6,7 +6,7 @@
 DECLARE_LOG_CATEGORY_EXTERN(LogHotPatcherCommandletBase, All, All);
 
 UCLASS()
-class UHotPatcherCommandletBase :public UCommandlet
+class HOTPATCHERCORE_API UHotPatcherCommandletBase :public UCommandlet
 {
 	GENERATED_BODY()
 

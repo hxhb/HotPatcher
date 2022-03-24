@@ -32,7 +32,7 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherCreatePatchModel> InCreatePatchModel);
+	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherModelBase> InCreatePatchModel);
 
 public:
 	FText HandlePatchModeComboButtonContentText() const;
@@ -52,7 +52,8 @@ protected:
 
 	TSharedPtr<IPatchableInterface> GetActivePatchable()const;
 private:
-	TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
+	FORCEINLINE FHotPatcherCreatePatchModel* GetPatchModelPtr()const{ return (FHotPatcherCreatePatchModel*)mCreatePatchModel.Get(); }
+	TSharedPtr<FHotPatcherModelBase> mCreatePatchModel;
 	TSharedPtr<SHotPatcherPatchableBase> mPatch;
 	TSharedPtr<SHotPatcherPatchableBase> mRelease;
 	TSharedPtr<SHotPatcherPatchableBase> mShaderPatch;

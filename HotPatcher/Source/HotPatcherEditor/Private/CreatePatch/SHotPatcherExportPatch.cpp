@@ -31,7 +31,7 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCreatePatch"
 
-void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCreatePatchModel> InCreatePatchModel)
+void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherModelBase> InCreatePatchModel)
 {
 	ExportPatchSetting = MakeShareable(new FExportPatchSettings);
 	GPatchSettings = ExportPatchSetting.Get();

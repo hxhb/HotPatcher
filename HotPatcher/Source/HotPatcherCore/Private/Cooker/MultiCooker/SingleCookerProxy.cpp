@@ -1,7 +1,7 @@
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "FlibHotPatcherCoreHelper.h"
 #include "HotPatcherCore.h"
-#include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
+#include "Cooker/MultiCooker/FlibHotCookerHelper.h"
 #include "ShaderCompiler.h"
 #include "Async/ParallelFor.h"
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
@@ -224,7 +224,7 @@ void USingleCookerProxy::InitShaderLibConllections()
 {
 	FString SavePath = GetSettingObject()->StorageMetadataDir;
 	SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::InitShaderLibConllections",FColor::Red);
-	PlatformCookShaderCollection = UFlibMultiCookerHelper::CreateCookShaderCollectionProxyByPlatform(
+	PlatformCookShaderCollection = UFlibHotCookerHelper::CreateCookShaderCollectionProxyByPlatform(
 		GetSettingObject()->ShaderLibName,
 		GetSettingObject()->CookTargetPlatforms,
 		GetSettingObject()->ShaderOptions.bSharedShaderLibrary,
@@ -268,7 +268,7 @@ bool USingleCookerProxy::DoExport()
 		FString FailedJsonString;
 		THotPatcherTemplateHelper::TSerializeStructAsJsonString(GetCookFailedAssetsCollection(),FailedJsonString);
 		UE_LOG(LogHotPatcher,Warning,TEXT("Single Cooker Proxy %s:\n%s"),*GetSettingObject()->MissionName,*FailedJsonString);
-		FString SaveTo = UFlibMultiCookerHelper::GetCookerProcFailedResultPath(GetSettingObject()->StorageMetadataDir,GetSettingObject()->MissionName,GetSettingObject()->MissionID);
+		FString SaveTo = UFlibHotCookerHelper::GetCookerProcFailedResultPath(GetSettingObject()->StorageMetadataDir,GetSettingObject()->MissionName,GetSettingObject()->MissionID);
 		FFileHelper::SaveStringToFile(FailedJsonString,*SaveTo);
 	}
 	

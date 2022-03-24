@@ -33,8 +33,9 @@ private:
 	TSharedPtr<SNotificationList> NotificationListPtr;
 
 	// TSharedPtr<FHotPatcherOriginalCookerModel> CookModel;
-	TSharedPtr<FHotPatcherCookerModel> CookerModel;
-	TSharedPtr<FHotPatcherCreatePatchModel> CreatePatchModel;
+	// TSharedPtr<FHotPatcherCookerModel> CookerModel;
+	// TSharedPtr<FHotPatcherCreatePatchModel> CreatePatchModel;
+	TMap<FString,TSharedPtr<FHotPatcherModelBase>> HotPatcherModelsMap;
 	TSharedPtr<SVersionUpdaterWidget> VersionUpdaterWidget;
 };
 
