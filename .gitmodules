@@ -1,0 +1,3 @@
+[submodule "Mods/HotMultiCooker"]
+	path = Mods/HotMultiCooker
+	url = git@github.com:hxhb/HotMultiCooker.git
