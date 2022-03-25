@@ -1,4 +1,4 @@
-
+#pragma once
 // engine header
 #include "CoreMinimal.h"
 #include "Model/FHotPatcherContextBase.h"

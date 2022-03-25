@@ -6,10 +6,13 @@
 #include "SHotPatcher.h"
 #include "HotPatcherSettings.h"
 #include "Templates/HotPatcherTemplateHelper.hpp"
-// #include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
-// #include "Cooker/MultiCooker/FMultiCookerSettings.h"
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "CreatePatch/PatcherProxy.h"
+#include "Cooker/MultiCooker/FlibHotCookerHelper.h"
+#include "HotPatcherActionManager.h"
+#include "FlibHotPatcherCoreHelper.h"
+#include "FlibHotPatcherEditorHelper.h"
+#include "HotPatcherLog.h"
 
 // ENGINE HEADER
 #include "AssetToolsModule.h"
@@ -18,16 +21,12 @@
 #include "Misc/MessageDialog.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "DesktopPlatformModule.h"
-#include "FlibHotPatcherCoreHelper.h"
-#include "FlibHotPatcherEditorHelper.h"
-#include "HotPatcherLog.h"
 #include "ISettingsModule.h"
 #include "LevelEditor.h"
 #include "HAL/FileManager.h"
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "PakFileUtilities.h"
-#include "Cooker/MultiCooker/FlibHotCookerHelper.h"
 
 #if ENGINE_MAJOR_VERSION < 5
 #include "Widgets/Docking/SDockableTab.h"
