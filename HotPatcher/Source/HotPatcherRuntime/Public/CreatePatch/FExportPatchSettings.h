@@ -241,7 +241,7 @@ public:
 	 * bShareMaterialShaderCode as false
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
-		bool bCookPatchAssets = false;
+		bool bCookPatchAssets = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "bCookPatchAssets"))
 		FCookShaderOptions CookShaderOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "bCookPatchAssets"))
