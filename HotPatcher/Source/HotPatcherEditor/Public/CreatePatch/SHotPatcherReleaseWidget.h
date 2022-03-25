@@ -2,9 +2,10 @@
 
 #pragma once
 
-#include "Model/FHotPatcherCreatePatchModel.h"
-#include "CreatePatch/SHotPatcherPatchableBase.h"
-#include "ShaderPatch/FExportShaderPatchSettings.h"
+#include "Model/FPatchersModeContext.h"
+#include "SHotPatcherWidgetBase.h"
+#include "CreatePatch/FExportPatchSettings.h"
+#include "CreatePatch/FExportReleaseSettings.h"
 
 // engine header
 #include "Interfaces/ITargetPlatformManagerModule.h"
@@ -17,12 +18,12 @@
 /**
  * Implements the cooked platforms panel.
  */
-class SHotPatcherExportShaderPatch
-	: public SHotPatcherPatchableBase
+class SHotPatcherReleaseWidget
+	: public SHotPatcherWidgetBase
 {
 public:
 
-	SLATE_BEGIN_ARGS(SHotPatcherExportShaderPatch) { }
+	SLATE_BEGIN_ARGS(SHotPatcherReleaseWidget) { }
 	SLATE_END_ARGS()
 
 public:
@@ -32,29 +33,26 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherModelBase> InCreateModel);
+	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherContextBase> InCreateModel);
 
 public:
 	virtual void ImportConfig();
-	virtual void ImportProjectConfig(){};
 	virtual void ExportConfig()const;
 	virtual void ResetConfig();
 	virtual void DoGenerate();
-	virtual FExportShaderPatchSettings* GetConfigSettings() override{return ExportShaderPatchSettings.Get();};
-	virtual FString GetMissionName() override{return TEXT("Shader Patch");}
-	virtual FText GetGenerateTooltipText() const override;
+	virtual FString GetMissionName() override{return TEXT("Release");}
+	virtual FExportReleaseSettings* GetConfigSettings()override{return ExportReleaseSettings.Get();};
 protected:
 	void CreateExportFilterListView();
-	bool CanExportShaderPatch()const;
-	bool HasValidConfig()const;
-	FReply DoExportShaderPatch();
-
+	bool CanExportRelease()const;
+	FReply DoExportRelease();
+	virtual FText GetGenerateTooltipText() const override;
 private:
 
 	// TSharedPtr<FHotPatcherCreatePatchModel> mCreatePatchModel;
 
 	/** Settings view ui element ptr */
 	TSharedPtr<IStructureDetailsView> SettingsView;
-	TSharedPtr<FExportShaderPatchSettings> ExportShaderPatchSettings;
+	TSharedPtr<FExportReleaseSettings> ExportReleaseSettings;
 };
 

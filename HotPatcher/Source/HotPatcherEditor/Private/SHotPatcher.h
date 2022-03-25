@@ -8,8 +8,8 @@
 #include "Widgets/SCompoundWidget.h"
 //#include "Model/FHotPatcherOriginalCookerModel.h"
 #include "SVersionUpdater/SVersionUpdaterWidget.h"
-#include "Model/FHotPatcherCookerModel.h"
-#include "Model/FHotPatcherCreatePatchModel.h"
+#include "Model/FCookersModeContext.h"
+#include "Model/FPatchersModeContext.h"
 class SHotPatcher : public SCompoundWidget
 {
 
@@ -35,7 +35,7 @@ private:
 	// TSharedPtr<FHotPatcherOriginalCookerModel> CookModel;
 	// TSharedPtr<FHotPatcherCookerModel> CookerModel;
 	// TSharedPtr<FHotPatcherCreatePatchModel> CreatePatchModel;
-	TMap<FString,TSharedPtr<FHotPatcherModelBase>> HotPatcherModelsMap;
+	TMap<FString,TSharedPtr<FHotPatcherContextBase>> HotPatcherModelsMap;
 	TSharedPtr<SVersionUpdaterWidget> VersionUpdaterWidget;
 };
 

@@ -4,7 +4,7 @@
 #include "FCookerConfig.h"
 #include "FlibPatchParserHelper.h"
 #include "FlibHotPatcherCoreHelper.h"
-#include "FHotPatcherModelBase.h"
+#include "FHotPatcherContextBase.h"
 
 // engine header
 #include "Misc/App.h"
@@ -18,11 +18,12 @@
 DECLARE_DELEGATE_OneParam(FRequestExSettingsDlg, TArray<FString>&);
 DECLARE_DELEGATE_OneParam(FRequestSpecifyCookFilterDlg, TArray<FDirectoryPath>&);
 
-struct HOTPATCHEREDITOR_API FHotPatcherOriginalCookerModel: public FHotPatcherModelBase
+struct HOTPATCHEREDITOR_API FOriginalCookerContext: public FHotPatcherContextBase
 {
 public:
-	virtual FName GetModelName()const override{ return TEXT("OriginalCooker"); }
-	virtual ~FHotPatcherOriginalCookerModel()override{}
+	FOriginalCookerContext()=default;
+	virtual FName GetContextName()const override{ return TEXT("OriginalCooker"); }
+	virtual ~FOriginalCookerContext()override{}
 	void AddSelectedCookPlatform(const FString& InPlatfotm)
 	{
 		if (!mSelectedPlatform.Contains(InPlatfotm))

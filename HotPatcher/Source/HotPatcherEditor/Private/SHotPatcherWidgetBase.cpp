@@ -1,7 +1,7 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
 // #include "HotPatcherPrivatePCH.h"
-#include "CreatePatch/SHotPatcherPatchableBase.h"
+#include "SHotPatcherWidgetBase.h"
 #include "FlibHotPatcherCoreHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "FHotPatcherVersion.h"
@@ -24,13 +24,13 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCreatePatch"
 
-void SHotPatcherPatchableBase::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherModelBase> InCreatePatchModel)
+void SHotPatcherWidgetBase::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherContextBase> InContext)
 {
-	mCreatePatchModel = InCreatePatchModel;
+	SetContext(InContext);
 	// InitMissionNotificationProxy();
 }
 
-void SHotPatcherPatchableBase::ImportProjectConfig()
+void SHotPatcherWidgetBase::ImportProjectConfig()
 {
 	// import uasset
 	UFlibHotPatcherCoreHelper::ImportProjectSettingsToSettingBase(GetConfigSettings());
@@ -79,12 +79,12 @@ void SHotPatcherPatchableBase::ImportProjectConfig()
 	}
 }
 
-FText SHotPatcherPatchableInterface::GetGenerateTooltipText() const
+FText SHotPatcherWidgetInterface::GetGenerateTooltipText() const
 {
 	return UKismetTextLibrary::Conv_StringToText(TEXT(""));
 }
 
-TArray<FString> SHotPatcherPatchableInterface::OpenFileDialog()const
+TArray<FString> SHotPatcherWidgetInterface::OpenFileDialog()const
 {
 	IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
 	TArray<FString> SelectedFiles;
@@ -105,7 +105,7 @@ TArray<FString> SHotPatcherPatchableInterface::OpenFileDialog()const
 }
 
 
-TArray<FString> SHotPatcherPatchableInterface::SaveFileDialog()const
+TArray<FString> SHotPatcherWidgetInterface::SaveFileDialog()const
 {
 	IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
 

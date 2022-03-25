@@ -11,13 +11,14 @@
 #include "ETargetPlatform.h"
 #include "FlibHotPatcherCoreHelper.h"
 #include "HotPatcherSettings.h"
-#include "Modules/ModuleManager.h"
 #include "CreatePatch/FExportPatchSettings.h"
 #include "CreatePatch/FExportReleaseSettings.h"
-#include "Model/FHotPatcherModelBase.h"
+#include "Model/FHotPatcherContextBase.h"
+#include "HotPatcherActionManager.h"
+
 // engine header
 #include "CoreMinimal.h"
-
+#include "Modules/ModuleManager.h"
 #include "ContentBrowserDelegates.h"
 #include "MissionNotificationProxy.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
@@ -40,18 +41,6 @@ struct FContentBrowserSelectedInfo
 	TArray<FName> OutAllAssetPackages;
 };
 
-struct FHotPatcherAction
-{
-	TAttribute<FText> InLabel;
-	TAttribute<FText> InToolTip;
-	FSlateIcon InIcon;
-	// FUIAction InAction;
-	TFunction<void(void)> ActionCallback;
-	TFunction<TSharedRef<SCompoundWidget>(TSharedPtr<FHotPatcherModelBase>)> RequestWidget;
-};
-
-DECLARE_MULTICAST_DELEGATE_ThreeParams(FHotPatcherActionDelegate,const FString&,const FString&,const FHotPatcherAction&);
-
 class HOTPATCHEREDITOR_API FHotPatcherEditorModule : public IModuleInterface
 {
 public:
@@ -62,8 +51,6 @@ public:
 	void OpenDockTab();
 	/** This function will be bound to Command. */
 	void PluginButtonClicked();
-
-	typedef TMap<FString,TMap<FString,FHotPatcherAction>> FHotPatcherActionsType;
 	
 public:
 	void AddToolbarExtension(FToolBarBuilder& Builder);
@@ -73,12 +60,6 @@ public:
 	
 	TSharedPtr<FProcWorkerThread> RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName);
 
-	void RegisteHotPatcherActions(const FString& Category,const FString& ActionName,const FHotPatcherAction& Action);
-	void UnRegisteHotPatcherActions(const FString& Category, const FString& ActionName);
-	FHotPatcherActionsType& GetHotPatcherActions() { return HotPatcherActions; }
-	FHotPatcherActionsType HotPatcherActions;
-	FHotPatcherActionDelegate OnHotPatcherActionRegisted;
-	FHotPatcherActionDelegate OnHotPatcherActionUnRegisted;
 	
 #if WITH_EDITOR_SECTION
 	void CreateRootMenu();
@@ -113,13 +94,12 @@ private:
 	void OnTabClosed(TSharedRef<SDockTab> InTab);
 	TArray<FAssetData> GetSelectedAssetsInBrowserContent();
 	TArray<FString> GetSelectedFolderInBrowserContent();
+	
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
 	TSharedPtr<SDockTab> DockTab;
-
 	mutable TSharedPtr<FProcWorkerThread> mProcWorkingThread;
 	UMissionNotificationProxy* MissionNotifyProay;
 	TSharedPtr<FExportPatchSettings> PatchSettings;
 	TArray<class UPatcherProxy*> Proxys;
-
 };

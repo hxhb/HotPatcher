@@ -6,28 +6,27 @@
 #include "CoreMinimal.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
-#include "Model/FHotPatcherOriginalCookerModel.h"
+#include "Model/FOriginalCookerContext.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
 
-#include "ICookerItemInterface.h"
+#include "IOriginalCookerChildWidget.h"
 #include "MissionNotificationProxy.h"
 #include "SHotPatcherCookedPlatforms.h"
 #include "SHotPatcherCookMaps.h"
 #include "SHotPatcherCookSetting.h"
 #include "SHotPatcherCookSpecifyCookFilter.h"
 
-
 DECLARE_LOG_CATEGORY_EXTERN(LogCookPage, Log, All);
 
 /**
  * Implements the profile page for the session launcher wizard.
  */
-class SProjectCookPage
-	: public SHotPatcherCookerBase,public ICookerItemInterface
+class SOriginalCookWidget
+	: public SHotPatcherCookerBase,public IOriginalCookerChildWidget
 {
 public:
 
-	SLATE_BEGIN_ARGS(SProjectCookPage) { }
+	SLATE_BEGIN_ARGS(SOriginalCookWidget) { }
 	SLATE_END_ARGS()
 
 public:
@@ -37,7 +36,7 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherOriginalCookerModel> InCookModel);
+	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherContextBase> InContext);
 	
 public:
 	virtual TSharedPtr<FJsonObject> SerializeAsJson()const override;
@@ -61,9 +60,9 @@ protected:
 	TArray<FString> GetDefaultCookParams()const;
 	void CancelCookMission();
 
-	TArray<ICookerItemInterface*> GetSerializableItems()const
+	TArray<IOriginalCookerChildWidget*> GetSerializableItems()const
 	{
-		TArray<ICookerItemInterface*> List;
+		TArray<IOriginalCookerChildWidget*> List;
 		List.Add(Platforms.Get());
 		List.Add(CookMaps.Get());
 		List.Add(CookFilters.Get());
@@ -78,11 +77,11 @@ private:
 	bool InCooking=false;
 	/** The pending progress message */
 	TWeakPtr<SNotificationItem> PendingProgressPtr;
-	TSharedPtr<FHotPatcherOriginalCookerModel> mCookModel;
+	
 	mutable TSharedPtr<FProcWorkerThread> mCookProcWorkingThread;
 	TSharedPtr<SHotPatcherCookedPlatforms> Platforms;
 	TSharedPtr<SHotPatcherCookMaps> CookMaps;
 	TSharedPtr<SHotPatcherCookSpecifyCookFilter> CookFilters;
 	TSharedPtr<SHotPatcherCookSetting> CookSettings;
-
+	TSharedPtr<FOriginalCookerContext> OriginalCookerContext;
 };

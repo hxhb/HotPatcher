@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "Model/FHotPatcherCreatePatchModel.h"
-#include "CreatePatch/SHotPatcherPatchableBase.h"
+#include "Model/FPatchersModeContext.h"
+#include "SHotPatcherWidgetBase.h"
 #include "GameFeature/FGameFeaturePackagerSettings.h"
 
 // engine header
@@ -13,12 +13,12 @@
 /**
  * Implements the cooked platforms panel.
  */
-class SHotPatcherGameFeaturePackager
-	: public SHotPatcherPatchableBase
+class SGameFeaturePackageWidget
+	: public SHotPatcherWidgetBase
 {
 public:
 
-	SLATE_BEGIN_ARGS(SHotPatcherGameFeaturePackager) { }
+	SLATE_BEGIN_ARGS(SGameFeaturePackageWidget) { }
 	SLATE_END_ARGS()
 
 public:
@@ -28,7 +28,7 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherModelBase> InCreateModel);
+	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherContextBase> InCreateModel);
 
 public:
 	virtual void ImportConfig();

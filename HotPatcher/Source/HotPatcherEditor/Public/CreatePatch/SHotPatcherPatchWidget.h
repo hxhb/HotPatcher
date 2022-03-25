@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "Model/FHotPatcherCreatePatchModel.h"
+#include "Model/FPatchersModeContext.h"
 #include "CreatePatch/FExportPatchSettings.h"
 #include "SHotPatcherInformations.h"
-#include "SHotPatcherPatchableBase.h"
+#include "SHotPatcherWidgetBase.h"
 #include "FPatchVersionDiff.h"
 #include "CreatePatch/FExportPatchSettings.h"
 
@@ -21,12 +21,12 @@
 /**
  * Implements the cooked platforms panel.
  */
-class SHotPatcherExportPatch
-	: public SHotPatcherPatchableBase
+class SHotPatcherPatchWidget
+	: public SHotPatcherWidgetBase
 {
 public:
 
-	SLATE_BEGIN_ARGS(SHotPatcherExportPatch) { }
+	SLATE_BEGIN_ARGS(SHotPatcherPatchWidget) { }
 	SLATE_END_ARGS()
 
 public:
@@ -36,7 +36,7 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherModelBase> InCreateModel);
+	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherContextBase> InCreateModel);
 
 // IPatchableInterface
 public:

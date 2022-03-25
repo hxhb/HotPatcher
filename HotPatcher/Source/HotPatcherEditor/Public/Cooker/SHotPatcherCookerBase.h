@@ -5,7 +5,7 @@
 #include "Interfaces/ITargetPlatform.h"
 #include "CreatePatch/FExportPatchSettings.h"
 #include "CreatePatch/IPatchableInterface.h"
-#include "Model/FHotPatcherCookerModel.h"
+#include "Model/FCookersModeContext.h"
 // engine header
 #include "Cooker/HotPatcherCookerSettingBase.h"
 #include "Interfaces/ITargetPlatform.h"
@@ -13,13 +13,13 @@
 #include "IDetailsView.h"
 #include "MissionNotificationProxy.h"
 #include "PropertyEditorModule.h"
-#include "CreatePatch/SHotPatcherPatchableBase.h"
+#include "SHotPatcherWidgetBase.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
 #include "Widgets/Text/SMultiLineEditableText.h"
 /**
  * Implements the cooked platforms panel.
  */
-class SHotPatcherCookerBase : public SHotPatcherPatchableInterface
+class SHotPatcherCookerBase : public SHotPatcherWidgetInterface
 {
 public:
 
@@ -33,15 +33,15 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	FORCEINLINE void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherModelBase> InCreateModel)
+	FORCEINLINE void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherContextBase> InCreateModel)
 	{
 		mCreatePatchModel = InCreateModel;
 	}
 
 
 protected:
-	FHotPatcherCookerModel* GetCookerModelPtr()const { return (FHotPatcherCookerModel*)mCreatePatchModel.Get(); }
-	TSharedPtr<FHotPatcherModelBase> mCreatePatchModel;
+	FCookersModeContext* GetCookerModelPtr()const { return (FCookersModeContext*)mCreatePatchModel.Get(); }
+	TSharedPtr<FHotPatcherContextBase> mCreatePatchModel;
 
 };
 

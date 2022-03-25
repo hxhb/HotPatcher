@@ -68,11 +68,12 @@ FHotPatcherEditorModule& FHotPatcherEditorModule::Get()
 void FHotPatcherEditorModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-
 	FHotPatcherStyle::Initialize();
 	FHotPatcherStyle::ReloadTextures();
 	FHotPatcherCommands::Register();
 
+	FHotPatcherActionManager::Get().Init();
+	
 	FHotPatcherDelegates::Get().GetNotifyFileGenerated().AddLambda([](FText Msg,const FString& File)
 	{
 		UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,File);
@@ -134,7 +135,7 @@ void FHotPatcherEditorModule::ShutdownModule()
 	{
 		DockTab->RequestCloseTab();
 	}
-	
+	FHotPatcherActionManager::Get().Shutdown();
 	FHotPatcherCommands::Unregister();
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(HotPatcherTabName);
 	FHotPatcherStyle::Shutdown();
@@ -707,25 +708,6 @@ TSharedPtr<FProcWorkerThread> FHotPatcherEditorModule::RunProcMission(const FStr
 		mProcWorkingThread->Execute();
 	}
 	return mProcWorkingThread;
-}
-
-void FHotPatcherEditorModule::RegisteHotPatcherActions(const FString& Category, const FString& ActionName,
-	const FHotPatcherAction& Action)
-{
-	TMap<FString,FHotPatcherAction>& CategoryIns = HotPatcherActions.FindOrAdd(Category);
-	CategoryIns.Add(ActionName,Action);
-	OnHotPatcherActionRegisted.Broadcast(Category,ActionName,Action);
-}
-void FHotPatcherEditorModule::UnRegisteHotPatcherActions(const FString& Category, const FString& ActionName)
-{
-	TMap<FString,FHotPatcherAction>& CategoryIns = HotPatcherActions.FindOrAdd(Category);
-	FHotPatcherAction Action;
-	if(CategoryIns.Contains(ActionName))
-	{
-		Action = *CategoryIns.Find(ActionName);
-		CategoryIns.Remove(ActionName);
-	}
-	OnHotPatcherActionUnRegisted.Broadcast(Category,ActionName,Action);
 }
 
 #undef LOCTEXT_NAMESPACE

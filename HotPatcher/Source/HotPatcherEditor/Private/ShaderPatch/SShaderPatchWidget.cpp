@@ -1,4 +1,4 @@
-#include "ShaderPatch/SHotPatcherExportShaderPatch.h"
+#include "ShaderPatch/SShaderPatchWidget.h"
 #include "FlibPatchParserHelper.h"
 #include "FlibHotPatcherCoreHelper.h"
 #include "FlibHotPatcherEditorHelper.h"
@@ -11,17 +11,15 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcherShaderPatch"
 
-void SHotPatcherExportShaderPatch::Construct(const FArguments& InArgs,
-	TSharedPtr<FHotPatcherModelBase> InCreateModel)
+void SShaderPatchWidget::Construct(const FArguments& InArgs,
+	TSharedPtr<FHotPatcherContextBase> InContext)
 {
+	SetContext(InContext);
 	ExportShaderPatchSettings = MakeShareable(new FExportShaderPatchSettings);
 	CreateExportFilterListView();
 	
-	mCreatePatchModel = InCreateModel;
-	
 	ChildSlot
         [
-
             SNew(SVerticalBox)
             + SVerticalBox::Slot()
             .AutoHeight()
@@ -45,14 +43,14 @@ void SHotPatcherExportShaderPatch::Construct(const FArguments& InArgs,
             [
                 SNew(SButton)
                 .Text(LOCTEXT("GenerateShaderPatch", "Export ShaderPatch"))
-                .OnClicked(this,&SHotPatcherExportShaderPatch::DoExportShaderPatch)
-                .IsEnabled(this,&SHotPatcherExportShaderPatch::CanExportShaderPatch)
-                .ToolTipText(this,&SHotPatcherExportShaderPatch::GetGenerateTooltipText)
+                .OnClicked(this,&SShaderPatchWidget::DoExportShaderPatch)
+                .IsEnabled(this,&SShaderPatchWidget::CanExportShaderPatch)
+                .ToolTipText(this,&SShaderPatchWidget::GetGenerateTooltipText)
             ]
         ];
 }
 
-void SHotPatcherExportShaderPatch::ImportConfig()
+void SShaderPatchWidget::ImportConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Import Shader Patch Config"));
 	TArray<FString> Files = this->OpenFileDialog();
@@ -69,7 +67,7 @@ void SHotPatcherExportShaderPatch::ImportConfig()
 	}
 }
 
-void SHotPatcherExportShaderPatch::ExportConfig() const
+void SShaderPatchWidget::ExportConfig() const
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Export Shader Patch Config"));
 	TArray<FString> Files = this->SaveFileDialog();
@@ -90,7 +88,7 @@ void SHotPatcherExportShaderPatch::ExportConfig() const
 	}
 }
 
-void SHotPatcherExportShaderPatch::ResetConfig()
+void SShaderPatchWidget::ResetConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Reset Shader Patch Config"));
 	FString DefaultSettingJson;
@@ -99,7 +97,7 @@ void SHotPatcherExportShaderPatch::ResetConfig()
 	SettingsView->GetDetailsView()->ForceRefresh();
 }
 
-void SHotPatcherExportShaderPatch::DoGenerate()
+void SShaderPatchWidget::DoGenerate()
 {
 	UShaderPatchProxy* ShaderPatchProxy = NewObject<UShaderPatchProxy>();
 	ShaderPatchProxy->AddToRoot();
@@ -120,7 +118,7 @@ void SHotPatcherExportShaderPatch::DoGenerate()
 	}
 }
 
-FText SHotPatcherExportShaderPatch::GetGenerateTooltipText() const
+FText SShaderPatchWidget::GetGenerateTooltipText() const
 {
 	FString FinalString;
 	struct FStatus
@@ -145,7 +143,7 @@ FText SHotPatcherExportShaderPatch::GetGenerateTooltipText() const
 	return UKismetTextLibrary::Conv_StringToText(FinalString);
 }
 
-void SHotPatcherExportShaderPatch::CreateExportFilterListView()
+void SShaderPatchWidget::CreateExportFilterListView()
 {
 	// Create a property view
 	FPropertyEditorModule& EditModule = FModuleManager::Get().GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
@@ -180,13 +178,13 @@ void SHotPatcherExportShaderPatch::CreateExportFilterListView()
 	SettingsView->SetStructureData(MakeShareable(Struct));
 }
 
-bool SHotPatcherExportShaderPatch::CanExportShaderPatch() const
+bool SShaderPatchWidget::CanExportShaderPatch() const
 {
 	bool bHasSavePath = ExportShaderPatchSettings->GetSaveAbsPath().IsEmpty()?false:FPaths::DirectoryExists(ExportShaderPatchSettings->GetSaveAbsPath());
 	return HasValidConfig() && bHasSavePath;
 }
 
-bool SHotPatcherExportShaderPatch::HasValidConfig() const
+bool SShaderPatchWidget::HasValidConfig() const
 {
 	auto HasValidDir = [](const TArray<FDirectoryPath>& Dirs)->bool
 	{
@@ -217,7 +215,7 @@ bool SHotPatcherExportShaderPatch::HasValidConfig() const
 	return HasValidPatchConfig;
 }
 
-FReply SHotPatcherExportShaderPatch::DoExportShaderPatch()
+FReply SShaderPatchWidget::DoExportShaderPatch()
 {
 	DoGenerate();
 	return FReply::Handled();

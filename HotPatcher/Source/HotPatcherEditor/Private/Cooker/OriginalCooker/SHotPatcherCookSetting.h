@@ -3,17 +3,17 @@
 #pragma once
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Interfaces/ITargetPlatform.h"
-#include "Model/FHotPatcherOriginalCookerModel.h"
+#include "Model/FOriginalCookerContext.h"
 #include "Templates/SharedPointer.h"
 #include "Widgets/Input/SEditableTextBox.h"
 // project header
-#include "ICookerItemInterface.h"
+#include "IOriginalCookerChildWidget.h"
 
 /**
  * Implements the cooked platforms panel.
  */
 class SHotPatcherCookSetting
-	: public SCompoundWidget,public ICookerItemInterface
+	: public SCompoundWidget,public IOriginalCookerChildWidget
 {
 public:
 
@@ -27,7 +27,7 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherOriginalCookerModel> InCookModel);
+	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherContextBase> InContext);
 public:
 	virtual TSharedPtr<FJsonObject> SerializeAsJson()const override;
 	virtual void DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)override;
@@ -53,9 +53,7 @@ private:
 
 	/** Holds the map list view. */
 	TSharedPtr<SListView<TSharedPtr<FString> > > SettingListView;
-
-	TSharedPtr<FHotPatcherOriginalCookerModel> mCookModel;
-
+	
 	// Extern Cook Setting Param
 	TSharedPtr<SEditableTextBox> ExternSettingTextBox;
 };

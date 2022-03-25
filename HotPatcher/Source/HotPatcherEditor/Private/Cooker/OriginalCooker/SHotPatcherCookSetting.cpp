@@ -11,11 +11,10 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCookSetting"
 
-void SHotPatcherCookSetting::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherOriginalCookerModel> InCookModel)
+void SHotPatcherCookSetting::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherContextBase> InContext)
 {
-
-	mCookModel = InCookModel;
-
+	SetContext(InContext);
+	
 	ChildSlot
 		[
 			SNew(SVerticalBox)
@@ -65,8 +64,11 @@ void SHotPatcherCookSetting::Construct(const FArguments& InArgs, TSharedPtr<FHot
 				]
 			]
 		];
-
-	mCookModel->OnRequestExSettings.BindRaw(this, &SHotPatcherCookSetting::HandleRequestExSettings);
+	if(GetCookerContextPtr())
+	{
+		GetCookerContextPtr()->OnRequestExSettings.BindRaw(this, &SHotPatcherCookSetting::HandleRequestExSettings);
+	}
+	
 	RefreshSettingsList();
 }
 
@@ -74,7 +76,7 @@ TSharedPtr<FJsonObject> SHotPatcherCookSetting::SerializeAsJson() const
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
-	TArray<FString> SelectedCookSettingList = mCookModel->GetAllSelectedSettings();
+	TArray<FString> SelectedCookSettingList = GetCookerContextPtr()->GetAllSelectedSettings();
 
 	TArray<TSharedPtr<FJsonValue>> CookSettingJsonList;
 	for (const auto& Platform : SelectedCookSettingList)
@@ -105,7 +107,7 @@ void SHotPatcherCookSetting::DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const
 	{
 		FString Setting = SettingItem->AsString();
 		SelectedCookSettingList.Add(MakeShareable(new FString(Setting)));
-		mCookModel->AddSelectedSetting(Setting);
+		GetCookerContextPtr()->AddSelectedSetting(Setting);
 	}
 	ExternSettingTextBox->SetText(UKismetTextLibrary::Conv_StringToText(InJsonObject->GetStringField("Options")));
 }
@@ -118,14 +120,14 @@ FString SHotPatcherCookSetting::GetSerializeName()const
 
 void SHotPatcherCookSetting::Reset()
 {
-	mCookModel->ClearAllSettings();
+	GetCookerContextPtr()->ClearAllSettings();
 	ExternSettingTextBox->SetText(UKismetTextLibrary::Conv_StringToText(TEXT("")));
 }
 
 
 TSharedRef<ITableRow> SHotPatcherCookSetting::HandleCookSettingListViewGenerateRow(TSharedPtr<FString> InItem, const TSharedRef<STableViewBase>& OwnerTable)
 {
-	return SNew(SProjectCookSettingsListRow, mCookModel.ToSharedRef())
+	return SNew(SProjectCookSettingsListRow, mContext)
 		.SettingName(InItem)
 		.OwnerTableView(OwnerTable);
 }

@@ -1,7 +1,7 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
 // #include "HotPatcherPrivatePCH.h"
-#include "CreatePatch/SHotPatcherExportPatch.h"
+#include "CreatePatch/SHotPatcherPatchWidget.h"
 #include "CreatePatch/FExportPatchSettings.h"
 #include "CreatePatch/PatcherProxy.h"
 #include "CreatePatch/ScopedSlowTaskContext.h"
@@ -31,12 +31,12 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCreatePatch"
 
-void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherModelBase> InCreatePatchModel)
+void SHotPatcherPatchWidget::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherContextBase> InCreatePatchModel)
 {
 	ExportPatchSetting = MakeShareable(new FExportPatchSettings);
 	GPatchSettings = ExportPatchSetting.Get();
 	CreateExportFilterListView();
-	mCreatePatchModel = InCreatePatchModel;
+	mContext = InCreatePatchModel;
 
 	ChildSlot
 		[
@@ -65,7 +65,7 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 				[
 					SNew(SButton)
 					.Text(LOCTEXT("AddToPreset", "AddToPreset"))
-					.OnClicked(this, &SHotPatcherExportPatch::DoAddToPreset)
+					.OnClicked(this, &SHotPatcherPatchWidget::DoAddToPreset)
 				]
 				+ SHorizontalBox::Slot()
 				.HAlign(HAlign_Right)
@@ -74,9 +74,9 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 				[
 					SNew(SButton)
 					.Text(LOCTEXT("PreviewChunk", "PreviewChunk"))
-					.IsEnabled(this, &SHotPatcherExportPatch::CanPreviewChunk)
-					.OnClicked(this, &SHotPatcherExportPatch::DoPreviewChunk)
-					.Visibility(this, &SHotPatcherExportPatch::VisibilityPreviewChunkButtons)
+					.IsEnabled(this, &SHotPatcherPatchWidget::CanPreviewChunk)
+					.OnClicked(this, &SHotPatcherPatchWidget::DoPreviewChunk)
+					.Visibility(this, &SHotPatcherPatchWidget::VisibilityPreviewChunkButtons)
 				]
 				+ SHorizontalBox::Slot()
 				.HAlign(HAlign_Right)
@@ -85,9 +85,9 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 				[
 					SNew(SButton)
 					.Text(LOCTEXT("Diff", "Diff"))
-					.IsEnabled(this, &SHotPatcherExportPatch::CanDiff)
-					.OnClicked(this, &SHotPatcherExportPatch::DoDiff)
-					.Visibility(this, &SHotPatcherExportPatch::VisibilityDiffButtons)
+					.IsEnabled(this, &SHotPatcherPatchWidget::CanDiff)
+					.OnClicked(this, &SHotPatcherPatchWidget::DoDiff)
+					.Visibility(this, &SHotPatcherPatchWidget::VisibilityDiffButtons)
 				]
 				+ SHorizontalBox::Slot()
 				.HAlign(HAlign_Right)
@@ -96,9 +96,9 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 				[
 					SNew(SButton)
 					.Text(LOCTEXT("ClearDiff", "ClearDiff"))
-					.IsEnabled(this, &SHotPatcherExportPatch::CanDiff)
-					.OnClicked(this, &SHotPatcherExportPatch::DoClearDiff)
-					.Visibility(this, &SHotPatcherExportPatch::VisibilityDiffButtons)
+					.IsEnabled(this, &SHotPatcherPatchWidget::CanDiff)
+					.OnClicked(this, &SHotPatcherPatchWidget::DoClearDiff)
+					.Visibility(this, &SHotPatcherPatchWidget::VisibilityDiffButtons)
 				]
 				+ SHorizontalBox::Slot()
 					.HAlign(HAlign_Right)
@@ -107,9 +107,9 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 					[
 						SNew(SButton)
 						.Text(LOCTEXT("PreviewPatch", "PreviewPatch"))
-						.IsEnabled(this, &SHotPatcherExportPatch::CanPreviewPatch)
-						.OnClicked(this, &SHotPatcherExportPatch::DoPreviewPatch)
-						.ToolTipText(this,&SHotPatcherExportPatch::GetGenerateTooltipText)
+						.IsEnabled(this, &SHotPatcherPatchWidget::CanPreviewPatch)
+						.OnClicked(this, &SHotPatcherPatchWidget::DoPreviewPatch)
+						.ToolTipText(this,&SHotPatcherPatchWidget::GetGenerateTooltipText)
 					]
 				+ SHorizontalBox::Slot()
 					.HAlign(HAlign_Right)
@@ -118,9 +118,9 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 					[
 						SNew(SButton)
 						.Text(LOCTEXT("GeneratePatch", "GeneratePatch"))
-						.ToolTipText(this,&SHotPatcherExportPatch::GetGenerateTooltipText)
-						.IsEnabled(this, &SHotPatcherExportPatch::CanExportPatch)
-						.OnClicked(this, &SHotPatcherExportPatch::DoExportPatch)
+						.ToolTipText(this,&SHotPatcherPatchWidget::GetGenerateTooltipText)
+						.IsEnabled(this, &SHotPatcherPatchWidget::CanExportPatch)
+						.OnClicked(this, &SHotPatcherPatchWidget::DoExportPatch)
 					]
 			]
 			+ SVerticalBox::Slot()
@@ -136,7 +136,7 @@ void SHotPatcherExportPatch::Construct(const FArguments& InArgs, TSharedPtr<FHot
 		];
 }
 
-void SHotPatcherExportPatch::ImportConfig()
+void SHotPatcherPatchWidget::ImportConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Patch Import Config"));
 	TArray<FString> Files = this->OpenFileDialog();
@@ -152,7 +152,7 @@ void SHotPatcherExportPatch::ImportConfig()
 	}
 }
 
-void SHotPatcherExportPatch::ExportConfig()const
+void SHotPatcherPatchWidget::ExportConfig()const
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Patch Export Config"));
 	TArray<FString> Files = this->SaveFileDialog();
@@ -176,7 +176,7 @@ void SHotPatcherExportPatch::ExportConfig()const
 	}
 }
 
-void SHotPatcherExportPatch::ResetConfig()
+void SHotPatcherPatchWidget::ResetConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Patch Clear Config"));
 	FString DefaultSettingJson;
@@ -185,31 +185,31 @@ void SHotPatcherExportPatch::ResetConfig()
 	SettingsView->GetDetailsView()->ForceRefresh();
 
 }
-void SHotPatcherExportPatch::DoGenerate()
+void SHotPatcherPatchWidget::DoGenerate()
 {
 	DoExportPatch();
 }
 
 
 
-bool SHotPatcherExportPatch::InformationContentIsVisibility() const
+bool SHotPatcherPatchWidget::InformationContentIsVisibility() const
 {
 	return DiffWidget->GetVisibility() == EVisibility::Visible;
 }
 
-void SHotPatcherExportPatch::SetInformationContent(const FString& InContent)const
+void SHotPatcherPatchWidget::SetInformationContent(const FString& InContent)const
 {
 	DiffWidget->SetContent(InContent);
 }
 
-void SHotPatcherExportPatch::SetInfomationContentVisibility(EVisibility InVisibility)const
+void SHotPatcherPatchWidget::SetInfomationContentVisibility(EVisibility InVisibility)const
 {
 	DiffWidget->SetVisibility(InVisibility);
 }
 
-void SHotPatcherExportPatch::ImportProjectConfig()
+void SHotPatcherPatchWidget::ImportProjectConfig()
 {
-	SHotPatcherPatchableBase::ImportProjectConfig();
+	SHotPatcherWidgetBase::ImportProjectConfig();
 	bool bUseIoStore = false;
 	bool bAllowBulkDataInIoStore = false;
 	
@@ -240,7 +240,7 @@ void SHotPatcherExportPatch::ImportProjectConfig()
 	
 }
 
-void SHotPatcherExportPatch::ShowMsg(const FString& InMsg)const
+void SHotPatcherPatchWidget::ShowMsg(const FString& InMsg)const
 {
 	auto ErrorMsgShowLambda = [this](const FString& InErrorMsg)->bool
 	{
@@ -265,7 +265,7 @@ void SHotPatcherExportPatch::ShowMsg(const FString& InMsg)const
 	ErrorMsgShowLambda(InMsg);
 }
 
-bool SHotPatcherExportPatch::CanDiff()const
+bool SHotPatcherPatchWidget::CanDiff()const
 {
 	bool bCanDiff = false;
 	if (ExportPatchSetting)
@@ -279,7 +279,7 @@ bool SHotPatcherExportPatch::CanDiff()const
 	}
 	return bCanDiff;
 }
-FReply SHotPatcherExportPatch::DoDiff()const
+FReply SHotPatcherPatchWidget::DoDiff()const
 {
 	FString BaseVersionContent;
 	FHotPatcherVersion BaseVersion;
@@ -324,7 +324,7 @@ FReply SHotPatcherExportPatch::DoDiff()const
 	return FReply::Handled();
 }
 
-FReply SHotPatcherExportPatch::DoClearDiff()const
+FReply SHotPatcherPatchWidget::DoClearDiff()const
 {
 	SetInformationContent(TEXT(""));
 	SetInfomationContentVisibility(EVisibility::Collapsed);
@@ -332,7 +332,7 @@ FReply SHotPatcherExportPatch::DoClearDiff()const
 	return FReply::Handled();
 }
 
-EVisibility SHotPatcherExportPatch::VisibilityDiffButtons() const
+EVisibility SHotPatcherPatchWidget::VisibilityDiffButtons() const
 {
 	bool bHasBase = false;
 	if (ExportPatchSetting && ExportPatchSetting->IsByBaseVersion())
@@ -351,7 +351,7 @@ EVisibility SHotPatcherExportPatch::VisibilityDiffButtons() const
 }
 
 
-FReply SHotPatcherExportPatch::DoPreviewChunk() const
+FReply SHotPatcherPatchWidget::DoPreviewChunk() const
 {
 
 	FHotPatcherVersion BaseVersion;
@@ -439,12 +439,12 @@ FReply SHotPatcherExportPatch::DoPreviewChunk() const
 	return FReply::Handled();
 }
 
-bool SHotPatcherExportPatch::CanPreviewChunk() const
+bool SHotPatcherPatchWidget::CanPreviewChunk() const
 {
 	return ExportPatchSetting->IsEnableChunk();
 }
 
-EVisibility SHotPatcherExportPatch::VisibilityPreviewChunkButtons() const
+EVisibility SHotPatcherPatchWidget::VisibilityPreviewChunkButtons() const
 {
 	if (CanPreviewChunk())
 	{
@@ -454,7 +454,7 @@ EVisibility SHotPatcherExportPatch::VisibilityPreviewChunkButtons() const
 		return EVisibility::Collapsed;
 	}
 }
-bool SHotPatcherExportPatch::CanExportPatch()const
+bool SHotPatcherPatchWidget::CanExportPatch()const
 {
 	bool bCanExport = false;
 	if (ExportPatchSetting)
@@ -490,14 +490,14 @@ bool SHotPatcherExportPatch::CanExportPatch()const
 	return bCanExport;
 }
 
-FReply SHotPatcherExportPatch::DoExportPatch()
+FReply SHotPatcherPatchWidget::DoExportPatch()
 {
 	if(!GetConfigSettings()->IsStandaloneMode())
 	{
 		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
 		PatcherProxy->AddToRoot();
 		PatcherProxy->Init(ExportPatchSetting.Get());
-		PatcherProxy->OnShowMsg.AddRaw(this,&SHotPatcherExportPatch::ShowMsg);
+		PatcherProxy->OnShowMsg.AddRaw(this,&SHotPatcherPatchWidget::ShowMsg);
 		PatcherProxy->DoExport();
 	}
 	else
@@ -514,7 +514,7 @@ FReply SHotPatcherExportPatch::DoExportPatch()
 	return FReply::Handled();
 }
 
-FText SHotPatcherExportPatch::GetGenerateTooltipText() const
+FText SHotPatcherPatchWidget::GetGenerateTooltipText() const
 {
 	FString FinalString;
 	if (GetMutableDefault<UHotPatcherSettings>()->bPreviewTooltips && ExportPatchSetting)
@@ -570,7 +570,7 @@ FText SHotPatcherExportPatch::GetGenerateTooltipText() const
 	return UKismetTextLibrary::Conv_StringToText(FinalString);
 }
 
-bool SHotPatcherExportPatch::CanPreviewPatch() const
+bool SHotPatcherPatchWidget::CanPreviewPatch() const
 {
 	bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
 	bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
@@ -611,7 +611,7 @@ bool SHotPatcherExportPatch::CanPreviewPatch() const
 }
 
 
-FReply SHotPatcherExportPatch::DoPreviewPatch()
+FReply SHotPatcherPatchWidget::DoPreviewPatch()
 {
 	ExportPatchSetting->Init();
 	FChunkInfo DefaultChunk;
@@ -668,15 +668,15 @@ FReply SHotPatcherExportPatch::DoPreviewPatch()
 	return FReply::Handled();
 }
 
-FReply SHotPatcherExportPatch::DoAddToPreset() const
+FReply SHotPatcherPatchWidget::DoAddToPreset() const
 {
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
-	Settings->PresetConfigs.Add(*const_cast<SHotPatcherExportPatch*>(this)->GetConfigSettings());
+	Settings->PresetConfigs.Add(*const_cast<SHotPatcherPatchWidget*>(this)->GetConfigSettings());
 	Settings->SaveConfig();
 	return FReply::Handled();
 }
 
-void SHotPatcherExportPatch::CreateExportFilterListView()
+void SHotPatcherPatchWidget::CreateExportFilterListView()
 {
 	// Create a property view
 	FPropertyEditorModule& EditModule = FModuleManager::Get().GetModuleChecked<FPropertyEditorModule>("PropertyEditor");

@@ -1,7 +1,7 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
 // #include "HotPatcherPrivatePCH.h"
-#include "CreatePatch/SHotPatcherExportRelease.h"
+#include "CreatePatch/SHotPatcherReleaseWidget.h"
 #include "FlibHotPatcherCoreHelper.h"
 #include "FlibAssetManageHelper.h"
 #include "AssetManager/FAssetDependenciesInfo.h"
@@ -23,17 +23,15 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcherExportRelease"
 
-void SHotPatcherExportRelease::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherModelBase> InCreatePatchModel)
+void SHotPatcherReleaseWidget::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherContextBase> InCreatePatchModel)
 {
 	ExportReleaseSettings = MakeShareable(new FExportReleaseSettings);
 	GReleaseSettings = ExportReleaseSettings.Get();
 	CreateExportFilterListView();
-
-	mCreatePatchModel = InCreatePatchModel;
+	mContext = InCreatePatchModel;
 
 	ChildSlot
 		[
-
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot()
 			.AutoHeight()
@@ -57,14 +55,14 @@ void SHotPatcherExportRelease::Construct(const FArguments& InArgs, TSharedPtr<FH
 			[
 				SNew(SButton)
 				.Text(LOCTEXT("GenerateRelease", "Export Release"))
-				.OnClicked(this,&SHotPatcherExportRelease::DoExportRelease)
-				.IsEnabled(this,&SHotPatcherExportRelease::CanExportRelease)
-				.ToolTipText(this,&SHotPatcherExportRelease::GetGenerateTooltipText)
+				.OnClicked(this,&SHotPatcherReleaseWidget::DoExportRelease)
+				.IsEnabled(this,&SHotPatcherReleaseWidget::CanExportRelease)
+				.ToolTipText(this,&SHotPatcherReleaseWidget::GetGenerateTooltipText)
 			]
 		];
 }
 
-void SHotPatcherExportRelease::ImportConfig()
+void SHotPatcherReleaseWidget::ImportConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Release Import Config"));
 	TArray<FString> Files = this->OpenFileDialog();
@@ -81,7 +79,7 @@ void SHotPatcherExportRelease::ImportConfig()
 	}
 }
 
-void SHotPatcherExportRelease::ExportConfig()const
+void SHotPatcherReleaseWidget::ExportConfig()const
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Release Export Config"));
 	TArray<FString> Files = this->SaveFileDialog();
@@ -103,7 +101,7 @@ void SHotPatcherExportRelease::ExportConfig()const
 	}
 }
 
-void SHotPatcherExportRelease::ResetConfig()
+void SHotPatcherReleaseWidget::ResetConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Release Clear Config"));
 	FString DefaultSettingJson;
@@ -111,12 +109,12 @@ void SHotPatcherExportRelease::ResetConfig()
 	THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(DefaultSettingJson,*ExportReleaseSettings);
 	SettingsView->GetDetailsView()->ForceRefresh();
 }
-void SHotPatcherExportRelease::DoGenerate()
+void SHotPatcherReleaseWidget::DoGenerate()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Release DoGenerate"));
 }
 
-void SHotPatcherExportRelease::CreateExportFilterListView()
+void SHotPatcherReleaseWidget::CreateExportFilterListView()
 {
 	// Create a property view
 	FPropertyEditorModule& EditModule = FModuleManager::Get().GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
@@ -151,7 +149,7 @@ void SHotPatcherExportRelease::CreateExportFilterListView()
 	SettingsView->SetStructureData(MakeShareable(Struct));
 }
 
-bool SHotPatcherExportRelease::CanExportRelease()const
+bool SHotPatcherReleaseWidget::CanExportRelease()const
 {
 	bool bCanExport=false;
 	if (ExportReleaseSettings)
@@ -166,7 +164,7 @@ bool SHotPatcherExportRelease::CanExportRelease()const
 	return bCanExport;
 }
 
-FReply SHotPatcherExportRelease::DoExportRelease()
+FReply SHotPatcherReleaseWidget::DoExportRelease()
 {
 	if(!GetConfigSettings()->IsStandaloneMode())
 	{
@@ -189,7 +187,7 @@ FReply SHotPatcherExportRelease::DoExportRelease()
 	return FReply::Handled();
 }
 
-FText SHotPatcherExportRelease::GetGenerateTooltipText() const
+FText SHotPatcherReleaseWidget::GetGenerateTooltipText() const
 {
 	FString FinalString;
 	if (GetMutableDefault<UHotPatcherSettings>()->bPreviewTooltips && ExportReleaseSettings)

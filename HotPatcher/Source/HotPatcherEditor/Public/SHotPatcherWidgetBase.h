@@ -3,9 +3,8 @@
 #pragma once
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Interfaces/ITargetPlatform.h"
-#include "Model/FHotPatcherCreatePatchModel.h"
+#include "Model/FPatchersModeContext.h"
 #include "CreatePatch/FExportPatchSettings.h"
-#include "SHotPatcherInformations.h"
 #include "CreatePatch/IPatchableInterface.h"
 
 // engine header
@@ -17,12 +16,12 @@
 #include "ThreadUtils/FProcWorkerThread.hpp"
 #include "Widgets/Text/SMultiLineEditableText.h"
 
-class HOTPATCHEREDITOR_API SHotPatcherPatchableInterface
+class HOTPATCHEREDITOR_API SHotPatcherWidgetInterface
 	: public SCompoundWidget, public IPatchableInterface
 {
 public:
 
-	SLATE_BEGIN_ARGS(SHotPatcherPatchableInterface) { }
+	SLATE_BEGIN_ARGS(SHotPatcherWidgetInterface) { }
 	SLATE_END_ARGS()
 
 	virtual void ImportProjectConfig(){};
@@ -40,12 +39,12 @@ public:
 /**
  * Implements the cooked platforms panel.
  */
-class HOTPATCHEREDITOR_API SHotPatcherPatchableBase
-	: public SHotPatcherPatchableInterface
+class HOTPATCHEREDITOR_API SHotPatcherWidgetBase
+	: public SHotPatcherWidgetInterface
 {
 public:
 
-	SLATE_BEGIN_ARGS(SHotPatcherPatchableBase) { }
+	SLATE_BEGIN_ARGS(SHotPatcherWidgetBase) { }
 	SLATE_END_ARGS()
 
 public:
@@ -55,20 +54,17 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherModelBase> InCreateModel);
+	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherContextBase> InContext);
 	
 	virtual void ImportProjectConfig() override;
-	// FORCEINLINE virtual void ImportConfig() override {};
-	// FORCEINLINE virtual void ExportConfig()const override {};
-	// FORCEINLINE virtual void ResetConfig() override {};
-	// FORCEINLINE virtual void DoGenerate() override {};
 
 	virtual FHotPatcherSettingBase* GetConfigSettings(){return nullptr;};
-
-
+	virtual void SetContext(TSharedPtr<FHotPatcherContextBase> InContext)
+	{
+		mContext = InContext;
+	}
 protected:
-	// FHotPatcherCreatePatchModel* GetPatchModel()const { return (FHotPatcherCreatePatchModel*)mCreatePatchModel.Get(); }
-	TSharedPtr<FHotPatcherModelBase> mCreatePatchModel;
+	TSharedPtr<FHotPatcherContextBase> mContext;
 
 };
 

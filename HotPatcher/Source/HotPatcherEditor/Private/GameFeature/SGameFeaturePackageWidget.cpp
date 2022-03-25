@@ -1,11 +1,11 @@
-#include "SGameFeaturePackager.h"
+#include "SGameFeaturePackageWidget.h"
 #include "FlibPatchParserHelper.h"
 #include "FlibHotPatcherCoreHelper.h"
 #include "FlibHotPatcherEditorHelper.h"
 #include "HotPatcherEditor.h"
 #include "GameFeature/FGameFeaturePackagerSettings.h"
 #include "CreatePatch/PatcherProxy.h"
-#include "CreatePatch/SHotPatcherExportPatch.h"
+#include "CreatePatch/SHotPatcherPatchWidget.h"
 #include "GameFeature/GameFeatureProxy.h"
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -13,13 +13,13 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcherGameFeaturePackager"
 
-void SHotPatcherGameFeaturePackager::Construct(const FArguments& InArgs,
-	TSharedPtr<FHotPatcherModelBase> InCreateModel)
+void SGameFeaturePackageWidget::Construct(const FArguments& InArgs,
+	TSharedPtr<FHotPatcherContextBase> InCreateModel)
 {
 	GameFeaturePackagerSettings = MakeShareable(new FGameFeaturePackagerSettings);
 	CreateExportFilterListView();
 	
-	mCreatePatchModel = InCreateModel;
+	mContext = InCreateModel;
 	
 	ChildSlot
         [
@@ -46,14 +46,14 @@ void SHotPatcherGameFeaturePackager::Construct(const FArguments& InArgs,
             [
                 SNew(SButton)
                 .Text(LOCTEXT("GenerateGameFeature", "Generate GameFeature"))
-                .OnClicked(this,&SHotPatcherGameFeaturePackager::DoGameFeaturePackager)
-                .IsEnabled(this,&SHotPatcherGameFeaturePackager::CanGameFeaturePackager)
-                .ToolTipText(this,&SHotPatcherGameFeaturePackager::GetGenerateTooltipText)
+                .OnClicked(this,&SGameFeaturePackageWidget::DoGameFeaturePackager)
+                .IsEnabled(this,&SGameFeaturePackageWidget::CanGameFeaturePackager)
+                .ToolTipText(this,&SGameFeaturePackageWidget::GetGenerateTooltipText)
             ]
         ];
 }
 
-void SHotPatcherGameFeaturePackager::ImportConfig()
+void SGameFeaturePackageWidget::ImportConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Import Game Feature Packager Config"));
 	TArray<FString> Files = this->OpenFileDialog();
@@ -70,7 +70,7 @@ void SHotPatcherGameFeaturePackager::ImportConfig()
 	}
 }
 
-void SHotPatcherGameFeaturePackager::ExportConfig() const
+void SGameFeaturePackageWidget::ExportConfig() const
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Export Game Feature Packager Config"));
 	TArray<FString> Files = this->SaveFileDialog();
@@ -91,7 +91,7 @@ void SHotPatcherGameFeaturePackager::ExportConfig() const
 	}
 }
 
-void SHotPatcherGameFeaturePackager::ResetConfig()
+void SGameFeaturePackageWidget::ResetConfig()
 {
 	UE_LOG(LogHotPatcher, Log, TEXT("Reset Game Feature Packager Config"));
 	FString DefaultSettingJson;
@@ -103,7 +103,7 @@ void SHotPatcherGameFeaturePackager::ResetConfig()
 // #if ENGINE_GAME_FEATURE
 // #include "GameFeaturesSubsystem.h"
 // #endif
-void SHotPatcherGameFeaturePackager::DoGenerate()
+void SGameFeaturePackageWidget::DoGenerate()
 {
 #if ENGINE_GAME_FEATURE
 	if(GetConfigSettings()->bAutoLoadFeaturePlugin)
@@ -171,7 +171,7 @@ void SHotPatcherGameFeaturePackager::DoGenerate()
 #endif
 }
 
-void SHotPatcherGameFeaturePackager::FeaturePackager()
+void SGameFeaturePackageWidget::FeaturePackager()
 {
 	if(!GetConfigSettings()->IsStandaloneMode())
 	{
@@ -192,7 +192,7 @@ void SHotPatcherGameFeaturePackager::FeaturePackager()
 	}
 }
 
-FText SHotPatcherGameFeaturePackager::GetGenerateTooltipText() const
+FText SGameFeaturePackageWidget::GetGenerateTooltipText() const
 {
 	FString FinalString;
 	struct FStatus
@@ -219,7 +219,7 @@ FText SHotPatcherGameFeaturePackager::GetGenerateTooltipText() const
 
 // #include "DetailsCustomization/CustomGameFeatursDetails.h"
 
-void SHotPatcherGameFeaturePackager::CreateExportFilterListView()
+void SGameFeaturePackageWidget::CreateExportFilterListView()
 {
 	// Create a property view
 	FPropertyEditorModule& EditModule = FModuleManager::Get().GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
@@ -255,19 +255,19 @@ void SHotPatcherGameFeaturePackager::CreateExportFilterListView()
 	SettingsView->SetStructureData(MakeShareable(Struct));
 }
 
-bool SHotPatcherGameFeaturePackager::CanGameFeaturePackager() const
+bool SGameFeaturePackageWidget::CanGameFeaturePackager() const
 {
 	bool bHasSavePath = GameFeaturePackagerSettings->GetSaveAbsPath().IsEmpty()?false:FPaths::DirectoryExists(GameFeaturePackagerSettings->GetSaveAbsPath());
 	return HasValidConfig() && bHasSavePath;
 }
 
-bool SHotPatcherGameFeaturePackager::HasValidConfig() const
+bool SGameFeaturePackageWidget::HasValidConfig() const
 {
 	bool bHasTarget = !!GetConfigSettings()->TargetPlatforms.Num();
 	return bHasTarget;
 }
 
-FReply SHotPatcherGameFeaturePackager::DoGameFeaturePackager()
+FReply SGameFeaturePackageWidget::DoGameFeaturePackager()
 {
 	DoGenerate();
 	return FReply::Handled();

@@ -1,7 +1,7 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
-#include "Model/FHotPatcherOriginalCookerModel.h"
+#include "Model/FOriginalCookerContext.h"
 #include "Templates/SharedPointer.h"
 #include "FlibPatchParserHelper.h"
 #include "SpecifyCookFilterSetting.h"
@@ -13,13 +13,13 @@
 #include "Kismet/KismetSystemLibrary.h"
 
 // project header
-#include "ICookerItemInterface.h"
+#include "IOriginalCookerChildWidget.h"
 
 /**
  * Implements the cooked Maps panel.
  */
 class SHotPatcherCookSpecifyCookFilter
-	: public SCompoundWidget,public ICookerItemInterface
+	: public SCompoundWidget,public IOriginalCookerChildWidget
 {
 public:
 
@@ -33,7 +33,7 @@ public:
 	 *
 	 * @param InArgs The Slate argument list.
 	 */
-	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherOriginalCookerModel> InCookModel);
+	void Construct(	const FArguments& InArgs,TSharedPtr<FHotPatcherContextBase> InContext);
 public:
 	virtual TSharedPtr<FJsonObject> SerializeAsJson()const override;
 	virtual void DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & InJsonObject)override;
@@ -49,12 +49,8 @@ protected:
 	void CreateFilterListView();
 
 private:
-
 	/** Settings view ui element ptr */
 	TSharedPtr<IDetailsView> SettingsView;
-
 	USpecifyCookFilterSetting* SpecifyCookFilterSetting;
-
-	TSharedPtr<FHotPatcherOriginalCookerModel> mCookModel;
 };
 

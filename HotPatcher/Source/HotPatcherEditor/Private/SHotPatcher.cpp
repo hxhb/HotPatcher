@@ -1,8 +1,8 @@
 #include "SHotPatcher.h"
-#include "Cooker/OriginalCooker/SProjectCookPage.h"
-#include "CreatePatch/SProjectCreatePatchPage.h"
+#include "Cooker/OriginalCooker/SOriginalCookWidget.h"
+#include "CreatePatch/SPatchersPage.h"
 #include "SVersionUpdater/SVersionUpdaterWidget.h"
-#include "Cooker/SProjectCookerPage.h"
+#include "Cooker/SCookersPage.h"
 // engine header
 #include "Styling/SlateTypes.h"
 #include "Widgets/Layout/SBorder.h"
@@ -33,16 +33,12 @@
 #include "Misc/SecureHash.h"
 #include "Misc/PackageName.h"
 
-
-#define LOCTEXT_NAMESPACE "FExportPakModule"
+#define LOCTEXT_NAMESPACE "SHotPatcher"
 
 void SHotPatcher::Construct(const FArguments& InArgs)
 {
-	// CookModel = MakeShareable(new FHotPatcherOriginalCookerModel);
-	// CookerModel = MakeShareable(new FHotPatcherCookerModel);
-	// CreatePatchModel = MakeShareable(new FHotPatcherCreatePatchModel);
-	HotPatcherModelsMap.Add(TEXT("Cooker"),MakeShareable(new FHotPatcherCookerModel));
-	HotPatcherModelsMap.Add(TEXT("Patch"),MakeShareable(new FHotPatcherCreatePatchModel));
+	HotPatcherModelsMap.Add(TEXT("Cooker"),MakeShareable(new FCookersModeContext));
+	HotPatcherModelsMap.Add(TEXT("Patch"),MakeShareable(new FPatchersModeContext));
 
 	ChildSlot
 	[
@@ -80,14 +76,14 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 					.VAlign(VAlign_Top)
 					[
 					SNew(STextBlock)
-					.Font(FCoreStyle::GetDefaultFontStyle("Cook", 13))
-					.Text(LOCTEXT("ProjectCookSectionHeader", "Cook"))
+					.Font(FCoreStyle::GetDefaultFontStyle("Cooker", 13))
+					.Text(LOCTEXT("ProjectCookSectionHeader", "Cooker"))
 					]
 					+ SGridPanel::Slot(1, 0)
 					.Padding(32.0f, 0.0f, 8.0f, 0.0f)
 					[
 						// SNew(SProjectCookPage,CookModel)
-						SNew(SProjectCookerPage,*HotPatcherModelsMap.Find(TEXT("Cooker")))
+						SNew(SCookersPage,*HotPatcherModelsMap.Find(TEXT("Cooker")))
 					]
 
 					+ SGridPanel::Slot(0, 1)
@@ -104,13 +100,13 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 					.VAlign(VAlign_Top)
 					[
 						SNew(STextBlock)
-						.Font(FCoreStyle::GetDefaultFontStyle("Patch", 13))
-					.Text(LOCTEXT("ProjectPatchSectionHeader", "Patch"))
+						.Font(FCoreStyle::GetDefaultFontStyle("Patcher", 13))
+					.Text(LOCTEXT("ProjectPatchSectionHeader", "Patcher"))
 					]
 					+ SGridPanel::Slot(1, 2)
 					.Padding(32.0f, 0.0f, 8.0f, 0.0f)
 					[
-						SNew(SProjectCreatePatchPage, *HotPatcherModelsMap.Find(TEXT("Patch")))
+						SNew(SPatchersPage, *HotPatcherModelsMap.Find(TEXT("Patch")))
 					]
 				]
 			]
