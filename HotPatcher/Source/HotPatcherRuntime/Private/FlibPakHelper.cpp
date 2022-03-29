@@ -460,11 +460,11 @@ TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FStri
 	return Records;
 }
 
-TMap<FString,FPakEntry> UFlibPakHelper::GetPakEntrys(TSharedPtr<FPakFile> InPakFile, const FString& AESKey)
+TMap<FString,FPakEntry> UFlibPakHelper::GetPakEntrys(FPakFile* InPakFile, const FString& AESKey)
 {
 	TMap<FString,FPakEntry> Records;
 	
-	if(InPakFile.IsValid())
+	if(InPakFile)
 	{
 		FString MountPoint = InPakFile->GetMountPoint();
 		for (FPakFile::FFileIterator It(*InPakFile, true); It; ++It)
@@ -513,14 +513,10 @@ void UFlibPakHelper::DumpPakEntrys(const FString& InPak, const FString& AESKey, 
 	FFileHelper::SaveStringToFile(OutString,*SaveTo);
 }
 
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
-TRefCountPtr<FPakFile> UFlibPakHelper::GetPakFileIns(const FString& InPak, const FString& AESKey)
-#else
-TSharedPtr<FPakFile> UFlibPakHelper::GetPakFileIns(const FString& InPak, const FString& AESKey)
-#endif
+FPakFile* UFlibPakHelper::GetPakFileIns(const FString& InPak, const FString& AESKey)
 {
 	IPlatformFile* PlatformIns = &FPlatformFileManager::Get().GetPlatformFile();
-
+	FPakFile* rPakFile = nullptr;
 	FString StandardFileName = InPak;
 	FPaths::MakeStandardFilename(StandardFileName);
 	TArray<FString> Records;
@@ -528,19 +524,21 @@ TSharedPtr<FPakFile> UFlibPakHelper::GetPakFileIns(const FString& InPak, const F
 	{
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 		TRefCountPtr<FPakFile> PakFile = new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false);
+		rPakFile = PakFile.GetReference();
 #else
 		TSharedPtr<FPakFile> PakFile = MakeShareable(new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false));
+		rPakFile = PakFile.Get();
 #endif
-		return PakFile;
+
 	}
-	return NULL;
+	return rPakFile;
 }
 
 FString UFlibPakHelper::GetPakFileMountPoint(const FString& InPak, const FString& AESKey)
 {
 	FString result;
 	auto PakFile = UFlibPakHelper::GetPakFileIns(InPak,AESKey);
-	if(PakFile.IsValid())
+	if(PakFile)
 	{
 		result = PakFile->GetMountPoint();
 	}
