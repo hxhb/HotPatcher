@@ -11,7 +11,7 @@
 #include "Engine/Texture.h"
 #include "Materials/MaterialInstance.h"
 #include "Misc/ScopeExit.h"
-
+#include "Engine/AssetManager.h"
 #if WITH_PACKAGE_CONTEXT
 // // engine header
 #include "UObject/SavePackage.h"
