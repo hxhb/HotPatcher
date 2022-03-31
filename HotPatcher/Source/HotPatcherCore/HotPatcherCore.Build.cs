@@ -19,6 +19,7 @@ public class HotPatcherCore : ModuleRules
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
+				Path.Combine(ModuleDirectory,"Public/CommandletBase")
 				// ... add public include paths required here ...
 			}
 			);

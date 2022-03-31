@@ -19,8 +19,6 @@
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "PakFileUtilities.h"
-#include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
-#include "Cooker/MultiCooker/FMultiCookerSettings.h"
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "CreatePatch/PatcherProxy.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"

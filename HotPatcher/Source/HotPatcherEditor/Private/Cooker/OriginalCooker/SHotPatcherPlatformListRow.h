@@ -13,7 +13,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/SListView.h"
 #include "Widgets/Input/SCheckBox.h"
-#include "Model/FHotPatcherOriginalCookerModel.h"
+#include "Model/FOriginalCookerContext.h"
 #include "Templates/SharedPointer.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcherPlatformListRow"
@@ -22,7 +22,7 @@
  * Implements a row widget for map list.
  */
 class SHotPatcherPlatformListRow
-	: public SMultiColumnTableRow<TSharedPtr<FString> >
+	: public SMultiColumnTableRow<TSharedPtr<FString> >,IOriginalCookerChildWidget
 {
 public:
 
@@ -40,12 +40,12 @@ public:
 	 * @param InArgs The construction arguments.
 	 * @param InProfileManager The profile manager to use.
 	 */
-	void Construct( const FArguments& InArgs, TSharedPtr<FHotPatcherOriginalCookerModel> InCookModel)
+	void Construct( const FArguments& InArgs, TSharedPtr<FHotPatcherContextBase> InContext)
 	{
 		HighlightString = InArgs._HighlightString;
 		PlatformName = InArgs._PlatformName;
 
-		mCookModel = InCookModel;
+		SetContext(InContext);
 		SMultiColumnTableRow<TSharedPtr<FString> >::Construct(FSuperRowType::FArguments(), InArgs._OwnerTableView.ToSharedRef());
 	}
 
@@ -81,19 +81,19 @@ private:
 	{
 		if (NewState == ECheckBoxState::Checked)
 		{
-			mCookModel->AddSelectedCookPlatform(*PlatformName);
+			GetCookerContextPtr()->AddSelectedCookPlatform(*PlatformName);
 		}
 		else {
-			mCookModel->RemoveSelectedCookPlatform(*PlatformName);
+			GetCookerContextPtr()->RemoveSelectedCookPlatform(*PlatformName);
 		}
 	}
 
 	// Callback for determining the checked state of the check box.
 	ECheckBoxState HandleCheckBoxIsChecked( ) const
 	{
-		if (mCookModel.IsValid())
+		if (mContext.IsValid())
 		{
-			if (mCookModel->GetAllSelectedPlatform().Contains(*PlatformName))
+			if (GetCookerContextPtr()->GetAllSelectedPlatform().Contains(*PlatformName))
 			{
 				return ECheckBoxState::Checked;
 			}
@@ -108,8 +108,6 @@ private:
 
 	// Holds the platform's name.
 	TSharedPtr<FString> PlatformName;
-
-	TSharedPtr<FHotPatcherOriginalCookerModel> mCookModel;
 };
 
 

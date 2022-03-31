@@ -15,11 +15,6 @@
 
 void FHotPatcherRuntimeModule::StartupModule()
 {
-	UEnum* TargetPlatform = THotPatcherTemplateHelper::GetUEnum<ETargetPlatform>();
-	uint64 MaxEnumValue = TargetPlatform->GetMaxEnumValue()-2;
-	FString EnumName = TargetPlatform->GetName();
-	TArray<TPair<FName, int64>> EnumNames;
-	
 	TArray<FString> AppendPlatformEnums;
 	
 #if WITH_EDITOR
@@ -36,27 +31,8 @@ void FHotPatcherRuntimeModule::StartupModule()
 	}
 	AppendPlatformEnums = RealPlatformEnums;
 #endif
-	for (ETargetPlatform Platform:TEnumRange<ETargetPlatform>())
-	{
-		FName EnumtorName = TargetPlatform->GetNameByValue((int64)Platform);
-		EnumNames.Emplace(EnumtorName,(int64)Platform);
-		AppendPlatformEnums.Remove(EnumtorName.ToString());
-	}
-	for(const auto& AppendEnumItem:AppendPlatformEnums)
-	{
-		++MaxEnumValue;
-		EnumNames.Emplace(
-			FName(*FString::Printf(TEXT("%s::%s"),*EnumName,*AppendEnumItem)),
-			MaxEnumValue
-		);
-	}
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
-	TargetPlatform->SetEnums(EnumNames,UEnum::ECppForm::EnumClass,EEnumFlags::None,true);
-#else
-	TargetPlatform->SetEnums(EnumNames,UEnum::ECppForm::EnumClass,true);
-#endif
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 	
+	TArray<TPair<FName, int64>> EnumNames = THotPatcherTemplateHelper::AppendEnumeraters<ETargetPlatform>(AppendPlatformEnums);
 }
 
 void FHotPatcherRuntimeModule::ShutdownModule()

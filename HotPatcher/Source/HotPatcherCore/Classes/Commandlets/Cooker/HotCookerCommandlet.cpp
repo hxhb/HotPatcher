@@ -2,7 +2,7 @@
 #include "ThreadUtils/FProcWorkerThread.hpp"
 #include "FCookerConfig.h"
 #include "FlibPatchParserHelper.h"
-#include "Commandlets/CommandletHelper.h"
+#include "CommandletBase/CommandletHelper.h"
 
 // / engine header
 #include "CoreMinimal.h"

@@ -25,6 +25,11 @@
 			"LoadingPhase": "Default"
 		},
 		{
+			"Name": "HotPatcherCore",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		},
+		{
 			"Name": "BinariesPatchFeature",
 			"Type": "Runtime",
 			"LoadingPhase": "PreDefault"

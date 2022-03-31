@@ -10,11 +10,10 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCookMaps"
 
-void SHotPatcherCookMaps::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherOriginalCookerModel> InCookModel)
+void SHotPatcherCookMaps::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherContextBase> InContext)
 {
-
-	mCookModel = InCookModel;
-
+	SetContext(InContext);
+	
 	ChildSlot
 		[
 			SNew(SVerticalBox)
@@ -89,7 +88,7 @@ TSharedPtr<FJsonObject> SHotPatcherCookMaps::SerializeAsJson() const
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
-	TArray<FString> SelectedPlatformList = mCookModel->GetAllSelectedCookMap();
+	TArray<FString> SelectedPlatformList = GetCookerContextPtr()->GetAllSelectedCookMap();
 
 	TArray<TSharedPtr<FJsonValue>> SelectedMapsJsonList;
 	for (const auto& Platform : SelectedPlatformList)
@@ -113,7 +112,7 @@ void SHotPatcherCookMaps::DeSerializeFromJsonObj(TSharedPtr<FJsonObject>const & 
 		{
 			FString Map = PlatformJson->AsString();
 			SelectedMaps.Add(MakeShareable(new FString(Map)));
-			mCookModel->AddSelectedCookMap(Map);
+			GetCookerContextPtr()->AddSelectedCookMap(Map);
 		}
 	}
 	else
@@ -129,7 +128,7 @@ FString SHotPatcherCookMaps::GetSerializeName()const
 
 void SHotPatcherCookMaps::Reset()
 {
-	mCookModel->ClearAllMap();
+	GetCookerContextPtr()->ClearAllMap();
 }
 
 
@@ -149,7 +148,7 @@ void SHotPatcherCookMaps::RefreshMapList()
 
 TSharedRef<ITableRow> SHotPatcherCookMaps::HandleMapListViewGenerateRow(TSharedPtr<FString> InItem, const TSharedRef<STableViewBase>& OwnerTable)
 {
-	return SNew(SProjectCookMapListRow, mCookModel.ToSharedRef())
+	return SNew(SProjectCookMapListRow, mContext)
 		.MapName(InItem)
 		.OwnerTableView(OwnerTable);
 }

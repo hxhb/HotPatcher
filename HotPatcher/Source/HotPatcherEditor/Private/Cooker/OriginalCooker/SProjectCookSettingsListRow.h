@@ -14,7 +14,7 @@
 #include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Views/SListView.h"
 
-#include "Model/FHotPatcherOriginalCookerModel.h"
+#include "Model/FOriginalCookerContext.h"
 
 #define LOCTEXT_NAMESPACE "SProjectCookSettingsListRow"
 
@@ -22,7 +22,7 @@
  * Implements a row widget for map list.
  */
 class SProjectCookSettingsListRow
-	: public SMultiColumnTableRow<TSharedPtr<FString> >
+	: public SMultiColumnTableRow<TSharedPtr<FString> >,public IOriginalCookerChildWidget
 {
 public:
 
@@ -40,11 +40,11 @@ public:
 	 * @param InArgs The construction arguments.
 	 * @param InProfileManager The profile manager to use.
 	 */
-	void Construct( const FArguments& InArgs, const TSharedRef<FHotPatcherOriginalCookerModel>& InModel )
+	void Construct( const FArguments& InArgs, const TSharedPtr<FHotPatcherContextBase>& InModel )
 	{
 		HighlightString = InArgs._HighlightString;
 		SettingName = InArgs._SettingName;
-		Model = InModel;
+		SetContext(InModel);
 
 		SMultiColumnTableRow<TSharedPtr<FString> >::Construct(FSuperRowType::FArguments(), InArgs._OwnerTableView.ToSharedRef());
 	}
@@ -80,15 +80,15 @@ private:
 	void HandleCheckBoxCheckStateChanged( ECheckBoxState NewState )
 	{
 
-		if (Model.IsValid())
+		if (mContext.IsValid())
 		{
 			if (NewState == ECheckBoxState::Checked)
 			{
-				Model->AddSelectedSetting(*SettingName);
+				GetCookerContextPtr()->AddSelectedSetting(*SettingName);
 			}
 			else
 			{
-				Model->RemoveSelectedSetting(*SettingName);
+				GetCookerContextPtr()->RemoveSelectedSetting(*SettingName);
 			}
 		}
 	}
@@ -97,7 +97,7 @@ private:
 	ECheckBoxState HandleCheckBoxIsChecked( ) const
 	{
 
-		if (Model.IsValid() && Model->GetAllSelectedSettings().Contains(*SettingName))
+		if (mContext.IsValid() && GetCookerContextPtr()->GetAllSelectedSettings().Contains(*SettingName))
 		{
 			return ECheckBoxState::Checked;
 		}
@@ -112,9 +112,6 @@ private:
 
 	// Holds the map's name.
 	TSharedPtr<FString> SettingName;
-
-	// Holds a pointer to the data model.
-	TSharedPtr<FHotPatcherOriginalCookerModel> Model;
 };
 
 

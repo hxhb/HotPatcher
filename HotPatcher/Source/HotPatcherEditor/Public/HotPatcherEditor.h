@@ -11,12 +11,14 @@
 #include "ETargetPlatform.h"
 #include "FlibHotPatcherCoreHelper.h"
 #include "HotPatcherSettings.h"
-#include "Modules/ModuleManager.h"
 #include "CreatePatch/FExportPatchSettings.h"
 #include "CreatePatch/FExportReleaseSettings.h"
+#include "Model/FHotPatcherContextBase.h"
+#include "HotPatcherActionManager.h"
+
 // engine header
 #include "CoreMinimal.h"
-
+#include "Modules/ModuleManager.h"
 #include "ContentBrowserDelegates.h"
 #include "MissionNotificationProxy.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
@@ -39,7 +41,7 @@ struct FContentBrowserSelectedInfo
 	TArray<FName> OutAllAssetPackages;
 };
 
-class FHotPatcherEditorModule : public IModuleInterface
+class HOTPATCHEREDITOR_API FHotPatcherEditorModule : public IModuleInterface
 {
 public:
 	static FHotPatcherEditorModule& Get();
@@ -58,6 +60,7 @@ public:
 	
 	TSharedPtr<FProcWorkerThread> RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName);
 
+	
 #if WITH_EDITOR_SECTION
 	void CreateRootMenu();
 	void CreateAssetContextMenu(FToolMenuSection& InSection);
@@ -91,10 +94,10 @@ private:
 	void OnTabClosed(TSharedRef<SDockTab> InTab);
 	TArray<FAssetData> GetSelectedAssetsInBrowserContent();
 	TArray<FString> GetSelectedFolderInBrowserContent();
+	
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
 	TSharedPtr<SDockTab> DockTab;
-
 	mutable TSharedPtr<FProcWorkerThread> mProcWorkingThread;
 	UMissionNotificationProxy* MissionNotifyProay;
 	TSharedPtr<FExportPatchSettings> PatchSettings;

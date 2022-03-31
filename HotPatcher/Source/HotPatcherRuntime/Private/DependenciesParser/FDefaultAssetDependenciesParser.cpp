@@ -1,6 +1,7 @@
 #include "DependenciesParser/FDefaultAssetDependenciesParser.h"
 #include "FlibAssetManageHelper.h"
 #include "HotPatcherLog.h"
+#include "Engine/WorldComposition.h"
 
 
 void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
@@ -163,6 +164,31 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 		PRAGMA_DISABLE_DEPRECATION_WARNINGS
 		bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(InLongPackageName, CurrentAssetDependencies, TotalType);
 		PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+		// collect world composition tile packages to cook 
+		if(CurrentAssetData.GetClass() == UWorld::StaticClass())
+		{
+#if WITH_EDITOR
+			UWorld* World = UWorld::FindWorldInPackage(CurrentAssetData.GetAsset()->GetOutermost());
+			if (World)
+			{
+				if(World->WorldComposition)
+				{
+					TArray<FString> PackageNames;
+					World->WorldComposition->CollectTilesToCook(PackageNames);
+					for(const auto& PackageName:PackageNames)
+					{
+#if ASSET_DEPENDENCIES_DEBUG_LOG
+						UE_LOG(LogHotPatcher,Log,TEXT("Collecting WorldComposition Tile Package %s for %s"),*InLongPackageName.ToString(),*PackageName);
+#endif
+						CurrentAssetDependencies.AddUnique(FName(*PackageName));
+					}
+				}
+
+			}
+#endif
+		}
+		
 		if (!bGetDependenciesSuccess)
 			return AssetDependencies;
 	}

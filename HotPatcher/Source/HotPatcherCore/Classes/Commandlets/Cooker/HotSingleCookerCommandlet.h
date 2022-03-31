@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Commandlets/Commandlet.h"
-#include "Commandlets/HotPatcherCommandletBase.h"
+#include "CommandletBase/HotPatcherCommandletBase.h"
 #include "HotSingleCookerCommandlet.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogHotSingleCookerCommandlet, All, All);

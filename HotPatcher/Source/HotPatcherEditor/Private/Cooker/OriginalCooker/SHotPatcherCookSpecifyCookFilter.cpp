@@ -10,11 +10,11 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCookSpecifyCookFilter"
 
-void SHotPatcherCookSpecifyCookFilter::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherOriginalCookerModel> InCookModel)
+void SHotPatcherCookSpecifyCookFilter::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherContextBase> InContext)
 {
-
-	mCookModel = InCookModel;
-	mCookModel->OnRequestSpecifyCookFilter.BindRaw(this, &SHotPatcherCookSpecifyCookFilter::HandleRequestSpecifyCookFilter);
+	SetContext(InContext);
+	
+	GetCookerContextPtr()->OnRequestSpecifyCookFilter.BindRaw(this, &SHotPatcherCookSpecifyCookFilter::HandleRequestSpecifyCookFilter);
 	CreateFilterListView();
 
 	ChildSlot

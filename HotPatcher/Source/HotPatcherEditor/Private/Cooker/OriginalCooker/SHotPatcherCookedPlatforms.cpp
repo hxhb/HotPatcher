@@ -8,10 +8,9 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCookedPlatforms"
 
-void SHotPatcherCookedPlatforms::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherOriginalCookerModel> InCookModel)
+void SHotPatcherCookedPlatforms::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherContextBase> InContext)
 {
-
-	mCookModel = InCookModel;
+	mContext = InContext;
 	MakePlatformMenu();
 
 	ChildSlot
@@ -86,7 +85,7 @@ TSharedPtr<FJsonObject> SHotPatcherCookedPlatforms::SerializeAsJson() const
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 
-	TArray<FString> SelectedPlatformList = mCookModel->GetAllSelectedPlatform();
+	TArray<FString> SelectedPlatformList = GetCookerContextPtr()->GetAllSelectedPlatform();
 
 	TArray<TSharedPtr<FJsonValue>> PlatformJsonList;
 	for (const auto& Platform : SelectedPlatformList)
@@ -107,7 +106,7 @@ void SHotPatcherCookedPlatforms::DeSerializeFromJsonObj(TSharedPtr<FJsonObject>c
 	{
 		FString Platform = PlatformJson->AsString();
 		SelectedPlatform.Add(MakeShareable(new FString(Platform)));
-		mCookModel->AddSelectedCookPlatform(Platform);
+		GetCookerContextPtr()->AddSelectedCookPlatform(Platform);
 	}
 }
 
@@ -119,11 +118,11 @@ FString SHotPatcherCookedPlatforms::GetSerializeName()const
 
 void SHotPatcherCookedPlatforms::Reset()
 {
-	mCookModel->ClearAllPlatform();
+	GetCookerContextPtr()->ClearAllPlatform();
 }
 TSharedRef<ITableRow> SHotPatcherCookedPlatforms::HandlePlatformListViewGenerateRow(TSharedPtr<FString> InItem, const TSharedRef<STableViewBase>& OwnerTable)
 {
-	return SNew(SHotPatcherPlatformListRow,mCookModel)
+	return SNew(SHotPatcherPlatformListRow,mContext)
 		.PlatformName(InItem)
 		.OwnerTableView(OwnerTable);
 }

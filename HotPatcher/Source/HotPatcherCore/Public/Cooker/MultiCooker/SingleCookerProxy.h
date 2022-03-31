@@ -1,12 +1,10 @@
 #pragma once
-#include "FMultiCookerSettings.h"
+#include "FSingleCookerSettings.h"
 #include "Cooker/HotPatcherCookerSettingBase.h"
 #include "CreatePatch/HotPatcherProxyBase.h"
 #include "HotPatcherBaseTypes.h"
-
-// engine header
 #include "BaseTypes/FPackageTracker.h"
-#include "FMultiCookerSettings.h"
+// engine header
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Interfaces/ITargetPlatform.h"
@@ -59,40 +57,60 @@ struct FCookCluster
 
 
 UCLASS()
-class HOTPATCHERCORE_API USingleCookerProxy:public UHotPatcherProxyBase
+class HOTPATCHERCORE_API USingleCookerProxy:public UHotPatcherProxyBase, public FTickableEditorObject
 {
     GENERATED_BODY()
 public:
     virtual void Init(FPatcherEntitySettingBase* InSetting)override;
+
+    
     virtual void Shutdown() override;
     virtual bool DoExport()override;
     bool IsFinsihed();
     bool HasError();
     virtual FSingleCookerSettings* GetSettingObject()override {return (FSingleCookerSettings*)(Setting);};
-    FCookerFailedCollection& GetCookFailedAssetsCollection(){return CookFailedAssetsCollection;};
 
+public:
+    virtual void Tick(float DeltaTime) override;
+    TStatId GetStatId() const override;
+    bool IsTickable() const override;
+public: // core interface
+    FCookerFailedCollection& GetCookFailedAssetsCollection(){return CookFailedAssetsCollection;};
+    void CleanOldCooked(const FString& CookBaseDir,const TArray<FSoftObjectPath>& ObjectPaths,const TArray<ETargetPlatform>& CookPlatforms);
     void CookClusterSync(const FCookCluster& CookCluster);
     void CookCluster(const FCookCluster& CookCluster);
     void AddCluster(const FCookCluster& CookCluster);
+
+    void PreGeneratePlatformData(const FCookCluster& CookCluster);
+    void WaitCookerFinished();
+    FCookCluster GetPackageTrackerAsCluster();
+
+    void AsyncLoadAssets(const TArray<FSoftObjectPath>& ObjectPaths);
+    void OnAsyncAssetsLoaded();
     
+public: // callback
+    FCookActionResultEvent GetOnPackageSavedCallback();
+    FCookActionEvent GetOnCookAssetBeginCallback();
+    
+public: // public get interface
     TArray<FName>& GetPlatformCookAssetOrders(ETargetPlatform Platform);
     TSet<FName> GetAdditionalAssets();
     TArray<UClass*> GetPreCacheClasses()const;
+    FORCEINLINE_DEBUGGABLE TMap<FName,FName>& GetAssetTypeMapping(){ return AssetTypeMapping; }
+    FORCEINLINE_DEBUGGABLE TSet<FName>& GetPaendingCookAssetsSet(){ return PaendingCookAssetsSet; }
+    
 protected:
     void OnAssetCookedHandle(const FSoftObjectPath& PackagePath,ETargetPlatform Platform,ESavePackageResult Result);
-    void DoCookMission(const TArray<FAssetDetail>& Assets);
+    void MarkAssetCooked(const FSoftObjectPath& PackagePath,ETargetPlatform Platform);
+
+protected: // metadata
     void BulkDataManifest();
     void IoStoreManifest();
     
     void InitShaderLibConllections();
     void ShutdowShaderLibCollections();
-
-    void MarkAssetCooked(const FSoftObjectPath& PackagePath,ETargetPlatform Platform);
-
-    void PreGeneratePlatformData(const FCookCluster& CookCluster);
-    void WaitCookerFinished();
     
-private:
+private: // package context
 #if WITH_PACKAGE_CONTEXT
     FORCEINLINE TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>>& GetPlatformSavePackageContexts() {return PlatformSavePackageContexts;}
     TMap<ETargetPlatform,FSavePackageContext*> GetPlatformSavePackageContextsRaw();
@@ -100,22 +118,26 @@ private:
     TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
 #endif
 
-public:
+public: // delegate
     FSingleCookerEvent OnCookBegin;
     FSingleCookerEvent OnCookFinished;
     FSingleCookActionEvent OnCookAssetBegin;
     FSingleCookResultEvent OnAssetCooked;
-    
+
+protected:
+    // FORCEINLINE TSet<UObject*>& GetPenddingCacheObjects() { return PendingCachePlatformDataObjects; };
+    // UPROPERTY()
+    // mutable TSet<UObject*> PendingCachePlatformDataObjects;
+    // // UPROPERTY()
+    // mutable TSet<UObject*> ProcessedObjects;
+
 private:
-    FORCEINLINE_DEBUGGABLE TMap<FName,FName>& GetAssetTypeMapping(){ return AssetTypeMapping; }
-    FORCEINLINE_DEBUGGABLE TSet<FName>& GetPaendingCookAssetsSet(){ return PaendingCookAssetsSet; }
-    
     TMap<FName,FName> AssetTypeMapping;
     TSet<FName> PaendingCookAssetsSet;
 
     /** Critical section for synchronizing access to sink. */
     mutable FCriticalSection SynchronizationObject;
-
+    
 private:
     TArray<FCookCluster> CookClusters;
     FCookerFailedCollection CookFailedAssetsCollection;

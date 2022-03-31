@@ -6,10 +6,13 @@
 #include "SHotPatcher.h"
 #include "HotPatcherSettings.h"
 #include "Templates/HotPatcherTemplateHelper.hpp"
-#include "Cooker/MultiCooker/FlibMultiCookerHelper.h"
-#include "Cooker/MultiCooker/FMultiCookerSettings.h"
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "CreatePatch/PatcherProxy.h"
+#include "Cooker/MultiCooker/FlibHotCookerHelper.h"
+#include "HotPatcherActionManager.h"
+#include "FlibHotPatcherCoreHelper.h"
+#include "FlibHotPatcherEditorHelper.h"
+#include "HotPatcherLog.h"
 
 // ENGINE HEADER
 #include "AssetToolsModule.h"
@@ -18,9 +21,6 @@
 #include "Misc/MessageDialog.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "DesktopPlatformModule.h"
-#include "FlibHotPatcherCoreHelper.h"
-#include "FlibHotPatcherEditorHelper.h"
-#include "HotPatcherLog.h"
 #include "ISettingsModule.h"
 #include "LevelEditor.h"
 #include "HAL/FileManager.h"
@@ -67,11 +67,12 @@ FHotPatcherEditorModule& FHotPatcherEditorModule::Get()
 void FHotPatcherEditorModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-
 	FHotPatcherStyle::Initialize();
 	FHotPatcherStyle::ReloadTextures();
 	FHotPatcherCommands::Register();
 
+	FHotPatcherActionManager::Get().Init();
+	
 	FHotPatcherDelegates::Get().GetNotifyFileGenerated().AddLambda([](FText Msg,const FString& File)
 	{
 		UFlibHotPatcherEditorHelper::CreateSaveFileNotify(Msg,File);
@@ -133,7 +134,7 @@ void FHotPatcherEditorModule::ShutdownModule()
 	{
 		DockTab->RequestCloseTab();
 	}
-	
+	FHotPatcherActionManager::Get().Shutdown();
 	FHotPatcherCommands::Unregister();
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(HotPatcherTabName);
 	FHotPatcherStyle::Shutdown();
@@ -521,7 +522,7 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 	EmptySetting.bSerializeAssetRegistry = false;
 	EmptySetting.bDisplayConfig = false;
 	EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
-	EmptySetting.StorageMetadataDir = FPaths::Combine(UFlibMultiCookerHelper::GetMultiCookerBaseDir(),EmptySetting.MissionName);
+	EmptySetting.StorageMetadataDir = FPaths::Combine(UFlibHotCookerHelper::GetCookerBaseDir(),EmptySetting.MissionName);
 
 	USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
 	SingleCookerProxy->AddToRoot();
@@ -707,6 +708,7 @@ TSharedPtr<FProcWorkerThread> FHotPatcherEditorModule::RunProcMission(const FStr
 	}
 	return mProcWorkingThread;
 }
+
 #undef LOCTEXT_NAMESPACE
 	
 IMPLEMENT_MODULE(FHotPatcherEditorModule, HotPatcherEditor)
