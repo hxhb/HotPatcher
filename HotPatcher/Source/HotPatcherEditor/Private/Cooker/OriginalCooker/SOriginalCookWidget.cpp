@@ -30,8 +30,8 @@ DEFINE_LOG_CATEGORY(LogCookPage);
 
 void SOriginalCookWidget::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherContextBase> InContext)
 {
-	SetContext(InContext);
 	OriginalCookerContext = MakeShareable(new FOriginalCookerContext);
+	SetContext(OriginalCookerContext);
 	
 	MissionNotifyProay = NewObject<UMissionNotificationProxy>();
 	MissionNotifyProay->AddToRoot();
