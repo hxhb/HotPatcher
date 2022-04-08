@@ -1230,21 +1230,21 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 	return CollectPakCommandsByChunkLambda(DiffInfo, Chunk, PlatformName/*, PakOptions*/);
 }
 
-FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
+FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 	const FString& InVersionId,
 	const FString& InBaseVersion,
 	const FString& InDate,
-	const TArray<FString>& InIncludeFilter,
-	const TArray<FString>& InIgnoreFilter,
-	const TArray<FString>& ForceSkipContents,
-	const TArray<UClass*>& ForceSkipClasses,
-	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
-	const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
-	const TArray<FPlatformExternAssets>& AddToPlatformExFiles,
-	bool InIncludeHasRefAssetsOnly,
-	bool bInAnalysisFilterDependencies
-)
+	const FChunkInfo& InChunkInfo,
+	bool InIncludeHasRefAssetsOnly /*= false */,
+	bool bInAnalysisFilterDependencies /* = true*/)
 {
+	TArray<FString> AllSkipContents;;
+	if(InChunkInfo.bForceSkipContent)
+	{
+		AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(InChunkInfo.ForceSkipContentRules));
+		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(InChunkInfo.ForceSkipAssets));
+	}
+
 	SCOPED_NAMED_EVENT_TEXT("ExportReleaseVersionInfo",FColor::Red);
 	FHotPatcherVersion ExportVersion;
 	{
@@ -1252,53 +1252,74 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 		ExportVersion.Date = InDate;
 		ExportVersion.BaseVersionId = InBaseVersion;
 	}
-	
+
+	FAssetScanConfig ScanConfig;
+	ScanConfig.AssetIncludeFilters = InChunkInfo.AssetIncludeFilters;
+	ScanConfig.AssetIgnoreFilters = InChunkInfo.AssetIgnoreFilters;
+	ScanConfig.bAnalysisFilterDependencies = bInAnalysisFilterDependencies;
+	ScanConfig.bForceSkipContent = InChunkInfo.bForceSkipContent;
+	ScanConfig.bRecursiveWidgetTree = false;
+	ScanConfig.ForceSkipAssets = InChunkInfo.ForceSkipAssets;
+	ScanConfig.ForceSkipClasses = InChunkInfo.ForceSkipClasses;
+	ScanConfig.IncludeSpecifyAssets = InChunkInfo.IncludeSpecifyAssets;
+	ScanConfig.AssetRegistryDependencyTypes = InChunkInfo.AssetRegistryDependencyTypes;
+	ScanConfig.ForceSkipContentRules = InChunkInfo.ForceSkipContentRules;
+	ScanConfig.bIncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
+	RunAssetScanner(ScanConfig,ExportVersion);
+	ExportExternAssetsToPlatform(InChunkInfo.AddExternAssetsToPlatform,ExportVersion);
+
+	return ExportVersion;
+}
+
+void UFlibPatchParserHelper::RunAssetScanner(FAssetScanConfig ScanConfig,FHotPatcherVersion& ExportVersion)
+{
+	SCOPED_NAMED_EVENT_TEXT("UFlibPatchParserHelper::RunAssetScanner",FColor::Red);
 	// add Include Filter
 	{
 		TArray<FString> AllIncludeFilter;
-		for (const auto& Filter : InIncludeFilter)
+		for (const auto& Filter : ScanConfig.AssetIncludeFilters)
 		{
-			AllIncludeFilter.AddUnique(Filter);
-			ExportVersion.IncludeFilter.AddUnique(Filter);
+			AllIncludeFilter.AddUnique(Filter.Path);
+			ExportVersion.IncludeFilter.AddUnique(Filter.Path);
 		}
 	}
 	// add Ignore Filter
 	{
 		TArray<FString> AllIgnoreFilter;
-		for (const auto& Filter : InIgnoreFilter)
+		for (const auto& Filter : ScanConfig.AssetIgnoreFilters)
 		{
-			AllIgnoreFilter.AddUnique(Filter);
-			ExportVersion.IgnoreFilter.AddUnique(Filter);
+			AllIgnoreFilter.AddUnique(Filter.Path);
+			ExportVersion.IgnoreFilter.AddUnique(Filter.Path);
 		}
 	}
-	ExportVersion.bIncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
-	ExportVersion.IncludeSpecifyAssets = InIncludeSpecifyAsset;
-	
-	// for (const auto& File : InAllExternFiles)
-	// {
-	// 	if (!ExportVersion.ExternalFiles.Contains(File.FilePath.FilePath))
-	// 	{
-	// 		ExportVersion.ExternalFiles.Add(File.MountPath, File);
-	// 	}
-	// }
+	ExportVersion.bIncludeHasRefAssetsOnly = ScanConfig.bIncludeHasRefAssetsOnly;
+	ExportVersion.IncludeSpecifyAssets = ScanConfig.IncludeSpecifyAssets;
 
 	TSet<FName> IgnoreTypes = 
 	{
 		TEXT("EditorUtilityBlueprint")
 	};
-	for(auto Class:ForceSkipClasses)
+	for(auto Class:ScanConfig.ForceSkipClasses)
 	{
 		IgnoreTypes.Add(*Class->GetName());
 	}
 	FAssetDependencies AssetConfig;
 	AssetConfig.IncludeFilters = ExportVersion.IncludeFilter;
 	AssetConfig.IgnoreFilters = ExportVersion.IgnoreFilter;
-	AssetConfig.AssetRegistryDependencyTypes = AssetRegistryDependencyTypes;
-	AssetConfig.InIncludeSpecifyAsset = InIncludeSpecifyAsset;
-	AssetConfig.ForceSkipContents = ForceSkipContents;
+	AssetConfig.AssetRegistryDependencyTypes = ScanConfig.AssetRegistryDependencyTypes;
+	AssetConfig.InIncludeSpecifyAsset = ScanConfig.IncludeSpecifyAssets;
+
+	TArray<FString> AllSkipContents;;
+	if(ScanConfig.bForceSkipContent)
+	{
+		AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(ScanConfig.ForceSkipContentRules));
+		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(ScanConfig.ForceSkipAssets));
+	}
+	
+	AssetConfig.ForceSkipContents = AllSkipContents;
 	AssetConfig.bRedirector = true;
-	AssetConfig.AnalysicFilterDependencies = bInAnalysisFilterDependencies;
-	AssetConfig.IncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
+	AssetConfig.AnalysicFilterDependencies = ScanConfig.bAnalysisFilterDependencies;
+	AssetConfig.IncludeHasRefAssetsOnly = ScanConfig.bIncludeHasRefAssetsOnly;
 	AssetConfig.IgnoreAseetTypes = IgnoreTypes;
 	
 	{
@@ -1322,64 +1343,20 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 			}
 		}
 	}
-	
-	// {
-	// 	SCOPED_NAMED_EVENT_TEXT("parser all uasset dependencies(Old)",FColor::Red);
-	// 	FOldAssetDependenciesParser Parser;
-	// 	Parser.Parse(AssetConfig);
-	//
-	// 	{
-	// 		SCOPED_NAMED_EVENT_TEXT("calac all uasset num (old)",FColor::Red);
-	// 		TArray<FAssetDetail> AssetDetails;
-	// 		UFlibAssetManageHelper::GetAssetDetailsByAssetDependenciesInfo(Parser.GetrParseResults(),AssetDetails);
-	// 		UE_LOG(LogHotPatcher,Display,TEXT("FAssetDependenciteParser Asset Num (old) %d"),AssetDetails.Num());
-	// 	}
-	// 	// ExportVersion.AssetInfo = Parser.GetrParseResults();
-	// }
-	
-	{
-		SCOPED_NAMED_EVENT_TEXT("ExportReleaseVersionInfo parser external files",FColor::Red);
-		for(const auto& PlatformExInfo:AddToPlatformExFiles)
-		{
-			FPlatformExternFiles PlatformFileInfo = UFlibPatchParserHelper::GetAllExFilesByPlatform(PlatformExInfo);
-			FPlatformExternAssets PlatformExternAssets;
-			PlatformExternAssets.TargetPlatform = PlatformExInfo.TargetPlatform;
-			PlatformExternAssets.AddExternFileToPak = PlatformFileInfo.ExternFiles;
-			ExportVersion.PlatformAssets.Add(PlatformExInfo.TargetPlatform,PlatformExternAssets);
-		}
-	}
-	return ExportVersion;
 }
 
-FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
-	const FString& InVersionId,
-	const FString& InBaseVersion,
-	const FString& InDate,
-	const FChunkInfo& InChunkInfo,
-	bool InIncludeHasRefAssetsOnly /*= false */,
-	bool bInAnalysisFilterDependencies /* = true*/)
+void UFlibPatchParserHelper::ExportExternAssetsToPlatform(
+	const TArray<FPlatformExternAssets>& AddExternAssetsToPlatform, FHotPatcherVersion& ExportVersion)
 {
-	TArray<FString> AllSkipContents;;
-	if(InChunkInfo.bForceSkipContent)
+	SCOPED_NAMED_EVENT_TEXT("UFlibPatchParserHelper::ExportExternAssetsToPlatform",FColor::Red);
+	for(const auto& PlatformExInfo:AddExternAssetsToPlatform)
 	{
-		AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(InChunkInfo.ForceSkipContentRules));
-		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(InChunkInfo.ForceSkipAssets));
+		FPlatformExternFiles PlatformFileInfo = UFlibPatchParserHelper::GetAllExFilesByPlatform(PlatformExInfo);
+		FPlatformExternAssets PlatformExternAssets;
+		PlatformExternAssets.TargetPlatform = PlatformExInfo.TargetPlatform;
+		PlatformExternAssets.AddExternFileToPak = PlatformFileInfo.ExternFiles;
+		ExportVersion.PlatformAssets.Add(PlatformExInfo.TargetPlatform,PlatformExternAssets);
 	}
-	
-	return UFlibPatchParserHelper::ExportReleaseVersionInfo(
-        InVersionId,
-        InBaseVersion,
-        InDate,
-        UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIncludeFilters),
-        UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIgnoreFilters),
-        AllSkipContents,
-        InChunkInfo.ForceSkipClasses,
-        InChunkInfo.AssetRegistryDependencyTypes,
-        InChunkInfo.IncludeSpecifyAssets,
-        InChunkInfo.AddExternAssetsToPlatform,
-        InIncludeHasRefAssetsOnly,
-        bInAnalysisFilterDependencies
-    );
 }
 
 TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands,const TArray<FReplaceText>& InReplaceTexts,bool bIoStore)

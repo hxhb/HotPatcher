@@ -3,6 +3,7 @@
 #pragma once
 
 //project header
+#include "BaseTypes/FAssetScanConfig.h"
 #include "FChunkInfo.h"
 #include "FPakFileInfo.h"
 #include "FReplaceText.h"
@@ -47,20 +48,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	static FString GetProjectFilePath();
 	
-	static FHotPatcherVersion ExportReleaseVersionInfo(
-        const FString& InVersionId,
-        const FString& InBaseVersion,
-        const FString& InDate,
-        const TArray<FString>& InIncludeFilter,
-        const TArray<FString>& InIgnoreFilter,
-        const TArray<FString>& ForceSkipContents,
-        const TArray<UClass*>& ForceSkipClasses,
-        const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
-        const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
-        const TArray<FPlatformExternAssets>& AddToPlatformExFiles,
-        bool InIncludeHasRefAssetsOnly = false,
-        bool bInAnalysisFilterDependencies = true
-    );
 	static FHotPatcherVersion ExportReleaseVersionInfoByChunk(
 		const FString& InVersionId,
 		const FString& InBaseVersion,
@@ -69,7 +56,8 @@ public:
 		bool InIncludeHasRefAssetsOnly = false,
 		bool bInAnalysisFilterDependencies = true
 	);
-
+	static void RunAssetScanner(FAssetScanConfig ScanConfig,FHotPatcherVersion& ExportVersion);
+	static void ExportExternAssetsToPlatform(const TArray<FPlatformExternAssets>& AddExternAssetsToPlatform,FHotPatcherVersion& ExportVersion);
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool DiffVersionAssets(const FAssetDependenciesInfo& InNewVersion, 

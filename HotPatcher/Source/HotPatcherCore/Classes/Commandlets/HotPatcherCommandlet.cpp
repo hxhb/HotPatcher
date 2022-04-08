@@ -59,8 +59,8 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 				ExportPatchSetting->PakTargetPlatforms.AddUnique(Platform);
 			}
 		}
-		ExportPatchSetting->AssetIncludeFilters.Append(CommandletHelper::ParserPatchFilters(Params,TEXT("AssetIncludeFilters")));
-		ExportPatchSetting->AssetIgnoreFilters.Append(CommandletHelper::ParserPatchFilters(Params,TEXT("AssetIgnoreFilters")));
+		ExportPatchSetting->GetAssetScanConfigRef().AssetIncludeFilters.Append(CommandletHelper::ParserPatchFilters(Params,TEXT("AssetIncludeFilters")));
+		ExportPatchSetting->GetAssetScanConfigRef().AssetIgnoreFilters.Append(CommandletHelper::ParserPatchFilters(Params,TEXT("AssetIgnoreFilters")));
 		
 		FString FinalConfig;
 		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*ExportPatchSetting,FinalConfig);

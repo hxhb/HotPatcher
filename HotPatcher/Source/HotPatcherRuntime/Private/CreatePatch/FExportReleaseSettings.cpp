@@ -139,7 +139,7 @@ void FExportReleaseSettings::ClearImportedPakList()
 {
 	UE_LOG(LogHotPatcher,Log,TEXT("FExportReleaseSettings::ClearImportedPakList"));
 	AddExternAssetsToPlatform.Empty();
-	IncludeSpecifyAssets.Empty();
+	GetAssetScanConfigRef().IncludeSpecifyAssets.Empty();
 }
 	
 // for DetailView property change property

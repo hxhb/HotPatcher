@@ -442,8 +442,8 @@ void FHotPatcherEditorModule::OnAddToPatchSettings(const FToolMenuContext& MenuC
 		PatchSettingAssetElement.Asset = AssetObjectPath;
 		AssetsSoftPath.AddUnique(PatchSettingAssetElement);
 	}
-	GPatchSettings->IncludeSpecifyAssets.Append(AssetsSoftPath);
-	GPatchSettings->AssetIncludeFilters.Append(FolderDirectorys);
+	GPatchSettings->GetAssetScanConfigRef().IncludeSpecifyAssets.Append(AssetsSoftPath);
+	GPatchSettings->GetAssetScanConfigRef().AssetIncludeFilters.Append(FolderDirectorys);
 }
 
 void FHotPatcherEditorModule::OnPakPreset(FExportPatchSettings Config)
@@ -647,8 +647,8 @@ FExportPatchSettings FHotPatcherEditorModule::MakeTempPatchSettings(
 	Settings->ReloadConfig();
 	FExportPatchSettings TempSettings = Settings->TempPatchSetting;
 	TempSettings.VersionId = Name;
-	TempSettings.AssetIncludeFilters = AssetIncludeFilters;
-	TempSettings.IncludeSpecifyAssets = IncludeSpecifyAssets;
+	TempSettings.GetAssetScanConfigRef().AssetIncludeFilters = AssetIncludeFilters;
+	TempSettings.GetAssetScanConfigRef().IncludeSpecifyAssets = IncludeSpecifyAssets;
 	TempSettings.AddExternAssetsToPlatform = ExternFiles;
 	TempSettings.bCookPatchAssets = bCook;
 	TempSettings.PakTargetPlatforms = PakTargetPlatforms;

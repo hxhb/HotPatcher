@@ -299,20 +299,27 @@ FReply SHotPatcherPatchWidget::DoDiff()const
 		}
 	}
 	ExportPatchSetting->Init();
-	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
-		ExportPatchSetting->GetVersionId(),
-		BaseVersion.VersionId,
-		FDateTime::UtcNow().ToString(),
-		UFlibAssetManageHelper::DirectoryPathsToStrings(ExportPatchSetting->GetAssetIncludeFilters()),
-			UFlibAssetManageHelper::DirectoryPathsToStrings(ExportPatchSetting->GetAssetIgnoreFilters()),
-		ExportPatchSetting->GetAllSkipContents(),
-		ExportPatchSetting->GetForceSkipClasses(),
-		ExportPatchSetting->GetAssetRegistryDependencyTypes(),
-		ExportPatchSetting->GetIncludeSpecifyAssets(),
-		ExportPatchSetting->GetAddExternAssetsToPlatform(),
-		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
-	);
+	FHotPatcherVersion CurrentVersion;
 
+	// UFlibPatchParserHelper::ExportReleaseVersionInfo(
+	// 	ExportPatchSetting->GetVersionId(),
+	// 	BaseVersion.VersionId,
+	// 	FDateTime::UtcNow().ToString(),
+	// 	UFlibAssetManageHelper::DirectoryPathsToStrings(ExportPatchSetting->GetAssetIncludeFilters()),
+	// 		UFlibAssetManageHelper::DirectoryPathsToStrings(ExportPatchSetting->GetAssetIgnoreFilters()),
+	// 	ExportPatchSetting->GetAllSkipContents(),
+	// 	ExportPatchSetting->GetForceSkipClasses(),
+	// 	ExportPatchSetting->GetAssetRegistryDependencyTypes(),
+	// 	ExportPatchSetting->GetIncludeSpecifyAssets(),
+	// 	ExportPatchSetting->GetAddExternAssetsToPlatform(),
+	// 	ExportPatchSetting->IsIncludeHasRefAssetsOnly()
+	// );
+	CurrentVersion.VersionId = ExportPatchSetting->GetVersionId();
+	CurrentVersion.BaseVersionId = BaseVersion.VersionId;
+	CurrentVersion.Date = FDateTime::UtcNow().ToString();
+	UFlibPatchParserHelper::RunAssetScanner(ExportPatchSetting->GetAssetScanConfig(),CurrentVersion);
+	UFlibPatchParserHelper::ExportExternAssetsToPlatform(ExportPatchSetting->GetAddExternAssetsToPlatform(),CurrentVersion);
+	
 	FPatchVersionDiff VersionDiffInfo = UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
 	
 	bool bShowDeleteAsset = false;

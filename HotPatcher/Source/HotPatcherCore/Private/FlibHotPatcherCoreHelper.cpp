@@ -113,7 +113,7 @@ FChunkInfo UFlibHotPatcherCoreHelper::MakeChunkFromPatchSettings(const FExportPa
 	Chunk.bAnalysisFilterDependencies = InPatchSetting->IsAnalysisFilterDependencies();
 	Chunk.IncludeSpecifyAssets = GetThis()->GetIncludeSpecifyAssets();
 	Chunk.bForceSkipContent = GetThis()->IsForceSkipContent();
-	Chunk.ForceSkipClasses = GetThis()->ForceSkipClasses;
+	Chunk.ForceSkipClasses = GetThis()->GetAssetScanConfig().ForceSkipClasses;
 	Chunk.ForceSkipContentRules = GetThis()->GetForceSkipContentRules();
 	Chunk.ForceSkipAssets = GetThis()->GetForceSkipAssets();
 	Chunk.AddExternAssetsToPlatform = GetThis()->GetAddExternAssetsToPlatform();
@@ -1925,10 +1925,10 @@ bool UFlibHotPatcherCoreHelper::IsCanCookPackage(const FString& LongPackageName)
 	return bResult;
 }
 
-void UFlibHotPatcherCoreHelper::ImportProjectSettingsToSettingBase(FHotPatcherSettingBase* HotPatcherSettingBase)
+void UFlibHotPatcherCoreHelper::ImportProjectSettingsToScannerConfig(FAssetScanConfig& AssetScanConfig)
 {
 	FProjectPackageAssetCollection AssetCollection = UFlibHotPatcherCoreHelper::ImportProjectSettingsPackages();
-	HotPatcherSettingBase->AssetIncludeFilters.Append(AssetCollection.DirectoryPaths);
+	AssetScanConfig.AssetIncludeFilters.Append(AssetCollection.DirectoryPaths);
 
 	for(const auto& Asset:AssetCollection.NeedCookPackages)
 	{
@@ -1936,12 +1936,12 @@ void UFlibHotPatcherCoreHelper::ImportProjectSettingsToSettingBase(FHotPatcherSe
 		CurrentAsset.Asset = Asset;
 		CurrentAsset.bAnalysisAssetDependencies = true;
 		CurrentAsset.AssetRegistryDependencyTypes = {EAssetRegistryDependencyTypeEx::Packages};
-		HotPatcherSettingBase->IncludeSpecifyAssets.Add(CurrentAsset);
+		AssetScanConfig.IncludeSpecifyAssets.Add(CurrentAsset);
 	}
 	// NEVER COOK
-	HotPatcherSettingBase->AssetIgnoreFilters.Append(AssetCollection.NeverCookPaths);
-	HotPatcherSettingBase->ForceSkipContentRules.Append(AssetCollection.NeverCookPaths);
-	HotPatcherSettingBase->ForceSkipAssets.Append(AssetCollection.NeverCookPackages);
+	AssetScanConfig.AssetIgnoreFilters.Append(AssetCollection.NeverCookPaths);
+	AssetScanConfig.ForceSkipContentRules.Append(AssetCollection.NeverCookPaths);
+	AssetScanConfig.ForceSkipAssets.Append(AssetCollection.NeverCookPackages);
 }
 
 void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, TSet<UObject*>& PendingCachePlatformDataObjects, bool bStorageConcurrent, bool bWaitComplete)

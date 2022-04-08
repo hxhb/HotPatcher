@@ -80,19 +80,26 @@ FHotPatcherVersion FExportPatchSettings::GetNewPatchVersionInfo()
 	FHotPatcherVersion BaseVersionInfo;
 	GetBaseVersionInfo(BaseVersionInfo);
 
-	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
-        GetVersionId(),
-        BaseVersionInfo.VersionId,
-        FDateTime::UtcNow().ToString(),
-        UFlibAssetManageHelper::DirectoryPathsToStrings(GetAssetIncludeFilters()),
-			 UFlibAssetManageHelper::DirectoryPathsToStrings(GetAssetIgnoreFilters()),
-        GetAllSkipContents(),
-        GetForceSkipClasses(),
-        GetAssetRegistryDependencyTypes(),
-        GetIncludeSpecifyAssets(),
-        GetAddExternAssetsToPlatform(),
-        IsIncludeHasRefAssetsOnly()
-    );
+	FHotPatcherVersion CurrentVersion;
+	CurrentVersion.VersionId =  GetVersionId();
+	CurrentVersion.BaseVersionId = BaseVersionInfo.VersionId;
+	CurrentVersion.Date = FDateTime::UtcNow().ToString();
+	UFlibPatchParserHelper::RunAssetScanner(GetAssetScanConfig(),CurrentVersion);
+	UFlibPatchParserHelper::ExportExternAssetsToPlatform(GetAddExternAssetsToPlatform(),CurrentVersion);
+	
+	// UFlibPatchParserHelper::ExportReleaseVersionInfo(
+ //        GetVersionId(),
+ //        BaseVersionInfo.VersionId,
+ //        FDateTime::UtcNow().ToString(),
+ //        UFlibAssetManageHelper::DirectoryPathsToStrings(GetAssetIncludeFilters()),
+	// 		 UFlibAssetManageHelper::DirectoryPathsToStrings(GetAssetIgnoreFilters()),
+ //        GetAllSkipContents(),
+ //        GetForceSkipClasses(),
+ //        GetAssetRegistryDependencyTypes(),
+ //        GetIncludeSpecifyAssets(),
+ //        GetAddExternAssetsToPlatform(),
+ //        IsIncludeHasRefAssetsOnly()
+ //    );
 
 	return CurrentVersion;
 }

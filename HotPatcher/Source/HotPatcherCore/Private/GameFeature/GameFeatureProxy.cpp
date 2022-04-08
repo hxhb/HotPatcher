@@ -17,7 +17,7 @@ bool UGameFeatureProxy::DoExport()
 		FDirectoryPath FeaturePluginPath;
 		FeaturePluginPath.Path = FString::Printf(TEXT("/%s"),*PatchSettings->VersionId);
 		
-		PatchSettings->AssetIncludeFilters.Add(FeaturePluginPath);
+		PatchSettings->GetAssetScanConfigRef().AssetIncludeFilters.Add(FeaturePluginPath);
 
 		FPlatformExternAssets PlatformExternAssets;
 		{

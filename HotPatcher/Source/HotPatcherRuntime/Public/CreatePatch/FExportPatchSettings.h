@@ -118,7 +118,7 @@ public:
 	FORCEINLINE bool IsSaveDiffAnalysis()const { return IsByBaseVersion() && bStorageDiffAnalysisResults; }
 	FORCEINLINE TArray<FString> GetIgnoreDeletionModulesAsset()const{return IgnoreDeletionModulesAsset;}
 
-	FORCEINLINE bool IsPackageTracker()const { return bPackageTracker; }
+	// FORCEINLINE bool IsPackageTracker()const { return bPackageTracker; }
 	FORCEINLINE bool IsIncludeAssetRegistry()const { return bIncludeAssetRegistry; }
 	FORCEINLINE bool IsIncludeGlobalShaderCache()const { return bIncludeGlobalShaderCache; }
 	FORCEINLINE bool IsIncludeShaderBytecode()const { return bIncludeShaderBytecode; }
@@ -129,7 +129,7 @@ public:
 
 	FORCEINLINE bool IsByBaseVersion()const { return bByBaseVersion; }
 	FORCEINLINE bool IsEnableExternFilesDiff()const { return bEnableExternFilesDiff; }
-	FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return bIncludeHasRefAssetsOnly; }
+	
 	FORCEINLINE bool IsIncludePakVersion()const { return bIncludePakVersionFile; }
 
 	// chunk infomation
@@ -172,6 +172,7 @@ public:
 	FORCEINLINE bool IsSharedShaderLibrary()const { return GetCookShaderOptions().bSharedShaderLibrary; }
 	FORCEINLINE FCookShaderOptions GetCookShaderOptions()const {return CookShaderOptions;}
 	FORCEINLINE FAssetRegistryOptions GetSerializeAssetRegistryOptions()const{return SerializeAssetRegistryOptions;}
+	FORCEINLINE bool IsImportProjectSettings()const{ return bImportProjectSettings; }
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = false;
@@ -179,7 +180,9 @@ public:
 		FFilePath BaseVersion;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "PatchBaseSettings")
 		FString VersionId;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filters")
+		bool bImportProjectSettings = false;
+	
 	// require HDiffPatchUE plugin
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BinariesPatch")
 		bool bBinariesPatch = false;
@@ -190,7 +193,7 @@ public:
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filters",meta = (EditCondition = "!bAnalysisFilterDependencies"))
 	bool bAnalysisDiffAssetDependenciesOnly = false;
 	// allow tracking load asset when cooking
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filters")
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filters")
 		bool bPackageTracker = true;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooked Files")
 		bool bIncludeAssetRegistry = false;

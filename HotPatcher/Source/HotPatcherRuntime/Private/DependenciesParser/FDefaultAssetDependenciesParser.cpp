@@ -1,6 +1,7 @@
 #include "DependenciesParser/FDefaultAssetDependenciesParser.h"
 #include "FlibAssetManageHelper.h"
 #include "HotPatcherLog.h"
+#include "Engine/World.h"
 #include "Engine/WorldComposition.h"
 
 

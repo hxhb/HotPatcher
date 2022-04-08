@@ -33,7 +33,7 @@ void SHotPatcherWidgetBase::Construct(const FArguments& InArgs, TSharedPtr<FHotP
 void SHotPatcherWidgetBase::ImportProjectConfig()
 {
 	// import uasset
-	UFlibHotPatcherCoreHelper::ImportProjectSettingsToSettingBase(GetConfigSettings());
+	UFlibHotPatcherCoreHelper::ImportProjectSettingsToScannerConfig(GetConfigSettings()->GetAssetScanConfigRef());
 	
 	FString DefaultEditorIni = FPaths::ProjectConfigDir()/TEXT("DefaultEditor.ini");
 	FString DefaultGameIni = FPaths::ProjectConfigDir()/TEXT("DefaultGame.ini");

@@ -93,7 +93,7 @@ namespace ReleaseWorker
 	{
 		if(Context.GetSettingObject()->IsImportProjectSettings())
 		{
-			UFlibHotPatcherCoreHelper::ImportProjectSettingsToSettingBase(Context.GetSettingObject());
+			UFlibHotPatcherCoreHelper::ImportProjectSettingsToScannerConfig(Context.GetSettingObject()->GetAssetScanConfigRef());
 		}
 		
 		return true;
@@ -108,20 +108,13 @@ namespace ReleaseWorker
 		}
 		FText DiaLogMsg = FText::Format(NSLOCTEXT("AnalysisRelease", "AnalysisReleaseVersionInfo", "Analysis Release {0} Assets info."), FText::FromString(Context.GetSettingObject()->GetVersionId()));
 		Context.UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
-		Context.NewReleaseVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
-			Context.GetSettingObject()->GetVersionId(),
-			TEXT(""),
-			FDateTime::UtcNow().ToString(),
-			UFlibAssetManageHelper::DirectoryPathsToStrings(Context.GetSettingObject()->GetAssetIncludeFilters()),
-			UFlibAssetManageHelper::DirectoryPathsToStrings(Context.GetSettingObject()->GetAssetIgnoreFilters()),
-			AllSkipContent,
-			Context.GetSettingObject()->GetForceSkipClasses(),
-			Context.GetSettingObject()->GetAssetRegistryDependencyTypes(),
-			Context.GetSettingObject()->GetSpecifyAssets(),
-			Context.GetSettingObject()->GetAddExternAssetsToPlatform(),
-			Context.GetSettingObject()->IsIncludeHasRefAssetsOnly(),
-			Context.GetSettingObject()->IsAnalysisFilterDependencies()
-		);
+		{
+			Context.NewReleaseVersion.VersionId = Context.GetSettingObject()->GetVersionId();
+			Context.NewReleaseVersion.Date = FDateTime::UtcNow().ToString();
+			Context.NewReleaseVersion.BaseVersionId = TEXT("");
+		}
+		UFlibPatchParserHelper::RunAssetScanner(Context.GetSettingObject()->GetAssetScanConfig(),Context.NewReleaseVersion);
+		UFlibPatchParserHelper::ExportExternAssetsToPlatform(Context.GetSettingObject()->GetAddExternAssetsToPlatform(),Context.NewReleaseVersion);
 		return true;
 	}
 

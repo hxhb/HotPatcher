@@ -76,7 +76,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Version", meta = (RelativeToGameContentDir, EditCondition = "ByPakList"))
 		TArray<FPlatformPakListFiles> PlatformsPakListFiles;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filters")
+	 UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Filters")
 		bool bImportProjectSettings = false;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "External Files")

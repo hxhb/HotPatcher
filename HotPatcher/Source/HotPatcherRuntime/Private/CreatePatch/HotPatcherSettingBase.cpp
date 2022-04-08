@@ -3,10 +3,11 @@
 #include "FPlatformExternFiles.h"
 #include "HotPatcherLog.h"
 
-FHotPatcherSettingBase::FHotPatcherSettingBase():bAnalysisFilterDependencies(true),
-	AssetRegistryDependencyTypes(TArray<EAssetRegistryDependencyTypeEx>{EAssetRegistryDependencyTypeEx::Packages})
+FHotPatcherSettingBase::FHotPatcherSettingBase()
 {
-	ForceSkipContentRules.Append(UFlibPatchParserHelper::GetDefaultForceSkipContentDir());
+	GetAssetScanConfigRef().bAnalysisFilterDependencies = true;
+	GetAssetScanConfigRef().AssetRegistryDependencyTypes = TArray<EAssetRegistryDependencyTypeEx>{EAssetRegistryDependencyTypeEx::Packages};
+	GetAssetScanConfigRef().ForceSkipContentRules.Append(UFlibPatchParserHelper::GetDefaultForceSkipContentDir());
 }
 
 

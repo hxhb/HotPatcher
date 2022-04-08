@@ -88,8 +88,8 @@ void FAssetTypeActions_PrimaryAssetLabel::ExecuteAddToPatchIncludeFilter(
 	FHotPatcherEditorModule::Get().OpenDockTab();
 	if(GPatchSettings)
 	{
-		GPatchSettings->IncludeSpecifyAssets.Append(GetLabelsAssets(Objects));
-		GPatchSettings->AssetIncludeFilters.Append(GetLabelsDirs(Objects));
+		GPatchSettings->GetAssetScanConfigRef().IncludeSpecifyAssets.Append(GetLabelsAssets(Objects));
+		GPatchSettings->GetAssetScanConfigRef().AssetIncludeFilters.Append(GetLabelsDirs(Objects));
 	}
 }
 
