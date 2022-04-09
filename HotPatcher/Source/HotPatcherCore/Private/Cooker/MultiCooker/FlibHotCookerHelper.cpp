@@ -35,7 +35,7 @@ FString UFlibHotCookerHelper::GetCookerBaseDir()
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(
 			FPaths::Combine(
 				FPaths::ProjectSavedDir(),
-				TEXT("HotPatcher/Cooker"),
+				TEXT("HotPatcher/MultiCooker"),
 				FApp::GetProjectName()
 				));
 		return SaveConfigTo;

@@ -170,11 +170,13 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 		if(CurrentAssetData.GetClass() == UWorld::StaticClass())
 		{
 #if WITH_EDITOR
+			SCOPED_NAMED_EVENT_TEXT("LoadWorld",FColor::Red);
 			UWorld* World = UWorld::FindWorldInPackage(CurrentAssetData.GetAsset()->GetOutermost());
 			if (World)
 			{
 				if(World->WorldComposition)
 				{
+					SCOPED_NAMED_EVENT_TEXT("Collect WorldComposition Tiles",FColor::Red);
 					TArray<FString> PackageNames;
 					World->WorldComposition->CollectTilesToCook(PackageNames);
 					for(const auto& PackageName:PackageNames)
