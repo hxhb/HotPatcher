@@ -12,6 +12,6 @@ class UHotAssetScannerCommandlet :public UHotPatcherCommandletBase
 	GENERATED_BODY()
 
 public:
-
 	virtual int32 Main(const FString& Params)override;
+	void MaybeMarkPackageAsAlreadyLoaded(UPackage* Package);
 };

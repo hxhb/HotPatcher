@@ -11,6 +11,11 @@
 
 DEFINE_LOG_CATEGORY(LogHotAssetScannerCommandlet);
 
+void UHotAssetScannerCommandlet::MaybeMarkPackageAsAlreadyLoaded(UPackage* Package)
+{
+	Package->SetPackageFlags(PKG_ReloadingForCooker);
+}
+
 int32 UHotAssetScannerCommandlet::Main(const FString& Params)
 {
 	Super::Main(Params);
@@ -50,7 +55,9 @@ int32 UHotAssetScannerCommandlet::Main(const FString& Params)
 	FString FinalConfig;
 	THotPatcherTemplateHelper::TSerializeStructAsJsonString(*AssetScanConfig,FinalConfig);
 	UE_LOG(LogHotAssetScannerCommandlet, Display, TEXT("%s"), *FinalConfig);
-		
+
+	FCoreUObjectDelegates::PackageCreatedForLoad.AddUObject(this,&UHotAssetScannerCommandlet::MaybeMarkPackageAsAlreadyLoaded);
+	
 	FHotPatcherVersion CurrentVersion;
 	{
 		CurrentVersion.VersionId = TEXT("HotAssetScanner");
