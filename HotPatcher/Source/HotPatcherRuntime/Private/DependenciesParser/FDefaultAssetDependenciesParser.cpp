@@ -170,7 +170,8 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 		if(CurrentAssetData.GetClass() == UWorld::StaticClass())
 		{
 #if WITH_EDITOR
-			SCOPED_NAMED_EVENT_TEXT("LoadWorld",FColor::Red);
+			FString DisplayStr = FString::Printf(TEXT("LoadWorld %s"),*CurrentAssetData.GetFullName());
+			FScopedNamedEvent CacheClassEvent(FColor::Red,*DisplayStr);
 			UWorld* World = UWorld::FindWorldInPackage(CurrentAssetData.GetAsset()->GetOutermost());
 			if (World)
 			{

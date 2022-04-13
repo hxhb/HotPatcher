@@ -22,6 +22,7 @@
 #include "Engine/EngineTypes.h"
 #include "JsonObjectConverter.h"
 #include "AssetRegistryState.h"
+#include "FPackageTracker.h"
 #include "CreatePatch/TimeRecorder.h"
 #include "Misc/Paths.h"
 #include "Kismet/KismetStringLibrary.h"
@@ -1274,6 +1275,12 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 void UFlibPatchParserHelper::RunAssetScanner(FAssetScanConfig ScanConfig,FHotPatcherVersion& ExportVersion)
 {
 	SCOPED_NAMED_EVENT_TEXT("UFlibPatchParserHelper::RunAssetScanner",FColor::Red);
+
+	TSharedPtr<FPackageTrackerBase> ObjectTracker;
+	if(ScanConfig.bPackageTracker)
+	{
+		ObjectTracker = MakeShareable(new FPackageTrackerBase);
+	}
 	// add Include Filter
 	{
 		TArray<FString> AllIncludeFilter;
@@ -1341,6 +1348,17 @@ void UFlibPatchParserHelper::RunAssetScanner(FAssetScanConfig ScanConfig,FHotPat
 					ExportVersion.AssetInfo.AddAssetsDetail(CurrentDetail);
 				}
 			}
+		}
+	}
+	
+	if(ObjectTracker && ScanConfig.bPackageTracker)
+	{
+		SCOPED_NAMED_EVENT_TEXT("Combine Package Tracker Assets",FColor::Red);
+		const TSet<FName> LoadedPackages = ObjectTracker->GetLoadedPackages();
+		for(const auto& Package:LoadedPackages)
+		{
+			FAssetDetail LoadedPackageDetail = UFlibAssetManageHelper::GetAssetDetailByPackageName(Package.ToString());
+			ExportVersion.AssetInfo.AddAssetsDetail(LoadedPackageDetail);
 		}
 	}
 }

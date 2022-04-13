@@ -37,6 +37,9 @@ struct FPackageTrackerBase : public FUObjectArray::FUObjectCreateListener, publi
 
 			if (Package->GetOuter() == nullptr && !Package->GetFName().IsNone())
 			{
+				FName AssetPathName = FName(*Package->GetPathName());
+				LoadedPackages.Add(AssetPathName);
+				
 				OnPackageCreated(Package);
 			}
 		}
@@ -61,8 +64,8 @@ struct FPackageTrackerBase : public FUObjectArray::FUObjectCreateListener, publi
 		GUObjectArray.RemoveUObjectDeleteListener(this);
 		GUObjectArray.RemoveUObjectCreateListener(this);
 	}
-	virtual void OnPackageCreated(UPackage* Package) = 0;
-	virtual void OnPackageDeleted(UPackage* Package) = 0;
+	virtual void OnPackageCreated(UPackage* Package){};
+	virtual void OnPackageDeleted(UPackage* Package){};
 	virtual const TSet<FName>& GetLoadedPackages()const{ return LoadedPackages; }
 	
 protected:
@@ -71,8 +74,7 @@ protected:
 
 struct FPackageTracker : public FPackageTrackerBase
 {
-	FPackageTracker(TSet<FName>& InExisitAssets):ExisitAssets(InExisitAssets)
-	{}
+	FPackageTracker(TSet<FName>& InExisitAssets):ExisitAssets(InExisitAssets){}
 
 	virtual ~FPackageTracker(){}
 

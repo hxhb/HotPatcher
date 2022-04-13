@@ -16,6 +16,7 @@
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #include "GameDelegates.h"
 #include "GameMapsSettings.h"
+#include "INetworkFileSystemModule.h"
 #include "IPlatformFileSandboxWrapper.h"
 #include "PackageHelperFunctions.h"
 #include "Async/Async.h"
@@ -2178,4 +2179,37 @@ EObjectFlags UFlibHotPatcherCoreHelper::GetObjectFlagForCooked(UPackage* Package
 	return CookedFlags;
 }
 
+
+void UFlibHotPatcherCoreHelper::SaveGlobalShaderMapFiles(const TArrayView<const ITargetPlatform* const>& Platforms,const FString& BaseOutputDir)
+{
+	// we don't support this behavior
+	for (int32 Index = 0; Index < Platforms.Num(); Index++)
+	{
+		// make sure global shaders are up to date!
+		TArray<FString> Files;
+		FShaderRecompileData RecompileData;
+		RecompileData.PlatformName = Platforms[Index]->PlatformName();
+		// Compile for all platforms
+		RecompileData.ShaderPlatform = -1;
+		RecompileData.ModifiedFiles = &Files;
+		RecompileData.MeshMaterialMaps = NULL;
+
+		check( IsInGameThread() );
+
+		FString OutputDir  = FPaths::Combine(BaseOutputDir,Platforms[Index]->PlatformName());
+		RecompileShadersForRemote
+			(RecompileData.PlatformName, 
+			RecompileData.ShaderPlatform == -1 ? SP_NumPlatforms : (EShaderPlatform)RecompileData.ShaderPlatform, //-V547
+			OutputDir, 
+			RecompileData.MaterialsToLoad,
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+			RecompileData.ShadersToRecompile,
+#endif
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 25
+			RecompileData.SerializedShaderResources,
+#endif
+			RecompileData.MeshMaterialMaps, 
+			RecompileData.ModifiedFiles);
+	}
+}
 
