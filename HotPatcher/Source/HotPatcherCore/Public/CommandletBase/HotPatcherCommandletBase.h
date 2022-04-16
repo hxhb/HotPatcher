@@ -13,4 +13,7 @@ class HOTPATCHERCORE_API UHotPatcherCommandletBase :public UCommandlet
 public:
 
 	virtual int32 Main(const FString& Params)override;
+protected:
+	void MaybeMarkPackageAsAlreadyLoaded(UPackage* Package);
+	TSharedPtr<struct FObjectTrackerTagCleaner> ObjectTrackerTagCleaner;
 };

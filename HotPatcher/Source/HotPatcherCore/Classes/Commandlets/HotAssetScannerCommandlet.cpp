@@ -12,34 +12,12 @@
 #include "BaseTypes/FPackageTracker.h"
 DEFINE_LOG_CATEGORY(LogHotAssetScannerCommandlet);
 
-static const bool bNoDDC = FParse::Param(FCommandLine::Get(), TEXT("NoDDC"));
-
-struct FObjectTrackerTagCleaner:public FPackageTrackerBase
-{
-	virtual void NotifyUObjectCreated(const UObjectBase* Object, int32 Index) override
-	{
-		auto ObjectIns = const_cast<UObject*>(static_cast<const UObject*>(Object));
-		if(ObjectIns && bNoDDC)
-		{
-			ObjectIns->ClearFlags(RF_NeedPostLoad);
-			ObjectIns->ClearFlags(RF_NeedPostLoadSubobjects);
-		}
-	}
-};
-
-void UHotAssetScannerCommandlet::MaybeMarkPackageAsAlreadyLoaded(UPackage* Package)
-{
-	Package->SetPackageFlags(PKG_ReloadingForCooker);
-	Package->SetPackageFlags(PKG_FilterEditorOnly);
-}
 
 int32 UHotAssetScannerCommandlet::Main(const FString& Params)
 {
 	SCOPED_NAMED_EVENT_TEXT("UHotAssetScannerCommandlet::Main",FColor::Red);
 	Super::Main(Params);
-	// for Object Create Tracking,Optimize Asset searching, dont execute UObject::PostLoad
-	TSharedPtr<FObjectTrackerTagCleaner> ObjectTrackerTagCleaner = MakeShareable(new FObjectTrackerTagCleaner);
-	
+
 	UE_LOG(LogHotAssetScannerCommandlet, Display, TEXT("UHotAssetScannerCommandlet::Main"));
 
 	FString config_path;
@@ -63,10 +41,7 @@ int32 UHotAssetScannerCommandlet::Main(const FString& Params)
 		AssetRegistryModule.Get().SearchAllAssets(true);
 	}
 	
-	if (bNoDDC)
-	{
-		FCoreUObjectDelegates::PackageCreatedForLoad.AddUObject(this,&UHotAssetScannerCommandlet::MaybeMarkPackageAsAlreadyLoaded);
-	}
+
 	
 	TSharedPtr<FAssetScanConfig> AssetScanConfig = MakeShareable(new FAssetScanConfig);
 	

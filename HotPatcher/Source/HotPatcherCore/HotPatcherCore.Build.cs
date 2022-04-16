@@ -144,7 +144,9 @@ public class HotPatcherCore : ModuleRules
 		AddPublicDefinitions("WITH_EDITOR_SECTION", Version.MajorVersion > 4 || Version.MinorVersion > 24);
 		System.Console.WriteLine("MajorVersion {0} MinorVersion: {1} PatchVersion {2}",Target.Version.MajorVersion,Target.Version.MinorVersion,Target.Version.PatchVersion);
 		
-
+		// !!! Please make sure to modify the engine if necessary, otherwise it will cause a crash
+		AddPublicDefinitions("SUPPORT_NO_DDC", true);
+		
 		// Game feature
 		bool bEnableGameFeature = true;
 		if (bEnableGameFeature || (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 26))

@@ -57,6 +57,8 @@ public:
 				FPlatformProcess::Sleep(0.2f);
 			}
 
+			mThreadStatus = EThreadStatus::Completed;
+			
 			int32 ProcReturnCode;
 			if (FPlatformProcess::GetProcReturnCode(mProcessHandle,&ProcReturnCode))
 			{
@@ -79,7 +81,7 @@ public:
 			}
 			
 		}
-		mThreadStatus = EThreadStatus::Completed;
+		
 		return 0;
 	}
 	virtual void Exit()override
