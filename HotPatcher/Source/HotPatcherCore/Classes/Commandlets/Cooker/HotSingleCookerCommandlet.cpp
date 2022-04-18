@@ -40,7 +40,7 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 	// 	AssetRegistryModule.Get().SearchAllAssets(true);
 	// }
 
-	TSharedPtr<FSingleCookerSettings> ExportSingleCookerSetting = MakeShareable(new FSingleCookerSettings);
+	ExportSingleCookerSetting = MakeShareable(new FSingleCookerSettings);
 	
 	FString JsonContent;
 	if (FPaths::FileExists(config_path) && FFileHelper::LoadFileToString(JsonContent, *config_path))
@@ -79,4 +79,27 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 	}
 	
 	return bExportStatus ? 0 : -1;
+}
+
+bool UHotSingleCookerCommandlet::IsSkipObject(UObject* Object)
+{
+	bool bRsult = false;
+	if(ExportSingleCookerSetting.IsValid() && !ExportSingleCookerSetting->bPackageTracker)
+	{
+		UPackage* OutmostPackage = Object->GetOutermost();
+		FName PackageName = *OutmostPackage->GetFullName();
+		bRsult = ExportSingleCookerSetting->SkipLoadedAssets.Contains(PackageName);
+	}
+	return bRsult;
+}
+
+bool UHotSingleCookerCommandlet::IsSkipPackage(UPackage* Package)
+{
+	bool bRsult = false;
+	if(ExportSingleCookerSetting.IsValid() && !ExportSingleCookerSetting->bPackageTracker)
+	{
+		FName PackageName = *Package->GetFullName();
+		bRsult = ExportSingleCookerSetting->SkipLoadedAssets.Contains(PackageName);
+	}
+	return bRsult;
 }

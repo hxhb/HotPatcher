@@ -11,8 +11,9 @@ class HOTPATCHERCORE_API UHotPatcherCommandletBase :public UCommandlet
 	GENERATED_BODY()
 
 public:
-
 	virtual int32 Main(const FString& Params)override;
+	virtual bool IsSkipObject(UObject* Object){ return false; }
+	virtual bool IsSkipPackage(UPackage* Package){ return false; }
 protected:
 	void MaybeMarkPackageAsAlreadyLoaded(UPackage* Package);
 	TSharedPtr<struct FObjectTrackerTagCleaner> ObjectTrackerTagCleaner;

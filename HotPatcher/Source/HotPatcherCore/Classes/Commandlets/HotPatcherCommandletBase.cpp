@@ -16,32 +16,36 @@ static const bool bNoDDC = FParse::Param(FCommandLine::Get(), TEXT("NoDDC"));
 
 struct FObjectTrackerTagCleaner:public FPackageTrackerBase
 {
+	FObjectTrackerTagCleaner(UHotPatcherCommandletBase* InCommandletIns):CommandletIns(InCommandletIns){}
 	virtual void NotifyUObjectCreated(const UObjectBase* Object, int32 Index) override
 	{
 		auto ObjectIns = const_cast<UObject*>(static_cast<const UObject*>(Object));
-		if(ObjectIns && bNoDDC)
+		if((ObjectIns && bNoDDC) || CommandletIns->IsSkipObject(ObjectIns))
 		{
 			ObjectIns->ClearFlags(RF_NeedPostLoad);
 			ObjectIns->ClearFlags(RF_NeedPostLoadSubobjects);
 		}
 	}
+protected:
+	UHotPatcherCommandletBase* CommandletIns;
 };
 
 void UHotPatcherCommandletBase::MaybeMarkPackageAsAlreadyLoaded(UPackage* Package)
 {
-	Package->SetPackageFlags(PKG_ReloadingForCooker);
-	Package->SetPackageFlags(PKG_FilterEditorOnly);
+	if (bNoDDC || IsSkipPackage(Package))
+	{
+		Package->SetPackageFlags(PKG_ReloadingForCooker);
+		Package->SetPackageFlags(PKG_FilterEditorOnly);
+	}
 }
 
 int32 UHotPatcherCommandletBase::Main(const FString& Params)
 {
 #if SUPPORT_NO_DDC
 	// for Object Create Tracking,Optimize Asset searching, dont execute UObject::PostLoad
-	if (bNoDDC)
-	{
-		ObjectTrackerTagCleaner = MakeShareable(new FObjectTrackerTagCleaner);
-		FCoreUObjectDelegates::PackageCreatedForLoad.AddUObject(this,&UHotPatcherCommandletBase::MaybeMarkPackageAsAlreadyLoaded);
-	}
+	ObjectTrackerTagCleaner = MakeShareable(new FObjectTrackerTagCleaner(this));
+	FCoreUObjectDelegates::PackageCreatedForLoad.AddUObject(this,&UHotPatcherCommandletBase::MaybeMarkPackageAsAlreadyLoaded);
+	
 #endif
 	return 0;
 }
