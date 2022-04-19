@@ -47,10 +47,10 @@ public:
 	FReply DoResetConfig()const;
 
 	virtual TSharedPtr<FHotPatcherContextBase> GetContext()const { return Context; }
-	virtual TMap<FName,TSharedPtr<SHotPatcherWidgetBase>> GetActionWidgetMap()const { return ActionWidgetMap; }
+	virtual TMap<FName,TSharedPtr<SHotPatcherWidgetInterface>> GetActionWidgetMap()const { return ActionWidgetMap; }
 
-	TSharedPtr<SHotPatcherWidgetBase> GetActiveAction()const;
+	TSharedPtr<SHotPatcherWidgetInterface> GetActiveAction()const;
 protected:
 	TSharedPtr<FHotPatcherContextBase> Context;
-	TMap<FName,TSharedPtr<SHotPatcherWidgetBase>> ActionWidgetMap;
+	mutable TMap<FName,TSharedPtr<SHotPatcherWidgetInterface>> ActionWidgetMap;
 };

@@ -19,6 +19,7 @@ ENUM_RANGE_BY_COUNT(EHotPatcherActionModes, EHotPatcherActionModes::Count);
 struct HOTPATCHEREDITOR_API FPatchersModeContext: public FHotPatcherContextBase
 {
 public:
+	virtual ~FPatchersModeContext(){};
 	virtual FName GetContextName()const override{ return TEXT("Patch"); }
 	FORCEINLINE_DEBUGGABLE void SetPatcherMode(EHotPatcherActionModes InPatcherMode){ PatcherMode = InPatcherMode; }
 	FORCEINLINE_DEBUGGABLE EHotPatcherActionModes GetMode() { return PatcherMode; }
@@ -38,6 +39,5 @@ public:
 	}
 
 private:
-
-	EHotPatcherActionModes PatcherMode;
+	EHotPatcherActionModes PatcherMode = EHotPatcherActionModes::ByPatch;
 };

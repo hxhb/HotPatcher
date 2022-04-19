@@ -6,6 +6,7 @@
 #include "Model/FPatchersModeContext.h"
 #include "CreatePatch/FExportPatchSettings.h"
 #include "CreatePatch/IPatchableInterface.h"
+#include "Model/FHotPatcherContextBase.h"
 
 // engine header
 #include "Interfaces/ITargetPlatform.h"

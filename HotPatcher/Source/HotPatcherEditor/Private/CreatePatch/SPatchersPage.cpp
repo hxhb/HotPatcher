@@ -108,11 +108,12 @@ void SPatchersPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCo
 	{
 		for(const auto& Patcher:*Patchers)
 		{
-			TSharedRef<SCompoundWidget> CookAction = Patcher.Value.RequestWidget(GetContext());
-			Widget->AddSlot().AutoHeight().Padding(0.0, 8.0, 0.0, 0.0)
-			[
-				CookAction
-			];
+			TSharedRef<SHotPatcherWidgetInterface> Action = Patcher.Value.RequestWidget(GetContext());
+			 Widget->AddSlot().AutoHeight().Padding(0.0, 8.0, 0.0, 0.0)
+			 [
+			 	Action
+			 ];
+			ActionWidgetMap.Add(*Patcher.Key,Action);
 		}
 	}
 	

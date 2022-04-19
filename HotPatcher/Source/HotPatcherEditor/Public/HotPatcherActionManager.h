@@ -1,6 +1,7 @@
 #pragma once
 // engine header
 #include "CoreMinimal.h"
+#include "SHotPatcherWidgetBase.h"
 #include "Model/FHotPatcherContextBase.h"
 
 struct HOTPATCHEREDITOR_API FHotPatcherAction
@@ -12,7 +13,7 @@ struct HOTPATCHEREDITOR_API FHotPatcherAction
 		const TAttribute<FText>& InActionToolTip,
 		const FSlateIcon& InIcon,
 		TFunction<void(void)> InCallback,
-		TFunction<TSharedRef<SCompoundWidget>(TSharedPtr<FHotPatcherContextBase>)> InRequestWidget
+		TFunction<TSharedRef<SHotPatcherWidgetInterface>(TSharedPtr<FHotPatcherContextBase>)> InRequestWidget
 		)
 	:Category(InCategory),ActionName(InActionName),ActionToolTip(InActionToolTip),Icon(InIcon),ActionCallback(InCallback),RequestWidget(InRequestWidget){}
 	FName Category;
@@ -20,7 +21,7 @@ struct HOTPATCHEREDITOR_API FHotPatcherAction
 	TAttribute<FText> ActionToolTip;
 	FSlateIcon Icon;
 	TFunction<void(void)> ActionCallback;
-	TFunction<TSharedRef<SCompoundWidget>(TSharedPtr<FHotPatcherContextBase>)> RequestWidget;
+	TFunction<TSharedRef<SHotPatcherWidgetInterface>(TSharedPtr<FHotPatcherContextBase>)> RequestWidget;
 };
 
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FHotPatcherActionDelegate,const FString&,const FString&,const FHotPatcherAction&);

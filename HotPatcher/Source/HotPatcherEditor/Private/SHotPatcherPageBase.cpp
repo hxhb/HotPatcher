@@ -35,9 +35,9 @@ FReply SHotPatcherPageBase::DoResetConfig()const
 	return FReply::Handled();
 }
 
-TSharedPtr<SHotPatcherWidgetBase> SHotPatcherPageBase::GetActiveAction()const
+TSharedPtr<SHotPatcherWidgetInterface> SHotPatcherPageBase::GetActiveAction()const
 {
-	TSharedPtr<SHotPatcherWidgetBase> result;
+	TSharedPtr<SHotPatcherWidgetInterface> result;
 	if (GetContext().IsValid())
 	{
 		if(ActionWidgetMap.Contains(GetContext()->GetModeName()))

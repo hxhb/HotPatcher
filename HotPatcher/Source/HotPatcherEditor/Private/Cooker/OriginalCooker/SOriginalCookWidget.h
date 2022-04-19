@@ -73,7 +73,7 @@ protected:
 	FString SerializeAsString()const;
 
 private:
-	UMissionNotificationProxy* MissionNotifyProay;
+	UMissionNotificationProxy* MissionNotifyProay = nullptr;
 	bool InCooking=false;
 	/** The pending progress message */
 	TWeakPtr<SNotificationItem> PendingProgressPtr;

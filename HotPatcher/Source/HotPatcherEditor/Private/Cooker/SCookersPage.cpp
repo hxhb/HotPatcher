@@ -107,12 +107,13 @@ void SCookersPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCon
 	{
 		for(const auto& Cooker:*Cookers)
 		{
-			TSharedRef<SCompoundWidget> CookAction = Cooker.Value.RequestWidget(GetContext());
+			TSharedRef<SHotPatcherWidgetInterface> Action = Cooker.Value.RequestWidget(GetContext());
 		
 			Widget->AddSlot().AutoHeight().Padding(0.0, 8.0, 0.0, 0.0)
 			[
-				CookAction
+				Action
 			];
+			ActionWidgetMap.Add(*Cooker.Key,Action);
 		}
 	}
 	ChildSlot
