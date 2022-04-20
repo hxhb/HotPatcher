@@ -919,35 +919,73 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 	// Collect Chunk Assets
 	{
 
-		auto GetAssetFilterPaths = [](const TArray<FDirectoryPath>& InFilters)->TArray<FString>
-		{
-			TArray<FString> Result;
-			for (const auto& Filter : InFilters)
-			{
-				if (!Filter.Path.IsEmpty())
-				{
-					FString FinalFilter = Filter.Path;
-					if(!Filter.Path.EndsWith(TEXT("/")))
-					{
-						FinalFilter = FString::Printf(TEXT("%s/"),*FinalFilter);
-					}
-					Result.AddUnique(FinalFilter);
-				}
-			}
-			return Result;
-		};
+		// auto GetAssetFilterPaths = [](const TArray<FDirectoryPath>& InFilters)->TArray<FString>
+		// {
+		// 	TArray<FString> Result;
+		// 	for (const auto& Filter : InFilters)
+		// 	{
+		// 		if (!Filter.Path.IsEmpty())
+		// 		{
+		// 			FString FinalFilter = Filter.Path;
+		// 			if(!Filter.Path.EndsWith(TEXT("/")))
+		// 			{
+		// 				FinalFilter = FString::Printf(TEXT("%s/"),*FinalFilter);
+		// 			}
+		// 			Result.AddUnique(FinalFilter);
+		// 		}
+		// 	}
+		// 	return Result;
+		// };
+		
 		FAssetDependenciesInfo SpecifyDependAssets;
 		
-		FAssetDependenciesParser Parser;
-		FAssetDependencies Conf;
-		Conf.InIncludeSpecifyAsset = Chunk.IncludeSpecifyAssets;
+	
+		TArray<FString> AllIncludeFilter;
+		for (const auto& Filter : Chunk.AssetIncludeFilters)
+		{
+			AllIncludeFilter.AddUnique(Filter.Path);
+		}	
 		
-		Parser.Parse(Conf);
+		TArray<FString> AllIgnoreFilter;
+		for (const auto& Filter : Chunk.AssetIgnoreFilters)
+		{
+			AllIgnoreFilter.AddUnique(Filter.Path);
+
+		}
+
+		TSet<FName> IgnoreTypes = 
+		{
+			TEXT("EditorUtilityBlueprint")
+		};
+		for(auto Class:Chunk.ForceSkipClasses)
+		{
+			IgnoreTypes.Add(*Class->GetName());
+		}
+		
+		FAssetDependenciesParser Parser;
+		FAssetDependencies ChunkAssetConfig;
+		ChunkAssetConfig.IncludeFilters = AllIncludeFilter;
+		ChunkAssetConfig.IgnoreFilters = AllIgnoreFilter;
+		ChunkAssetConfig.AssetRegistryDependencyTypes = Chunk.AssetRegistryDependencyTypes;
+		ChunkAssetConfig.InIncludeSpecifyAsset = Chunk.IncludeSpecifyAssets;
+
+		TArray<FString> AllSkipContents;;
+		if(Chunk.bForceSkipContent)
+		{
+			AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(Chunk.ForceSkipContentRules));
+			AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(Chunk.ForceSkipAssets));
+		}
+	
+		ChunkAssetConfig.ForceSkipContents = AllSkipContents;
+		ChunkAssetConfig.bRedirector = true;
+		ChunkAssetConfig.AnalysicFilterDependencies = Chunk.bAnalysisFilterDependencies;
+		ChunkAssetConfig.IgnoreAseetTypes = IgnoreTypes;
+		
+		Parser.Parse(ChunkAssetConfig);
 		TSet<FName> AssetLongPackageNames = Parser.GetrParseResults();
 		
-		TArray<FString> AssetFilterPaths = GetAssetFilterPaths(Chunk.AssetIncludeFilters);
-		// AssetFilterPaths.Append(GetSpecifyAssets(Chunk.IncludeSpecifyAssets));
-		// AssetFilterPaths.Append(SpecifyDependAssets.GetAssetLongPackageNames());
+		TArray<FString> AssetFilterPaths;
+
 		for(FName LongPackageName:AssetLongPackageNames)
 		{
 			if(LongPackageName.IsNone())
