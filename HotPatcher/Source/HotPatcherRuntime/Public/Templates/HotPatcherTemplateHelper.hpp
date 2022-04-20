@@ -125,6 +125,110 @@ namespace THotPatcherTemplateHelper
 		return bStatus;
 	}
 
+	// Temp To Adapt Old Version
+	static void AdaptOldVersion(const TSharedPtr<FJsonObject>& OutJsonObject)
+	{
+		const bool bHaveAssetScanConfig = OutJsonObject->HasField(TEXT("assetScanConfig"));
+		const bool bHaveByBaseVersion = OutJsonObject->HasField(TEXT("bByBaseVersion"));
+		if (bHaveAssetScanConfig || !bHaveByBaseVersion)
+		{
+			return;
+		}
+
+		const TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+
+		const TArray<TSharedPtr<FJsonValue>> *AssetIncludeFilters = nullptr;
+		const TArray<TSharedPtr<FJsonValue>> *AssetIgnoreFilters = nullptr;
+
+		const TArray<TSharedPtr<FJsonValue>> *ForceSkipContentRules = nullptr;
+
+		const TArray<TSharedPtr<FJsonValue>> *ForceSkipAssets = nullptr;
+		const TArray<TSharedPtr<FJsonValue>> *AssetRegistryDependencyTypes = nullptr;
+		const TArray<TSharedPtr<FJsonValue>> *IncludeSpecifyAssets = nullptr;
+
+		bool bForceSkipContent = false;
+		bool bIncludeHasRefAssetsOnly = false;
+		bool bAnalysisFilterDependencies = false;
+		bool bAnalysisDiffAssetDependenciesOnly = false;
+		bool bRecursiveWidgetTree = false;
+
+		const bool bHaveAssetIncludeFilters = OutJsonObject->TryGetArrayField(TEXT("assetIncludeFilters"), AssetIncludeFilters);
+		const bool bHaveAssetIgnoreFilters = OutJsonObject->TryGetArrayField(TEXT("assetIgnoreFilters"), AssetIgnoreFilters);
+		const bool bHaveForceSkipContentRules = OutJsonObject->TryGetArrayField(TEXT("forceSkipContentRules"), ForceSkipContentRules);
+
+		const bool bHaveForceSkipAssets = OutJsonObject->TryGetArrayField(TEXT("forceSkipAssets"), ForceSkipAssets);
+		const bool bHaveAssetRegistryDependencyTypes = OutJsonObject->TryGetArrayField(TEXT("assetRegistryDependencyTypes"), AssetRegistryDependencyTypes);
+		const bool bHaveIncludeSpecifyAssets = OutJsonObject->TryGetArrayField(TEXT("includeSpecifyAssets"), IncludeSpecifyAssets);
+
+		const bool bHaveForceSkipContent = OutJsonObject->TryGetBoolField(TEXT("bForceSkipContent"), bForceSkipContent);
+		const bool bHaveIncludeHasRefAssetsOnly = OutJsonObject->TryGetBoolField(TEXT("bIncludeHasRefAssetsOnly"), bIncludeHasRefAssetsOnly);
+		const bool bHaveAnalysisFilterDependencies = OutJsonObject->TryGetBoolField(TEXT("bAnalysisFilterDependencies"), bAnalysisFilterDependencies);
+		const bool bHaveAnalysisDiffAssetDependenciesOnly = OutJsonObject->TryGetBoolField(TEXT("bAnalysisDiffAssetDependenciesOnly"), bAnalysisDiffAssetDependenciesOnly);
+		const bool bHaveRecursiveWidgetTree = OutJsonObject->TryGetBoolField(TEXT("bRecursiveWidgetTree"), bRecursiveWidgetTree);
+
+		if (bHaveAssetIncludeFilters)
+		{
+			JsonObject->SetArrayField(TEXT("assetIncludeFilters"), *AssetIncludeFilters);
+		}
+
+		if (bHaveAssetIgnoreFilters)
+		{
+			JsonObject->SetArrayField(TEXT("assetIgnoreFilters"), *AssetIgnoreFilters);
+		}
+
+		if (bHaveForceSkipContentRules)
+		{
+			JsonObject->SetArrayField(TEXT("forceSkipContentRules"), *ForceSkipContentRules);
+		}
+
+		if (bHaveForceSkipAssets)
+		{
+			JsonObject->SetArrayField(TEXT("forceSkipAssets"), *ForceSkipAssets);
+		}
+
+		if (bHaveAssetRegistryDependencyTypes)
+		{
+			JsonObject->SetArrayField(TEXT("assetRegistryDependencyTypes"), *AssetRegistryDependencyTypes);
+		}
+
+		if (bHaveIncludeSpecifyAssets)
+		{
+			JsonObject->SetArrayField(TEXT("includeSpecifyAssets"), *IncludeSpecifyAssets);
+		}
+
+		if (bHaveForceSkipContent)
+		{
+			JsonObject->SetBoolField(TEXT("bForceSkipContent"), bForceSkipContent);
+		}
+
+		if (bHaveIncludeHasRefAssetsOnly)
+		{
+			JsonObject->SetBoolField(TEXT("bIncludeHasRefAssetsOnly"), bIncludeHasRefAssetsOnly);
+		}
+
+		if (bHaveAnalysisFilterDependencies)
+		{
+			JsonObject->SetBoolField(TEXT("bAnalysisFilterDependencies"), bAnalysisFilterDependencies);
+		}
+
+		if (bHaveAnalysisDiffAssetDependenciesOnly)
+		{
+			JsonObject->SetBoolField(TEXT("bAnalysisDiffAssetDependenciesOnly"), bAnalysisDiffAssetDependenciesOnly);
+		}
+
+		if (bHaveRecursiveWidgetTree)
+		{
+			JsonObject->SetBoolField(TEXT("bRecursiveWidgetTree"), bRecursiveWidgetTree);
+		}
+
+		if (bHaveForceSkipContent)
+		{
+			JsonObject->SetBoolField(TEXT("bForceSkipContent"), bForceSkipContent);
+		}
+
+		OutJsonObject->SetObjectField(TEXT("assetScanConfig"), JsonObject);
+	}
+
 	template<typename TStructType>
     static bool TDeserializeJsonObjectAsStruct(const TSharedPtr<FJsonObject>& OutJsonObject,TStructType& InStruct)
 	{
@@ -132,6 +236,7 @@ namespace THotPatcherTemplateHelper
 		bool bStatus = false;
 		if(OutJsonObject.IsValid())
 		{
+			AdaptOldVersion(OutJsonObject);
 			bStatus = FJsonObjectConverter::JsonObjectToUStruct(OutJsonObject.ToSharedRef(),TStructType::StaticStruct(),&InStruct,0,0);
 		}
 		return bStatus;
