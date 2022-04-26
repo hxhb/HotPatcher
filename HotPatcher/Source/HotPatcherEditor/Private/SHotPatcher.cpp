@@ -1,45 +1,26 @@
 #include "SHotPatcher.h"
-#include "Cooker/OriginalCooker/SOriginalCookWidget.h"
 #include "CreatePatch/SPatchersPage.h"
-#include "SVersionUpdater/SVersionUpdaterWidget.h"
 #include "Cooker/SCookersPage.h"
+#include "SVersionUpdater/SVersionUpdaterWidget.h"
 // engine header
-#include "Styling/SlateTypes.h"
-#include "Widgets/Layout/SBorder.h"
-#include "Widgets/Images/SImage.h"
-#include "Widgets/Layout/SBox.h"
-#include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/SBoxPanel.h"
-#include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Layout/SGridPanel.h"
 #include "Widgets/Layout/SSeparator.h"
-#include "EditorStyleSet.h"
-#include "PropertyEditorModule.h"
-#include "Modules/ModuleManager.h"
-#include "IDetailsView.h"
-#include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
-#include "AssetRegistryModule.h"
-#include "ARFilter.h"
-#include "Modules/ModuleManager.h"
-#include "ISettingsModule.h"
 #include "HAL/PlatformFile.h"
-#include "HAL/PlatformFilemanager.h"
-#include "HAL/FileManager.h"
-#include "Misc/FileHelper.h"
 #include "Json.h"
-
-#include "Misc/SecureHash.h"
-#include "Misc/PackageName.h"
+#include "Model/FCookersModeContext.h"
 
 #define LOCTEXT_NAMESPACE "SHotPatcher"
 
 void SHotPatcher::Construct(const FArguments& InArgs)
 {
-	HotPatcherModelsMap.Add(TEXT("Cooker"),MakeShareable(new FCookersModeContext));
-	HotPatcherModelsMap.Add(TEXT("Patch"),MakeShareable(new FPatchersModeContext));
-
+	TMap<FString,FHotPatcherCategory> HotPatcherCategorys;
+	HotPatcherCategorys.Add(TEXT("Cooker"),FHotPatcherCategory(TEXT("Cooker"),SNew(SCookersPage, MakeShareable(new FCookersModeContext))));
+	HotPatcherCategorys.Add(TEXT("Patcher"),FHotPatcherCategory(TEXT("Patcher"),SNew(SPatchersPage, MakeShareable(new FPatchersModeContext))));
+	HotPatcherCategorys.Append(FHotPatcherActionManager::Get().GetHotPatcherCategorys());
+	
 	ChildSlot
 	[
 		SNew(SOverlay)
@@ -68,50 +49,59 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 				.Padding(0,10,0,0)
 				.AutoHeight()
 				[
-					SNew(SGridPanel)
+					SAssignNew(ActionPageGridPanel,SGridPanel)
 					.FillColumn(1, 1.0f)
-					// cook section
-					+ SGridPanel::Slot(0, 0)
-					.Padding(8.0f, 10.0f, 0.0f, 0.0f)
-					.VAlign(VAlign_Top)
-					[
-					SNew(STextBlock)
-					.Font(FCoreStyle::GetDefaultFontStyle("Cooker", 13))
-					.Text(LOCTEXT("ProjectCookSectionHeader", "Cooker"))
-					]
-					+ SGridPanel::Slot(1, 0)
-					.Padding(32.0f, 0.0f, 8.0f, 0.0f)
-					[
-						// SNew(SProjectCookPage,CookModel)
-						SNew(SCookersPage,*HotPatcherModelsMap.Find(TEXT("Cooker")))
-					]
+				]
+			]
+		]
+	];
 
-					+ SGridPanel::Slot(0, 1)
+	int32 RowNum = 0;
+	for(auto ActionPage:HotPatcherCategorys)
+	{
+		FString ActionCategoryName = ActionPage.Key;
+		if(TMap<FString,FHotPatcherAction>* ActionCategory = FHotPatcherActionManager::Get().GetHotPatcherActions().Find(ActionCategoryName))
+		{
+			bool bHasActiveActions = false;
+			for(auto Action:*ActionCategory)
+			{
+				bHasActiveActions = FHotPatcherActionManager::Get().IsActiveAction(Action.Key);
+				if(bHasActiveActions)
+				{
+					break;
+				}
+			}
+			if(bHasActiveActions)
+			{
+				ActionPageGridPanel->AddSlot(0,RowNum)
+				.Padding(8.0f, 10.0f, 0.0f, 0.0f)
+				.VAlign(VAlign_Top)
+				[
+					SNew(STextBlock)
+					.Font(FCoreStyle::GetDefaultFontStyle(*ActionCategoryName, 13))
+					.Text(UKismetTextLibrary::Conv_StringToText(ActionCategoryName))
+				];
+		
+				ActionPageGridPanel->AddSlot(1, RowNum)
+				.Padding(32.0f, 0.0f, 8.0f, 0.0f)
+				[
+					ActionPage.Value.Widget
+				];
+				++RowNum;
+				if(RowNum < (HotPatcherCategorys.Num()*2-1))
+				{
+					ActionPageGridPanel->AddSlot(0, RowNum)
 					.ColumnSpan(3)
 					.Padding(0.0f, 16.0f)
 					[
 						SNew(SSeparator)
 						.Orientation(Orient_Horizontal)
-					]
-
-					// Patch Version Control section
-					+ SGridPanel::Slot(0, 2)
-					.Padding(8.0f, 0.0f, 0.0f, 0.0f)
-					.VAlign(VAlign_Top)
-					[
-						SNew(STextBlock)
-						.Font(FCoreStyle::GetDefaultFontStyle("Patcher", 13))
-					.Text(LOCTEXT("ProjectPatchSectionHeader", "Patcher"))
-					]
-					+ SGridPanel::Slot(1, 2)
-					.Padding(32.0f, 0.0f, 8.0f, 0.0f)
-					[
-						SNew(SPatchersPage, *HotPatcherModelsMap.Find(TEXT("Patch")))
-					]
-				]
-			]
-		]
-	];
+					];
+					++RowNum;
+				}
+			}
+		}
+	}
 }
 
 TSharedPtr<SNotificationList> SHotPatcher::GetNotificationListPtr() const

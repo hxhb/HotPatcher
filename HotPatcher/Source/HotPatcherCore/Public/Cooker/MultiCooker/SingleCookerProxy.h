@@ -62,51 +62,47 @@ class HOTPATCHERCORE_API USingleCookerProxy:public UHotPatcherProxyBase, public 
     GENERATED_BODY()
 public:
     virtual void Init(FPatcherEntitySettingBase* InSetting)override;
-
-    
     virtual void Shutdown() override;
+    
     virtual bool DoExport()override;
     bool IsFinsihed();
     bool HasError();
     virtual FSingleCookerSettings* GetSettingObject()override {return (FSingleCookerSettings*)(Setting);};
 
-public:
+public: // base func
     virtual void Tick(float DeltaTime) override;
     TStatId GetStatId() const override;
     bool IsTickable() const override;
+    
 public: // core interface
+    void CreateCookQueue();
+    void PreGeneratePlatformData(const FCookCluster& CookCluster);
+    void CleanClusterCachedPlatformData(const FCookCluster& CookCluster);
+    void ExecCookCluster(const FCookCluster& Cluster);
     FCookerFailedCollection& GetCookFailedAssetsCollection(){return CookFailedAssetsCollection;};
     void CleanOldCooked(const FString& CookBaseDir,const TArray<FSoftObjectPath>& ObjectPaths,const TArray<ETargetPlatform>& CookPlatforms);
-    void CookClusterSync(const FCookCluster& CookCluster);
-    void CookCluster(const FCookCluster& CookCluster);
-    void AddCluster(const FCookCluster& CookCluster);
+    // cook classes order
+    TArray<UClass*> GetPreCacheClasses()const;
 
-    void PreGeneratePlatformData(const FCookCluster& CookCluster);
-    void WaitCookerFinished();
-    FCookCluster GetPackageTrackerAsCluster();
-
-    void AsyncLoadAssets(const TArray<FSoftObjectPath>& ObjectPaths);
-    void OnAsyncAssetsLoaded();
+    void DumpCluster(const FCookCluster& CookCluster);
     
 public: // callback
     FCookActionResultEvent GetOnPackageSavedCallback();
     FCookActionEvent GetOnCookAssetBeginCallback();
     
-public: // public get interface
-    TArray<FName>& GetPlatformCookAssetOrders(ETargetPlatform Platform);
+public: // packae tracker interface
     TSet<FName> GetAdditionalAssets();
-    TArray<UClass*> GetPreCacheClasses()const;
-    FORCEINLINE_DEBUGGABLE TMap<FName,FName>& GetAssetTypeMapping(){ return AssetTypeMapping; }
+    FCookCluster GetPackageTrackerAsCluster();
     FORCEINLINE_DEBUGGABLE TSet<FName>& GetPaendingCookAssetsSet(){ return PaendingCookAssetsSet; }
     
-protected:
+    TArray<FName>& GetPlatformCookAssetOrders(ETargetPlatform Platform);
+    
+protected: // on asset cooked call func
     void OnAssetCookedHandle(const FSoftObjectPath& PackagePath,ETargetPlatform Platform,ESavePackageResult Result);
-    void MarkAssetCooked(const FSoftObjectPath& PackagePath,ETargetPlatform Platform);
 
-protected: // metadata
+protected: // metadata func
     void BulkDataManifest();
     void IoStoreManifest();
-    
     void InitShaderLibConllections();
     void ShutdowShaderLibCollections();
     
@@ -124,26 +120,24 @@ public: // delegate
     FSingleCookActionEvent OnCookAssetBegin;
     FSingleCookResultEvent OnAssetCooked;
 
-protected:
-    // FORCEINLINE TSet<UObject*>& GetPenddingCacheObjects() { return PendingCachePlatformDataObjects; };
-    // UPROPERTY()
-    // mutable TSet<UObject*> PendingCachePlatformDataObjects;
-    // // UPROPERTY()
-    // mutable TSet<UObject*> ProcessedObjects;
-
-private:
-    TMap<FName,FName> AssetTypeMapping;
+private: // cook assets manager
+    FCookCluster GlobalCluser;
+    TQueue<FCookCluster> CookCluserQueue;
+    FCookerFailedCollection CookFailedAssetsCollection;
+    
+private: // metadate
+    TSharedPtr<struct FCookShaderCollectionProxy> PlatformCookShaderCollection;
+    TMap<ETargetPlatform,TArray<FName>> CookAssetOrders;
+    
+private: // package tracker
     TSet<FName> PaendingCookAssetsSet;
+    TSharedPtr<FPackageTracker> PackageTracker;
+    FPackagePathSet ExixtPackagePathSet;
 
+private: // worker flow control
     /** Critical section for synchronizing access to sink. */
     mutable FCriticalSection SynchronizationObject;
-    
-private:
-    TArray<FCookCluster> CookClusters;
-    FCookerFailedCollection CookFailedAssetsCollection;
-    TSharedPtr<FPackageTracker> PackageTracker;
     TSharedPtr<FThreadWorker> WaitThreadWorker;
-    TSharedPtr<struct FCookShaderCollectionProxy> PlatformCookShaderCollection;
-    FPackagePathSet PackagePathSet;
-    TMap<ETargetPlatform,TArray<FName>> CookAssetOrders;
+    bool IsAlready()const{ return bAlready; }
+    bool bAlready = false;
 };

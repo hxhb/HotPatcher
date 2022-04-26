@@ -223,6 +223,15 @@ public:
 	static bool MatchIgnoreFilters(const FString& LongPackageName, const TArray<FString>& IgnoreDirs, FString& MatchDir);
 
 	static bool ContainsRedirector(const FName& PackageName, TMap<FName, FName>& RedirectedPaths);
+
+	static TArray<UObject*> FindClassObjectInPackage(UPackage* Package,UClass* FindClass);
+	static bool HasClassObjInPackage(UPackage* Package,UClass* FindClass);
+	static TArray<FAssetDetail> GetAssetDetailsByClass(TArray<FAssetDetail>& AllAssetDetails,UClass* Class,bool RemoveFromSrc);
+	static TArray<FSoftObjectPath> GetAssetPathsByClass(TArray<FAssetDetail>& AllAssetDetails,UClass* Class,bool RemoveFromSrc);
+
+	static bool IsRedirector(const FAssetDetail& Src,FAssetDetail& Out);
+	static void ReplaceReditector(TArray<FAssetDetail>& SrcAssets);
+	static void RemoveInvalidAssets(TArray<FAssetDetail>& SrcAssets);
 };
 
 

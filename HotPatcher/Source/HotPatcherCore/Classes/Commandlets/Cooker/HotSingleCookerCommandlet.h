@@ -15,10 +15,6 @@ class UHotSingleCookerCommandlet :public UHotPatcherCommandletBase
 public:
 
 	virtual int32 Main(const FString& Params)override;
-	virtual bool IsSkipObject(UObject* Object) override;
-	virtual bool IsSkipPackage(UPackage* Package) override;
 protected:
 	TSharedPtr<FSingleCookerSettings> ExportSingleCookerSetting;
-	TArray<FName> CurrentMissionPackagePaths;
-	TArray<FName> TotalPackageNames;
 };

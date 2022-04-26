@@ -24,13 +24,16 @@ void SCookersPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCon
 	// create cook modes menu
 	FMenuBuilder PatchModeMenuBuilder(true, NULL);
 	{
-		TMap<FString,FHotPatcherAction>* Cookers = FHotPatcherActionManager::Get().GetHotPatcherActions().Find(TEXT("Cooker"));
+		TMap<FString,FHotPatcherAction>* Cookers = FHotPatcherActionManager::Get().GetHotPatcherActions().Find(GetPageName());
 		if(Cookers)
 		{
 			for(const auto& Cooker:*Cookers)
 			{
-				FUIAction Action = FExecuteAction::CreateSP(this, &SCookersPage::HandleHotPatcherMenuEntryClicked, Cooker.Key,Cooker.Value.ActionCallback);
-				PatchModeMenuBuilder.AddMenuEntry(Cooker.Value.ActionName, Cooker.Value.ActionToolTip, Cooker.Value.Icon, Action);
+				if(FHotPatcherActionManager::Get().IsActiveAction(Cooker.Key))
+				{
+					FUIAction Action = FExecuteAction::CreateSP(this, &SCookersPage::HandleHotPatcherMenuEntryClicked, Cooker.Key,Cooker.Value.ActionCallback);
+					PatchModeMenuBuilder.AddMenuEntry(Cooker.Value.ActionName, Cooker.Value.ActionToolTip, Cooker.Value.Icon, Action);
+				}
 			}
 		}
 	}
@@ -102,7 +105,7 @@ void SCookersPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCon
 				]
 		];
 
-	TMap<FString,FHotPatcherAction>* Cookers = FHotPatcherActionManager::Get().GetHotPatcherActions().Find(TEXT("Cooker"));
+	TMap<FString,FHotPatcherAction>* Cookers = FHotPatcherActionManager::Get().GetHotPatcherActions().Find(GetPageName());
 	if(Cookers)
 	{
 		for(const auto& Cooker:*Cookers)
@@ -121,7 +124,10 @@ void SCookersPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCon
 		Widget
 	];
 	
-	HandleHotPatcherMenuEntryClicked(TEXT("ByOriginal"),nullptr);
+	if(FHotPatcherAction* DefaultAction = FHotPatcherActionManager::Get().GetTopActionByCategory(GetPageName()))
+	{
+		HandleHotPatcherMenuEntryClicked(UKismetTextLibrary::Conv_TextToString(DefaultAction->ActionName.Get()),nullptr);
+	}
 }
 
 

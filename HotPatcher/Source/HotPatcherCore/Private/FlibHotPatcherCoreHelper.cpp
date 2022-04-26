@@ -2003,6 +2003,9 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
     		GetObjectsWithOuter(Package,ExportMap,true);
     		for(const auto& ExportObj:ExportMap)
     		{
+#if ENGINE_MINOR_VERSION < 26
+    			FScopedNamedEvent CacheExportEvent(FColor::Red,*FString::Printf(TEXT("%s"),*ExportObj->GetName()));
+#endif
     			if (ExportObj->HasAnyFlags(RF_Transient))
     			{
     				// UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("%s is PreCached."),*ExportObj->GetFullName());
@@ -2036,6 +2039,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
     			{
     				if (bStorageConcurrent)
     				{
+    					SCOPED_NAMED_EVENT_TEXT("Export PreSave",FColor::Red);
     					GIsCookerLoadingPackage = true;
     					{
     						ExportObj->PreSave(Platform);
@@ -2046,6 +2050,8 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
     				// bool bIsTexture = ExportObj->IsA(UTexture::StaticClass());
     				// if (!bIsTexture || bStorageConcurrent)
     				{
+    					SCOPED_NAMED_EVENT_TEXT("BeginCacheForCookedPlatformData",FColor::Red);
+    					
     					UPackage* Outermost = ExportObj->GetOutermost();
     					bool bHasFilterEditorOnly = Outermost->HasAnyPackageFlags(PKG_FilterEditorOnly);
     					bool bIsTransient = (Outermost == GetTransientPackage());
@@ -2065,6 +2071,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
     	
     			if (World && bInitializedPhysicsSceneForSave)
     			{
+    				SCOPED_NAMED_EVENT_TEXT("CleanupPhysicsSceneThatWasInitializedForSave",FColor::Red);
     				GEditor->CleanupPhysicsSceneThatWasInitializedForSave(World, bForceInitializedWorld);
     			}
     		}
@@ -2074,6 +2081,9 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
 	// When saving concurrently, flush async loading since that is normally done internally in SavePackage
 	if (bStorageConcurrent)
 	{
+#if ENGINE_MINOR_VERSION < 26
+		FScopedNamedEvent CacheExportEvent(FColor::Red,*FString::Printf(TEXT("FlushAsyncLoading and ProcessThreadUtilIdle")));
+#endif
 		FlushAsyncLoading();
 		FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
 	}
@@ -2088,6 +2098,9 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
 		// UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("Calling PostSaveRoot on worlds..."));
 		for (auto WorldIt = WorldsToPostSaveRoot.CreateConstIterator(); WorldIt; ++WorldIt)
 		{
+#if ENGINE_MINOR_VERSION < 26
+			FScopedNamedEvent CacheExportEvent(FColor::Red,*FString::Printf(TEXT("World PostSaveRoot")));
+#endif
 			UWorld* World = WorldIt.Key();
 			check(World);
 			World->PostSaveRoot(WorldIt.Value());
@@ -2213,3 +2226,57 @@ void UFlibHotPatcherCoreHelper::SaveGlobalShaderMapFiles(const TArrayView<const 
 	}
 }
 
+FString UFlibHotPatcherCoreHelper::GetSavePackageResultStr(ESavePackageResult Result)
+{
+	FString Str;
+
+	switch (Result)
+	{
+	case ESavePackageResult::Success:
+		{
+			Str = TEXT("Success");
+			break;
+		}
+	case ESavePackageResult::Canceled:
+		{
+			Str = TEXT("Canceled");
+			break;
+		}
+	case ESavePackageResult::Error:
+		{
+			Str = TEXT("Error");
+			break;
+		}
+	case ESavePackageResult::DifferentContent:
+		{
+			Str = TEXT("DifferentContent");
+			break;
+		}
+	case ESavePackageResult::GenerateStub:
+		{
+			Str = TEXT("GenerateStub");
+			break;
+		}
+	case ESavePackageResult::MissingFile:
+		{
+			Str = TEXT("MissingFile");
+			break;
+		}
+	case ESavePackageResult::ReplaceCompletely:
+		{
+			Str = TEXT("ReplaceCompletely");
+			break;
+		}
+	case ESavePackageResult::ContainsEditorOnlyData:
+		{
+			Str = TEXT("ContainsEditorOnlyData");
+			break;
+		}
+	case ESavePackageResult::ReferencedOnlyByEditorOnlyData:
+		{
+			Str = TEXT("ReferencedOnlyByEditorOnlyData");
+			break;
+		}
+	}
+	return Str;
+}

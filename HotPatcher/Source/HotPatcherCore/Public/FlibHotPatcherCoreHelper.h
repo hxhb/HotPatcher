@@ -229,4 +229,6 @@ public:
 	static int32 GetMemoryMappingAlignment(const FString& PlatformName);
 
 	static void SaveGlobalShaderMapFiles(const TArrayView<const ITargetPlatform* const>& Platforms,const FString& BaseOutputDir);
+
+	static FString GetSavePackageResultStr(ESavePackageResult Result);
 };

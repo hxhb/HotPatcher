@@ -40,6 +40,7 @@ public class HotPatcherCore : ModuleRules
 				"UMGEditor",
 				"Core",
                 "Json",
+                "LevelSequence",
                 "ContentBrowser",
                 "SandboxFile",
                 "JsonUtilities",

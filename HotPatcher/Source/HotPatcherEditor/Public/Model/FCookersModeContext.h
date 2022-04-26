@@ -17,24 +17,4 @@ struct HOTPATCHEREDITOR_API FCookersModeContext:public FHotPatcherContextBase
 {
 public:
 	virtual FName GetContextName()const override{ return TEXT("Cooker"); }
-	
-	void SetCookerMode(EHotPatcherCookActionMode InCookerMode){ CookerMode = InCookerMode; }
-	EHotPatcherCookActionMode GetCookerMode() { return CookerMode; }
-	
-	FORCEINLINE_DEBUGGABLE virtual void SetModeByName(FName CookerModeEnumName)override
-	{
-		EHotPatcherCookActionMode tempCookerMode;
-		if(THotPatcherTemplateHelper::GetEnumValueByName(CookerModeEnumName.ToString(),tempCookerMode))
-		{
-			SetCookerMode(tempCookerMode);
-		}
-	}
-	
-	FORCEINLINE_DEBUGGABLE virtual FName GetModeName()override
-	{
-		return *THotPatcherTemplateHelper::GetEnumNameByValue(CookerMode,false);
-	}
-private:
-
-	EHotPatcherCookActionMode CookerMode;
 };

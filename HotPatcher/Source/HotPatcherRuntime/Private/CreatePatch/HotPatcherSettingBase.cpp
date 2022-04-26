@@ -8,6 +8,7 @@ FHotPatcherSettingBase::FHotPatcherSettingBase()
 	GetAssetScanConfigRef().bAnalysisFilterDependencies = true;
 	GetAssetScanConfigRef().AssetRegistryDependencyTypes = TArray<EAssetRegistryDependencyTypeEx>{EAssetRegistryDependencyTypeEx::Packages};
 	GetAssetScanConfigRef().ForceSkipContentRules.Append(UFlibPatchParserHelper::GetDefaultForceSkipContentDir());
+	SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/");
 }
 
 

@@ -1345,6 +1345,7 @@ void UFlibPatchParserHelper::RunAssetScanner(FAssetScanConfig ScanConfig,FHotPat
 				FAssetDetail CurrentDetail;
 				if(UFlibAssetManageHelper::GetSpecifyAssetDetail(LongPackageName.ToString(),CurrentDetail))
 				{
+					UFlibAssetManageHelper::IsRedirector(CurrentDetail,CurrentDetail);
 					ExportVersion.AssetInfo.AddAssetsDetail(CurrentDetail);
 				}
 			}
@@ -1358,6 +1359,7 @@ void UFlibPatchParserHelper::RunAssetScanner(FAssetScanConfig ScanConfig,FHotPat
 		for(const auto& Package:LoadedPackages)
 		{
 			FAssetDetail LoadedPackageDetail = UFlibAssetManageHelper::GetAssetDetailByPackageName(Package.ToString());
+			UFlibAssetManageHelper::IsRedirector(LoadedPackageDetail,LoadedPackageDetail);
 			ExportVersion.AssetInfo.AddAssetsDetail(LoadedPackageDetail);
 		}
 	}

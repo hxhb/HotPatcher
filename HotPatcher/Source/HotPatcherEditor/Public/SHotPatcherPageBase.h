@@ -48,8 +48,9 @@ public:
 
 	virtual TSharedPtr<FHotPatcherContextBase> GetContext()const { return Context; }
 	virtual TMap<FName,TSharedPtr<SHotPatcherWidgetInterface>> GetActionWidgetMap()const { return ActionWidgetMap; }
-
-	TSharedPtr<SHotPatcherWidgetInterface> GetActiveAction()const;
+	virtual FString GetPageName()const { return TEXT(""); };
+	virtual TSharedPtr<SHotPatcherWidgetInterface> GetActiveAction()const;
+	
 protected:
 	TSharedPtr<FHotPatcherContextBase> Context;
 	mutable TMap<FName,TSharedPtr<SHotPatcherWidgetInterface>> ActionWidgetMap;

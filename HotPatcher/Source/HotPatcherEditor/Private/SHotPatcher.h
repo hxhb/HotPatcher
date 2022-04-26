@@ -2,14 +2,11 @@
 
 #include "HotPatcherEditor.h"
 #include "CoreMinimal.h"
-#include "IDetailsView.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
-#include "Input/Reply.h"
 #include "Widgets/SCompoundWidget.h"
-//#include "Model/FHotPatcherOriginalCookerModel.h"
 #include "SVersionUpdater/SVersionUpdaterWidget.h"
-#include "Model/FCookersModeContext.h"
-#include "Model/FPatchersModeContext.h"
+#include "Widgets/Layout/SGridPanel.h"
+
 class SHotPatcher : public SCompoundWidget
 {
 
@@ -31,11 +28,8 @@ public:
 private:
 	/** The list of active system messages */
 	TSharedPtr<SNotificationList> NotificationListPtr;
-
-	// TSharedPtr<FHotPatcherOriginalCookerModel> CookModel;
-	// TSharedPtr<FHotPatcherCookerModel> CookerModel;
-	// TSharedPtr<FHotPatcherCreatePatchModel> CreatePatchModel;
-	TMap<FString,TSharedPtr<FHotPatcherContextBase>> HotPatcherModelsMap;
+	// TArray<FHotPatcherCategory> CategoryPages;
 	TSharedPtr<SVersionUpdaterWidget> VersionUpdaterWidget;
+	TSharedPtr<SGridPanel> ActionPageGridPanel;
 };
 

@@ -84,8 +84,15 @@ struct FPackageTracker : public FPackageTrackerBase
 		LoadedPackages.Add(AssetPathName);
 		if(!ExisitAssets.Contains(AssetPathName))
 		{
-			UE_LOG(LogHotPatcher,Display,TEXT("[PackageTracker] Add %s"),*AssetPathName.ToString());
-			PackagesPendingSave.Add(AssetPathName);
+			if(FPackageName::DoesPackageExist(AssetPathName.ToString()))
+			{
+				UE_LOG(LogHotPatcher,Display,TEXT("[PackageTracker] Add %s"),*AssetPathName.ToString());
+				PackagesPendingSave.Add(AssetPathName);
+			}
+			else
+			{
+				UE_LOG(LogHotPatcher,Display,TEXT("[PackageTracker] %s is not valid package!"),*AssetPathName.ToString());
+			}
 		}
 	}
 	virtual void OnPackageDeleted(UPackage* Package) override

@@ -6,6 +6,7 @@
 #include "Interfaces/IHttpRequest.h"
 #include "Widgets/SCompoundWidget.h"
 
+#include "FVersionUpdaterManager.h"
 // #define CURRENT_VERSION_ID 68
 // #define REMOTE_VERSION_FILE TEXT("https://imzlp.com/opensource/version.json")
 
@@ -49,14 +50,14 @@ public:
 	FText GetUpdateWebsite() const {return FText::FromString(UpdateWebsite);};
 	FText GetDeveloperWebsite() const {return FText::FromString(DeveloperWebsite);};
 	FText GetDeveloperDescrible() const {return FText::FromString(FString::Printf(TEXT("Developed by %s"),*GetDeveloperName().ToString()));};
-	FText GetLatstVersionText() const {return FText::FromString(FString::Printf(TEXT("A new version v%d.%d is avaliable"),LatstVersion,LatstPatchVersion));};
+	FText GetLatstVersionText() const {return FText::FromString(FString::Printf(TEXT("A new version v%d.%d is avaliable"),RemoteVersion.Version,RemoteVersion.PatchVersion));};
 	virtual void SetToolUpdateInfo(const FString& ToolName,const FString& DeveloperName,const FString& DeveloperWebsite,const FString& UpdateWebsite);
 	int32 GetCurrentVersion()const { return CurrentVersion; }
 	int32 GetPatchVersion()const { return PatchVersion; }
 
-	void OnRequestComplete(FHttpRequestPtr RequestPtr, FHttpResponsePtr ResponsePtr, bool bConnectedSuccessfully);
-	void RequestVersion(const FString& URL);
 private:
+	void OnRemoveVersionFinished();
+	
 	int32 CurrentVersion = 0;
 	int32 PatchVersion = 0;
 	FString ToolName;
@@ -64,8 +65,6 @@ private:
 	FString DeveloperWebsite;
 	FString DeveloperName;
 	TSharedPtr<SHorizontalBox> UpdateInfoWidget;
-	int32 LatstVersion = 0;
-	int32 LatstPatchVersion = 0;
-	FHttpRequestPtr HttpHeadRequest;
+	FRemteVersionDescrible RemoteVersion;
 };
 

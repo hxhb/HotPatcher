@@ -3,6 +3,7 @@
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
 #include "HotPatcherLog.h"
 #include "FlibHotPatcherCoreHelper.h"
+#include "HotPatcherCore.h"
 
 #include "ShaderCompiler.h"
 #include "IPlatformFileSandboxWrapper.h"
@@ -236,16 +237,28 @@ void UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete()
 	if (GShaderCompilingManager)
 	{
 		SCOPED_NAMED_EVENT_TEXT("WaitShaderCompileComplete",FColor::Red);
-		// UE_LOG(LogHotPatcher, Display, TEXT("Waiting for shader compilation..."));
+		int32 LastRemainingJob = 0;
 		while(GShaderCompilingManager->IsCompiling())
 		{
 			GShaderCompilingManager->ProcessAsyncResults(false, false);
-			// UE_LOG(LogHotPatcher,Display,TEXT("Remaining Shader %d"),GShaderCompilingManager->GetNumRemainingJobs())
+			int32 CurrentNumRemaingingJobs = GShaderCompilingManager->GetNumRemainingJobs();
+			if(GCookLog && LastRemainingJob != CurrentNumRemaingingJobs)
+			{
+				UE_LOG(LogHotPatcher,Display,TEXT("Remaining Shader %d"),CurrentNumRemaingingJobs);
+				LastRemainingJob = CurrentNumRemaingingJobs;
+			}
 			FPlatformProcess::Sleep(0.5f);
 		}
 
 		// One last process to get the shaders that were compiled at the very end
 		GShaderCompilingManager->ProcessAsyncResults(false, false);
-		// UE_LOG(LogHotPatcher, Display, TEXT("Shader Compilated!"));
+	}
+}
+
+void UFlibShaderCodeLibraryHelper::CleanShaderWorkerDir()
+{
+	if (!IFileManager::Get().DeleteDirectory(*FPaths::ShaderWorkingDir(), false, true))
+	{
+		UE_LOG(LogHotPatcher, Fatal, TEXT("Could not delete the shader compiler working directory '%s'."), *FPaths::ShaderWorkingDir());
 	}
 }

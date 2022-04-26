@@ -26,13 +26,16 @@ void SPatchersPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCo
 	
 	// create cook modes menu
 	FMenuBuilder PatchModeMenuBuilder(true, NULL);
-	TMap<FString,FHotPatcherAction>* Patchers = FHotPatcherActionManager::Get().GetHotPatcherActions().Find(TEXT("Patcher"));
+	TMap<FString,FHotPatcherAction>* Patchers = FHotPatcherActionManager::Get().GetHotPatcherActions().Find(GetPageName());
 	if(Patchers)
 	{
 		for(const auto& Action:*Patchers)
 		{
-			FUIAction UIAction = FExecuteAction::CreateSP(this, &SPatchersPage::HandleHotPatcherMenuEntryClicked, Action.Value.ActionName.Get().ToString(),Action.Value.ActionCallback);
-			PatchModeMenuBuilder.AddMenuEntry(Action.Value.ActionName, Action.Value.ActionToolTip, Action.Value.Icon, UIAction);
+			if(FHotPatcherActionManager::Get().IsActiveAction(Action.Key))
+			{
+				FUIAction UIAction = FExecuteAction::CreateSP(this, &SPatchersPage::HandleHotPatcherMenuEntryClicked, Action.Value.ActionName.Get().ToString(),Action.Value.ActionCallback);
+				PatchModeMenuBuilder.AddMenuEntry(Action.Value.ActionName, Action.Value.ActionToolTip, Action.Value.Icon, UIAction);
+			}
 		}
 	}
 
@@ -121,8 +124,11 @@ void SPatchersPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCo
 	[
 		Widget
 	];
-
-	HandleHotPatcherMenuEntryClicked(TEXT("ByPatch"),nullptr);
+	
+	if(FHotPatcherAction* DefaultAction = FHotPatcherActionManager::Get().GetTopActionByCategory(GetPageName()))
+	{
+		HandleHotPatcherMenuEntryClicked(UKismetTextLibrary::Conv_TextToString(DefaultAction->ActionName.Get()),nullptr);
+	}
 }
 
 EVisibility SPatchersPage::HandleOperatorConfigVisibility()const

@@ -9,6 +9,12 @@
 #include "Misc/CommandLine.h"
 #include "Misc/Paths.h"
 
+#if PLATFORM_WINDOWS && WITH_EDITOR
+#include "Windows/AllowWindowsPlatformTypes.h"
+#include "Windows.h"
+#include "Windows/HideWindowsPlatformTypes.h"
+#endif
+
 DEFINE_LOG_CATEGORY(LogHotPatcherCommandletBase);
 
 
@@ -45,7 +51,13 @@ int32 UHotPatcherCommandletBase::Main(const FString& Params)
 	// for Object Create Tracking,Optimize Asset searching, dont execute UObject::PostLoad
 	ObjectTrackerTagCleaner = MakeShareable(new FObjectTrackerTagCleaner(this));
 	FCoreUObjectDelegates::PackageCreatedForLoad.AddUObject(this,&UHotPatcherCommandletBase::MaybeMarkPackageAsAlreadyLoaded);
-	
+#endif
+
+#if PLATFORM_WINDOWS && WITH_EDITOR
+	{
+		SetPriorityClass(GetCurrentProcess(),REALTIME_PRIORITY_CLASS);
+		UE_LOG(LogHotPatcher,Display,TEXT("Set Commandlet Priority to REALTIME_PRIORITY_CLASS."));
+	}
 #endif
 	return 0;
 }

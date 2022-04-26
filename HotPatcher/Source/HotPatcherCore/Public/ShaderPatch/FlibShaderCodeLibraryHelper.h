@@ -58,4 +58,6 @@ public:
 	static TArray<FString> FindCookedShaderLibByShaderFrmat(const FString& ShaderFormatName,const FString& Directory);
 
 	static void WaitShaderCompilingComplete();
+
+	static void CleanShaderWorkerDir();
 };

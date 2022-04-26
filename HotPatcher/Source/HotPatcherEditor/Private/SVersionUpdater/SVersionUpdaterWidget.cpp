@@ -1,5 +1,6 @@
 #include "SVersionUpdaterWidget.h"
 // engine header
+#include "FVersionUpdaterManager.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Images/SImage.h"
@@ -141,7 +142,19 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 			]
 		]
 	];
-	RequestVersion(REMOTE_VERSION_FILE);
+	if(!FVersionUpdaterManager::Get().IsRequestFinished())
+	{
+		FVersionUpdaterManager::Get().AddOnFinishedCallback([&]()
+		{
+			OnRemoveVersionFinished();
+		});
+		
+		FVersionUpdaterManager::Get().RequestRemoveVersion(REMOTE_VERSION_FILE);
+	}
+	else
+	{
+		OnRemoveVersionFinished();
+	}
 }
 
 void SVersionUpdaterWidget::HyLinkClickEventOpenUpdateWebsite()
@@ -163,60 +176,23 @@ void SVersionUpdaterWidget::SetToolUpdateInfo(const FString& InToolName, const F
 	UpdateWebsite = InUpdateWebsite;
 }
 
-DEFINE_LOG_CATEGORY_STATIC(LogVersionUpdater,All,All);
-
-void SVersionUpdaterWidget::OnRequestComplete(FHttpRequestPtr RequestPtr, FHttpResponsePtr ResponsePtr, bool bConnectedSuccessfully)
+void SVersionUpdaterWidget::OnRemoveVersionFinished()
 {
-	FString Result = ResponsePtr->GetContentAsString();;
-	// UE_LOG(LogVersionUpdater, Log, TEXT("%s"),*Result);
-	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(Result);
-	TSharedPtr<FJsonObject> JsonObject;
-	if (FJsonSerializer::Deserialize(JsonReader, JsonObject))
+	FRemteVersionDescrible* ToolRemoteVersion = FVersionUpdaterManager::Get().GetRemoteVersionByName(*GetToolName().ToString());
+	if(ToolRemoteVersion)
 	{
-		TArray<FString> ToolNames;
-		if(JsonObject->TryGetStringArrayField(TEXT("Tools"),ToolNames))
-		{
-			if(ToolNames.Contains(GetToolName().ToString()))
-			{
-				const TSharedPtr<FJsonObject>* ToolJsonObject;
-				if(JsonObject->TryGetObjectField(GetToolName().ToString(),ToolJsonObject))
-				{
-					LatstVersion = ToolJsonObject->Get()->GetIntegerField(TEXT("Version"));
-					FString Developer = ToolJsonObject->Get()->GetStringField(TEXT("Author"));
-					FString UpdateURL = ToolJsonObject->Get()->GetStringField(TEXT("URL"));
-					FString Website = ToolJsonObject->Get()->GetStringField(TEXT("Website"));
-					int32 RemotePatchVersion = 0;
-					if(ToolJsonObject->Get()->TryGetNumberField(TEXT("PatchVersion"),RemotePatchVersion))
-					{
-						LatstPatchVersion = RemotePatchVersion;
-					}
+		int32 RemoteMainVersion = ToolRemoteVersion->Version;
+		int32 RemotePatchVersion = ToolRemoteVersion->PatchVersion;
 					
-					SetToolUpdateInfo(GetToolName().ToString(),Developer,Website,UpdateURL);
-					if(CurrentVersion < LatstVersion || (CurrentVersion == LatstVersion && LatstPatchVersion > PatchVersion))
-					{
-						UpdateInfoWidget->SetVisibility(EVisibility::Visible);
-					}
-				}
-			}
+		SetToolUpdateInfo(GetToolName().ToString(),ToolRemoteVersion->Author,ToolRemoteVersion->Website,ToolRemoteVersion->URL);
+		if(CurrentVersion < RemoteMainVersion || (CurrentVersion == RemoteMainVersion && RemotePatchVersion > PatchVersion))
+		{
+			UpdateInfoWidget->SetVisibility(EVisibility::Visible);
 		}
+		RemoteVersion = *ToolRemoteVersion;
 	}
 }
 
-void SVersionUpdaterWidget::RequestVersion(const FString& URL)
-{
-	if(HttpHeadRequest.IsValid())
-	{
-		HttpHeadRequest->CancelRequest();
-		HttpHeadRequest.Reset();
-	}
-	HttpHeadRequest = FHttpModule::Get().CreateRequest();
-	HttpHeadRequest->SetURL(URL);
-	HttpHeadRequest->SetVerb(TEXT("GET"));
-	HttpHeadRequest->OnProcessRequestComplete().BindRaw(this,&SVersionUpdaterWidget::OnRequestComplete);
-	if (HttpHeadRequest->ProcessRequest())
-	{
-		UE_LOG(LogVersionUpdater, Log, TEXT("Request %s Version."),*GetToolName().ToString());
-	}
-}
+DEFINE_LOG_CATEGORY_STATIC(LogVersionUpdater, All, All);
 
 #undef LOCTEXT_NAMESPACE

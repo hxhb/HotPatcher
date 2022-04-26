@@ -615,6 +615,8 @@ namespace PatchWorker
 						EmptySetting.bPreGeneratePlatformData = false;
 						EmptySetting.bWaitEachAssetCompleted = false;
 						EmptySetting.bConcurrentSave = false;
+						// for current impl arch
+						EmptySetting.bForceCookInOneFrame = true;
 						EmptySetting.bDisplayConfig = false;
 						EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 						EmptySetting.StorageMetadataDir = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,TEXT("Metadatas"),Chunk.ChunkName);

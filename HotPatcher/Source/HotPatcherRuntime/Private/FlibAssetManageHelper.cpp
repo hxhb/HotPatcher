@@ -327,6 +327,27 @@ bool UFlibAssetManageHelper::GetRedirectorList(const TArray<FString>& InFilterPa
 	return false;
 }
 
+bool UFlibAssetManageHelper::IsRedirector(const FAssetDetail& Src,FAssetDetail& Out)
+{
+	SCOPED_NAMED_EVENT_TEXT("IsRedirector",FColor::Red);
+	bool bIsRedirector = false;
+	FAssetData AssetData;
+	if (UFlibAssetManageHelper::GetSingleAssetsData(Src.PackagePath.ToString(), AssetData))
+	{
+		if (AssetData.IsValid() && AssetData.IsRedirector() ||
+			UObjectRedirector::StaticClass()->GetFName() == Src.AssetType ||
+			Src.PackagePath != AssetData.ObjectPath
+			)
+		{
+			FAssetDetail AssetDetail;
+			UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(AssetData, AssetDetail);
+			Out = AssetDetail;
+			bIsRedirector = true;
+		}
+	}
+	return bIsRedirector;
+}
+
 bool UFlibAssetManageHelper::GetSpecifyAssetData(const FString& InLongPackageName, TArray<FAssetData>& OutAssetData, bool InIncludeOnlyOnDiskAssets)
 {
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetSpecifyAssetData",FColor::Red);
@@ -1260,7 +1281,8 @@ bool UFlibAssetManageHelper::MatchIgnoreFilters(const FString& LongPackageName, 
 {
 	for(const auto& IgnoreFilter:IgnoreDirs)
 	{
-		if(LongPackageName.StartsWith(IgnoreFilter))
+		if(LongPackageName.StartsWith(IgnoreFilter) ||
+			IgnoreFilter.Contains(TEXT("*")) ? IgnoreFilter.MatchesWildcard(LongPackageName,ESearchCase::CaseSensitive):false)
 		{
 			MatchDir = IgnoreFilter;
 			return true;
@@ -1350,6 +1372,79 @@ bool UFlibAssetManageHelper::ContainsRedirector(const FName& PackageName, TMap<F
 		}
 	}
 	return bFoundRedirector;
+}
+
+
+TArray<UObject*> UFlibAssetManageHelper::FindClassObjectInPackage(UPackage* Package,UClass* FindClass)
+{
+	TArray<UObject*> ResultObjects;
+	TArray<UObject*> ObjectsInPackage;
+	GetObjectsWithOuter(Package, ObjectsInPackage, false);
+	for ( auto ObjIt = ObjectsInPackage.CreateConstIterator(); ObjIt; ++ObjIt )
+	{
+		if((*ObjIt)->GetClass()->IsChildOf(FindClass))
+		{
+			ResultObjects.Add(*ObjIt);
+		}
+	}
+	return ResultObjects;
+}
+bool UFlibAssetManageHelper::HasClassObjInPackage(UPackage* Package,UClass* FindClass)
+{
+	return !!FindClassObjectInPackage(Package,FindClass).Num();
+}
+
+TArray<FAssetDetail> UFlibAssetManageHelper::GetAssetDetailsByClass(TArray<FAssetDetail>& AllAssetDetails,
+	UClass* Class, bool RemoveFromSrc)
+{
+	return THotPatcherTemplateHelper::GetArrayBySrcWithCondition<FAssetDetail>(AllAssetDetails,[&](FAssetDetail AssetDetail)->bool
+				{
+					return AssetDetail.AssetType.IsEqual(*Class->GetName());
+				},RemoveFromSrc);
+}
+
+TArray<FSoftObjectPath> UFlibAssetManageHelper::GetAssetPathsByClass(TArray<FAssetDetail>& AllAssetDetails,
+	UClass* Class, bool RemoveFromSrc)
+{
+	TArray<FSoftObjectPath> ObjectPaths;
+	for(const auto& AssetDetail:UFlibAssetManageHelper::GetAssetDetailsByClass(AllAssetDetails,Class,RemoveFromSrc))
+	{
+		ObjectPaths.Emplace(AssetDetail.PackagePath.ToString());
+	}
+	return ObjectPaths;
+}
+
+void UFlibAssetManageHelper::ReplaceReditector(TArray<FAssetDetail>& SrcAssets)
+{
+	SCOPED_NAMED_EVENT_TEXT("ReplaceReditector",FColor::Red);
+	for(auto& AssetDetail:SrcAssets)
+	{
+		FName SrcPackagePath = AssetDetail.PackagePath;
+		
+		if(IsRedirector(AssetDetail,AssetDetail))
+		{
+			UE_LOG(LogHotPatcher,Warning,TEXT("%s is an redirector(to %s)!"),*SrcPackagePath.ToString(),*AssetDetail.PackagePath.ToString())
+		}
+	}
+}
+
+void UFlibAssetManageHelper::RemoveInvalidAssets(TArray<FAssetDetail>& SrcAssets)
+{
+	SCOPED_NAMED_EVENT_TEXT("RemoveInvalidAssets",FColor::Red);
+	for(size_t index = 0;index< SrcAssets.Num();)
+	{
+		FString PackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(SrcAssets[index].PackagePath.ToString());
+		if(FPackageName::DoesPackageExist(PackageName))
+		{
+			++index;
+			continue;
+		}
+		else
+		{
+			UE_LOG(LogHotPatcher,Warning,TEXT("%s is not a valid package."),*PackageName);
+			SrcAssets.RemoveAt(index);
+		}
+	}
 }
 
 // PRAGMA_ENABLE_DEPRECATION_WARNINGS

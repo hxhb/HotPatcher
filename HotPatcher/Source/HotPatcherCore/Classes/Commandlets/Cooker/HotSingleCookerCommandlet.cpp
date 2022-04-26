@@ -15,9 +15,6 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 {
 	Super::Main(Params);
 	
-	FCommandLine::Append(TEXT(" -buildmachine"));
-	GIsBuildMachine = true;
-	
 	UE_LOG(LogHotSingleCookerCommandlet, Display, TEXT("UHotSingleCookerCommandlet::Main"));
 
 	FString config_path;
@@ -33,12 +30,14 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 		UE_LOG(LogHotSingleCookerCommandlet, Error, TEXT("cofnig file %s not exists."), *config_path);
 		return -1;
 	}
-	// if(IsRunningCommandlet())
-	// {
-	// 	// load asset registry
-	// 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-	// 	AssetRegistryModule.Get().SearchAllAssets(true);
-	// }
+
+	if(IsRunningCommandlet())
+	{
+		SCOPED_NAMED_EVENT_TEXT("SearchAllAssets",FColor::Red);
+		// load asset registry
+		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+		AssetRegistryModule.Get().SearchAllAssets(false);
+	}
 
 	ExportSingleCookerSetting = MakeShareable(new FSingleCookerSettings);
 	
@@ -79,27 +78,4 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 	}
 	
 	return bExportStatus ? 0 : -1;
-}
-
-bool UHotSingleCookerCommandlet::IsSkipObject(UObject* Object)
-{
-	bool bRsult = false;
-	if(ExportSingleCookerSetting.IsValid() && !ExportSingleCookerSetting->bPackageTracker)
-	{
-		UPackage* OutmostPackage = Object->GetOutermost();
-		FName PackageName = *OutmostPackage->GetFullName();
-		bRsult = ExportSingleCookerSetting->SkipLoadedAssets.Contains(PackageName);
-	}
-	return bRsult;
-}
-
-bool UHotSingleCookerCommandlet::IsSkipPackage(UPackage* Package)
-{
-	bool bRsult = false;
-	if(ExportSingleCookerSetting.IsValid() && !ExportSingleCookerSetting->bPackageTracker)
-	{
-		FName PackageName = *Package->GetFullName();
-		bRsult = ExportSingleCookerSetting->SkipLoadedAssets.Contains(PackageName);
-	}
-	return bRsult;
 }
