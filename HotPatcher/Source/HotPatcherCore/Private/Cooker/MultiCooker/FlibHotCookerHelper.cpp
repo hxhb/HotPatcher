@@ -30,14 +30,21 @@
 // 	return SaveConfigTo;
 // }
 
+FString UFlibHotCookerHelper::GetCookedDir()
+{
+	return FPaths::Combine(
+				TEXT("[PROJECTDIR]"),
+				TEXT("Saved"),TEXT("Cooked"));
+}
+
 FString UFlibHotCookerHelper::GetCookerBaseDir()
 {
-		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(
-			FPaths::Combine(
-				FPaths::ProjectSavedDir(),
+		FString SaveConfigTo = FPaths::Combine(
+				TEXT("[PROJECTDIR]"),
+				TEXT("Saved"),
 				TEXT("HotPatcher/MultiCooker"),
 				FApp::GetProjectName()
-				));
+				);
 		return SaveConfigTo;
 }
 

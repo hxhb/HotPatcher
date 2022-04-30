@@ -96,7 +96,7 @@ FString FHotPatcherSettingBase::GetSaveAbsPath()const
 {
 	if (!SavePath.Path.IsEmpty())
 	{
-		return UFlibPatchParserHelper::ReplaceMarkPath(SavePath.Path);
+		return UFlibPatchParserHelper::ReplaceMarkPath(GetSavePath());
 	}
 	return TEXT("");
 }

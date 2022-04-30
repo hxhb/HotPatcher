@@ -2136,7 +2136,7 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 					}else{
 						if(GCookLog)
 						{
-							UE_LOG(LogHotPatcherCoreHelper,Display,TEXT("PreCached ExportObj %s for %s"),*Object->GetFullName(),*TargetPlatform->PlatformName());
+							UE_LOG(LogHotPatcherCoreHelper,Log,TEXT("PreCached ExportObj %s for %s"),*Object->GetFullName(),*TargetPlatform->PlatformName());
 						}
 					}
 				}
@@ -2156,7 +2156,7 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 			
 			if(!!PendingCachePlatformDataObjects.Num())
 			{
-				FPlatformProcess::Sleep(0.01f);	
+				FPlatformProcess::Sleep(0.001f);	
 			}
 		}
 	}

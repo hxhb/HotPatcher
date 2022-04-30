@@ -97,9 +97,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool bDisplayConfig = false;
 
+	FString GetStorageCookedAbsDir()const;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString StorageCookedDir;
-	
+
+	FString GetStorageMetadataAbsDir()const;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString StorageMetadataDir;
 
@@ -134,18 +136,3 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	TMap<ETargetPlatform,FAssetsCollection> CookFailedAssets;
 };
-
-
-FORCEINLINE bool FSingleCookerSettings::IsSkipAsset(const FString& PackageName)
-{
-	bool bRet = false;
-	for(const auto& SkipCookContent:SkipCookContents)
-	{
-		if(PackageName.StartsWith(SkipCookContent))
-		{
-			bRet = true;
-			break;
-		}
-	}
-	return bRet;
-}

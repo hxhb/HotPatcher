@@ -18,8 +18,12 @@
 #include "UObject/ConstructorHelpers.h"
 #include "Resources/Version.h"
 #include "HotPatcherLog.h"
+#include "HotPatcherRuntime.h"
 #include "Templates/HotPatcherTemplateHelper.hpp"
 #include "UObject/MetaData.h"
+#include "UObject/UObjectHash.h"
+
+bool UFlibAssetManageHelper::bIncludeOnlyOnDiskAssets = !GForceSingleThread;
 
 // PRAGMA_DISABLE_DEPRECATION_WARNINGS
 FString UFlibAssetManageHelper::PackagePathToFilename(const FString& InPackagePath)
@@ -277,9 +281,9 @@ bool UFlibAssetManageHelper::GetAssetReferenceEx(const FAssetDetail& InAsset, co
 FName UFlibAssetManageHelper::GetAssetType(FSoftObjectPath SoftObjectPath)
 {
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetTypeByPackageName",FColor::Red);
-	
-	FAssetData OutAssetData;
-	UAssetManager::Get().GetAssetDataForPath(SoftObjectPath, OutAssetData) && OutAssetData.IsValid();
+	UAssetManager& AssetManager = UAssetManager::Get();
+	FAssetData OutAssetData = AssetManager.GetAssetRegistry().GetAssetByObjectPath(*SoftObjectPath.GetAssetPathString(), bIncludeOnlyOnDiskAssets);
+	// UAssetManager::Get().GetAssetDataForPath(SoftObjectPath, OutAssetData) && OutAssetData.IsValid();
 	
 	return OutAssetData.AssetClass;
 }
@@ -293,8 +297,8 @@ FAssetDetail UFlibAssetManageHelper::GetAssetDetailByPackageName(const FString& 
 	{
 		FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InPackageName);
 		{
-			FAssetData OutAssetData;
-			if (AssetManager.GetAssetDataForPath(FSoftObjectPath{ PackagePath }, OutAssetData) && OutAssetData.IsValid())
+			FAssetData OutAssetData = AssetManager.GetAssetRegistry().GetAssetByObjectPath(FName(*PackagePath), bIncludeOnlyOnDiskAssets);
+			if (/*AssetManager.GetAssetDataForPath(FSoftObjectPath{ PackagePath }, OutAssetData) && */OutAssetData.IsValid())
 			{
 				AssetDetail.PackagePath = OutAssetData.ObjectPath;
 				AssetDetail.AssetType = OutAssetData.AssetClass;
@@ -355,7 +359,7 @@ bool UFlibAssetManageHelper::GetSpecifyAssetData(const FString& InLongPackageNam
 	return AssetRegistryModule.Get().GetAssetsByPackageName(*InLongPackageName, OutAssetData, InIncludeOnlyOnDiskAssets);
 }
 
-bool UFlibAssetManageHelper::GetAssetsData(const TArray<FString>& InFilterPaths, TArray<FAssetData>& OutAssetData, bool bIncludeOnlyOnDiskAssets)
+bool UFlibAssetManageHelper::GetAssetsData(const TArray<FString>& InFilterPaths, TArray<FAssetData>& OutAssetData, bool bLocalIncludeOnlyOnDiskAssets)
 {
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetsData",FColor::Red);
 	OutAssetData.Reset();
@@ -364,7 +368,7 @@ bool UFlibAssetManageHelper::GetAssetsData(const TArray<FString>& InFilterPaths,
 #if ENGINE_MAJOR_VERSION > 25
 	Filter.WithoutPackageFlags = PKG_FilterEditorOnly;
 #endif
-	Filter.bIncludeOnlyOnDiskAssets = bIncludeOnlyOnDiskAssets;
+	Filter.bIncludeOnlyOnDiskAssets = bLocalIncludeOnlyOnDiskAssets;
 	Filter.bRecursivePaths = true;
 	for(const auto& FilterPackageName: InFilterPaths)
 	{
@@ -435,7 +439,9 @@ bool UFlibAssetManageHelper::GetSingleAssetsData(const FString& InPackagePath, F
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetSingleAssetsData",FColor::Red);
 	UAssetManager& AssetManager = UAssetManager::Get();
 
-	return AssetManager.GetAssetDataForPath(FSoftObjectPath{ InPackagePath }, OutAssetData);
+	OutAssetData = AssetManager.GetAssetRegistry().GetAssetByObjectPath(FName(*InPackagePath), bIncludeOnlyOnDiskAssets);
+	
+	return OutAssetData.IsValid();//AssetManager.GetAssetDataForPath(FSoftObjectPath{ InPackagePath }, OutAssetData);
 }
 
 bool UFlibAssetManageHelper::GetAssetsDataByPackageName(const FString& InPackageName, FAssetData& OutAssetData)
@@ -479,7 +485,7 @@ bool UFlibAssetManageHelper::GetSpecifyAssetDetail(const FString& InLongPackageN
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetSpecifyAssetDetail",FColor::Red);
 	bool bRunStatus = false;
 	TArray<FAssetData> AssetData;
-	if (UFlibAssetManageHelper::GetSpecifyAssetData(InLongPackageName, AssetData, true))
+	if (UFlibAssetManageHelper::GetSpecifyAssetData(InLongPackageName, AssetData, bIncludeOnlyOnDiskAssets))
 	{
 		if (AssetData.Num() > 0)
 		{
@@ -491,7 +497,7 @@ bool UFlibAssetManageHelper::GetSpecifyAssetDetail(const FString& InLongPackageN
 	{
 #if ASSET_DEPENDENCIES_DEBUG_LOG
 		SCOPED_NAMED_EVENT_TEXT("display GetSpecifyAssetDetail failed log",FColor::Red);
-		UE_LOG(LogHotPatcher,Display,TEXT("Get %s AssetDetail failed!"),*InLongPackageName);
+		UE_LOG(LogHotPatcher,Log,TEXT("Get %s AssetDetail failed!"),*InLongPackageName);
 #endif
 	}
 	return bRunStatus;
@@ -1067,23 +1073,29 @@ FString UFlibAssetManageHelper::PackagePathToLongPackageName(const FString& Pack
 
 void UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(FAssetDependenciesInfo& AssetDependencies,const TArray<FString>& ExcludeRules)
 {
+	SCOPED_NAMED_EVENT_TEXT("ExcludeContentForAssetDependenciesDetail",FColor::Red);
 	auto ExcludeEditorContent = [&ExcludeRules](TMap<FString,FAssetDependenciesDetail>& AssetCategorys)
 	{
 		TArray<FString> Keys;
 		AssetCategorys.GetKeys(Keys);
+
 		for(const auto& Key:Keys)
 		{
 			FAssetDependenciesDetail&  ModuleAssetList = *AssetCategorys.Find(Key);
 			TArray<FString> AssetKeys;
 			
 			ModuleAssetList.AssetDependencyDetails.GetKeys(AssetKeys);
-			for(const auto& AssetKey:AssetKeys)
+			FCriticalSection	SynchronizationObject;
+			
+			// for(const auto& AssetKey:AssetKeys)
+			ParallelFor(AssetKeys.Num(),[&](int32 index)
 			{
+				auto& AssetKey = AssetKeys[index];
 				bool customStartWith = false;
 				FString MatchRule;
 				for(const auto& Rule:ExcludeRules)
 				{
-					if(AssetKey.StartsWith(Rule))
+					if(AssetKeys[index].StartsWith(Rule))
 					{
 						MatchRule = Rule;
 						customStartWith = true;
@@ -1092,10 +1104,11 @@ void UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(FAssetDepe
 				}
 				if( customStartWith )
 				{
-					UE_LOG(LogHotPatcher,Display,TEXT("remove %s in AssetDependencies(match exclude rule %s)"),*AssetKey,*MatchRule);
+					// UE_LOG(LogHotPatcher,Display,TEXT("remove %s in AssetDependencies(match exclude rule %s)"),*AssetKey,*MatchRule);
+					FScopeLock Lock(&SynchronizationObject);
 					ModuleAssetList.AssetDependencyDetails.Remove(AssetKey);
 				}
-			}
+			},GForceSingleThread);
 		}
 	};
 	ExcludeEditorContent(AssetDependencies.AssetsDependenciesMap);
@@ -1265,13 +1278,15 @@ bool UFlibAssetManageHelper::MatchIgnoreTypes(const FString& LongPackageName, TS
 		SCOPED_NAMED_EVENT_TEXT("is ignore types",FColor::Red);
 		MatchTypeStr = AssetData.AssetClass.ToString();
 		bIgnoreType = IgnoreTypes.Contains(AssetData.AssetClass);
-#if ENGINE_MAJOR_VERSION > 25
+
 		if(!bIgnoreType)
 		{
+#if ENGINE_MAJOR_VERSION > 25
 			bIgnoreType = AssetData.HasAnyPackageFlags(PKG_EditorOnly);
-		}
+#else
+			bIgnoreType = (AssetData.PackageFlags & PKG_EditorOnly) != 0;
 #endif
-		
+		}
 	}
 	return bIgnoreType;
 }
@@ -1282,7 +1297,7 @@ bool UFlibAssetManageHelper::MatchIgnoreFilters(const FString& LongPackageName, 
 	for(const auto& IgnoreFilter:IgnoreDirs)
 	{
 		if(LongPackageName.StartsWith(IgnoreFilter) ||
-			IgnoreFilter.Contains(TEXT("*")) ? IgnoreFilter.MatchesWildcard(LongPackageName,ESearchCase::CaseSensitive):false)
+			IgnoreFilter.Contains(TEXT("*")) ? LongPackageName.MatchesWildcard(IgnoreFilter,ESearchCase::CaseSensitive):false)
 		{
 			MatchDir = IgnoreFilter;
 			return true;

@@ -12,6 +12,7 @@
 
 #define LOCTEXT_NAMESPACE "FHotPatcherRuntimeModule"
 
+bool GForceSingleThread = (bool)FORCE_SINGLE_THREAD;
 
 void FHotPatcherRuntimeModule::StartupModule()
 {

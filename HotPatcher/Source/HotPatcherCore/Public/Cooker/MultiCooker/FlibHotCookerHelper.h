@@ -16,6 +16,7 @@ class HOTPATCHERCORE_API UFlibHotCookerHelper : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 public:
+	static FString GetCookedDir();
 	static FString GetCookerBaseDir();
 	// static FString GetCookerProcConfigPath(const FString& MissionName,int32 MissionID);
 	static FString GetCookerProcFailedResultPath(const FString& BaseDir,const FString& MissionName, int32 MissionID);

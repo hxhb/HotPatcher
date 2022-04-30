@@ -76,7 +76,8 @@ public class HotPatcherRuntime : ModuleRules
 		};
 
 		AddPublicDefinitions("WITH_EDITOR_SECTION", Version.MajorVersion > 4 || Version.MinorVersion > 24);
-
+		AddPublicDefinitions("FORCE_SINGLE_THREAD", false);
+		
 		bool bEnableAssetDependenciesDebugLog = true;
 		AddPublicDefinitions("ASSET_DEPENDENCIES_DEBUG_LOG", bEnableAssetDependenciesDebugLog);
 		

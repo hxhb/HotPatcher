@@ -1,5 +1,7 @@
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "FlibAssetManageHelper.h"
+#include "HotPatcherRuntime.h"
+#include "Async/ParallelFor.h"
 
 
 void FAssetDependenciesInfo::AddAssetsDetail(const FAssetDetail& AssetDetail)
@@ -39,24 +41,28 @@ bool FAssetDependenciesInfo::HasAsset(const FString& InAssetPackageName)const
 
 TArray<FAssetDetail> FAssetDependenciesInfo::GetAssetDetails()const
 {
-	TArray<FAssetDetail> OutAssetDetails;
 	SCOPED_NAMED_EVENT_TEXT("FAssetDependenciesInfo::GetAssetDetails",FColor::Red);
+	TArray<FAssetDetail> OutAssetDetails;
+	
 	OutAssetDetails.Empty();
 	TArray<FString> Keys;
 	AssetsDependenciesMap.GetKeys(Keys);
 
-	for (const auto& Key : Keys)
+	FCriticalSection	SynchronizationObject;
+	ParallelFor(Keys.Num(),[&](int32 index)
 	{
-		TMap<FString, FAssetDetail> ModuleAssetDetails = AssetsDependenciesMap.Find(Key)->AssetDependencyDetails;
+		const TMap<FString, FAssetDetail>& ModuleAssetDetails = AssetsDependenciesMap.Find(Keys[index])->AssetDependencyDetails;
 
 		TArray<FString> ModuleAssetKeys;
 		ModuleAssetDetails.GetKeys(ModuleAssetKeys);
 
 		for (const auto& ModuleAssetKey : ModuleAssetKeys)
 		{
+			FScopeLock Lock(&SynchronizationObject);
 			OutAssetDetails.Add(*ModuleAssetDetails.Find(ModuleAssetKey));
 		}
-	}
+	},GForceSingleThread);
+	
 	return OutAssetDetails;
 }
 

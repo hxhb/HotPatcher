@@ -61,7 +61,7 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 		UE_LOG(LogHotReleaseCommandlet, Warning, TEXT("not -config=xxxx.json params."));
 		// return -1;
 	}
-
+	config_path = UFlibPatchParserHelper::ReplaceMark(config_path);
 	if (bStatus && !FPaths::FileExists(config_path))
 	{
 		UE_LOG(LogHotReleaseCommandlet, Error, TEXT("config file %s not exists."), *config_path);

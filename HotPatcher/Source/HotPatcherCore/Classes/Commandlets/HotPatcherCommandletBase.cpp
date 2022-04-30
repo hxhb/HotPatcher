@@ -42,6 +42,7 @@ void UHotPatcherCommandletBase::MaybeMarkPackageAsAlreadyLoaded(UPackage* Packag
 	{
 		Package->SetPackageFlags(PKG_ReloadingForCooker);
 		Package->SetPackageFlags(PKG_FilterEditorOnly);
+		Package->SetPackageFlags(PKG_EditorOnly);
 	}
 }
 
@@ -59,5 +60,19 @@ int32 UHotPatcherCommandletBase::Main(const FString& Params)
 		UE_LOG(LogHotPatcher,Display,TEXT("Set Commandlet Priority to REALTIME_PRIORITY_CLASS."));
 	}
 #endif
+	
+	bool bStatus = FParse::Value(*Params, *FString(PATCHER_CONFIG_PARAM_NAME).ToLower(), CmdConfigPath);
+	if (!bStatus)
+	{
+		UE_LOG(LogHotPatcherCommandletBase, Warning, TEXT("not -config=xxxx.json params."));
+		return -1;
+	}
+	CmdConfigPath = UFlibPatchParserHelper::ReplaceMark(CmdConfigPath);
+	if (bStatus && !FPaths::FileExists(CmdConfigPath))
+	{
+		UE_LOG(LogHotPatcherCommandletBase, Error, TEXT("cofnig file %s not exists."), *CmdConfigPath);
+		return -1;
+	}
+	
 	return 0;
 }

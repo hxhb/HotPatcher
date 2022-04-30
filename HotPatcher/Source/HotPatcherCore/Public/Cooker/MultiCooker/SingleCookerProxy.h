@@ -84,8 +84,6 @@ public: // core interface
     // cook classes order
     TArray<UClass*> GetPreCacheClasses()const;
 
-    void DumpCluster(const FCookCluster& CookCluster);
-    
 public: // callback
     FCookActionResultEvent GetOnPackageSavedCallback();
     FCookActionEvent GetOnCookAssetBeginCallback();
@@ -113,6 +111,9 @@ private: // package context
     TMap<FString, FSavePackageContext*> GetPlatformSavePackageContextsNameMapping();
     TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> PlatformSavePackageContexts;
 #endif
+
+public: // static function
+    static void DumpCluster(const FCookCluster& CookCluster, bool bWriteToLog);
 
 public: // delegate
     FSingleCookerEvent OnCookBegin;

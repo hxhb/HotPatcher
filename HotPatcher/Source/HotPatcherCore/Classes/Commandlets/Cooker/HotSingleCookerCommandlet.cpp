@@ -14,35 +14,27 @@ DEFINE_LOG_CATEGORY(LogHotSingleCookerCommandlet);
 int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 {
 	Super::Main(Params);
+	SCOPED_NAMED_EVENT_TEXT("UHotSingleCookerCommandlet::Main",FColor::Red);
 	
 	UE_LOG(LogHotSingleCookerCommandlet, Display, TEXT("UHotSingleCookerCommandlet::Main"));
 
-	FString config_path;
-	bool bStatus = FParse::Value(*Params, *FString(PATCHER_CONFIG_PARAM_NAME).ToLower(), config_path);
-	if (!bStatus)
+	if(CmdConfigPath.IsEmpty())
 	{
-		UE_LOG(LogHotSingleCookerCommandlet, Warning, TEXT("not -config=xxxx.json params."));
 		return -1;
 	}
 
-	if (bStatus && !FPaths::FileExists(config_path))
-	{
-		UE_LOG(LogHotSingleCookerCommandlet, Error, TEXT("cofnig file %s not exists."), *config_path);
-		return -1;
-	}
-
-	if(IsRunningCommandlet())
-	{
-		SCOPED_NAMED_EVENT_TEXT("SearchAllAssets",FColor::Red);
-		// load asset registry
-		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-		AssetRegistryModule.Get().SearchAllAssets(false);
-	}
+	// if(IsRunningCommandlet())
+	// {
+	// 	SCOPED_NAMED_EVENT_TEXT("SearchAllAssets",FColor::Red);
+	// 	// load asset registry
+	// 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	// 	AssetRegistryModule.Get().SearchAllAssets(true);
+	// }
 
 	ExportSingleCookerSetting = MakeShareable(new FSingleCookerSettings);
 	
 	FString JsonContent;
-	if (FPaths::FileExists(config_path) && FFileHelper::LoadFileToString(JsonContent, *config_path))
+	if (FPaths::FileExists(CmdConfigPath) && FFileHelper::LoadFileToString(JsonContent, *CmdConfigPath))
 	{
 		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportSingleCookerSetting);
 	}

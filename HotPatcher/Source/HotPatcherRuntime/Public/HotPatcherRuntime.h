@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
+extern HOTPATCHERRUNTIME_API bool GForceSingleThread;
+
 class FHotPatcherRuntimeModule : public IModuleInterface
 {
 public:

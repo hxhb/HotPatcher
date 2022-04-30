@@ -112,7 +112,7 @@ public:
 		static bool GetSpecifyAssetData(const FString& InLongPackageName, TArray<FAssetData>& OutAssetData,bool InIncludeOnlyOnDiskAssets);
 		// /Game all uasset/umap files
 		static TArray<FString> GetAssetsByFilter(const FString& InFilter);
-		static bool GetAssetsData(const TArray<FString>& InFilterPaths, TArray<FAssetData>& OutAssetData, bool bIncludeOnlyOnDiskAssets = true);
+		static bool GetAssetsData(const TArray<FString>& InFilterPaths, TArray<FAssetData>& OutAssetData, bool bLocalIncludeOnlyOnDiskAssets = true);
 		static bool GetAssetsDataByDisk(const TArray<FString>& InFilterPaths, TArray<FAssetData>& OutAssetData);
 		static bool GetSingleAssetsData(const FString& InPackagePath, FAssetData& OutAssetData);
 		static bool GetAssetsDataByPackageName(const FString& InPackageName, FAssetData& OutAssetData);
@@ -232,6 +232,8 @@ public:
 	static bool IsRedirector(const FAssetDetail& Src,FAssetDetail& Out);
 	static void ReplaceReditector(TArray<FAssetDetail>& SrcAssets);
 	static void RemoveInvalidAssets(TArray<FAssetDetail>& SrcAssets);
+
+	static bool bIncludeOnlyOnDiskAssets;
 };
 
 

@@ -17,4 +17,5 @@ public:
 protected:
 	void MaybeMarkPackageAsAlreadyLoaded(UPackage* Package);
 	TSharedPtr<struct FObjectTrackerTagCleaner> ObjectTrackerTagCleaner;
+	FString CmdConfigPath;
 };

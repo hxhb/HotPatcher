@@ -241,12 +241,12 @@ void UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete()
 		while(GShaderCompilingManager->IsCompiling())
 		{
 			GShaderCompilingManager->ProcessAsyncResults(false, false);
-			int32 CurrentNumRemaingingJobs = GShaderCompilingManager->GetNumRemainingJobs();
-			if(GCookLog && LastRemainingJob != CurrentNumRemaingingJobs)
-			{
-				UE_LOG(LogHotPatcher,Display,TEXT("Remaining Shader %d"),CurrentNumRemaingingJobs);
-				LastRemainingJob = CurrentNumRemaingingJobs;
-			}
+			// int32 CurrentNumRemaingingJobs = GShaderCompilingManager->GetNumRemainingJobs();
+			// if(GCookLog && LastRemainingJob != CurrentNumRemaingingJobs)
+			// {
+			// 	UE_LOG(LogHotPatcher,Display,TEXT("Remaining Shader %d"),CurrentNumRemaingingJobs);
+			// 	LastRemainingJob = CurrentNumRemaingingJobs;
+			// }
 			FPlatformProcess::Sleep(0.5f);
 		}
 

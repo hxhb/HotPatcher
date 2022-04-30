@@ -76,9 +76,12 @@ void FVersionUpdaterManager::OnRequestComplete(FHttpRequestPtr RequestPtr, FHttp
 			}
 		}
 	}
-	bRequestFinished = true;
-	for(const auto& callback:OnRequestFinishedCallback)
+	if(bConnectedSuccessfully && Remotes.Num())
 	{
-		callback();
+		bRequestFinished = true;
+		for(const auto& callback:OnRequestFinishedCallback)
+		{
+			callback();
+		}
 	}
 }

@@ -23,9 +23,13 @@
 #include "JsonObjectConverter.h"
 #include "AssetRegistryState.h"
 #include "FPackageTracker.h"
+#include "HotPatcherRuntime.h"
+#include "Async/ParallelFor.h"
 #include "CreatePatch/TimeRecorder.h"
 #include "Misc/Paths.h"
 #include "Kismet/KismetStringLibrary.h"
+#include "Misc/Base64.h"
+#include "Misc/FileHelper.h"
 #include "Serialization/LargeMemoryReader.h"
 
 TArray<FString> UFlibPatchParserHelper::GetAvailableMaps(FString GameName, bool IncludeEngineMaps, bool IncludePluginMaps, bool Sorted)
@@ -1306,10 +1310,7 @@ void UFlibPatchParserHelper::RunAssetScanner(FAssetScanConfig ScanConfig,FHotPat
 	{
 		TEXT("EditorUtilityBlueprint")
 	};
-	for(auto Class:ScanConfig.ForceSkipClasses)
-	{
-		IgnoreTypes.Add(*Class->GetName());
-	}
+	
 	FAssetDependencies AssetConfig;
 	AssetConfig.IncludeFilters = ExportVersion.IncludeFilter;
 	AssetConfig.IgnoreFilters = ExportVersion.IgnoreFilter;
@@ -1321,8 +1322,11 @@ void UFlibPatchParserHelper::RunAssetScanner(FAssetScanConfig ScanConfig,FHotPat
 	{
 		AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(ScanConfig.ForceSkipContentRules));
 		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(ScanConfig.ForceSkipAssets));
+		for(auto Class:ScanConfig.ForceSkipClasses)
+		{
+			IgnoreTypes.Add(*Class->GetName());
+		}
 	}
-	
 	AssetConfig.ForceSkipContents = AllSkipContents;
 	AssetConfig.bRedirector = true;
 	AssetConfig.AnalysicFilterDependencies = ScanConfig.bAnalysisFilterDependencies;
@@ -1338,30 +1342,44 @@ void UFlibPatchParserHelper::RunAssetScanner(FAssetScanConfig ScanConfig,FHotPat
 
 		{
 			SCOPED_NAMED_EVENT_TEXT("combine all assets to FAssetDependenciesInfo",FColor::Red);
-			for(FName LongPackageName:Parser.GetrParseResults())
+			FCriticalSection	SynchronizationObject;
+			const TArray<FName>& ParseResultSet = Parser.GetrParseResults().Array();
+			ParallelFor(Parser.GetrParseResults().Num(),[&](int32 index)
 			{
+				FName LongPackageName = ParseResultSet[index];
 				if(LongPackageName.IsNone())
-					continue;
+				{
+					return;
+				}
 				FAssetDetail CurrentDetail;
 				if(UFlibAssetManageHelper::GetSpecifyAssetDetail(LongPackageName.ToString(),CurrentDetail))
 				{
 					UFlibAssetManageHelper::IsRedirector(CurrentDetail,CurrentDetail);
-					ExportVersion.AssetInfo.AddAssetsDetail(CurrentDetail);
+					{
+						FScopeLock Lock(&SynchronizationObject);
+						ExportVersion.AssetInfo.AddAssetsDetail(CurrentDetail);
+					}
 				}
-			}
+			},GForceSingleThread);
 		}
 	}
 	
 	if(ObjectTracker && ScanConfig.bPackageTracker)
 	{
 		SCOPED_NAMED_EVENT_TEXT("Combine Package Tracker Assets",FColor::Red);
-		const TSet<FName> LoadedPackages = ObjectTracker->GetLoadedPackages();
-		for(const auto& Package:LoadedPackages)
+		const TArray<FName> LoadedPackages = ObjectTracker->GetLoadedPackages().Array();
+		
+		FCriticalSection	SynchronizationObject;
+		ParallelFor(LoadedPackages.Num(),[&](int32 index)
 		{
-			FAssetDetail LoadedPackageDetail = UFlibAssetManageHelper::GetAssetDetailByPackageName(Package.ToString());
+			FAssetDetail LoadedPackageDetail = UFlibAssetManageHelper::GetAssetDetailByPackageName(LoadedPackages[index].ToString());
 			UFlibAssetManageHelper::IsRedirector(LoadedPackageDetail,LoadedPackageDetail);
-			ExportVersion.AssetInfo.AddAssetsDetail(LoadedPackageDetail);
-		}
+			
+			{
+				FScopeLock Lock(&SynchronizationObject);
+				ExportVersion.AssetInfo.AddAssetsDetail(LoadedPackageDetail);
+			}
+		},GForceSingleThread);
 	}
 }
 
@@ -1381,11 +1399,13 @@ void UFlibPatchParserHelper::ExportExternAssetsToPlatform(
 
 TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands,const TArray<FReplaceText>& InReplaceTexts,bool bIoStore)
 {
+	SCOPED_NAMED_EVENT_TEXT("UFlibPatchParserHelper::ExportExternAssetsToPlatform",FColor::Red);
 	TArray<FString> ResultPakCommands;
 	{
-		for (const auto& PakCommand : PakCommands)
+		FCriticalSection	SynchronizationObject;
+		ParallelFor(PakCommands.Num(),[&](int32 index)
 		{
-			const TArray<FString>& PakCommandOriginTexts = bIoStore?PakCommand.GetIoStoreCommands():PakCommand.GetPakCommands();
+			const TArray<FString>& PakCommandOriginTexts = bIoStore?PakCommands[index].GetIoStoreCommands():PakCommands[index].GetPakCommands();
 			if (!!InReplaceTexts.Num())
 			{
 				for (const auto& PakCommandOriginText : PakCommandOriginTexts)
@@ -1396,14 +1416,18 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<
 						ESearchCase::Type SearchCaseMode = ReplaceText.SearchCase == ESearchCaseMode::CaseSensitive ? ESearchCase::CaseSensitive : ESearchCase::IgnoreCase;
 						PakCommandTargetText = PakCommandTargetText.Replace(*ReplaceText.From, *ReplaceText.To, SearchCaseMode);
 					}
-					ResultPakCommands.Add(PakCommandTargetText);
+					{
+						FScopeLock Lock(&SynchronizationObject);
+						ResultPakCommands.Add(PakCommandTargetText);
+					}
 				}
 			}
 			else
 			{
+				FScopeLock Lock(&SynchronizationObject);
 				ResultPakCommands.Append(PakCommandOriginTexts);
 			}
-		}
+		},GForceSingleThread);
 	}
 	return ResultPakCommands;
 }
@@ -1561,25 +1585,19 @@ TMap<FString, FString> UFlibPatchParserHelper::GetReplacePathMarkMap()
 FString UFlibPatchParserHelper::ReplaceMark(const FString& Src)
 {
 	TMap<FString,FString> MarkMap = UFlibPatchParserHelper::GetReplacePathMarkMap();
-	auto ReplaceStringMark = [&MarkMap](const FString& OriginDir)->FString
-	{
-		TArray<FString> MarkKeys;
-		MarkMap.GetKeys(MarkKeys);
+	TArray<FString> MarkKeys;
+	MarkMap.GetKeys(MarkKeys);
 		
-		FString result = OriginDir;
-		for(const auto& Key:MarkKeys)
+	FString result = Src;
+	for(const auto& Key:MarkKeys)
+	{
+		while(result.Contains(Key))
 		{
-			if(OriginDir.StartsWith(Key))
-			{
-				result = OriginDir;
-				result.RemoveFromStart(Key,ESearchCase::IgnoreCase);
-				result = FPaths::Combine(MarkMap[Key],result);
-				break;
-			}
+			result = result.Replace(*Key,*FPaths::ConvertRelativePathToFull(*MarkMap.Find(Key)));
 		}
-		return result;
-	};
-	return ReplaceStringMark(Src);
+	}
+	
+	return result;
 }
 FString UFlibPatchParserHelper::ReplaceMarkPath(const FString& Src)
 {
@@ -1983,7 +2001,10 @@ bool UFlibPatchParserHelper::SerializePakEncryptionKeyToFile(const FPakEncryptio
 TArray<FDirectoryPath> UFlibPatchParserHelper::GetDefaultForceSkipContentDir()
 {
 	TArray<FDirectoryPath> result;
-	TArray<FString> DefaultSkipEditorContentRules = {TEXT("/Engine/Editor"),TEXT("/Engine/VREditor")};
+	TArray<FString> DefaultSkipEditorContentRules = {
+		TEXT("/Engine/Editor*/"),
+		TEXT("/Engine/VREditor/")
+	};
 	for(const auto& Ruls:DefaultSkipEditorContentRules)
 	{
 		FDirectoryPath PathIns;

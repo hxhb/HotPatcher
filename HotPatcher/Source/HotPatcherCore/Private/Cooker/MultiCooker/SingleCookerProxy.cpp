@@ -52,7 +52,7 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 		}
 		PackageTracker = MakeShareable(new FPackageTracker(ExixtPackagePathSet.PackagePaths));
 	}
-	UFlibHotPatcherCoreHelper::DeleteDirectory(GetSettingObject()->StorageMetadataDir);
+	UFlibHotPatcherCoreHelper::DeleteDirectory(GetSettingObject()->GetStorageMetadataAbsDir());
 	
 	GetCookFailedAssetsCollection().MissionName = GetSettingObject()->MissionName;
 	GetCookFailedAssetsCollection().MissionID = GetSettingObject()->MissionID;
@@ -63,33 +63,61 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 void USingleCookerProxy::CreateCookQueue()
 {
 	SCOPED_NAMED_EVENT_TEXT("CreateCookQueue",FColor::Red);
-	int32 NumberOfAssetsPerFrame = GetSettingObject()->GetNumberOfAssetsPerFrame();
-	
-	for(auto Class:GetPreCacheClasses())
+
+	FString DumpCookerInfo;
+	DumpCookerInfo.Append(TEXT("-----------------------------Dump Cooker-----------------------------"));
+	DumpCookerInfo.Append(FString::Printf(TEXT("\tTotal Asset: %d"),GlobalCluser.AssetDetails.Num()));
+	DumpCookerInfo.Append(FString::Printf(TEXT("\tbForceCookInOneFrame: %s"),GetSettingObject()->bForceCookInOneFrame ? TEXT("true"):TEXT("false")));
+	FString PlatformsStr;
+	for(auto Platform:GlobalCluser.Platforms)
 	{
-		TArray<FAssetDetail> ObjectAssets = UFlibAssetManageHelper::GetAssetDetailsByClass(GlobalCluser.AssetDetails,Class,true);
-		while(ObjectAssets.Num())
-		{
-			int32 ClusterAssetNum = NumberOfAssetsPerFrame < 1 ? ObjectAssets.Num() : NumberOfAssetsPerFrame;
-			int32 NewClusterAssetNum = FMath::Min(ClusterAssetNum,ObjectAssets.Num());
-			
-			TArray<FAssetDetail> CulsterObjectAssets(ObjectAssets.GetData(),NewClusterAssetNum);
-			FCookCluster NewCluster;
-			NewCluster.AssetDetails = std::move(CulsterObjectAssets);
-			ObjectAssets.RemoveAt(0,NewClusterAssetNum);
-			NewCluster.Platforms = GetSettingObject()->CookTargetPlatforms;
-			NewCluster.bPreGeneratePlatformData = GetSettingObject()->bPreGeneratePlatformData;
-
-			NewCluster.CookActionCallback.OnAssetCooked = GetOnPackageSavedCallback();
-			NewCluster.CookActionCallback.OnCookBegin = GetOnCookAssetBeginCallback();
-			CookCluserQueue.Enqueue(NewCluster);
-		}
+		PlatformsStr += THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
+		PlatformsStr.Append(TEXT(","));
 	}
-
-	if(GlobalCluser.AssetDetails.Num())
+	PlatformsStr.RemoveFromEnd(TEXT(","));
+	DumpCookerInfo.Append(FString::Printf(TEXT("\tTarget Platforms: %s"),*PlatformsStr));
+	
+	if(GetSettingObject()->bForceCookInOneFrame)
 	{
 		CookCluserQueue.Enqueue(GlobalCluser);
+		return;
 	}
+	else
+	{
+		int32 NumberOfAssetsPerFrame = GetSettingObject()->GetNumberOfAssetsPerFrame();
+		for(auto Class:GetPreCacheClasses())
+		{
+			TArray<FAssetDetail> ObjectAssets = UFlibAssetManageHelper::GetAssetDetailsByClass(GlobalCluser.AssetDetails,Class,true);
+			if(ObjectAssets.Num())
+			{
+				DumpCookerInfo.Append(FString::Printf(TEXT("\t%s -- %d"),*Class->GetName(),ObjectAssets.Num()));
+			}
+			while(ObjectAssets.Num())
+			{
+				int32 ClusterAssetNum = NumberOfAssetsPerFrame < 1 ? ObjectAssets.Num() : NumberOfAssetsPerFrame;
+				int32 NewClusterAssetNum = FMath::Min(ClusterAssetNum,ObjectAssets.Num());
+			
+				TArray<FAssetDetail> CulsterObjectAssets(ObjectAssets.GetData(),NewClusterAssetNum);
+				FCookCluster NewCluster;
+				NewCluster.AssetDetails = std::move(CulsterObjectAssets);
+				ObjectAssets.RemoveAt(0,NewClusterAssetNum);
+				NewCluster.Platforms = GetSettingObject()->CookTargetPlatforms;
+				NewCluster.bPreGeneratePlatformData = GetSettingObject()->bPreGeneratePlatformData;
+
+				NewCluster.CookActionCallback.OnAssetCooked = GetOnPackageSavedCallback();
+				NewCluster.CookActionCallback.OnCookBegin = GetOnCookAssetBeginCallback();
+				CookCluserQueue.Enqueue(NewCluster);
+			}
+		}
+
+		if(GlobalCluser.AssetDetails.Num())
+		{
+			CookCluserQueue.Enqueue(GlobalCluser);
+			DumpCookerInfo.Append(FString::Printf(TEXT("\tOther Assets -- %d"),GlobalCluser.AssetDetails.Num()));
+		}
+	}
+	DumpCookerInfo.Append(TEXT("---------------------------------------------------------------------"));
+	UE_LOG(LogHotPatcher,Display,TEXT("%s"),*DumpCookerInfo);
 }
 
 void USingleCookerProxy::CleanClusterCachedPlatformData(const FCookCluster& CookCluster)
@@ -132,9 +160,9 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 			UPackage* CurrentPackage = PreCachePackages[Index];
 			if(GCookLog)
 			{
-				UE_LOG(LogHotPatcher,Display,TEXT("PreCache %s, pending %d total %d"),*CurrentPackage->GetPathName(),PreCachePackages.Num()-1,TotalPackagesNum);
+				UE_LOG(LogHotPatcher,Log,TEXT("PreCache %s, pending %d total %d"),*CurrentPackage->GetPathName(),PreCachePackages.Num()-1,TotalPackagesNum);
 			}
-				
+			
 			UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
 				TArray<UPackage*>{CurrentPackage},
 				TargetPlatforms,
@@ -155,10 +183,11 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 	UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(ProcessedObjects,PendingCachePlatformDataObjects,TargetPlatforms);
 }
 
-void USingleCookerProxy::DumpCluster(const FCookCluster& CookCluster)
+void USingleCookerProxy::DumpCluster(const FCookCluster& CookCluster, bool bWriteToLog)
 {
+	SCOPED_NAMED_EVENT_TEXT("DumpCluster",FColor::Red);
 	FString Dumper;
-	Dumper.Append("--------------------Cook Cluster--------------------\n");
+	Dumper.Append("--------------------Dump Cook Cluster--------------------\n");
 	Dumper.Append(FString::Printf(TEXT("\tAsset Number: %d\n"),CookCluster.AssetDetails.Num()));
 	
 	FString PlatformsStr;
@@ -169,12 +198,17 @@ void USingleCookerProxy::DumpCluster(const FCookCluster& CookCluster)
 		}
 		PlatformsStr.RemoveFromStart(TEXT("+"));
 	}
-	Dumper.Append(FString::Printf(TEXT("Cook Platforms: %s\n"),*PlatformsStr));
-	Dumper.Append(FString::Printf(TEXT("PreGeneratePlatformData: %s\n"),CookCluster.bPreGeneratePlatformData?TEXT("true"):TEXT("false")));
+	Dumper.Append(FString::Printf(TEXT("\tCook Platforms: %s\n"),*PlatformsStr));
+	Dumper.Append(FString::Printf(TEXT("\tPreGeneratePlatformData: %s\n"),CookCluster.bPreGeneratePlatformData?TEXT("true"):TEXT("false")));
 	Dumper.Append(TEXT("\tCluster Assets:\n"));
 	for(const auto& Asset:CookCluster.AssetDetails)
 	{
 		Dumper.Append(FString::Printf(TEXT("\t%s %s\n"),*Asset.AssetType.ToString(),*Asset.PackagePath.ToString()));
+	}
+	Dumper.Append("---------------------------------------------------------\n");
+	if(bWriteToLog)
+	{
+		UE_LOG(LogHotPatcher,Log,TEXT("%s"),*Dumper);
 	}
 }
 
@@ -186,9 +220,11 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 	{
 		return;
 	}
+
+	DumpCluster(CookCluster,GCookLog);
 	
 	TArray<ITargetPlatform*> TargetPlatforms = UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(CookCluster.Platforms);
-	FString CookBaseDir = GetSettingObject()->StorageCookedDir;
+	FString CookBaseDir = GetSettingObject()->GetStorageCookedAbsDir();
 	CleanOldCooked(CookBaseDir,CookCluster.AsSoftObjectPaths(),CookCluster.Platforms);
 	
 #if WITH_PACKAGE_CONTEXT
@@ -235,7 +271,7 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 	}
 	// clean cached ddc
 	CleanClusterCachedPlatformData(CookCluster);
-	GEngine->ForceGarbageCollection();
+	GEngine->ForceGarbageCollection(true);
 }
 
 void USingleCookerProxy::Tick(float DeltaTime)
@@ -284,14 +320,15 @@ void USingleCookerProxy::Shutdown()
 	}
 	
 	ShutdowShaderLibCollections();
-	
+	FString StorageMetadataAbsDir = GetSettingObject()->GetStorageMetadataAbsDir();
 	// serialize cook failed assets to json
 	if(GetCookFailedAssetsCollection().CookFailedAssets.Num())
 	{
 		FString FailedJsonString;
 		THotPatcherTemplateHelper::TSerializeStructAsJsonString(GetCookFailedAssetsCollection(),FailedJsonString);
 		UE_LOG(LogHotPatcher,Warning,TEXT("Single Cooker Proxy %s:\n%s"),*GetSettingObject()->MissionName,*FailedJsonString);
-		FString SaveTo = UFlibHotCookerHelper::GetCookerProcFailedResultPath(GetSettingObject()->StorageMetadataDir,GetSettingObject()->MissionName,GetSettingObject()->MissionID);
+		FString SaveTo = UFlibHotCookerHelper::GetCookerProcFailedResultPath(StorageMetadataAbsDir,GetSettingObject()->MissionName,GetSettingObject()->MissionID);
+		UFlibPatchParserHelper::ReplaceMark(SaveTo);
 		FFileHelper::SaveStringToFile(FailedJsonString,*SaveTo);
 	}
 	
@@ -309,8 +346,8 @@ void USingleCookerProxy::Shutdown()
 			return OutString;
 		};
 		
-		FFileHelper::SaveStringToFile(SerializePackageSetToString(PackageTracker->GetPendingPackageSet()),*FPaths::Combine(GetSettingObject()->StorageMetadataDir,TEXT("AdditionalPackageSet.json")));
-		FFileHelper::SaveStringToFile(SerializePackageSetToString(PackageTracker->GetLoadedPackages()),*FPaths::Combine(GetSettingObject()->StorageMetadataDir,TEXT("AllLoadedPackageSet.json")));
+		FFileHelper::SaveStringToFile(SerializePackageSetToString(PackageTracker->GetPendingPackageSet()),*FPaths::Combine(StorageMetadataAbsDir,TEXT("AdditionalPackageSet.json")));
+		FFileHelper::SaveStringToFile(SerializePackageSetToString(PackageTracker->GetLoadedPackages()),*FPaths::Combine(StorageMetadataAbsDir,TEXT("AllLoadedPackageSet.json")));
 	}
 	BulkDataManifest();
 	IoStoreManifest();
@@ -391,7 +428,7 @@ void USingleCookerProxy::IoStoreManifest()
 				}
 				FFileHelper::SaveStringArrayToFile(result,*FPaths::ConvertRelativePathToFull(File));
 			};
-			SaveCookOpenOrder(CookOpenOrders,FPaths::Combine(GetSettingObject()->StorageMetadataDir,GetSettingObject()->MissionName,PlatformName,TEXT("CookOpenOrder.txt")));
+			SaveCookOpenOrder(CookOpenOrders,FPaths::Combine(GetSettingObject()->GetStorageMetadataAbsDir(),GetSettingObject()->MissionName,PlatformName,TEXT("CookOpenOrder.txt")));
 		}
 	}
 }
@@ -399,7 +436,7 @@ void USingleCookerProxy::IoStoreManifest()
 void USingleCookerProxy::InitShaderLibConllections()
 {
 	SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::InitShaderLibConllections",FColor::Red);
-	FString SavePath = GetSettingObject()->StorageMetadataDir;
+	FString SavePath = GetSettingObject()->GetStorageMetadataAbsDir();
 	PlatformCookShaderCollection = UFlibHotCookerHelper::CreateCookShaderCollectionProxyByPlatform(
 		GetSettingObject()->ShaderLibName,
 		GetSettingObject()->CookTargetPlatforms,
@@ -482,21 +519,25 @@ bool USingleCookerProxy::DoExport()
 
 	UFlibAssetManageHelper::ReplaceReditector(GlobalCluser.AssetDetails);
 	UFlibAssetManageHelper::RemoveInvalidAssets(GlobalCluser.AssetDetails);
+	
 	CreateCookQueue();
 
 	// force cook all in onece frame
-	while(GetSettingObject()->bForceCookInOneFrame && !CookCluserQueue.IsEmpty())
+	if(GetSettingObject()->bForceCookInOneFrame)
 	{
-		FCookCluster CookCluster;
-		CookCluserQueue.Dequeue(CookCluster);
-		ExecCookCluster(CookCluster);
+		while(!CookCluserQueue.IsEmpty())
+		{
+			FCookCluster CookCluster;
+			CookCluserQueue.Dequeue(CookCluster);
+			ExecCookCluster(CookCluster);
+		}
+	
+		if(CookCluserQueue.IsEmpty())
+		{
+			ExecCookCluster(GetPackageTrackerAsCluster());
+		}
 	}
 	
-	if(CookCluserQueue.IsEmpty())
-	{
-		ExecCookCluster(GetPackageTrackerAsCluster());
-	}
-
 	bAlready = true;
 	return !HasError();
 }
@@ -507,15 +548,19 @@ void USingleCookerProxy::CleanOldCooked(const FString& CookBaseDir,const TArray<
 	{
 		SCOPED_NAMED_EVENT_TEXT("Delete Old Cooked Files",FColor::Red);
 		TArray<FString> PaddingDeleteFiles;
-		for(const auto& Asset:ObjectPaths)
+
+		// FCriticalSection	LocalSynchronizationObject;
+		// for(const auto& Asset:ObjectPaths)
+		ParallelFor(ObjectPaths.Num(),[&](int32 Index)
 		{
-			FString PackageName = Asset.GetLongPackageName();
+			FString PackageName = ObjectPaths[Index].GetLongPackageName();
 			for(const auto& TargetPlatform:CookPlatfotms)
 			{
 				FString CookedSavePath = UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(CookBaseDir,PackageName, TargetPlatform->PlatformName());
+				// FScopeLock Lock(&LocalSynchronizationObject);
 				PaddingDeleteFiles.AddUnique(CookedSavePath);
 			}
-		}
+		},true);
 	
 		ParallelFor(PaddingDeleteFiles.Num(),[PaddingDeleteFiles](int32 Index)
 		{
@@ -524,7 +569,7 @@ void USingleCookerProxy::CleanOldCooked(const FString& CookBaseDir,const TArray<
 			{
 				IFileManager::Get().Delete(*FileName,true,true,true);
 			}
-		},false);
+		},GForceSingleThread);
 	}
 }
 

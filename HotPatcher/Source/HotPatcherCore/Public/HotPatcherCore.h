@@ -8,6 +8,7 @@
 #include "HotPatcherSettings.h"
 #include "Modules/ModuleManager.h"
 #include "CreatePatch/FExportPatchSettings.h"
+#include "HotPatcherRuntime.h"
 #include "CreatePatch/FExportReleaseSettings.h"
 // engine header
 #include "CoreMinimal.h"

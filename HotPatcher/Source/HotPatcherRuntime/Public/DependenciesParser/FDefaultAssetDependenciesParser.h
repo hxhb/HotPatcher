@@ -3,7 +3,6 @@
 #include "IAssetDependenciesParser.h"
 
 
-
 struct FAssetDependenciesParser : public IAssetDependenciesParser
 {
 	using FScanedCachesType = TMap<FName, TSet<FName>>;
@@ -11,7 +10,9 @@ struct FAssetDependenciesParser : public IAssetDependenciesParser
 	virtual void Parse(const FAssetDependencies& InParseConfig) override;
 	virtual const TSet<FName>& GetrParseResults()const { return Results; };
 	bool IsIgnoreAsset(const FAssetData& AssetData);
-	
+	bool IsIgnoreAsset(const FString& LongPackageName);
+
+	static bool IsForceSkipAsset(const FString& LongPackageName,TSet<FName> IgnoreTypes,TArray<FString> IgnoreFilters);
 	static TSet<FName> GatherAssetDependicesInfoRecursively(
 		FAssetRegistryModule& InAssetRegistryModule,
 		FName InLongPackageName,
@@ -20,7 +21,7 @@ struct FAssetDependenciesParser : public IAssetDependenciesParser
 		const TArray<FString>& IgnoreDirectories,
 		TSet<FName> IgnorePackageNames,
 		const TSet<FName>& IgnoreAssetTypes,
-		FScanedCachesType& ScanedCaches
+		FScanedCachesType& InScanedCaches
 	);
 protected:
 	TSet<FName> Results;

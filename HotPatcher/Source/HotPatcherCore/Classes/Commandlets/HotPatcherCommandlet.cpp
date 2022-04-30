@@ -28,6 +28,7 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 		return -1;
 	}
 
+	config_path = UFlibPatchParserHelper::ReplaceMark(config_path);
 	if (!FPaths::FileExists(config_path))
 	{
 		UE_LOG(LogHotPatcherCommandlet, Error, TEXT("cofnig file %s not exists."), *config_path);

@@ -30,6 +30,8 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase:public FPatcherEntitySetting
     virtual TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform);
 
     virtual FString GetSaveAbsPath()const;
+    FORCEINLINE FString GetSavePath()const { return SavePath.Path; }
+    
     FORCEINLINE virtual bool IsStandaloneMode()const {return bStandaloneMode;}
     FORCEINLINE virtual bool IsSaveConfig()const {return bStorageConfig;}
     FORCEINLINE virtual TArray<FString> GetAdditionalCommandletArgs()const{return AdditionalCommandletArgs;}
@@ -67,6 +69,7 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase:public FPatcherEntitySetting
     FORCEINLINE FAssetScanConfig GetAssetScanConfig()const{ return AssetScanConfig; }
     FORCEINLINE FAssetScanConfig& GetAssetScanConfigRef() { return AssetScanConfig; }
     virtual ~FHotPatcherSettingBase(){}
+    
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Asset Filters")
     FAssetScanConfig AssetScanConfig;

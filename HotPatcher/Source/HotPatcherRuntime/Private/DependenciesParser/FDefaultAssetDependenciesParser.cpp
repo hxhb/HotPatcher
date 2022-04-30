@@ -1,6 +1,8 @@
 #include "DependenciesParser/FDefaultAssetDependenciesParser.h"
 #include "FlibAssetManageHelper.h"
 #include "HotPatcherLog.h"
+#include "HotPatcherRuntime.h"
+#include "Async/ParallelFor.h"
 #include "Engine/World.h"
 #include "Engine/WorldComposition.h"
 
@@ -23,7 +25,7 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 	{
 		SCOPED_NAMED_EVENT_TEXT("Get AssetPackageNames by filter",FColor::Red);
 		TArray<FAssetData> AssetDatas;
-		UFlibAssetManageHelper::GetAssetsData(ParseConfig.IncludeFilters,AssetDatas);
+		UFlibAssetManageHelper::GetAssetsData(ParseConfig.IncludeFilters,AssetDatas,!GForceSingleThread);
 
 		for(const auto& AssetData:AssetDatas)
 		{
@@ -77,21 +79,19 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 	}
 
 	Results.Remove(FName(NAME_None));
+
+	FCriticalSection	SynchronizationObject;
 	TSet<FName> ForceSkipPackages;
-	for(const auto& SkipContent:ParseConfig.ForceSkipContents)
+	TArray<FName> ResultArray = Results.Array();
+	ParallelFor(ResultArray.Num(),[&](int32 index)
 	{
-		for(auto& AssetPackageName:Results)
+		FString AssetPackageNameStr = ResultArray[index].ToString();
+		if(IsForceSkipAsset(AssetPackageNameStr,ParseConfig.IgnoreAseetTypes,ParseConfig.ForceSkipContents))
 		{
-			FString AssetPackageNameStr = AssetPackageName.ToString();
-			if(AssetPackageNameStr.StartsWith(SkipContent))
-			{
-#if ASSET_DEPENDENCIES_DEBUG_LOG
-				UE_LOG(LogHotPatcher,Log,TEXT("Force Skip %s (match %s)"),*AssetPackageNameStr,*SkipContent);
-#endif
-				ForceSkipPackages.Add(AssetPackageName);
-			}
+			FScopeLock Lock(&SynchronizationObject);
+			ForceSkipPackages.Add(ResultArray[index]);
 		}
-	}
+	},GForceSingleThread);
 
 	for(FName SkipPackage:ForceSkipPackages)
 	{
@@ -101,7 +101,7 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 
 bool IsValidPackageName(const FString& LongPackageName)
 {
-	SCOPED_NAMED_EVENT_TEXT("GatherAssetDependicesInfoRecursively",FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("IsValidPackageName",FColor::Red);
 	bool bStatus = false;
 	if (!LongPackageName.IsEmpty() && !FPackageName::IsScriptPackage(LongPackageName) && !FPackageName::IsMemoryPackage(LongPackageName))
 	{
@@ -113,16 +113,20 @@ bool IsValidPackageName(const FString& LongPackageName)
 bool FAssetDependenciesParser::IsIgnoreAsset(const FAssetData& AssetData)
 {
 	FString LongPackageName = AssetData.PackageName.ToString();
+	return IsIgnoreAsset(LongPackageName);
+}
 
+bool FAssetDependenciesParser::IsForceSkipAsset(const FString& LongPackageName,TSet<FName> IgnoreTypes,TArray<FString> IgnoreFilters)
+{
+	SCOPED_NAMED_EVENT_TEXT("IsForceSkipAsset",FColor::Red);
 	bool bIsIgnore = false;
 	FString MatchIgnoreStr;
-	if(UFlibAssetManageHelper::UFlibAssetManageHelper::MatchIgnoreTypes(LongPackageName,ParseConfig.IgnoreAseetTypes,MatchIgnoreStr))
+	if(UFlibAssetManageHelper::UFlibAssetManageHelper::MatchIgnoreTypes(LongPackageName,IgnoreTypes,MatchIgnoreStr))
 	{
-
 		bIsIgnore = true;
 	}
 	
-	if(!bIsIgnore && UFlibAssetManageHelper::MatchIgnoreFilters(LongPackageName,ParseConfig.IgnoreFilters,MatchIgnoreStr))
+	if(!bIsIgnore && UFlibAssetManageHelper::MatchIgnoreFilters(LongPackageName,IgnoreFilters,MatchIgnoreStr))
 	{
 		bIsIgnore = true;
 	}
@@ -130,15 +134,39 @@ bool FAssetDependenciesParser::IsIgnoreAsset(const FAssetData& AssetData)
 	if(bIsIgnore)
 	{
 #if ASSET_DEPENDENCIES_DEBUG_LOG
-		UE_LOG(LogHotPatcher,Log,TEXT("Force Skip %s (match ignore rule %s)"),*AssetData.GetFullName(),*MatchIgnoreStr);
+		UE_LOG(LogHotPatcher,Log,TEXT("Force Skip %s (match ignore rule %s)"),*LongPackageName,*MatchIgnoreStr);
 #endif
 	}
 	return bIsIgnore;
 }
 
+bool FAssetDependenciesParser::IsIgnoreAsset(const FString& LongPackageName)
+{
+	// SCOPED_NAMED_EVENT_TEXT("IsIgnoreAsset",FColor::Red);
+// 	bool bIsIgnore = false;
+// 	FString MatchIgnoreStr;
+// 	if(UFlibAssetManageHelper::UFlibAssetManageHelper::MatchIgnoreTypes(LongPackageName,ParseConfig.IgnoreAseetTypes,MatchIgnoreStr))
+// 	{
+// 		bIsIgnore = true;
+// 	}
+// 	
+// 	if(!bIsIgnore && UFlibAssetManageHelper::MatchIgnoreFilters(LongPackageName,ParseConfig.IgnoreFilters,MatchIgnoreStr))
+// 	{
+// 		bIsIgnore = true;
+// 	}
+//
+// 	if(bIsIgnore)
+// 	{
+// #if ASSET_DEPENDENCIES_DEBUG_LOG
+// 		UE_LOG(LogHotPatcher,Log,TEXT("Force Skip %s (match ignore rule %s)"),*LongPackageName,*MatchIgnoreStr);
+// #endif
+// 	}
+	return IsForceSkipAsset(LongPackageName,ParseConfig.IgnoreAseetTypes,ParseConfig.IgnoreFilters);
+}
+
 TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAssetRegistryModule& InAssetRegistryModule,
                                                                            FName InLongPackageName, const TArray<EAssetRegistryDependencyTypeEx>& InAssetDependencyTypes,
-                                                                           bool bRecursively, const TArray<FString>& IgnoreDirectories,TSet<FName> IgnorePackageNames,const TSet<FName>& IgnoreAssetTypes,FScanedCachesType& ScanedCaches)
+                                                                           bool bRecursively, const TArray<FString>& IgnoreDirectories,TSet<FName> IgnorePackageNames,const TSet<FName>& IgnoreAssetTypes,FScanedCachesType& InScanedCaches)
 {
 	TSet<FName> AssetDependencies;
 	SCOPED_NAMED_EVENT_TEXT("GatherAssetDependicesInfoRecursively",FColor::Red);
@@ -146,9 +174,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 
 	FAssetData CurrentAssetData;
 	UFlibAssetManageHelper::GetAssetsDataByPackageName(InLongPackageName.ToString(),CurrentAssetData);
-	
-	// TArray<EAssetRegistryDependencyType::Type> AssetTypes;
-	
+
 	bool bGetDependenciesSuccess = false;
 	EAssetRegistryDependencyType::Type TotalType = EAssetRegistryDependencyType::None;
 
@@ -159,7 +185,6 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 
 	TArray<FName> CurrentAssetDependencies;
 	
-	// AssetTypes.AddUnique(UFlibAssetManageHelper::ConvAssetRegistryDependencyToInternal(DepType));
 	{
 		SCOPED_NAMED_EVENT_TEXT("GetDependencies",FColor::Red);
 		PRAGMA_DISABLE_DEPRECATION_WARNINGS
@@ -199,46 +224,29 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 	
 	{
 		SCOPED_NAMED_EVENT_TEXT("check valid package and ignore rule",FColor::Red);
-		for (auto &LongPackageName : CurrentAssetDependencies)
+		FCriticalSection	SynchronizationObject;
+		ParallelFor(CurrentAssetDependencies.Num(),[&](int32 index)
 		{
+			auto LongPackageName = CurrentAssetDependencies[index];
 			FString LongPackageNameStr = LongPackageName.ToString();
 		
 			// ignore /Script/ and self
 			if(LongPackageName.IsNone() || !IsValidPackageName(LongPackageNameStr) || LongPackageName == InLongPackageName)
 			{
-				continue;
+				return;
 			}
 			// check is ignore directories or ingore types
 			{
 				SCOPED_NAMED_EVENT_TEXT("check ignore directories",FColor::Red);
-				bool bIsIgnore = false;
-				FString MatchIgnoreStr;
-				
-				if(!bIsIgnore && UFlibAssetManageHelper::MatchIgnoreTypes(LongPackageNameStr,IgnoreAssetTypes,MatchIgnoreStr))
+				if(!IsForceSkipAsset(LongPackageNameStr,IgnoreAssetTypes,IgnoreDirectories))
 				{
-					bIsIgnore = true;
-				}
-				
-				if(!bIsIgnore && UFlibAssetManageHelper::MatchIgnoreFilters(LongPackageNameStr,IgnoreDirectories,MatchIgnoreStr))
-				{
-					bIsIgnore = true;
-				}
-
-				if(bIsIgnore)
-				{
-#if ASSET_DEPENDENCIES_DEBUG_LOG
-					UE_LOG(LogHotPatcher,Log,TEXT("Force Skip %s (match ignore rule %s)"),*LongPackageNameStr,*MatchIgnoreStr);
-#endif
-					continue;
-				}
-				else
-				{
+					FScopeLock Lock(&SynchronizationObject);
 					AssetDependencies.Add(LongPackageName);
 				}
 			}
-		}
+		},GForceSingleThread);
 	}
-
+	
 	if(bRecursively)
 	{
 		TSet<FName> Dependencies;
@@ -249,11 +257,11 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 			if(IgnorePackageNames.Contains(AssetPackageName))
 				continue;
 				
-			if(!ScanedCaches.Contains(AssetPackageName))
+			if(!InScanedCaches.Contains(AssetPackageName))
 			{
-				ScanedCaches.Add(AssetPackageName,GatherAssetDependicesInfoRecursively(InAssetRegistryModule, AssetPackageName, InAssetDependencyTypes,true,IgnoreDirectories,IgnorePackageNames,IgnoreAssetTypes,ScanedCaches));
+				InScanedCaches.Add(AssetPackageName,GatherAssetDependicesInfoRecursively(InAssetRegistryModule, AssetPackageName, InAssetDependencyTypes,true,IgnoreDirectories,IgnorePackageNames,IgnoreAssetTypes,InScanedCaches));
 			}
-			Dependencies.Append(*ScanedCaches.Find(AssetPackageName));
+			Dependencies.Append(*InScanedCaches.Find(AssetPackageName));
 		}
 		AssetDependencies.Append(Dependencies);
 	}
