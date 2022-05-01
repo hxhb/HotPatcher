@@ -58,26 +58,30 @@ public:
 			}
 
 			mThreadStatus = EThreadStatus::Completed;
-			
+
+			bool bRunSuccessfuly = false;
 			int32 ProcReturnCode;
 			if (FPlatformProcess::GetProcReturnCode(mProcessHandle,&ProcReturnCode))
 			{
 				if (ProcReturnCode == 0)
 				{
-					if(ProcSuccessedDelegate.IsBound())
-						ProcSuccessedDelegate.Broadcast(this);
+					bRunSuccessfuly = true;
 				}
-				else
+			}
+			
+			if (bRunSuccessfuly)
+			{
+				if(ProcSuccessedDelegate.IsBound())
 				{
-					if (ProcFaildDelegate.IsBound())
-						ProcFaildDelegate.Broadcast(this);
+					ProcSuccessedDelegate.Broadcast(this);
 				}
 			}
 			else
 			{
 				if (ProcFaildDelegate.IsBound())
+				{
 					ProcFaildDelegate.Broadcast(this);
-
+				}
 			}
 			
 		}
@@ -86,8 +90,9 @@ public:
 	}
 	virtual void Exit()override
 	{
-		Cancel();
+		FThreadWorker::Exit();
 	}
+	
 	virtual void Cancel()override
 	{
 		if (GetThreadStatus() != EThreadStatus::Busy)
