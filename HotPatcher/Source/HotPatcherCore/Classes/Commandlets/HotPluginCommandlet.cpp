@@ -52,7 +52,7 @@ int32 UHotPluginCommandlet::Main(const FString& Params)
 		
 		TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Params);
 		THotPatcherTemplateHelper::ReplaceProperty(*PluginPackagerSetting, KeyValues);
-		TArray<ETargetPlatform> AddPlatforms = CommandletHelper::ParserPlatforms(Params,);
+		TArray<ETargetPlatform> AddPlatforms = CommandletHelper::ParserPlatforms(Params,ADD_PATCH_PLATFORMS);
 
 		FString FinalConfig;
 		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*PluginPackagerSetting,FinalConfig);
