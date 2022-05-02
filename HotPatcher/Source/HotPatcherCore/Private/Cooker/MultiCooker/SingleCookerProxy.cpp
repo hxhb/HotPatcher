@@ -13,6 +13,7 @@
 #include "Misc/ScopeExit.h"
 #include "Engine/AssetManager.h"
 #include "LevelSequence/Public/LevelSequence.h"
+#include "Particles/ParticleSystem.h"
 #if WITH_PACKAGE_CONTEXT
 // // engine header
 #include "UObject/SavePackage.h"
@@ -66,8 +67,8 @@ void USingleCookerProxy::CreateCookQueue()
 
 	FString DumpCookerInfo;
 	DumpCookerInfo.Append(TEXT("-----------------------------Dump Cooker-----------------------------"));
-	DumpCookerInfo.Append(FString::Printf(TEXT("\tTotal Asset: %d"),GlobalCluser.AssetDetails.Num()));
-	DumpCookerInfo.Append(FString::Printf(TEXT("\tbForceCookInOneFrame: %s"),GetSettingObject()->bForceCookInOneFrame ? TEXT("true"):TEXT("false")));
+	DumpCookerInfo.Append(FString::Printf(TEXT("\tTotal Asset: %d\n"),GlobalCluser.AssetDetails.Num()));
+	DumpCookerInfo.Append(FString::Printf(TEXT("\tbForceCookInOneFrame: %s\n"),GetSettingObject()->bForceCookInOneFrame ? TEXT("true"):TEXT("false")));
 	FString PlatformsStr;
 	for(auto Platform:GlobalCluser.Platforms)
 	{
@@ -75,7 +76,7 @@ void USingleCookerProxy::CreateCookQueue()
 		PlatformsStr.Append(TEXT(","));
 	}
 	PlatformsStr.RemoveFromEnd(TEXT(","));
-	DumpCookerInfo.Append(FString::Printf(TEXT("\tTarget Platforms: %s"),*PlatformsStr));
+	DumpCookerInfo.Append(FString::Printf(TEXT("\tTarget Platforms: %s\n"),*PlatformsStr));
 	
 	if(GetSettingObject()->bForceCookInOneFrame)
 	{
@@ -90,7 +91,7 @@ void USingleCookerProxy::CreateCookQueue()
 			TArray<FAssetDetail> ObjectAssets = UFlibAssetManageHelper::GetAssetDetailsByClass(GlobalCluser.AssetDetails,Class,true);
 			if(ObjectAssets.Num())
 			{
-				DumpCookerInfo.Append(FString::Printf(TEXT("\t%s -- %d"),*Class->GetName(),ObjectAssets.Num()));
+				DumpCookerInfo.Append(FString::Printf(TEXT("\t%s -- %d\n"),*Class->GetName(),ObjectAssets.Num()));
 			}
 			while(ObjectAssets.Num())
 			{
@@ -113,7 +114,7 @@ void USingleCookerProxy::CreateCookQueue()
 		if(GlobalCluser.AssetDetails.Num())
 		{
 			CookCluserQueue.Enqueue(GlobalCluser);
-			DumpCookerInfo.Append(FString::Printf(TEXT("\tOther Assets -- %d"),GlobalCluser.AssetDetails.Num()));
+			DumpCookerInfo.Append(FString::Printf(TEXT("\tOther Assets -- %d\n"),GlobalCluser.AssetDetails.Num()));
 		}
 	}
 	DumpCookerInfo.Append(TEXT("---------------------------------------------------------------------"));
@@ -662,22 +663,28 @@ TArray<UClass*> USingleCookerProxy::GetPreCacheClasses() const
 		UTexture::StaticClass(),
 		UMaterialExpression::StaticClass(),
 		UMaterialFunctionInterface::StaticClass(),
-		UMaterialInterface::StaticClass()
+		UMaterialInterface::StaticClass(),
 	};
 
 	for(auto& ParentClass:ParentClasses)
 	{
 		Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,true,true));
 	}
-	
-	Classes.Append(TArray<UClass*>{
+
+	for(auto& ParentClass:TArray<UClass*>{
+		UFXSystemAsset::StaticClass(),
 		UAnimSequence::StaticClass(),
 		UStaticMesh::StaticClass(),
 		USkeletalMesh::StaticClass(),
 		UBlueprint::StaticClass(),
+	})
+	{
+		Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,true,true));
+	}
+	
+	Classes.Append(TArray<UClass*>{
 		ULevelSequence::StaticClass(),
-		UWorld::StaticClass()
-	});
+		UWorld::StaticClass()});
 	
 	return Classes;
 }
