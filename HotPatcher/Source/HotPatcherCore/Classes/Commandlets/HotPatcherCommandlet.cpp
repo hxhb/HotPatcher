@@ -51,7 +51,7 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 		
 		TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Params);
 		THotPatcherTemplateHelper::ReplaceProperty(*ExportPatchSetting, KeyValues);
-		TArray<ETargetPlatform> AddPlatforms = CommandletHelper::ParserPatchPlatforms(Params);
+		TArray<ETargetPlatform> AddPlatforms = CommandletHelper::ParserPlatforms(Params,ADD_PATCH_PLATFORMS);
 	
 		if(AddPlatforms.Num())
 		{

@@ -29,10 +29,10 @@ TArray<FString> CommandletHelper::ParserPatchConfigByCommandline(const FString& 
 	return result;
 }
 	
-TArray<ETargetPlatform> CommandletHelper::ParserPatchPlatforms(const FString& Commandline)
+TArray<ETargetPlatform> CommandletHelper::ParserPlatforms(const FString& Commandline, const FString& Token)
 {
 	TArray<ETargetPlatform> result;
-	for(auto& PlatformName:ParserPatchConfigByCommandline(Commandline,ADD_PATCH_PLATFORMS))
+	for(auto& PlatformName:ParserPatchConfigByCommandline(Commandline,Token))
 	{
 		ETargetPlatform Platform = ETargetPlatform::None;
 		THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
