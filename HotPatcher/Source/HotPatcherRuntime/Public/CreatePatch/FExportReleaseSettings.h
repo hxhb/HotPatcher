@@ -30,13 +30,13 @@ struct HOTPATCHERRUNTIME_API FPlatformPakListFiles
 {
 	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	ETargetPlatform TargetPlatform = ETargetPlatform::None;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	TArray<FFilePath> PakResponseFiles;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	TArray<FFilePath> PakFiles;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	FString AESKey;
 };
 

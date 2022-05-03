@@ -18,10 +18,10 @@ public:
 	FPatchVersionAssetDiff()=default;
 	FPatchVersionAssetDiff(const FPatchVersionAssetDiff&)=default;
 	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	FAssetDependenciesInfo AddAssetDependInfo;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	FAssetDependenciesInfo ModifyAssetDependInfo;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	FAssetDependenciesInfo DeleteAssetDependInfo;
 };

@@ -19,8 +19,8 @@ struct FPlatformExternFiles
     FORCEINLINE FPlatformExternFiles(ETargetPlatform InPlatform,const TArray<FExternFileInfo>& InFiles):
         Platform(InPlatform),ExternFiles(InFiles){}
 	
-    UPROPERTY(EditAnywhere,BlueprintReadWrite)
+    UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="")
     ETargetPlatform Platform = ETargetPlatform::None;
-    UPROPERTY(EditAnywhere,BlueprintReadWrite)
+    UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="")
     TArray<FExternFileInfo> ExternFiles;
 };

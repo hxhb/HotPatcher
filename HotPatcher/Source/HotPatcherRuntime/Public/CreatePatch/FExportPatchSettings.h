@@ -72,16 +72,16 @@ struct HOTPATCHERRUNTIME_API FAssetRegistryOptions
 	}
 	FString GetAssetRegistryMountPointRegular()const { return AssetRegistryMountPointRegular; }
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 	bool bSerializeAssetRegistry = false;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 	FString AssetRegistryMountPointRegular;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 	EAssetRegistryRule AssetRegistryRule = EAssetRegistryRule::PATCH;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 	bool bCustomAssetRegistryName = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bCustomAssetRegistryName"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bCustomAssetRegistryName"), Category="")
 	FString AssetRegistryNameRegular;
 };
 

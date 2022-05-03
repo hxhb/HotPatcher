@@ -19,10 +19,10 @@ struct HOTPATCHERRUNTIME_API FAssetDependenciesDetail
 		: ModuleCategory(InModuleCategory), AssetDependencyDetails(InDependAssetDetails)
 	{}
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 		FString ModuleCategory;
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	//	TArray<FString> mDependAsset;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 		TMap<FString,FAssetDetail> AssetDependencyDetails;
 };

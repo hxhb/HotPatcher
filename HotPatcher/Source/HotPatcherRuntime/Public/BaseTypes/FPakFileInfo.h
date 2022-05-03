@@ -12,11 +12,11 @@ struct FPakFileInfo
 	GENERATED_USTRUCT_BODY()
 public:
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="")
 	FString FileName;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="")
 	FString Hash;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="")
 	int32 FileSize = 0;
 	//UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	//FPakVersion PakVersion;

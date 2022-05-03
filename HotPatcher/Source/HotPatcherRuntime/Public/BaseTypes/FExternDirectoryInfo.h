@@ -16,7 +16,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		FDirectoryPath DirectoryPath;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="")
 		FString MountPoint = TEXT("../../../");
 
 

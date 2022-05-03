@@ -84,29 +84,29 @@ struct HOTPATCHERRUNTIME_API FHotPatcherPatchContext:public FHotPatcherContext
     class UPatcherProxy* PatchProxy;
     
     // base version content
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(EditAnywhere, Category="")
     FHotPatcherVersion BaseVersion;
     // current project content
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(EditAnywhere, Category="")
     FHotPatcherVersion CurrentVersion;
 
     // base version and current version different
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(EditAnywhere, Category="")
     FPatchVersionDiff VersionDiff;
 
     // final new version content
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(EditAnywhere, Category="")
     FHotPatcherVersion NewReleaseVersion;
 
     // generated current version chunk
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(EditAnywhere, Category="")
     FChunkInfo NewVersionChunk;
     
     // chunk info
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(EditAnywhere, Category="")
     TArray<FChunkInfo> PakChunks;
 
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(EditAnywhere, Category="")
     TArray<FPakCommand> AdditionalFileToPak;
     
     // every pak file info
@@ -135,7 +135,7 @@ struct HOTPATCHERRUNTIME_API FHotPatcherReleaseContext:public FHotPatcherContext
     FHotPatcherReleaseContext()=default;
     virtual FExportReleaseSettings* GetSettingObject() { return (FExportReleaseSettings*)ContextSetting; }
     virtual FString GetTotalTimeRecorderName()const{return TEXT("Generate the release total time");}
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly, Category="")
     FHotPatcherVersion NewReleaseVersion;
     class UReleaseProxy* ReleaseProxy;
 };

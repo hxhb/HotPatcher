@@ -13,11 +13,11 @@ struct FPakExternalInfo
     GENERATED_BODY()
     FPakExternalInfo()=default;
     FPakExternalInfo(const FPakExternalInfo&)=default;
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(EditAnywhere, Category="")
     FString PakName;
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(EditAnywhere, Category="")
     TArray<ETargetPlatform> TargetPlatforms;
-    UPROPERTY(EditAnywhere)
+    UPROPERTY(EditAnywhere, Category="")
     FPlatformExternAssets AddExternAssetsToPlatform;
 };
 

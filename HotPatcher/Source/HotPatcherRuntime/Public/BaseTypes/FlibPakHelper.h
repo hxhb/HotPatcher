@@ -92,18 +92,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|Pak")
 		static TArray<FString> GetAllMountedPaks();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 		static int32 GetPakOrderByPakPath(const FString& PakFile);
 
 
 	// Default Load FApp::GetProjectName() on Enging launching
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 		static bool OpenPSO(const FString& Name);
 
 	static TArray<FString> GetPakFileList(const FString& InPak, const FString& AESKey);
 	static TMap<FString,FPakEntry> GetPakEntrys(FPakFile* InPakFile, const FString& AESKey);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 	static void DumpPakEntrys(const FString& InPak, const FString& AESKey,const FString& SaveTo);
 	
 	static FString GetPakFileMountPoint(const FString& InPak, const FString& AESKey);
@@ -112,17 +112,17 @@ public:
 
 public:
 	// reload Global&Project shaderbytecode
-	UFUNCTION(BlueprintCallable,Exec)
+	UFUNCTION(BlueprintCallable,Exec, Category="")
 		static void ReloadShaderbytecode();
-	UFUNCTION(BlueprintCallable,Exec)
+	UFUNCTION(BlueprintCallable,Exec, Category="")
 		static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir);
-	UFUNCTION(BlueprintCallable,Exec)
+	UFUNCTION(BlueprintCallable,Exec, Category="")
 		static bool LoadShaderbytecodeInDefaultDir(const FString& LibraryName);	
-	UFUNCTION(BlueprintCallable,Exec)
+	UFUNCTION(BlueprintCallable,Exec, Category="")
 		static void CloseShaderbytecode(const FString& LibraryName);
 	
 	static bool LoadAssetRegistryToState(const TCHAR* Path,FAssetRegistryState& Out);
-	UFUNCTION(BlueprintCallable,Exec)
+	UFUNCTION(BlueprintCallable,Exec, Category="")
 		static bool LoadAssetRegistry(const FString& LibraryName, const FString& LibraryDir);
 	
 };
