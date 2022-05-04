@@ -1,19 +1,32 @@
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
+
+#include "ActorSequence.h"
+#include "ActorSequence.h"
 #include "FlibHotPatcherCoreHelper.h"
 #include "HotPatcherCore.h"
+#include "PaperSprite.h"
+#include "PaperSprite.h"
 #include "Cooker/MultiCooker/FlibHotCookerHelper.h"
 #include "ShaderCompiler.h"
+#include "Animation/AnimComposite.h"
+#include "Animation/AnimMontage.h"
+#include "Animation/BlendSpace.h"
+#include "Animation/BlendSpace1D.h"
 #include "Async/ParallelFor.h"
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
 #include "ThreadUtils/FThreadUtils.hpp"
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
+#include "Curves/CurveLinearColor.h"
 #include "Engine/Engine.h"
 #include "Engine/Texture.h"
 #include "Materials/MaterialInstance.h"
 #include "Misc/ScopeExit.h"
 #include "Engine/AssetManager.h"
+#include "Engine/UserDefinedStruct.h"
 #include "LevelSequence/Public/LevelSequence.h"
+#include "Materials/MaterialParameterCollection.h"
 #include "Particles/ParticleSystem.h"
+#include "Sound/SoundWave.h"
 #if WITH_PACKAGE_CONTEXT
 // // engine header
 #include "UObject/SavePackage.h"
@@ -65,7 +78,7 @@ void USingleCookerProxy::CreateCookQueue()
 	SCOPED_NAMED_EVENT_TEXT("CreateCookQueue",FColor::Red);
 
 	FString DumpCookerInfo;
-	DumpCookerInfo.Append(TEXT("-----------------------------Dump Cooker-----------------------------"));
+	DumpCookerInfo.Append(TEXT("\n-----------------------------Dump Cooker-----------------------------\n"));
 	DumpCookerInfo.Append(FString::Printf(TEXT("\tTotal Asset: %d\n"),GlobalCluser.AssetDetails.Num()));
 	DumpCookerInfo.Append(FString::Printf(TEXT("\tbForceCookInOneFrame: %s\n"),GetSettingObject()->bForceCookInOneFrame ? TEXT("true"):TEXT("false")));
 	FString PlatformsStr;
@@ -116,7 +129,7 @@ void USingleCookerProxy::CreateCookQueue()
 			DumpCookerInfo.Append(FString::Printf(TEXT("\tOther Assets -- %d\n"),GlobalCluser.AssetDetails.Num()));
 		}
 	}
-	DumpCookerInfo.Append(TEXT("---------------------------------------------------------------------"));
+	DumpCookerInfo.Append(TEXT("---------------------------------------------------------------------\n"));
 	UE_LOG(LogHotPatcher,Display,TEXT("%s"),*DumpCookerInfo);
 }
 
@@ -187,7 +200,7 @@ void USingleCookerProxy::DumpCluster(const FCookCluster& CookCluster, bool bWrit
 {
 	SCOPED_NAMED_EVENT_TEXT("DumpCluster",FColor::Red);
 	FString Dumper;
-	Dumper.Append("--------------------Dump Cook Cluster--------------------\n");
+	Dumper.Append("\n--------------------Dump Cook Cluster--------------------\n");
 	Dumper.Append(FString::Printf(TEXT("\tAsset Number: %d\n"),CookCluster.AssetDetails.Num()));
 	
 	FString PlatformsStr;
@@ -208,7 +221,7 @@ void USingleCookerProxy::DumpCluster(const FCookCluster& CookCluster, bool bWrit
 	Dumper.Append("---------------------------------------------------------\n");
 	if(bWriteToLog)
 	{
-		UE_LOG(LogHotPatcher,Log,TEXT("%s"),*Dumper);
+		UE_LOG(LogHotPatcher,Display,TEXT("%s"),*Dumper);
 	}
 }
 
@@ -689,31 +702,47 @@ TArray<UClass*> USingleCookerProxy::GetPreCacheClasses() const
 	TArray<UClass*> Classes;
 
 	TSet<UClass*> ParentClasses = {
+		// textures
 		UTexture::StaticClass(),
+		UPaperSprite::StaticClass(),
+		// material
 		UMaterialExpression::StaticClass(),
+		UMaterialParameterCollection::StaticClass(),
 		UMaterialFunctionInterface::StaticClass(),
 		UMaterialInterface::StaticClass(),
+		// other
+		UPhysicsAsset::StaticClass(),
+		UPhysicalMaterial::StaticClass(),
+		UStaticMesh::StaticClass(),
+		// curve
+		UCurveFloat::StaticClass(),
+		UCurveVector::StaticClass(),
+		UCurveLinearColor::StaticClass(),
+		// skeletal and animation
+		USkeleton::StaticClass(),
+		USkeletalMesh::StaticClass(),
+		UAnimSequence::StaticClass(),
+		UBlendSpace1D::StaticClass(),
+		UBlendSpace::StaticClass(),
+		UAnimMontage::StaticClass(),
+		UAnimComposite::StaticClass(),
+		// blueprint
+		UUserDefinedStruct::StaticClass(),
+		UBlueprint::StaticClass(),
+		// sound
+		USoundWave::StaticClass(),
+		// particles
+		UFXSystemAsset::StaticClass(),
+		// large ref asset
+		UActorSequence::StaticClass(),
+		ULevelSequence::StaticClass(),
+		UWorld::StaticClass()
 	};
 
 	for(auto& ParentClass:ParentClasses)
 	{
 		Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,true,true));
 	}
-
-	for(auto& ParentClass:TArray<UClass*>{
-		UFXSystemAsset::StaticClass(),
-		UAnimSequence::StaticClass(),
-		UStaticMesh::StaticClass(),
-		USkeletalMesh::StaticClass(),
-		UBlueprint::StaticClass(),
-	})
-	{
-		Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,true,true));
-	}
-	
-	Classes.Append(TArray<UClass*>{
-		ULevelSequence::StaticClass(),
-		UWorld::StaticClass()});
 	
 	return Classes;
 }
