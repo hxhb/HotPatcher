@@ -89,6 +89,7 @@ public: // callback
     FCookActionEvent GetOnCookAssetBeginCallback();
     
 public: // packae tracker interface
+    TSet<FName> GetCookerAssets();
     TSet<FName> GetAdditionalAssets();
     FCookCluster GetPackageTrackerAsCluster();
     FORCEINLINE_DEBUGGABLE TSet<FName>& GetPaendingCookAssetsSet(){ return PaendingCookAssetsSet; }

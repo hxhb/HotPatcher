@@ -46,11 +46,10 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 	// cook package tracker
 	if(GetSettingObject()->bPackageTracker)
 	{
+		// all cooker assets
 		ExixtPackagePathSet.PackagePaths.Append(GetSettingObject()->SkipLoadedAssets);
-		for(const auto& Asset:GetSettingObject()->CookAssets)
-		{
-			ExixtPackagePathSet.PackagePaths.Add(*UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString()));
-		}
+		// current cooker assets
+		ExixtPackagePathSet.PackagePaths.Append(GetCookerAssets());
 		PackageTracker = MakeShareable(new FPackageTracker(ExixtPackagePathSet.PackagePaths));
 	}
 	UFlibHotPatcherCoreHelper::DeleteDirectory(GetSettingObject()->GetStorageMetadataAbsDir());
@@ -346,9 +345,24 @@ void USingleCookerProxy::Shutdown()
 			}
 			return OutString;
 		};
+		const TSet<FName>& AllLoadedPackagePaths = PackageTracker->GetLoadedPackages();
+		const TSet<FName>& AdditionalPackageSet = PackageTracker->GetPendingPackageSet();
+		const TSet<FName>& CurrentCookerAssetPaths = GetCookerAssets();
 		
-		FFileHelper::SaveStringToFile(SerializePackageSetToString(PackageTracker->GetPendingPackageSet()),*FPaths::Combine(StorageMetadataAbsDir,TEXT("AdditionalPackageSet.json")));
-		FFileHelper::SaveStringToFile(SerializePackageSetToString(PackageTracker->GetLoadedPackages()),*FPaths::Combine(StorageMetadataAbsDir,TEXT("AllLoadedPackageSet.json")));
+		TSet<FName> NotInCookerAssets;
+		{
+			for(const auto& LoadedPackage:AllLoadedPackagePaths)
+			{
+				if(!CurrentCookerAssetPaths.Contains(LoadedPackage) && !AdditionalPackageSet.Contains(LoadedPackage))
+				{
+					NotInCookerAssets.Add(LoadedPackage);
+				}
+			}
+		}
+		
+		FFileHelper::SaveStringToFile(SerializePackageSetToString(AdditionalPackageSet),*FPaths::Combine(StorageMetadataAbsDir,TEXT("AdditionalPackageSet.json")));
+		FFileHelper::SaveStringToFile(SerializePackageSetToString(AllLoadedPackagePaths),*FPaths::Combine(StorageMetadataAbsDir,TEXT("AllLoadedPackageSet.json")));
+		FFileHelper::SaveStringToFile(SerializePackageSetToString(NotInCookerAssets),*FPaths::Combine(StorageMetadataAbsDir,TEXT("OtherCookerAssetPackageSet.json")));
 	}
 	BulkDataManifest();
 	IoStoreManifest();
@@ -507,6 +521,21 @@ FCookActionEvent USingleCookerProxy::GetOnCookAssetBeginCallback()
 		OnCookAssetBegin.Broadcast(PackagePath,Platform);
 	};
 	return CookAssetBegin;
+}
+
+TSet<FName> USingleCookerProxy::GetCookerAssets()
+{
+	static bool bInited = false;
+	static TSet<FName> PackagePaths;
+	if(!bInited)
+	{
+		for(const auto& Asset:GetSettingObject()->CookAssets)
+		{
+			PackagePaths.Add(*UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString()));
+		}
+		bInited = true;
+	}
+	return PackagePaths;
 }
 
 bool USingleCookerProxy::DoExport()
