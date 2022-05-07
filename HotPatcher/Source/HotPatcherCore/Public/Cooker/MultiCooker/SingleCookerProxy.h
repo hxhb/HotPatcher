@@ -11,6 +11,7 @@
 #include "Templates/SharedPointer.h"
 #include "IDetailsView.h"
 #include "PropertyEditorModule.h"
+#include "Materials/MaterialParameterCollection.h"
 #include "ThreadUtils/FThreadUtils.hpp"
 #include "Widgets/Text/SMultiLineEditableText.h"
 #include "SingleCookerProxy.generated.h"
@@ -22,6 +23,57 @@ struct FPackagePathSet
 
     UPROPERTY()
     TSet<FName> PackagePaths;
+};
+
+bool IsAlwayPostLoadClasses(UPackage* Package, UObject* Object);
+
+struct FFreezePackageTracker : public FPackageTrackerBase
+{
+public:
+    FFreezePackageTracker(const TSet<FName>& InCookerAssetsSet,const TSet<FName>& InAllAssets):CookerAssetsSet(InCookerAssetsSet),AllAssetsSet(InAllAssets){}
+
+    virtual ~FFreezePackageTracker(){}
+	
+    virtual void NotifyUObjectCreated(const class UObjectBase *Object, int32 Index) override;
+    virtual void NotifyUObjectDeleted(const UObjectBase* Object, int32 Index) override
+    {
+        auto ObjectOuter = const_cast<UObject*>(static_cast<const UObject*>(Object));
+        if(FreezeObjects.Contains(ObjectOuter))
+        {
+            FreezeObjects.Remove(ObjectOuter);
+        }
+    }
+    bool IsFreezed(UObject* Object)const
+    {
+        return FreezeObjects.Contains(Object);        
+    }
+protected:
+    TSet<FName> CookerAssetsSet;
+    TSet<FName> AllAssetsSet;
+    TSet<UObject*> FreezeObjects;
+    TMultiMap<FName,TArray<UObject*>> PackageObjectsMap;
+    // TArray<UObject*> FreezeObjects;
+};
+
+struct FOtherCookerPackageTracker : public FPackageTrackerBase
+{
+    FOtherCookerPackageTracker(const TSet<FName>& InCookerAssets,const TSet<FName>& InAllCookerAssets):CookerAssets(InCookerAssets),AllCookerAssets(InAllCookerAssets){};
+	
+    virtual ~FOtherCookerPackageTracker(){}
+    FORCEINLINE virtual void OnPackageCreated(UPackage* Package) override
+    {
+        FName AssetPathName = FName(*Package->GetPathName());
+        if(!CookerAssets.Contains(AssetPathName) && AllCookerAssets.Contains(AssetPathName))
+        {
+            LoadOtherCookerAssets.Add(AssetPathName);
+            UE_LOG(LogHotPatcher,Display,TEXT("[OtherCookerPackageTracker] %s "),*AssetPathName.ToString());
+        }
+    }
+    FORCEINLINE const TSet<FName>& GetLoadOtherCookerAssets()const { return LoadOtherCookerAssets; }
+protected:
+    TSet<FName> CookerAssets;
+    TSet<FName> AllCookerAssets;
+    TSet<FName> LoadOtherCookerAssets;
 };
 
 DECLARE_MULTICAST_DELEGATE(FSingleCookerEvent);
@@ -75,7 +127,7 @@ public: // base func
     bool IsTickable() const override;
     
 public: // core interface
-    void CreateCookQueue();
+    void MakeCookQueue(FCookCluster& InCluser);
     void PreGeneratePlatformData(const FCookCluster& CookCluster);
     void CleanClusterCachedPlatformData(const FCookCluster& CookCluster);
     void ExecCookCluster(const FCookCluster& Cluster);
@@ -89,6 +141,7 @@ public: // callback
     FCookActionEvent GetOnCookAssetBeginCallback();
     
 public: // packae tracker interface
+    TSet<FName> GetCookerAssets();
     TSet<FName> GetAdditionalAssets();
     FCookCluster GetPackageTrackerAsCluster();
     FORCEINLINE_DEBUGGABLE TSet<FName>& GetPaendingCookAssetsSet(){ return PaendingCookAssetsSet; }
@@ -133,6 +186,9 @@ private: // metadate
 private: // package tracker
     TSet<FName> PaendingCookAssetsSet;
     TSharedPtr<FPackageTracker> PackageTracker;
+    TSharedPtr<FOtherCookerPackageTracker> OtherCookerPackageTracker;
+    TSharedPtr<FFreezePackageTracker> FreezePackageTracker;
+    
     FPackagePathSet ExixtPackagePathSet;
 
 private: // worker flow control

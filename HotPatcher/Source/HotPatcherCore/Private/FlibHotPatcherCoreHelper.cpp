@@ -1945,7 +1945,15 @@ void UFlibHotPatcherCoreHelper::ImportProjectSettingsToScannerConfig(FAssetScanC
 	AssetScanConfig.ForceSkipAssets.Append(AssetCollection.NeverCookPackages);
 }
 
-void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, TSet<UObject*>& PendingCachePlatformDataObjects, bool bStorageConcurrent, bool bWaitComplete)
+void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
+	const TArray<FSoftObjectPath>& ObjectPaths,
+	TArray<ITargetPlatform*> TargetPlatforms,
+	TSet<UObject*>& ProcessedObjs,
+	TSet<UObject*>& PendingCachePlatformDataObjects,
+	bool bStorageConcurrent,
+	bool bWaitComplete,
+	TFunction<void(UPackage*,UObject*)> OnPreCacheObjectWithOuter
+	)
 {
 	SCOPED_NAMED_EVENT_TEXT("CacheForCookedPlatformData",FColor::Red);
 	TArray<UPackage*> AllPackages = UFlibAssetManageHelper::LoadPackagesForCooking(ObjectPaths,bStorageConcurrent);
@@ -1970,7 +1978,15 @@ UE_TRACE_EVENT_BEGIN(CUSTOM_LOADTIMER_LOG, CachePackagePlatformData, NoSync)
 UE_TRACE_EVENT_END()
 
 #endif
-void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms, TSet<UObject*>& ProcessedObjs,TSet<UObject*>& PendingCachePlatformDataObjects, bool bStorageConcurrent, bool bWaitComplete)
+void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
+	const TArray<UPackage*>& Packages,
+	TArray<ITargetPlatform*> TargetPlatforms,
+	TSet<UObject*>& ProcessedObjs,
+	TSet<UObject*>& PendingCachePlatformDataObjects,
+	bool bStorageConcurrent,
+	bool bWaitComplete,
+	TFunction<void(UPackage*,UObject*)> OnPreCacheObjectWithOuter
+	)
 {
 	SCOPED_NAMED_EVENT_TEXT("CacheForCookedPlatformData",FColor::Red);
 	
@@ -2003,6 +2019,10 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(const TArray<UPackage
     		GetObjectsWithOuter(Package,ExportMap,true);
     		for(const auto& ExportObj:ExportMap)
     		{
+    			if(OnPreCacheObjectWithOuter)
+    			{
+    				OnPreCacheObjectWithOuter(Package,ExportObj);
+    			}
 #if ENGINE_MINOR_VERSION < 26
     			FScopedNamedEvent CacheExportEvent(FColor::Red,*FString::Printf(TEXT("%s"),*ExportObj->GetName()));
 #endif

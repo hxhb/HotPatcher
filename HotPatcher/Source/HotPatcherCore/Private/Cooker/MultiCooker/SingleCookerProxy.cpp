@@ -1,18 +1,33 @@
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
+
+#include "ActorSequence.h"
+#include "ActorSequence.h"
 #include "FlibHotPatcherCoreHelper.h"
 #include "HotPatcherCore.h"
+#include "PaperSprite.h"
+#include "PaperSprite.h"
 #include "Cooker/MultiCooker/FlibHotCookerHelper.h"
 #include "ShaderCompiler.h"
+#include "Animation/AnimComposite.h"
+#include "Animation/AnimMontage.h"
+#include "Animation/BlendSpace.h"
+#include "Animation/BlendSpace1D.h"
 #include "Async/ParallelFor.h"
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
 #include "ThreadUtils/FThreadUtils.hpp"
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
+#include "Curves/CurveLinearColor.h"
 #include "Engine/Engine.h"
 #include "Engine/Texture.h"
 #include "Materials/MaterialInstance.h"
 #include "Misc/ScopeExit.h"
 #include "Engine/AssetManager.h"
+#include "Engine/UserDefinedStruct.h"
 #include "LevelSequence/Public/LevelSequence.h"
+#include "Materials/MaterialParameterCollection.h"
+#include "Particles/ParticleSystem.h"
+#include "Sound/SoundWave.h"
+#include "UObject/MetaData.h"
 #if WITH_PACKAGE_CONTEXT
 // // engine header
 #include "UObject/SavePackage.h"
@@ -22,6 +37,30 @@
 #include "Serialization/BulkDataManifest.h"
 #endif
 
+
+bool IsAlwayPostLoadClasses(UPackage* Package, UObject* Object)
+{
+	return true;
+}
+
+void FFreezePackageTracker::NotifyUObjectCreated(const UObjectBase* Object, int32 Index)
+{
+	// UObject* ObjectOuter = Object->GetOuter();
+	auto ObjectOuter = const_cast<UObject*>(static_cast<const UObject*>(Object));
+	UPackage* Package = ObjectOuter ? ObjectOuter->GetOutermost() : nullptr;
+	if(Package)
+	{
+		    
+		FName AssetPathName = FName(*Package->GetPathName());
+		if(!CookerAssetsSet.Contains(AssetPathName) && AllAssetsSet.Contains(AssetPathName) && !IsAlwayPostLoadClasses(Package, ObjectOuter))
+		{
+			PackageObjectsMap.FindOrAdd(AssetPathName).Add(ObjectOuter);
+			FreezeObjects.Add(ObjectOuter);
+			ObjectOuter->ClearFlags(RF_NeedPostLoad);
+			ObjectOuter->ClearFlags(RF_NeedPostLoadSubobjects);
+		}
+	}
+}
 
 void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 {
@@ -45,13 +84,15 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 	// cook package tracker
 	if(GetSettingObject()->bPackageTracker)
 	{
+		// all cooker assets
 		ExixtPackagePathSet.PackagePaths.Append(GetSettingObject()->SkipLoadedAssets);
-		for(const auto& Asset:GetSettingObject()->CookAssets)
-		{
-			ExixtPackagePathSet.PackagePaths.Add(*UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString()));
-		}
+		// current cooker assets
+		ExixtPackagePathSet.PackagePaths.Append(GetCookerAssets());
 		PackageTracker = MakeShareable(new FPackageTracker(ExixtPackagePathSet.PackagePaths));
+		OtherCookerPackageTracker = MakeShareable(new FOtherCookerPackageTracker(GetCookerAssets(),GetSettingObject()->SkipLoadedAssets));
+		FreezePackageTracker = MakeShareable(new FFreezePackageTracker(GetCookerAssets(),GetSettingObject()->SkipLoadedAssets));
 	}
+	
 	UFlibHotPatcherCoreHelper::DeleteDirectory(GetSettingObject()->GetStorageMetadataAbsDir());
 	
 	GetCookFailedAssetsCollection().MissionName = GetSettingObject()->MissionName;
@@ -60,37 +101,38 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 	OnAssetCooked.AddUObject(this,&USingleCookerProxy::OnAssetCookedHandle);
 }
 
-void USingleCookerProxy::CreateCookQueue()
+void USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
 {
-	SCOPED_NAMED_EVENT_TEXT("CreateCookQueue",FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("MakeCookQueue",FColor::Red);
 
 	FString DumpCookerInfo;
-	DumpCookerInfo.Append(TEXT("-----------------------------Dump Cooker-----------------------------"));
-	DumpCookerInfo.Append(FString::Printf(TEXT("\tTotal Asset: %d"),GlobalCluser.AssetDetails.Num()));
-	DumpCookerInfo.Append(FString::Printf(TEXT("\tbForceCookInOneFrame: %s"),GetSettingObject()->bForceCookInOneFrame ? TEXT("true"):TEXT("false")));
+	DumpCookerInfo.Append(TEXT("\n-----------------------------Dump Cooker-----------------------------\n"));
+	DumpCookerInfo.Append(FString::Printf(TEXT("\tTotal Asset: %d\n"),InCluser.AssetDetails.Num()));
+	DumpCookerInfo.Append(FString::Printf(TEXT("\tbForceCookInOneFrame: %s\n"),GetSettingObject()->bForceCookInOneFrame ? TEXT("true"):TEXT("false")));
 	FString PlatformsStr;
-	for(auto Platform:GlobalCluser.Platforms)
+	for(auto Platform:InCluser.Platforms)
 	{
 		PlatformsStr += THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
 		PlatformsStr.Append(TEXT(","));
 	}
 	PlatformsStr.RemoveFromEnd(TEXT(","));
-	DumpCookerInfo.Append(FString::Printf(TEXT("\tTarget Platforms: %s"),*PlatformsStr));
+	DumpCookerInfo.Append(FString::Printf(TEXT("\tTarget Platforms: %s\n"),*PlatformsStr));
+	
+	const int32 NumberOfAssetsPerFrame = GetSettingObject()->GetNumberOfAssetsPerFrame();
 	
 	if(GetSettingObject()->bForceCookInOneFrame)
 	{
-		CookCluserQueue.Enqueue(GlobalCluser);
+		CookCluserQueue.Enqueue(InCluser);
 		return;
 	}
 	else
 	{
-		int32 NumberOfAssetsPerFrame = GetSettingObject()->GetNumberOfAssetsPerFrame();
 		for(auto Class:GetPreCacheClasses())
 		{
-			TArray<FAssetDetail> ObjectAssets = UFlibAssetManageHelper::GetAssetDetailsByClass(GlobalCluser.AssetDetails,Class,true);
+			TArray<FAssetDetail> ObjectAssets = UFlibAssetManageHelper::GetAssetDetailsByClass(InCluser.AssetDetails,Class,true);
 			if(ObjectAssets.Num())
 			{
-				DumpCookerInfo.Append(FString::Printf(TEXT("\t%s -- %d"),*Class->GetName(),ObjectAssets.Num()));
+				DumpCookerInfo.Append(FString::Printf(TEXT("\t%s -- %d\n"),*Class->GetName(),ObjectAssets.Num()));
 			}
 			while(ObjectAssets.Num())
 			{
@@ -110,13 +152,26 @@ void USingleCookerProxy::CreateCookQueue()
 			}
 		}
 
-		if(GlobalCluser.AssetDetails.Num())
+		if(InCluser.AssetDetails.Num())
 		{
-			CookCluserQueue.Enqueue(GlobalCluser);
-			DumpCookerInfo.Append(FString::Printf(TEXT("\tOther Assets -- %d"),GlobalCluser.AssetDetails.Num()));
+			int32 OtherAssetNumPerFrame = NumberOfAssetsPerFrame < 1 ? InCluser.AssetDetails.Num() : NumberOfAssetsPerFrame;
+			int32 SplitNum = (InCluser.AssetDetails.Num() / OtherAssetNumPerFrame) + 1;
+			
+			const TArray<TArray<FAssetDetail>> SplitedAssets= THotPatcherTemplateHelper::SplitArray(InCluser.AssetDetails,SplitNum);
+			for(const auto& AssetDetails:SplitedAssets)
+			{
+				FCookCluster NewCluster;
+				NewCluster.AssetDetails = std::move(AssetDetails);
+				NewCluster.Platforms = GetSettingObject()->CookTargetPlatforms;
+				NewCluster.bPreGeneratePlatformData = GetSettingObject()->bPreGeneratePlatformData;
+				NewCluster.CookActionCallback.OnAssetCooked = GetOnPackageSavedCallback();
+				NewCluster.CookActionCallback.OnCookBegin = GetOnCookAssetBeginCallback();
+				CookCluserQueue.Enqueue(NewCluster);
+			}
+			DumpCookerInfo.Append(FString::Printf(TEXT("\tOther Assets -- %d, make %d cluster.\n"),InCluser.AssetDetails.Num(),SplitedAssets.Num()));
 		}
 	}
-	DumpCookerInfo.Append(TEXT("---------------------------------------------------------------------"));
+	DumpCookerInfo.Append(TEXT("---------------------------------------------------------------------\n"));
 	UE_LOG(LogHotPatcher,Display,TEXT("%s"),*DumpCookerInfo);
 }
 
@@ -169,7 +224,16 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 				ProcessedObjects,
 				PendingCachePlatformDataObjects,
 				bConcurrentSave,
-				GetSettingObject()->bWaitEachAssetCompleted);
+				GetSettingObject()->bWaitEachAssetCompleted,
+				[&](UPackage* Package,UObject* ExportObj)
+				{
+					if(FreezePackageTracker.IsValid() && FreezePackageTracker->IsFreezed(ExportObj))
+					{
+						ExportObj->SetFlags(RF_NeedPostLoad);
+						ExportObj->SetFlags(RF_NeedPostLoadSubobjects);
+						ExportObj->ConditionalPostLoad();
+					}
+				});
 			PreCachePackages.RemoveAtSwap(Index,1,false);
 		}
 	};
@@ -187,7 +251,7 @@ void USingleCookerProxy::DumpCluster(const FCookCluster& CookCluster, bool bWrit
 {
 	SCOPED_NAMED_EVENT_TEXT("DumpCluster",FColor::Red);
 	FString Dumper;
-	Dumper.Append("--------------------Dump Cook Cluster--------------------\n");
+	Dumper.Append("\n--------------------Dump Cook Cluster--------------------\n");
 	Dumper.Append(FString::Printf(TEXT("\tAsset Number: %d\n"),CookCluster.AssetDetails.Num()));
 	
 	FString PlatformsStr;
@@ -208,7 +272,7 @@ void USingleCookerProxy::DumpCluster(const FCookCluster& CookCluster, bool bWrit
 	Dumper.Append("---------------------------------------------------------\n");
 	if(bWriteToLog)
 	{
-		UE_LOG(LogHotPatcher,Log,TEXT("%s"),*Dumper);
+		UE_LOG(LogHotPatcher,Display,TEXT("%s"),*Dumper);
 	}
 }
 
@@ -270,8 +334,8 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 		GIsSavingPackage = false;
 	}
 	// clean cached ddc
-	CleanClusterCachedPlatformData(CookCluster);
-	GEngine->ForceGarbageCollection(true);
+	// CleanClusterCachedPlatformData(CookCluster);
+	// GEngine->ForceGarbageCollection(true);
 }
 
 void USingleCookerProxy::Tick(float DeltaTime)
@@ -288,13 +352,15 @@ void USingleCookerProxy::Tick(float DeltaTime)
 		CookCluserQueue.Dequeue(CookCluster);
 		ExecCookCluster(CookCluster);
 	}
+	static bool bCookedPackageTracker = false;
 	
-	if(CookCluserQueue.IsEmpty())
+	if(!bCookedPackageTracker && CookCluserQueue.IsEmpty() && GetSettingObject()->bPackageTracker && GetSettingObject()->bCookPackageTrackerAssets)
 	{
 		FCookCluster PackageTrackerCluster = GetPackageTrackerAsCluster();
 		if(PackageTrackerCluster.AssetDetails.Num())
 		{
-			CookCluserQueue.Enqueue(PackageTrackerCluster);
+			MakeCookQueue(PackageTrackerCluster);
+			bCookedPackageTracker = true;
 		}
 	}
 }
@@ -345,9 +411,24 @@ void USingleCookerProxy::Shutdown()
 			}
 			return OutString;
 		};
+		const TSet<FName>& AllLoadedPackagePaths = PackageTracker->GetLoadedPackages();
+		const TSet<FName>& AdditionalPackageSet = PackageTracker->GetPendingPackageSet();
+		const TSet<FName> LoadedOtherCookerAssets = OtherCookerPackageTracker->GetLoadOtherCookerAssets();
 		
-		FFileHelper::SaveStringToFile(SerializePackageSetToString(PackageTracker->GetPendingPackageSet()),*FPaths::Combine(StorageMetadataAbsDir,TEXT("AdditionalPackageSet.json")));
-		FFileHelper::SaveStringToFile(SerializePackageSetToString(PackageTracker->GetLoadedPackages()),*FPaths::Combine(StorageMetadataAbsDir,TEXT("AllLoadedPackageSet.json")));
+		// const TSet<FName>& CurrentCookerAssetPaths = GetCookerAssets();
+		// {
+		// 	for(const auto& LoadedPackage:AllLoadedPackagePaths)
+		// 	{
+		// 		if(!CurrentCookerAssetPaths.Contains(LoadedPackage) && !AdditionalPackageSet.Contains(LoadedPackage))
+		// 		{
+		// 			NotInCookerAssets.Add(LoadedPackage);
+		// 		}
+		// 	}
+		// }
+		
+		FFileHelper::SaveStringToFile(SerializePackageSetToString(AdditionalPackageSet),*FPaths::Combine(StorageMetadataAbsDir,TEXT("AdditionalPackageSet.json")));
+		FFileHelper::SaveStringToFile(SerializePackageSetToString(AllLoadedPackagePaths),*FPaths::Combine(StorageMetadataAbsDir,TEXT("AllLoadedPackageSet.json")));
+		FFileHelper::SaveStringToFile(SerializePackageSetToString(LoadedOtherCookerAssets),*FPaths::Combine(StorageMetadataAbsDir,TEXT("OtherCookerAssetPackageSet.json")));
 	}
 	BulkDataManifest();
 	IoStoreManifest();
@@ -477,13 +558,16 @@ FCookCluster USingleCookerProxy::GetPackageTrackerAsCluster()
 	PackageTrackerCluster.CookActionCallback.OnAssetCooked = GetOnPackageSavedCallback();
 	PackageTrackerCluster.CookActionCallback.OnCookBegin = GetOnCookAssetBeginCallback();
 			
-	if(PackageTracker && GetSettingObject()->bCookAdditionalAssets)
+	if(PackageTracker && GetSettingObject()->bCookPackageTrackerAssets)
 	{
 		PackageTrackerCluster.AssetDetails.Empty();
 		for(FName PackagePath:PackageTracker->GetPendingPackageSet())
 		{
-					
-			PackageTrackerCluster.AssetDetails.Emplace(UFlibAssetManageHelper::GetAssetDetailByPackageName(PackagePath.ToString()));
+			FAssetDetail AssetDetail = UFlibAssetManageHelper::GetAssetDetailByPackageName(PackagePath.ToString());
+			if(AssetDetail.IsValid())
+			{
+				PackageTrackerCluster.AssetDetails.Emplace(AssetDetail);
+			}
 		}
 	}
 	return PackageTrackerCluster;
@@ -508,6 +592,21 @@ FCookActionEvent USingleCookerProxy::GetOnCookAssetBeginCallback()
 	return CookAssetBegin;
 }
 
+TSet<FName> USingleCookerProxy::GetCookerAssets()
+{
+	static bool bInited = false;
+	static TSet<FName> PackagePaths;
+	if(!bInited)
+	{
+		for(const auto& Asset:GetSettingObject()->CookAssets)
+		{
+			PackagePaths.Add(*UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString()));
+		}
+		bInited = true;
+	}
+	return PackagePaths;
+}
+
 bool USingleCookerProxy::DoExport()
 {
 	SCOPED_NAMED_EVENT_TEXT("DoExport",FColor::Red);
@@ -520,7 +619,7 @@ bool USingleCookerProxy::DoExport()
 	UFlibAssetManageHelper::ReplaceReditector(GlobalCluser.AssetDetails);
 	UFlibAssetManageHelper::RemoveInvalidAssets(GlobalCluser.AssetDetails);
 	
-	CreateCookQueue();
+	MakeCookQueue(GlobalCluser);
 
 	// force cook all in onece frame
 	if(GetSettingObject()->bForceCookInOneFrame)
@@ -659,25 +758,47 @@ TArray<UClass*> USingleCookerProxy::GetPreCacheClasses() const
 	TArray<UClass*> Classes;
 
 	TSet<UClass*> ParentClasses = {
+		// textures
 		UTexture::StaticClass(),
+		UPaperSprite::StaticClass(),
+		// material
 		UMaterialExpression::StaticClass(),
+		UMaterialParameterCollection::StaticClass(),
 		UMaterialFunctionInterface::StaticClass(),
-		UMaterialInterface::StaticClass()
+		UMaterialInterface::StaticClass(),
+		// other
+		UPhysicsAsset::StaticClass(),
+		UPhysicalMaterial::StaticClass(),
+		UStaticMesh::StaticClass(),
+		// curve
+		UCurveFloat::StaticClass(),
+		UCurveVector::StaticClass(),
+		UCurveLinearColor::StaticClass(),
+		// skeletal and animation
+		USkeleton::StaticClass(),
+		USkeletalMesh::StaticClass(),
+		UAnimSequence::StaticClass(),
+		UBlendSpace1D::StaticClass(),
+		UBlendSpace::StaticClass(),
+		UAnimMontage::StaticClass(),
+		UAnimComposite::StaticClass(),
+		// blueprint
+		UUserDefinedStruct::StaticClass(),
+		UBlueprint::StaticClass(),
+		// sound
+		USoundWave::StaticClass(),
+		// particles
+		UFXSystemAsset::StaticClass(),
+		// large ref asset
+		UActorSequence::StaticClass(),
+		ULevelSequence::StaticClass(),
+		UWorld::StaticClass()
 	};
 
 	for(auto& ParentClass:ParentClasses)
 	{
 		Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,true,true));
 	}
-	
-	Classes.Append(TArray<UClass*>{
-		UAnimSequence::StaticClass(),
-		UStaticMesh::StaticClass(),
-		USkeletalMesh::StaticClass(),
-		UBlueprint::StaticClass(),
-		ULevelSequence::StaticClass(),
-		UWorld::StaticClass()
-	});
 	
 	return Classes;
 }

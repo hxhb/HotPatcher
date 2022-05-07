@@ -17,7 +17,7 @@ namespace CommandletHelper
 
 	HOTPATCHERCORE_API TArray<FString> ParserPatchConfigByCommandline(const FString& Commandline,const FString& Token);
 
-	HOTPATCHERCORE_API TArray<ETargetPlatform> ParserPatchPlatforms(const FString& Commandline);
+	HOTPATCHERCORE_API TArray<ETargetPlatform> ParserPlatforms(const FString& Commandline, const FString& Token);
 
 	HOTPATCHERCORE_API TArray<FDirectoryPath> ParserPatchFilters(const FString& Commandline,const FString& FilterName);
 
