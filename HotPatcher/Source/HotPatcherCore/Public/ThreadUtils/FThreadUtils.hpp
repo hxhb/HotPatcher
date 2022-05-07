@@ -69,6 +69,7 @@ public:
 public:
 	FThreadWorkerStatusDelegate CancelDelegate;
 	FORCEINLINE FString GetThreadName()const {return mThreadName;}
+	virtual bool IsCompleted()const { return GetThreadStatus() == EThreadStatus::Completed || GetThreadStatus() == EThreadStatus::Canceled;}
 protected:
 	FString mThreadName;
 	FCallback mRunFunc;

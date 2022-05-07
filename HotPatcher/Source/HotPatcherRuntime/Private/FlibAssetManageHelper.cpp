@@ -19,6 +19,7 @@
 #include "Resources/Version.h"
 #include "HotPatcherLog.h"
 #include "HotPatcherRuntime.h"
+#include "Async/ParallelFor.h"
 #include "Templates/HotPatcherTemplateHelper.hpp"
 #include "UObject/MetaData.h"
 #include "UObject/UObjectHash.h"
@@ -1284,8 +1285,13 @@ bool UFlibAssetManageHelper::MatchIgnoreTypes(const FString& LongPackageName, TS
 #if ENGINE_MAJOR_VERSION > 25
 			bIgnoreType = AssetData.HasAnyPackageFlags(PKG_EditorOnly);
 #else
-			bIgnoreType = (AssetData.PackageFlags & PKG_EditorOnly) != 0;
+			// bIgnoreType = (AssetData.PackageFlags & PKG_EditorOnly) != 0;
+			
 #endif
+			if(bIgnoreType)
+			{
+				MatchTypeStr = TEXT("Has PKG_EditorOnly Flag");
+			}
 		}
 	}
 	return bIgnoreType;

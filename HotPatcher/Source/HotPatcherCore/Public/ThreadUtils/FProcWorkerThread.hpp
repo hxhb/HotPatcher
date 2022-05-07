@@ -45,7 +45,10 @@ public:
 						for (int32 Index = 0; Index < count - 1; ++Index)
 						{
 							StringArray[Index].TrimEndInline();
-							ProcOutputMsgDelegate.ExecuteIfBound(this,StringArray[Index]);
+							if(ProcOutputMsgDelegate.IsBound())
+							{
+								ProcOutputMsgDelegate.Execute(this,StringArray[Index]);
+							}
 						}
 						Line = StringArray[count - 1];
 						if (NewLine.EndsWith(TEXT("\n")))
@@ -59,35 +62,37 @@ public:
 
 			mThreadStatus = EThreadStatus::Completed;
 			
-			int32 ProcReturnCode;
-			if (FPlatformProcess::GetProcReturnCode(mProcessHandle,&ProcReturnCode))
+		}
+		bool bRunSuccess = false;
+		int32 ProcReturnCode;
+		if (FPlatformProcess::GetProcReturnCode(mProcessHandle,&ProcReturnCode))
+		{
+			if (ProcReturnCode == 0)
 			{
-				if (ProcReturnCode == 0)
-				{
-					if(ProcSuccessedDelegate.IsBound())
-						ProcSuccessedDelegate.Broadcast(this);
-				}
-				else
-				{
-					if (ProcFaildDelegate.IsBound())
-						ProcFaildDelegate.Broadcast(this);
-				}
+				bRunSuccess = true;
 			}
-			else
+		}
+		if (bRunSuccess)
+		{
+			if(ProcSuccessedDelegate.IsBound())
 			{
-				if (ProcFaildDelegate.IsBound())
-					ProcFaildDelegate.Broadcast(this);
-
+				ProcSuccessedDelegate.Broadcast(this);
 			}
-			
+		}
+		else
+		{
+			if (ProcFaildDelegate.IsBound())
+			{
+				ProcFaildDelegate.Broadcast(this);
+			}
 		}
 		
 		return 0;
 	}
-	virtual void Exit()override
-	{
-		Cancel();
-	}
+	// virtual void Exit()override
+	// {
+	// 	// Cancel();
+	// }
 	virtual void Cancel()override
 	{
 		if (GetThreadStatus() != EThreadStatus::Busy)
