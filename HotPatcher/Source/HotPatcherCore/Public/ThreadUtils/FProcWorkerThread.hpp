@@ -1,6 +1,7 @@
 #pragma  once
 #include "FThreadUtils.hpp"
 #include "CoreMinimal.h"
+#include "Misc/Paths.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
 
 class FProcWorkerThread;
@@ -56,9 +57,7 @@ public:
 				}
 				FPlatformProcess::Sleep(0.2f);
 			}
-
-			mThreadStatus = EThreadStatus::Completed;
-
+			
 			bool bRunSuccessfuly = false;
 			int32 ProcReturnCode;
 			if (FPlatformProcess::GetProcReturnCode(mProcessHandle,&ProcReturnCode))
@@ -83,9 +82,7 @@ public:
 					ProcFaildDelegate.Broadcast(this);
 				}
 			}
-			
 		}
-		
 		return 0;
 	}
 	virtual void Exit()override
@@ -108,13 +105,17 @@ public:
 			FPlatformProcess::TerminateProc(mProcessHandle, true);
 
 			if (ProcFaildDelegate.IsBound())
+			{
 				ProcFaildDelegate.Broadcast(this);
+			}
 			mProcessHandle.Reset();
 			mProcessID = 0;
 		}
 		mThreadStatus = EThreadStatus::Canceled;
 		if (CancelDelegate.IsBound())
+		{
 			CancelDelegate.Broadcast();
+		}
 	}
 
 	virtual uint32 GetProcesId()const { return mProcessID; }

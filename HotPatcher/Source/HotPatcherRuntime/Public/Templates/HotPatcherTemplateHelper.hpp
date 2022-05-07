@@ -64,12 +64,13 @@ namespace THotPatcherTemplateHelper
 		{
 			FString TypeName;
 			FString ValueName;
+			UEnum* FoundEnum = nullptr;
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 21
-			UEnum* FoundEnum = StaticEnum<ENUM_TYPE>();
+			FoundEnum = StaticEnum<ENUM_TYPE>();
 #else
 			FString EnumTypeName = ANSI_TO_TCHAR(THotPatcherTemplateHelper::GetCPPTypeName<ENUM_TYPE>().c_str());
-			UEnum* FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true); 
+			FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true); 
 #endif
 			if (FoundEnum)
 			{
@@ -89,14 +90,25 @@ namespace THotPatcherTemplateHelper
 	{
 		SCOPED_NAMED_EVENT_TEXT("GetEnumValueByName",FColor::Red);
 		bool bStatus = false;
-
+		static TMap<FString,UEnum*> Mapping;
+		UEnum* FoundEnum = nullptr;
+		FString EnumTypeName;
+		
+		if(Mapping.Contains(InEnumValueName))
+		{
+			FoundEnum = *Mapping.Find(InEnumValueName);
+		}
+		else
+		{
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 21
-		UEnum* FoundEnum = StaticEnum<ENUM_TYPE>();
-		FString EnumTypeName = FoundEnum->CppType;
+			FoundEnum = StaticEnum<ENUM_TYPE>();
+			EnumTypeName = FoundEnum->CppType;
 #else
-		FString EnumTypeName = ANSI_TO_TCHAR(THotPatcherTemplateHelper::GetCPPTypeName<ENUM_TYPE>().c_str());
-		UEnum* FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true); 
+			EnumTypeName = ANSI_TO_TCHAR(THotPatcherTemplateHelper::GetCPPTypeName<ENUM_TYPE>().c_str());
+			FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true); 
 #endif
+			Mapping.Add(EnumTypeName,FoundEnum);
+		}
 		if (FoundEnum)
 		{
 			FString EnumValueFullName = EnumTypeName + TEXT("::") + InEnumValueName;

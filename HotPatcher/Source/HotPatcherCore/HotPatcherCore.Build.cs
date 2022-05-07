@@ -66,9 +66,7 @@ public class HotPatcherCore : ModuleRules
 				"InputCore",
 				"CoreUObject",
 				"Engine",
-				"RenderCore", 
-				"Paper2D", 
-				"ActorSequence"
+				"RenderCore"
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);

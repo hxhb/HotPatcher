@@ -5,15 +5,11 @@
 #include "HotPatcherBaseTypes.h"
 #include "BaseTypes/FPackageTracker.h"
 // engine header
-#include "Interfaces/ITargetPlatformManagerModule.h"
-#include "Interfaces/ITargetPlatform.h"
-#include "Interfaces/ITargetPlatform.h"
 #include "Templates/SharedPointer.h"
-#include "IDetailsView.h"
-#include "PropertyEditorModule.h"
+#include "Containers/Queue.h"
+#include "Tickable.h"
 #include "Materials/MaterialParameterCollection.h"
 #include "ThreadUtils/FThreadUtils.hpp"
-#include "Widgets/Text/SMultiLineEditableText.h"
 #include "SingleCookerProxy.generated.h"
 
 USTRUCT()
@@ -109,7 +105,7 @@ struct FCookCluster
 
 
 UCLASS()
-class HOTPATCHERCORE_API USingleCookerProxy:public UHotPatcherProxyBase, public FTickableEditorObject
+class HOTPATCHERCORE_API USingleCookerProxy:public UHotPatcherProxyBase, public FTickableObjectBase
 {
     GENERATED_BODY()
 public:
