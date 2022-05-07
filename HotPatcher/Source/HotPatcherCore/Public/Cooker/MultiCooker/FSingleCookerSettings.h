@@ -63,6 +63,9 @@ public:
 	// track load asset when cooking
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bPackageTracker = true;
+	// cook load in cooking assets by SingleCookder side
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPackageTracker"))
+	bool bCookPackageTrackerAssets = true;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	FCookerShaderOptions ShaderOptions;
@@ -80,10 +83,6 @@ public:
 	FORCEINLINE int32 GetNumberOfAssetsPerFrame()const{ return NumberOfAssetsPerFrame; }
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bForceCookInOneFrame",ClampMin=0))
 	int32 NumberOfAssetsPerFrame = 100;
-	
-	// cook load in cooking assets by SingleCookder side
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
-	bool bCookAdditionalAssets = true;
 	
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bAsyncLoad = false;

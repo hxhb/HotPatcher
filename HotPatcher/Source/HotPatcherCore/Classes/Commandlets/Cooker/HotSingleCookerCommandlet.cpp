@@ -23,14 +23,6 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 		return -1;
 	}
 
-	// if(IsRunningCommandlet())
-	// {
-	// 	SCOPED_NAMED_EVENT_TEXT("SearchAllAssets",FColor::Red);
-	// 	// load asset registry
-	// 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-	// 	AssetRegistryModule.Get().SearchAllAssets(true);
-	// }
-
 	ExportSingleCookerSetting = MakeShareable(new FSingleCookerSettings);
 	
 	FString JsonContent;
@@ -46,6 +38,14 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 	{
 		FString FinalConfig;
 		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*ExportSingleCookerSetting,FinalConfig);
+	}
+	
+	if(IsRunningCommandlet() && ExportSingleCookerSetting->bPackageTracker && ExportSingleCookerSetting->bCookPackageTrackerAssets)
+	{
+		SCOPED_NAMED_EVENT_TEXT("SearchAllAssets",FColor::Red);
+		// load asset registry
+		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+		AssetRegistryModule.Get().SearchAllAssets(true);
 	}
 	
 	UE_LOG(LogHotSingleCookerCommandlet, Display, TEXT("Cooker %s Id %d,Assets Num %d"), *ExportSingleCookerSetting->MissionName,ExportSingleCookerSetting->MissionID,ExportSingleCookerSetting->CookAssets.Num());

@@ -298,7 +298,7 @@ FAssetDetail UFlibAssetManageHelper::GetAssetDetailByPackageName(const FString& 
 		FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InPackageName);
 		{
 			FAssetData OutAssetData = AssetManager.GetAssetRegistry().GetAssetByObjectPath(FName(*PackagePath), bIncludeOnlyOnDiskAssets);
-			if (/*AssetManager.GetAssetDataForPath(FSoftObjectPath{ PackagePath }, OutAssetData) && */OutAssetData.IsValid())
+			if (/*AssetManager.GetAssetDataForPath(FSoftObjectPath{ PackagePath }, OutAssetData) && */!OutAssetData.PackagePath.IsNone() && !OutAssetData.AssetClass.IsNone())
 			{
 				AssetDetail.PackagePath = OutAssetData.ObjectPath;
 				AssetDetail.AssetType = OutAssetData.AssetClass;

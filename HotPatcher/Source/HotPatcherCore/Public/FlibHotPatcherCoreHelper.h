@@ -212,8 +212,24 @@ public:
 	
 	static void ImportProjectSettingsToScannerConfig(FAssetScanConfig& AssetScanConfig);
 
-	static void CacheForCookedPlatformData(const TArray<UPackage*>& Packages, TArray<ITargetPlatform*> TargetPlatforms, TSet<UObject*>& ProcessedObjs, TSet<UObject*>& PendingCachePlatformDataObjects, bool bStorageConcurrent = false, bool bWaitComplete = false);
-	static void CacheForCookedPlatformData(const TArray<FSoftObjectPath>& ObjectPaths, TArray<ITargetPlatform*> TargetPlatforms,TSet<UObject*>& ProcessedObjs, TSet<UObject*>& PendingCachePlatformDataObjects, bool bStorageConcurrent, bool bWaitComplete = false);
+	static void CacheForCookedPlatformData(
+		const TArray<UPackage*>& Packages,
+		TArray<ITargetPlatform*> TargetPlatforms,
+		TSet<UObject*>& ProcessedObjs,
+		TSet<UObject*>& PendingCachePlatformDataObjects,
+		bool bStorageConcurrent = false,
+		bool bWaitComplete = false,
+		TFunction<void(UPackage*,UObject*)> OnPreCacheObjectWithOuter=nullptr
+		);
+	static void CacheForCookedPlatformData(
+		const TArray<FSoftObjectPath>& ObjectPaths,
+		TArray<ITargetPlatform*> TargetPlatforms,
+		TSet<UObject*>& ProcessedObjs,
+		TSet<UObject*>& PendingCachePlatformDataObjects,
+		bool bStorageConcurrent,
+		bool bWaitComplete = false,
+		TFunction<void(UPackage*,UObject*)> OnPreCacheObjectWithOuter = nullptr
+		);
 
 	static void WaitObjectsCachePlatformDataComplete(TSet<UObject*>& CachedPlatformDataObjects,TSet<UObject*>& PendingCachePlatformDataObjects,TArray<ITargetPlatform*> TargetPlatforms);
 	
