@@ -161,6 +161,7 @@ void FHotPatcherEditorModule::PluginButtonClicked()
 
 void FHotPatcherEditorModule::OnTabClosed(TSharedRef<SDockTab> InTab)
 {
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(HotPatcherTabName);
 	DockTab.Reset();
 }
 
