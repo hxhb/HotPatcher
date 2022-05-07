@@ -1332,7 +1332,7 @@ void UFlibPatchParserHelper::RunAssetScanner(FAssetScanConfig ScanConfig,FHotPat
 	AssetConfig.AnalysicFilterDependencies = ScanConfig.bAnalysisFilterDependencies;
 	AssetConfig.IncludeHasRefAssetsOnly = ScanConfig.bIncludeHasRefAssetsOnly;
 	AssetConfig.IgnoreAseetTypes = IgnoreTypes;
-	
+	AssetConfig.bSupportWorldComposition = ScanConfig.bSupportWorldComposition;
 	{
 		SCOPED_NAMED_EVENT_TEXT("parser all uasset dependencies(optimized)",FColor::Red);
 		FAssetDependenciesParser Parser;

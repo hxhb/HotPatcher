@@ -13,7 +13,7 @@ struct FAssetDependenciesParser : public IAssetDependenciesParser
 	bool IsIgnoreAsset(const FString& LongPackageName);
 
 	static bool IsForceSkipAsset(const FString& LongPackageName,TSet<FName> IgnoreTypes,TArray<FString> IgnoreFilters);
-	static TSet<FName> GatherAssetDependicesInfoRecursively(
+	TSet<FName> GatherAssetDependicesInfoRecursively(
 		FAssetRegistryModule& InAssetRegistryModule,
 		FName InLongPackageName,
 		const TArray<EAssetRegistryDependencyTypeEx>& InAssetDependencyTypes,

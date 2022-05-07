@@ -7,8 +7,7 @@
 // engine header
 #include "Templates/SharedPointer.h"
 #include "Containers/Queue.h"
-#include "Tickable.h"
-#include "Materials/MaterialParameterCollection.h"
+#include "TickableEditorObject.h"
 #include "ThreadUtils/FThreadUtils.hpp"
 #include "SingleCookerProxy.generated.h"
 
@@ -105,7 +104,7 @@ struct FCookCluster
 
 
 UCLASS()
-class HOTPATCHERCORE_API USingleCookerProxy:public UHotPatcherProxyBase, public FTickableObjectBase
+class HOTPATCHERCORE_API USingleCookerProxy:public UHotPatcherProxyBase, public FTickableEditorObject
 {
     GENERATED_BODY()
 public:

@@ -38,9 +38,11 @@ public:
     TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool bRecursiveWidgetTree = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bSupportWorldComposition = true;
+	
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool bForceSkipContent = true;
-
     // force exclude asset folder e.g. Exclude editor content when cooking in Project Settings
     UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (RelativeToGameContentDir, LongPackageName, EditCondition="bForceSkipContent"))
     TArray<FDirectoryPath> ForceSkipContentRules;

@@ -192,7 +192,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 		PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 		// collect world composition tile packages to cook 
-		if(CurrentAssetData.GetClass() == UWorld::StaticClass())
+		if(ParseConfig.bSupportWorldComposition && CurrentAssetData.GetClass() == UWorld::StaticClass())
 		{
 #if WITH_EDITOR
 			FString DisplayStr = FString::Printf(TEXT("LoadWorld %s"),*CurrentAssetData.GetFullName());

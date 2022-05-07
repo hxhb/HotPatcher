@@ -12,6 +12,7 @@ struct FAssetDependencies
 	TArray<FPatcherSpecifyAsset> InIncludeSpecifyAsset;
 	// like /Game/EditorOnly /Engine/VREditor
 	TArray<FString> ForceSkipContents;
+	bool bSupportWorldComposition = true;
 	bool bRedirector = true;
 	bool AnalysicFilterDependencies = true;
 	bool IncludeHasRefAssetsOnly = false;

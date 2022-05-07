@@ -90,25 +90,17 @@ namespace THotPatcherTemplateHelper
 	{
 		SCOPED_NAMED_EVENT_TEXT("GetEnumValueByName",FColor::Red);
 		bool bStatus = false;
-		static TMap<FString,UEnum*> Mapping;
 		UEnum* FoundEnum = nullptr;
 		FString EnumTypeName;
-		
-		if(Mapping.Contains(InEnumValueName))
-		{
-			FoundEnum = *Mapping.Find(InEnumValueName);
-		}
-		else
-		{
+
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 21
-			FoundEnum = StaticEnum<ENUM_TYPE>();
-			EnumTypeName = FoundEnum->CppType;
+		FoundEnum = StaticEnum<ENUM_TYPE>();
+		EnumTypeName = FoundEnum->CppType;
 #else
-			EnumTypeName = ANSI_TO_TCHAR(THotPatcherTemplateHelper::GetCPPTypeName<ENUM_TYPE>().c_str());
-			FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true); 
+		EnumTypeName = ANSI_TO_TCHAR(THotPatcherTemplateHelper::GetCPPTypeName<ENUM_TYPE>().c_str());
+		FoundEnum = FindObject<UEnum>(ANY_PACKAGE, *EnumTypeName, true); 
 #endif
-			Mapping.Add(EnumTypeName,FoundEnum);
-		}
+		
 		if (FoundEnum)
 		{
 			FString EnumValueFullName = EnumTypeName + TEXT("::") + InEnumValueName;

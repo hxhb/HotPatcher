@@ -307,7 +307,7 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 			}
 		}
 
-		auto CookPackageLambda = [=](int32 AssetIndex)
+		auto CookPackageLambda = [&](int32 AssetIndex)
 		{
 			UFlibHotPatcherCoreHelper::CookPackage(
 				PreCachePackages[AssetIndex],
@@ -329,7 +329,7 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 				THotPatcherTemplateHelper::GetEnumValueByName(Platform->PlatformName(),TargetPlatform);
 			}
 			GIsSavingPackage = true;
-			ParallelFor(PreCachePackages.Num(), CookPackageLambda,!GForceSingleThread && bCanConcurrentSave);
+			ParallelFor(PreCachePackages.Num(), CookPackageLambda,GForceSingleThread ? true : !bCanConcurrentSave);
 			GIsSavingPackage = false;
 		}
 		else
