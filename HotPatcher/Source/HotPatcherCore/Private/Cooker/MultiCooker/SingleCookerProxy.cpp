@@ -425,21 +425,19 @@ void USingleCookerProxy::Shutdown()
 		const TSet<FName>& AllLoadedPackagePaths = PackageTracker->GetLoadedPackages();
 		const TSet<FName>& AdditionalPackageSet = PackageTracker->GetPendingPackageSet();
 		const TSet<FName> LoadedOtherCookerAssets = OtherCookerPackageTracker->GetLoadOtherCookerAssets();
-		
-		// const TSet<FName>& CurrentCookerAssetPaths = GetCookerAssets();
-		// {
-		// 	for(const auto& LoadedPackage:AllLoadedPackagePaths)
-		// 	{
-		// 		if(!CurrentCookerAssetPaths.Contains(LoadedPackage) && !AdditionalPackageSet.Contains(LoadedPackage))
-		// 		{
-		// 			NotInCookerAssets.Add(LoadedPackage);
-		// 		}
-		// 	}
-		// }
-		
-		FFileHelper::SaveStringToFile(SerializePackageSetToString(AdditionalPackageSet),*FPaths::Combine(StorageMetadataAbsDir,TEXT("AdditionalPackageSet.json")));
-		FFileHelper::SaveStringToFile(SerializePackageSetToString(AllLoadedPackagePaths),*FPaths::Combine(StorageMetadataAbsDir,TEXT("AllLoadedPackageSet.json")));
-		FFileHelper::SaveStringToFile(SerializePackageSetToString(LoadedOtherCookerAssets),*FPaths::Combine(StorageMetadataAbsDir,TEXT("OtherCookerAssetPackageSet.json")));
+
+		if(AllLoadedPackagePaths.Num())
+		{
+			FFileHelper::SaveStringToFile(SerializePackageSetToString(AllLoadedPackagePaths),*FPaths::Combine(StorageMetadataAbsDir,TEXT("AllLoadedPackageSet.json")));
+		}
+		if(AdditionalPackageSet.Num())
+		{
+			FFileHelper::SaveStringToFile(SerializePackageSetToString(AdditionalPackageSet),*FPaths::Combine(StorageMetadataAbsDir,TEXT("AdditionalPackageSet.json")));
+		}
+		if(LoadedOtherCookerAssets.Num())
+		{
+			FFileHelper::SaveStringToFile(SerializePackageSetToString(LoadedOtherCookerAssets),*FPaths::Combine(StorageMetadataAbsDir,TEXT("OtherCookerAssetPackageSet.json")));
+		}
 	}
 	BulkDataManifest();
 	IoStoreManifest();
