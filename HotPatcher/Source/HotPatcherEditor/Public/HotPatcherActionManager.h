@@ -42,9 +42,9 @@ DECLARE_MULTICAST_DELEGATE_ThreeParams(FHotPatcherActionDelegate,const FString&,
 
 struct HOTPATCHEREDITOR_API FHotPatcherActionManager
 {
+    static FHotPatcherActionManager Manager;
 	static FHotPatcherActionManager& Get()
 	{
-		static FHotPatcherActionManager Manager;
 		return Manager;
 	}
 	virtual void Init();
