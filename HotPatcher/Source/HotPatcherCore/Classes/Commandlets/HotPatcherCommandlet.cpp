@@ -75,7 +75,7 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 		PatcherProxy->OnShowMsg.AddStatic(&::CommandletHelper::ReceiveShowMsg);
 		bExportStatus = PatcherProxy->DoExport();
 		
-		UE_LOG(LogHotPatcherCommandlet,Display,TEXT("Export Patch Misstion is %s!"),bExportStatus?TEXT("Successed"):TEXT("Failure"));
+		UE_LOG(LogHotPatcherCommandlet,Display,TEXT("Export Patch Misstion is %s, return %d!"),bExportStatus?TEXT("Successed"):TEXT("Failure"),(int32)!bExportStatus);
 	}
 
 	if(FParse::Param(FCommandLine::Get(), TEXT("wait")))
