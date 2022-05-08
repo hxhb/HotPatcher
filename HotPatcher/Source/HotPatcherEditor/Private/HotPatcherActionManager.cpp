@@ -18,7 +18,7 @@ void FHotPatcherActionManager::Init()
 
 void FHotPatcherActionManager::Shutdown()
 {
-	
+	FVersionUpdaterManager::Get().Reset();
 }
 
 void FHotPatcherActionManager::RegisterCategory(const FHotPatcherCategory& Category)

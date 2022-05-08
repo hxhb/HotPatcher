@@ -26,6 +26,7 @@ struct FVersionUpdaterManager
 		return Manager;
 	}
 	
+	void Reset();
 	void RequestRemoveVersion(const FString& URL);
 	FRemteVersionDescrible* GetRemoteVersionByName(FName Name){ return Remotes.Find(Name); }
 	bool IsRequestFinished()const { return bRequestFinished; }

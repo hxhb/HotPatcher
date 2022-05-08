@@ -8,6 +8,15 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogVersionUpdaterManager,All,All)
 
+void FVersionUpdaterManager::Reset()
+{
+	if(HttpHeadRequest.IsValid())
+	{
+		HttpHeadRequest->CancelRequest();
+		HttpHeadRequest.Reset();
+	}
+}
+
 void FVersionUpdaterManager::RequestRemoveVersion(const FString& URL)
 {
 	if(HttpHeadRequest.IsValid())

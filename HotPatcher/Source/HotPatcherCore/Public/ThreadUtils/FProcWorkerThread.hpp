@@ -67,7 +67,7 @@ public:
 					bRunSuccessfuly = true;
 				}
 			}
-			
+			ProcOutputMsgDelegate.ExecuteIfBound(this,FString::Printf(TEXT("ProcWorker %s return value %d."),*mThreadName,ProcReturnCode));
 			if (bRunSuccessfuly)
 			{
 				if(ProcSuccessedDelegate.IsBound())
