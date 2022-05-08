@@ -27,6 +27,10 @@ void FVersionUpdaterManager::RequestRemoveVersion(const FString& URL)
 
 void FVersionUpdaterManager::OnRequestComplete(FHttpRequestPtr RequestPtr, FHttpResponsePtr ResponsePtr, bool bConnectedSuccessfully)
 {
+    if(!ResponsePtr.IsValid())
+    {
+        return;
+    }
 	FString Result = ResponsePtr->GetContentAsString();
 	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(Result);
 	TSharedPtr<FJsonObject> JsonObject;

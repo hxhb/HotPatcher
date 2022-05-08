@@ -8,6 +8,8 @@
 
 #define LOCTEXT_NAMESPACE "FHotPatcherActionManager"
 
+FHotPatcherActionManager FHotPatcherActionManager::Manager;
+
 void FHotPatcherActionManager::Init()
 {
 	FVersionUpdaterManager::Get().RequestRemoveVersion(REMOTE_VERSION_FILE);
