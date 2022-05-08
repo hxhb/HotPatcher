@@ -522,11 +522,12 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 	EmptySetting.IoStoreSettings.bIoStore = false;
 	EmptySetting.bSerializeAssetRegistry = false;
 	EmptySetting.bDisplayConfig = false;
+	EmptySetting.bForceCookInOneFrame = true;
 	EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 	EmptySetting.StorageMetadataDir = FPaths::Combine(UFlibHotCookerHelper::GetCookerBaseDir(),EmptySetting.MissionName);
 
 	USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
-	SingleCookerProxy->AddToRoot();
+	// SingleCookerProxy->AddToRoot();
 	SingleCookerProxy->Init(&EmptySetting);
 	SingleCookerProxy->OnAssetCooked.AddLambda([CookNotifyLambda](const FSoftObjectPath& ObjectPath,ETargetPlatform Platform,ESavePackageResult Result)
 	{

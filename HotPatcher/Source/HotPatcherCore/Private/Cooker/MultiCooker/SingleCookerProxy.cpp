@@ -352,7 +352,7 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 void USingleCookerProxy::Tick(float DeltaTime)
 {
 	SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::Tick",FColor::Red);
-	if(!GetSettingObject() || !IsAlready())
+	if(!GetSettingObject() || GetSettingObject()->bForceCookInOneFrame|| !IsAlready())
 	{
 		return;
 	}
@@ -383,7 +383,7 @@ TStatId USingleCookerProxy::GetStatId() const
 
 bool USingleCookerProxy::IsTickable() const
 {
-	return IsAlready();
+	return IsAlready() && !const_cast<USingleCookerProxy*>(this)->GetSettingObject()->bForceCookInOneFrame;
 }
 
 void USingleCookerProxy::Shutdown()
@@ -441,6 +441,7 @@ void USingleCookerProxy::Shutdown()
 	}
 	BulkDataManifest();
 	IoStoreManifest();
+	bAlready = false;
 	Super::Shutdown();
 }
 
