@@ -12,14 +12,9 @@ public class CmdHandler : ModuleRules
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		bLegacyPublicIncludePaths = false;
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
-		if (Target.Version.MajorVersion < 5 && Target.Version.MinorVersion <= 21)
-		{
-			bUseRTTI = true;
-		}
-		
+
 		PublicIncludePaths.AddRange(
 			new string[] {
-				Path.Combine(ModuleDirectory,"Public/CommandletBase")
 				// ... add public include paths required here ...
 			}
 			);
