@@ -78,7 +78,7 @@ public:
 	);
 	static bool CookPackage(
 		const FSoftObjectPath& AssetObjectPath,
-		TArray<ITargetPlatform*> CookPlatforms,
+		TMap<ETargetPlatform,ITargetPlatform*> CookPlatforms,
 		FCookActionCallback CookActionCallback,
 #if WITH_PACKAGE_CONTEXT
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext = TMap<FString,FSavePackageContext*>{},
@@ -88,7 +88,7 @@ public:
 	);
 	static bool CookPackage(
 		UPackage* Package,
-		TArray<ITargetPlatform*> CookPlatforms,
+		TMap<ETargetPlatform,ITargetPlatform*> CookPlatforms,
 		FCookActionCallback CookActionCallback,
 #if WITH_PACKAGE_CONTEXT
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
@@ -99,13 +99,13 @@ public:
 
 	static bool CookPackage(
 		UPackage* Package,
-		TArray<ITargetPlatform*> CookPlatforms,
+		TMap<ETargetPlatform,ITargetPlatform*> CookPlatforms,
 		FCookActionCallback CookActionCallback,
 #if WITH_PACKAGE_CONTEXT
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
 #endif
 		const TMap<FName,FString>& CookedPlatformSavePaths,
-		bool bStorageConcurrent 
+		bool bStorageConcurrent
 	);
 
 	static void CookChunkAssets(
