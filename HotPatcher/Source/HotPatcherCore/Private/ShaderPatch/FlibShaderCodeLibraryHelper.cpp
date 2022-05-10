@@ -8,6 +8,7 @@
 #include "ShaderCompiler.h"
 #include "IPlatformFileSandboxWrapper.h"
 #include "Interfaces/IPluginManager.h"
+#include "Interfaces/ITargetPlatform.h"
 
 #define REMAPPED_PLUGINS TEXT("RemappedPlugins")
 
@@ -126,11 +127,19 @@ bool UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* Targ
 #else
 		if(bMaster)
 		{
-			bSaved = FShaderCodeLibrary::SaveShaderCodeMaster(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths);
+			bSaved = FShaderCodeLibrary::SaveShaderCodeMaster(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths
+#if SUPPORT_XGAME
+			,0
+#endif
+			);
 		}
 		else
 		{
-			bSaved = FShaderCodeLibrary::SaveShaderCodeChild(ShaderCodeDir, RootMetaDataPath, ShaderFormats);
+			bSaved = FShaderCodeLibrary::SaveShaderCodeChild(ShaderCodeDir, RootMetaDataPath, ShaderFormats
+#if SUPPORT_XGAME
+			,0
+#endif
+			);
 		}
 #endif	
 	}
@@ -257,8 +266,8 @@ void UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete()
 
 void UFlibShaderCodeLibraryHelper::CleanShaderWorkerDir()
 {
-	if (!IFileManager::Get().DeleteDirectory(*FPaths::ShaderWorkingDir(), false, true))
+	if (FPaths::DirectoryExists(FPaths::ShaderWorkingDir()) && !IFileManager::Get().DeleteDirectory(*FPaths::ShaderWorkingDir(), false, true))
 	{
-		UE_LOG(LogHotPatcher, Fatal, TEXT("Could not delete the shader compiler working directory '%s'."), *FPaths::ShaderWorkingDir());
+		UE_LOG(LogHotPatcher, Warning, TEXT("Could not delete the shader compiler working directory '%s'."), *FPaths::ShaderWorkingDir());
 	}
 }
