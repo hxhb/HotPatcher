@@ -595,9 +595,9 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			}
 	#if WITH_PACKAGE_CONTEXT
 			FSavePackageContext* CurrentPlatformPackageContext = nullptr;
-			if(PlatformSavePackageContext.Contains(Platform->PlatformName()))
+			if(PlatformSavePackageContext.Contains(Platform.Value->PlatformName()))
 			{
-				CurrentPlatformPackageContext = *PlatformSavePackageContext.Find(Platform->PlatformName());
+				CurrentPlatformPackageContext = *PlatformSavePackageContext.Find(Platform.Value->PlatformName());
 			}
 		#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
 				IPackageWriter::FBeginPackageInfo BeginInfo;
