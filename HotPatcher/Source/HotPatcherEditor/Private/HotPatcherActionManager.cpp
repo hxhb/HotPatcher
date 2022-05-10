@@ -87,7 +87,7 @@ bool FHotPatcherActionManager::IsActiveAction(FString ActionName)
 		}
 		return bActiveInRemote;
 	}
-	return false;
+	return true;
 }
 
 void FHotPatcherActionManager::SetupDefaultActions()
