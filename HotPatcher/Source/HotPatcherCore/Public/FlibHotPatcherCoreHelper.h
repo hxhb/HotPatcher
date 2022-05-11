@@ -211,7 +211,10 @@ public:
 	static bool IsCanCookPackage(const FString& LongPackageName);
 	
 	static void ImportProjectSettingsToScannerConfig(FAssetScanConfig& AssetScanConfig);
-
+	static void ImportProjectNotAssetDir(TArray<FPlatformExternAssets>& PlatformExternAssets);
+	
+	static TArray<FExternDirectoryInfo> GetProjectNotAssetDirConfig();
+	
 	static void CacheForCookedPlatformData(
 		const TArray<UPackage*>& Packages,
 		TArray<ITargetPlatform*> TargetPlatforms,

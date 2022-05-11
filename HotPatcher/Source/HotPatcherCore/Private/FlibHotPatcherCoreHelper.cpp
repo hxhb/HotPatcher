@@ -1945,6 +1945,81 @@ void UFlibHotPatcherCoreHelper::ImportProjectSettingsToScannerConfig(FAssetScanC
 	AssetScanConfig.ForceSkipAssets.Append(AssetCollection.NeverCookPackages);
 }
 
+void UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(TArray<FPlatformExternAssets>& PlatformExternAssets)
+{
+	const auto ProjectNotAssetDirs = UFlibHotPatcherCoreHelper::GetProjectNotAssetDirConfig();
+	FPlatformExternAssets* AllPlatformExternalAssetsPtr = nullptr;
+
+	for(auto& AddExternAssetsToPlatform:PlatformExternAssets)
+	{
+		if(AddExternAssetsToPlatform.TargetPlatform == ETargetPlatform::AllPlatforms)
+		{
+			AllPlatformExternalAssetsPtr = &AddExternAssetsToPlatform;
+		}
+	}
+	if(!AllPlatformExternalAssetsPtr)
+	{
+		FPlatformExternAssets AllPlatformExternalAssets;
+		AllPlatformExternalAssets.TargetPlatform = ETargetPlatform::AllPlatforms;
+				
+		int32 index = PlatformExternAssets.Add(AllPlatformExternalAssets);
+		AllPlatformExternalAssetsPtr = &PlatformExternAssets[index];
+	}
+	AllPlatformExternalAssetsPtr->AddExternDirectoryToPak.Append(ProjectNotAssetDirs);
+}
+
+TArray<FExternDirectoryInfo> UFlibHotPatcherCoreHelper::GetProjectNotAssetDirConfig()
+{
+	TArray<FExternDirectoryInfo> result;
+	const UProjectPackagingSettings* const PackagingSettings = GetDefault<UProjectPackagingSettings>();
+
+	FString BasePath = FString::Printf(TEXT("../../../%s/Content/%s"),FApp::GetProjectName());
+	auto FixPath = [](const FString& BasePath,const FString& Path)->FString
+	{
+		FString result;
+		FString finalSubPath = Path;
+		TArray<FString> PathsItem = UKismetStringLibrary::ParseIntoArray(BasePath,TEXT("/"));
+		while(PathsItem.Num() && finalSubPath.StartsWith(TEXT("../")))
+		{
+			PathsItem.RemoveAt(PathsItem.Num()-1);
+			finalSubPath.RemoveFromStart(TEXT("../"));
+		}
+		PathsItem.Add(finalSubPath);
+		for(auto& DirItem:PathsItem)
+		{
+			if(!DirItem.IsEmpty())
+			{
+				result = FPaths::Combine(result,DirItem);
+			}
+		}
+		return result;
+	};
+	
+	if(PackagingSettings)
+	{
+		for(auto ContentSubDir:PackagingSettings->DirectoriesToAlwaysStageAsUFS)
+		{
+			FExternDirectoryInfo DirInfo;
+			
+			FString MountPoint = ContentSubDir.Path;
+			if(MountPoint.StartsWith(TEXT("../")))
+			{
+				MountPoint = FixPath(BasePath,MountPoint);
+				DirInfo.DirectoryPath.Path = FixPath(TEXT("[PROJECTDIR]/Content"),ContentSubDir.Path);
+			}
+			else
+			{
+				MountPoint = FPaths::Combine(BasePath,MountPoint);
+				DirInfo.DirectoryPath.Path = FString::Printf(TEXT("[PROJECT_CONTENT_DIR]/%s"),*ContentSubDir.Path);
+			}
+			DirInfo.MountPoint = MountPoint;
+			FPaths::NormalizeDirectoryName(DirInfo.MountPoint);
+			result.Emplace(DirInfo);
+		}
+	}
+	return result;
+}
+
 void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
 	const TArray<FSoftObjectPath>& ObjectPaths,
 	TArray<ITargetPlatform*> TargetPlatforms,

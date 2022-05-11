@@ -273,6 +273,14 @@ namespace PatchWorker
 		SCOPED_NAMED_EVENT_TEXT("MakeCurrentVersionWorker",FColor::Red);
 		UE_LOG(LogHotPatcher,Display,TEXT("Make Patch Setting..."));
 		TimeRecorder ExportNewVersionTR(TEXT("Make Release Chunk/Export Release Version Info By Chunk"));
+
+		// import cook dir and uasset / not-uasset directories to settings
+		if(Context.GetSettingObject()->IsImportProjectSettings())
+		{
+			UFlibHotPatcherCoreHelper::ImportProjectSettingsToScannerConfig(Context.GetSettingObject()->GetAssetScanConfigRef());
+			UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(Context.GetSettingObject()->GetAddExternAssetsToPlatform());
+		}
+		
 		Context.NewVersionChunk = UFlibHotPatcherCoreHelper::MakeChunkFromPatchSettings(Context.GetSettingObject());
 
 		UE_LOG(LogHotPatcher,Display,TEXT("Deserialize Release Version by Patch Setting..."));

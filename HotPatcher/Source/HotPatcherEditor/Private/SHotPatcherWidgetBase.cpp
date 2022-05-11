@@ -34,49 +34,7 @@ void SHotPatcherWidgetBase::ImportProjectConfig()
 {
 	// import uasset
 	UFlibHotPatcherCoreHelper::ImportProjectSettingsToScannerConfig(GetConfigSettings()->GetAssetScanConfigRef());
-	
-	FString DefaultEditorIni = FPaths::ProjectConfigDir()/TEXT("DefaultEditor.ini");
-	FString DefaultGameIni = FPaths::ProjectConfigDir()/TEXT("DefaultGame.ini");
-	auto GameConingLoader = [](const FString& Section,const FString& Key,const FString& Ini)->TArray<FString>
-	{
-		TArray<FString> result;
-		GConfig->GetArray(*Section,*Key,result,Ini);
-		return result;
-	};
-
-	auto CleanPath= [](const TArray<FString>& List)->TArray<FString>
-	{
-		TArray<FString> result;
-		for(const auto& Item:List)
-		{
-			if(Item.StartsWith(TEXT("(Path=\"")) && Item.EndsWith(TEXT("\")")))
-			{
-				FString str = Item;
-				str.RemoveFromStart(TEXT("(Path=\""));
-				str.RemoveFromEnd(TEXT("\")"));
-				result.AddUnique(str);
-			}
-			
-		}
-		return result;
-	};
-	
-	TArray<FString> NotUFSDirsToPackage = GameConingLoader(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("+DirectoriesToAlwaysStageAsUFS"),DefaultGameIni);
-	FPlatformExternAssets AddToAllPlatform;
-	AddToAllPlatform.TargetPlatform = ETargetPlatform::AllPlatforms;
-	for(const auto& UFSDir:CleanPath(NotUFSDirsToPackage))
-	{
-		FExternDirectoryInfo DirInfo;
-		// DirInfo.DirectoryPath.Path = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectContentDir(),UFSDir));
-		DirInfo.DirectoryPath.Path = FPaths::Combine(TEXT("[PROJECT_CONTENT_DIR]"),UFSDir);
-		DirInfo.MountPoint = FString::Printf(TEXT("../../../%s/Content/%s"),FApp::GetProjectName(),*UFSDir);
-		AddToAllPlatform.AddExternDirectoryToPak.Add(DirInfo);
-	}
-	if(AddToAllPlatform.AddExternDirectoryToPak.Num() || AddToAllPlatform.AddExternFileToPak.Num())
-	{
-		GetConfigSettings()->GetAddExternAssetsToPlatform().Empty();
-		GetConfigSettings()->GetAddExternAssetsToPlatform().Add(AddToAllPlatform);
-	}
+	UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(GetConfigSettings()->GetAddExternAssetsToPlatform());
 }
 
 FText SHotPatcherWidgetInterface::GetGenerateTooltipText() const
