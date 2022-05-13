@@ -456,8 +456,14 @@ bool PreLoadPak(const FString& InPakPath,const FString& AesKey)
 TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FString& AESKey)
 {
 	TArray<FString> Records;
-	TSharedPtr<FPakFile> PakFile = MakeShareable(UFlibPakHelper::GetPakFileIns(InPak,AESKey));
-	UFlibPakHelper::GetPakEntrys(PakFile.Get(),AESKey).GetKeys(Records);
+	
+	auto PakFilePtr = UFlibPakHelper::GetPakFileIns(InPak,AESKey);;
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+	TRefCountPtr<FPakFile> PakFile = PakFilePtr;
+#else
+	TSharedPtr<FPakFile> PakFile = MakeShareable(PakFilePtr);
+#endif
+	UFlibPakHelper::GetPakEntrys(PakFilePtr,AESKey).GetKeys(Records);
 	return Records;
 }
 
@@ -480,13 +486,19 @@ TMap<FString,FPakEntry> UFlibPakHelper::GetPakEntrys(FPakFile* InPakFile, const 
 
 void UFlibPakHelper::DumpPakEntrys(const FString& InPak, const FString& AESKey, const FString& SaveTo)
 {
-	TSharedPtr<FPakFile> PakFile = MakeShareable(UFlibPakHelper::GetPakFileIns(InPak,AESKey));
 	
-	TMap<FString,FPakEntry> Records = UFlibPakHelper::GetPakEntrys(PakFile.Get(),AESKey);
+	auto PakFilePtr = UFlibPakHelper::GetPakFileIns(InPak,AESKey);;
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+	TRefCountPtr<FPakFile> PakFile = PakFilePtr;
+#else
+	TSharedPtr<FPakFile> PakFile = MakeShareable(PakFilePtr);
+#endif
+	
+	TMap<FString,FPakEntry> Records = UFlibPakHelper::GetPakEntrys(PakFilePtr,AESKey);
 	FString FileName = FPaths::GetBaseFilename(InPak,true);
 	FPakDumper Results;
 	Results.PakName = FileName;
-	Results.MountPoint = PakFile->GetMountPoint();
+	Results.MountPoint = PakFilePtr->GetMountPoint();
 	
 	for(const auto& Pair:Records)
 	{
@@ -539,10 +551,17 @@ FPakFile* UFlibPakHelper::GetPakFileIns(const FString& InPak, const FString& AES
 FString UFlibPakHelper::GetPakFileMountPoint(const FString& InPak, const FString& AESKey)
 {
 	FString result;
-	const TSharedPtr<FPakFile> PakFile = MakeShareable(UFlibPakHelper::GetPakFileIns(InPak,AESKey));
-	if(PakFile.IsValid())
+
+	auto PakFilePtr = UFlibPakHelper::GetPakFileIns(InPak,AESKey);;
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+	TRefCountPtr<FPakFile> PakFile = PakFilePtr;
+#else
+	TSharedPtr<FPakFile> PakFile = MakeShareable(PakFilePtr);
+#endif
+
+	if(PakFilePtr)
 	{
-		result = PakFile->GetMountPoint();
+		result = PakFilePtr->GetMountPoint();
 	}
 	return result;
 }
