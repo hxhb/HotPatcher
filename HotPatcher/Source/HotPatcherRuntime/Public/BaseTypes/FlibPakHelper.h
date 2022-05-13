@@ -38,6 +38,11 @@ struct FDumpPakAsset
 	GENERATED_USTRUCT_BODY()
 	
 	UPROPERTY()
+	FString PackageName;
+	UPROPERTY()
+	FName GUID;
+	
+	UPROPERTY()
 	TMap<FString,FDumpPakEntry> AssetEntrys;
 };
 

@@ -80,9 +80,9 @@ public:
 	static FString LongPackageNameToPackagePath(const FString& InLongPackageName);
 	static FString PackagePathToLongPackageName(const FString& PackagePath);
 	
-		static const FAssetPackageData* GetPackageDataByPackagePath(const FString& InShortPackagePath);
+		static const FAssetPackageData* GetPackageDataByPackageName(const FString& InPackageName);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerExEx")
-		static bool GetAssetPackageGUID(const FString& InPackagePath, FName& OutGUID);
+		static bool GetAssetPackageGUID(const FString& InPackageName, FName& OutGUID);
 	
 	static FName GetAssetType(FSoftObjectPath InPackageName);
 	

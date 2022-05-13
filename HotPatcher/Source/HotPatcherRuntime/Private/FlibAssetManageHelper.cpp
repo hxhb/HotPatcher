@@ -83,15 +83,15 @@ void UFlibAssetManageHelper::UpdateAssetMangerDatabase(bool bForceRefresh)
 }
 
 
-bool UFlibAssetManageHelper::GetAssetPackageGUID(const FString& InPackagePath, FName& OutGUID)
+bool UFlibAssetManageHelper::GetAssetPackageGUID(const FString& InPackageName, FName& OutGUID)
 {
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetPackageGUID",FColor::Red);
 	bool bResult = false;
-	if (InPackagePath.IsEmpty())
+	if (InPackageName.IsEmpty())
 		return false;
 	
 #ifndef CUSTOM_ASSET_GUID
-	const FAssetPackageData* AssetPackageData = UFlibAssetManageHelper::GetPackageDataByPackagePath(InPackagePath);
+	const FAssetPackageData* AssetPackageData = UFlibAssetManageHelper::GetPackageDataByPackageName(InPackageName);
 	if (AssetPackageData != NULL)
 	{
 		PRAGMA_DISABLE_DEPRECATION_WARNINGS
@@ -303,7 +303,7 @@ FAssetDetail UFlibAssetManageHelper::GetAssetDetailByPackageName(const FString& 
 			{
 				AssetDetail.PackagePath = OutAssetData.ObjectPath;
 				AssetDetail.AssetType = OutAssetData.AssetClass;
-				UFlibAssetManageHelper::GetAssetPackageGUID(PackagePath, AssetDetail.Guid);
+				UFlibAssetManageHelper::GetAssetPackageGUID(InPackageName, AssetDetail.Guid);
 			}
 		}
 	}
@@ -472,9 +472,10 @@ bool UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(const FAssetData& InAs
 		return false;
 	FAssetDetail AssetDetail;
 	AssetDetail.AssetType = FName(*InAssetData.AssetClass.ToString());
-	FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InAssetData.PackageName.ToString());
+	FString PackageName = InAssetData.PackageName.ToString();
+	FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(PackageName);
 	AssetDetail.PackagePath = FName(*PackagePath);
-	UFlibAssetManageHelper::GetAssetPackageGUID(PackagePath, AssetDetail.Guid);
+	UFlibAssetManageHelper::GetAssetPackageGUID(PackageName, AssetDetail.Guid);
 
 	OutAssetDetail = AssetDetail;
 	return !OutAssetDetail.AssetType.IsNone() && !OutAssetDetail.AssetType.IsNone() && !OutAssetDetail.AssetType.IsNone();
@@ -654,16 +655,17 @@ SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAllInValidAssetInProject",FC
 		}
 	}
 }
-const FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackagePath(const FString& InPackagePath)
+
+const FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(const FString& InPackageName)
 {
 	FAssetPackageData* AssetPackageData = nullptr;
-	if (InPackagePath.IsEmpty())
+	if (InPackageName.IsEmpty())
 		return NULL;
-	if (!InPackagePath.IsEmpty())
+	if (!InPackageName.IsEmpty())
 	{
 		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-		FString TargetLongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(InPackagePath);
-
+		// FString TargetLongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(InPackageName);
+		const FString& TargetLongPackageName = InPackageName;
 #if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
 		TOptional<FAssetPackageData> PackageDataOpt = AssetRegistryModule.Get().GetAssetPackageDataCopy(*TargetLongPackageName);
 		if(PackageDataOpt.IsSet())

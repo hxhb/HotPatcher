@@ -6,7 +6,8 @@
 #include "HAL/PlatformFilemanager.h"
 #include "AssetManager/FFileArrayDirectoryVisitor.hpp"
 #include "HotPatcherLog.h"
-
+#include "FlibAssetManageHelper.h"
+#include "HotPatcherTemplateHelper.hpp"
 // Engine Header
 #include "Resources/Version.h"
 #include "Serialization/ArrayReader.h"
@@ -20,7 +21,6 @@
 #include "ShaderPipelineCache.h"
 #include "RHI.h"
 #include "AssetRegistryState.h"
-#include "HotPatcherTemplateHelper.hpp"
 #include "Misc/Base64.h"
 #include "Misc/CoreDelegates.h"
 #include "Serialization/LargeMemoryReader.h"
@@ -456,7 +456,8 @@ bool PreLoadPak(const FString& InPakPath,const FString& AesKey)
 TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FString& AESKey)
 {
 	TArray<FString> Records;
-	UFlibPakHelper::GetPakEntrys(UFlibPakHelper::GetPakFileIns(InPak,AESKey),AESKey).GetKeys(Records);
+	TSharedPtr<FPakFile> PakFile = MakeShareable(UFlibPakHelper::GetPakFileIns(InPak,AESKey));
+	UFlibPakHelper::GetPakEntrys(PakFile.Get(),AESKey).GetKeys(Records);
 	return Records;
 }
 
@@ -479,9 +480,9 @@ TMap<FString,FPakEntry> UFlibPakHelper::GetPakEntrys(FPakFile* InPakFile, const 
 
 void UFlibPakHelper::DumpPakEntrys(const FString& InPak, const FString& AESKey, const FString& SaveTo)
 {
-	auto PakFile = UFlibPakHelper::GetPakFileIns(InPak,AESKey);
+	TSharedPtr<FPakFile> PakFile = MakeShareable(UFlibPakHelper::GetPakFileIns(InPak,AESKey));
 	
-	TMap<FString,FPakEntry> Records = UFlibPakHelper::GetPakEntrys(PakFile,AESKey);
+	TMap<FString,FPakEntry> Records = UFlibPakHelper::GetPakEntrys(PakFile.Get(),AESKey);
 	FString FileName = FPaths::GetBaseFilename(InPak,true);
 	FPakDumper Results;
 	Results.PakName = FileName;
@@ -506,7 +507,10 @@ void UFlibPakHelper::DumpPakEntrys(const FString& InPak, const FString& AESKey, 
 		Entry.ContentSize = Pair.Value.Size;
 		Entry.Offset = Pair.Value.Offset;
 		Entry.PakEntrySize = Pair.Value.GetSerializedSize(FPakInfo::PakFile_Version_Latest);
-		Results.PakEntrys.FindOrAdd(RecordName).AssetEntrys.Add(PakFilename,Entry);
+		FDumpPakAsset& RecordItem = Results.PakEntrys.FindOrAdd(RecordName);
+		RecordItem.PackageName = PackageName;
+		UFlibAssetManageHelper::GetAssetPackageGUID(PackageName,RecordItem.GUID);
+		RecordItem.AssetEntrys.Add(PakFilename,Entry);
 	}
 	FString OutString;
 	THotPatcherTemplateHelper::TSerializeStructAsJsonString(Results,OutString);
@@ -522,14 +526,12 @@ FPakFile* UFlibPakHelper::GetPakFileIns(const FString& InPak, const FString& AES
 	TArray<FString> Records;
 	if(PreLoadPak(StandardFileName,AESKey))
 	{
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
-		TRefCountPtr<FPakFile> PakFile = new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false);
-		rPakFile = PakFile.GetReference();
-#else
-		TSharedPtr<FPakFile> PakFile = MakeShareable(new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false));
-		rPakFile = PakFile.Get();
-#endif
-
+// #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+// 		TRefCountPtr<FPakFile> PakFile = new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false);
+// 		rPakFile = PakFile.GetReference();
+// #else
+		rPakFile = new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false);
+//#endif
 	}
 	return rPakFile;
 }
@@ -537,8 +539,8 @@ FPakFile* UFlibPakHelper::GetPakFileIns(const FString& InPak, const FString& AES
 FString UFlibPakHelper::GetPakFileMountPoint(const FString& InPak, const FString& AESKey)
 {
 	FString result;
-	auto PakFile = UFlibPakHelper::GetPakFileIns(InPak,AESKey);
-	if(PakFile)
+	const TSharedPtr<FPakFile> PakFile = MakeShareable(UFlibPakHelper::GetPakFileIns(InPak,AESKey));
+	if(PakFile.IsValid())
 	{
 		result = PakFile->GetMountPoint();
 	}
