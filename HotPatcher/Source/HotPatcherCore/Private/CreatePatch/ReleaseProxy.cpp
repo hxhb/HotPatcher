@@ -94,6 +94,7 @@ namespace ReleaseWorker
 		if(Context.GetSettingObject()->IsImportProjectSettings())
 		{
 			UFlibHotPatcherCoreHelper::ImportProjectSettingsToScannerConfig(Context.GetSettingObject()->GetAssetScanConfigRef());
+			UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(Context.GetSettingObject()->GetAddExternAssetsToPlatform());
 		}
 		
 		return true;

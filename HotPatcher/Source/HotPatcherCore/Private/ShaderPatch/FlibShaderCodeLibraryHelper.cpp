@@ -8,6 +8,7 @@
 #include "ShaderCompiler.h"
 #include "IPlatformFileSandboxWrapper.h"
 #include "Interfaces/IPluginManager.h"
+#include "Interfaces/ITargetPlatform.h"
 
 #define REMAPPED_PLUGINS TEXT("RemappedPlugins")
 
@@ -257,8 +258,8 @@ void UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete()
 
 void UFlibShaderCodeLibraryHelper::CleanShaderWorkerDir()
 {
-	if (!IFileManager::Get().DeleteDirectory(*FPaths::ShaderWorkingDir(), false, true))
+	if (FPaths::DirectoryExists(FPaths::ShaderWorkingDir()) && !IFileManager::Get().DeleteDirectory(*FPaths::ShaderWorkingDir(), false, true))
 	{
-		UE_LOG(LogHotPatcher, Fatal, TEXT("Could not delete the shader compiler working directory '%s'."), *FPaths::ShaderWorkingDir());
+		UE_LOG(LogHotPatcher, Warning, TEXT("Could not delete the shader compiler working directory '%s'."), *FPaths::ShaderWorkingDir());
 	}
 }

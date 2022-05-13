@@ -307,11 +307,19 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 			}
 		}
 
+		TMap<ETargetPlatform,ITargetPlatform*> PlatformMaps;
+		for(auto Platform:TargetPlatforms)
+		{
+			ETargetPlatform EnumPlatform;
+			THotPatcherTemplateHelper::GetEnumValueByName(*Platform->PlatformName(),EnumPlatform);
+			PlatformMaps.Add(EnumPlatform,Platform);
+		}
+		
 		auto CookPackageLambda = [&](int32 AssetIndex)
 		{
 			UFlibHotPatcherCoreHelper::CookPackage(
 				PreCachePackages[AssetIndex],
-				TargetPlatforms,
+				PlatformMaps,
 				CookCluster.CookActionCallback,
 #if WITH_PACKAGE_CONTEXT
 				SavePackageContextsNameMapping,

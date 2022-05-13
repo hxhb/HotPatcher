@@ -65,7 +65,7 @@ struct HOTPATCHEREDITOR_API FHotPatcherActionManager
 	FHotPatcherActionsType& GetHotPatcherActions() { return HotPatcherActions; }
 	
 	FHotPatcherAction* GetTopActionByCategory(const FString CategoryName);
-	FORCEINLINE bool IsActiveAction(FString ActionName);
+	bool IsActiveAction(FString ActionName);
 
 private:
 	virtual ~FHotPatcherActionManager(){}
