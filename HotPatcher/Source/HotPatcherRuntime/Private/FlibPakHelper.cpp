@@ -477,7 +477,10 @@ TMap<FString,FPakEntry> UFlibPakHelper::GetPakEntrys(FPakFile* InPakFile, const 
 		for (FPakFile::FFileIterator It(*InPakFile, true); It; ++It)
 		{
 			const FString& Filename = It.Filename();
-			Records.Emplace(MountPoint + Filename,It.Info());
+			FPakEntry PakEntry;
+			PakEntry = It.Info();
+			InPakFile->ReadHashFromPayload(PakEntry,PakEntry.Hash);
+			Records.Emplace(MountPoint + Filename,PakEntry);
 		}
 		
 	}
@@ -486,7 +489,6 @@ TMap<FString,FPakEntry> UFlibPakHelper::GetPakEntrys(FPakFile* InPakFile, const 
 
 void UFlibPakHelper::DumpPakEntrys(const FString& InPak, const FString& AESKey, const FString& SaveTo)
 {
-	
 	auto PakFilePtr = UFlibPakHelper::GetPakFileIns(InPak,AESKey);;
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 	TRefCountPtr<FPakFile> PakFile = PakFilePtr;
@@ -506,22 +508,34 @@ void UFlibPakHelper::DumpPakEntrys(const FString& InPak, const FString& AESKey, 
 		FString PakFilename = Pair.Key;
 		FString PackageName;
 		FString RecordName;
+		bool bIsAsset = false;
 		if(FPackageName::TryConvertFilenameToLongPackageName(PakFilename,PackageName))
 		{
+			bIsAsset = true;
 			RecordName = PackageName;
 		}
 		else
 		{
 			RecordName = PakFilename;
-			
 		}
+		
 		PakFilename = FPaths::GetBaseFilename(PakFilename,true) + FPaths::GetExtension(PakFilename,true);
 		Entry.ContentSize = Pair.Value.Size;
 		Entry.Offset = Pair.Value.Offset;
-		Entry.PakEntrySize = Pair.Value.GetSerializedSize(FPakInfo::PakFile_Version_Latest);
 		FDumpPakAsset& RecordItem = Results.PakEntrys.FindOrAdd(RecordName);
+		Entry.PakEntrySize = Pair.Value.GetSerializedSize(FPakInfo::PakFile_Version_Latest);
+		if(bIsAsset)
+		{
+			UFlibAssetManageHelper::GetAssetPackageGUID(PackageName,RecordItem.GUID);
+		}
+		else
+		{
+			FSHAHash Hash;
+			FMemory::Memcpy(Hash.Hash,Pair.Value.Hash,20);
+			RecordItem.GUID = *Hash.ToString();
+		}
 		RecordItem.PackageName = PackageName;
-		UFlibAssetManageHelper::GetAssetPackageGUID(PackageName,RecordItem.GUID);
+		
 		RecordItem.AssetEntrys.Add(PakFilename,Entry);
 	}
 	FString OutString;
@@ -542,7 +556,7 @@ FPakFile* UFlibPakHelper::GetPakFileIns(const FString& InPak, const FString& AES
 // 		TRefCountPtr<FPakFile> PakFile = new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false);
 // 		rPakFile = PakFile.GetReference();
 // #else
-		rPakFile = new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false);
+		rPakFile = new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false,true);
 //#endif
 	}
 	return rPakFile;
