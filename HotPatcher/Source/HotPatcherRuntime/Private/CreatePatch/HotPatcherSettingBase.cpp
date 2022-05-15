@@ -39,7 +39,7 @@ TArray<FExternFileInfo> FHotPatcherSettingBase::GetAllExternFilesByPlatform(ETar
 	{
 		for (auto& ExFile : AllExternFiles)
 		{
-			ExFile.GenerateFileHash();
+			ExFile.GenerateFileHash(GetHashCalculator());
 		}
 	}
 	return AllExternFiles;

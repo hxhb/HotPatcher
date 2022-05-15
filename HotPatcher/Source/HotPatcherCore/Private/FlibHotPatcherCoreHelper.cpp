@@ -1150,7 +1150,7 @@ FPatchVersionDiff UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(co
 		VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo
 	);
 
-	UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(Base,New,VersionDiffInfo.PlatformExternDiffInfo);
+	UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(PatchSetting,Base,New,VersionDiffInfo.PlatformExternDiffInfo);
 
 	if(PatchSetting.GetIgnoreDeletionModulesAsset().Num())
 	{

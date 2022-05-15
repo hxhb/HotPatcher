@@ -8,6 +8,15 @@
 #include "Engine/EngineTypes.h"
 #include "FExternFileInfo.generated.h"
 
+
+UENUM()
+enum class EHashCalculator
+{
+	NoHash,
+	MD5,
+	SHA1
+};
+
 USTRUCT(BlueprintType)
 struct FExternFileInfo
 {
@@ -18,23 +27,8 @@ public:
 	FExternFileInfo(const FExternFileInfo&) = default;
 	FExternFileInfo& operator=(const FExternFileInfo&) = default;
 
-	FORCEINLINE FString GenerateFileHash()
-	{
-		FileHash = GetFileHash();
-		return FileHash;
-	}
-
-	FORCEINLINE FString GetFileHash()const
-	{
-		FString HashValue;
-		FString FileAbsPath = FPaths::ConvertRelativePathToFull(FilePath.FilePath);
-		if (FPaths::FileExists(FileAbsPath))
-		{
-			FMD5Hash FileMD5Hash = FMD5Hash::HashFile(*FileAbsPath);
-			HashValue = LexToString(FileMD5Hash);
-		}
-		return HashValue;
-	}
+	FString GenerateFileHash(EHashCalculator HashCalculator = EHashCalculator::MD5);
+	FString GetFileHash(EHashCalculator HashCalculator = EHashCalculator::MD5)const;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion", meta = (RelativeToGameContentDir))
 		FFilePath FilePath;

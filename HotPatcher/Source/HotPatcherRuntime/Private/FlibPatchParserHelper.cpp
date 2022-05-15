@@ -199,6 +199,7 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 
 
 bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
+	const FExportPatchSettings& PatchSetting,
 	const FHotPatcherVersion& InBaseVersion,const FHotPatcherVersion& InNewVersion, TMap<ETargetPlatform, FPatchVersionExternDiff>& OutDiff)
 {
 	OutDiff.Empty();
@@ -265,8 +266,8 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 		if(InBaseVersion.PlatformAssets.Contains(Platform))
 		{
 			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
-				UFlibPatchParserHelper::GetAllExFilesByPlatform(InBaseVersion.PlatformAssets[Platform],false),
-				UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform]),
+				UFlibPatchParserHelper::GetAllExFilesByPlatform(InBaseVersion.PlatformAssets[Platform],false,PatchSetting.GetHashCalculator()),
+				UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform],false,PatchSetting.GetHashCalculator()),
 				Platform
 			));
 		}
@@ -276,7 +277,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 			EmptyBase.Platform = Platform;
 			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
 				EmptyBase,
-                UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform],true),
+                UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform],true,PatchSetting.GetHashCalculator()),
                 Platform
             ));
 		}
@@ -290,7 +291,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 			FPlatformExternFiles EmptyNew;
 			EmptyNew.Platform = Platform;
 			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
-                UFlibPatchParserHelper::GetAllExFilesByPlatform(InBaseVersion.PlatformAssets[Platform]),
+                UFlibPatchParserHelper::GetAllExFilesByPlatform(InBaseVersion.PlatformAssets[Platform],false,PatchSetting.GetHashCalculator()),
                 EmptyNew,
                 Platform
             ));
@@ -300,7 +301,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 }
 
 FPlatformExternFiles UFlibPatchParserHelper::GetAllExFilesByPlatform(
-	const FPlatformExternAssets& InPlatformConf,bool InGeneratedHash)
+	const FPlatformExternAssets& InPlatformConf, bool InGeneratedHash, EHashCalculator HashCalculator)
 {
 	FPlatformExternFiles result;
 	result.ExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(InPlatformConf.AddExternDirectoryToPak);
@@ -319,7 +320,7 @@ FPlatformExternFiles UFlibPatchParserHelper::GetAllExFilesByPlatform(
 	{
 		for (auto& ExFile : result.ExternFiles)
 		{
-			ExFile.GenerateFileHash();
+			ExFile.GenerateFileHash(HashCalculator);
 		}
 	}
 	return result;
@@ -530,26 +531,26 @@ bool UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(
 	return bRunStatus;
 }
 
-bool UFlibPatchParserHelper::ConvNotAssetFileToExFile(const FString& InProjectDir, const FString& InPlatformName, const FString& InCookedFile, FExternFileInfo& OutExFile)
-{
-	bool bRunStatus = false;
-	if (FPaths::FileExists(InCookedFile))
-	{
-		FString CookPlatformAbsPath = FPaths::Combine(InProjectDir, TEXT("Saved/Cooked"), InPlatformName);
-
-		FString RelativePath = UKismetStringLibrary::GetSubstring(InCookedFile, CookPlatformAbsPath.Len() + 1, InCookedFile.Len() - CookPlatformAbsPath.Len());
-		FString AssetFileRelativeCookPath = FString::Printf(
-			TEXT("../../../%s"),
-			*RelativePath
-		);
-
-		OutExFile.FilePath.FilePath = InCookedFile;
-		OutExFile.MountPath = AssetFileRelativeCookPath;
-		OutExFile.GetFileHash();
-		bRunStatus = true;
-	}
-	return bRunStatus;
-}
+// bool UFlibPatchParserHelper::ConvNotAssetFileToExFile(const FString& InProjectDir, const FString& InPlatformName, const FString& InCookedFile, FExternFileInfo& OutExFile)
+// {
+// 	bool bRunStatus = false;
+// 	if (FPaths::FileExists(InCookedFile))
+// 	{
+// 		FString CookPlatformAbsPath = FPaths::Combine(InProjectDir, TEXT("Saved/Cooked"), InPlatformName);
+//
+// 		FString RelativePath = UKismetStringLibrary::GetSubstring(InCookedFile, CookPlatformAbsPath.Len() + 1, InCookedFile.Len() - CookPlatformAbsPath.Len());
+// 		FString AssetFileRelativeCookPath = FString::Printf(
+// 			TEXT("../../../%s"),
+// 			*RelativePath
+// 		);
+//
+// 		OutExFile.FilePath.FilePath = InCookedFile;
+// 		OutExFile.MountPath = AssetFileRelativeCookPath;
+// 		OutExFile.GetFileHash();
+// 		bRunStatus = true;
+// 	}
+// 	return bRunStatus;
+// }
 
 FString UFlibPatchParserHelper::HashStringWithSHA1(const FString &InString)
 {
@@ -742,24 +743,24 @@ TArray<FString> UFlibPatchParserHelper::GetCookedFilesByPakInternalInfo(const FP
 }
 
 
-TArray<FExternFileInfo> UFlibPatchParserHelper::GetInternalFilesAsExFiles(const FPakInternalInfo& InPakInternalInfo, const FString& InPlatformName)
-{
-	TArray<FExternFileInfo> resultFiles;
-
-	TArray<FString> AllNeedPakInternalCookedFiles;
-
-	FString ProjectAbsDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-	AllNeedPakInternalCookedFiles.Append(UFlibPatchParserHelper::GetCookedFilesByPakInternalInfo(InPakInternalInfo, InPlatformName));
-
-	for (const auto& File : AllNeedPakInternalCookedFiles)
-	{
-		FExternFileInfo CurrentFile;
-		UFlibPatchParserHelper::ConvNotAssetFileToExFile(ProjectAbsDir,InPlatformName, File, CurrentFile);
-		resultFiles.Add(CurrentFile);
-	}
-
-	return resultFiles;
-}
+// TArray<FExternFileInfo> UFlibPatchParserHelper::GetInternalFilesAsExFiles(const FPakInternalInfo& InPakInternalInfo, const FString& InPlatformName)
+// {
+// 	TArray<FExternFileInfo> resultFiles;
+//
+// 	TArray<FString> AllNeedPakInternalCookedFiles;
+//
+// 	FString ProjectAbsDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+// 	AllNeedPakInternalCookedFiles.Append(UFlibPatchParserHelper::GetCookedFilesByPakInternalInfo(InPakInternalInfo, InPlatformName));
+//
+// 	for (const auto& File : AllNeedPakInternalCookedFiles)
+// 	{
+// 		FExternFileInfo CurrentFile;
+// 		UFlibPatchParserHelper::ConvNotAssetFileToExFile(ProjectAbsDir,InPlatformName, File, CurrentFile);
+// 		resultFiles.Add(CurrentFile);
+// 	}
+//
+// 	return resultFiles;
+// }
 
 TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(
 	const FPakInternalInfo& InPakInternalInfo, 
@@ -1271,7 +1272,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 	ScanConfig.ForceSkipContentRules = InChunkInfo.ForceSkipContentRules;
 	ScanConfig.bIncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
 	RunAssetScanner(ScanConfig,ExportVersion);
-	ExportExternAssetsToPlatform(InChunkInfo.AddExternAssetsToPlatform,ExportVersion);
+	ExportExternAssetsToPlatform(InChunkInfo.AddExternAssetsToPlatform,ExportVersion,false,EHashCalculator::NoHash);
 
 	return ExportVersion;
 }
@@ -1384,12 +1385,13 @@ void UFlibPatchParserHelper::RunAssetScanner(FAssetScanConfig ScanConfig,FHotPat
 }
 
 void UFlibPatchParserHelper::ExportExternAssetsToPlatform(
-	const TArray<FPlatformExternAssets>& AddExternAssetsToPlatform, FHotPatcherVersion& ExportVersion)
+	const TArray<FPlatformExternAssets>& AddExternAssetsToPlatform, FHotPatcherVersion& ExportVersion, bool
+	bGenerateHASH, EHashCalculator HashCalculator)
 {
 	SCOPED_NAMED_EVENT_TEXT("UFlibPatchParserHelper::ExportExternAssetsToPlatform",FColor::Red);
 	for(const auto& PlatformExInfo:AddExternAssetsToPlatform)
 	{
-		FPlatformExternFiles PlatformFileInfo = UFlibPatchParserHelper::GetAllExFilesByPlatform(PlatformExInfo);
+		FPlatformExternFiles PlatformFileInfo = UFlibPatchParserHelper::GetAllExFilesByPlatform(PlatformExInfo,bGenerateHASH,HashCalculator);
 		FPlatformExternAssets PlatformExternAssets;
 		PlatformExternAssets.TargetPlatform = PlatformExInfo.TargetPlatform;
 		PlatformExternAssets.AddExternFileToPak = PlatformFileInfo.ExternFiles;

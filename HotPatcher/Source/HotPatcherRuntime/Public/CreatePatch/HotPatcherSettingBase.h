@@ -15,6 +15,8 @@ struct HOTPATCHERRUNTIME_API FPatcherEntitySettingBase
     GENERATED_BODY();
     virtual ~FPatcherEntitySettingBase(){}
 };
+
+
 USTRUCT(BlueprintType)
 struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase:public FPatcherEntitySettingBase
 {
@@ -68,6 +70,7 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase:public FPatcherEntitySetting
 
     FORCEINLINE FAssetScanConfig GetAssetScanConfig()const{ return AssetScanConfig; }
     FORCEINLINE FAssetScanConfig& GetAssetScanConfigRef() { return AssetScanConfig; }
+    FORCEINLINE EHashCalculator GetHashCalculator()const { return HashCalculator; }
     virtual ~FHotPatcherSettingBase(){}
     
 public:
@@ -79,6 +82,10 @@ public:
     bool bStorageConfig = true;
     UPROPERTY(EditAnywhere, Category = "SaveTo")
     FDirectoryPath SavePath;
+    
+    UPROPERTY(EditAnywhere, Category = "Advanced")
+    EHashCalculator HashCalculator = EHashCalculator::MD5;
+    
     // create a UE4Editor-cmd.exe process execute patch mission.
     UPROPERTY(EditAnywhere, Category = "Advanced")
     bool bStandaloneMode = true;

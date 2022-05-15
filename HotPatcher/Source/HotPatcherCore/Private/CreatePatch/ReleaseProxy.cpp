@@ -115,7 +115,7 @@ namespace ReleaseWorker
 			Context.NewReleaseVersion.BaseVersionId = TEXT("");
 		}
 		UFlibPatchParserHelper::RunAssetScanner(Context.GetSettingObject()->GetAssetScanConfig(),Context.NewReleaseVersion);
-		UFlibPatchParserHelper::ExportExternAssetsToPlatform(Context.GetSettingObject()->GetAddExternAssetsToPlatform(),Context.NewReleaseVersion);
+		UFlibPatchParserHelper::ExportExternAssetsToPlatform(Context.GetSettingObject()->GetAddExternAssetsToPlatform(),Context.NewReleaseVersion,false,Context.GetSettingObject()->GetHashCalculator());
 		return true;
 	}
 

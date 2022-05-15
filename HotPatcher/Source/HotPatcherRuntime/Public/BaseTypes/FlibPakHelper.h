@@ -108,6 +108,7 @@ public:
 	static TArray<FString> GetPakFileList(const FString& InPak, const FString& AESKey);
 	static TMap<FString,FPakEntry> GetPakEntrys(FPakFile* InPakFile, const FString& AESKey);
 
+	static FSHA1 GetPakEntryHASH(FPakFile* InPakFile,const FPakEntry& PakEntry);
 	UFUNCTION(BlueprintCallable)
 	static void DumpPakEntrys(const FString& InPak, const FString& AESKey,const FString& SaveTo);
 	
@@ -115,6 +116,9 @@ public:
 
 	static FPakFile* GetPakFileIns(const FString& InPak, const FString& AESKey);
 
+	UFUNCTION(BlueprintCallable)
+	static void TestRemakePak(const FString& OldPak,const FString& NewPak);
+	
 public:
 	// reload Global&Project shaderbytecode
 	UFUNCTION(BlueprintCallable,Exec)

@@ -85,7 +85,7 @@ FHotPatcherVersion FExportPatchSettings::GetNewPatchVersionInfo()
 	CurrentVersion.BaseVersionId = BaseVersionInfo.VersionId;
 	CurrentVersion.Date = FDateTime::UtcNow().ToString();
 	UFlibPatchParserHelper::RunAssetScanner(GetAssetScanConfig(),CurrentVersion);
-	UFlibPatchParserHelper::ExportExternAssetsToPlatform(GetAddExternAssetsToPlatform(),CurrentVersion);
+	UFlibPatchParserHelper::ExportExternAssetsToPlatform(GetAddExternAssetsToPlatform(),CurrentVersion,false,GetHashCalculator());
 	
 	// UFlibPatchParserHelper::ExportReleaseVersionInfo(
  //        GetVersionId(),

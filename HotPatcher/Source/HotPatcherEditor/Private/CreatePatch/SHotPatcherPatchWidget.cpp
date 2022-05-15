@@ -318,7 +318,7 @@ FReply SHotPatcherPatchWidget::DoDiff()const
 	CurrentVersion.BaseVersionId = BaseVersion.VersionId;
 	CurrentVersion.Date = FDateTime::UtcNow().ToString();
 	UFlibPatchParserHelper::RunAssetScanner(ExportPatchSetting->GetAssetScanConfig(),CurrentVersion);
-	UFlibPatchParserHelper::ExportExternAssetsToPlatform(ExportPatchSetting->GetAddExternAssetsToPlatform(),CurrentVersion);
+	UFlibPatchParserHelper::ExportExternAssetsToPlatform(ExportPatchSetting->GetAddExternAssetsToPlatform(),CurrentVersion,false,ExportPatchSetting->GetHashCalculator());
 	
 	FPatchVersionDiff VersionDiffInfo = UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
 	

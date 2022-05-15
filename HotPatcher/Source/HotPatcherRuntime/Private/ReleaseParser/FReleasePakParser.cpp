@@ -3,7 +3,7 @@
 #include "FlibPakHelper.h"
 #include "FlibPatchParserHelper.h"
 
-void FReleasePakParser::Parser(TSharedPtr<FReleaseParserConf> ParserConf)
+void FReleasePakParser::Parser(TSharedPtr<FReleaseParserConf> ParserConf, EHashCalculator HashCalculator)
 {
 	result.Platform = ParserConf->TargetPlatform;
 	FReleasePakFilesConf* Conf = (FReleasePakFilesConf*)ParserConf.Get();

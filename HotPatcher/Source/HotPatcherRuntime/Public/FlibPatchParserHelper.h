@@ -57,7 +57,8 @@ public:
 		bool bInAnalysisFilterDependencies = true
 	);
 	static void RunAssetScanner(FAssetScanConfig ScanConfig,FHotPatcherVersion& ExportVersion);
-	static void ExportExternAssetsToPlatform(const TArray<FPlatformExternAssets>& AddExternAssetsToPlatform,FHotPatcherVersion& ExportVersion);
+	static void ExportExternAssetsToPlatform(const TArray<FPlatformExternAssets>& AddExternAssetsToPlatform, FHotPatcherVersion& ExportVersion, bool bGenerateHASH, EHashCalculator
+	                                         HashCalculator);
 
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool DiffVersionAssets(const FAssetDependenciesInfo& InNewVersion, 
@@ -67,14 +68,15 @@ public:
 								FAssetDependenciesInfo& OutDeleteAsset
 		);
 
-	UFUNCTION()
+	// UFUNCTION()
 	static bool DiffVersionAllPlatformExFiles(
+		const FExportPatchSettings& PatchSetting,
         const FHotPatcherVersion& InBaseVersion,
         const FHotPatcherVersion& InNewVersion,
 		TMap<ETargetPlatform,FPatchVersionExternDiff>& OutDiff        
     );
 	UFUNCTION()
-	static FPlatformExternFiles GetAllExFilesByPlatform(const FPlatformExternAssets& InPlatformConf,bool InGeneratedHash=true);
+	static FPlatformExternFiles GetAllExFilesByPlatform(const FPlatformExternAssets& InPlatformConf, bool InGeneratedHash=true, EHashCalculator HashCalculator = EHashCalculator::NoHash);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static bool GetPakFileInfo(const FString& InFile,FPakFileInfo& OutFileInfo);
 
@@ -106,7 +108,7 @@ public:
 			const FString& InCookedFile,
 			FString& OutCommand,
 			TFunction<void(const FPakCommand&)> InReceiveCommand = [](const FPakCommand&) {});
-	static bool ConvNotAssetFileToExFile(const FString& InProjectDir, const FString& InPlatformName, const FString& InCookedFile, FExternFileInfo& OutExFile);
+	// static bool ConvNotAssetFileToExFile(const FString& InProjectDir, const FString& InPlatformName, const FString& InCookedFile, FExternFileInfo& OutExFile);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 	static FString HashStringWithSHA1(const FString &InString);
 
@@ -133,7 +135,7 @@ public:
 		const FPakInternalInfo& InPakInternalInfo, 
 		const FString& PlatformName);
 
-	static TArray<FExternFileInfo> GetInternalFilesAsExFiles(const FPakInternalInfo& InPakInternalInfo, const FString& InPlatformName);
+	// static TArray<FExternFileInfo> GetInternalFilesAsExFiles(const FPakInternalInfo& InPakInternalInfo, const FString& InPlatformName);
 	static TArray<FString> GetPakCommandsFromInternalInfo(
 		const FPakInternalInfo& InPakInternalInfo, 
 		const FString& PlatformName, 

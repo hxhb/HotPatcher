@@ -30,7 +30,7 @@ void FExportReleaseSettings::Init()
 			if(!!PakListConf->PakResponseFiles.Num())
 			{
 				FReleasePaklistParser PakListParser;
-				PakListParser.Parser(PakListConf);
+				PakListParser.Parser(PakListConf,GetHashCalculator());
 				PlatformAssets.Add(PakListParser.GetParserResult());
 			}
 
@@ -43,7 +43,7 @@ void FExportReleaseSettings::Init()
 			if(!!PakFileConf->PakFiles.Num())
 			{
 				FReleasePakParser PakFileParser;
-				PakFileParser.Parser(PakFileConf);
+				PakFileParser.Parser(PakFileConf,GetHashCalculator());
 				PlatformAssets.Add(PakFileParser.GetParserResult());
 			}
 		}

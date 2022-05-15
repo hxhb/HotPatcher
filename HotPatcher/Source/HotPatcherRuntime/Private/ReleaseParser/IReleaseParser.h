@@ -30,7 +30,7 @@ struct FReleaseParserResult
 
 struct IReleaseParser
 {
-	virtual void Parser(TSharedPtr<FReleaseParserConf> ParserConf)=0;
+	virtual void Parser(TSharedPtr<FReleaseParserConf> ParserConf, EHashCalculator HashCalculator)=0;
 	virtual const FReleaseParserResult& GetParserResult()const {return result;};
  	virtual ~IReleaseParser(){}
 protected:

@@ -4,5 +4,5 @@
 
 struct FReleasePakParser : public IReleaseParser
 {
-	virtual void Parser(TSharedPtr<FReleaseParserConf> ParserConf) override;
+	virtual void Parser(TSharedPtr<FReleaseParserConf> ParserConf, EHashCalculator HashCalculator) override;
 };
