@@ -18,49 +18,6 @@
 	#define GetFilenames GetPrunedFilenames
 #endif
 
-
-USTRUCT(BlueprintType)
-struct FDumpPakEntry
-{
-	GENERATED_USTRUCT_BODY()
-	
-	UPROPERTY()
-	int64 Offset;
-	UPROPERTY()
-	int64 PakEntrySize;
-	UPROPERTY()
-	int64 ContentSize;
-};
-
-USTRUCT(BlueprintType)
-struct FDumpPakAsset
-{
-	GENERATED_USTRUCT_BODY()
-	
-	UPROPERTY()
-	FString PackageName;
-	UPROPERTY()
-	FName GUID;
-	
-	UPROPERTY()
-	TMap<FString,FDumpPakEntry> AssetEntrys;
-};
-
-
-USTRUCT(BlueprintType)
-struct FPakDumper
-{
-	GENERATED_USTRUCT_BODY()
-	UPROPERTY()
-	FString PakName;
-	UPROPERTY()
-	FString MountPoint;
-
-	UPROPERTY()
-	TMap<FString,FDumpPakAsset> PakEntrys;
-};
-
-
 UCLASS()
 class HOTPATCHERRUNTIME_API UFlibPakHelper : public UBlueprintFunctionLibrary
 {
@@ -107,18 +64,11 @@ public:
 
 	static TArray<FString> GetPakFileList(const FString& InPak, const FString& AESKey);
 	static TMap<FString,FPakEntry> GetPakEntrys(FPakFile* InPakFile, const FString& AESKey);
-
-	static FSHA1 GetPakEntryHASH(FPakFile* InPakFile,const FPakEntry& PakEntry);
-	UFUNCTION(BlueprintCallable)
-	static void DumpPakEntrys(const FString& InPak, const FString& AESKey,const FString& SaveTo);
+	
 	
 	static FString GetPakFileMountPoint(const FString& InPak, const FString& AESKey);
-
 	static FPakFile* GetPakFileIns(const FString& InPak, const FString& AESKey);
 
-	UFUNCTION(BlueprintCallable)
-	static void TestRemakePak(const FString& OldPak,const FString& NewPak);
-	
 public:
 	// reload Global&Project shaderbytecode
 	UFUNCTION(BlueprintCallable,Exec)

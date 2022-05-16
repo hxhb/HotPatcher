@@ -2,6 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "IPlatformFilePak.h"
+#include "Serialization/MemoryWriter.h"
+
+struct FPakEntryPair
+{
+	FString Filename;
+	FPakEntry Info;
+};
 
 struct PakEntryWrapper
 {

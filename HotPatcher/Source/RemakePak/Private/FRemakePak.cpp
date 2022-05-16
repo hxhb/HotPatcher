@@ -1,4 +1,4 @@
-#include "RemakePak.h"
+#include "FRemakePak.h"
 
 /* Helper for index creation in CreatePakFile.  Used to (conditionally) write Bytes into a SecondaryIndex and serialize into the PrimaryIndex the offset of the SecondaryIndex */
 struct FSecondaryIndexWriter
@@ -182,10 +182,7 @@ void FRemakePak::SerializeToDisk(const FString& Filename)
 	int32 NumDeletedEntries = 0;
 	TArray<FPakEntry> NonEncodableEntries;
 
-	FPakFile::FDirectoryIndex DirectoryIndex;
-	FPakFile::FPathHashIndex PathHashIndex;
-	TMap<uint64, FString> CollisionDetection; // Currently detecting Collisions only within the files stored into a single Pak.  TODO: Create separate job to detect collisions over all files in the export.
-	uint64 PathHashSeed;
+
 	int32 NextIndex = 0;
 	TArray<FPakEntryPair> PakEntryPairs;
 	for(const auto& PakEntry:PakEntries)
@@ -200,11 +197,15 @@ void FRemakePak::SerializeToDisk(const FString& Filename)
 	FPakInfo Info;
 	Info.bEncryptedIndex = false;
 	Info.EncryptionKeyGuid = FGuid();
-	
-	
+
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
+	FPakFile::FDirectoryIndex DirectoryIndex;
+	FPakFile::FPathHashIndex PathHashIndex;
+	TMap<uint64, FString> CollisionDetection; // Currently detecting Collisions only within the files stored into a single Pak.  TODO: Create separate job to detect collisions over all files in the export.
+	uint64 PathHashSeed;
 	FPakFile::EncodePakEntriesIntoIndex(PakEntries.Num(), ReadNextEntry, *Filename, Info, MountPoint, NumEncodedEntries, NumDeletedEntries, &PathHashSeed,
 		&DirectoryIndex, &PathHashIndex, EncodedPakEntries, NonEncodableEntries, &CollisionDetection, FPakInfo::PakFile_Version_Latest);
-	
+
 		// We write one PrimaryIndex and two SecondaryIndexes to the Pak File
 	// PrimaryIndex
 	//		Common scalar data such as MountPoint
@@ -326,5 +327,6 @@ void FRemakePak::SerializeToDisk(const FString& Filename)
 
 	// Save the FPakInfo, which has offset, size, and hash value for the PrimaryIndex, at the end of the PakFile
 	Info.Serialize(*SerializePak, FPakInfo::PakFile_Version_Latest);
+#endif
 	SerializePak->Close();
 }
