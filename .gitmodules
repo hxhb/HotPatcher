@@ -1,3 +1,6 @@
 [submodule "Mods/HotMultiCooker"]
 	path = Mods/HotMultiCooker
 	url = git@github.com:hxhb/HotMultiCooker.git
+[submodule "Mods/RemakePak"]
+	path = Mods/RemakePak
+	url = git@github.com:hxhb/RemakePak.git
