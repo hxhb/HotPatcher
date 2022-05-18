@@ -64,7 +64,7 @@ public:
 
 	static TArray<FString> GetPakFileList(const FString& InPak, const FString& AESKey);
 	static TMap<FString,FPakEntry> GetPakEntrys(FPakFile* InPakFile, const FString& AESKey);
-	
+	static FSHA1 GetPakEntryHASH(FPakFile* InPakFile,const FPakEntry& PakEntry);
 	
 	static FString GetPakFileMountPoint(const FString& InPak, const FString& AESKey);
 	static FPakFile* GetPakFileIns(const FString& InPak, const FString& AESKey);

@@ -222,5 +222,10 @@ public:
 	static bool SerializePakEncryptionKeyToFile(const FPakEncryptionKeys& PakEncryptionKeys,const FString& ToFile);
 
 	static TArray<FDirectoryPath> GetDefaultForceSkipContentDir();
+
+	static FSHAHash FileSHA1Hash(const FString& Filename);
+	
+	static FString FileHash(const FString& Filename,EHashCalculator Calculator);
+	
 };
 

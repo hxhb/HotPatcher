@@ -453,6 +453,17 @@ bool PreLoadPak(const FString& InPakPath,const FString& AesKey)
 #define FFileIterator FFilenameIterator
 #endif
 
+FSHA1 UFlibPakHelper::GetPakEntryHASH(FPakFile* InPakFile,const FPakEntry& PakEntry)
+{
+	FSHA1 Sha1;
+	FArchive* Reader = InPakFile->GetSharedReader(nullptr);
+	Reader->Seek(PakEntry.Offset);
+	FPakEntry SerializedEntry;
+	SerializedEntry.Serialize(*Reader, InPakFile->GetInfo().Version);
+	FMemory::Memcpy(Sha1.m_digest, &SerializedEntry.Hash, sizeof(SerializedEntry.Hash));
+	return Sha1;
+}
+
 TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FString& AESKey)
 {
 	TArray<FString> Records;
@@ -479,8 +490,8 @@ TMap<FString,FPakEntry> UFlibPakHelper::GetPakEntrys(FPakFile* InPakFile, const 
 			const FString& Filename = It.Filename();
 			FPakEntry PakEntry;
 			PakEntry = It.Info();
-			// FSHA1 Sha1 = GetPakEntryHASH(InPakFile,PakEntry);
-			// FMemory::Memcpy(PakEntry.Hash,Sha1.m_digest,sizeof(Sha1.m_digest));
+			FSHA1 Sha1 = GetPakEntryHASH(InPakFile,PakEntry);
+			FMemory::Memcpy(PakEntry.Hash,Sha1.m_digest,sizeof(Sha1.m_digest));
 			Records.Emplace(MountPoint + Filename,PakEntry);
 		}
 		

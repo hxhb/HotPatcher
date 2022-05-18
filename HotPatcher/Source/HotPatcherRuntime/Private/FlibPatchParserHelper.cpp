@@ -2016,3 +2016,39 @@ TArray<FDirectoryPath> UFlibPatchParserHelper::GetDefaultForceSkipContentDir()
 	return result;
 }
 
+FSHAHash UFlibPatchParserHelper::FileSHA1Hash(const FString& Filename)
+{
+	FSHAHash Hash;
+	FSHA1::GetFileSHAHash(*Filename,Hash.Hash,true);
+	TArray<uint8> Data;
+	FFileHelper::LoadFileToArray(Data,*Filename);
+	FSHA1::HashBuffer(Data.GetData(),Data.Num(),Hash.Hash);
+	return Hash;
+}
+
+FString UFlibPatchParserHelper::FileHash(const FString& Filename, EHashCalculator Calculator)
+{
+	FString HashValue;
+	
+	FString FileAbsPath = FPaths::ConvertRelativePathToFull(Filename);
+	if (FPaths::FileExists(FileAbsPath))
+	{
+		switch (Calculator)
+		{
+		case EHashCalculator::MD5:
+			{
+				FMD5Hash FileMD5Hash = FMD5Hash::HashFile(*FileAbsPath);
+				HashValue = LexToString(FileMD5Hash);
+				break;
+			}
+		case  EHashCalculator::SHA1:
+			{
+				FSHAHash Hash = UFlibPatchParserHelper::FileSHA1Hash(Filename);
+				HashValue = Hash.ToString();
+				break;
+			}
+		};
+	}
+	return HashValue;
+}
+
