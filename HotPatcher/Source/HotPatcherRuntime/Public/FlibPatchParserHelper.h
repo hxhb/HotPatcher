@@ -226,6 +226,15 @@ public:
 	static FSHAHash FileSHA1Hash(const FString& Filename);
 	
 	static FString FileHash(const FString& Filename,EHashCalculator Calculator);
-	
+
+	template<typename T>
+	static bool SerializeStruct(T SerializeStruct,const FString& SaveTo)
+	{
+		SCOPED_NAMED_EVENT_TEXT("SerializeStruct",FColor::Red);
+		FString SaveToPath = UFlibPatchParserHelper::ReplaceMark(SaveTo);
+		FString SerializedJsonContent;
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(SerializeStruct,SerializedJsonContent);
+		return FFileHelper::SaveStringToFile(SerializedJsonContent,*FPaths::ConvertRelativePathToFull(SaveToPath));
+	}
 };
 
