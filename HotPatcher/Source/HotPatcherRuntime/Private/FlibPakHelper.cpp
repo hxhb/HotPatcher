@@ -474,11 +474,11 @@ TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FStri
 #else
 	TSharedPtr<FPakFile> PakFile = MakeShareable(PakFilePtr);
 #endif
-	UFlibPakHelper::GetPakEntrys(PakFilePtr,AESKey).GetKeys(Records);
+	UFlibPakHelper::GetPakEntrys(PakFilePtr).GetKeys(Records);
 	return Records;
 }
 
-TMap<FString,FPakEntry> UFlibPakHelper::GetPakEntrys(FPakFile* InPakFile, const FString& AESKey)
+TMap<FString,FPakEntry> UFlibPakHelper::GetPakEntrys(FPakFile* InPakFile)
 {
 	TMap<FString,FPakEntry> Records;
 	

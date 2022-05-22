@@ -63,7 +63,7 @@ public:
 		static bool OpenPSO(const FString& Name);
 
 	static TArray<FString> GetPakFileList(const FString& InPak, const FString& AESKey);
-	static TMap<FString,FPakEntry> GetPakEntrys(FPakFile* InPakFile, const FString& AESKey);
+	static TMap<FString,FPakEntry> GetPakEntrys(FPakFile* InPakFile);
 	static FSHA1 GetPakEntryHASH(FPakFile* InPakFile,const FPakEntry& PakEntry);
 	
 	static FString GetPakFileMountPoint(const FString& InPak, const FString& AESKey);
