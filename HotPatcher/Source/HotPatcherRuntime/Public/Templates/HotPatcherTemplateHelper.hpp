@@ -35,9 +35,10 @@ namespace THotPatcherTemplateHelper
 	template<typename T>
 	static std::string GetCPPTypeName()
 	{
-		std::string type_name = typeid(T).name();
-		std::vector<std::string> split_results = THotPatcherTemplateHelper::split(type_name,' ');
-		std::string result = split_results.at(split_results.size()-1);
+		// std::string type_name = typeid(T).name();
+		// std::vector<std::string> split_results = THotPatcherTemplateHelper::split(type_name,' ');
+		// std::string result = split_results.at(split_results.size()-1);
+		std::string result;
 		// std::for_each(type_name.begin(),type_name.end(),[&result](const char& character){if(!std::isdigit(character)) result.push_back(character);});
 		return result;
 	}
@@ -57,7 +58,7 @@ namespace THotPatcherTemplateHelper
 	}
 	
 	template<typename ENUM_TYPE>
-	static FString GetEnumNameByValue(ENUM_TYPE InEnumValue, bool bFullName = false)
+	FString GetEnumNameByValue(ENUM_TYPE InEnumValue, bool bFullName = false)
 	{
 		SCOPED_NAMED_EVENT_TEXT("GetEnumNameByValue",FColor::Red);
 		FString result;
@@ -84,9 +85,10 @@ namespace THotPatcherTemplateHelper
 		}
 		return result;
 	}
+	
 
 	template<typename ENUM_TYPE>
-	static bool GetEnumValueByName(const FString& InEnumValueName, ENUM_TYPE& OutEnumValue)
+	bool GetEnumValueByName(const FString& InEnumValueName, ENUM_TYPE& OutEnumValue)
 	{
 		SCOPED_NAMED_EVENT_TEXT("GetEnumValueByName",FColor::Red);
 		bool bStatus = false;
@@ -116,7 +118,6 @@ namespace THotPatcherTemplateHelper
 		return bStatus;
 	}
 
-	
 	template<typename TStructType>
 	static bool TSerializeStructAsJsonObject(const TStructType& InStruct,TSharedPtr<FJsonObject>& OutJsonObject)
 	{

@@ -14,7 +14,8 @@ public class HotPatcherRuntime : ModuleRules
 			new string[] {
 				Path.Combine(EngineDirectory,"Source/Runtime/Launch"),
 				Path.Combine(ModuleDirectory,"Public"),
-				Path.Combine(ModuleDirectory,"Public/BaseTypes")
+				Path.Combine(ModuleDirectory,"Public/BaseTypes"),
+				Path.Combine(ModuleDirectory,"Public/Templates")
 				// ... add public include paths required here ...
 			}
 			);

@@ -2,6 +2,7 @@
 #include "FlibHotPatcherCoreHelper.h"
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
 #include "Interfaces/ITargetPlatform.h"
+#include "Resources/Version.h"
 
 FCookShaderCollectionProxy::FCookShaderCollectionProxy(const TArray<FString>& InPlatformNames,const FString& InLibraryName,bool bInShareShader,bool InIsNative,bool bInMaster,const FString& InSaveBaseDir)
 :PlatformNames(InPlatformNames),LibraryName(InLibraryName),bShareShader(bInShareShader),bIsNative(InIsNative),bMaster(bInMaster),SaveBaseDir(InSaveBaseDir){}

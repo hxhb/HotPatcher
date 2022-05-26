@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Templates/HotPatcherTemplateHelper.hpp"
+
 #include "CoreMinimal.h"
 #include "Misc/EnumRange.h"
 #include "ETargetPlatform.generated.h"
@@ -13,6 +15,17 @@ enum class ETargetPlatform : uint8
 	Count UMETA(Hidden)
 };
 ENUM_RANGE_BY_COUNT(ETargetPlatform, ETargetPlatform::Count);
+
+#if ENGINE_MAJOR_VERSION <= 4 && ENGINE_MINOR_VERSION <= 21
+namespace THotPatcherTemplateHelper
+{
+	template<>
+	std::string GetCPPTypeName<ETargetPlatform>()
+	{
+		return std::string("ETargetPlatform");	
+	};
+}
+#endif
 
 // static TArray<FString> AppendPlatformEnums = {
 // #if ENGINE_MAJOR_VERSION > 4

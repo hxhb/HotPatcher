@@ -5,7 +5,7 @@
 #include "Async/ParallelFor.h"
 #include "Engine/World.h"
 #include "Engine/WorldComposition.h"
-
+#include "Resources/Version.h"
 
 void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 {
