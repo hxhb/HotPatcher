@@ -58,6 +58,7 @@ void FVersionUpdaterManager::OnRequestComplete(FHttpRequestPtr RequestPtr, FHttp
 					RemoteVersion.Author = ToolJsonObject->Get()->GetStringField(TEXT("Author"));
 					RemoteVersion.URL = ToolJsonObject->Get()->GetStringField(TEXT("URL"));
 					RemoteVersion.Website = ToolJsonObject->Get()->GetStringField(TEXT("Website"));
+					RemoteVersion.b3rdMods = ToolJsonObject->Get()->GetBoolField(TEXT("3rdMods"));
 					ToolJsonObject->Get()->TryGetNumberField(TEXT("PatchVersion"),RemoteVersion.PatchVersion);
 					const TSharedPtr<FJsonObject>& Actions = ToolJsonObject->Get()->GetObjectField(TEXT("Actions"));
 					

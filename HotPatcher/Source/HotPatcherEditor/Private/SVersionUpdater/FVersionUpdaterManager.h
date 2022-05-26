@@ -14,6 +14,7 @@ struct FRemteVersionDescrible
 	FString Author;
 	FString Website;
 	FString URL;
+	bool b3rdMods;
 	TMap<FName,TSet<FName>> ActiveActions;
 };
 

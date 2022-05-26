@@ -73,15 +73,22 @@ bool FHotPatcherActionManager::IsActiveAction(FString ActionName)
 	if(FVersionUpdaterManager::Get().IsRequestFinished())
 	{
 		bool bActiveInRemote = false;
-		auto HotPatcherRemoteVersion = FVersionUpdaterManager::Get().GetRemoteVersionByName(TEXT("HotPatcher"));
+		FRemteVersionDescrible* HotPatcherRemoteVersion = FVersionUpdaterManager::Get().GetRemoteVersionByName(TEXT("HotPatcher"));
 		if(HotPatcherRemoteVersion)
 		{
-			for(auto ActionCategory:HotPatcherRemoteVersion->ActiveActions)
+			if(HotPatcherRemoteVersion->b3rdMods)
 			{
-				if(ActionCategory.Value.Contains(*ActionName))
+				bActiveInRemote = true;
+			}
+			else
+			{
+				for(auto ActionCategory:HotPatcherRemoteVersion->ActiveActions)
 				{
-					bActiveInRemote = true;
-					break;
+					if(ActionCategory.Value.Contains(*ActionName))
+					{
+						bActiveInRemote = true;
+						break;
+					}
 				}
 			}
 		}

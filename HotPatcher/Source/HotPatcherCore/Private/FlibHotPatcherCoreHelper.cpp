@@ -2090,9 +2090,9 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
     		SCOPED_NAMED_EVENT_TEXT("ExportMap BeginCacheForCookedPlatformData",FColor::Red);
 			
     		uint32 SaveFlags = UFlibHotPatcherCoreHelper::GetCookSaveFlag(Package,true,bStorageConcurrent,false);
-    		TArray<UObject*> ExportMap;
-    		GetObjectsWithOuter(Package,ExportMap,true);
-    		for(const auto& ExportObj:ExportMap)
+    		TArray<UObject*> ObjectsInPackage;
+    		GetObjectsWithOuter(Package,ObjectsInPackage,true);
+    		for(const auto& ExportObj:ObjectsInPackage)
     		{
     			if(OnPreCacheObjectWithOuter)
     			{
