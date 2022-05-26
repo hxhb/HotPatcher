@@ -3,10 +3,10 @@
 #include "HotPatcherRuntime.h"
 #include "FlibPatchParserHelper.h"
 #include "ETargetPlatform.h"
-#include "Interfaces/ITargetPlatform.h"
 #include "Misc/EnumRange.h"
 
 #if WITH_EDITOR
+#include "Interfaces/ITargetPlatform.h"
 #include "Interfaces/ITargetPlatformManagerModule.h"
 #endif
 
