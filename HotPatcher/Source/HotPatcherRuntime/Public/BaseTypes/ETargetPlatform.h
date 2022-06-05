@@ -16,16 +16,7 @@ enum class ETargetPlatform : uint8
 };
 ENUM_RANGE_BY_COUNT(ETargetPlatform, ETargetPlatform::Count);
 
-#if ENGINE_MAJOR_VERSION <= 4 && ENGINE_MINOR_VERSION <= 21
-namespace THotPatcherTemplateHelper
-{
-	template<>
-	std::string GetCPPTypeName<ETargetPlatform>()
-	{
-		return std::string("ETargetPlatform");	
-	};
-}
-#endif
+DECAL_GETCPPTYPENAME_SPECIAL(ETargetPlatform)
 
 // static TArray<FString> AppendPlatformEnums = {
 // #if ENGINE_MAJOR_VERSION > 4

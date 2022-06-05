@@ -32,6 +32,25 @@ DECLARE_LOG_CATEGORY_EXTERN(LogHotPatcherCoreHelper, Log, All);
 
 struct FExportPatchSettings;
 
+
+
+struct FExecTimeRecoder
+{
+	FExecTimeRecoder(const FString& InDispalyStr):DispalyStr(InDispalyStr)
+	{
+		BeginTime = FDateTime::Now();
+	}
+	~FExecTimeRecoder()
+	{
+		EndTime = FDateTime::Now();
+		FTimespan ClusterExecTime = EndTime - BeginTime;
+		UE_LOG(LogHotPatcherCoreHelper,Display,TEXT("%s Time : %fs"),*DispalyStr,ClusterExecTime.GetTotalSeconds())
+	}
+	FString DispalyStr;
+	FDateTime BeginTime;
+	FDateTime EndTime;
+};
+
 struct FProjectPackageAssetCollection
 {
 	TArray<FDirectoryPath> DirectoryPaths;

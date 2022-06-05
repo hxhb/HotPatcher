@@ -9,16 +9,7 @@
 #include "Modules/ModuleManager.h"
 #include "UObject/Class.h"
 
-#if ENGINE_MAJOR_VERSION <= 4 && ENGINE_MINOR_VERSION <= 21
-namespace THotPatcherTemplateHelper
-{
-	template<>
-	std::string GetCPPTypeName<EBinariesPatchFeature>()
-	{
-		return std::string("EBinariesPatchFeature");	
-	};
-}
-#endif
+DECAL_GETCPPTYPENAME_SPECIAL(EBinariesPatchFeature)
 
 void OnBinariesModularFeatureRegistered(const FName& Type, IModularFeature* ModularFeature)
 {

@@ -190,6 +190,7 @@ void USingleCookerProxy::CleanClusterCachedPlatformData(const FCookCluster& Cook
 void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster)
 {
 	SCOPED_NAMED_EVENT_TEXT("PreGeneratePlatformData",FColor::Red);
+	FExecTimeRecoder PreGeneratePlatformDataTimer(TEXT("PreGeneratePlatformData"));
 	TArray<ITargetPlatform*> TargetPlatforms = UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(CookCluster.Platforms);
 	bool bConcurrentSave = GetSettingObject()->bConcurrentSave;
 	TSet<UObject*> ProcessedObjects;
@@ -268,7 +269,7 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 {
 	SCOPED_NAMED_EVENT_TEXT("ExecCookCluster",FColor::Red);
 
-	FDateTime BeginTime = FDateTime::Now();
+	FExecTimeRecoder ExecCookClusterTimer(TEXT("ExecCookCluster"));
 	
 	if(!CookCluster.AssetDetails.Num())
 	{
@@ -317,6 +318,7 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 		
 		auto CookPackageLambda = [&](int32 AssetIndex)
 		{
+			FExecTimeRecoder CookTimer(PreCachePackages[AssetIndex]->GetFullName());
 			UFlibHotPatcherCoreHelper::CookPackage(
 				PreCachePackages[AssetIndex],
 				PlatformMaps,
@@ -349,9 +351,6 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 		}
 	}
 
-	FDateTime EndTime = FDateTime::Now();
-	FTimespan ClusterExecTime = EndTime - BeginTime;
-	UE_LOG(LogHotPatcher,Display,TEXT("ExecCookCluster Time : %fs"),ClusterExecTime.GetTotalSeconds())
 	// clean cached ddd / release memory
 	// CleanClusterCachedPlatformData(CookCluster);
 	// GEngine->ForceGarbageCollection(true);

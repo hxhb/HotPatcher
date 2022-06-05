@@ -15,6 +15,18 @@
 #define FProperty UProperty
 #endif
 
+
+#define DECAL_GETCPPTYPENAME_SPECIAL(TypeName) \
+namespace THotPatcherTemplateHelper \
+{\
+template<>\
+std::string GetCPPTypeName<TypeName>()\
+{\
+return std::string(#TypeName);\
+};\
+}\
+
+
 namespace THotPatcherTemplateHelper
 {
 	FORCEINLINE std::vector<std::string> split(const std::string& s, char seperator)

@@ -2079,6 +2079,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
 	for(auto Package:Packages)
 	{
 		FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
+		FExecTimeRecoder PreGeneratePlatformDataTimer(FString::Printf(TEXT("PreGeneratePlatformData %s"),*LongPackageName));
 		FString FakePackageName = FString(TEXT("Package ")) + LongPackageName;
 
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
@@ -2215,6 +2216,7 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 	TArray<ITargetPlatform*> TargetPlatforms)
 {
 	SCOPED_NAMED_EVENT_TEXT("WaitObjectsCachePlatformDataComplete",FColor::Red);
+	FExecTimeRecoder WaitObjectsCachePlatformDataCompleteTimer(TEXT("WaitObjectsCachePlatformDataComplete"));
 	if (GShaderCompilingManager)
 	{
 		// Wait for all shaders to finish compiling
