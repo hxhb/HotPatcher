@@ -19,12 +19,12 @@
 #define DECAL_GETCPPTYPENAME_SPECIAL(TypeName) \
 namespace THotPatcherTemplateHelper \
 {\
-template<>\
-std::string GetCPPTypeName<TypeName>()\
-{\
-return std::string(#TypeName);\
-};\
-}\
+	template<>\
+	std::string GetCPPTypeName<TypeName>()\
+	{\
+	return std::string(#TypeName);\
+	};\
+};
 
 
 namespace THotPatcherTemplateHelper
@@ -42,8 +42,7 @@ namespace THotPatcherTemplateHelper
 		output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
 		return output;
 	}
-	
-#if ENGINE_MAJOR_VERSION <= 4 && ENGINE_MINOR_VERSION <= 21
+
 	template<typename T>
 	static std::string GetCPPTypeName()
 	{
@@ -54,7 +53,6 @@ namespace THotPatcherTemplateHelper
 		// std::for_each(type_name.begin(),type_name.end(),[&result](const char& character){if(!std::isdigit(character)) result.push_back(character);});
 		return result;
 	}
-#endif
 	
 	template<typename ENUM_TYPE>
 	static UEnum* GetUEnum()
