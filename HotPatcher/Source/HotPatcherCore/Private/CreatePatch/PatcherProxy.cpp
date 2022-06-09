@@ -596,9 +596,9 @@ namespace PatchWorker
 					THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
 
 					FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
+						Context.GetSettingObject(),
 						Context.VersionDiff,
-						Chunk,
-						TArray<ETargetPlatform>{Platform}
+						Chunk, TArray<ETargetPlatform>{Platform}
 					);
 					
 					const TArray<FAssetDetail>& ChunkAssets = ChunkAssetsDescrible.Assets.GetAssetDetails();
@@ -656,10 +656,10 @@ namespace PatchWorker
 				ETargetPlatform Platform;
 				THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
 				FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
-						Context.VersionDiff,
-						Chunk,
-						TArray<ETargetPlatform>{Platform}
-					);
+					Context.GetSettingObject(),
+					Context.VersionDiff,
+					Chunk, TArray<ETargetPlatform>{Platform}
+				);
 				const TArray<FAssetDetail>& ChunkAssets = ChunkAssetsDescrible.Assets.GetAssetDetails();
 				
 				if(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry)

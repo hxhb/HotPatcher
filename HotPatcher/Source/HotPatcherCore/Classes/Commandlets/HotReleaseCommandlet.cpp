@@ -2,6 +2,7 @@
 #include "CreatePatch/FExportReleaseSettings.h"
 #include "CreatePatch/ReleaseProxy.h"
 #include "CommandletHelper.h"
+#include "FlibHotPatcherCoreHelper.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -80,6 +81,8 @@ int32 UHotReleaseCommandlet::Main(const FString& Params)
 	if (FPaths::FileExists(config_path) && FFileHelper::LoadFileToString(JsonContent, *config_path))
 	{
 		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportReleaseSetting);
+		// adaptor old version config
+		UFlibHotPatcherCoreHelper::AdaptorOldVersionConfig(ExportReleaseSetting->GetAssetScanConfigRef(),JsonContent);
 	}
 
 	TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Params);

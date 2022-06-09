@@ -148,6 +148,8 @@ void SHotPatcherPatchWidget::ImportConfig()
 	if (UFlibAssetManageHelper::LoadFileToString(LoadFile, JsonContent))
 	{
 		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportPatchSetting);
+		// adaptor old version config
+		UFlibHotPatcherCoreHelper::AdaptorOldVersionConfig(ExportPatchSetting->GetAssetScanConfigRef(),JsonContent);
 		SettingsView->GetDetailsView()->ForceRefresh();
 	}
 }
@@ -412,7 +414,7 @@ FReply SHotPatcherPatchWidget::DoPreviewChunk() const
 	FString ShowMsg;
 	for (const auto& Chunk : PatchChunks)
 	{	
-		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(VersionDiffInfo, Chunk,ExportPatchSetting->GetPakTargetPlatforms());
+		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(ExportPatchSetting.Get(), VersionDiffInfo,Chunk, ExportPatchSetting->GetPakTargetPlatforms());
 		ShowMsg.Append(FString::Printf(TEXT("Chunk:%s\n"), *Chunk.ChunkName));
 		auto AppendFilesToMsg = [&ShowMsg](const FString& CategoryName, const TArray<FName>& InFiles)
 		{

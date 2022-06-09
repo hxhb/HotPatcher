@@ -269,4 +269,6 @@ public:
 	static void SaveGlobalShaderMapFiles(const TArrayView<const ITargetPlatform* const>& Platforms,const FString& BaseOutputDir);
 
 	static FString GetSavePackageResultStr(ESavePackageResult Result);
+
+	static void AdaptorOldVersionConfig(FAssetScanConfig& ScanConfig,const FString& JsonContent);
 };

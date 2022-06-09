@@ -75,6 +75,8 @@ void SHotPatcherReleaseWidget::ImportConfig()
 	{
 		// UFlibHotPatcherCoreHelper::DeserializeReleaseConfig(ExportReleaseSettings, JsonContent);
 		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportReleaseSettings);
+		// adaptor old version config
+		UFlibHotPatcherCoreHelper::AdaptorOldVersionConfig(ExportReleaseSettings->GetAssetScanConfigRef(),JsonContent);
 		SettingsView->GetDetailsView()->ForceRefresh();
 	}
 }

@@ -5,6 +5,7 @@
 
 // engine header
 #include "CoreMinimal.h"
+#include "FlibHotPatcherCoreHelper.h"
 #include "Misc/FileHelper.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Paths.h"
@@ -48,6 +49,8 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 		
 		TSharedPtr<FExportPatchSettings> ExportPatchSetting = MakeShareable(new FExportPatchSettings);
 		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportPatchSetting);
+		// adaptor old version config
+		UFlibHotPatcherCoreHelper::AdaptorOldVersionConfig(ExportPatchSetting->GetAssetScanConfigRef(),JsonContent);
 		
 		TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Params);
 		THotPatcherTemplateHelper::ReplaceProperty(*ExportPatchSetting, KeyValues);

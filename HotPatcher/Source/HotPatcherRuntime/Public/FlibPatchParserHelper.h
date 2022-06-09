@@ -151,8 +151,8 @@ public:
 	TMap<ETargetPlatform,FPlatformExternFiles> GetAllPlatformExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash);
 
 	static FChunkAssetDescribe CollectFChunkAssetsDescribeByChunk(
-		const FPatchVersionDiff& DiffInfo,
-		const FChunkInfo& Chunk, TArray<ETargetPlatform> Platforms
+		const FHotPatcherSettingBase* PatcheSettings,
+		const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, TArray<ETargetPlatform> Platforms
 	);
 
 	static TArray<FString> CollectPakCommandsStringsByChunk(

@@ -915,10 +915,10 @@ TMap<ETargetPlatform,FPlatformExternFiles> UFlibPatchParserHelper::GetAllPlatfor
 }
 
 FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
+	const FHotPatcherSettingBase* PatcheSettings,
 	const FPatchVersionDiff& DiffInfo,
-	const FChunkInfo& Chunk,
-	TArray<ETargetPlatform> Platforms
-	)
+	const FChunkInfo& Chunk, TArray<ETargetPlatform> Platforms
+)
 {
 	FChunkAssetDescribe ChunkAssetDescribe;
 	// Collect Chunk Assets
@@ -945,12 +945,39 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 		
 		FAssetDependenciesParser Parser;
 		FAssetDependencies Conf;
+		
+		TArray<FString> AssetFilterPaths = GetAssetFilterPaths(Chunk.AssetIncludeFilters);
+		TArray<FString> AsserIgnoreFilterPaths = GetAssetFilterPaths(Chunk.AssetIgnoreFilters);
+		Conf.IncludeFilters = AssetFilterPaths;
+		Conf.IgnoreFilters = AsserIgnoreFilterPaths;
 		Conf.InIncludeSpecifyAsset = Chunk.IncludeSpecifyAssets;
+		Conf.AnalysicFilterDependencies = Chunk.bAnalysisFilterDependencies;
+		Conf.ForceSkipContents = GetAssetFilterPaths(Chunk.ForceSkipContentRules);
+		Conf.ForceSkipContents.Append(GetAssetFilterPaths(PatcheSettings->GetAssetScanConfig().ForceSkipContentRules));
+		
+		auto AddForceSkipAssets = [&Conf](const TArray<FSoftObjectPath>& Assets)
+		{
+			for(const auto& forceSkipAsset:Assets)
+			{
+				Conf.ForceSkipContents.Add(forceSkipAsset.GetLongPackageName());
+			}
+		};
+		AddForceSkipAssets(Chunk.ForceSkipAssets);
+		AddForceSkipAssets(PatcheSettings->GetAssetScanConfig().ForceSkipAssets);
+		
+		auto AddSkipClassesLambda = [&Conf](const TArray<UClass*>& Classes)
+		{
+			for(const auto& ForceSkipClass:Classes)
+			{
+				Conf.IgnoreAseetTypes.Add(*ForceSkipClass->GetName());
+			}
+		};
+		AddSkipClassesLambda(Chunk.ForceSkipClasses);
+		AddSkipClassesLambda(PatcheSettings->GetAssetScanConfig().ForceSkipClasses);
 		
 		Parser.Parse(Conf);
 		TSet<FName> AssetLongPackageNames = Parser.GetrParseResults();
 		
-		TArray<FString> AssetFilterPaths = GetAssetFilterPaths(Chunk.AssetIncludeFilters);
 		// AssetFilterPaths.Append(GetSpecifyAssets(Chunk.IncludeSpecifyAssets));
 		// AssetFilterPaths.Append(SpecifyDependAssets.GetAssetLongPackageNames());
 		for(FName LongPackageName:AssetLongPackageNames)
@@ -1113,7 +1140,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 		THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
 		TArray<ETargetPlatform> CollectPlatforms = {ETargetPlatform::AllPlatforms};
 		CollectPlatforms.AddUnique(Platform);
-		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(DiffInfo, Chunk ,CollectPlatforms);
+		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(PatcheSettings, DiffInfo ,Chunk, CollectPlatforms);
 
 		TArray<FPakCommand> PakCommands;
 

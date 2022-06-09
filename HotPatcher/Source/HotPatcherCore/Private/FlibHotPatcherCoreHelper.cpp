@@ -2385,3 +2385,8 @@ FString UFlibHotPatcherCoreHelper::GetSavePackageResultStr(ESavePackageResult Re
 	}
 	return Str;
 }
+
+void UFlibHotPatcherCoreHelper::AdaptorOldVersionConfig(FAssetScanConfig& ScanConfig, const FString& JsonContent)
+{
+	THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,ScanConfig);
+}
