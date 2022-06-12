@@ -29,6 +29,7 @@
 #include "CreatePatch/FExportPatchSettings.h"
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Misc/FileHelper.h"
 #include "FlibPatchParserHelper.generated.h"
 
 struct FExportPatchSettings;

@@ -4,12 +4,15 @@
 #include "JsonObjectConverter.h"
 #include "HAL/PlatformMisc.h"
 #include "Misc/EnumRange.h"
+#include "Resources/Version.h"
+
 // cpp standard
 #include <typeinfo>
 #include <cctype>
 #include <algorithm>
 #include <string>
 #include <vector>
+
 
 #if  ENGINE_MAJOR_VERSION <=4 && ENGINE_MINOR_VERSION < 25
 #define FProperty UProperty
