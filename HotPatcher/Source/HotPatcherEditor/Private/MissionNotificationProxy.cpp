@@ -7,6 +7,7 @@
 
 #include "Async/Async.h"
 #include "Framework/Notifications/NotificationManager.h"
+#include "ThreadUtils/FProcWorkerThread.hpp"
 #include "Widgets/Notifications/SNotificationList.h"
 DEFINE_LOG_CATEGORY_STATIC(LogMissionNotificationProxy, All, All);
 
@@ -34,7 +35,7 @@ void UMissionNotificationProxy::SetMissionNotifyText(const FText& RunningText, c
 	MissionFailedNotifyText = FaildText; // LOCTEXT("CookFaildNotification", "Cook Faild!");
 }
 
-void UMissionNotificationProxy::ReceiveOutputMsg(const FString& InMsg)
+void UMissionNotificationProxy::ReceiveOutputMsg(FProcWorkerThread* Worker,const FString& InMsg)
 {
 	FString FindItem(TEXT("Display:"));
 	int32 Index = InMsg.Len() - InMsg.Find(FindItem) - FindItem.Len();
@@ -49,11 +50,11 @@ void UMissionNotificationProxy::ReceiveOutputMsg(const FString& InMsg)
 	}
 	else
 	{
-		UE_LOG(LogMissionNotificationProxy, Log, TEXT("%s"), *InMsg);
+		UE_LOG(LogMissionNotificationProxy, Display, TEXT("%s"), *InMsg);
 	}
 }
 
-void UMissionNotificationProxy::SpawnRuningMissionNotification()
+void UMissionNotificationProxy::SpawnRuningMissionNotification(FProcWorkerThread* ProcWorker)
 {
 	UMissionNotificationProxy* MissionProxy=this;
 	AsyncTask(ENamedThreads::GameThread, [MissionProxy]()
@@ -79,7 +80,7 @@ void UMissionNotificationProxy::SpawnRuningMissionNotification()
     });
 }
 
-void UMissionNotificationProxy::SpawnMissionSuccessedNotification()
+void UMissionNotificationProxy::SpawnMissionSuccessedNotification(FProcWorkerThread* ProcWorker)
 {
 	UMissionNotificationProxy* MissionProxy=this;
 	AsyncTask(ENamedThreads::GameThread, [MissionProxy]() {
@@ -99,7 +100,7 @@ void UMissionNotificationProxy::SpawnMissionSuccessedNotification()
 	});
 }
 
-void UMissionNotificationProxy::SpawnMissionFaildNotification()
+void UMissionNotificationProxy::SpawnMissionFaildNotification(FProcWorkerThread* ProcWorker)
 {
 	UMissionNotificationProxy* MissionProxy = this;
 	AsyncTask(ENamedThreads::GameThread, [MissionProxy]() {

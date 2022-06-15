@@ -1,48 +1,31 @@
 #include "CreatePatch/FExportPatchSettings.h"
-#include "FLibAssetManageHelperEx.h"
+#include "FlibAssetManageHelper.h"
 #include "HotPatcherLog.h"
-
-// engine header
-#include "Dom/JsonValue.h"
-#include "HAL/PlatformFilemanager.h"
-#include "Kismet/KismetStringLibrary.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include "FlibPatchParserHelper.h"
 
 
 FExportPatchSettings::FExportPatchSettings()
-	: bAnalysisFilterDependencies(true),
-	AssetRegistryDependencyTypes(TArray<EAssetRegistryDependencyTypeEx>{EAssetRegistryDependencyTypeEx::Packages}),
-	bEnableExternFilesDiff(true), 
-	UnrealPakOptions{ TEXT("-compress") ,TEXT("-compressionformats=Zlib")}
+	:bEnableExternFilesDiff(true),
+	DefaultPakListOptions{ TEXT("-compress") },
+	DefaultCommandletOptions{ TEXT("-compress") ,TEXT("-compressionformats=Zlib")}
 {
+	// IoStoreSettings.IoStoreCommandletOptions.Add(TEXT("-CreateGlobalContainer="));
 	PakVersionFileMountPoint = FPaths::Combine(
 		TEXT("../../../"),
 		UFlibPatchParserHelper::GetProjectName(),
 		TEXT("Versions/version.json")
 	);
-	TArray<FString> DefaultSkipEditorContentRules = {TEXT("/Engine/Editor"),TEXT("/Engine/VREditor")};
-	for(const auto& Ruls:DefaultSkipEditorContentRules)
-	{
-		FDirectoryPath PathIns;
-		PathIns.Path = Ruls;
-		ForceSkipContentRules.Add(PathIns);
-	}
 }
 
 void FExportPatchSettings::Init()
 {
-	UFlibPatchParserHelper::ReplacePatherSettingProjectDir(GetAddExternAssetsToPlatform());
+	Super::Init();
 }
 
-FString FExportPatchSettings::GetSaveAbsPath()const
+FString FExportPatchSettings::GetBaseVersion() const
 {
-	if (!SavePath.Path.IsEmpty())
-	{
-		return FPaths::ConvertRelativePathToFull(SavePath.Path);
-	}
-	return TEXT("");
+	return UFlibPatchParserHelper::ReplaceMarkPath(BaseVersion.FilePath); 
 }
-
 
 FPakVersion FExportPatchSettings::GetPakVersion(const FHotPatcherVersion& InHotPatcherVersion, const FString& InUtcTime)
 {
@@ -62,27 +45,6 @@ FPakVersion FExportPatchSettings::GetPakVersion(const FHotPatcherVersion& InHotP
 	);
 
 	return PakVersion;
-}
-
-TArray<FExternFileInfo> FExportPatchSettings::GetAllExternFiles(bool InGeneratedHash)const
-{
-	TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
-
-	for (auto& ExFile : GetAddExternFiles())
-	{
-		if (!AllExternFiles.Contains(ExFile))
-		{
-			AllExternFiles.Add(ExFile);
-		}
-	}
-	if (InGeneratedHash)
-	{
-		for (auto& ExFile : AllExternFiles)
-		{
-			ExFile.GenerateFileHash();
-		}
-	}
-	return AllExternFiles;
 }
 
 FString FExportPatchSettings::GetSavePakVersionPath(const FString& InSaveAbsPath, const FHotPatcherVersion& InVersion)
@@ -113,122 +75,23 @@ FString FExportPatchSettings::GetPakCommandsSaveToPath(const FString& InSaveAbsP
 	return SavePakCommandPath;
 }
 
-
-TArray<FString> FExportPatchSettings::MakeAllExternDirectoryAsPakCommand() const
-{
-	
-	TArray<FString> CookCommandResault;
-	if (!GetAddExternDirectory().Num())
-		return CookCommandResault;
-
-
-	TArray<FExternFileInfo>&& ExFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectory());
-
-	for (const auto& File : ExFiles)
-	{
-		CookCommandResault.Add(FString::Printf(TEXT("\"%s\" \"%s\""), *File.FilePath.FilePath, *File.MountPath));
-	}
-	return CookCommandResault;
-}
-
-TArray<FString> FExportPatchSettings::MakeAllPakCommandsByTheSetting(const FString& InPlatformName, const FPatchVersionDiff& InVersionDiff, bool bDiffExFiles) const
-{
-	TArray<ETargetPlatform> Platforms{ETargetPlatform::AllPlatforms};
-	ETargetPlatform InPlatform;
-	UFlibPatchParserHelper::GetEnumValueByName(InPlatformName,InPlatform);
-	Platforms.Add(InPlatform);
-	
-	FAssetDependenciesInfo AllChangedAssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(InVersionDiff.AssetDiffInfo.AddAssetDependInfo, InVersionDiff.AssetDiffInfo.ModifyAssetDependInfo);
-
-	
-	TArray<FExternFileInfo> AllChangedExternalFiles;
-	for(auto Platform:Platforms)
-	{
-		AllChangedExternalFiles.Append(InVersionDiff.PlatformExternDiffInfo[Platform].AddExternalFiles);
-		AllChangedExternalFiles.Append(InVersionDiff.PlatformExternDiffInfo[Platform].ModifyExternalFiles);
-	}
-	// combine all cook commands
-	{
-		FString ProjectDir = UKismetSystemLibrary::GetProjectDirectory();
-		
-		// generated cook command form asset list
-		TArray<FString> OutPakCommand;
-		UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(ProjectDir, InPlatformName, AllChangedAssetInfo, TArray<FString>{}, OutPakCommand);
-
-		// generated cook command form project ini/AssetRegistry.bin/GlobalShaderCache*.bin
-		// and all extern file
-		{
-			TArray<FString> AllExternPakCommand;
-			TArray<FString> PakOptions;
-			this->MakeAllExternAssetAsPakCommands(ProjectDir, InPlatformName, AllExternPakCommand,PakOptions);
-
-			if (!!AllExternPakCommand.Num())
-			{
-				OutPakCommand.Append(AllExternPakCommand);
-			}
-
-			// external not-asset files
-			{
-				TArray<FExternFileInfo> ExFiles;
-				if (bDiffExFiles)
-				{
-					ExFiles = AllChangedExternalFiles;
-				}
-				else
-				{
-					ExFiles = GetAllExternFiles();
-				
-				}
-				for (const auto& File : ExFiles)
-				{
-					// UE_LOG(LogHotPatcher, Warning, TEXT("CookCommand %s"), *FString::Printf(TEXT("\"%s\" \"%s\""), *File.FilePath.FilePath, *File.MountPath));
-					OutPakCommand.Add(FString::Printf(TEXT("\"%s\" \"%s\""), *File.FilePath.FilePath, *File.MountPath));
-				}
-			}
-
-		}
-
-		// add PakVersion.json to cook commands
-		{
-			FHotPatcherVersion CurrentNewPatchVersion = const_cast<FExportPatchSettings*>(this)->GetNewPatchVersionInfo();
-			FString CurrentVersionSavePath = FPaths::Combine(this->GetSaveAbsPath(), CurrentNewPatchVersion.VersionId);
-
-			FString SavedPakVersionFilePath = FExportPatchSettings::GetSavePakVersionPath(CurrentVersionSavePath, CurrentNewPatchVersion);
-
-			if (this->IsIncludePakVersion() && FPaths::FileExists(SavedPakVersionFilePath))
-			{
-				FString FileNameWithExtension = FPaths::GetCleanFilename(SavedPakVersionFilePath);
-
-				FString CommbinedCookCommand = FString::Printf(
-					TEXT("\"%s\" \"%s\""),
-					*SavedPakVersionFilePath,
-					*FPaths::Combine(this->GetPakVersionFileMountPoint(), FileNameWithExtension)
-				);
-
-				OutPakCommand.Add(CommbinedCookCommand);
-			}
-		}
-
-		return OutPakCommand;
-	}
-}
-
 FHotPatcherVersion FExportPatchSettings::GetNewPatchVersionInfo()
 {
 	FHotPatcherVersion BaseVersionInfo;
-	this->GetBaseVersionInfo(BaseVersionInfo);
+	GetBaseVersionInfo(BaseVersionInfo);
 
 	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfo(
-        this->GetVersionId(),
+        GetVersionId(),
         BaseVersionInfo.VersionId,
         FDateTime::UtcNow().ToString(),
-        this->GetAssetIncludeFiltersPaths(),
-        this->GetAssetIgnoreFiltersPaths(),
-        this->GetAssetRegistryDependencyTypes(),
-        this->GetIncludeSpecifyAssets(),
-        this->GetAddExternAssetsToPlatform(),
-        // this->GetAllExternFiles(true),
-        this->IsIncludeHasRefAssetsOnly()
+        UFlibAssetManageHelper::DirectoryPathsToStrings(GetAssetIncludeFilters()),
+			 UFlibAssetManageHelper::DirectoryPathsToStrings(GetAssetIgnoreFilters()),
+        GetAllSkipContents(),
+        GetForceSkipClasses(),
+        GetAssetRegistryDependencyTypes(),
+        GetIncludeSpecifyAssets(),
+        GetAddExternAssetsToPlatform(),
+        IsIncludeHasRefAssetsOnly()
     );
 
 	return CurrentVersion;
@@ -239,11 +102,11 @@ bool FExportPatchSettings::GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion
 	FString BaseVersionContent;
 
 	bool bDeserializeStatus = false;
-	if (this->IsByBaseVersion())
+	if (IsByBaseVersion())
 	{
-		if (UFLibAssetManageHelperEx::LoadFileToString(this->GetBaseVersion(), BaseVersionContent))
+		if (UFlibAssetManageHelper::LoadFileToString(GetBaseVersion(), BaseVersionContent))
 		{
-			bDeserializeStatus = UFlibPatchParserHelper::TDeserializeJsonStringAsStruct(BaseVersionContent, OutBaseVersion);
+			bDeserializeStatus = THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(BaseVersionContent, OutBaseVersion);
 		}
 	}
 
@@ -253,164 +116,17 @@ bool FExportPatchSettings::GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion
 
 FString FExportPatchSettings::GetCurrentVersionSavePath() const
 {
-	FString CurrentVersionSavePath = FPaths::Combine(this->GetSaveAbsPath(), const_cast<FExportPatchSettings*>(this)->GetNewPatchVersionInfo().VersionId);
+	FString CurrentVersionSavePath = FPaths::Combine(GetSaveAbsPath(), /*const_cast<FExportPatchSettings*>(this)->GetNewPatchVersionInfo().*/VersionId);
 	return CurrentVersionSavePath;
-}
-
-bool FExportPatchSettings::MakeAllExternAssetAsPakCommands(const FString& InProjectDir, const FString& InPlatform, const TArray<FString>& PakOptions, TArray<FString>& OutCookCommands)const
-{
-	OutCookCommands.Reset();
-
-	FPakInternalInfo InternalAssets;
-	InternalAssets.bIncludeAssetRegistry = IsIncludeAssetRegistry();
-	InternalAssets.bIncludeGlobalShaderCache = IsIncludeGlobalShaderCache();
-	InternalAssets.bIncludeShaderBytecode = IsIncludeShaderBytecode();
-
-	InternalAssets.bIncludeEngineIni = IsIncludeEngineIni();
-	InternalAssets.bIncludePluginIni = IsIncludePluginIni();
-	InternalAssets.bIncludeProjectIni = IsIncludeProjectIni();
-
-	OutCookCommands = UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(InternalAssets, InPlatform, PakOptions);
-
-	return true;
-}
-
-TArray<FString> FExportPatchSettings::MakeAddExternFileToPakCommands()const
-{
-	TArray<FString> resault;
-	// FString ProjectName = UFlibPatchParserHelper::GetProjectName();
-	for (const auto& ExternFile : GetAddExternFiles())
-	{
-		FString FileAbsPath = FPaths::ConvertRelativePathToFull(ExternFile.FilePath.FilePath);
-		FPaths::MakeStandardFilename(FileAbsPath);
-
-		if (FPaths::FileExists(FileAbsPath) &&
-			ExternFile.MountPath.StartsWith(FPaths::Combine(TEXT("../../..")/*,ProjectName*/))
-		)
-		{
-			resault.AddUnique(
-				FString::Printf(TEXT("\"%s\" \"%s\""),*FileAbsPath,*ExternFile.MountPath)
-			);
-		}
-		else
-		{
-			UE_LOG(LogHotPatcher,Warning,TEXT("File mount point is invalid,is %s"), *ExternFile.MountPath)
-		}
-	}
-	return resault;
 }
 
 TArray<FString> FExportPatchSettings::GetPakTargetPlatformNames() const
 {
 	TArray<FString> Resault;
-	for (const auto &Platform : this->GetPakTargetPlatforms())
+	for (const auto &Platform : GetPakTargetPlatforms())
 	{
-		Resault.Add(UFlibPatchParserHelper::GetEnumNameByValue(Platform));
+		Resault.Add(THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
 	}
 	return Resault;
 }
 
-TArray<FString> FExportPatchSettings::GetAssetIgnoreFiltersPaths()const
-{
-	TArray<FString> Result;
-	for (const auto& Filter : AssetIgnoreFilters)
-	{
-		if (!Filter.Path.IsEmpty())
-		{
-			Result.AddUnique(Filter.Path);
-		}
-	}
-	return Result;
-}
-
-TArray<FString> FExportPatchSettings::GetAssetIncludeFiltersPaths()const
-{
-	TArray<FString> Result;
-	for (const auto& Filter : AssetIncludeFilters)
-	{
-		if (!Filter.Path.IsEmpty())
-		{
-			Result.AddUnique(Filter.Path);
-		}
-	}
-	return Result;
-}
-
-TArray<FString> FExportPatchSettings::GetForceSkipContentStrRules()const
-{
-	TArray<FString> Path;
-	for(const auto& DirPath:GetForceSkipContentRules())
-	{
-		Path.AddUnique(DirPath.Path);
-	}
-	return Path;
-}
-
-TArray<FString> FExportPatchSettings::GetForceSkipAssetsStr()const
-{
-	TArray<FString> result;
-	for(const auto &Asset:GetForceSkipAssets())
-	{
-		result.Add(Asset.GetLongPackageName());
-	}
-	return result;
-}
-
-	
-TArray<FExternFileInfo> FExportPatchSettings::GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash)
-{
-	TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectoryByPlatform(InTargetPlatform));
-	
-	for (auto& ExFile : GetAddExternFilesByPlatform(InTargetPlatform))
-	{
-		if (!AllExternFiles.Contains(ExFile))
-		{
-			AllExternFiles.Add(ExFile);
-		}
-	}
-	if (InGeneratedHash)
-	{
-		for (auto& ExFile : AllExternFiles)
-		{
-			ExFile.GenerateFileHash();
-		}
-	}
-	return AllExternFiles;
-}
-	
-TMap<ETargetPlatform,FPlatformExternFiles> FExportPatchSettings::GetAllPlatfotmExternFiles(bool InGeneratedHash)
-{
-	TMap<ETargetPlatform,FPlatformExternFiles> result;
-	
-	for(const auto& Platform:GetAddExternAssetsToPlatform())
-	{
-		FPlatformExternFiles PlatformIns{Platform.TargetPlatform,GetAllExternFilesByPlatform(Platform.TargetPlatform,InGeneratedHash)};
-		result.Add(Platform.TargetPlatform,PlatformIns);
-	}
-	return result;
-}
-	
-TArray<FExternFileInfo> FExportPatchSettings::GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)
-{
-	for(const auto& Platform:GetAddExternAssetsToPlatform())
-	{
-		if (Platform.TargetPlatform == InTargetPlatform)
-		{
-			return Platform.AddExternFileToPak;
-		}
-	}
-
-	return TArray<FExternFileInfo>{};
-}
-TArray<FExternDirectoryInfo> FExportPatchSettings::GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform)
-{
-	for(const auto& Platform:GetAddExternAssetsToPlatform())
-	{
-		if (Platform.TargetPlatform == InTargetPlatform)
-		{
-			return Platform.AddExternDirectoryToPak;
-		}
-	}
-
-	return TArray<FExternDirectoryInfo>{};
-}

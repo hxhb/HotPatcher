@@ -20,4 +20,8 @@ public:
 
 public:
 	TSharedPtr< FUICommandInfo > PluginAction;
+
+	TSharedPtr<FUICommandInfo> CookSelectedAction;
+	TSharedPtr<FUICommandInfo> CookAndPakSelectedAction;
+	TSharedPtr<FUICommandInfo> AddToPakSettingsAction;
 };

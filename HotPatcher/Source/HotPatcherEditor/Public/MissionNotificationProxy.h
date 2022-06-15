@@ -6,6 +6,7 @@
 #include "UObject/NoExportTypes.h"
 #include "MissionNotificationProxy.generated.h"
 
+class FProcWorkerThread;
 
 DECLARE_MULTICAST_DELEGATE(FMissionCanceled);
 /**
@@ -17,10 +18,10 @@ class HOTPATCHEREDITOR_API UMissionNotificationProxy : public UObject
 	GENERATED_UCLASS_BODY()
 public:
 
-	virtual void ReceiveOutputMsg(const FString& InMsg);
-	virtual void SpawnRuningMissionNotification();
-	virtual void SpawnMissionSuccessedNotification();
-	virtual void SpawnMissionFaildNotification();
+	virtual void ReceiveOutputMsg(FProcWorkerThread* Worker,const FString& InMsg);
+	virtual void SpawnRuningMissionNotification(FProcWorkerThread* ProcWorker);
+	virtual void SpawnMissionSuccessedNotification(FProcWorkerThread* ProcWorker);
+	virtual void SpawnMissionFaildNotification(FProcWorkerThread* ProcWorker);
 	virtual void CancelMission();
 
 	virtual void SetMissionName(FName NewMissionName);

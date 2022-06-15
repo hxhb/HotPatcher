@@ -16,8 +16,15 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonReader.h"
 #include "Misc/FileHelper.h"
-
 #include "IPlatformFilePak.h"
+#include "ShaderPipelineCache.h"
+#include "RHI.h"
+#include "AssetRegistryState.h"
+#include "HotPatcherTemplateHelper.hpp"
+#include "Misc/Base64.h"
+#include "Misc/CoreDelegates.h"
+#include "Serialization/LargeMemoryReader.h"
+#include "ShaderCodeLibrary.h"
 
 void UFlibPakHelper::ExecMountPak(FString InPakPath, int32 InPakOrder, FString InMountPoint)
 {
@@ -104,7 +111,7 @@ bool UFlibPakHelper::ScanPlatformDirectory(const FString& InRelativePath, bool b
 		TArray<FString> Files;
 		TArray<FString> Dirs;
 
-		FFillArrayDirectoryVisitor FallArrayDirVisitor;
+		FFileArrayDirectoryVisitor FallArrayDirVisitor;
 		if (bRecursively)
 		{
 			PlatformFile.IterateDirectoryRecursively(*InRelativePath, FallArrayDirVisitor);
@@ -130,75 +137,6 @@ bool UFlibPakHelper::ScanPlatformDirectory(const FString& InRelativePath, bool b
 	else 
 	{
 		UE_LOG(LogHotPatcher, Warning, TEXT("Directory %s is not found."), *InRelativePath);
-	}
-
-	return bRunStatus;
-}
-
-bool UFlibPakHelper::SerializePakVersionToString(const FPakVersion& InPakVersion, FString& OutString)
-{
-	bool bRunStatus = false;
-	OutString = TEXT("");
-
-	TSharedPtr<FJsonObject> RootJsonObject = MakeShareable(new FJsonObject);
-	if (UFlibPakHelper::SerializePakVersionToJsonObject(InPakVersion, RootJsonObject))
-	{
-		auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&OutString);
-		if (FJsonSerializer::Serialize(RootJsonObject.ToSharedRef(), JsonWriter))
-		{
-			bRunStatus = true;
-		}
-	}
-	return bRunStatus;
-}
-
-bool UFlibPakHelper::SerializePakVersionToJsonObject(const FPakVersion& InPakVersion, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool bRunStatus = false;
-
-	if(OutJsonObject.IsValid())
-	{
-		OutJsonObject = MakeShareable(new FJsonObject);
-	}
-
-	OutJsonObject->SetStringField(TEXT("VersionId"), InPakVersion.VersionId);
-	OutJsonObject->SetStringField(TEXT("BaseVersionId"), InPakVersion.BaseVersionId);
-	OutJsonObject->SetStringField(TEXT("Date"), InPakVersion.Date);
-	OutJsonObject->SetStringField(TEXT("CheckCode"), InPakVersion.CheckCode);
-	bRunStatus = true;
-
-	return bRunStatus;
-}
-
-bool UFlibPakHelper::DeserializeStringToPakVersion(const FString& InString, FPakVersion& OutPakVersion)
-{
-	bool bRunStatus = false;
-	if (!InString.IsEmpty())
-	{
-		TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(InString);
-		TSharedPtr<FJsonObject> DeserializeJsonObject;
-		if (FJsonSerializer::Deserialize(JsonReader, DeserializeJsonObject))
-		{
-			bRunStatus = DeserializeJsonObjectToPakVersion(DeserializeJsonObject, OutPakVersion);
-		}
-	}
-	return bRunStatus;
-}
-
-bool UFlibPakHelper::DeserializeJsonObjectToPakVersion(const TSharedPtr<FJsonObject>& InJsonObject, FPakVersion& OutPakVersion)
-{
-	bool bRunStatus = false;
-
-	if (!InJsonObject.IsValid())
-	{
-		return false;
-	}
-	{
-		bool bVersionId = InJsonObject->TryGetStringField(TEXT("VersionId"), OutPakVersion.VersionId);
-		bool bBaseVersionId = InJsonObject->TryGetStringField(TEXT("BaseVersionId"), OutPakVersion.BaseVersionId);
-		bool bDate = InJsonObject->TryGetStringField(TEXT("Date"), OutPakVersion.Date);
-		bool bCheckCode = InJsonObject->TryGetStringField(TEXT("CheckCode"), OutPakVersion.CheckCode);
-		bRunStatus = bVersionId && bBaseVersionId && bDate && bCheckCode;
 	}
 
 	return bRunStatus;
@@ -245,120 +183,6 @@ TArray<FString> UFlibPakHelper::ScanExtenPakFiles()
 	return FinalResult;
 }
 
-bool UFlibPakHelper::LoadPakDoSomething(const FString& InPakFile, TFunction<bool(const FPakFile*)> InDoSomething)
-{
-	bool bRunStatus = false;
-	bool bMounted = false;
-	FPakPlatformFile* PakPlatform = (FPakPlatformFile*)&FPlatformFileManager::Get().GetPlatformFile();
-
-	FString StandardFileName = InPakFile;
-	FPaths::MakeStandardFilename(StandardFileName);
-
-	TSharedPtr<FPakFile> PakFile = MakeShareable(new FPakFile(PakPlatform->GetLowerLevel(), *StandardFileName, false));
-
-	if (PakPlatform->FileExists(*StandardFileName))
-	{
-		FString MountPoint = PakFile->GetMountPoint();
-		UE_LOG(LogHotPatcher, Log, TEXT("Pak Mount Point %s"),*MountPoint);
-
-		if (UFlibPakHelper::MountPak(*StandardFileName,10, MountPoint))
-		{
-			TArray<FString> MountedPakList = UFlibPakHelper::GetAllMountedPaks();
-			UE_LOG(LogHotPatcher, Log, TEXT("Mounted Paks:"), *MountPoint);
-			
-			if (PakFile)
-			{
-				InDoSomething(PakFile.Get());;
-			}
-			bMounted = true;
-		}
-		else 
-		{
-			UE_LOG(LogHotPatcher, Log, TEXT("Mount Faild."));
-		}
-	}
-	else
-	{
-		UE_LOG(LogHotPatcher, Log, TEXT("file %s is not found."),*StandardFileName);
-	}
-
-	if (bMounted)
-	{
-		bRunStatus = UFlibPakHelper::UnMountPak(*StandardFileName);
-	}
-
-	return bRunStatus;
-}
-
-bool UFlibPakHelper::LoadFilesByPak(const FString& InPakFile, TArray<FString>& OutFiles)
-{
-	bool bRunStatus = false;
-	TArray<FString> AllFiles;
-	auto ScanAllFilesLambda = [&AllFiles](const FPakFile* InPakFileIns)->bool
-	{
-		bool bLambdaRunStatus = false;
-		if (InPakFileIns)
-		{
-			InPakFileIns->FindFilesAtPath(AllFiles, *InPakFileIns->GetMountPoint(), true, false, true);
-			bLambdaRunStatus = true;
-		}
-		return bLambdaRunStatus;
-	};
-	bRunStatus = UFlibPakHelper::LoadPakDoSomething(InPakFile, ScanAllFilesLambda);
-	OutFiles = AllFiles;
-	return bRunStatus;
-}
-
-bool UFlibPakHelper::LoadVersionInfoByPak(const FString& InPakFile, FPakVersion& OutVersion)
-{
-	bool bRunStatus = false;
-	
-	TArray<FPakVersion> AllVersionInfo;
-	auto ScanAllFilesLambda = [&AllVersionInfo](const FPakFile* InPakFile)->bool
-	{
-		bool bLambdaRunStatus = false;
-		if (InPakFile)
-		{
-			// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: InPakFile is not null."));
-			TArray<FString> AllVersionDescribleFiles;
-			FString PakMountPoint = InPakFile->GetMountPoint();
-
-			InPakFile->FindFilesAtPath(AllVersionDescribleFiles, *InPakFile->GetMountPoint(), true, false, true);
-
-			// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda:  FindFilesAtPath num is %d."),AllVersionDescribleFiles.Num());
-
-			
-			for (const auto& VersionDescribleFile : AllVersionDescribleFiles)
-			{
-				// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: VersionDescrible File %s."), *VersionDescribleFile);
-				if (!VersionDescribleFile.EndsWith(".json"))
-					continue;
-				FString CurrentVersionStr;
-				if (FFileHelper::LoadFileToString(CurrentVersionStr,*VersionDescribleFile))
-				{
-					// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: Load File Success."));
-					FPakVersion CurrentPakVersionInfo;
-					if (UFlibPakHelper::DeserializeStringToPakVersion(CurrentVersionStr, CurrentPakVersionInfo))
-					{
-						// UE_LOG(LogHotPatcher, Log, TEXT("Scan All Files Lambda: Deserialize File Success."));
-						AllVersionInfo.Add(CurrentPakVersionInfo);
-						bLambdaRunStatus = true;
-					}
-				}
-			}
-			
-		}
-		return bLambdaRunStatus;
-	};
-	bRunStatus = UFlibPakHelper::LoadPakDoSomething(InPakFile, ScanAllFilesLambda);
-
-	if (bRunStatus && !!AllVersionInfo.Num())
-	{
-		OutVersion = AllVersionInfo[0];
-	}
-	return bRunStatus;
-}
-
 int32 UFlibPakHelper::GetPakOrderByPakPath(const FString& PakFile)
 {
 	int32 PakOrder = 0;
@@ -366,7 +190,7 @@ int32 UFlibPakHelper::GetPakOrderByPakPath(const FString& PakFile)
     {
     	FString PakFilename = PakFile;
     	if (PakFilename.EndsWith(TEXT("_P.pak")))
-    	{    
+    	{
 			// Prioritize based on the chunk version number
     		// Default to version 1 for single patch system
     		uint32 ChunkVersionNumber = 1;
@@ -396,27 +220,335 @@ int32 UFlibPakHelper::GetPakOrderByPakPath(const FString& PakFile)
 	return PakOrder;
 }
 
-bool UFlibPakHelper::LoadAssetRegistry(const FString& InAssetRegistryBin)
+void UFlibPakHelper::ReloadShaderbytecode()
 {
-	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
-	bool bSuccess = false;
-	FArrayReader SerializedAssetData;
-	FString AssetRegistryBinPath = InAssetRegistryBin;
-	UE_LOG(LogHotPatcher,Log,TEXT("Load AssetRegistry %s"),*AssetRegistryBinPath);
-	if (IFileManager::Get().FileExists(*AssetRegistryBinPath) && FFileHelper::LoadFileToArray(SerializedAssetData, *AssetRegistryBinPath))
+	FShaderCodeLibrary::OpenLibrary("Global", FPaths::ProjectContentDir());
+	FShaderCodeLibrary::OpenLibrary(FApp::GetProjectName(), FPaths::ProjectContentDir());
+}
+
+
+bool UFlibPakHelper::LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir)
+{
+	bool result = true;
+	FString FinalLibraryDir = LibraryDir;
+#if PLATFORM_IOS
+	FinalLibraryDir = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*LibraryDir);;
+#endif
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >= 23
+	result = FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
+#else
+	FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
+#endif
+	UE_LOG(LogHotPatcher,Log,TEXT("Load Shader bytecode %s,Dir: %s, status: %s"),*LibraryName,*FinalLibraryDir,result?TEXT("True"):TEXT("False"));
+	return result;
+}
+
+bool UFlibPakHelper::LoadShaderbytecodeInDefaultDir(const FString& LibraryName)
+{
+	return LoadShaderbytecode(LibraryName,FPaths::Combine(FPaths::ProjectDir(),TEXT("ShaderLibs")));
+}
+
+void UFlibPakHelper::CloseShaderbytecode(const FString& LibraryName)
+{
+	FShaderCodeLibrary::CloseLibrary(LibraryName);
+}
+
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+bool UFlibPakHelper::LoadAssetRegistryToState(const TCHAR* Path,FAssetRegistryState& Out)
+{
+	check(Path);
+
+	TUniquePtr<FArchive> FileReader(IFileManager::Get().CreateFileReader(Path));
+	if (FileReader)
 	{
-		SerializedAssetData.Seek(0);
-		AssetRegistry.Serialize(SerializedAssetData);
-		bSuccess = true;
+		// It's faster to load the whole file into memory on a Gen5 console
+		TArray64<uint8> Data;
+		Data.SetNumUninitialized(FileReader->TotalSize());
+		FileReader->Serialize(Data.GetData(), Data.Num());
+		check(!FileReader->IsError());
+		
+		FLargeMemoryReader MemoryReader(Data.GetData(), Data.Num());
+		return Out.Load(MemoryReader, FAssetRegistryLoadOptions{});
 	}
-	return bSuccess;
+
+	return false;
+}
+#else
+bool UFlibPakHelper::LoadAssetRegistryToState(const TCHAR* Path, FAssetRegistryState& Out)
+{
+	bool bStatus = false;
+	FString AssetRegistryPath = Path;
+	FArrayReader SerializedAssetData;
+	// FString AssetRegistryBinPath = InAssetRegistryBin;
+	// UE_LOG(LogHotPatcher,Log,TEXT("Load AssetRegistry %s"),*AssetRegistryBinPath);
+	if (IFileManager::Get().FileExists(*AssetRegistryPath) && FFileHelper::LoadFileToArray(SerializedAssetData, *AssetRegistryPath))
+	{
+		FAssetRegistryState State;
+		FAssetRegistrySerializationOptions SerializationOptions;
+		SerializationOptions.bSerializeAssetRegistry = true;
+		bStatus = State.Serialize(SerializedAssetData, SerializationOptions);
+	}
+	return bStatus;
+}
+#endif
+
+
+bool UFlibPakHelper::LoadAssetRegistry(const FString& LibraryName, const FString& LibraryDir)
+{
+	bool bStatus = false;
+	FString AssetRegistryPath = FPaths::Combine(LibraryDir,FString::Printf(TEXT("%s.bin"),*LibraryName));
+	UE_LOG(LogHotPatcher,Log,TEXT("Load Asset Registry %s"),*AssetRegistryPath);
+	if(FPaths::FileExists(AssetRegistryPath))
+	{
+		FAssetRegistryState State;
+		if(LoadAssetRegistryToState(*AssetRegistryPath,State))
+		{
+			FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+#if ENGINE_MAJOR_VERSION > 4 || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 21)
+			AssetRegistryModule.Get().AppendState(State);
+#else
+			// todo support append state in 4.21
+#endif
+			bStatus = true;
+		}
+	}
+	return bStatus;
+}
+
+
+
+bool UFlibPakHelper::OpenPSO(const FString& Name)
+{
+	return FShaderPipelineCache::OpenPipelineFileCache(Name,GMaxRHIShaderPlatform);
+}
+
+FAES::FAESKey CachedAESKey;
+#define AES_KEY_SIZE 32
+bool ValidateEncryptionKey(TArray<uint8>& IndexData, const FSHAHash& InExpectedHash, const FAES::FAESKey& InAESKey)
+{
+	FAES::DecryptData(IndexData.GetData(), IndexData.Num(), InAESKey);
+
+	// Check SHA1 value.
+	FSHAHash ActualHash;
+	FSHA1::HashBuffer(IndexData.GetData(), IndexData.Num(), ActualHash.Hash);
+	return InExpectedHash == ActualHash;
+}
+
+bool PreLoadPak(const FString& InPakPath,const FString& AesKey)
+{
+	UE_LOG(LogHotPatcher, Log, TEXT("Pre load pak file: %s and check file hash."), *InPakPath);
+
+	FArchive* Reader = IFileManager::Get().CreateFileReader(*InPakPath);
+	if (!Reader)
+	{
+		return false;
+	}
+
+	FPakInfo Info;
+	const int64 CachedTotalSize = Reader->TotalSize();
+	bool bShouldLoad = false;
+	int32 CompatibleVersion = FPakInfo::PakFile_Version_Latest;
+
+	// Serialize trailer and check if everything is as expected.
+	// start up one to offset the -- below
+	CompatibleVersion++;
+	int64 FileInfoPos = -1;
+	do
+	{
+		// try the next version down
+		CompatibleVersion--;
+
+		FileInfoPos = CachedTotalSize - Info.GetSerializedSize(CompatibleVersion);
+		if (FileInfoPos >= 0)
+		{
+			Reader->Seek(FileInfoPos);
+
+			// Serialize trailer and check if everything is as expected.
+			Info.Serialize(*Reader, CompatibleVersion);
+			if (Info.Magic == FPakInfo::PakFile_Magic)
+			{
+				bShouldLoad = true;
+			}
+		}
+	} while (!bShouldLoad && CompatibleVersion >= FPakInfo::PakFile_Version_Initial);
+
+	if (!bShouldLoad)
+	{
+		Reader->Close();
+		delete Reader;
+		return false;
+	}
+
+	if (Info.EncryptionKeyGuid.IsValid() || Info.bEncryptedIndex)
+	{
+		const FString KeyString = AesKey;
+		
+		FAES::FAESKey AESKey;
+
+		TArray<uint8> DecodedBuffer;
+		if (!FBase64::Decode(KeyString, DecodedBuffer))
+		{
+			UE_LOG(LogHotPatcher, Error, TEXT("AES encryption key base64[%s] is not base64 format!"), *KeyString);
+			bShouldLoad = false;
+		}
+
+		// Error checking
+		if (bShouldLoad && DecodedBuffer.Num() != AES_KEY_SIZE)
+		{
+			UE_LOG(LogHotPatcher, Error, TEXT("AES encryption key base64[%s] can not decode to %d bytes long!"), *KeyString, AES_KEY_SIZE);
+			bShouldLoad = false;
+		}
+
+		if (bShouldLoad)
+		{
+			FMemory::Memcpy(AESKey.Key, DecodedBuffer.GetData(), AES_KEY_SIZE);
+
+			TArray<uint8> PrimaryIndexData;
+			Reader->Seek(Info.IndexOffset);
+			PrimaryIndexData.SetNum(Info.IndexSize);
+			Reader->Serialize(PrimaryIndexData.GetData(), Info.IndexSize);
+
+			FSHAHash Hash;
+			FMemory::Memcpy(Hash.Hash,
+#if ENGINE_MAJOR_VERSION > 4 || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 23)
+				Info.IndexHash.Hash,
+#else
+				Info.IndexHash,
+#endif
+				20);
+
+			if (!ValidateEncryptionKey(PrimaryIndexData, Hash, AESKey))
+			{
+				UE_LOG(LogHotPatcher, Error, TEXT("AES encryption key base64[%s] is not correct!"), *KeyString);
+				bShouldLoad = false;
+			}
+			else
+			{
+ 				CachedAESKey = AESKey;
+
+				UE_LOG(LogHotPatcher, Log, TEXT("Use AES encryption key base64[%s] for %s."), *KeyString, *InPakPath);
+				FCoreDelegates::GetPakEncryptionKeyDelegate().BindLambda(
+					[AESKey](uint8 OutKey[32])
+					{
+						FMemory::Memcpy(OutKey, AESKey.Key, 32);
+					});
+
+				if (Info.EncryptionKeyGuid.IsValid())
+				{
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >= 26
+					FCoreDelegates::GetRegisterEncryptionKeyMulticastDelegate().Broadcast(Info.EncryptionKeyGuid, AESKey);
+#else
+					FCoreDelegates::GetRegisterEncryptionKeyDelegate().ExecuteIfBound(Info.EncryptionKeyGuid, AESKey);
+#endif
+				}
+			}
+		}
+	}
+
+	Reader->Close();
+	delete Reader;
+	return bShouldLoad;
+}
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
+#define FFileIterator FFilenameIterator
+#endif
+
+TArray<FString> UFlibPakHelper::GetPakFileList(const FString& InPak, const FString& AESKey)
+{
+	TArray<FString> Records;
+	UFlibPakHelper::GetPakEntrys(UFlibPakHelper::GetPakFileIns(InPak,AESKey),AESKey).GetKeys(Records);
+	return Records;
+}
+
+TMap<FString,FPakEntry> UFlibPakHelper::GetPakEntrys(FPakFile* InPakFile, const FString& AESKey)
+{
+	TMap<FString,FPakEntry> Records;
+	
+	if(InPakFile)
+	{
+		FString MountPoint = InPakFile->GetMountPoint();
+		for (FPakFile::FFileIterator It(*InPakFile, true); It; ++It)
+		{
+			const FString& Filename = It.Filename();
+			Records.Emplace(MountPoint + Filename,It.Info());
+		}
+		
+	}
+	return Records;
+}
+
+void UFlibPakHelper::DumpPakEntrys(const FString& InPak, const FString& AESKey, const FString& SaveTo)
+{
+	auto PakFile = UFlibPakHelper::GetPakFileIns(InPak,AESKey);
+	
+	TMap<FString,FPakEntry> Records = UFlibPakHelper::GetPakEntrys(PakFile,AESKey);
+	FString FileName = FPaths::GetBaseFilename(InPak,true);
+	FPakDumper Results;
+	Results.PakName = FileName;
+	Results.MountPoint = PakFile->GetMountPoint();
+	
+	for(const auto& Pair:Records)
+	{
+		FDumpPakEntry Entry;
+		FString PakFilename = Pair.Key;
+		FString PackageName;
+		FString RecordName;
+		if(FPackageName::TryConvertFilenameToLongPackageName(PakFilename,PackageName))
+		{
+			RecordName = PackageName;
+		}
+		else
+		{
+			RecordName = PakFilename;
+			
+		}
+		PakFilename = FPaths::GetBaseFilename(PakFilename,true) + FPaths::GetExtension(PakFilename,true);
+		Entry.ContentSize = Pair.Value.Size;
+		Entry.Offset = Pair.Value.Offset;
+		Entry.PakEntrySize = Pair.Value.GetSerializedSize(FPakInfo::PakFile_Version_Latest);
+		Results.PakEntrys.FindOrAdd(RecordName).AssetEntrys.Add(PakFilename,Entry);
+	}
+	FString OutString;
+	THotPatcherTemplateHelper::TSerializeStructAsJsonString(Results,OutString);
+	FFileHelper::SaveStringToFile(OutString,*SaveTo);
+}
+
+FPakFile* UFlibPakHelper::GetPakFileIns(const FString& InPak, const FString& AESKey)
+{
+	IPlatformFile* PlatformIns = &FPlatformFileManager::Get().GetPlatformFile();
+	FPakFile* rPakFile = nullptr;
+	FString StandardFileName = InPak;
+	FPaths::MakeStandardFilename(StandardFileName);
+	TArray<FString> Records;
+	if(PreLoadPak(StandardFileName,AESKey))
+	{
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
+		TRefCountPtr<FPakFile> PakFile = new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false);
+		rPakFile = PakFile.GetReference();
+#else
+		TSharedPtr<FPakFile> PakFile = MakeShareable(new FPakFile(&PlatformIns->GetPlatformPhysical(), *StandardFileName, false));
+		rPakFile = PakFile.Get();
+#endif
+
+	}
+	return rPakFile;
+}
+
+FString UFlibPakHelper::GetPakFileMountPoint(const FString& InPak, const FString& AESKey)
+{
+	FString result;
+	auto PakFile = UFlibPakHelper::GetPakFileIns(InPak,AESKey);
+	if(PakFile)
+	{
+		result = PakFile->GetMountPoint();
+	}
+	return result;
 }
 
 TArray<FString> UFlibPakHelper::GetAllMountedPaks()
 {
 	FPakPlatformFile* PakPlatformFile = (FPakPlatformFile*)(FPlatformFileManager::Get().FindPlatformFile(FPakPlatformFile::GetTypeName()));
-
+	
 	TArray<FString> Resault;
 	if(PakPlatformFile)
 		PakPlatformFile->GetMountedPakFilenames(Resault);

@@ -2,14 +2,17 @@
 
 // project header
 #include "FlibPatchParserHelper.h"
-#include "FLibAssetManageHelperEx.h"
-#include "Struct/AssetManager/FFileArrayDirectoryVisitor.hpp"
-#include "FLibAssetManageHelperEx.h"
-#include "Flib/FLibAssetManageHelperEx.h"
+#include "FlibAssetManageHelper.h"
+#include "BaseTypes/AssetManager/FFileArrayDirectoryVisitor.hpp"
+#include "FlibAssetManageHelper.h"
+#include "FlibAssetManageHelper.h"
 #include "HotPatcherLog.h"
 #include "CreatePatch/FExportPatchSettings.h"
+#include "DependenciesParser/FDefaultAssetDependenciesParser.h"
+#include "DependenciesParser/FOldAssetDependenciesParser.h"
 
 // engine header
+#include "Misc/App.h"
 #include "Misc/SecureHash.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetStringLibrary.h"
@@ -18,8 +21,11 @@
 #include "HAL/FileManager.h"
 #include "Engine/EngineTypes.h"
 #include "JsonObjectConverter.h"
+#include "AssetRegistryState.h"
+#include "CreatePatch/TimeRecorder.h"
 #include "Misc/Paths.h"
 #include "Kismet/KismetStringLibrary.h"
+#include "Serialization/LargeMemoryReader.h"
 
 TArray<FString> UFlibPatchParserHelper::GetAvailableMaps(FString GameName, bool IncludeEngineMaps, bool IncludePluginMaps, bool Sorted)
 {
@@ -27,7 +33,7 @@ TArray<FString> UFlibPatchParserHelper::GetAvailableMaps(FString GameName, bool 
 	TArray<FString> AllMaps;
 	TMap<FString,FString> AllEnableModules;
 
-	UFLibAssetManageHelperEx::GetAllEnabledModuleName(AllEnableModules);
+	UFlibAssetManageHelper::GetAllEnabledModuleName(AllEnableModules);
 
 	auto ScanMapsByModuleName = [WildCard,&AllMaps](const FString& InModuleBaseDir)
 	{
@@ -130,7 +136,7 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 				{
 					if (!BaseVersionDependAssetsList.Contains(NewAssetItem))
 					{
-						FString BelongModuneName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(NewAssetItem);
+						FString BelongModuneName = UFlibAssetManageHelper::GetAssetBelongModuleName(NewAssetItem);
 						if (!OutAddAsset.AssetsDependenciesMap.Contains(BelongModuneName))
 						{
 							OutAddAsset.AssetsDependenciesMap.Add(BelongModuneName, FAssetDependenciesDetail{ BelongModuneName,TMap<FString,FAssetDetail>{} });
@@ -170,6 +176,7 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 
 					if (!(*NewVersionAssetDetail == *BaseVersionAssetDetail))
 					{
+						UE_LOG(LogHotPatcher,Display,TEXT("Modify Asset: %s"),*AssetItem);
 						if (!OutModifyAsset.AssetsDependenciesMap.Contains(BaseVersionAssetModule))
 						{
 							OutModifyAsset.AssetsDependenciesMap.Add(BaseVersionAssetModule, FAssetDependenciesDetail{ BaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
@@ -222,7 +229,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 					bool bIsSame = (NewVersionFile.FileHash == InBase.ExternFiles[BaseFileIndex].FileHash);
 					if (!bIsSame)
 					{
-						UE_LOG(LogHotPatcher, Log, TEXT("%s is not same."), *NewVersionFile.MountPath);
+						// UE_LOG(LogHotPatcher, Log, TEXT("%s is not same."), *NewVersionFile.MountPath);
 						Out.Add(NewVersionFile);
 					}else
 					{
@@ -231,7 +238,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 				}
 				else
 				{
-					UE_LOG(LogHotPatcher, Log, TEXT("base version not contains %s."), *NewVersionFile.MountPath);
+					// UE_LOG(LogHotPatcher, Log, TEXT("base version not contains %s."), *NewVersionFile.MountPath);
 				}
 			}
 		};
@@ -298,7 +305,9 @@ FPlatformExternFiles UFlibPatchParserHelper::GetAllExFilesByPlatform(
 		// ignore FPaths::FileExists(ExFile.FilePath.FilePath) 
 		if (!ExFile.FilePath.FilePath.IsEmpty() && !result.ExternFiles.Contains(ExFile))
 		{
-			result.ExternFiles.Add(ExFile);
+			FExternFileInfo CurrentFile = ExFile;
+			CurrentFile.FilePath.FilePath = UFlibPatchParserHelper::ReplaceMarkPath(ExFile.FilePath.FilePath);
+			result.ExternFiles.Add(CurrentFile);
 		}
 	}
 	if (InGeneratedHash)
@@ -334,7 +343,7 @@ bool UFlibPatchParserHelper::GetPakFileInfo(const FString& InFile, FPakFileInfo&
 TArray<FString> UFlibPatchParserHelper::GetCookedGlobalShaderCacheFiles(const FString& InProjectDir, const FString& InPlatformName)
 {
 	TArray<FString> Resault;
-	if (UFLibAssetManageHelperEx::IsValidPlatform(InPlatformName))
+	// if (UFlibAssetManageHelper::IsValidPlatform(InPlatformName))
 	{
 		FString CookedEngineFolder = FPaths::Combine(InProjectDir,TEXT("Saved/Cooked"),InPlatformName,TEXT("Engine"));
 		if (FPaths::DirectoryExists(CookedEngineFolder))
@@ -355,7 +364,7 @@ TArray<FString> UFlibPatchParserHelper::GetCookedGlobalShaderCacheFiles(const FS
 bool UFlibPatchParserHelper::GetCookedAssetRegistryFiles(const FString& InProjectAbsDir,const FString& InProjectName, const FString& InPlatformName, FString& OutFiles)
 {
 	bool bRunStatus = false;
-	if (UFLibAssetManageHelperEx::IsValidPlatform(InPlatformName))
+	// if (UFlibAssetManageHelper::IsValidPlatform(InPlatformName))
 	{
 		FString CookedPAssetRegistryFile = FPaths::Combine(InProjectAbsDir, TEXT("Saved/Cooked"), InPlatformName, InProjectName,TEXT("AssetRegistry.bin"));
 		if (FPaths::FileExists(CookedPAssetRegistryFile))
@@ -373,7 +382,7 @@ bool UFlibPatchParserHelper::GetCookedShaderBytecodeFiles(const FString& InProje
 	bool bRunStatus = false;
 	OutFiles.Reset();
 
-	if (UFLibAssetManageHelperEx::IsValidPlatform(InPlatformName))
+	// if (UFlibAssetManageHelper::IsValidPlatform(InPlatformName))
 	{
 		FString CookedContentDir = FPaths::Combine(InProjectAbsDir, TEXT("Saved/Cooked"), InPlatformName, InProjectName, TEXT("Content"));
 
@@ -412,19 +421,12 @@ bool UFlibPatchParserHelper::ConvIniFilesToPakCommands(
 	const FString& InEngineAbsDir,
 	const FString& InProjectAbsDir,
 	const FString& InProjectName, 
-	const TArray<FString>& InPakOptions, 
+	// const TArray<FString>& InPakOptions, 
 	const TArray<FString>& InIniFiles, 
 	TArray<FString>& OutCommands,
 	TFunction<void(const FPakCommand&)> InReceiveCommand
 )
 {
-	FString PakOptionsStr;
-	{
-		for (const auto& PakOption : InPakOptions)
-		{
-			PakOptionsStr += PakOption + TEXT(" ");
-		}
-	}
 	OutCommands.Reset();
 	bool bRunStatus = false;
 	if (!FPaths::DirectoryExists(InProjectAbsDir) || !FPaths::DirectoryExists(InEngineAbsDir))
@@ -471,10 +473,9 @@ bool UFlibPatchParserHelper::ConvIniFilesToPakCommands(
 			FString IniFileNameWithExten = FString::Printf(TEXT("%s.%s"),*IniFileName,*IniExtention);
 			FString CookedIniRelativePath = FPaths::Combine(RelativePath, IniFileNameWithExten);
 			FString CookCommand = FString::Printf(
-				TEXT("\"%s\" \"%s\" %s"),
+				TEXT("\"%s\" \"%s\""),
 					*IniFile,
-					*CookedIniRelativePath,
-					*PakOptionsStr
+					*CookedIniRelativePath
 			);
 			FPakCommand CurrentPakCommand;
 			CurrentPakCommand.PakCommands = TArray<FString>{ CookCommand };
@@ -492,20 +493,12 @@ bool UFlibPatchParserHelper::ConvIniFilesToPakCommands(
 bool UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(
 	const FString& InProjectDir, 
 	const FString& InPlatformName,
-	const TArray<FString>& InPakOptions, 
+	// const TArray<FString>& InPakOptions, 
 	const FString& InCookedFile, 
 	FString& OutCommand,
 	TFunction<void(const FPakCommand&)> InReceiveCommand
 )
 {
-	FString PakOptionsStr;
-	{
-		for (const auto& PakOption : InPakOptions)
-		{
-			PakOptionsStr += PakOption + TEXT(" ");
-		}
-	}
-
 	bool bRunStatus = false;
 	if (FPaths::FileExists(InCookedFile))
 	{
@@ -518,10 +511,9 @@ bool UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(
 		);
 
 		OutCommand = FString::Printf(
-			TEXT("\"%s\" \"%s\" %s"),
+			TEXT("\"%s\" \"%s\""),
 			*InCookedFile,
-			*AssetFileRelativeCookPath,
-			*PakOptionsStr
+			*AssetFileRelativeCookPath
 		);
 		FPakCommand CurrentPakCommand;
 		CurrentPakCommand.PakCommands = TArray<FString>{ OutCommand };
@@ -570,7 +562,7 @@ TArray<FString> UFlibPatchParserHelper::GetIniConfigs(const FString& InSearchDir
 
 	if (FPaths::DirectoryExists(SearchConfigAbsDir))
 	{
-		FFillArrayDirectoryVisitor Visitor;
+		FFileArrayDirectoryVisitor Visitor;
 
 		IFileManager::Get().IterateDirectory(*SearchConfigAbsDir, Visitor);
 
@@ -587,7 +579,7 @@ TArray<FString> UFlibPatchParserHelper::GetIniConfigs(const FString& InSearchDir
 			FString DirectoryName = UKismetStringLibrary::GetSubstring(PlatformIniDirectory, PlatformNameBeginIndex, PlatformIniDirectory.Len() - PlatformNameBeginIndex);
 			if (InPlatformName.Contains(DirectoryName))
 			{
-				FFillArrayDirectoryVisitor PlatformVisitor;
+				FFileArrayDirectoryVisitor PlatformVisitor;
 
 				IFileManager::Get().IterateDirectory(*PlatformIniDirectory, PlatformVisitor);
 
@@ -614,7 +606,7 @@ TArray<FString> UFlibPatchParserHelper::GetEnabledPluginConfigs(const FString& I
 	for (const auto& Plugin : AllEnablePlugins)
 	{
 		FString PluginAbsPath;
-		if (UFLibAssetManageHelperEx::GetPluginModuleAbsDir(Plugin->GetName(), PluginAbsPath))
+		if (UFlibAssetManageHelper::GetPluginModuleAbsDir(Plugin->GetName(), PluginAbsPath))
 		{
 			FString PluginIniPath = FPaths::Combine(PluginAbsPath, TEXT("Config"));
 			result.Append(UFlibPatchParserHelper::GetIniConfigs(PluginIniPath, InPlatformName));
@@ -637,13 +629,13 @@ TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const
 	{
 		if(DirectoryItem.DirectoryPath.Path.IsEmpty())
 			continue;
-		FString DirAbsPath = FPaths::ConvertRelativePathToFull(DirectoryItem.DirectoryPath.Path);
+		FString DirAbsPath = UFlibPatchParserHelper::ReplaceMarkPath(DirectoryItem.DirectoryPath.Path); //FPaths::ConvertRelativePathToFull(DirectoryItem.DirectoryPath.Path);
 		
 		FPaths::MakeStandardFilename(DirAbsPath);
 		if (!DirAbsPath.IsEmpty() && FPaths::DirectoryExists(DirAbsPath))
 		{
 			TArray<FString> DirectoryAllFiles;
-			if (UFLibAssetManageHelperEx::FindFilesRecursive(DirAbsPath, DirectoryAllFiles, true))
+			if (UFlibAssetManageHelper::FindFilesRecursive(DirAbsPath, DirectoryAllFiles, true))
 			{
 				int32 ParentDirectoryIndex = DirAbsPath.Len();
 				for (const auto& File : DirectoryAllFiles)
@@ -674,8 +666,8 @@ TArray<FAssetDetail> UFlibPatchParserHelper::ParserExFilesInfoAsAssetDetailInfo(
 	for (auto& File : InExFiles)
 	{
 		FAssetDetail CurrentFile;
-		CurrentFile.mAssetType = TEXT("ExternalFile");
-		CurrentFile.mPackagePath = File.MountPath;
+		CurrentFile.AssetType = TEXT("ExternalFile");
+		CurrentFile.PackagePath = FName(*File.MountPath);
 		//CurrentFile.mGuid = File.GetFileHash();
 		result.Add(CurrentFile);
 	}
@@ -767,7 +759,7 @@ TArray<FExternFileInfo> UFlibPatchParserHelper::GetInternalFilesAsExFiles(const 
 TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(
 	const FPakInternalInfo& InPakInternalInfo, 
 	const FString& PlatformName, 
-	const TArray<FString>& InPakOptions, 
+	// const TArray<FString>& InPakOptions, 
 	TFunction<void(const FPakCommand&)> InReceiveCommand
 )
 {
@@ -781,7 +773,7 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(
 	for (const auto& AssetFile : AllNeedPakInternalCookedFiles)
 	{
 		FString CurrentCommand;
-		if (UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(ProjectAbsDir, PlatformName,InPakOptions, AssetFile, CurrentCommand, InReceiveCommand))
+		if (UFlibPatchParserHelper::ConvNotAssetFileToPakCommand(ProjectAbsDir, PlatformName ,/*InPakOptions,*/ AssetFile, CurrentCommand, InReceiveCommand))
 		{
 			OutPakCommands.AddUnique(CurrentCommand);
 		}
@@ -789,7 +781,7 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(
 
 	FString EngineAbsDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
 
-	auto CombineInPakCommands = [&OutPakCommands, &ProjectAbsDir, &EngineAbsDir, &PlatformName,&InPakOptions,&InReceiveCommand](const TArray<FString>& IniFiles)
+	auto CombineInPakCommands = [&OutPakCommands, &ProjectAbsDir, &EngineAbsDir, &PlatformName, /*&InPakOptions,*/&InReceiveCommand](const TArray<FString>& IniFiles)
 	{
 		TArray<FString> result;
 
@@ -798,7 +790,7 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(
 			EngineAbsDir,
 			ProjectAbsDir,
 			UFlibPatchParserHelper::GetProjectName(),
-			InPakOptions,
+			// InPakOptions,
 			IniFiles,
 			IniPakCommmands,
 			InReceiveCommand
@@ -872,32 +864,16 @@ TArray<FString> UFlibPatchParserHelper::GetDirectoryPaths(const TArray<FDirector
 	{
 		if (!Filter.Path.IsEmpty())
 		{
-			Result.AddUnique(Filter.Path);
+			FString Path = Filter.Path;
+			if(Path.StartsWith(TEXT("/All/")))
+			{
+				Path.RemoveFromStart(TEXT("/All"));
+			}
+			Result.AddUnique(Path);
 		}
 	}
 	return Result;
 }
-
-// TArray<FExternFileInfo> UFlibPatchParserHelper::GetExternFilesFromChunk(const FChunkInfo& InChunk,TArray<ETargetPlatform> InTargetPlatforms, bool bCalcHash)
-// {
-// 	TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(InChunk.AddExternDirectoryToPak);
-//
-// 	for (auto& ExFile : InChunk.AddExternFileToPak)
-// 	{
-// 		if (!AllExternFiles.Contains(ExFile))
-// 		{
-// 			AllExternFiles.Add(ExFile);
-// 		}
-// 	}
-// 	if (bCalcHash)
-// 	{
-// 		for (auto& ExFile : AllExternFiles)
-// 		{
-// 			ExFile.GenerateFileHash();
-// 		}
-// 	}
-// 	return AllExternFiles;
-// }
 
 TMap<ETargetPlatform,FPlatformExternFiles> UFlibPatchParserHelper::GetAllPlatformExternFilesFromChunk(const FChunkInfo& InChunk, bool bCalcHash)
 {
@@ -932,8 +908,11 @@ TMap<ETargetPlatform,FPlatformExternFiles> UFlibPatchParserHelper::GetAllPlatfor
 	return result;
 }
 
-
-FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, TArray<ETargetPlatform> Platforms)
+FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
+	const FPatchVersionDiff& DiffInfo,
+	const FChunkInfo& Chunk,
+	TArray<ETargetPlatform> Platforms
+	)
 {
 	FChunkAssetDescribe ChunkAssetDescribe;
 	// Collect Chunk Assets
@@ -946,31 +925,34 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 			{
 				if (!Filter.Path.IsEmpty())
 				{
-					Result.AddUnique(Filter.Path);
+					FString FinalFilter = Filter.Path;
+					if(!Filter.Path.EndsWith(TEXT("/")))
+					{
+						FinalFilter = FString::Printf(TEXT("%s/"),*FinalFilter);
+					}
+					Result.AddUnique(FinalFilter);
 				}
 			}
 			return Result;
 		};
 		FAssetDependenciesInfo SpecifyDependAssets;
-
-		auto GetSpecifyAssets = [&SpecifyDependAssets](const TArray<FPatcherSpecifyAsset>& SpecifyAssets)->TArray<FString>
-		{
-			TArray<FString> result;
-			for (const auto& Assset : SpecifyAssets)
-			{
-				FString CurrentAssetLongPackageName = Assset.Asset.GetLongPackageName();
-				result.Add(CurrentAssetLongPackageName);
-				if (Assset.bAnalysisAssetDependencies)
-				{
-					UFLibAssetManageHelperEx::GetAssetDependencies(CurrentAssetLongPackageName,Assset.AssetRegistryDependencyTypes, SpecifyDependAssets);
-				}
-			}
-			return result;
-		};
-
+		
+		FAssetDependenciesParser Parser;
+		FAssetDependencies Conf;
+		Conf.InIncludeSpecifyAsset = Chunk.IncludeSpecifyAssets;
+		
+		Parser.Parse(Conf);
+		TSet<FName> AssetLongPackageNames = Parser.GetrParseResults();
+		
 		TArray<FString> AssetFilterPaths = GetAssetFilterPaths(Chunk.AssetIncludeFilters);
-		AssetFilterPaths.Append(GetSpecifyAssets(Chunk.IncludeSpecifyAssets));
-		AssetFilterPaths.Append(UFLibAssetManageHelperEx::GetAssetLongPackageNameByAssetDependenciesInfo(SpecifyDependAssets));
+		// AssetFilterPaths.Append(GetSpecifyAssets(Chunk.IncludeSpecifyAssets));
+		// AssetFilterPaths.Append(SpecifyDependAssets.GetAssetLongPackageNames());
+		for(FName LongPackageName:AssetLongPackageNames)
+		{
+			if(LongPackageName.IsNone())
+				continue;
+			AssetFilterPaths.AddUnique(LongPackageName.ToString());
+		}
 
 		const FAssetDependenciesInfo& AddAssetsRef = DiffInfo.AssetDiffInfo.AddAssetDependInfo;
 		const FAssetDependenciesInfo& ModifyAssetsRef = DiffInfo.AssetDiffInfo.ModifyAssetDependInfo;
@@ -1021,8 +1003,9 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 			}
 			return ResultAssetDependInfos;
 		};
-
-		ChunkAssetDescribe.Assets = UFLibAssetManageHelperEx::CombineAssetDependencies(CollectChunkAssets(AddAssetsRef, AssetFilterPaths), CollectChunkAssets(ModifyAssetsRef, AssetFilterPaths));
+		ChunkAssetDescribe.AddAssets = CollectChunkAssets(AddAssetsRef, AssetFilterPaths);
+		ChunkAssetDescribe.ModifyAssets = CollectChunkAssets(ModifyAssetsRef, AssetFilterPaths);
+		ChunkAssetDescribe.Assets = UFlibAssetManageHelper::CombineAssetDependencies(ChunkAssetDescribe.AddAssets, ChunkAssetDescribe.ModifyAssets);
 	}
 
 	auto CoolectPlatformExFiles = [](const FPatchVersionDiff& DiffInfo,const auto& Chunk,ETargetPlatform Platform)->TArray<FExternFileInfo>
@@ -1039,13 +1022,13 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 					for (const auto& Directory : Chunk.AddExternAssetsToPlatform[PlatformIndex].AddExternDirectoryToPak)
 					{
 						if (!Directory.DirectoryPath.Path.IsEmpty())
-							AllSearchFileFilter.Add(Directory.DirectoryPath.Path);
+							AllSearchFileFilter.Add(UFlibPatchParserHelper::ReplaceMarkPath(Directory.DirectoryPath.Path));
 					}
 					for (const auto& File : Chunk.AddExternAssetsToPlatform[PlatformIndex].AddExternFileToPak)
 					{
-						AllSearchFileFilter.Add(File.FilePath.FilePath);
+						AllSearchFileFilter.Add(UFlibPatchParserHelper::ReplaceMarkPath(File.FilePath.FilePath));
 					}
-				}			
+				}
 			}
 		}
 		TArray<FExternFileInfo> AddFilesRef;
@@ -1057,7 +1040,7 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 		}
 
 		// TArray<FString>
-		auto CollectExtenFilesLambda = [&AllFiles](const TArray<FExternFileInfo>& SearchBase, const TSet<FString>& Filters)
+		auto CollectExtenFilesLambda = [&AllFiles](const TArray<FExternFileInfo>& SearchBase, const TSet<FString>& Filters,EPatchAssetType Type)
 		{
 			for (const auto& Filter : Filters)
 			{
@@ -1065,13 +1048,15 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 				{
 					if (SearchItem.FilePath.FilePath.StartsWith(Filter))
 					{
-						AllFiles.Add(SearchItem);
+						FExternFileInfo FileItem = SearchItem;
+						FileItem.Type = Type;
+						AllFiles.Add(FileItem);
 					}
 				}
 			}
 		};
-		CollectExtenFilesLambda(AddFilesRef, AllSearchFileFilter);
-		CollectExtenFilesLambda(ModifyFilesRef, AllSearchFileFilter);
+		CollectExtenFilesLambda(AddFilesRef, AllSearchFileFilter,EPatchAssetType::NEW);
+		CollectExtenFilesLambda(ModifyFilesRef, AllSearchFileFilter,EPatchAssetType::MODIFY);
 		return AllFiles;
 	};
 
@@ -1088,12 +1073,18 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(c
 }
 
 
-TArray<FString> UFlibPatchParserHelper::CollectPakCommandsStringsByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)
+TArray<FString> UFlibPatchParserHelper::CollectPakCommandsStringsByChunk(
+	const FPatchVersionDiff& DiffInfo,
+	const FChunkInfo& Chunk,
+	const FString& PlatformName,
+	// const TArray<FString>& PakOptions,
+	const FExportPatchSettings* PatcheSettings
+)
 {
 	TArray<FString> ChunkPakCommands;
 	{
-		TArray<FPakCommand> ChunkPakCommands_r = UFlibPatchParserHelper::CollectPakCommandByChunk(DiffInfo, Chunk, PlatformName, PakOptions);
-		for (const auto PakCommand : ChunkPakCommands_r)
+		TArray<FPakCommand> ChunkPakCommands_r = UFlibPatchParserHelper::CollectPakCommandByChunk(DiffInfo, Chunk, PlatformName,/* PakOptions,*/PatcheSettings);
+		for (const auto& PakCommand : ChunkPakCommands_r)
 		{
 			ChunkPakCommands.Append(PakCommand.GetPakCommands());
 		}
@@ -1102,119 +1093,141 @@ TArray<FString> UFlibPatchParserHelper::CollectPakCommandsStringsByChunk(const F
 	return ChunkPakCommands;
 }
 
-TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)
+TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
+	const FPatchVersionDiff& DiffInfo,
+	const FChunkInfo& Chunk,
+	const FString& PlatformName,
+	// const TArray<FString>& PakOptions,
+	const FExportPatchSettings* PatcheSettings
+)
 {
-	auto CollectPakCommandsByChunkLambda = [](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName, const TArray<FString>& PakOptions)->TArray<FPakCommand>
+	auto CollectPakCommandsByChunkLambda = [PatcheSettings](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName/*, const TArray<FString>& PakOptions*/)->TArray<FPakCommand>
 	{
 		ETargetPlatform Platform;
-		UFlibPatchParserHelper::GetEnumValueByName(PlatformName,Platform);
+		THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
 		TArray<ETargetPlatform> CollectPlatforms = {ETargetPlatform::AllPlatforms};
 		CollectPlatforms.AddUnique(Platform);
 		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(DiffInfo, Chunk ,CollectPlatforms);
 
-		FString PakOptionsStr;
-		{
-			for (const auto& Param : PakOptions)
-			{
-				PakOptionsStr += TEXT(" ") + Param;
-			}
-		}
-
 		TArray<FPakCommand> PakCommands;
 
-		auto ReceivePakCommandAssetLambda = [&PakCommands](const TArray<FString>& InCommand, const FString& InMountPath,const FString& InLongPackageName)
+		bool bIoStore =false;
+		bool bAllowBulkDataInIoStore = false;
+#if ENGINE_MAJOR_VERSION > 4 ||ENGINE_MINOR_VERSION > 25
+		if(PatcheSettings)
 		{
-			FPakCommand CurrentPakCommand;
-			CurrentPakCommand.PakCommands = InCommand;
-			CurrentPakCommand.MountPath = InMountPath;
-			CurrentPakCommand.AssetPackage = InLongPackageName;
-			PakCommands.Add(CurrentPakCommand);
+			bIoStore = PatcheSettings->GetIoStoreSettings().bIoStore;
+			bAllowBulkDataInIoStore = PatcheSettings->GetIoStoreSettings().bAllowBulkDataInIoStore;
+		}
+#endif
+		
+		auto IsIoStoreAssetsLambda = [bIoStore,bAllowBulkDataInIoStore](const FString& InAbsAssets)->bool
+		{
+			bool Matched = false;
+			if(bIoStore)
+			{
+				TArray<FString> IoStoreExterns = {TEXT(".uasset"),TEXT(".umap")};
+				if(bAllowBulkDataInIoStore)
+				{
+					IoStoreExterns.Add(TEXT(".ubulk"));
+					IoStoreExterns.Add(TEXT(".uptnl"));
+				}
+				// bool bIoStoreMatched = false;
+				for(const auto& IoStoreExrern:IoStoreExterns)
+				{
+					if(InAbsAssets.EndsWith(IoStoreExrern))
+					{
+						Matched = true;
+						break;
+					}
+				}
+			}
+			return Matched;
 		};
+		
+
 		// Collect Chunk Assets
 		{
-			FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-			TArray<FString> AssetsPakCommands;
-			UFLibAssetManageHelperEx::MakePakCommandFromAssetDependencies(ProjectDir, PlatformName, ChunkAssetsDescrible.Assets, PakOptions, AssetsPakCommands, ReceivePakCommandAssetLambda);
-			
-		}
-
-		auto ReceivePakCommandExFilesLambda = [&PakCommands](const FPakCommand& InCommand)
-		{
-			PakCommands.Emplace(InCommand);
-		};
-
-		// Collect Extern Files
-		{
-			for(const auto& PlatformItenm:CollectPlatforms)
+			struct PakCommandReceiver
 			{
-				for (const auto& CollectFile : ChunkAssetsDescrible.AllPlatformExFiles[PlatformItenm].ExternFiles)
+				PakCommandReceiver(TArray<FPakCommand>& InPakCommandsRef,EPatchAssetType InType):PakCommands(InPakCommandsRef),Type(InType){}
+				void operator()(const TArray<FString>& InPakCommand,const TArray<FString>& InIoStoreCommand, const FString& InMountPath,const FString& InLongPackageName)
 				{
 					FPakCommand CurrentPakCommand;
-					CurrentPakCommand.MountPath = CollectFile.MountPath;
-					CurrentPakCommand.AssetPackage = UFlibPatchParserHelper::MountPathToRelativePath(CurrentPakCommand.MountPath);
-					CurrentPakCommand.PakCommands = TArray<FString>{ FString::Printf(TEXT("\"%s\" \"%s\"%s"), *CollectFile.FilePath.FilePath, *CollectFile.MountPath,*PakOptionsStr) };
-
+					CurrentPakCommand.PakCommands = InPakCommand;
+					CurrentPakCommand.IoStoreCommands = InIoStoreCommand;
+					CurrentPakCommand.MountPath = InMountPath;
+					CurrentPakCommand.AssetPackage = InLongPackageName;
+					CurrentPakCommand.Type = Type;
 					PakCommands.Add(CurrentPakCommand);
 				}
+				TArray<FPakCommand>& PakCommands;
+				EPatchAssetType Type;
+			};
+			// auto ReceivePakCommandAssetLambda = [&PakCommands](const TArray<FString>& InPakCommand,const TArray<FString>& InIoStoreCommand, const FString& InMountPath,const FString& InLongPackageName)
+			// {
+			// 	
+			// };
+			PakCommandReceiver AddReceiver(PakCommands,EPatchAssetType::NEW);
+			PakCommandReceiver ModifyReceiver(PakCommands,EPatchAssetType::MODIFY);
+			FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+			TArray<FString> AssetsPakCommands;
+			UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
+				ProjectDir,
+				PlatformName,
+				ChunkAssetsDescrible.AddAssets,
+				// PakOptions,
+				AssetsPakCommands,
+				AddReceiver,
+				IsIoStoreAssetsLambda
+			);
+			AssetsPakCommands.Empty();
+			UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
+				ProjectDir,
+				PlatformName,
+				ChunkAssetsDescrible.ModifyAssets,
+				// PakOptions,
+				AssetsPakCommands,
+				ModifyReceiver,
+				IsIoStoreAssetsLambda
+			);
+		}
+		
+		// Collect Extern Files
+		for(const auto& PlatformItenm:CollectPlatforms)
+		{
+			for (const auto& CollectFile : ChunkAssetsDescrible.AllPlatformExFiles[PlatformItenm].ExternFiles)
+			{
+				FPakCommand CurrentPakCommand;
+				CurrentPakCommand.MountPath = CollectFile.MountPath;
+				CurrentPakCommand.AssetPackage = UFlibPatchParserHelper::MountPathToRelativePath(CurrentPakCommand.MountPath);
+				
+				// FString PakOptionsStr;
+				// for (const auto& Param : PakOptions)
+				// {
+				// 	FString FileExtension = FPaths::GetExtension(CollectFile.FilePath.FilePath,false);
+				// 	if(IgnoreCompressFormats.Contains(FileExtension) && Param.Equals(TEXT("-compress"),ESearchCase::IgnoreCase))
+				// 	{
+				// 		continue;
+				// 	}
+				// 	PakOptionsStr += TEXT(" ") + Param;
+				// }
+				
+				CurrentPakCommand.PakCommands = TArray<FString>{ FString::Printf(TEXT("\"%s\" \"%s\""), *CollectFile.FilePath.FilePath, *CollectFile.MountPath/*,*PakOptionsStr*/) };
+				CurrentPakCommand.Type = CollectFile.Type;
+				PakCommands.Add(CurrentPakCommand);
 			}
 		}
 		// internal files
-		UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(ChunkAssetsDescrible.InternalFiles, PlatformName, PakOptions, ReceivePakCommandExFilesLambda);
+		// TArray<FString> NotCompressOptions = PakOptions;
+		// if(NotCompressOptions.Contains(TEXT("-compress")))
+		// 	NotCompressOptions.Remove(TEXT("-compress"));
+		auto ReceivePakCommandExFilesLambda = [&PakCommands](const FPakCommand& InCommand){ PakCommands.Emplace(InCommand); };
+		UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(ChunkAssetsDescrible.InternalFiles, PlatformName,/* NotCompressOptions,*/ ReceivePakCommandExFilesLambda);
 		return PakCommands;
 	};
 
-	return CollectPakCommandsByChunkLambda(DiffInfo, Chunk, PlatformName, PakOptions);
-}
-
-FPatchVersionDiff UFlibPatchParserHelper::DiffPatchVersionWithPatchSetting(const FExportPatchSettings& PatchSetting, const FHotPatcherVersion& Base, const FHotPatcherVersion& New)
-{
-	FPatchVersionDiff VersionDiffInfo;
-	FAssetDependenciesInfo BaseVersionAssetDependInfo = Base.AssetInfo;
-	FAssetDependenciesInfo CurrentVersionAssetDependInfo = New.AssetInfo;
-
-	UFlibPatchParserHelper::DiffVersionAssets(
-		CurrentVersionAssetDependInfo,
-		BaseVersionAssetDependInfo,
-		VersionDiffInfo.AssetDiffInfo.AddAssetDependInfo,
-		VersionDiffInfo.AssetDiffInfo.ModifyAssetDependInfo,
-		VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo
-	);
-
-	UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(Base,New,VersionDiffInfo.PlatformExternDiffInfo);
-
-	if(PatchSetting.GetIgnoreDeletionModulesAsset().Num())
-	{
-		for(const auto& ModuleName:PatchSetting.GetIgnoreDeletionModulesAsset())
-		{
-			VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap.Remove(ModuleName);
-		}
-	}
-	
-	if(PatchSetting.IsRecursiveWidgetTree())
-	{
-		UFlibPatchParserHelper::AnalysisWidgetTree(VersionDiffInfo);
-	}
-	
-	if(PatchSetting.IsForceSkipContent())
-	{
-		TArray<FString> AllSkipContents;
-		AllSkipContents.Append(PatchSetting.GetForceSkipContentStrRules());
-		AllSkipContents.Append(PatchSetting.GetForceSkipAssetsStr());
-		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipContents);
-	}
-	// clean deleted asset info in patch
-	if(PatchSetting.IsIgnoreDeleatedAssetsInfo())
-	{
-		UE_LOG(LogHotPatcher,Display,TEXT("ignore deleted assets info in patch..."));
-		VersionDiffInfo.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap.Empty();
-		VersionDiffInfo.PlatformExternDiffInfo.Find(ETargetPlatform::AllPlatforms)->DeleteExternalFiles.Empty();
-		for(const auto& Platform:PatchSetting.GetPakTargetPlatforms())
-		{
-			VersionDiffInfo.PlatformExternDiffInfo.Find(Platform)->DeleteExternalFiles.Empty();
-		}
-	}
-	
-	return VersionDiffInfo;
+	return CollectPakCommandsByChunkLambda(DiffInfo, Chunk, PlatformName/*, PakOptions*/);
 }
 
 FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
@@ -1223,22 +1236,23 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	const FString& InDate,
 	const TArray<FString>& InIncludeFilter,
 	const TArray<FString>& InIgnoreFilter,
+	const TArray<FString>& ForceSkipContents,
+	const TArray<UClass*>& ForceSkipClasses,
 	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
 	const TArray<FPatcherSpecifyAsset>& InIncludeSpecifyAsset,
-	// const TArray<FExternAssetFileInfo>& InAllExternFiles,
 	const TArray<FPlatformExternAssets>& AddToPlatformExFiles,
 	bool InIncludeHasRefAssetsOnly,
-	bool bInAnalysisFilterDepend
+	bool bInAnalysisFilterDependencies
 )
 {
+	SCOPED_NAMED_EVENT_TEXT("ExportReleaseVersionInfo",FColor::Red);
 	FHotPatcherVersion ExportVersion;
 	{
 		ExportVersion.VersionId = InVersionId;
 		ExportVersion.Date = InDate;
 		ExportVersion.BaseVersionId = InBaseVersion;
 	}
-
-
+	
 	// add Include Filter
 	{
 		TArray<FString> AllIncludeFilter;
@@ -1259,88 +1273,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	}
 	ExportVersion.bIncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
 	ExportVersion.IncludeSpecifyAssets = InIncludeSpecifyAsset;
-
-	TArray<FAssetDetail> FilterAssetList;
-	{
-		TArray<FAssetDetail> AllNeedPakRefAssets;
-		{
-			TArray<FAssetDetail> AllAssets;
-			UFLibAssetManageHelperEx::GetAssetsList(ExportVersion.IncludeFilter, AssetRegistryDependencyTypes, AllAssets);
-			if (InIncludeHasRefAssetsOnly)
-			{
-				TArray<FAssetDetail> AllDontHasRefAssets;
-				UFLibAssetManageHelperEx::FilterNoRefAssetsWithIgnoreFilter(AllAssets, ExportVersion.IgnoreFilter, AllNeedPakRefAssets, AllDontHasRefAssets);
-			}
-			else
-			{
-				AllNeedPakRefAssets = AllAssets;
-			}
-		}
-		// 剔除ignore filter中指定的资源
-		if (ExportVersion.IgnoreFilter.Num() > 0)
-		{
-			for (const auto& AssetDetail : AllNeedPakRefAssets)
-			{
-				bool bIsIgnore = false;
-				for (const auto& IgnoreFilter : ExportVersion.IgnoreFilter)
-				{
-					if (AssetDetail.mPackagePath.StartsWith(IgnoreFilter))
-					{
-						bIsIgnore = true;
-						break;
-					}
-				}
-				if (!bIsIgnore)
-				{
-					FilterAssetList.Add(AssetDetail);
-				}
-			}
-		}
-		else
-		{
-			FilterAssetList = AllNeedPakRefAssets;
-		}
-
-	}
-
-	auto AnalysisAssetDependency = [](const TArray<FAssetDetail>& InAssetDetail, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes, bool bInAnalysisDepend)->FAssetDependenciesInfo
-	{
-		FAssetDependenciesInfo RetAssetDepend;
-		if (InAssetDetail.Num())
-		{
-			UFLibAssetManageHelperEx::CombineAssetsDetailAsFAssetDepenInfo(InAssetDetail, RetAssetDepend);
-
-			if (bInAnalysisDepend)
-			{
-				FAssetDependenciesInfo AssetDependencies;
-				UFLibAssetManageHelperEx::GetAssetListDependenciesForAssetDetail(InAssetDetail,AssetRegistryDependencyTypes, AssetDependencies);
-
-				RetAssetDepend = UFLibAssetManageHelperEx::CombineAssetDependencies(RetAssetDepend, AssetDependencies);
-			}
-		}
-		return RetAssetDepend;
-	};
-
-	// 分析过滤器中指定的资源依赖
-	FAssetDependenciesInfo FilterAssetDependencies = AnalysisAssetDependency(FilterAssetList, AssetRegistryDependencyTypes, bInAnalysisFilterDepend);
-
-	// Specify Assets
-	FAssetDependenciesInfo SpecifyAssetDependencies;
-	{
-		for (const auto& SpecifyAsset : InIncludeSpecifyAsset)
-		{
-			FString AssetLongPackageName = SpecifyAsset.Asset.GetLongPackageName();
-			FAssetDetail AssetDetail;
-			if (UFLibAssetManageHelperEx::GetSpecifyAssetDetail(AssetLongPackageName, AssetDetail))
-			{
-				FAssetDependenciesInfo CurrentAssetDependencies = AnalysisAssetDependency(TArray<FAssetDetail>{AssetDetail}, SpecifyAsset.AssetRegistryDependencyTypes, SpecifyAsset.bAnalysisAssetDependencies);
-				SpecifyAssetDependencies = UFLibAssetManageHelperEx::CombineAssetDependencies(SpecifyAssetDependencies, CurrentAssetDependencies);
-			}
-		}
-	}
-
-	ExportVersion.AssetInfo = UFLibAssetManageHelperEx::CombineAssetDependencies(FilterAssetDependencies, SpecifyAssetDependencies);
-
+	
 	// for (const auto& File : InAllExternFiles)
 	// {
 	// 	if (!ExportVersion.ExternalFiles.Contains(File.FilePath.FilePath))
@@ -1349,91 +1282,113 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfo(
 	// 	}
 	// }
 
-	for(const auto& PlatformExInfo:AddToPlatformExFiles)
+	TSet<FName> IgnoreTypes = 
 	{
-		FPlatformExternFiles PlatformFileInfo = UFlibPatchParserHelper::GetAllExFilesByPlatform(PlatformExInfo);
-		FPlatformExternAssets PlatformExternAssets;
-		PlatformExternAssets.TargetPlatform = PlatformExInfo.TargetPlatform;
-		PlatformExternAssets.AddExternFileToPak = PlatformFileInfo.ExternFiles;
-		ExportVersion.PlatformAssets.Add(PlatformExInfo.TargetPlatform,PlatformExternAssets);
+		TEXT("EditorUtilityBlueprint")
+	};
+	for(auto Class:ForceSkipClasses)
+	{
+		IgnoreTypes.Add(*Class->GetName());
+	}
+	FAssetDependencies AssetConfig;
+	AssetConfig.IncludeFilters = ExportVersion.IncludeFilter;
+	AssetConfig.IgnoreFilters = ExportVersion.IgnoreFilter;
+	AssetConfig.AssetRegistryDependencyTypes = AssetRegistryDependencyTypes;
+	AssetConfig.InIncludeSpecifyAsset = InIncludeSpecifyAsset;
+	AssetConfig.ForceSkipContents = ForceSkipContents;
+	AssetConfig.bRedirector = true;
+	AssetConfig.AnalysicFilterDependencies = bInAnalysisFilterDependencies;
+	AssetConfig.IncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
+	AssetConfig.IgnoreAseetTypes = IgnoreTypes;
+	
+	{
+		SCOPED_NAMED_EVENT_TEXT("parser all uasset dependencies(optimized)",FColor::Red);
+		FAssetDependenciesParser Parser;
+		Parser.Parse(AssetConfig);
+
+		UE_LOG(LogHotPatcher,Display,TEXT("FAssetDependenciteParser Asset Num (Optimized) %d"),Parser.GetrParseResults().Num());
+
+		{
+			SCOPED_NAMED_EVENT_TEXT("combine all assets to FAssetDependenciesInfo",FColor::Red);
+			for(FName LongPackageName:Parser.GetrParseResults())
+			{
+				if(LongPackageName.IsNone())
+					continue;
+				FAssetDetail CurrentDetail;
+				if(UFlibAssetManageHelper::GetSpecifyAssetDetail(LongPackageName.ToString(),CurrentDetail))
+				{
+					ExportVersion.AssetInfo.AddAssetsDetail(CurrentDetail);
+				}
+			}
+		}
+	}
+	
+	// {
+	// 	SCOPED_NAMED_EVENT_TEXT("parser all uasset dependencies(Old)",FColor::Red);
+	// 	FOldAssetDependenciesParser Parser;
+	// 	Parser.Parse(AssetConfig);
+	//
+	// 	{
+	// 		SCOPED_NAMED_EVENT_TEXT("calac all uasset num (old)",FColor::Red);
+	// 		TArray<FAssetDetail> AssetDetails;
+	// 		UFlibAssetManageHelper::GetAssetDetailsByAssetDependenciesInfo(Parser.GetrParseResults(),AssetDetails);
+	// 		UE_LOG(LogHotPatcher,Display,TEXT("FAssetDependenciteParser Asset Num (old) %d"),AssetDetails.Num());
+	// 	}
+	// 	// ExportVersion.AssetInfo = Parser.GetrParseResults();
+	// }
+	
+	{
+		SCOPED_NAMED_EVENT_TEXT("ExportReleaseVersionInfo parser external files",FColor::Red);
+		for(const auto& PlatformExInfo:AddToPlatformExFiles)
+		{
+			FPlatformExternFiles PlatformFileInfo = UFlibPatchParserHelper::GetAllExFilesByPlatform(PlatformExInfo);
+			FPlatformExternAssets PlatformExternAssets;
+			PlatformExternAssets.TargetPlatform = PlatformExInfo.TargetPlatform;
+			PlatformExternAssets.AddExternFileToPak = PlatformFileInfo.ExternFiles;
+			ExportVersion.PlatformAssets.Add(PlatformExInfo.TargetPlatform,PlatformExternAssets);
+		}
 	}
 	return ExportVersion;
 }
 
-FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(const FString& InVersionId, const FString& InBaseVersion, const FString& InDate, const FChunkInfo& InChunkInfo, bool InIncludeHasRefAssetsOnly /*= false */,bool bInAnalysisFilterDepend /* = true*/)
+FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
+	const FString& InVersionId,
+	const FString& InBaseVersion,
+	const FString& InDate,
+	const FChunkInfo& InChunkInfo,
+	bool InIncludeHasRefAssetsOnly /*= false */,
+	bool bInAnalysisFilterDependencies /* = true*/)
 {
+	TArray<FString> AllSkipContents;;
+	if(InChunkInfo.bForceSkipContent)
+	{
+		AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(InChunkInfo.ForceSkipContentRules));
+		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(InChunkInfo.ForceSkipAssets));
+	}
+	
 	return UFlibPatchParserHelper::ExportReleaseVersionInfo(
         InVersionId,
         InBaseVersion,
         InDate,
         UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIncludeFilters),
         UFlibPatchParserHelper::GetDirectoryPaths(InChunkInfo.AssetIgnoreFilters),
+        AllSkipContents,
+        InChunkInfo.ForceSkipClasses,
         InChunkInfo.AssetRegistryDependencyTypes,
         InChunkInfo.IncludeSpecifyAssets,
         InChunkInfo.AddExternAssetsToPlatform,
         InIncludeHasRefAssetsOnly,
-        bInAnalysisFilterDepend
+        bInAnalysisFilterDependencies
     );
 }
 
-
-FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkWithPatchSetting(const FExportPatchSettings& PatchSetting, const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk)
-{
-	FHotPatcherVersion TotalChunkVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
-		TEXT(""),
-		TEXT(""),
-		TEXT(""),
-		TotalChunk,
-		PatchSetting.IsIncludeHasRefAssetsOnly(),
-		TotalChunk.bAnalysisFilterDependencies
-	);
-
-	return UFlibPatchParserHelper::DiffChunkByBaseVersionWithPatchSetting(PatchSetting, CurrentVersionChunk ,TotalChunk, TotalChunkVersion);
-}
-
-FChunkAssetDescribe UFlibPatchParserHelper::DiffChunkByBaseVersionWithPatchSetting(const FExportPatchSettings& PatchSetting, const FChunkInfo& CurrentVersionChunk, const FChunkInfo& TotalChunk, const FHotPatcherVersion& BaseVersion)
-{
-	FChunkAssetDescribe result;
-	FHotPatcherVersion CurrentVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
-		TEXT(""),
-		TEXT(""),
-		TEXT(""),
-		CurrentVersionChunk,
-		PatchSetting.IsIncludeHasRefAssetsOnly(),
-		CurrentVersionChunk.bAnalysisFilterDependencies
-	);
-	FPatchVersionDiff ChunkDiffInfo = DiffPatchVersionWithPatchSetting(PatchSetting, BaseVersion, CurrentVersion);
-	
-	result.Assets = UFLibAssetManageHelperEx::CombineAssetDependencies(ChunkDiffInfo.AssetDiffInfo.AddAssetDependInfo, ChunkDiffInfo.AssetDiffInfo.ModifyAssetDependInfo);
-
-	TArray<ETargetPlatform> Platforms;
-	ChunkDiffInfo.PlatformExternDiffInfo.GetKeys(Platforms);
-	for(auto Platform:Platforms)
-	{
-		FPlatformExternFiles PlatformFiles;
-		PlatformFiles.Platform = Platform;
-		PlatformFiles.ExternFiles = ChunkDiffInfo.PlatformExternDiffInfo.Find(Platform)->AddExternalFiles;
-		PlatformFiles.ExternFiles.Append(ChunkDiffInfo.PlatformExternDiffInfo.Find(Platform)->ModifyExternalFiles);
-		result.AllPlatformExFiles.Add(Platform,PlatformFiles);	
-	}
-	
-	result.InternalFiles.bIncludeAssetRegistry = CurrentVersionChunk.InternalFiles.bIncludeAssetRegistry != TotalChunk.InternalFiles.bIncludeAssetRegistry;
-	result.InternalFiles.bIncludeGlobalShaderCache = CurrentVersionChunk.InternalFiles.bIncludeGlobalShaderCache != TotalChunk.InternalFiles.bIncludeGlobalShaderCache;
-	result.InternalFiles.bIncludeShaderBytecode = CurrentVersionChunk.InternalFiles.bIncludeShaderBytecode != TotalChunk.InternalFiles.bIncludeShaderBytecode;
-	result.InternalFiles.bIncludeEngineIni = CurrentVersionChunk.InternalFiles.bIncludeEngineIni != TotalChunk.InternalFiles.bIncludeEngineIni;
-	result.InternalFiles.bIncludePluginIni = CurrentVersionChunk.InternalFiles.bIncludePluginIni != TotalChunk.InternalFiles.bIncludePluginIni;
-	result.InternalFiles.bIncludeProjectIni = CurrentVersionChunk.InternalFiles.bIncludeProjectIni != TotalChunk.InternalFiles.bIncludeProjectIni;
-
-	return result;
-}
-
-TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands,const TArray<FReplaceText>& InReplaceTexts)
+TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands,const TArray<FReplaceText>& InReplaceTexts,bool bIoStore)
 {
 	TArray<FString> ResultPakCommands;
 	{
-		for (const auto PakCommand : PakCommands)
+		for (const auto& PakCommand : PakCommands)
 		{
-			const TArray<FString>& PakCommandOriginTexts = PakCommand.GetPakCommands();
+			const TArray<FString>& PakCommandOriginTexts = bIoStore?PakCommand.GetIoStoreCommands():PakCommand.GetPakCommands();
 			if (!!InReplaceTexts.Num())
 			{
 				for (const auto& PakCommandOriginText : PakCommandOriginTexts)
@@ -1458,44 +1413,55 @@ TArray<FString> UFlibPatchParserHelper::GetPakCommandStrByCommands(const TArray<
 
 
 
-FHotPatcherAssetDependency UFlibPatchParserHelper::GetAssetRelatedInfo(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
-{
-	FHotPatcherAssetDependency Dependency;
-	Dependency.Asset = InAsset;
-	FString LongPackageName;
-	if (UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(InAsset.mPackagePath, LongPackageName))
-	{
-		TArray<EAssetRegistryDependencyType::Type> SearchAssetDepTypes;
-		for (const auto& Type : AssetRegistryDependencyTypes)
-		{
-			SearchAssetDepTypes.AddUnique(UFLibAssetManageHelperEx::ConvAssetRegistryDependencyToInternal(Type));
-		}
-
-		UFLibAssetManageHelperEx::GetAssetDependency(LongPackageName, AssetRegistryDependencyTypes,Dependency.AssetDependency, false);
-		UFLibAssetManageHelperEx::GetAssetReference(InAsset, SearchAssetDepTypes, Dependency.AssetReference);
-
-	}
-
-	return Dependency;
-}
-
-TArray<FHotPatcherAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfo(const TArray<FAssetDetail>& InAssets, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
-{
-	TArray<FHotPatcherAssetDependency> AssetsDependency;
-
-	for (const auto& Asset : InAssets)
-	{
-		AssetsDependency.Add(UFlibPatchParserHelper::GetAssetRelatedInfo(Asset, AssetRegistryDependencyTypes));
-	}
-	return AssetsDependency;
-}
-
-TArray<FHotPatcherAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(const FAssetDependenciesInfo& InAssetsDependencies, const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes)
-{
-	TArray<FAssetDetail> AssetsDetail;
-	UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(InAssetsDependencies, AssetsDetail);
-	return UFlibPatchParserHelper::GetAssetsRelatedInfo(AssetsDetail, AssetRegistryDependencyTypes);
-}
+// FHotPatcherAssetDependency UFlibPatchParserHelper::GetAssetRelatedInfo(
+// 	const FAssetDetail& InAsset,
+// 	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+// 	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+// )
+// {
+// 	FHotPatcherAssetDependency Dependency;
+// 	Dependency.Asset = InAsset;
+// 	FString LongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(InAsset.PackagePath.ToString());
+// 	
+// 	{
+// 		TArray<EAssetRegistryDependencyType::Type> SearchAssetDepTypes;
+// 		for (const auto& Type : AssetRegistryDependencyTypes)
+// 		{
+// 			SearchAssetDepTypes.AddUnique(UFlibAssetManageHelper::ConvAssetRegistryDependencyToInternal(Type));
+// 		}
+//
+// 		UFlibAssetManageHelper::GetAssetDependency(LongPackageName, AssetRegistryDependencyTypes,Dependency.AssetDependency, ScanedCaches,false);
+// 		UFlibAssetManageHelper::GetAssetReference(InAsset, SearchAssetDepTypes, Dependency.AssetReference);
+//
+// 	}
+//
+// 	return Dependency;
+// }
+//
+// TArray<FHotPatcherAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfo(
+// 	const TArray<FAssetDetail>& InAssets,
+// 	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+// 	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+// )
+// {
+// 	TArray<FHotPatcherAssetDependency> AssetsDependency;
+//
+// 	for (const auto& Asset : InAssets)
+// 	{
+// 		AssetsDependency.Add(UFlibPatchParserHelper::GetAssetRelatedInfo(Asset, AssetRegistryDependencyTypes,ScanedCaches));
+// 	}
+// 	return AssetsDependency;
+// }
+//
+// TArray<FHotPatcherAssetDependency> UFlibPatchParserHelper::GetAssetsRelatedInfoByFAssetDependencies(
+// 	const FAssetDependenciesInfo& InAssetsDependencies,
+// 	const TArray<EAssetRegistryDependencyTypeEx>& AssetRegistryDependencyTypes,
+// 	TMap<FString, FAssetDependenciesInfo>& ScanedCaches
+// )
+// {
+// 	const TArray<FAssetDetail>& AssetsDetail = InAssetsDependencies.GetAssetDetails();
+// 	return UFlibPatchParserHelper::GetAssetsRelatedInfo(AssetsDetail, AssetRegistryDependencyTypes,ScanedCaches);
+// }
 
 
 
@@ -1527,7 +1493,7 @@ bool UFlibPatchParserHelper::GetCookProcCommandParams(const FCookerConfig& InCon
 	for (const auto& CookFilter : InConfig.CookFilter)
 	{
 		FString FilterFullPath;
-		if (UFLibAssetManageHelperEx::ConvRelativeDirToAbsDir(CookFilter, FilterFullPath))
+		if (UFlibAssetManageHelper::ConvRelativeDirToAbsDir(CookFilter, FilterFullPath))
 		{
 			if (FPaths::DirectoryExists(FilterFullPath))
 			{
@@ -1550,41 +1516,10 @@ bool UFlibPatchParserHelper::GetCookProcCommandParams(const FCookerConfig& InCon
 
 void UFlibPatchParserHelper::ExcludeContentForVersionDiff(FPatchVersionDiff& VersionDiff,const TArray<FString>& ExcludeRules)
 {
-	auto ExcludeEditorContent = [&ExcludeRules](TMap<FString,FAssetDependenciesDetail>& AssetCategorys)
-	{
-		TArray<FString> Keys;
-		AssetCategorys.GetKeys(Keys);
-		for(const auto& Key:Keys)
-		{
-			FAssetDependenciesDetail&  ModuleAssetList = *AssetCategorys.Find(Key);
-			TArray<FString> AssetKeys;
-			
-			ModuleAssetList.AssetDependencyDetails.GetKeys(AssetKeys);
-			for(const auto& AssetKey:AssetKeys)
-			{
-				bool customStartWith = false;
-                for(const auto& Rule:ExcludeRules)
-                {
-                	if(AssetKey.StartsWith(Rule))
-                	{
-                		customStartWith = true;
-                		break;
-                	}
-                }
-                			
-                if( customStartWith )
-                {
-                	ModuleAssetList.AssetDependencyDetails.Remove(AssetKey);
-                }
-			}
-		}
-	};
-
-	ExcludeEditorContent(VersionDiff.AssetDiffInfo.AddAssetDependInfo.AssetsDependenciesMap);
-	ExcludeEditorContent(VersionDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap);
-	ExcludeEditorContent(VersionDiff.AssetDiffInfo.DeleteAssetDependInfo.AssetsDependenciesMap);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.AddAssetDependInfo,ExcludeRules);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.ModifyAssetDependInfo,ExcludeRules);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.DeleteAssetDependInfo,ExcludeRules);
 }
-
 
 FString UFlibPatchParserHelper::MountPathToRelativePath(const FString& InMountPath)
 {
@@ -1601,187 +1536,6 @@ FString UFlibPatchParserHelper::MountPathToRelativePath(const FString& InMountPa
 	return Path/filename;
 }
 
-
-#include "ShaderCodeLibrary.h"
-
-void UFlibPatchParserHelper::ReloadShaderbytecode()
-{
-	FShaderCodeLibrary::OpenLibrary("Global", FPaths::ProjectContentDir());
-	FShaderCodeLibrary::OpenLibrary(FApp::GetProjectName(), FPaths::ProjectContentDir());
-}
-
-FString UFlibPatchParserHelper::SerializeAssetsDependencyAsJsonString(
-	const TArray<FHotPatcherAssetDependency>& InAssetsDependency)
-{
-	FString AssetsDependencyString;
-	auto SerializeAssetsDependencyLambda = [](const TArray<FHotPatcherAssetDependency>& InAssetsDependency, TSharedPtr<FJsonObject>& OutJsonObject)->bool
-	{
-		if (!OutJsonObject.IsValid())
-			OutJsonObject = MakeShareable(new FJsonObject);
-
-		TArray<TSharedPtr<FJsonValue>> RefAssetsObjectList;
-		for (const auto& AssetDependency: InAssetsDependency)
-		{
-			TSharedPtr<FJsonObject> CurrentAssetDependencyJsonObject;
-			if(UFlibPatchParserHelper::TSerializeStructAsJsonObject(AssetDependency,CurrentAssetDependencyJsonObject))
-				RefAssetsObjectList.Add(MakeShareable(new FJsonValueObject(CurrentAssetDependencyJsonObject)));
-		}
-		OutJsonObject->SetArrayField(TEXT("AssetsRelatedInfos"),RefAssetsObjectList);
-		return true;
-	};
-	TSharedPtr<FJsonObject> SerializeObject;
-	SerializeAssetsDependencyLambda(InAssetsDependency,SerializeObject);
-				
-	auto JsonWriter = TJsonWriterFactory<>::Create(&AssetsDependencyString);
-	FJsonSerializer::Serialize(SerializeObject.ToSharedRef(), JsonWriter);
-	return AssetsDependencyString;
-}
-
-bool UFlibPatchParserHelper::SerializePlatformPakInfoToString(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, FString& OutString)
-{
-	bool bRunStatus = false;
-	TSharedPtr<FJsonObject> RootJsonObj = MakeShareable(new FJsonObject);
-
-	bRunStatus = UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(InPakFilesMap, RootJsonObj);
-
-	auto JsonWriter = TJsonWriterFactory<TCHAR>::Create(&OutString);
-	FJsonSerializer::Serialize(RootJsonObj.ToSharedRef(), JsonWriter);
-
-	return bRunStatus;
-}
-
-bool UFlibPatchParserHelper::SerializePlatformPakInfoToJsonObject(const TMap<FString, TArray<FPakFileInfo>>& InPakFilesMap, TSharedPtr<FJsonObject>& OutJsonObject)
-{
-	bool bRunStatus = false;
-	if (!OutJsonObject.IsValid())
-	{
-		OutJsonObject = MakeShareable(new FJsonObject);
-	}
-
-	// serialize
-	{
-		TArray<FString> PakPlatformKeys;
-		InPakFilesMap.GetKeys(PakPlatformKeys);
-
-		for (const auto& PakPlatformKey : PakPlatformKeys)
-		{
-			TSharedPtr<FJsonObject> CurrentPlatformPakJsonObj;
-			TArray<TSharedPtr<FJsonValue>> CurrentPlatformPaksObjectList;
-			for (const auto& Pak : *InPakFilesMap.Find(PakPlatformKey))
-			{
-				TSharedPtr<FJsonObject> CurrentPakJsonObj;
-				if (UFlibPatchParserHelper::TSerializeStructAsJsonObject(Pak, CurrentPakJsonObj))
-				{
-					CurrentPlatformPaksObjectList.Add(MakeShareable(new FJsonValueObject(CurrentPakJsonObj)));
-				}
-			}
-			
-			OutJsonObject->SetArrayField(PakPlatformKey, CurrentPlatformPaksObjectList);
-		}
-		bRunStatus = true;
-	}
-	return bRunStatus;
-}
-
-TArray<FAssetDetail> UFlibPatchParserHelper::GetAllAssetDependencyDetails(const FAssetDetail& Asset,
-	const TArray<EAssetRegistryDependencyTypeEx>& Types,const FString& AssetType)
-{
-	TArray<FAssetDetail> result;
-	TArray<FHotPatcherAssetDependency> AssetDeps = UFlibPatchParserHelper::GetAssetsRelatedInfo(TArray<FAssetDetail>{Asset}, Types);
-	for(const auto& AssetDependency:AssetDeps)
-	{
-		for(const auto& AssetRederenceItem:AssetDependency.AssetReference)
-		{
-			if(AssetType.IsEmpty() || AssetRederenceItem.mAssetType.Equals(AssetType,ESearchCase::IgnoreCase))
-			{
-				TArray<FAssetDetail> CurrentAssetDepAssetList = UFlibPatchParserHelper::GetAllAssetDependencyDetails(AssetRederenceItem,Types,AssetType);
-				CurrentAssetDepAssetList.AddUnique(AssetRederenceItem);
-				for(const auto& AssetItem:CurrentAssetDepAssetList)
-				{
-					result.AddUnique(AssetItem);
-				}
-            }
-		}
-	}
-	return result;
-}
-
-void UFlibPatchParserHelper::AnalysisWidgetTree(FPatchVersionDiff& PakDiff,int32 flags)
-{
-	TArray<FAssetDetail> AnalysisAssets;
-	if(flags & 0x1)
-	{
-		TArray<FAssetDetail> AddAssets;
-		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(PakDiff.AssetDiffInfo.AddAssetDependInfo,AddAssets);
-		AnalysisAssets.Append(AddAssets);
-		
-	}
-	if(flags & 0x2)
-	{
-		TArray<FAssetDetail> ModifyAssets;
-		UFLibAssetManageHelperEx::GetAssetDetailsByAssetDependenciesInfo(PakDiff.AssetDiffInfo.ModifyAssetDependInfo,ModifyAssets);
-		AnalysisAssets.Append(ModifyAssets);
-	}
-	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDepTypes {EAssetRegistryDependencyTypeEx::Hard};
-	FString AssetType = TEXT("WidgetBlueprint");
-
-	auto AssetsIsExist = [&PakDiff](const FAssetDetail& Asset)->bool
-	{
-		bool result = false;
-		FString ModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(Asset.mPackagePath);
-		FString LongPackageName;
-		UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath,LongPackageName);
-		if(PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName))
-		{
-			if(PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName)->AssetDependencyDetails.Find(LongPackageName))
-			{
-				result = true;
-			}
-		}
-		return result;
-	};
-	TArray<EAssetRegistryDependencyType::Type> SearchType{EAssetRegistryDependencyType::Hard};
-	
-	for(const auto& OriginAsset:AnalysisAssets)
-	{
-		if(OriginAsset.mAssetType.Equals(AssetType))
-		{
-			// if asset is existed
-			if(AssetsIsExist(OriginAsset))
-			{
-				continue;
-			}
-			TArray<FAssetDetail> CurrentAssetsRef;
-			UFLibAssetManageHelperEx::GetAssetReferenceRecursively(OriginAsset, SearchType, TArray<FString>{AssetType}, CurrentAssetsRef);
-			UE_LOG(LogHotPatcher,Display,TEXT("Reference %s Widgets:"),*OriginAsset.mPackagePath);
-			// TArray<FAssetDetail> CurrentAssetDeps = UFlibPatchParserHelper::GetAllAssetDependencyDetails(OriginAsset,AssetRegistryDepTypes,AssetType);
-			for(const auto& Asset:CurrentAssetsRef)
-			{
-				if(!Asset.mAssetType.Equals(AssetType))
-				{
-					continue;
-				}
-				
-				UE_LOG(LogHotPatcher,Display,TEXT("Widget: %s"),*Asset.mPackagePath);
-				FString ModuleName = UFLibAssetManageHelperEx::GetAssetBelongModuleName(Asset.mPackagePath);
-				FString LongPackageName;
-				UFLibAssetManageHelperEx::ConvPackagePathToLongPackageName(Asset.mPackagePath,LongPackageName);
-				if(PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName))
-				{
-					PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Find(ModuleName)->AssetDependencyDetails.Add(LongPackageName,Asset);
-				}
-				else
-				{
-					FAssetDependenciesDetail AssetModuleDetail;
-					AssetModuleDetail.ModuleCategory = ModuleName;
-					AssetModuleDetail.AssetDependencyDetails.Add(LongPackageName,Asset);
-					PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AssetsDependenciesMap.Add(ModuleName,AssetModuleDetail);
-				}
-			}
-		}
-	}
-}
-
 #define ENGINEDIR_MARK TEXT("[ENGINEDIR]/")
 #define ENGINE_CONTENT_DIR_MARK TEXT("[ENGINE_CONTENT_DIR]/")
 #define PROJECTDIR_MARK TEXT("[PROJECTDIR]/")
@@ -1789,17 +1543,28 @@ void UFlibPatchParserHelper::AnalysisWidgetTree(FPatchVersionDiff& PakDiff,int32
 #define PROJECT_SAVED_DIR_MARK TEXT("[PROJECT_SAVED_DIR]/")
 #define PROJECT_CONFIG_DIR_MARK TEXT("[PROJECT_CONFIG_DIR]/")
 
-void UFlibPatchParserHelper::ReplacePatherSettingProjectDir(TArray<FPlatformExternAssets>& PlatformAssets)
+TMap<FString, FString> UFlibPatchParserHelper::GetReplacePathMarkMap()
 {
-	TMap<FString,FString> MarkMap;
-	MarkMap.Add(ENGINEDIR_MARK,FPaths::EngineDir());
-	MarkMap.Add(ENGINE_CONTENT_DIR_MARK,FPaths::EngineContentDir());
-	MarkMap.Add(PROJECTDIR_MARK,FPaths::ProjectDir());
-	MarkMap.Add(PROJECT_CONTENT_DIR_MARK,FPaths::ProjectContentDir());
-	MarkMap.Add(PROJECT_SAVED_DIR_MARK,FPaths::ProjectSavedDir());
-	MarkMap.Add(PROJECT_CONFIG_DIR_MARK,FPaths::ProjectConfigDir());
+	static TMap<FString,FString> MarkMap;
+	static bool bInited = false;
+	if(!bInited)
+	{
+		MarkMap.Add(ENGINEDIR_MARK,FPaths::EngineDir());
+		MarkMap.Add(ENGINE_CONTENT_DIR_MARK,FPaths::EngineContentDir());
+		MarkMap.Add(PROJECTDIR_MARK,FPaths::ProjectDir());
+		MarkMap.Add(PROJECT_CONTENT_DIR_MARK,FPaths::ProjectContentDir());
+		MarkMap.Add(PROJECT_SAVED_DIR_MARK,FPaths::ProjectSavedDir());
+		MarkMap.Add(PROJECT_CONFIG_DIR_MARK,FPaths::ProjectConfigDir());
+		bInited = true;
+	}
+	
+	return MarkMap;
+}
 
-	auto ReplaceProjectDir = [&MarkMap](const FString& OriginDir)->FString
+FString UFlibPatchParserHelper::ReplaceMark(const FString& Src)
+{
+	TMap<FString,FString> MarkMap = UFlibPatchParserHelper::GetReplacePathMarkMap();
+	auto ReplaceStringMark = [&MarkMap](const FString& OriginDir)->FString
 	{
 		TArray<FString> MarkKeys;
 		MarkMap.GetKeys(MarkKeys);
@@ -1815,20 +1580,419 @@ void UFlibPatchParserHelper::ReplacePatherSettingProjectDir(TArray<FPlatformExte
 				break;
 			}
 		}
-		
-		result = FPaths::ConvertRelativePathToFull(result);
-		FPaths::MakeStandardFilename(result);
 		return result;
 	};
+	return ReplaceStringMark(Src);
+}
+FString UFlibPatchParserHelper::ReplaceMarkPath(const FString& Src)
+{
+	FString result = UFlibPatchParserHelper::ReplaceMark(Src);
+	FPaths::MakeStandardFilename(result);
+	result = FPaths::ConvertRelativePathToFull(result);
+	return result;
+}
+
+void UFlibPatchParserHelper::ReplacePatherSettingProjectDir(TArray<FPlatformExternAssets>& PlatformAssets)
+{
 	for(auto& ExPlatform:PlatformAssets)
 	{
 		for(auto& ExFile:ExPlatform.AddExternFileToPak)
 		{
-			ExFile.FilePath.FilePath = ReplaceProjectDir(ExFile.FilePath.FilePath);
+			ExFile.FilePath.FilePath = UFlibPatchParserHelper::ReplaceMarkPath(ExFile.FilePath.FilePath);
 		}
 		for(auto& ExDir:ExPlatform.AddExternDirectoryToPak)
 		{
-			ExDir.DirectoryPath.Path = ReplaceProjectDir(ExDir.DirectoryPath.Path);
+			ExDir.DirectoryPath.Path = UFlibPatchParserHelper::ReplaceMarkPath(ExDir.DirectoryPath.Path);
 		}
 	}
 }
+
+TArray<FString> UFlibPatchParserHelper::GetUnCookUassetExtensions()
+{
+	TArray<FString> UAssetFormats = { TEXT(".uasset"),TEXT(".umap")};
+	return UAssetFormats;
+}
+
+TArray<FString> UFlibPatchParserHelper::GetCookedUassetExtensions()
+{
+	TArray<FString> UAssetFormats = { TEXT(".uasset"),TEXT(".ubulk"),TEXT(".uexp"),TEXT(".umap"),TEXT(".ufont") };
+	return UAssetFormats;
+}
+
+bool UFlibPatchParserHelper::IsCookedUassetExtensions(const FString& InAsset)
+{
+	return UFlibPatchParserHelper::MatchStrInArray(InAsset,UFlibPatchParserHelper::GetCookedUassetExtensions());
+}
+bool UFlibPatchParserHelper::IsUnCookUassetExtension(const FString& InAsset)
+{
+	return UFlibPatchParserHelper::MatchStrInArray(InAsset,UFlibPatchParserHelper::GetUnCookUassetExtensions());
+}
+
+bool UFlibPatchParserHelper::MatchStrInArray(const FString& InStr, const TArray<FString>& InArray)
+{
+	bool bResult = false;
+	for (const auto& Format:InArray)
+	{
+		if (InStr.Contains(Format))
+		{
+			bResult = true;
+			break;
+		}
+	}
+	return bResult;
+}
+
+FString UFlibPatchParserHelper::LoadAESKeyStringFromCryptoFile(const FString& InCryptoJson)
+{
+	FString result;
+	if(FPaths::FileExists(InCryptoJson))
+	{
+		FString Content;
+		FFileHelper::LoadFileToString(Content,*InCryptoJson);
+		if (!Content.IsEmpty())
+		{
+			TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(Content);
+			TSharedPtr<FJsonObject> DeserializeJsonObject;
+			if (FJsonSerializer::Deserialize(JsonReader, DeserializeJsonObject))
+			{
+				const TSharedPtr<FJsonObject>* EncryptionKeyObject;
+				DeserializeJsonObject->TryGetObjectField(TEXT("EncryptionKey"),EncryptionKeyObject);
+				if(EncryptionKeyObject->IsValid())
+				{
+					FString Key;
+					EncryptionKeyObject->Get()->TryGetStringField(TEXT("Key"),Key);
+					if(!Key.IsEmpty())
+					{
+						result = Key;
+					}
+				}
+			}
+		}
+	}
+	return result;
+}
+
+FAES::FAESKey UFlibPatchParserHelper::LoadAESKeyFromCryptoFile(const FString& InCryptoJson)
+{
+	FAES::FAESKey AESKey;
+	FString AESKeyString = UFlibPatchParserHelper::LoadAESKeyStringFromCryptoFile(InCryptoJson);
+	if(!AESKeyString.IsEmpty())
+	{
+		TArray<uint8> DecodedBuffer;
+		if (!FBase64::Decode(AESKeyString, DecodedBuffer))
+		{
+			FMemory::Memcpy(AESKey.Key, DecodedBuffer.GetData(), 32);
+		}
+	}
+	return AESKey;
+}
+
+FString UFlibPatchParserHelper::AssetMountPathToAbs(const FString& InAssetMountPath)
+{
+	FString result;
+	// ../../../Engine/xxx to ENGINE/
+	FString Dest = InAssetMountPath;
+	while(Dest.StartsWith(TEXT("../")))
+	{
+		Dest.RemoveFromStart(TEXT("../"));
+	}
+
+	if(Dest.StartsWith(TEXT("Engine")))
+	{
+		Dest.RemoveFromStart(TEXT("Engine/"));
+		result = FPaths::Combine(FPaths::EngineDir(),Dest);	
+	}
+	if(Dest.StartsWith(FApp::GetProjectName()))
+	{
+		Dest.RemoveFromStart(FString::Printf(TEXT("%s/"),FApp::GetProjectName()));
+		result = FPaths::Combine(FPaths::ProjectDir(),Dest);	
+	}
+	FPaths::NormalizeFilename(result);
+	return FPaths::ConvertRelativePathToFull(result);
+}
+
+FString UFlibPatchParserHelper::UAssetMountPathToPackagePath(const FString& InAssetMountPath)
+{
+	TMap<FString, FString> ReceiveModuleMap;
+	UFlibAssetManageHelper::GetAllEnabledModuleName(ReceiveModuleMap);
+
+	FString LongPackageName = InAssetMountPath;
+
+	LongPackageName.RemoveFromStart(TEXT("../../.."));
+
+	for(const auto& UnCookAssetExtension:UFlibPatchParserHelper::GetUnCookUassetExtensions())
+	{
+		LongPackageName.RemoveFromEnd(UnCookAssetExtension);
+	}
+	
+	// LongPackageName = LongPackageName.Replace(TEXT("/Content"), TEXT(""));
+							
+	FString ModuleName = LongPackageName;
+	{
+		ModuleName.RemoveAt(0);
+		int32 Index;
+		if (ModuleName.FindChar('/', Index))
+		{
+			ModuleName = ModuleName.Left(Index);
+		}
+	}
+
+	if (ModuleName.Equals(FApp::GetProjectName()))
+	{
+		LongPackageName.RemoveFromStart(TEXT("/") + ModuleName);
+		LongPackageName = TEXT("/Game") + LongPackageName;
+	}
+
+	if (LongPackageName.Contains(TEXT("/Plugins/")))
+	{
+		TArray<FString> ModuleKeys;
+		ReceiveModuleMap.GetKeys(ModuleKeys);
+
+		TArray<FString> IgnoreModules = { TEXT("Game"),TEXT("Engine") };
+
+		for (const auto& IgnoreModule : IgnoreModules)
+		{
+			ModuleKeys.Remove(IgnoreModule);
+		}
+
+		for (const auto& Module : ModuleKeys)
+		{
+			FString FindStr = TEXT("/") + Module + TEXT("/");
+			if (LongPackageName.Contains(FindStr,ESearchCase::IgnoreCase))
+			{
+				int32 PluginModuleIndex = LongPackageName.Find(FindStr,ESearchCase::IgnoreCase,ESearchDir::FromEnd);
+
+				LongPackageName = LongPackageName.Right(LongPackageName.Len()- PluginModuleIndex-FindStr.Len());
+				LongPackageName = TEXT("/") + Module + TEXT("/") + LongPackageName;
+				break;
+			}
+		}
+	}
+
+	int32 ContentPoint = LongPackageName.Find(TEXT("/Content"));
+	if(ContentPoint != INDEX_NONE)
+	{
+		LongPackageName = FPaths::Combine(LongPackageName.Left(ContentPoint), LongPackageName.Right(LongPackageName.Len() - ContentPoint - 8));
+	}
+
+	FString LongPackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(LongPackageName);
+	return LongPackagePath;
+}
+
+bool UFlibPatchParserHelper::GetPluginPakPathByName(const FString& PluginName,FString& uPluginAbsPath,FString& uPluginMountPath)
+{
+	bool bStatus = false;
+	TSharedPtr<IPlugin> FoundPlugin = IPluginManager::Get().FindPlugin(PluginName);
+	FString uPluginFileAbsPath;
+	FString uPluginFileMountPath;
+	if(FoundPlugin.IsValid())
+	{
+		uPluginFileAbsPath = FPaths::ConvertRelativePathToFull(FPaths::Combine(FoundPlugin->GetBaseDir(),FString::Printf(TEXT("%s.uplugin"),*FoundPlugin->GetName())));
+		FPaths::NormalizeFilename(uPluginFileAbsPath);
+				
+		uPluginFileMountPath = uPluginFileAbsPath;
+				
+		if(FPaths::FileExists(uPluginFileAbsPath))
+		{
+			FString EnginePluginPath = FPaths::ConvertRelativePathToFull(FPaths::EnginePluginsDir());
+			FString ProjectPluginPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectPluginsDir());
+			if(uPluginFileMountPath.StartsWith(EnginePluginPath))
+			{
+				uPluginFileMountPath.RemoveFromStart(EnginePluginPath);
+				uPluginFileMountPath = FString::Printf(TEXT("../../../Engine/Plugins/%s"),*uPluginFileMountPath);
+			}
+			if(uPluginFileMountPath.StartsWith(ProjectPluginPath))
+			{
+				uPluginFileMountPath.RemoveFromStart(ProjectPluginPath);
+				uPluginFileMountPath = FString::Printf(TEXT("../../../%s/Plugins/%s"),FApp::GetProjectName(),*uPluginFileMountPath);
+			}
+			uPluginAbsPath = uPluginFileAbsPath;
+			uPluginMountPath = uPluginFileMountPath;
+			bStatus = true;
+		}
+	}
+	return bStatus;
+}
+
+FString UFlibPatchParserHelper::GetPluginMountPoint(const FString& PluginName)
+{
+	FString uPluginAbsPath;
+	FString uPluginMountPath;
+	if(UFlibPatchParserHelper::GetPluginPakPathByName(PluginName,uPluginAbsPath,uPluginMountPath))
+	{
+		uPluginMountPath.RemoveFromEnd(FString::Printf(TEXT("/%s.uplugin"),*PluginName));
+	}
+	return uPluginMountPath;
+}
+
+FString UFlibPatchParserHelper::ParserMountPointRegular(const FString& Src)
+{
+	FString result;
+	if(Src.MatchesWildcard(FString::Printf(TEXT("*%s*"),AS_PROJECTDIR_MARK)))
+	{
+		result = Src.Replace(AS_PROJECTDIR_MARK,*FString::Printf(TEXT("../../../%s"),FApp::GetProjectName()));
+	}
+	if(Src.MatchesWildcard(FString::Printf(TEXT("*%s*"),AS_PLUGINDIR_MARK)))
+	{
+		int32 index = Src.Find(AS_PLUGINDIR_MARK);
+		index += strlen(TCHAR_TO_ANSI(AS_PLUGINDIR_MARK));
+		int32 BeginIndex = index + 1; 
+		int32 EndIndex;
+		Src.FindLastChar(']',EndIndex);
+		FString PluginName = UKismetStringLibrary::GetSubstring(Src,BeginIndex,EndIndex-BeginIndex);
+		result = Src.Replace(AS_PLUGINDIR_MARK,TEXT(""));
+		result = result.Replace(*FString::Printf(TEXT("[%s]"),*PluginName),*UFlibPatchParserHelper::GetPluginMountPoint(PluginName));
+	}
+	return result;
+}
+
+void UFlibPatchParserHelper::ReloadShaderbytecode()
+{
+	UFlibPakHelper::ReloadShaderbytecode();
+}
+
+bool UFlibPatchParserHelper::LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir)
+{
+	return UFlibPakHelper::LoadShaderbytecode(LibraryName,LibraryDir);
+}
+
+void UFlibPatchParserHelper::CloseShaderbytecode(const FString& LibraryName)
+{
+	UFlibPakHelper::CloseShaderbytecode(LibraryName);
+}
+
+#define ENCRYPT_KEY_NAME TEXT("EncryptionKey")
+#define ENCRYPT_PAK_INI_FILES_NAME TEXT("bEncryptPakIniFiles")
+#define ENCRYPT_PAK_INDEX_NAME TEXT("bEncryptPakIndex")
+#define ENCRYPT_UASSET_FILES_NAME TEXT("bEncryptUAssetFiles")
+#define ENCRYPT_ALL_ASSET_FILES_NAME TEXT("bEncryptAllAssetFiles")
+
+#define SIGNING_PAK_SIGNING_NAME TEXT("bEnablePakSigning")
+#define SIGNING_MODULES_NAME TEXT("SigningModulus")
+#define SIGNING_PUBLIC_EXPONENT_NAME TEXT("SigningPublicExponent")
+#define SIGNING_PRIVATE_EXPONENT_NAME TEXT("SigningPrivateExponent")
+
+FPakEncryptionKeys UFlibPatchParserHelper::GetCryptoByProjectSettings()
+{
+	FPakEncryptionKeys result;
+
+	result.EncryptionKey.Name = TEXT("Embedded");
+	result.EncryptionKey.Guid = FGuid::NewGuid().ToString();
+	
+	UClass* Class = FindObject<UClass>(ANY_PACKAGE, TEXT("/Script/CryptoKeys.CryptoKeysSettings"), true);
+	if(Class)
+	{
+		FString AESKey;
+		for(TFieldIterator<FProperty> PropertyIter(Class);PropertyIter;++PropertyIter)
+		{
+			FProperty* PropertyIns = *PropertyIter;
+			UE_LOG(LogTemp,Log,TEXT("%s"),*PropertyIns->GetName());
+			if(PropertyIns->GetName().Equals(ENCRYPT_KEY_NAME))
+			{
+				result.EncryptionKey.Key = *PropertyIns->ContainerPtrToValuePtr<FString>(Class->GetDefaultObject());
+			}
+			if(PropertyIns->GetName().Equals(ENCRYPT_PAK_INI_FILES_NAME))
+			{
+				result.bEnablePakIniEncryption = *PropertyIns->ContainerPtrToValuePtr<bool>(Class->GetDefaultObject());
+			}
+			if(PropertyIns->GetName().Equals(ENCRYPT_PAK_INDEX_NAME))
+			{
+				result.bEnablePakIndexEncryption = *PropertyIns->ContainerPtrToValuePtr<bool>(Class->GetDefaultObject());
+			}
+			if(PropertyIns->GetName().Equals(ENCRYPT_UASSET_FILES_NAME))
+			{
+				result.bEnablePakUAssetEncryption = *PropertyIns->ContainerPtrToValuePtr<bool>(Class->GetDefaultObject());
+			}
+			if(PropertyIns->GetName().Equals(ENCRYPT_ALL_ASSET_FILES_NAME))
+			{
+				result.bEnablePakFullAssetEncryption = *PropertyIns->ContainerPtrToValuePtr<bool>(Class->GetDefaultObject());
+			}
+			// SIGN
+			if(PropertyIns->GetName().Equals(SIGNING_PAK_SIGNING_NAME))
+			{
+				result.bEnablePakSigning = *PropertyIns->ContainerPtrToValuePtr<bool>(Class->GetDefaultObject());
+			}
+			if(PropertyIns->GetName().Equals(SIGNING_PUBLIC_EXPONENT_NAME))
+			{
+				result.SigningKey.PublicKey.Exponent = *PropertyIns->ContainerPtrToValuePtr<FString>(Class->GetDefaultObject());
+			}
+			if(PropertyIns->GetName().Equals(SIGNING_MODULES_NAME))
+			{
+				result.SigningKey.PublicKey.Modulus = *PropertyIns->ContainerPtrToValuePtr<FString>(Class->GetDefaultObject());
+				result.SigningKey.PrivateKey.Modulus = result.SigningKey.PublicKey.Modulus;
+			}
+			if(PropertyIns->GetName().Equals(SIGNING_PRIVATE_EXPONENT_NAME))
+			{
+				result.SigningKey.PrivateKey.Exponent = *PropertyIns->ContainerPtrToValuePtr<FString>(Class->GetDefaultObject());
+			}
+		}
+	}
+	return result;
+}
+
+FEncryptSetting UFlibPatchParserHelper::GetCryptoSettingsByJson(const FString& CryptoJson)
+{
+	FEncryptSetting result;
+	FArchive* File = IFileManager::Get().CreateFileReader(*CryptoJson);
+	TSharedPtr<FJsonObject> RootObject;
+	TSharedRef<TJsonReader<char>> Reader = TJsonReaderFactory<char>::Create(File);
+	if (FJsonSerializer::Deserialize(Reader, RootObject))
+	{
+		result.bSign = RootObject->GetBoolField(TEXT("bEnablePakSigning"));
+		result.bEncryptIndex = RootObject->GetBoolField(TEXT("bEnablePakIndexEncryption"));
+		result.bEncryptIniFiles = RootObject->GetBoolField(TEXT("bEnablePakIniEncryption"));
+		result.bEncryptUAssetFiles = RootObject->GetBoolField(TEXT("bEnablePakUAssetEncryption"));
+		result.bEncryptAllAssetFiles = RootObject->GetBoolField(TEXT("bEnablePakFullAssetEncryption"));
+	}
+	return result;
+}
+
+FEncryptSetting UFlibPatchParserHelper::GetCryptoSettingByPakEncryptSettings(const FPakEncryptSettings& Config)
+{
+	FEncryptSetting EncryptSettings;
+	if(Config.bUseDefaultCryptoIni)
+	{
+		FPakEncryptionKeys ProjectCrypt = UFlibPatchParserHelper::GetCryptoByProjectSettings();
+		EncryptSettings.bEncryptIniFiles = ProjectCrypt.bEnablePakIniEncryption;
+		EncryptSettings.bEncryptUAssetFiles = ProjectCrypt.bEnablePakUAssetEncryption;
+		EncryptSettings.bEncryptAllAssetFiles = ProjectCrypt.bEnablePakFullAssetEncryption;
+		EncryptSettings.bEncryptIndex = ProjectCrypt.bEnablePakIndexEncryption;
+		EncryptSettings.bSign = ProjectCrypt.bEnablePakSigning;
+	}
+	else
+	{
+		FString CryptoKeyFile = FPaths::ConvertRelativePathToFull(Config.CryptoKeys.FilePath);
+		if(FPaths::FileExists(CryptoKeyFile))
+		{
+			FEncryptSetting CryptoJsonSettings = UFlibPatchParserHelper::GetCryptoSettingsByJson(CryptoKeyFile);
+			EncryptSettings.bEncryptIniFiles = CryptoJsonSettings.bEncryptIniFiles;
+			EncryptSettings.bEncryptUAssetFiles = CryptoJsonSettings.bEncryptUAssetFiles;
+			EncryptSettings.bEncryptAllAssetFiles = CryptoJsonSettings.bEncryptAllAssetFiles;
+			EncryptSettings.bSign = CryptoJsonSettings.bSign;
+			EncryptSettings.bEncryptIndex = CryptoJsonSettings.bEncryptIndex;
+		}
+	}
+	return EncryptSettings;
+}
+
+bool UFlibPatchParserHelper::SerializePakEncryptionKeyToFile(const FPakEncryptionKeys& PakEncryptionKeys,
+                                                                  const FString& ToFile)
+{
+	FString KeyInfo;
+	THotPatcherTemplateHelper::TSerializeStructAsJsonString(PakEncryptionKeys,KeyInfo);
+	return UFlibAssetManageHelper::SaveStringToFile(ToFile, KeyInfo);
+}
+
+TArray<FDirectoryPath> UFlibPatchParserHelper::GetDefaultForceSkipContentDir()
+{
+	TArray<FDirectoryPath> result;
+	TArray<FString> DefaultSkipEditorContentRules = {TEXT("/Engine/Editor"),TEXT("/Engine/VREditor")};
+	for(const auto& Ruls:DefaultSkipEditorContentRules)
+	{
+		FDirectoryPath PathIns;
+		PathIns.Path = Ruls;
+		result.Add(PathIns);
+	}
+	return result;
+}
+

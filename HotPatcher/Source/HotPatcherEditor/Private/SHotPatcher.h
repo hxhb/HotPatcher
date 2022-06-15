@@ -6,8 +6,10 @@
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Input/Reply.h"
 #include "Widgets/SCompoundWidget.h"
-#include "Model/FHotPatcherCookModel.h"
-#include "Model/FHotPatcherCreatePatchModel.h"
+//#include "Model/FHotPatcherOriginalCookerModel.h"
+#include "SVersionUpdater/SVersionUpdaterWidget.h"
+#include "Model/FCookersModeContext.h"
+#include "Model/FPatchersModeContext.h"
 class SHotPatcher : public SCompoundWidget
 {
 
@@ -30,7 +32,10 @@ private:
 	/** The list of active system messages */
 	TSharedPtr<SNotificationList> NotificationListPtr;
 
-	TSharedPtr<FHotPatcherCookModel> CookModel;
-	TSharedPtr<FHotPatcherCreatePatchModel> CreatePatchModel;
+	// TSharedPtr<FHotPatcherOriginalCookerModel> CookModel;
+	// TSharedPtr<FHotPatcherCookerModel> CookerModel;
+	// TSharedPtr<FHotPatcherCreatePatchModel> CreatePatchModel;
+	TMap<FString,TSharedPtr<FHotPatcherContextBase>> HotPatcherModelsMap;
+	TSharedPtr<SVersionUpdaterWidget> VersionUpdaterWidget;
 };
 
