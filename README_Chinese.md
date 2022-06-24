@@ -3,7 +3,7 @@ English Document:[README.md](https://github.com/hxhb/HotPatcher/edit/master/READ
 
 [HotPatcher](https://github.com/hxhb/HotPatcher)是一个用于管理热更版本和资源打包工具，用于追踪工程版本的原始资源变动来打出Patch。支持资源版本管理、版本间的差异对比和打包、支持导出多平台的基础包信息、方便地Cook和打包多平台的Patch，支持迭代打包、丰富的配置化选项，全功能的commandlet支持，可以与ci/cd平台相集成。
 
->目前支持的引擎版本为UE4.21-UE5，我创建了个群来讨论UE4热更新和HotPatcher插件的问题(QQ群958363331)。
+>目前支持的引擎版本为UE4.21-UE5EA（暂不支持UE5正式版），我创建了个群来讨论UE4热更新和HotPatcher插件的问题(QQ群958363331)。
 
 插件文档：[UE4资源热更打包工具HotPatcher](https://imzlp.com/posts/17590/)
 
