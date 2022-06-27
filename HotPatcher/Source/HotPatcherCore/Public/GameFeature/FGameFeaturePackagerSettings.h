@@ -39,13 +39,13 @@ public:
 		return &StaticIns;
 	}
 	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	TArray<FString> FeatureNames;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 	bool bAutoLoadFeaturePlugin = true;
 	// Config/ Script/ etc.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 	TArray<FString> NonContentDirs;
 	/*
 	 * Cook Asset in current patch

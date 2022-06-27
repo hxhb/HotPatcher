@@ -14,8 +14,8 @@ struct FPlatformBasePak
     GENERATED_BODY()
     FORCEINLINE FPlatformBasePak()=default;
 	
-    UPROPERTY(EditAnywhere,BlueprintReadWrite)
+    UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="")
     ETargetPlatform Platform = ETargetPlatform::None;
-    UPROPERTY(EditAnywhere,BlueprintReadWrite)
+    UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="")
     TArray<FFilePath> Paks;
 };

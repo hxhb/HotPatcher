@@ -38,7 +38,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion", meta = (RelativeToGameContentDir))
 		FFilePath FilePath;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="HotPatcherRunTime | Asset")
 		FString MountPath = TEXT("../../../");
 	UPROPERTY()
 		FString FileHash;

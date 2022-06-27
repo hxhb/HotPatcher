@@ -13,7 +13,7 @@ struct HOTPATCHERRUNTIME_API FAssetDependenciesInfo
 	FAssetDependenciesInfo(const FAssetDependenciesInfo&)=default;
 		//UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		//FString mAssetRef;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 		TMap<FString,FAssetDependenciesDetail> AssetsDependenciesMap;
 
 	void AddAssetsDetail(const FAssetDetail& AssetDetail);

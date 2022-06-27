@@ -16,12 +16,12 @@ struct FPatchVersionExternDiff
 	GENERATED_USTRUCT_BODY()
 	FPatchVersionExternDiff()=default;
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	ETargetPlatform Platform {ETargetPlatform::None};
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	TArray<FExternFileInfo> AddExternalFiles{};
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	TArray<FExternFileInfo> ModifyExternalFiles{};
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	TArray<FExternFileInfo> DeleteExternalFiles{};
 };

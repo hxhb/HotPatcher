@@ -9,10 +9,10 @@ struct FUnrealPakSettings
 	GENERATED_USTRUCT_BODY()
 public:
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 		TArray<FString> UnrealPakListOptions;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 		TArray<FString> UnrealCommandletOptions;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 		bool bStoragePakList = true;
 };

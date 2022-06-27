@@ -16,13 +16,13 @@ struct FPatchVersionDiff
 	FPatchVersionDiff()=default;
 	FPatchVersionDiff(const FPatchVersionDiff&)=default;
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	FPatchVersionAssetDiff AssetDiffInfo;
 	
 	// UPROPERTY(EditAnywhere)
 	// FPatchVersionExternDiff ExternDiffInfo;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	TMap<ETargetPlatform,FPatchVersionExternDiff> PlatformExternDiffInfo;
 	
 };

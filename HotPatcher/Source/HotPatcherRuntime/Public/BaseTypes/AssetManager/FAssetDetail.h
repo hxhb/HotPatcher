@@ -31,11 +31,11 @@ struct HOTPATCHERRUNTIME_API FAssetDetail
 	{
 		return !PackagePath.IsNone() && !AssetType.IsNone() && !Guid.IsNone();
 	}
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 		FName PackagePath;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 		FName AssetType;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 		FName Guid;
 	
 };

@@ -12,9 +12,9 @@ USTRUCT(Blueprintable,BlueprintType)
 struct HOTPATCHERRUNTIME_API FPakMountInfo
 {
     GENERATED_USTRUCT_BODY()
-    UPROPERTY(EditAnywhere,BlueprintReadWrite)
+    UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="")
     FString Pak;
-    UPROPERTY(EditAnywhere,BlueprintReadWrite)
+    UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="")
     int32 PakOrder = 0;
 };
 
@@ -29,7 +29,7 @@ class HOTPATCHERRUNTIME_API UMountListener : public UObject
     GENERATED_UCLASS_BODY()
 public:
 
-    UFUNCTION(BlueprintCallable)
+    UFUNCTION(BlueprintCallable, Category="")
     void Init();   
 
     void OnMountPak(const TCHAR* PakFileName, int32 ChunkID = 0);

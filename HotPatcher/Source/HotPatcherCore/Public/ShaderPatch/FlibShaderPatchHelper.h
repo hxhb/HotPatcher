@@ -20,10 +20,10 @@ class HOTPATCHERCORE_API UFlibShaderPatchHelper : public UBlueprintFunctionLibra
 	GENERATED_BODY()
 public:
 	
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 	static bool CreateShaderCodePatch(TArray<FString> const& OldMetaDataDirs, FString const& NewMetaDataDir, FString const& OutDir, bool bNativeFormat,bool bDeterministicShaderCodeOrder = true);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 	static TArray<FString> ConvDirectoryPathToStr(const TArray<FDirectoryPath>& Dirs);
 
 	static FString ShaderExtension;

@@ -11,10 +11,10 @@ struct HOTPATCHERRUNTIME_API FPakEncryptSettings
 {
 	GENERATED_BODY()
 	// Use DefaultCrypto.ini
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="")
 	bool bUseDefaultCryptoIni = false;
 	// crypto.json (option)
-	UPROPERTY(EditAnywhere,BlueprintReadWrite,meta=(EditCondition="!bUseDefaultCryptoIni"))
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,meta=(EditCondition="!bUseDefaultCryptoIni"), Category="")
 	FFilePath CryptoKeys;
 };
 

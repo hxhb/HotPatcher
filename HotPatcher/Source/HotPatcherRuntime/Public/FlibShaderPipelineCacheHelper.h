@@ -23,28 +23,28 @@ class HOTPATCHERRUNTIME_API UFlibShaderPipelineCacheHelper : public UBlueprintFu
 {
 	GENERATED_BODY()
 public:
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 	static bool LoadShaderPipelineCache(const FString& Name);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 	static bool EnableShaderPipelineCache(bool bEnable);
 	
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 	static bool SavePipelineFileCache(EPSOSaveMode Mode);
 
 	// r.ShaderPipelineCache.LogPSO
 	// 1 Logs new PSO entries into the file cache and allows saving.
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 	static bool EnableLogPSO(bool bEnable);
 	
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 	static bool EnableSaveBoundPSOLog(bool bEnable);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 	static bool IsEnabledUsePSO();
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 	static bool IsEnabledLogPSO();
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 	static bool IsEnabledSaveBoundPSOLog();
 	
 };

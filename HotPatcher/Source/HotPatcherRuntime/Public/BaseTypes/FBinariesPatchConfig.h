@@ -37,20 +37,20 @@ struct FMatchRule
 {
 	GENERATED_BODY()
 	// match or ignore
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	EMatchRule Rule = EMatchRule::None;
 
 	// grate/less/equal
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	EMatchOperator Operator = EMatchOperator::None;
 
 	// uint kb
-	UPROPERTY(EditAnywhere,meta=(EditCondition="Operator!=EMatchOperator::None"))
+	UPROPERTY(EditAnywhere,meta=(EditCondition="Operator!=EMatchOperator::None"), Category="")
 	float Size = 100;
 	// match file Formats. etc .ini/.lua, if it is empty match everything
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
 	TArray<FString> Formaters;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="")
     TArray<FString> AssetTypes;
 };
 

@@ -23,10 +23,10 @@ public:
 
 		return SameAsset && SameAssetRegistryDependencyTypes && SameAssetRegistryDependencyTypes;
 	}
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 		FSoftObjectPath Asset;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="")
 		bool bAnalysisAssetDependencies = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bAnalysisAssetDependencies"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bAnalysisAssetDependencies"), Category="")
 		TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 };

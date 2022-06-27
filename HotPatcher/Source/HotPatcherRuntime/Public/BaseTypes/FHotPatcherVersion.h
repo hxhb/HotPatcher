@@ -22,11 +22,11 @@ struct FHotPatcherVersion
 
 public:
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="")
 	FString VersionId;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 	FString BaseVersionId;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 	FString Date;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FString> IncludeFilter;
@@ -38,10 +38,10 @@ public:
 	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDependencyTypes;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FPatcherSpecifyAsset> IncludeSpecifyAssets;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 	FAssetDependenciesInfo AssetInfo;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	// TMap<FString, FExternFileInfo> ExternalFiles;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="")
 	TMap<ETargetPlatform,FPlatformExternAssets> PlatformAssets;
 };

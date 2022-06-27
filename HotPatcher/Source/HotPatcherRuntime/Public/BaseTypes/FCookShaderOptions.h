@@ -24,17 +24,17 @@ struct FCookShaderOptions
 	}
 	FString GetShaderLibMountPointRegular()const { return ShderLibMountPointRegular; }
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 	bool bSharedShaderLibrary = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 	bool bNativeShader = false;
 	// metallib and metalmap to pak?
 	bool bNativeShaderToPak = false;
 	// if name is StartContent to ShaderArchive-StarterContent-PCD3D_SM5.ushaderbytecode
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 	EShaderLibNameRule ShaderNameRule = EShaderLibNameRule::CHUNK_NAME;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="ShaderNameRule==EShaderLibNameRule::CUSTOM"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="ShaderNameRule==EShaderLibNameRule::CUSTOM"), Category="")
 	FString CustomShaderName;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="")
 	FString ShderLibMountPointRegular;
 };

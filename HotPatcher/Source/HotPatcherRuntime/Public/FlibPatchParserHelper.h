@@ -44,7 +44,7 @@ public:
 		static TArray<FString> GetAvailableMaps(FString GameName, bool IncludeEngineMaps,bool IncludePluginMaps, bool Sorted);
 	UFUNCTION(BlueprintCallable, Category = "HotPatcher|Flib")
 		static FString GetProjectName();
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 	static FString GetProjectFilePath();
 	
 	static FHotPatcherVersion ExportReleaseVersionInfo(
@@ -215,11 +215,11 @@ public:
 	static FString ParserMountPointRegular(const FString& Src);
 
 public:
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category="")
 	static void ReloadShaderbytecode();
-	UFUNCTION(BlueprintCallable,Exec)
+	UFUNCTION(BlueprintCallable,Exec, Category="")
 		static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir);	
-	UFUNCTION(BlueprintCallable,Exec)
+	UFUNCTION(BlueprintCallable,Exec, Category="")
 		static void CloseShaderbytecode(const FString& LibraryName);
 
 public:
