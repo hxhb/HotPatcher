@@ -58,7 +58,7 @@ bool UGameFeatureProxy::DoExport()
 			PatchSettings->CookShaderOptions = GetSettingObject()->CookShaderOptions;
 			PatchSettings->CookShaderOptions.bSharedShaderLibrary = true;
 			PatchSettings->CookShaderOptions.bNativeShader = true;
-			PatchSettings->CookShaderOptions.ShderLibMountPointRegular = FString::Printf(TEXT("%s[%s]"),AS_PLUGINDIR_MARK,*FeatureName);
+			PatchSettings->CookShaderOptions.ShaderLibMountPointRegular = FString::Printf(TEXT("%s[%s]"),AS_PLUGINDIR_MARK,*FeatureName);
 		}
 		PatchSettings->IoStoreSettings = GetSettingObject()->IoStoreSettings;
 		PatchSettings->EncryptSettings = GetSettingObject()->EncryptSettings;

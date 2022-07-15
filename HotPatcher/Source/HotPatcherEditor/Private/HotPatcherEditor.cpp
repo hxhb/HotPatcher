@@ -266,14 +266,14 @@ void FHotPatcherEditorModule::CreateAssetContextMenu(FToolMenuSection& InSection
 		);
 	
 	// InSection.AddMenuEntry(FHotPatcherCommands::Get().AddToPakSettingsAction);
-	InSection.AddDynamicEntry("AddToPatchSettgins", FNewToolMenuSectionDelegate::CreateLambda([this](FToolMenuSection& InSection)
+	InSection.AddDynamicEntry("AddToPatchSettings", FNewToolMenuSectionDelegate::CreateLambda([this](FToolMenuSection& InSection)
 	{
-		const TAttribute<FText> Label = LOCTEXT("CookUtilities_AddToPatchSettgins", "Add To Patch Settgins");
-		const TAttribute<FText> ToolTip = LOCTEXT("CookUtilities_AddToPatchSettginsTooltip", "Add Selected Assets To HotPatcher Patch Settgins");
+		const TAttribute<FText> Label = LOCTEXT("CookUtilities_AddToPatchSettings", "Add To Patch Settings");
+		const TAttribute<FText> ToolTip = LOCTEXT("CookUtilities_AddToPatchSettingsTooltip", "Add Selected Assets To HotPatcher Patch Settings");
 		const FSlateIcon Icon = FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions.Duplicate");
 		const FToolMenuExecuteAction UIAction = FToolMenuExecuteAction::CreateRaw(this,&FHotPatcherEditorModule::OnAddToPatchSettings);
 	
-		InSection.AddMenuEntry("CookUtilities_AddToPatchSettgins", Label, ToolTip, Icon, UIAction);
+		InSection.AddMenuEntry("CookUtilities_AddToPatchSettings", Label, ToolTip, Icon, UIAction);
 	}));
 	
 }

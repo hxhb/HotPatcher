@@ -20,9 +20,9 @@ struct FCookShaderOptions
 	GENERATED_BODY()
 	FCookShaderOptions()
 	{
-		ShderLibMountPointRegular = FString::Printf(TEXT("%s/ShaderLibs"),AS_PROJECTDIR_MARK);
+		ShaderLibMountPointRegular = FString::Printf(TEXT("%s/ShaderLibs"),AS_PROJECTDIR_MARK);
 	}
-	FString GetShaderLibMountPointRegular()const { return ShderLibMountPointRegular; }
+	FString GetShaderLibMountPointRegular()const { return ShaderLibMountPointRegular; }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bSharedShaderLibrary = false;
@@ -36,5 +36,5 @@ struct FCookShaderOptions
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="ShaderNameRule==EShaderLibNameRule::CUSTOM"))
 	FString CustomShaderName;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString ShderLibMountPointRegular;
+	FString ShaderLibMountPointRegular;
 };

@@ -1298,7 +1298,14 @@ void UFlibHotPatcherCoreHelper::DeleteDirectory(const FString& Dir)
 int32 UFlibHotPatcherCoreHelper::GetMemoryMappingAlignment(const FString& PlatformName)
 {
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 22
-	return UFlibHotPatcherCoreHelper::GetPlatformByName(PlatformName)->GetMemoryMappingAlignment();
+	int32 result = 0;
+	
+	ITargetPlatform* Platform =  UFlibHotPatcherCoreHelper::GetPlatformByName(PlatformName);
+	if(Platform)
+	{
+		result = Platform->GetMemoryMappingAlignment();
+	}
+	return result;
 #else
 	if(PlatformName.Equals(TEXT("IOS")))
 	{
