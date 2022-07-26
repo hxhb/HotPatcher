@@ -340,7 +340,7 @@ bool UFlibAssetManageHelper::GetAssetsData(const TArray<FString>& InFilterPaths,
 	OutAssetData.Reset();
 
 	FARFilter Filter;
-#if ENGINE_MAJOR_VERSION > 25
+#if ENGINE_MINOR_VERSION > 25
 	Filter.WithoutPackageFlags = PKG_FilterEditorOnly;
 #endif
 	Filter.bIncludeOnlyOnDiskAssets = bIncludeOnlyOnDiskAssets;
@@ -1244,7 +1244,7 @@ bool UFlibAssetManageHelper::MatchIgnoreTypes(const FString& LongPackageName, TS
 		SCOPED_NAMED_EVENT_TEXT("is ignore types",FColor::Red);
 		MatchTypeStr = AssetData.AssetClass.ToString();
 		bIgnoreType = IgnoreTypes.Contains(AssetData.AssetClass);
-#if ENGINE_MAJOR_VERSION > 25
+#if ENGINE_MINOR_VERSION > 25
 		if(!bIgnoreType)
 		{
 			bIgnoreType = AssetData.HasAnyPackageFlags(PKG_EditorOnly);
