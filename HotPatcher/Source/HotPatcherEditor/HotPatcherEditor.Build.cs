@@ -89,6 +89,11 @@ public class HotPatcherEditor : ModuleRules
 
 		PublicDefinitions.AddRange(new string[]
 		{
+			"ENABLE_ORIGINAL_COOKER=0"
+		});
+		
+		PublicDefinitions.AddRange(new string[]
+		{
 			"ENABLE_UPDATER_CHECK=1",
 			"TOOL_NAME=\"HotPatcher\"",
 			"CURRENT_VERSION_ID=76",
