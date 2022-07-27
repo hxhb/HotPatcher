@@ -138,7 +138,9 @@ EVisibility SPatchersPage::HandleOperatorConfigVisibility()const
 
 EVisibility SPatchersPage::HandleImportProjectConfigVisibility() const
 {
-	return GetContext()->GetModeName().IsEqual(TEXT("ByShaderPatch")) ? EVisibility::Hidden : EVisibility::Visible;
+	TArray<FString> EnableImportActions = {TEXT("ByPatch"),TEXT("ByRelease")};
+	bool bEnable = EnableImportActions.Contains(GetContext()->GetModeName().ToString());
+	return bEnable ? EVisibility::Visible : EVisibility::Hidden;
 }
 
 void SPatchersPage::HandleHotPatcherMenuEntryClicked(FString InModeName,TFunction<void(void)> ActionCallback)

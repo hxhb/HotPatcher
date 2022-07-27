@@ -60,6 +60,7 @@ public:
 	virtual void ImportProjectConfig() override;
 
 	virtual FHotPatcherSettingBase* GetConfigSettings(){return nullptr;};
+	virtual TSharedPtr<FHotPatcherContextBase> GetContext() { return mContext; }
 	virtual void SetContext(TSharedPtr<FHotPatcherContextBase> InContext)
 	{
 		mContext = InContext;
