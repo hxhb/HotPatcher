@@ -366,7 +366,7 @@ bool UFlibAssetManageHelper::GetAssetsData(const TArray<FString>& InFilterPaths,
 	OutAssetData.Reset();
 
 	FARFilter Filter;
-#if ENGINE_MAJOR_VERSION > 25
+#if (ENGINE_MAJOR_VERSION > 4) || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25)
 	Filter.WithoutPackageFlags = PKG_FilterEditorOnly;
 #endif
 	Filter.bIncludeOnlyOnDiskAssets = bLocalIncludeOnlyOnDiskAssets;
@@ -1284,7 +1284,7 @@ bool UFlibAssetManageHelper::MatchIgnoreTypes(const FString& LongPackageName, TS
 
 		if(!bIgnoreType)
 		{
-#if ENGINE_MAJOR_VERSION > 25
+#if (ENGINE_MAJOR_VERSION > 4) || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25)
 			bIgnoreType = AssetData.HasAnyPackageFlags(PKG_EditorOnly);
 #else
 			// bIgnoreType = (AssetData.PackageFlags & PKG_EditorOnly) != 0;
