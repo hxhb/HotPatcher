@@ -24,3 +24,19 @@ The series of UE4 hot update articles I wrote can be used as a reference for eng
 - [UE Hot Update: Binary Patch Solution for Resources](https://imzlp.com/posts/25136/)
 - [UE Hot Update: Shader Update Strategy](https://imzlp.com/posts/15810/)
 - [UE Hot Update: Reload and Reapply of Config](https://imzlp.com/posts/9028/)
+- [Resource Inspection Automation Practice Based on ResScannerUE](https://imzlp.com/posts/20376/)
+- [UE5: Game Feature Pre-Research](https://imzlp.com/posts/17658/)
+- [UE Resource Management: Engine Packaging Resource Analysis](https://imzlp.com/posts/22570/)
+- [Shader compression scheme based on ZSTD dictionary](https://imzlp.com/posts/24725/)
+- [Runtime reorganization scheme for Pak in Unreal Engine](https://imzlp.com/posts/12188/)
+
+**Resource management framework based on HotPatcher**
+
+![](https://img.imzlp.com/imgs/zlp/picgo/2021/20220526194731.png)
+
+**Application project**
+|                              QQ                              |                     Apex Legends Mobile                      | MOSSAI|
+| :----------------------------------------------------------: | :----------------------------------------------------------: | :-------------: |
+| <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/202207280953994.png" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/202207280956642.webp" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2021/20220607171033.png" height="160" width="160" /> |
+
+HotPatcher is used in a large number of UE projects and is currently the most popular hot update tool in the UE community.

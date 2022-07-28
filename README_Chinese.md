@@ -40,6 +40,6 @@ English Document:[README.md](https://github.com/hxhb/HotPatcher/edit/master/READ
 **应用项目**
 |                              QQ                              |                     Apex Legends Mobile                      | MOSSAI 元宇宙 |
 | :----------------------------------------------------------: | :----------------------------------------------------------: | :-------------: |
-| <img src="https://img.imzlp.com/imgs/zlp/picgo/2021/2U-E-AGFKKEI-k6oRndaHvAsOpYZmBWm5hgpP0pVP5MTClOhk3fL3f_Sbl--9dnbUh0=w240-h480-rw" height="160" width="160" /> | <img src="https://is1-ssl.mzstatic.com/image/thumb/Purple122/v4/b0/ac/a6/b0aca646-5e61-a362-46a7-c0e21f76ceb3/AppIcon-0-0-1x_U007emarketing-0-0-0-7-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/230x0w.webp" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2021/20220607171033.png" height="160" width="160" /> |
+| <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/202207280953994.png" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/202207280956642.webp" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2021/20220607171033.png" height="160" width="160" /> |
 
-大量的UE项目中也在使用，是目前UE社区中最流行的热更新工具。
+HotPatcher在大量的UE项目中使用，是目前UE社区中最流行的热更新工具。
