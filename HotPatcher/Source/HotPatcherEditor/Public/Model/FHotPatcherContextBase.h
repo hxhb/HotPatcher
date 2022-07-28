@@ -16,7 +16,6 @@ public:
 	FHotPatcherContextBase(const FHotPatcherContextBase&)=default;
 	virtual ~FHotPatcherContextBase(){}
 	virtual FName GetContextName()const{ return TEXT(""); }
-
 	FORCEINLINE_DEBUGGABLE virtual void SetModeByName(FName InPatcherModeName)
 	{
 		ModeName = InPatcherModeName.ToString();

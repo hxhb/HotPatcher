@@ -123,11 +123,13 @@ void FHotPatcherActionManager::SetupDefaultActions()
 		);
 #endif
 
+#if ENABLE_ORIGINAL_COOKER
 	DefaultActions.Emplace(
 		TEXT("Cooker"),LOCTEXT("ByOriginal", "ByOriginal"),LOCTEXT("OriginalCookerActionHint", "Use single-process Cook Content(UE Default)"),FSlateIcon(),nullptr,
 		CREATE_ACTION_WIDGET_LAMBDA(SOriginalCookWidget,TEXT("ByOriginal")),
 		0
 		);
+#endif
 	for(const auto& Action:DefaultActions)
 	{
 		RegisteHotPatcherAction(Action.Category.ToString(),Action.ActionName.Get().ToString(),Action);

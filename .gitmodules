@@ -4,3 +4,6 @@
 [submodule "Mods/RemakePak"]
 	path = Mods/RemakePak
 	url = git@github.com:hxhb/RemakePak.git
+[submodule "Mods/libzstd"]
+	path = Mods/libzstd
+	url = git@github.com:hxhb/ue-zstd.git

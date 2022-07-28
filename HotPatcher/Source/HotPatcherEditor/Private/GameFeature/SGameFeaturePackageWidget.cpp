@@ -19,7 +19,7 @@ void SGameFeaturePackageWidget::Construct(const FArguments& InArgs,
 	GameFeaturePackagerSettings = MakeShareable(new FGameFeaturePackagerSettings);
 	CreateExportFilterListView();
 	
-	mContext = InCreateModel;
+	SetContext(InCreateModel);
 	
 	ChildSlot
         [

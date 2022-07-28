@@ -31,6 +31,7 @@ public class HotPatcherEditor : ModuleRules
 				"DesktopPlatform",
 				"Projects",
 				"Settings",
+				"EditorStyle",
 				"HTTP",
 				"RHI",
 				"EngineSettings",
@@ -51,7 +52,6 @@ public class HotPatcherEditor : ModuleRules
 				"Projects",
 				"DesktopPlatform",
 				"InputCore",
-				"EditorStyle",
 				"LevelEditor",
 				"CoreUObject",
 				"Engine",
@@ -89,10 +89,15 @@ public class HotPatcherEditor : ModuleRules
 
 		PublicDefinitions.AddRange(new string[]
 		{
+			"ENABLE_ORIGINAL_COOKER=0"
+		});
+		
+		PublicDefinitions.AddRange(new string[]
+		{
 			"ENABLE_UPDATER_CHECK=1",
 			"TOOL_NAME=\"HotPatcher\"",
 			"CURRENT_VERSION_ID=76",
-			"CURRENT_PATCH_ID=0",
+			"CURRENT_PATCH_ID=1",
 			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
 		});
 
