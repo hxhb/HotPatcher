@@ -18,7 +18,10 @@ public:
 		FDirectoryPath DirectoryPath;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 		FString MountPoint = TEXT("../../../");
-
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+		bool bWildcard;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,meta=(EditCondition="bWildcard"))
+		FString WildcardStr;
 
 	bool operator==(const FExternDirectoryInfo& Right)const
 	{

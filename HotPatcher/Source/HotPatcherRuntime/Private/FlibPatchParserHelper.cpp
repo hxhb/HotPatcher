@@ -636,7 +636,8 @@ TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const
 		if(DirectoryItem.DirectoryPath.Path.IsEmpty())
 			continue;
 		FString DirAbsPath = UFlibPatchParserHelper::ReplaceMarkPath(DirectoryItem.DirectoryPath.Path); //FPaths::ConvertRelativePathToFull(DirectoryItem.DirectoryPath.Path);
-		
+		bool bWildcard = DirectoryItem.bWildcard;
+		FString Wildcard = DirectoryItem.WildcardStr;
 		FPaths::MakeStandardFilename(DirAbsPath);
 		if (!DirAbsPath.IsEmpty() && FPaths::DirectoryExists(DirAbsPath))
 		{
@@ -654,9 +655,15 @@ TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const
 					CurrentFile.FilePath.FilePath = File;
 
 					CurrentFile.MountPath = RelativeMountPointPath;
-					if (!result.Contains(CurrentFile))
+					bool bCanAdd = true;
+					if(bWildcard)
+					{
+						bCanAdd = File.MatchesWildcard(Wildcard) && RelativeMountPointPath.MatchesWildcard(Wildcard);
+					}
+					if (!result.Contains(CurrentFile) && bCanAdd)
+					{
 						result.Add(CurrentFile);
-
+					}
 				}
 			}
 		}
