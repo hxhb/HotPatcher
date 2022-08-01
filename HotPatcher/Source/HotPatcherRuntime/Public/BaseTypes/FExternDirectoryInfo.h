@@ -19,7 +19,7 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 		FString MountPoint = TEXT("../../../");
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-		bool bWildcard;
+		bool bWildcard = false;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,meta=(EditCondition="bWildcard"))
 		FString WildcardStr;
 

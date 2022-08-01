@@ -267,7 +267,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 		{
 			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
 				UFlibPatchParserHelper::GetAllExFilesByPlatform(InBaseVersion.PlatformAssets[Platform],false,PatchSetting.GetHashCalculator()),
-				UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform],false,PatchSetting.GetHashCalculator()),
+				UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform],true,PatchSetting.GetHashCalculator()),
 				Platform
 			));
 		}
@@ -1306,7 +1306,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 	ScanConfig.ForceSkipContentRules = InChunkInfo.ForceSkipContentRules;
 	ScanConfig.bIncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
 	RunAssetScanner(ScanConfig,ExportVersion);
-	ExportExternAssetsToPlatform(InChunkInfo.AddExternAssetsToPlatform,ExportVersion,false,EHashCalculator::NoHash);
+	ExportExternAssetsToPlatform(InChunkInfo.AddExternAssetsToPlatform,ExportVersion,true,EHashCalculator::NoHash);
 
 	return ExportVersion;
 }
