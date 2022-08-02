@@ -83,7 +83,7 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 				];
 		
 				ActionPageGridPanel->AddSlot(1, RowNum)
-				.Padding(32.0f, 0.0f, 8.0f, 0.0f)
+				.Padding(25.0f, 0.0f, 8.0f, 0.0f)
 				[
 					ActionPage.Value.Widget
 				];
