@@ -44,7 +44,7 @@ void FReleasePakParser::Parser(TSharedPtr<FReleaseParserConf> ParserConf, EHashC
 		else
 		{
 			// not uasset
-			FExternFileInfo currentFile;
+			FExternFileInfo ExFile;
 			FString RelativePath = MountFile;
 			FString ModuleName;
 			FString ModuleAbsPath;
@@ -54,10 +54,12 @@ void FReleasePakParser::Parser(TSharedPtr<FReleaseParserConf> ParserConf, EHashC
 			UFlibAssetManageHelper::GetEnableModuleAbsDir(ModuleName,ModuleAbsPath);
 			RelativePath.RemoveFromStart(ModuleName);
 			FString FinalFilePath = FPaths::Combine(ModuleAbsPath,RelativePath);
+			FinalFilePath = FinalFilePath.Replace(TEXT("//"), TEXT("/"));
 			FPaths::NormalizeFilename(FinalFilePath);
-			currentFile.FilePath.FilePath = FinalFilePath;
-			currentFile.MountPath = MountFile;
-			result.ExternFiles.AddUnique(currentFile);
+			ExFile.FilePath.FilePath = FinalFilePath;
+			ExFile.MountPath = MountFile;
+			ExFile.GenerateFileHash(HashCalculator);
+			result.ExternFiles.AddUnique(ExFile);
 		}
 	}
 }
