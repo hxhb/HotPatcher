@@ -4,7 +4,22 @@
 #include "SHotPatcherWidgetBase.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Model/FHotPatcherContextBase.h"
+#include "Kismet/KismetTextLibrary.h"
 
+using FRequestWidgetPtr = TFunction<TSharedRef<SHotPatcherWidgetInterface>(TSharedPtr<FHotPatcherContextBase>)>;
+
+struct HOTPATCHEREDITOR_API FHotPatcherActionDesc
+{
+	FHotPatcherActionDesc(FString InCategory,FString InActionName,FString InToolTip,FRequestWidgetPtr InRequestWidgetPtr,int32 InPriority = 0):
+	Category(InCategory),ActionName(InActionName),ToolTip(InToolTip),RequestWidgetPtr(InRequestWidgetPtr),Priority(InPriority){}
+	
+	FString Category;
+	FString ActionName;
+	FString ToolTip;
+	FRequestWidgetPtr RequestWidgetPtr;
+	int32 Priority = 0;
+	
+};
 
 struct HOTPATCHEREDITOR_API FHotPatcherAction
 {
@@ -15,16 +30,18 @@ struct HOTPATCHEREDITOR_API FHotPatcherAction
 		const TAttribute<FText>& InActionToolTip,
 		const FSlateIcon& InIcon,
 		TFunction<void(void)> InCallback,
-		TFunction<TSharedRef<SHotPatcherWidgetInterface>(TSharedPtr<FHotPatcherContextBase>)> InRequestWidget,
+		FRequestWidgetPtr InRequestWidget,
 		int32 InPriority
 		)
 	:Category(InCategory),ActionName(InActionName),ActionToolTip(InActionToolTip),Icon(InIcon),ActionCallback(InCallback),RequestWidget(InRequestWidget),Priority(InPriority){}
+
+	
 	FName Category;
 	TAttribute<FText> ActionName;
 	TAttribute<FText> ActionToolTip;
 	FSlateIcon Icon;
 	TFunction<void(void)> ActionCallback;
-	TFunction<TSharedRef<SHotPatcherWidgetInterface>(TSharedPtr<FHotPatcherContextBase>)> RequestWidget;
+	FRequestWidgetPtr RequestWidget;
 	int32 Priority = 0;
 };
 
@@ -53,6 +70,8 @@ struct HOTPATCHEREDITOR_API FHotPatcherActionManager
 	void RegisterCategory(const FHotPatcherCategory& Category);
 	
 	void RegisteHotPatcherAction(const FString& Category,const FString& ActionName,const FHotPatcherAction& Action);
+	void RegisteHotPatcherAction(const FHotPatcherActionDesc& NewAction);
+	
 	void UnRegisteHotPatcherAction(const FString& Category, const FString& ActionName);
 
 	FHotPatcherActionDelegate OnHotPatcherActionRegisted;

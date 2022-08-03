@@ -4,6 +4,7 @@
 #include "ShaderPatch/SShaderPatchWidget.h"
 #include "GameFeature/SGameFeaturePackageWidget.h"
 #include "Cooker/OriginalCooker/SOriginalCookWidget.h"
+#include "Kismet/KismetTextLibrary.h"
 #include "SVersionUpdater/FVersionUpdaterManager.h"
 
 #define LOCTEXT_NAMESPACE "FHotPatcherActionManager"
@@ -38,6 +39,23 @@ void FHotPatcherActionManager::RegisteHotPatcherAction(const FString& Category, 
 	
 	OnHotPatcherActionRegisted.Broadcast(Category,ActionName,Action);
 }
+
+void FHotPatcherActionManager::RegisteHotPatcherAction(const FHotPatcherActionDesc& NewAction)
+{
+	THotPatcherTemplateHelper::AppendEnumeraters<EHotPatcherCookActionMode>(TArray<FString>{NewAction.ActionName});
+	FHotPatcherAction NewPatcherAction
+	(
+		*NewAction.ActionName,
+	UKismetTextLibrary::Conv_StringToText(NewAction.ActionName),
+	UKismetTextLibrary::Conv_StringToText(NewAction.ToolTip),
+			FSlateIcon(),
+	nullptr,
+	NewAction.RequestWidgetPtr,
+	NewAction.Priority
+	);
+	FHotPatcherActionManager::Get().RegisteHotPatcherAction(NewAction.Category,NewAction.ActionName,NewPatcherAction);
+}
+
 void FHotPatcherActionManager::UnRegisteHotPatcherAction(const FString& Category, const FString& ActionName)
 {
 	TMap<FString,FHotPatcherAction>& CategoryIns = HotPatcherActions.FindOrAdd(Category);
