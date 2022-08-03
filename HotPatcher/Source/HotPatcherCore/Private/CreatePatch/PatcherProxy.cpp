@@ -177,7 +177,7 @@ void UPatcherProxy::Init(FPatcherEntitySettingBase* InSetting)
 #endif
 	UFlibAssetManageHelper::UpdateAssetMangerDatabase(true);
 	GetSettingObject()->Init();
-
+	ADD_PATCH_WORKER(PatchWorker::SavePatchConfigWorker);
 	ADD_PATCH_WORKER(PatchWorker::BaseVersionReader);
 	ADD_PATCH_WORKER(PatchWorker::MakeCurrentVersionWorker);
 	ADD_PATCH_WORKER(PatchWorker::ParseVersionDiffWorker);
@@ -197,7 +197,6 @@ void UPatcherProxy::Init(FPatcherEntitySettingBase* InSetting)
 	ADD_PATCH_WORKER(PatchWorker::SaveDifferenceWorker);
 	ADD_PATCH_WORKER(PatchWorker::SaveNewReleaseWorker);
 	ADD_PATCH_WORKER(PatchWorker::SavePakFileInfoWorker);
-	ADD_PATCH_WORKER(PatchWorker::SavePatchConfigWorker);
 	ADD_PATCH_WORKER(PatchWorker::BackupMetadataWorker);
 	ADD_PATCH_WORKER(PatchWorker::ShowSummaryWorker);
 	ADD_PATCH_WORKER(PatchWorker::OnFaildDispatchWorker);
