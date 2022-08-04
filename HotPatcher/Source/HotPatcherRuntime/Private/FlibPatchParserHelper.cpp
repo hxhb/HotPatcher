@@ -2012,7 +2012,7 @@ FEncryptSetting UFlibPatchParserHelper::GetCryptoSettingByPakEncryptSettings(con
 	}
 	else
 	{
-		FString CryptoKeyFile = FPaths::ConvertRelativePathToFull(Config.CryptoKeys.FilePath);
+		FString CryptoKeyFile = UFlibPatchParserHelper::ReplaceMark(Config.CryptoKeys.FilePath);
 		if(FPaths::FileExists(CryptoKeyFile))
 		{
 			FEncryptSetting CryptoJsonSettings = UFlibPatchParserHelper::GetCryptoSettingsByJson(CryptoKeyFile);
