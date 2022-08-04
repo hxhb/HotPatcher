@@ -1439,42 +1439,41 @@ namespace PatchWorker
 	bool SavePatchConfigWorker(FHotPatcherPatchContext& Context)
 	{
 		SCOPED_NAMED_EVENT_TEXT("SavePatchConfigWorker",FColor::Red);
-		if(Context.GetPakFileNum())
+		
+		TimeRecorder TR(FString::Printf(TEXT("Save patch config")));
+		FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportPatch", "ExportPatchConfig", "Generating Current Patch Config of version {0}"), FText::FromString(Context.CurrentVersion.VersionId));
+		if(::IsRunningCommandlet())
 		{
-			TimeRecorder TR(FString::Printf(TEXT("Save patch config")));
-			FText DiaLogMsg = FText::Format(NSLOCTEXT("ExportPatch", "ExportPatchConfig", "Generating Current Patch Config of version {0}"), FText::FromString(Context.CurrentVersion.VersionId));
-			if(::IsRunningCommandlet())
-			{
-				Context.OnPaking.Broadcast(TEXT("ExportPatchConfig"),*DiaLogMsg.ToString());	
-			}
-			else
-			{	
-				Context.UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
-			}
+			Context.OnPaking.Broadcast(TEXT("ExportPatchConfig"),*DiaLogMsg.ToString());	
+		}
+		else
+		{	
+			Context.UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
+		}
 
-			FString SaveConfigPath = FPaths::Combine(
-				Context.GetSettingObject()->GetCurrentVersionSavePath(),
-				FString::Printf(TEXT("%s_PatchConfig.json"),*Context.CurrentVersion.VersionId)
-			);
+		FString SaveConfigPath = FPaths::Combine(
+			Context.GetSettingObject()->GetCurrentVersionSavePath(),
+			FString::Printf(TEXT("%s_PatchConfig.json"),*Context.CurrentVersion.VersionId)
+		);
 
-			if (Context.GetSettingObject()->IsSaveConfig())
+		if (Context.GetSettingObject()->IsSaveConfig())
+		{
+			FString SerializedJsonStr;
+			THotPatcherTemplateHelper::TSerializeStructAsJsonString(*Context.GetSettingObject(),SerializedJsonStr);
+			if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveConfigPath))
 			{
-				FString SerializedJsonStr;
-				THotPatcherTemplateHelper::TSerializeStructAsJsonString(*Context.GetSettingObject(),SerializedJsonStr);
-				if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveConfigPath))
+				if(::IsRunningCommandlet())
 				{
-					if(::IsRunningCommandlet())
-					{
-						FString Msg = FString::Printf(TEXT("Successed to Export the Patch Config to %s."),*SaveConfigPath);
-						Context.OnPaking.Broadcast(TEXT("SavedPatchConfig"),Msg);
-					}else
-					{
-						FText Msg = LOCTEXT("SavedPatchConfig", "Successed to Export the Patch Config.");
-						FHotPatcherDelegates::Get().GetNotifyFileGenerated().Broadcast(Msg, SaveConfigPath);
-					}
+					FString Msg = FString::Printf(TEXT("Successed to Export the Patch Config to %s."),*SaveConfigPath);
+					Context.OnPaking.Broadcast(TEXT("SavedPatchConfig"),Msg);
+				}else
+				{
+					FText Msg = LOCTEXT("SavedPatchConfig", "Successed to Export the Patch Config.");
+					FHotPatcherDelegates::Get().GetNotifyFileGenerated().Broadcast(Msg, SaveConfigPath);
 				}
 			}
 		}
+		
 		return true;
 	};
 	

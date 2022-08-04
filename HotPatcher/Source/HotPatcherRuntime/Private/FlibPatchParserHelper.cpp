@@ -313,6 +313,7 @@ FPlatformExternFiles UFlibPatchParserHelper::GetAllExFilesByPlatform(
 		{
 			FExternFileInfo CurrentFile = ExFile;
 			CurrentFile.FilePath.FilePath = UFlibPatchParserHelper::ReplaceMarkPath(ExFile.FilePath.FilePath);
+			CurrentFile.MountPath = ExFile.MountPath;
 			result.ExternFiles.Add(CurrentFile);
 		}
 	}
