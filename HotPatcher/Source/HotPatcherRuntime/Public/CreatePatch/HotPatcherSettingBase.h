@@ -32,7 +32,7 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase:public FPatcherEntitySetting
     virtual TArray<FExternDirectoryInfo> GetAddExternDirectoryByPlatform(ETargetPlatform InTargetPlatform);
 
     virtual FString GetSaveAbsPath()const;
-    FORCEINLINE FString GetSavePath()const { return SavePath.Path; }
+    FORCEINLINE_DEBUGGABLE FString GetSavePath()const{ return SavePath.Path; }
     
     FORCEINLINE virtual bool IsStandaloneMode()const {return bStandaloneMode;}
     FORCEINLINE virtual bool IsSaveConfig()const {return bStorageConfig;}

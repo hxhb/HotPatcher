@@ -410,9 +410,9 @@ void USingleCookerProxy::Shutdown()
 	{
 		FString FailedJsonString;
 		THotPatcherTemplateHelper::TSerializeStructAsJsonString(GetCookFailedAssetsCollection(),FailedJsonString);
-		UE_LOG(LogHotPatcher,Warning,TEXT("Single Cooker Proxy %s:\n%s"),*GetSettingObject()->MissionName,*FailedJsonString);
 		FString SaveTo = UFlibHotCookerHelper::GetCookerProcFailedResultPath(StorageMetadataAbsDir,GetSettingObject()->MissionName,GetSettingObject()->MissionID);
-		UFlibPatchParserHelper::ReplaceMark(SaveTo);
+		SaveTo = UFlibPatchParserHelper::ReplaceMark(SaveTo);
+		UE_LOG(LogHotPatcher,Warning,TEXT("Single Cooker Proxy Cook Failed Assets %s:\n%s\nSerialize to %s"),*GetSettingObject()->MissionName,*FailedJsonString,*SaveTo);
 		FFileHelper::SaveStringToFile(FailedJsonString,*SaveTo);
 	}
 	
@@ -714,6 +714,12 @@ void USingleCookerProxy::OnAssetCookedHandle(const FSoftObjectPath& PackagePath,
 		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
 		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s for %s Failed (%s)!"),*PackagePath.GetAssetPathString(),*PlatformName, *UFlibHotPatcherCoreHelper::GetSavePackageResultStr(Result));
 		GetPaendingCookAssetsSet().Remove(PackagePath.GetAssetPathName());
+		if(!GetCookFailedAssetsCollection().CookFailedAssets.Contains(Platform))
+		{
+			GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform).TargetPlatform = Platform;
+		}
+		
+		GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform).Assets.Add(UFlibAssetManageHelper::GetAssetDetailByPackageName(PackagePath.GetAssetPathString()));
 	}
 }
 

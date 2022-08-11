@@ -101,6 +101,7 @@ FString FHotPatcherSettingBase::GetSaveAbsPath()const
 	return TEXT("");
 }
 
+
 TArray<FString> FHotPatcherSettingBase::GetAllSkipContents() const
 
 {

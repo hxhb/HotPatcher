@@ -387,7 +387,9 @@ FReply SHotPatcherPatchWidget::DoPreviewChunk() const
 		BaseVersion.VersionId,
 		FDateTime::UtcNow().ToString(),
 		NewVersionChunk,
-		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
+		ExportPatchSetting->IsIncludeHasRefAssetsOnly(),
+		ExportPatchSetting->AssetScanConfig.bAnalysisFilterDependencies,
+		ExportPatchSetting->GetHashCalculator()
 	);
 
 	FString CurrentVersionSavePath = ExportPatchSetting->GetCurrentVersionSavePath();

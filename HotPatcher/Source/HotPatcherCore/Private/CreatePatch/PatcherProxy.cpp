@@ -177,9 +177,9 @@ void UPatcherProxy::Init(FPatcherEntitySettingBase* InSetting)
 #endif
 	UFlibAssetManageHelper::UpdateAssetMangerDatabase(true);
 	GetSettingObject()->Init();
-	ADD_PATCH_WORKER(PatchWorker::SavePatchConfigWorker);
 	ADD_PATCH_WORKER(PatchWorker::BaseVersionReader);
 	ADD_PATCH_WORKER(PatchWorker::MakeCurrentVersionWorker);
+	ADD_PATCH_WORKER(PatchWorker::SavePatchConfigWorker);
 	ADD_PATCH_WORKER(PatchWorker::ParseVersionDiffWorker);
 	ADD_PATCH_WORKER(PatchWorker::ParseDiffAssetOnlyWorker);
 	ADD_PATCH_WORKER(PatchWorker::PatchRequireChekerWorker);
@@ -277,7 +277,21 @@ namespace PatchWorker
 		if(Context.GetSettingObject()->IsImportProjectSettings())
 		{
 			UFlibHotPatcherCoreHelper::ImportProjectSettingsToScannerConfig(Context.GetSettingObject()->GetAssetScanConfigRef());
-			UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(Context.GetSettingObject()->GetAddExternAssetsToPlatform());
+			
+			ETargetPlatform AddProjectDirToTarget = ETargetPlatform::AllPlatforms;
+            
+			TSet<ETargetPlatform> AllConfigPlatformSet;
+			for(const auto& PakTargetPlatform:Context.GetSettingObject()->GetPakTargetPlatforms())
+			{
+				AllConfigPlatformSet.Add(PakTargetPlatform);
+			}
+            
+			AddProjectDirToTarget = AllConfigPlatformSet.Num() > 1 ? ETargetPlatform::AllPlatforms : AllConfigPlatformSet.Array()[0];
+			
+			UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(
+				Context.GetSettingObject()->GetAddExternAssetsToPlatform(),
+				AddProjectDirToTarget
+				);
 		}
 		
 		Context.NewVersionChunk = UFlibHotPatcherCoreHelper::MakeChunkFromPatchSettings(Context.GetSettingObject());
@@ -289,7 +303,8 @@ namespace PatchWorker
 			FDateTime::UtcNow().ToString(),
 			Context.NewVersionChunk,
 			Context.GetSettingObject()->IsIncludeHasRefAssetsOnly(),
-			Context.GetSettingObject()->IsAnalysisFilterDependencies()
+			Context.GetSettingObject()->IsAnalysisFilterDependencies(),
+			Context.GetSettingObject()->GetHashCalculator()
 		);
 		return true;
 	};
@@ -328,7 +343,8 @@ namespace PatchWorker
 				FDateTime::UtcNow().ToString(),
 				DiffChunk,
 				Context.GetSettingObject()->IsIncludeHasRefAssetsOnly(),
-				Context.GetSettingObject()->IsAnalysisFilterDependencies()
+				Context.GetSettingObject()->IsAnalysisFilterDependencies(),
+				Context.GetSettingObject()->GetHashCalculator()
 			);
 			{
 				TimeRecorder DiffTR(TEXT("Base Version And Diff Version total time"));
@@ -727,7 +743,7 @@ namespace PatchWorker
 		{
 			ITargetPlatform* PlatformIns = UFlibHotPatcherCoreHelper::GetPlatformByName(PlatformName);
 			
-			UFlibHotPatcherCoreHelper::GeneratorGlobalAssetRegistryData(PlatformIns,PackageAssetsSet,TSet<FName>{},true);
+			UFlibHotPatcherCoreHelper::SerializeChunksManifests(PlatformIns,PackageAssetsSet,TSet<FName>{},true);
 		}
 		return true;
 	}

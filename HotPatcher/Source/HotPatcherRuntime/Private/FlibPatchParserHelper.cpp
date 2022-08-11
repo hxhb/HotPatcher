@@ -1277,7 +1277,8 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 	const FString& InDate,
 	const FChunkInfo& InChunkInfo,
 	bool InIncludeHasRefAssetsOnly /*= false */,
-	bool bInAnalysisFilterDependencies /* = true*/)
+	bool bInAnalysisFilterDependencies /* = true*/
+	, EHashCalculator HashCalculator)
 {
 	TArray<FString> AllSkipContents;;
 	if(InChunkInfo.bForceSkipContent)
@@ -1307,7 +1308,9 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 	ScanConfig.ForceSkipContentRules = InChunkInfo.ForceSkipContentRules;
 	ScanConfig.bIncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
 	RunAssetScanner(ScanConfig,ExportVersion);
-	ExportExternAssetsToPlatform(InChunkInfo.AddExternAssetsToPlatform,ExportVersion,true,EHashCalculator::NoHash);
+
+	bool CalcHash = HashCalculator == EHashCalculator::NoHash ? false : true;
+	ExportExternAssetsToPlatform(InChunkInfo.AddExternAssetsToPlatform,ExportVersion,CalcHash,HashCalculator);
 
 	return ExportVersion;
 }
@@ -2039,8 +2042,8 @@ TArray<FDirectoryPath> UFlibPatchParserHelper::GetDefaultForceSkipContentDir()
 {
 	TArray<FDirectoryPath> result;
 	TArray<FString> DefaultSkipEditorContentRules = {
-		TEXT("/Engine/Editor*/"),
-		TEXT("/Engine/VREditor/")
+		TEXT("/Engine/Editor*/")
+		// ,TEXT("/Engine/VREditor/")
 	};
 	for(const auto& Ruls:DefaultSkipEditorContentRules)
 	{

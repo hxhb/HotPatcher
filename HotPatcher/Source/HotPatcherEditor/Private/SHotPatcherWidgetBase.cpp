@@ -34,7 +34,7 @@ void SHotPatcherWidgetBase::ImportProjectConfig()
 {
 	// import uasset
 	UFlibHotPatcherCoreHelper::ImportProjectSettingsToScannerConfig(GetConfigSettings()->GetAssetScanConfigRef());
-	UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(GetConfigSettings()->GetAddExternAssetsToPlatform());
+	UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(GetConfigSettings()->GetAddExternAssetsToPlatform(),ETargetPlatform::AllPlatforms);
 }
 
 FText SHotPatcherWidgetInterface::GetGenerateTooltipText() const

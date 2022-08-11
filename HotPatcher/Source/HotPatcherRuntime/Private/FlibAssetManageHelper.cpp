@@ -310,8 +310,6 @@ FAssetDetail UFlibAssetManageHelper::GetAssetDetailByPackageName(const FString& 
 	return AssetDetail;
 }
 
-
-
 bool UFlibAssetManageHelper::GetRedirectorList(const TArray<FString>& InFilterPackagePaths, TArray<FAssetDetail>& OutRedirector)
 {
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetRedirectorList",FColor::Red);

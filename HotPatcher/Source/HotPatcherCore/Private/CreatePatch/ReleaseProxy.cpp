@@ -93,11 +93,23 @@ namespace ReleaseWorker
 		if(Context.GetSettingObject()->IsImportProjectSettings())
 		{
 			UFlibHotPatcherCoreHelper::ImportProjectSettingsToScannerConfig(Context.GetSettingObject()->GetAssetScanConfigRef());
-			UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(Context.GetSettingObject()->GetAddExternAssetsToPlatform());
+
+			ETargetPlatform AddProjectDirToTarget = ETargetPlatform::AllPlatforms;
+
+			TSet<ETargetPlatform> AllConfigPlatformSet;
+			for(const auto& PlatformsPakListFile:Context.GetSettingObject()->PlatformsPakListFiles)
+			{
+				AllConfigPlatformSet.Add(PlatformsPakListFile.TargetPlatform);
+			}
+
+			AddProjectDirToTarget = AllConfigPlatformSet.Num() > 1 ? ETargetPlatform::AllPlatforms : AllConfigPlatformSet.Array()[0];
+			
+			UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(Context.GetSettingObject()->GetAddExternAssetsToPlatform(),AddProjectDirToTarget);
 		}
 		
 		return true;
 	}
+	
 	bool ExportNewReleaseWorker(FHotPatcherReleaseContext& Context)
 	{
 		TimeRecorder TotalTimeTR(TEXT("Export Release Version Info"));

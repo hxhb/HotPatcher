@@ -52,7 +52,7 @@ FString UFlibHotCookerHelper::GetCookerProcFailedResultPath(const FString& BaseD
 {
 	FString SaveConfigTo = FPaths::Combine(
 			BaseDir,
-			FString::Printf(TEXT("%s.json"),*MissionName)
+			FString::Printf(TEXT("%s_FailedAssets.json"),*MissionName)
 			);
 	return SaveConfigTo;
 }

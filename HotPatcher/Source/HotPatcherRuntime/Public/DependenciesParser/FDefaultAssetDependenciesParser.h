@@ -10,8 +10,7 @@ struct FAssetDependenciesParser : public IAssetDependenciesParser
 	virtual void Parse(const FAssetDependencies& InParseConfig) override;
 	virtual const TSet<FName>& GetrParseResults()const { return Results; };
 	bool IsIgnoreAsset(const FAssetData& AssetData);
-	bool IsIgnoreAsset(const FString& LongPackageName);
-
+	
 	static bool IsForceSkipAsset(const FString& LongPackageName,TSet<FName> IgnoreTypes,TArray<FString> IgnoreFilters);
 	TSet<FName> GatherAssetDependicesInfoRecursively(
 		FAssetRegistryModule& InAssetRegistryModule,
