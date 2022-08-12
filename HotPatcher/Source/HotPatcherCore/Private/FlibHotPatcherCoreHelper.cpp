@@ -2420,7 +2420,11 @@ bool UFlibHotPatcherCoreHelper::SerializeChunksManifests(ITargetPlatform* Target
 {
 	bool bresult = true;
 #if GENERATE_CHUNKS_MANIFEST
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 26
 	TUniquePtr<class FSandboxPlatformFile> TempSandboxFile = MakeUnique<FSandboxPlatformFile>(false);
+#else
+	TUniquePtr<class FSandboxPlatformFile> TempSandboxFile = FSandboxPlatformFile::Create(false);
+#endif
 	FString PlatformSandboxDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked"),TargetPlatform->PlatformName()));
 	// Use SandboxFile to do path conversion to properly handle sandbox paths (outside of standard paths in particular).
 	TempSandboxFile->Initialize(&FPlatformFileManager::Get().GetPlatformFile(), *FString::Printf(TEXT("-sandbox=\"%s\""), *PlatformSandboxDir));
