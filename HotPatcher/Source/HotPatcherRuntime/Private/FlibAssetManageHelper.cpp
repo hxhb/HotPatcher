@@ -337,7 +337,7 @@ bool UFlibAssetManageHelper::IsRedirector(const FAssetDetail& Src,FAssetDetail& 
 	FAssetData AssetData;
 	if (UFlibAssetManageHelper::GetSingleAssetsData(Src.PackagePath.ToString(), AssetData))
 	{
-		if (AssetData.IsValid() && AssetData.IsRedirector() ||
+		if ((AssetData.IsValid() && AssetData.IsRedirector()) ||
 			UObjectRedirector::StaticClass()->GetFName() == Src.AssetType ||
 			Src.PackagePath != AssetData.ObjectPath
 			)
