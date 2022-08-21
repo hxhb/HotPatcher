@@ -186,10 +186,10 @@ TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByShaderFrmat(c
 	TArray<FString > FoundShaderFiles;
 	IFileManager::Get().FindFiles(FoundShaderFiles,*Directory,TEXT("ushaderbytecode"));
 
-	FString FormatExtersion = FString::Printf(TEXT("%s.ushaderbytecode"),*ShaderFormatName);
+	FString FormatExtersion = FString::Printf(TEXT("*%s*.ushaderbytecode"),*ShaderFormatName);
 	for(const auto& ShaderFile:FoundShaderFiles)
 	{
-		if(ShaderFile.EndsWith(FormatExtersion))
+		if(ShaderFile.MatchesWildcard(FormatExtersion))
 		{
 			result.Add(ShaderFile);
 		}

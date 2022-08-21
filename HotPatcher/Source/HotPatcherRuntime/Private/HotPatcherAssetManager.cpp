@@ -7,6 +7,7 @@
 
 void UHotPatcherAssetManager::ScanPrimaryAssetTypesFromConfig()
 {
+	SCOPED_NAMED_EVENT_TEXT("ScanPrimaryAssetTypesFromConfig",FColor::Red);
 	// ++[RSTUDIO][lipengzha] allow disable scan primaryasset at engine init
 	static const bool bNoScanPrimaryAsset = FParse::Param(FCommandLine::Get(), TEXT("NoScanPrimaryAsset"));
 	if(bNoScanPrimaryAsset)

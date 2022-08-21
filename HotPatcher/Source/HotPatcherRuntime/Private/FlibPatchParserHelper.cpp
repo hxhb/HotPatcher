@@ -2042,7 +2042,7 @@ TArray<FDirectoryPath> UFlibPatchParserHelper::GetDefaultForceSkipContentDir()
 {
 	TArray<FDirectoryPath> result;
 	TArray<FString> DefaultSkipEditorContentRules = {
-		TEXT("/Engine/Editor*/")
+		// TEXT("/Engine/Editor*/")
 		// ,TEXT("/Engine/VREditor/")
 	};
 	for(const auto& Ruls:DefaultSkipEditorContentRules)

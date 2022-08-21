@@ -1361,22 +1361,21 @@ FChunkAssetDescribe UFlibHotPatcherCoreHelper::DiffChunkByBaseVersionWithPatchSe
 	return result;
 }
 
-bool UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(const FString& PlatformName,
-	const TArray<FAssetDetail>& AssetDetails, const FString& SavePath)
+
+bool UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(IAssetRegistry* AssetRegistry,
+                                                                const FString& PlatformName, const TArray<FAssetDetail>& AssetDetails, const FString& SavePath)
 {
 	
 	ITargetPlatform* TargetPlatform =  UFlibHotPatcherCoreHelper::GetPlatformByName(PlatformName);
-	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
 	FAssetRegistrySerializationOptions SaveOptions;
-	AssetRegistry.InitializeSerializationOptions(SaveOptions, TargetPlatform->IniPlatformName());
+	AssetRegistry->InitializeSerializationOptions(SaveOptions, TargetPlatform->IniPlatformName());
 	SaveOptions.bSerializeAssetRegistry = true;
 	
-	return UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(PlatformName,AssetDetails,SavePath,SaveOptions);
+	return UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(AssetRegistry,PlatformName,AssetDetails,SavePath, SaveOptions);
 }
 
-bool UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(const FString& PlatformName,
-	const TArray<FAssetDetail>& AssetDetails, const FString& SavePath, FAssetRegistrySerializationOptions SaveOptions)
+bool UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(IAssetRegistry* AssetRegistry,
+                                                                const FString& PlatformName, const TArray<FAssetDetail>& AssetDetails, const FString& SavePath, FAssetRegistrySerializationOptions SaveOptions)
 {
 	TArray<FString> PackagePaths;
 
@@ -1385,19 +1384,19 @@ bool UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(const FString& P
 		PackagePaths.AddUnique(Detail.PackagePath.ToString());
 	}
 
-	return UFlibHotPatcherCoreHelper::SerializeAssetRegistry(PlatformName,PackagePaths,SavePath,SaveOptions);
+	return UFlibHotPatcherCoreHelper::SerializeAssetRegistry(AssetRegistry,PlatformName,PackagePaths,SavePath, SaveOptions);
 }
 
-bool UFlibHotPatcherCoreHelper::SerializeAssetRegistry(const FString& PlatformName,
-                                                       const TArray<FString>& PackagePaths, const FString& SavePath, FAssetRegistrySerializationOptions SaveOptions)
+bool UFlibHotPatcherCoreHelper::SerializeAssetRegistry(IAssetRegistry* AssetRegistry,
+                                                       const FString& PlatformName, const TArray<FString>& PackagePaths, const FString& SavePath, FAssetRegistrySerializationOptions SaveOptions)
 {
 	
 	FAssetRegistryState State;
-	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
+	// FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	// IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
 
-	AssetRegistry.Tick(-1.0f);
-	AssetRegistry.InitializeTemporaryAssetRegistryState(State, SaveOptions, true);
+	AssetRegistry->Tick(-1.0f);
+	AssetRegistry->InitializeTemporaryAssetRegistryState(State, SaveOptions, true);
 	for(const auto& AssetPackagePath:PackagePaths)
 	{
 		if (State.GetAssetByObjectPath(FName(*AssetPackagePath)))

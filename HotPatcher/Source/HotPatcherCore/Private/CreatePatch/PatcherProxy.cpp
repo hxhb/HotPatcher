@@ -685,9 +685,8 @@ namespace PatchWorker
 						Context.GetSettingObject()->GetSaveAbsPath(),
 						Context.NewVersionChunk.ChunkName,
 						PlatformName,
-						ChunkAssetRegistryName)
-					;
-					if(UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(PlatformName,ChunkAssets,AssetRegistryPath))
+						ChunkAssetRegistryName);
+					if(UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(Context.PatchProxy->GetAssetRegistry(),PlatformName,ChunkAssets, AssetRegistryPath))
 					{
 						FExternFileInfo AssetRegistryFileInfo;
 						AssetRegistryFileInfo.Type = EPatchAssetType::NEW;

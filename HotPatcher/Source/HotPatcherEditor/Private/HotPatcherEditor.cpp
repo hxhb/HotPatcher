@@ -103,10 +103,10 @@ void FHotPatcherEditorModule::StartupModule()
 		LevelEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
 
 		// settings
-	 	TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
-	 	ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddToolbarExtension));
-
-	 	LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
+	 	// TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
+	 	// ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddToolbarExtension));
+		// 
+	 	// LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
 	}
 
 	TSharedRef<FUICommandList> CommandList = LevelEditorModule.GetGlobalLevelEditorActions();

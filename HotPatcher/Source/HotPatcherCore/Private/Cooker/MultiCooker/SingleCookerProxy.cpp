@@ -703,23 +703,19 @@ void USingleCookerProxy::OnAssetCookedHandle(const FSoftObjectPath& PackagePath,
 {
 	FScopeLock Lock(&SynchronizationObject);
 	SCOPED_NAMED_EVENT_TEXT("OnAssetCookedHandle",FColor::Red);
+
+	FName AssetPathName = PackagePath.GetAssetPathName();
+	GetPaendingCookAssetsSet().Remove(AssetPathName);
+	
 	if(Result == ESavePackageResult::Success)
 	{
-		GetPaendingCookAssetsSet().Remove(PackagePath.GetAssetPathName());
-		GetPlatformCookAssetOrders(Platform).Add(PackagePath.GetAssetPathName());
+		GetPlatformCookAssetOrders(Platform).Add(AssetPathName);
 	}
 	else
 	{
 		SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::OnCookAssetFailed",FColor::Red);
-		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
-		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s for %s Failed (%s)!"),*PackagePath.GetAssetPathString(),*PlatformName, *UFlibHotPatcherCoreHelper::GetSavePackageResultStr(Result));
-		GetPaendingCookAssetsSet().Remove(PackagePath.GetAssetPathName());
-		if(!GetCookFailedAssetsCollection().CookFailedAssets.Contains(Platform))
-		{
-			GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform).TargetPlatform = Platform;
-		}
-		
-		GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform).Assets.Add(UFlibAssetManageHelper::GetAssetDetailByPackageName(PackagePath.GetAssetPathString()));
+		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s for %d Failed (%s)!"),*PackagePath.GetAssetPathString(),(int32)Platform, *UFlibHotPatcherCoreHelper::GetSavePackageResultStr(Result));
+		GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform).PackagePaths.Add(AssetPathName);
 	}
 }
 

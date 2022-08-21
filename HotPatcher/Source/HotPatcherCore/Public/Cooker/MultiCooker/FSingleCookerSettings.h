@@ -112,16 +112,24 @@ public:
 	bool IsSkipAsset(const FString& PackageName);
 };
 
-
 USTRUCT(BlueprintType)
-struct HOTPATCHERCORE_API FAssetsCollection
+struct FPackagePathSet
 {
 	GENERATED_BODY()
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	ETargetPlatform TargetPlatform = ETargetPlatform::None;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	TArray<FAssetDetail> Assets;
+
+	UPROPERTY()
+	TSet<FName> PackagePaths;
 };
+//
+// USTRUCT(BlueprintType)
+// struct HOTPATCHERCORE_API FAssetsCollection
+// {
+// 	GENERATED_BODY()
+// 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+// 	ETargetPlatform TargetPlatform = ETargetPlatform::None;
+// 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+// 	TArray<FAssetDetail> Assets;
+// };
 
 USTRUCT(BlueprintType)
 struct HOTPATCHERCORE_API FCookerFailedCollection
@@ -133,5 +141,5 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	int32 MissionID = -1;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	TMap<ETargetPlatform,FAssetsCollection> CookFailedAssets;
+	TMap<ETargetPlatform,FPackagePathSet> CookFailedAssets;
 };
