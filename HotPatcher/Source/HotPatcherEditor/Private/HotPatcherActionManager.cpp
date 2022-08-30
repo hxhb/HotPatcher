@@ -16,7 +16,6 @@ FHotPatcherActionManager FHotPatcherActionManager::Manager;
 void FHotPatcherActionManager::Init()
 {
 	FVersionUpdaterManager::Get().RequestRemoveVersion(GRemoteVersionFile);
-	FVersionUpdaterManager::Get().Update();
 	SetupDefaultActions();
 }
 

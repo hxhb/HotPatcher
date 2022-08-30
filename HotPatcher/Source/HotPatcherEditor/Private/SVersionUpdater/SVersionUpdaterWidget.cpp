@@ -151,12 +151,12 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 		});
 		
 		FVersionUpdaterManager::Get().RequestRemoveVersion(GRemoteVersionFile);
-		FVersionUpdaterManager::Get().Update();
 	}
 	else
 	{
 		OnRemoveVersionFinished();
 	}
+	FVersionUpdaterManager::Get().Update();
 }
 
 void SVersionUpdaterWidget::HyLinkClickEventOpenUpdateWebsite()

@@ -23,7 +23,7 @@ FProjectVersionDesc FCountServerlessWrapper::MakeCurrentProject()
 	return result;
 }
 
-#define COUNTER_API_HOST TEXT("https://appcounter.imzlp.com/1.1/classes/ResScanner")
+#define COUNTER_API_HOST TEXT("https://appcounter.imzlp.com/1.1/classes/HotPatcher")
 #define COUNTER_APPID TEXT("Y1diamRWR3pkRlVWcEtNSWkwMFFGdGVxLWd6R3pvSHN6")
 #define COUNTER_KEY TEXT("M1VrUldPaHhsRThGcnBKSUZpNlUxNExI")
 
@@ -158,6 +158,12 @@ void FCountServerlessWrapper::CreateToServerReceived(FHttpRequestPtr Request, FH
 FString FCountServerlessWrapper::Decode(const FString& Encode)
 {
 	FString DecodeStr;
-	FBase64::Decode(Encode,DecodeStr);
-	return DecodeStr;
+	if(FBase64::Decode(Encode,DecodeStr))
+	{
+		return DecodeStr;
+	}
+	else
+	{
+		return Encode;
+	}
 }
