@@ -61,7 +61,8 @@ public class HotPatcherCore : ModuleRules
 				"InputCore",
 				"CoreUObject",
 				"Engine",
-				"RenderCore"
+				"RenderCore",
+				"Sockets"
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);
@@ -186,5 +187,13 @@ public class HotPatcherCore : ModuleRules
 				Path.Combine(ModuleDirectory,"../CookerWriterForUE5")
 			});
 		}
+		
+		PublicDefinitions.AddRange(new string[]
+		{
+			"TOOL_NAME=\"HotPatcher\"",
+			"CURRENT_VERSION_ID=76",
+			"CURRENT_PATCH_ID=1",
+			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
+		});
 	}
 }

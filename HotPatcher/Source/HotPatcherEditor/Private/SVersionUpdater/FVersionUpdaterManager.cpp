@@ -1,5 +1,7 @@
 #include "FVersionUpdaterManager.h"
 
+#include "FCountServerlessWrapper.h"
+#include "HotPatcherCore.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "HttpModule.h"
@@ -15,6 +17,17 @@ void FVersionUpdaterManager::Reset()
 		HttpHeadRequest->CancelRequest();
 		HttpHeadRequest.Reset();
 	}
+	Counter.Reset();
+}
+
+void FVersionUpdaterManager::Update()
+{
+	Counter = MakeShareable(new FCountServerlessWrapper);
+	FServerRequestInfo RequestInfo = FCountServerlessWrapper::MakeServerRequestInfo();
+	auto ProjectInfo = FCountServerlessWrapper::MakeCurrentProject();
+	ProjectInfo.PluginVersion = FString::Printf(TEXT("%d.%d"),GToolMainVersion,GToolPatchVersion);
+	Counter->Init(RequestInfo,ProjectInfo);
+	Counter->Processor();
 }
 
 void FVersionUpdaterManager::RequestRemoveVersion(const FString& URL)

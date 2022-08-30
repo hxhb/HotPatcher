@@ -2,6 +2,7 @@
 
 #include "FlibHotPatcherCoreHelper.h"
 #include "HotPatcherCore.h"
+#include "HotPatcherRuntime.h"
 #include "Cooker/MultiCooker/FlibHotCookerHelper.h"
 #include "ShaderCompiler.h"
 #include "UObject/UObjectHash.h"

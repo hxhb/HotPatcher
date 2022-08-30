@@ -3,17 +3,14 @@
 #pragma once
 
 #include "HotPatcherSettings.h"
-#include "ETargetPlatform.h"
-#include "FlibHotPatcherCoreHelper.h"
-#include "HotPatcherSettings.h"
-#include "Modules/ModuleManager.h"
-#include "CreatePatch/FExportPatchSettings.h"
-#include "HotPatcherRuntime.h"
-#include "CreatePatch/FExportReleaseSettings.h"
 // engine header
 #include "CoreMinimal.h"
 
-extern bool GCookLog;
+extern HOTPATCHERCORE_API bool GCookLog;
+extern HOTPATCHERCORE_API FString GToolName;
+extern HOTPATCHERCORE_API FString GRemoteVersionFile;
+extern HOTPATCHERCORE_API int32 GToolMainVersion;
+extern HOTPATCHERCORE_API int32 GToolPatchVersion;
 
 HOTPATCHERCORE_API void ReceiveOutputMsg(class FProcWorkerThread* Worker,const FString& InMsg);
 

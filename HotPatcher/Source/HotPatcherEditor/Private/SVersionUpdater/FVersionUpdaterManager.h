@@ -2,7 +2,7 @@
 #include "Interfaces/IHttpRequest.h"
 #include "CoreMinimal.h"
 #include "Misc/RemoteConfigIni.h"
-
+#include "FCountServerlessWrapper.h"
 
 struct FRemteVersionDescrible
 {
@@ -28,6 +28,7 @@ struct FVersionUpdaterManager
 	}
 	
 	void Reset();
+	void Update();
 	void RequestRemoveVersion(const FString& URL);
 	FRemteVersionDescrible* GetRemoteVersionByName(FName Name){ return Remotes.Find(Name); }
 	bool IsRequestFinished()const { return bRequestFinished; }
@@ -38,4 +39,5 @@ protected:
 	TMap<FName,FRemteVersionDescrible> Remotes;
 	bool bRequestFinished = false;
 	TArray<TFunction<void(void)>> OnRequestFinishedCallback;
+	TSharedPtr<FCountServerlessWrapper> Counter;
 };

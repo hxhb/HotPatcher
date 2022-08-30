@@ -1,4 +1,6 @@
 #include "HotPatcherActionManager.h"
+
+#include "HotPatcherCore.h"
 #include "CreatePatch/SHotPatcherPatchWidget.h"
 #include "CreatePatch/SHotPatcherReleaseWidget.h"
 #include "ShaderPatch/SShaderPatchWidget.h"
@@ -13,7 +15,8 @@ FHotPatcherActionManager FHotPatcherActionManager::Manager;
 
 void FHotPatcherActionManager::Init()
 {
-	FVersionUpdaterManager::Get().RequestRemoveVersion(REMOTE_VERSION_FILE);
+	FVersionUpdaterManager::Get().RequestRemoveVersion(GRemoteVersionFile);
+	FVersionUpdaterManager::Get().Update();
 	SetupDefaultActions();
 }
 

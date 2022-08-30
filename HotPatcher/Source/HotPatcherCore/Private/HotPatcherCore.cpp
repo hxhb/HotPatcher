@@ -27,6 +27,10 @@
 FExportPatchSettings* GPatchSettings = nullptr;
 FExportReleaseSettings* GReleaseSettings = nullptr;
 bool GCookLog = (bool)ENABLE_COOK_LOG;
+FString GToolName = TOOL_NAME;
+int32 GToolMainVersion = CURRENT_VERSION_ID;
+int32 GToolPatchVersion = CURRENT_PATCH_ID;
+FString GRemoteVersionFile = REMOTE_VERSION_FILE;
 
 static const FName HotPatcherTabName("HotPatcher");
 

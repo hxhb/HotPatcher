@@ -54,7 +54,9 @@ public class HotPatcherRuntime : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"Slate",
-				"SlateCore"
+				"SlateCore",
+				"HTTP",
+				"Sockets"
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);
