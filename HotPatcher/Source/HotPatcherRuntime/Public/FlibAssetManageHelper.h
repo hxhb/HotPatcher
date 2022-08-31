@@ -94,8 +94,8 @@ public:
 	static void GetAllInValidAssetInProject(FAssetDependenciesInfo InAllDependencies, TArray<FString> &OutInValidAsset, TArray<FString> InIgnoreModules = {});
 
 
-	
-		static bool GetAssetReference(const FAssetDetail& InAsset,const TArray<EAssetRegistryDependencyType::Type>& SearchAssetDepTypes, TArray<FAssetDetail>& OutRefAsset);
+	static bool GetAssetReferenceByLongPackageName(const FString& LongPackageName,const TArray<EAssetRegistryDependencyType::Type>& SearchAssetDepTypes, TArray<FAssetDetail>& OutRefAsset);
+	static bool GetAssetReference(const FAssetDetail& InAsset,const TArray<EAssetRegistryDependencyType::Type>& SearchAssetDepTypes, TArray<FAssetDetail>& OutRefAsset);
 	static void GetAssetReferenceRecursively(const FAssetDetail& InAsset,
 	                                         const TArray<EAssetRegistryDependencyType::Type>& SearchAssetDepTypes,
 	                                         const TArray<FString>& SearchAssetsTypes,

@@ -6,6 +6,7 @@
 #include "Engine/World.h"
 #include "Engine/WorldComposition.h"
 #include "Resources/Version.h"
+#include "PaperSprite.h"
 
 void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 {
@@ -74,23 +75,23 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 
 	Results.Remove(FName(NAME_None));
 
-	FCriticalSection	SynchronizationObject;
-	TSet<FName> ForceSkipPackages;
-	TArray<FName> ResultArray = Results.Array();
-	ParallelFor(ResultArray.Num(),[&](int32 index)
-	{
-		FString AssetPackageNameStr = ResultArray[index].ToString();
-		if(IsForceSkipAsset(AssetPackageNameStr,ParseConfig.IgnoreAseetTypes,ParseConfig.ForceSkipContents))
-		{
-			FScopeLock Lock(&SynchronizationObject);
-			ForceSkipPackages.Add(ResultArray[index]);
-		}
-	},GForceSingleThread);
-
-	for(FName SkipPackage:ForceSkipPackages)
-	{
-		Results.Remove(SkipPackage);
-	}
+	// FCriticalSection	SynchronizationObject;
+	// TSet<FName> ForceSkipPackages;
+	// TArray<FName> ResultArray = Results.Array();
+	// ParallelFor(ResultArray.Num(),[&](int32 index)
+	// {
+	// 	FString AssetPackageNameStr = ResultArray[index].ToString();
+	// 	if(IsForceSkipAsset(AssetPackageNameStr,ParseConfig.IgnoreAseetTypes,ParseConfig.ForceSkipContents))
+	// 	{
+	// 		FScopeLock Lock(&SynchronizationObject);
+	// 		ForceSkipPackages.Add(ResultArray[index]);
+	// 	}
+	// },GForceSingleThread);
+	//
+	// for(FName SkipPackage:ForceSkipPackages)
+	// {
+	// 	Results.Remove(SkipPackage);
+	// }
 }
 
 bool IsValidPackageName(const FString& LongPackageName)
@@ -132,6 +133,27 @@ bool FAssetDependenciesParser::IsForceSkipAsset(const FString& LongPackageName,T
 		bIsIgnore = true;
 	}
 
+	if(!bIsIgnore)
+	{
+		TArray<FAssetDetail> AssetDetails;
+		if(UFlibAssetManageHelper::GetAssetReferenceByLongPackageName(LongPackageName,
+				TArray<EAssetRegistryDependencyType::Type>{EAssetRegistryDependencyType::Hard,EAssetRegistryDependencyType::Soft},
+				AssetDetails))
+		{
+			if(AssetDetails.Num() == 1 &&
+				AssetDetails[0].AssetType.IsEqual(TEXT("PaperSprite")))
+			{
+				FSoftObjectPath PaperSprite(AssetDetails[0].PackagePath);
+				UPaperSprite* PaperSpriteObj = Cast<UPaperSprite>(PaperSprite.TryLoad());
+				if(PaperSpriteObj && PaperSpriteObj->GetAtlasGroup())
+				{
+					bIsIgnore = true;
+					MatchIgnoreStr = TEXT("only reference in a PaperSprite");
+				}
+			}
+		}
+	}
+	
 	if(bIsIgnore)
 	{
 #if ASSET_DEPENDENCIES_DEBUG_LOG
@@ -222,7 +244,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 					AssetDependencies.Add(LongPackageName);
 				}
 			}
-		},GForceSingleThread);
+		},true);
 	}
 	
 	if(bRecursively)

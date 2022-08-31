@@ -475,56 +475,6 @@ namespace PatchWorker
 				}
 			}
 		}
-		else
-		{
-			TimeRecorder AnalysisChunkTR(TEXT("Analysis Chunk Info(not enable chunk)"));
-			// 分析所选过滤器中的资源所依赖的过滤器添加到Chunk中
-			// 因为默认情况下Chunk的过滤器不会进行依赖分析，当bEnableChunk未开启时，之前导出的Chunk中的过滤器不包含Patch中所选过滤器进行依赖分析之后的所有资源的模块。
-			{
-				TArray<FString> DependenciesFilters;
-			
-				auto GetKeysLambda = [&DependenciesFilters](const FAssetDependenciesInfo& Assets)
-				{
-					const TArray<FAssetDetail>& AllAssets = Assets.GetAssetDetails();
-					for (const auto& Asset : AllAssets)
-					{
-						FString Path;
-						FString Filename;
-						FString Extension;
-						FPaths::Split(Asset.PackagePath.ToString(), Path, Filename, Extension);
-						DependenciesFilters.AddUnique(Path);
-					}
-				};
-				GetKeysLambda(Context.VersionDiff.AssetDiffInfo.AddAssetDependInfo);
-				GetKeysLambda(Context.VersionDiff.AssetDiffInfo.ModifyAssetDependInfo);
-
-				TArray<FDirectoryPath> DepOtherModule;
-
-				for (const auto& DependenciesFilter : DependenciesFilters)
-				{
-					if (!!Context.NewVersionChunk.AssetIncludeFilters.Num())
-					{
-						for (const auto& includeFilter : Context.NewVersionChunk.AssetIncludeFilters)
-						{
-							if (!includeFilter.Path.StartsWith(DependenciesFilter))
-							{
-								FDirectoryPath FilterPath;
-								FilterPath.Path = DependenciesFilter;
-								DepOtherModule.Add(FilterPath);
-							}
-						}
-					}
-					else
-					{
-						FDirectoryPath FilterPath;
-						FilterPath.Path = DependenciesFilter;
-						DepOtherModule.Add(FilterPath);
-
-					}
-				}
-				Context.NewVersionChunk.AssetIncludeFilters.Append(DepOtherModule);
-			}
-		}
 		
 		bool bEnableChunk = Context.GetSettingObject()->IsEnableChunk();
 

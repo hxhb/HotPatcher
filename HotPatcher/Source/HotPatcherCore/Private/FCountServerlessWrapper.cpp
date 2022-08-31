@@ -79,15 +79,14 @@ void FCountServerlessWrapper::OnObjectIdReceived(FHttpRequestPtr Request, FHttpR
 				}
 			}
 		}
-	}
-
-	if(NameIdMaps.Contains(FApp::GetProjectName()))
-	{
-		UpdateToServer(Desc,*NameIdMaps.Find(FApp::GetProjectName()));
-	}
-	else
-	{
-		CreateToServer(Desc);
+		if(NameIdMaps.Contains(FApp::GetProjectName()))
+		{
+			UpdateToServer(Desc,*NameIdMaps.Find(FApp::GetProjectName()));
+		}
+		else
+		{
+			CreateToServer(Desc);
+		}
 	}
 }
 

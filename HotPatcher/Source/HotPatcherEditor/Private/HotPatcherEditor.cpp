@@ -102,11 +102,13 @@ void FHotPatcherEditorModule::StartupModule()
 
 		LevelEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
 
+#ifndef DISABLE_PLUGIN_TOOLBAR_MENU
 		// settings
-	 	// TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
-	 	// ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddToolbarExtension));
-		// 
-	 	// LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
+	 	TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
+	 	ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddToolbarExtension));
+		
+	 	LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
+#endif
 	}
 
 	TSharedRef<FUICommandList> CommandList = LevelEditorModule.GetGlobalLevelEditorActions();

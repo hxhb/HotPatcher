@@ -56,7 +56,8 @@ public class HotPatcherRuntime : ModuleRules
 				"Slate",
 				"SlateCore",
 				"HTTP",
-				"Sockets"
+				"Sockets",
+				"Paper2D"
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);
