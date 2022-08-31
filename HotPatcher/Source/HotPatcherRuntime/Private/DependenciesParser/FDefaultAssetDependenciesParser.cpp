@@ -6,7 +6,9 @@
 #include "Engine/World.h"
 #include "Engine/WorldComposition.h"
 #include "Resources/Version.h"
+#if WITH_EDITOR
 #include "PaperSprite.h"
+#endif
 
 void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 {
@@ -132,7 +134,7 @@ bool FAssetDependenciesParser::IsForceSkipAsset(const FString& LongPackageName,T
 	{
 		bIsIgnore = true;
 	}
-
+#if WITH_EDITOR
 	if(!bIsIgnore)
 	{
 		TArray<FAssetDetail> AssetDetails;
@@ -153,7 +155,7 @@ bool FAssetDependenciesParser::IsForceSkipAsset(const FString& LongPackageName,T
 			}
 		}
 	}
-	
+#endif
 	if(bIsIgnore)
 	{
 #if ASSET_DEPENDENCIES_DEBUG_LOG
