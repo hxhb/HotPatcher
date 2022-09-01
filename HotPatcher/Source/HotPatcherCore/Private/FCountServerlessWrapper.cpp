@@ -43,10 +43,15 @@ void FCountServerlessWrapper::Processor()
 		RequestObjectID();
 	}
 }
+#if ENGINE_MAJOR_VERSION > 4 || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25)
+using FHttpRequestType = TSharedRef<IHttpRequest,ESPMode::ThreadSafe>;
+#else
+using FHttpRequestType = TSharedRef<IHttpRequest,ESPMode::NotThreadSafe>;
+#endif
 
 void FCountServerlessWrapper::RequestObjectID()
 {
-	TSharedRef<IHttpRequest,ESPMode::NotThreadSafe> ObjectIDRequest = FHttpModule::Get().CreateRequest();
+	FHttpRequestType ObjectIDRequest = FHttpModule::Get().CreateRequest();
 	ObjectIDRequest->OnProcessRequestComplete().BindRaw(this, &FCountServerlessWrapper::OnObjectIdReceived);
 	ObjectIDRequest->SetURL(RequestInfo.Host);
 	ObjectIDRequest->SetHeader(TEXT("X-LC-Id"),Decode(RequestInfo.AppId));
@@ -102,7 +107,7 @@ void FCountServerlessWrapper::UpdateToServer(const FProjectVersionDesc& InDesc,c
 		TEXT("\"Count\":{\"__op\":\"Increment\",\"amount\":1}")
 	);
 	
-	TSharedRef<IHttpRequest,ESPMode::NotThreadSafe> CreateToServerRequest = FHttpModule::Get().CreateRequest();
+	FHttpRequestType CreateToServerRequest = FHttpModule::Get().CreateRequest();
 	FString UpdateObjectURL = FString::Printf(TEXT("%s/%s"),*RequestInfo.Host,*ObjectID);
 	CreateToServerRequest->SetURL(UpdateObjectURL);
 	CreateToServerRequest->SetHeader(TEXT("X-LC-Id"),Decode(RequestInfo.AppId));
@@ -135,7 +140,7 @@ void FCountServerlessWrapper::CreateToServer(const FProjectVersionDesc& InDesc)
 		1
 	);
 
-	TSharedRef<IHttpRequest,ESPMode::NotThreadSafe> UpdateToServerRequest = FHttpModule::Get().CreateRequest();
+	FHttpRequestType UpdateToServerRequest = FHttpModule::Get().CreateRequest();
 	UpdateToServerRequest->SetURL(RequestInfo.Host);
 	UpdateToServerRequest->SetHeader(TEXT("X-LC-Id"),Decode(RequestInfo.AppId));
 	UpdateToServerRequest->SetHeader(TEXT("X-LC-Key"),Decode(RequestInfo.Key));
