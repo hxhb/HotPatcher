@@ -11,14 +11,7 @@
 #include "ThreadUtils/FThreadUtils.hpp"
 #include "SingleCookerProxy.generated.h"
 
-USTRUCT()
-struct FPackagePathSet
-{
-    GENERATED_BODY()
 
-    UPROPERTY()
-    TSet<FName> PackagePaths;
-};
 
 bool IsAlwayPostLoadClasses(UPackage* Package, UObject* Object);
 

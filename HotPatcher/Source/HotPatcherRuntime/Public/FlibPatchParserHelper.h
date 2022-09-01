@@ -55,7 +55,7 @@ public:
 		const FString& InDate,
 		const FChunkInfo& InChunkInfo,
 		bool InIncludeHasRefAssetsOnly = false,
-		bool bInAnalysisFilterDependencies = true
+		bool bInAnalysisFilterDependencies = true, EHashCalculator HashCalculator = EHashCalculator::NoHash
 	);
 	static void RunAssetScanner(FAssetScanConfig ScanConfig,FHotPatcherVersion& ExportVersion);
 	static void ExportExternAssetsToPlatform(const TArray<FPlatformExternAssets>& AddExternAssetsToPlatform, FHotPatcherVersion& ExportVersion, bool bGenerateHASH, EHashCalculator

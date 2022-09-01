@@ -68,6 +68,8 @@ public:
 				}
 			}
 			ProcOutputMsgDelegate.ExecuteIfBound(this,FString::Printf(TEXT("ProcWorker %s return value %d."),*mThreadName,ProcReturnCode));
+
+			mThreadStatus = EThreadStatus::Completed;
 			if (bRunSuccessfuly)
 			{
 				if(ProcSuccessedDelegate.IsBound())
@@ -85,6 +87,7 @@ public:
 		}
 		return 0;
 	}
+	
 	virtual void Exit()override
 	{
 		FThreadWorker::Exit();

@@ -94,11 +94,7 @@ public class HotPatcherEditor : ModuleRules
 		
 		PublicDefinitions.AddRange(new string[]
 		{
-			"ENABLE_UPDATER_CHECK=1",
-			"TOOL_NAME=\"HotPatcher\"",
-			"CURRENT_VERSION_ID=76",
-			"CURRENT_PATCH_ID=1",
-			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
+			"ENABLE_UPDATER_CHECK=1"
 		});
 
 		bool bEnablePackageContext = true;

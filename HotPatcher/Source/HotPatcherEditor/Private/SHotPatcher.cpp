@@ -3,6 +3,7 @@
 #include "Cooker/SCookersPage.h"
 #include "SVersionUpdater/SVersionUpdaterWidget.h"
 // engine header
+#include "HotPatcherCore.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Layout/SGridPanel.h"
@@ -37,12 +38,12 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 				.AutoHeight()
 				[
 					SAssignNew(VersionUpdaterWidget,SVersionUpdaterWidget)
-					.ToolName(FText::FromString(ANSI_TO_TCHAR(TOOL_NAME)))
+					.ToolName(FText::FromString(GToolName))
 					.DeveloperName(FText::FromString(TEXT("lipengzha")))
 					.DeveloperWebsite(FText::FromString(TEXT("https://imzlp.com")))
 					.UpdateWebsite(FText::FromString(TEXT("https://imzlp.com/posts/17590/")))
-					.CurrentVersion(CURRENT_VERSION_ID)
-					.PatchVersion(CURRENT_PATCH_ID)
+					.CurrentVersion(GToolMainVersion)
+					.PatchVersion(GToolPatchVersion)
 				]
 #endif
 				+SVerticalBox::Slot()
@@ -83,7 +84,7 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 				];
 		
 				ActionPageGridPanel->AddSlot(1, RowNum)
-				.Padding(32.0f, 0.0f, 8.0f, 0.0f)
+				.Padding(25.0f, 0.0f, 8.0f, 0.0f)
 				[
 					ActionPage.Value.Widget
 				];

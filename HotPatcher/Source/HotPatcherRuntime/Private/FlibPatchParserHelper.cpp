@@ -267,7 +267,7 @@ bool UFlibPatchParserHelper::DiffVersionAllPlatformExFiles(
 		{
 			OutDiff.Add(Platform,ParserDiffPlatformExFileLambda(
 				UFlibPatchParserHelper::GetAllExFilesByPlatform(InBaseVersion.PlatformAssets[Platform],false,PatchSetting.GetHashCalculator()),
-				UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform],false,PatchSetting.GetHashCalculator()),
+				UFlibPatchParserHelper::GetAllExFilesByPlatform(InNewVersion.PlatformAssets[Platform],true,PatchSetting.GetHashCalculator()),
 				Platform
 			));
 		}
@@ -313,6 +313,7 @@ FPlatformExternFiles UFlibPatchParserHelper::GetAllExFilesByPlatform(
 		{
 			FExternFileInfo CurrentFile = ExFile;
 			CurrentFile.FilePath.FilePath = UFlibPatchParserHelper::ReplaceMarkPath(ExFile.FilePath.FilePath);
+			CurrentFile.MountPath = ExFile.MountPath;
 			result.ExternFiles.Add(CurrentFile);
 		}
 	}
@@ -636,7 +637,8 @@ TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const
 		if(DirectoryItem.DirectoryPath.Path.IsEmpty())
 			continue;
 		FString DirAbsPath = UFlibPatchParserHelper::ReplaceMarkPath(DirectoryItem.DirectoryPath.Path); //FPaths::ConvertRelativePathToFull(DirectoryItem.DirectoryPath.Path);
-		
+		bool bWildcard = DirectoryItem.bWildcard;
+		FString Wildcard = DirectoryItem.WildcardStr;
 		FPaths::MakeStandardFilename(DirAbsPath);
 		if (!DirAbsPath.IsEmpty() && FPaths::DirectoryExists(DirAbsPath))
 		{
@@ -654,9 +656,15 @@ TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const
 					CurrentFile.FilePath.FilePath = File;
 
 					CurrentFile.MountPath = RelativeMountPointPath;
-					if (!result.Contains(CurrentFile))
+					bool bCanAdd = true;
+					if(bWildcard)
+					{
+						bCanAdd = File.MatchesWildcard(Wildcard) && RelativeMountPointPath.MatchesWildcard(Wildcard);
+					}
+					if (!result.Contains(CurrentFile) && bCanAdd)
+					{
 						result.Add(CurrentFile);
-
+					}
 				}
 			}
 		}
@@ -1269,7 +1277,8 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 	const FString& InDate,
 	const FChunkInfo& InChunkInfo,
 	bool InIncludeHasRefAssetsOnly /*= false */,
-	bool bInAnalysisFilterDependencies /* = true*/)
+	bool bInAnalysisFilterDependencies /* = true*/
+	, EHashCalculator HashCalculator)
 {
 	TArray<FString> AllSkipContents;;
 	if(InChunkInfo.bForceSkipContent)
@@ -1299,7 +1308,9 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 	ScanConfig.ForceSkipContentRules = InChunkInfo.ForceSkipContentRules;
 	ScanConfig.bIncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
 	RunAssetScanner(ScanConfig,ExportVersion);
-	ExportExternAssetsToPlatform(InChunkInfo.AddExternAssetsToPlatform,ExportVersion,false,EHashCalculator::NoHash);
+
+	bool CalcHash = HashCalculator == EHashCalculator::NoHash ? false : true;
+	ExportExternAssetsToPlatform(InChunkInfo.AddExternAssetsToPlatform,ExportVersion,CalcHash,HashCalculator);
 
 	return ExportVersion;
 }
@@ -2005,7 +2016,7 @@ FEncryptSetting UFlibPatchParserHelper::GetCryptoSettingByPakEncryptSettings(con
 	}
 	else
 	{
-		FString CryptoKeyFile = FPaths::ConvertRelativePathToFull(Config.CryptoKeys.FilePath);
+		FString CryptoKeyFile = UFlibPatchParserHelper::ReplaceMark(Config.CryptoKeys.FilePath);
 		if(FPaths::FileExists(CryptoKeyFile))
 		{
 			FEncryptSetting CryptoJsonSettings = UFlibPatchParserHelper::GetCryptoSettingsByJson(CryptoKeyFile);
@@ -2031,8 +2042,8 @@ TArray<FDirectoryPath> UFlibPatchParserHelper::GetDefaultForceSkipContentDir()
 {
 	TArray<FDirectoryPath> result;
 	TArray<FString> DefaultSkipEditorContentRules = {
-		TEXT("/Engine/Editor*/"),
-		TEXT("/Engine/VREditor/")
+		// TEXT("/Engine/Editor*/")
+		// ,TEXT("/Engine/VREditor/")
 	};
 	for(const auto& Ruls:DefaultSkipEditorContentRules)
 	{

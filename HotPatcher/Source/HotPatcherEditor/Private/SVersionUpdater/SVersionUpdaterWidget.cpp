@@ -1,6 +1,7 @@
 #include "SVersionUpdaterWidget.h"
 // engine header
 #include "FVersionUpdaterManager.h"
+#include "HotPatcherCore.h"
 #include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Images/SImage.h"
@@ -22,7 +23,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 	static bool GBrushInited = false;
 	if(!GBrushInited)
 	{
-		FVersionUpdaterStyle::Initialize(FString::Printf(TEXT("%s_UpdaterStyle"),ANSI_TO_TCHAR(TOOL_NAME)));
+		FVersionUpdaterStyle::Initialize(FString::Printf(TEXT("%s_UpdaterStyle"),*GToolName));
 		FVersionUpdaterStyle::ReloadTextures();
 		GBrushInited = true;
 	}
@@ -149,12 +150,13 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 			OnRemoveVersionFinished();
 		});
 		
-		FVersionUpdaterManager::Get().RequestRemoveVersion(REMOTE_VERSION_FILE);
+		FVersionUpdaterManager::Get().RequestRemoveVersion(GRemoteVersionFile);
 	}
 	else
 	{
 		OnRemoveVersionFinished();
 	}
+	FVersionUpdaterManager::Get().Update();
 }
 
 void SVersionUpdaterWidget::HyLinkClickEventOpenUpdateWebsite()

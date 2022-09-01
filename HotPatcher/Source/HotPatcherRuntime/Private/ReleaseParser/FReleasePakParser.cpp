@@ -57,6 +57,7 @@ void FReleasePakParser::Parser(TSharedPtr<FReleaseParserConf> ParserConf, EHashC
 			FPaths::NormalizeFilename(FinalFilePath);
 			currentFile.FilePath.FilePath = FinalFilePath;
 			currentFile.MountPath = MountFile;
+			currentFile.GenerateFileHash(HashCalculator);
 			result.ExternFiles.AddUnique(currentFile);
 		}
 	}

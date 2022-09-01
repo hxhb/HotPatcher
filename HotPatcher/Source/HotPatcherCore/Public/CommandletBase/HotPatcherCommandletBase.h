@@ -1,5 +1,6 @@
 #pragma once
 
+#include "FCountServerlessWrapper.h"
 #include "Commandlets/Commandlet.h"
 #include "HotPatcherCommandletBase.generated.h"
 
@@ -15,7 +16,9 @@ public:
 	virtual bool IsSkipObject(UObject* Object){ return false; }
 	virtual bool IsSkipPackage(UPackage* Package){ return false; }
 protected:
+	void Update(const FString& Params);
 	void MaybeMarkPackageAsAlreadyLoaded(UPackage* Package);
 	TSharedPtr<struct FObjectTrackerTagCleaner> ObjectTrackerTagCleaner;
 	FString CmdConfigPath;
+	TSharedPtr<FCountServerlessWrapper> Counter;
 };

@@ -168,10 +168,6 @@ public:
 
 	static ITargetPlatform* GetPlatformByName(const FString& Name);
 
-	// need add UNREALED_API to FAssetRegistryGenerator
-	// all chunksinfo.csv / pakchunklist.txt / assetregistry.bin
-	static bool GeneratorGlobalAssetRegistryData(ITargetPlatform* TargetPlatform, const TSet<FName>&, const TSet<FName>&, bool bGenerateStreamingInstallManifest = true);
-
 	/*
 	* 0x1 Add
 	* 0x2 Modyfy
@@ -194,9 +190,10 @@ public:
 		const FHotPatcherVersion& BaseVersion
 		//,TMap<FString, FAssetDependenciesInfo>& ScanedCaches
 	);
-	
-	static bool SerializeAssetRegistryByDetails(const FString& PlatformName,const TArray<FAssetDetail>& AssetDetails,const FString& SavePath);
-	static bool SerializeAssetRegistry(const FString& PlatformName,const TArray<FString>& PackagePaths,const FString& SavePath);
+	static bool SerializeAssetRegistryByDetails(IAssetRegistry* AssetRegistry, const FString& PlatformName, const TArray<FAssetDetail>& AssetDetails, const FString& SavePath, FAssetRegistrySerializationOptions SaveOptions);
+	static bool SerializeAssetRegistryByDetails(IAssetRegistry* AssetRegistry, const FString& PlatformName, const TArray<FAssetDetail>& AssetDetails, const FString& SavePath);
+	static bool SerializeAssetRegistry(IAssetRegistry* AssetRegistry, const FString& PlatformName, const TArray<FString>& PackagePaths, const FString& SavePath, FAssetRegistrySerializationOptions
+	                                   SaveOptions);
 	
 	static FHotPatcherVersion MakeNewRelease(const FHotPatcherVersion& InBaseVersion, const FHotPatcherVersion& InCurrentVersion, FExportPatchSettings* InPatchSettings);
 	static FHotPatcherVersion MakeNewReleaseByDiff(const FHotPatcherVersion& InBaseVersion, const FPatchVersionDiff& InDiff, FExportPatchSettings* InPatchSettings = NULL);
@@ -230,7 +227,7 @@ public:
 	static bool IsCanCookPackage(const FString& LongPackageName);
 	
 	static void ImportProjectSettingsToScannerConfig(FAssetScanConfig& AssetScanConfig);
-	static void ImportProjectNotAssetDir(TArray<FPlatformExternAssets>& PlatformExternAssets);
+	static void ImportProjectNotAssetDir(TArray<FPlatformExternAssets>& PlatformExternAssets, ETargetPlatform AddToTargetPlatform);
 	
 	static TArray<FExternDirectoryInfo> GetProjectNotAssetDirConfig();
 	
@@ -271,4 +268,12 @@ public:
 	static FString GetSavePackageResultStr(ESavePackageResult Result);
 
 	static void AdaptorOldVersionConfig(FAssetScanConfig& ScanConfig,const FString& JsonContent);
+	
+	static bool GetIniPlatformName(const FString& PlatformName,FString& OutIniPlatformName);
+
+	
+	
+	// need add UNREALED_API to FAssetRegistryGenerator
+	// all chunksinfo.csv / pakchunklist.txt / assetregistry.bin
+	static bool SerializeChunksManifests(ITargetPlatform* TargetPlatform, const TSet<FName>&, const TSet<FName>&, bool bGenerateStreamingInstallManifest = true);
 };

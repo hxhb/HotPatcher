@@ -2,6 +2,7 @@
 
 #include "FlibHotPatcherCoreHelper.h"
 #include "HotPatcherCore.h"
+#include "HotPatcherRuntime.h"
 #include "Cooker/MultiCooker/FlibHotCookerHelper.h"
 #include "ShaderCompiler.h"
 #include "UObject/UObjectHash.h"
@@ -410,9 +411,9 @@ void USingleCookerProxy::Shutdown()
 	{
 		FString FailedJsonString;
 		THotPatcherTemplateHelper::TSerializeStructAsJsonString(GetCookFailedAssetsCollection(),FailedJsonString);
-		UE_LOG(LogHotPatcher,Warning,TEXT("Single Cooker Proxy %s:\n%s"),*GetSettingObject()->MissionName,*FailedJsonString);
 		FString SaveTo = UFlibHotCookerHelper::GetCookerProcFailedResultPath(StorageMetadataAbsDir,GetSettingObject()->MissionName,GetSettingObject()->MissionID);
-		UFlibPatchParserHelper::ReplaceMark(SaveTo);
+		SaveTo = UFlibPatchParserHelper::ReplaceMark(SaveTo);
+		UE_LOG(LogHotPatcher,Warning,TEXT("Single Cooker Proxy Cook Failed Assets %s:\n%s\nSerialize to %s"),*GetSettingObject()->MissionName,*FailedJsonString,*SaveTo);
 		FFileHelper::SaveStringToFile(FailedJsonString,*SaveTo);
 	}
 	
@@ -703,17 +704,19 @@ void USingleCookerProxy::OnAssetCookedHandle(const FSoftObjectPath& PackagePath,
 {
 	FScopeLock Lock(&SynchronizationObject);
 	SCOPED_NAMED_EVENT_TEXT("OnAssetCookedHandle",FColor::Red);
+
+	FName AssetPathName = PackagePath.GetAssetPathName();
+	GetPaendingCookAssetsSet().Remove(AssetPathName);
+	
 	if(Result == ESavePackageResult::Success)
 	{
-		GetPaendingCookAssetsSet().Remove(PackagePath.GetAssetPathName());
-		GetPlatformCookAssetOrders(Platform).Add(PackagePath.GetAssetPathName());
+		GetPlatformCookAssetOrders(Platform).Add(AssetPathName);
 	}
 	else
 	{
 		SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::OnCookAssetFailed",FColor::Red);
-		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
-		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s for %s Failed (%s)!"),*PackagePath.GetAssetPathString(),*PlatformName, *UFlibHotPatcherCoreHelper::GetSavePackageResultStr(Result));
-		GetPaendingCookAssetsSet().Remove(PackagePath.GetAssetPathName());
+		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s for %d Failed (%s)!"),*PackagePath.GetAssetPathString(),(int32)Platform, *UFlibHotPatcherCoreHelper::GetSavePackageResultStr(Result));
+		GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform).PackagePaths.Add(AssetPathName);
 	}
 }
 

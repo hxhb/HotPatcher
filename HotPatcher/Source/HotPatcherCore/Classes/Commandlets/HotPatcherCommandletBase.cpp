@@ -5,6 +5,7 @@
 
 // engine header
 #include "CoreMinimal.h"
+#include "HotPatcherCore.h"
 #include "Misc/FileHelper.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Paths.h"
@@ -36,6 +37,25 @@ protected:
 	UHotPatcherCommandletBase* CommandletIns;
 };
 
+void UHotPatcherCommandletBase::Update(const FString& Params)
+{
+	FString CommandletName;
+	bool bIsCommandlet = FParse::Value(FCommandLine::Get(), TEXT("-run="), CommandletName);
+	
+	Counter = MakeShareable(new FCountServerlessWrapper);
+	FServerRequestInfo RequestInfo = FCountServerlessWrapper::MakeServerRequestInfo();
+	auto ProjectInfo = FCountServerlessWrapper::MakeCurrentProject();
+	ProjectInfo.PluginVersion = FString::Printf(TEXT("%d.%d"),GToolMainVersion,GToolPatchVersion);
+
+	if(bIsCommandlet)
+	{
+		ProjectInfo.ProjectName = FString::Printf(TEXT("%s_%s"),*ProjectInfo.ProjectName,*CommandletName);
+	}
+	
+	Counter->Init(RequestInfo,ProjectInfo);
+	Counter->Processor();
+}
+
 void UHotPatcherCommandletBase::MaybeMarkPackageAsAlreadyLoaded(UPackage* Package)
 {
 	if (bNoDDC || IsSkipPackage(Package))
@@ -48,6 +68,7 @@ void UHotPatcherCommandletBase::MaybeMarkPackageAsAlreadyLoaded(UPackage* Packag
 
 int32 UHotPatcherCommandletBase::Main(const FString& Params)
 {
+	Update(Params);
 #if SUPPORT_NO_DDC
 	// for Object Create Tracking,Optimize Asset searching, dont execute UObject::PostLoad
 	ObjectTrackerTagCleaner = MakeShareable(new FObjectTrackerTagCleaner(this));

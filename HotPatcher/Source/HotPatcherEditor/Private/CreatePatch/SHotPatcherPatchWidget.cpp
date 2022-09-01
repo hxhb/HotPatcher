@@ -320,7 +320,7 @@ FReply SHotPatcherPatchWidget::DoDiff()const
 	CurrentVersion.BaseVersionId = BaseVersion.VersionId;
 	CurrentVersion.Date = FDateTime::UtcNow().ToString();
 	UFlibPatchParserHelper::RunAssetScanner(ExportPatchSetting->GetAssetScanConfig(),CurrentVersion);
-	UFlibPatchParserHelper::ExportExternAssetsToPlatform(ExportPatchSetting->GetAddExternAssetsToPlatform(),CurrentVersion,false,ExportPatchSetting->GetHashCalculator());
+	UFlibPatchParserHelper::ExportExternAssetsToPlatform(ExportPatchSetting->GetAddExternAssetsToPlatform(),CurrentVersion,true,ExportPatchSetting->GetHashCalculator());
 	
 	FPatchVersionDiff VersionDiffInfo = UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(*ExportPatchSetting, BaseVersion, CurrentVersion);
 	
@@ -387,7 +387,9 @@ FReply SHotPatcherPatchWidget::DoPreviewChunk() const
 		BaseVersion.VersionId,
 		FDateTime::UtcNow().ToString(),
 		NewVersionChunk,
-		ExportPatchSetting->IsIncludeHasRefAssetsOnly()
+		ExportPatchSetting->IsIncludeHasRefAssetsOnly(),
+		ExportPatchSetting->AssetScanConfig.bAnalysisFilterDependencies,
+		ExportPatchSetting->GetHashCalculator()
 	);
 
 	FString CurrentVersionSavePath = ExportPatchSetting->GetCurrentVersionSavePath();

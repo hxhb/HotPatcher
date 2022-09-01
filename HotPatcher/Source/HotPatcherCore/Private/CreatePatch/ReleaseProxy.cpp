@@ -44,12 +44,11 @@ bool UReleaseProxy::DoExport()
 	ReleaseContext.Init();
 	ReleaseContext.ReleaseProxy = this;
 	TArray<TFunction<bool(FHotPatcherReleaseContext&)>> ReleaseWorker;
-	
+	ReleaseWorker.Emplace(&::ReleaseWorker::SaveReleaseConfigWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::ImportPakListWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::ImportProjectSettingsWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::ExportNewReleaseWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::SaveReleaseVersionWorker);
-	ReleaseWorker.Emplace(&::ReleaseWorker::SaveReleaseConfigWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::BakcupMetadataWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::BakcupProjectConfigWorker);
 	ReleaseWorker.Emplace(&::ReleaseWorker::ReleaseSummaryWorker);
@@ -94,11 +93,23 @@ namespace ReleaseWorker
 		if(Context.GetSettingObject()->IsImportProjectSettings())
 		{
 			UFlibHotPatcherCoreHelper::ImportProjectSettingsToScannerConfig(Context.GetSettingObject()->GetAssetScanConfigRef());
-			UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(Context.GetSettingObject()->GetAddExternAssetsToPlatform());
+
+			ETargetPlatform AddProjectDirToTarget = ETargetPlatform::AllPlatforms;
+
+			TSet<ETargetPlatform> AllConfigPlatformSet;
+			for(const auto& PlatformsPakListFile:Context.GetSettingObject()->PlatformsPakListFiles)
+			{
+				AllConfigPlatformSet.Add(PlatformsPakListFile.TargetPlatform);
+			}
+
+			AddProjectDirToTarget = AllConfigPlatformSet.Num() > 1 ? ETargetPlatform::AllPlatforms : AllConfigPlatformSet.Array()[0];
+			
+			UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(Context.GetSettingObject()->GetAddExternAssetsToPlatform(),AddProjectDirToTarget);
 		}
 		
 		return true;
 	}
+	
 	bool ExportNewReleaseWorker(FHotPatcherReleaseContext& Context)
 	{
 		TimeRecorder TotalTimeTR(TEXT("Export Release Version Info"));
@@ -115,7 +126,7 @@ namespace ReleaseWorker
 			Context.NewReleaseVersion.BaseVersionId = TEXT("");
 		}
 		UFlibPatchParserHelper::RunAssetScanner(Context.GetSettingObject()->GetAssetScanConfig(),Context.NewReleaseVersion);
-		UFlibPatchParserHelper::ExportExternAssetsToPlatform(Context.GetSettingObject()->GetAddExternAssetsToPlatform(),Context.NewReleaseVersion,false,Context.GetSettingObject()->GetHashCalculator());
+		UFlibPatchParserHelper::ExportExternAssetsToPlatform(Context.GetSettingObject()->GetAddExternAssetsToPlatform(),Context.NewReleaseVersion,true,Context.GetSettingObject()->GetHashCalculator());
 		return true;
 	}
 

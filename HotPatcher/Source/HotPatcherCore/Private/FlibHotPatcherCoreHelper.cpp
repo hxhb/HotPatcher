@@ -1126,23 +1126,6 @@ ITargetPlatform* UFlibHotPatcherCoreHelper::GetPlatformByName(const FString& Nam
 	}
 	return result;
 }
-#include "Commandlets/AssetRegistryGenerator.h"
-
-bool UFlibHotPatcherCoreHelper::GeneratorGlobalAssetRegistryData(ITargetPlatform* TargetPlatform, const TSet<FName>& CookedPackageNames, const TSet<FName>& IgnorePackageNames, bool
-                                                             bGenerateStreamingInstallManifest)
-{
-	bool bresult = true;
-#if GENERATE_ASSET_REGISTRY_DATA
-	TUniquePtr<class FSandboxPlatformFile> TempSandboxFile = MakeUnique<FSandboxPlatformFile>(false);
-	TUniquePtr<FAssetRegistryGenerator> RegistryGenerator = MakeUnique<FAssetRegistryGenerator>(TargetPlatform);
-	RegistryGenerator->CleanManifestDirectories();
-	RegistryGenerator->Initialize(TArray<FName>());
-	RegistryGenerator->PreSave(CookedPackageNames);
-	RegistryGenerator->BuildChunkManifest(CookedPackageNames, IgnorePackageNames, TempSandboxFile.Get(), bGenerateStreamingInstallManifest);
-	bresult = RegistryGenerator->SaveManifests(TempSandboxFile.Get());
-#endif
-	return bresult;
-}
 
 FPatchVersionDiff UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(const FExportPatchSettings& PatchSetting, const FHotPatcherVersion& Base, const FHotPatcherVersion& New)
 {
@@ -1378,8 +1361,21 @@ FChunkAssetDescribe UFlibHotPatcherCoreHelper::DiffChunkByBaseVersionWithPatchSe
 	return result;
 }
 
-bool UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(const FString& PlatformName,
-	const TArray<FAssetDetail>& AssetDetails, const FString& SavePath)
+
+bool UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(IAssetRegistry* AssetRegistry,
+                                                                const FString& PlatformName, const TArray<FAssetDetail>& AssetDetails, const FString& SavePath)
+{
+	
+	ITargetPlatform* TargetPlatform =  UFlibHotPatcherCoreHelper::GetPlatformByName(PlatformName);
+	FAssetRegistrySerializationOptions SaveOptions;
+	AssetRegistry->InitializeSerializationOptions(SaveOptions, TargetPlatform->IniPlatformName());
+	SaveOptions.bSerializeAssetRegistry = true;
+	
+	return UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(AssetRegistry,PlatformName,AssetDetails,SavePath, SaveOptions);
+}
+
+bool UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(IAssetRegistry* AssetRegistry,
+                                                                const FString& PlatformName, const TArray<FAssetDetail>& AssetDetails, const FString& SavePath, FAssetRegistrySerializationOptions SaveOptions)
 {
 	TArray<FString> PackagePaths;
 
@@ -1387,24 +1383,20 @@ bool UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(const FString& P
 	{
 		PackagePaths.AddUnique(Detail.PackagePath.ToString());
 	}
-	return UFlibHotPatcherCoreHelper::SerializeAssetRegistry(PlatformName,PackagePaths,SavePath);
+
+	return UFlibHotPatcherCoreHelper::SerializeAssetRegistry(AssetRegistry,PlatformName,PackagePaths,SavePath, SaveOptions);
 }
 
-bool UFlibHotPatcherCoreHelper::SerializeAssetRegistry(const FString& PlatformName,
-                                                         const TArray<FString>& PackagePaths, const FString& SavePath)
+bool UFlibHotPatcherCoreHelper::SerializeAssetRegistry(IAssetRegistry* AssetRegistry,
+                                                       const FString& PlatformName, const TArray<FString>& PackagePaths, const FString& SavePath, FAssetRegistrySerializationOptions SaveOptions)
 {
-	ITargetPlatform* TargetPlatform =  UFlibHotPatcherCoreHelper::GetPlatformByName(PlatformName);
+	
 	FAssetRegistryState State;
-	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
-					
-	FAssetRegistrySerializationOptions SaveOptions;
-	AssetRegistry.InitializeSerializationOptions(SaveOptions, TargetPlatform->IniPlatformName());
+	// FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	// IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
 
-	SaveOptions.bSerializeAssetRegistry = true;
-					
-	AssetRegistry.Tick(-1.0f);
-	AssetRegistry.InitializeTemporaryAssetRegistryState(State, SaveOptions, true);
+	AssetRegistry->Tick(-1.0f);
+	AssetRegistry->InitializeTemporaryAssetRegistryState(State, SaveOptions, true);
 	for(const auto& AssetPackagePath:PackagePaths)
 	{
 		if (State.GetAssetByObjectPath(FName(*AssetPackagePath)))
@@ -1960,27 +1952,27 @@ void UFlibHotPatcherCoreHelper::ImportProjectSettingsToScannerConfig(FAssetScanC
 	AssetScanConfig.ForceSkipAssets.Append(AssetCollection.NeverCookPackages);
 }
 
-void UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(TArray<FPlatformExternAssets>& PlatformExternAssets)
+void UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(TArray<FPlatformExternAssets>& PlatformExternAssets, ETargetPlatform AddToTargetPlatform)
 {
 	const auto ProjectNotAssetDirs = UFlibHotPatcherCoreHelper::GetProjectNotAssetDirConfig();
-	FPlatformExternAssets* AllPlatformExternalAssetsPtr = nullptr;
+	FPlatformExternAssets* AddToPlatformExternalAssetsPtr = nullptr;
 
 	for(auto& AddExternAssetsToPlatform:PlatformExternAssets)
 	{
-		if(AddExternAssetsToPlatform.TargetPlatform == ETargetPlatform::AllPlatforms)
+		if(AddExternAssetsToPlatform.TargetPlatform == AddToTargetPlatform)
 		{
-			AllPlatformExternalAssetsPtr = &AddExternAssetsToPlatform;
+			AddToPlatformExternalAssetsPtr = &AddExternAssetsToPlatform;
 		}
 	}
-	if(!AllPlatformExternalAssetsPtr)
+	if(!AddToPlatformExternalAssetsPtr)
 	{
 		FPlatformExternAssets AllPlatformExternalAssets;
-		AllPlatformExternalAssets.TargetPlatform = ETargetPlatform::AllPlatforms;
+		AllPlatformExternalAssets.TargetPlatform = AddToTargetPlatform;
 				
 		int32 index = PlatformExternAssets.Add(AllPlatformExternalAssets);
-		AllPlatformExternalAssetsPtr = &PlatformExternAssets[index];
+		AddToPlatformExternalAssetsPtr = &PlatformExternAssets[index];
 	}
-	AllPlatformExternalAssetsPtr->AddExternDirectoryToPak.Append(ProjectNotAssetDirs);
+	AddToPlatformExternalAssetsPtr->AddExternDirectoryToPak.Append(ProjectNotAssetDirs);
 }
 
 TArray<FExternDirectoryInfo> UFlibHotPatcherCoreHelper::GetProjectNotAssetDirConfig()
@@ -2396,4 +2388,51 @@ FString UFlibHotPatcherCoreHelper::GetSavePackageResultStr(ESavePackageResult Re
 void UFlibHotPatcherCoreHelper::AdaptorOldVersionConfig(FAssetScanConfig& ScanConfig, const FString& JsonContent)
 {
 	THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,ScanConfig);
+}
+
+
+bool UFlibHotPatcherCoreHelper::GetIniPlatformName(const FString& InPlatformName, FString& OutIniPlatformName)
+{
+	bool bStatus = false;
+	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
+	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
+	for (ITargetPlatform *TargetPlatformIns : TargetPlatforms)
+	{
+		FString PlatformName = TargetPlatformIns->PlatformName();
+		if(PlatformName.Equals(InPlatformName))
+		{
+			OutIniPlatformName = TargetPlatformIns->IniPlatformName();
+			bStatus = true;
+			break;
+		}
+	}
+	return bStatus;
+}
+
+#if GENERATE_CHUNKS_MANIFEST
+#include "Commandlets/AssetRegistryGenerator.h"
+#include "Commandlets/AssetRegistryGenerator.cpp"
+#endif
+
+bool UFlibHotPatcherCoreHelper::SerializeChunksManifests(ITargetPlatform* TargetPlatform, const TSet<FName>& CookedPackageNames, const TSet<FName>& IgnorePackageNames, bool
+															 bGenerateStreamingInstallManifest)
+{
+	bool bresult = true;
+#if GENERATE_CHUNKS_MANIFEST
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION < 26
+	TUniquePtr<class FSandboxPlatformFile> TempSandboxFile = MakeUnique<FSandboxPlatformFile>(false);
+#else
+	TUniquePtr<class FSandboxPlatformFile> TempSandboxFile = FSandboxPlatformFile::Create(false);
+#endif
+	FString PlatformSandboxDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked"),TargetPlatform->PlatformName()));
+	// Use SandboxFile to do path conversion to properly handle sandbox paths (outside of standard paths in particular).
+	TempSandboxFile->Initialize(&FPlatformFileManager::Get().GetPlatformFile(), *FString::Printf(TEXT("-sandbox=\"%s\""), *PlatformSandboxDir));
+	TUniquePtr<FAssetRegistryGenerator> RegistryGenerator = MakeUnique<FAssetRegistryGenerator>(TargetPlatform);
+	RegistryGenerator->CleanManifestDirectories();
+	RegistryGenerator->Initialize(TArray<FName>());
+	RegistryGenerator->PreSave(CookedPackageNames);
+	RegistryGenerator->BuildChunkManifest(CookedPackageNames, IgnorePackageNames, TempSandboxFile.Get(), bGenerateStreamingInstallManifest);
+	bresult = RegistryGenerator->SaveManifests(TempSandboxFile.Get());
+#endif
+	return bresult;
 }

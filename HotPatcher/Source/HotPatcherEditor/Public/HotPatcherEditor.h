@@ -27,8 +27,6 @@
 	#define InvokeTab TryInvokeTab
 #endif
 
-HOTPATCHEREDITOR_API void ReceiveOutputMsg(FProcWorkerThread* Worker,const FString& InMsg);
-
 class FToolBarBuilder;
 class FMenuBuilder;
 extern FExportPatchSettings* GPatchSettings;

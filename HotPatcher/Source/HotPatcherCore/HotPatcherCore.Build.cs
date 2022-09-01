@@ -19,8 +19,7 @@ public class HotPatcherCore : ModuleRules
 				// ... add public include paths required here ...
 			}
 			);
-				
-		
+
 		PrivateIncludePaths.AddRange(
 			new string[] {
 				// ... add other private include paths required here ...
@@ -62,7 +61,8 @@ public class HotPatcherCore : ModuleRules
 				"InputCore",
 				"CoreUObject",
 				"Engine",
-				"RenderCore"
+				"RenderCore",
+				"Sockets"
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);
@@ -132,7 +132,6 @@ public class HotPatcherCore : ModuleRules
 			});
 		}
 		AddPublicDefinitions("WITH_IO_STORE_SUPPORT", bIOStoreSupport);
-		AddPublicDefinitions("GENERATE_ASSET_REGISTRY_DATA", false);
 		AddPublicDefinitions("ENABLE_COOK_LOG", true);
 		AddPublicDefinitions("ENABLE_COOK_ENGINE_MAP", false);
 		AddPublicDefinitions("ENABLE_COOK_PLUGIN_MAP", false);
@@ -166,6 +165,17 @@ public class HotPatcherCore : ModuleRules
 			});
 		}
 		
+		bool bGenerateChunksManifest = true;
+		if (bGenerateChunksManifest)
+		{
+			AddPublicDefinitions("GENERATE_CHUNKS_MANIFEST", true);
+			PublicIncludePaths.AddRange(new string[]
+			{
+				Path.Combine(EngineDirectory,"Source/Editor/UnrealEd/Public"),
+				Path.Combine(EngineDirectory,"Source/Editor/UnrealEd/Private"),
+			});
+		}
+		
 		if (Version.MajorVersion > 4 && Version.MinorVersion > 0)
 		{
 			PublicIncludePaths.AddRange(new List<string>()
@@ -177,5 +187,13 @@ public class HotPatcherCore : ModuleRules
 				Path.Combine(ModuleDirectory,"../CookerWriterForUE5")
 			});
 		}
+		
+		PublicDefinitions.AddRange(new string[]
+		{
+			"TOOL_NAME=\"HotPatcher\"",
+			"CURRENT_VERSION_ID=76",
+			"CURRENT_PATCH_ID=2",
+			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
+		});
 	}
 }

@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
-
+#include "Resources/Version.h"
 
 #if  ENGINE_MAJOR_VERSION <=4 && ENGINE_MINOR_VERSION < 25
 #define FProperty UProperty

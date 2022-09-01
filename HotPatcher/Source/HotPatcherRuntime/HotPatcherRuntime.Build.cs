@@ -29,7 +29,11 @@ public class HotPatcherRuntime : ModuleRules
 
 		if (Target.bBuildEditor)
 		{
-			PublicDependencyModuleNames.Add("TargetPlatform");
+			PublicDependencyModuleNames.AddRange(new string[]
+			{
+				"TargetPlatform",
+				"Paper2D"
+			});
 		}
 		
 		PublicDependencyModuleNames.AddRange(
@@ -54,10 +58,13 @@ public class HotPatcherRuntime : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"Slate",
-				"SlateCore"
+				"SlateCore",
+				"HTTP",
+				"Sockets"
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);
+		
 		if (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 21)
 		{
 			PrivateDependencyModuleNames.Add("RenderCore");
