@@ -6,6 +6,7 @@
 // ENGINE HEADER
 
 #include "AssetToolsModule.h"
+#include "CommandletHelper.h"
 #include "ContentBrowserModule.h"
 #include "IContentBrowserSingleton.h"
 #include "Misc/MessageDialog.h"
@@ -19,8 +20,10 @@
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "PakFileUtilities.h"
+
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "CreatePatch/PatcherProxy.h"
+#include "Settings/ProjectPackagingSettings.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
 
 
@@ -60,18 +63,18 @@ FHotPatcherCoreModule& FHotPatcherCoreModule::Get()
 	return Module;
 }
 
+
 void FHotPatcherCoreModule::StartupModule()
 {
 	FParse::Bool(FCommandLine::Get(),TEXT("-cooklog"),GCookLog);
 	UE_LOG(LogHotPatcher,Log,TEXT("GCookLog is %s!!!"),GCookLog ? TEXT("TRUE"): TEXT("FALSE"));
 }
 
-
-
 void FHotPatcherCoreModule::ShutdownModule()
 {
-
+	
 }
+
 #undef LOCTEXT_NAMESPACE
 	
 IMPLEMENT_MODULE(FHotPatcherCoreModule, HotPatcherCore)

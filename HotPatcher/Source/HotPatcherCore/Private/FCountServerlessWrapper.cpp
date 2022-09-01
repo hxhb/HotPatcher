@@ -1,11 +1,16 @@
 #pragma once
 #include "FCountServerlessWrapper.h"
+
+#include "Misc/App.h"
+#include "Misc/Base64.h"
 #include "HttpModule.h"
 #include "SocketSubsystem.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
+#include "Resources/Version.h"
+#include "CoreGlobals.h"
 
 FProjectVersionDesc FCountServerlessWrapper::MakeCurrentProject()
 {
@@ -64,6 +69,7 @@ void FCountServerlessWrapper::RequestObjectID()
 void FCountServerlessWrapper::OnObjectIdReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess)
 {
 	TMap<FString,FString> NameIdMaps;
+	int32 Count = 0;
 	if(bSuccess)
 	{
 		FString ResponseStr = Response->GetContentAsString();
@@ -80,6 +86,10 @@ void FCountServerlessWrapper::OnObjectIdReceived(FHttpRequestPtr Request, FHttpR
 					auto ChildJsonValue =JsonValue->AsObject();
 					FString ProjectName = ChildJsonValue->GetStringField(TEXT("ProjectName"));
 					FString objectId = ChildJsonValue->GetStringField(TEXT("objectId"));
+					if(!NameIdMaps.Contains(ProjectName))
+					{
+						Count++;
+					}
 					NameIdMaps.Add(ProjectName,objectId);
 				}
 			}
@@ -88,7 +98,7 @@ void FCountServerlessWrapper::OnObjectIdReceived(FHttpRequestPtr Request, FHttpR
 		{
 			UpdateToServer(Desc,*NameIdMaps.Find(FApp::GetProjectName()));
 		}
-		else
+		else if(!!Count)
 		{
 			CreateToServer(Desc);
 		}

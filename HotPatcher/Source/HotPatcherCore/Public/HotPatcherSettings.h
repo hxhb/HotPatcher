@@ -32,6 +32,7 @@ public:
     TArray<ETargetPlatform> PlatformWhitelists;
 
     FString GetTempSavedDir()const;
+    FString GetHPLSavedDir()const;
     
     UPROPERTY(EditAnywhere, config, Category = "ConfigTemplate")
     FExportPatchSettings TempPatchSetting;
@@ -45,27 +46,32 @@ public:
     bool bPreviewTooltips = false;
     UPROPERTY(EditAnywhere, config, Category = "Preview")
     bool bExternalFilesCheck = true;
+    
 };
+
 
 FORCEINLINE FString UHotPatcherSettings::GetTempSavedDir()const
 {
     return UFlibPatchParserHelper::ReplaceMark(TempPatchSetting.SavePath.Path);
 }
-
 FORCEINLINE UHotPatcherSettings::UHotPatcherSettings(const FObjectInitializer& Initializer):Super(Initializer)
 {
-    TempPatchSetting.bByBaseVersion=false;
-    // TempPatchSetting.bStorageAssetDependencies = false;
-    TempPatchSetting.bStorageDiffAnalysisResults=false;
-    TempPatchSetting.bStorageDeletedAssetsToNewReleaseJson = false;
-    TempPatchSetting.bStorageConfig = false;
-    TempPatchSetting.bStorageNewRelease = false;
-    TempPatchSetting.bStoragePakFileInfo = false;
-    TempPatchSetting.bCookPatchAssets = true;
-    TempPatchSetting.CookShaderOptions.bSharedShaderLibrary = false;
-    TempPatchSetting.CookShaderOptions.bNativeShader = false;
-    TempPatchSetting.EncryptSettings.bUseDefaultCryptoIni = true;
-    TempPatchSetting.SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/Paks");
+    auto ResetTempSettings = [](FExportPatchSettings& InTempPatchSetting)
+    {
+        InTempPatchSetting.bByBaseVersion=false;
+        // TempPatchSetting.bStorageAssetDependencies = false;
+        InTempPatchSetting.bStorageDiffAnalysisResults=false;
+        InTempPatchSetting.bStorageDeletedAssetsToNewReleaseJson = false;
+        InTempPatchSetting.bStorageConfig = false;
+        InTempPatchSetting.bStorageNewRelease = false;
+        InTempPatchSetting.bStoragePakFileInfo = false;
+        InTempPatchSetting.bCookPatchAssets = true;
+        InTempPatchSetting.CookShaderOptions.bSharedShaderLibrary = false;
+        InTempPatchSetting.CookShaderOptions.bNativeShader = false;
+        InTempPatchSetting.EncryptSettings.bUseDefaultCryptoIni = true;
+        InTempPatchSetting.SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/Paks");
+    };
+    ResetTempSettings(TempPatchSetting);
 }
 
 #undef LOCTEXT_NAMESPACE

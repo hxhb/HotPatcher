@@ -59,7 +59,7 @@ FString UFlibHotCookerHelper::GetCookerProcFailedResultPath(const FString& BaseD
 
 FString UFlibHotCookerHelper::GetProfilingCmd()
 {
-	return FString::Printf(TEXT("-trace=cpu,memory,loadtime -statnamedevents implies -llm"));
+	return FString::Printf(TEXT("-tracehost=127.0.0.1 -trace=cpu,memory,loadtime -statnamedevents implies -llm"));
 }
 
 TSharedPtr<FCookShaderCollectionProxy> UFlibHotCookerHelper::CreateCookShaderCollectionProxyByPlatform(
@@ -95,4 +95,20 @@ TSharedPtr<FCookShaderCollectionProxy> UFlibHotCookerHelper::CreateCookShaderCol
 			));
 	
 	return CookShaderCollection;
+}
+
+bool UFlibHotCookerHelper::IsAppleMetalPlatform(ITargetPlatform* TargetPlatform)
+{
+	SCOPED_NAMED_EVENT_TEXT("IsAppleMetalPlatform",FColor::Red);
+	bool bIsMatched = false;
+	TArray<FString> ApplePlatforms = {TEXT("IOS"),TEXT("Mac"),TEXT("TVOS")};
+	for(const auto& Platform:ApplePlatforms)
+	{
+		if(TargetPlatform->PlatformName().StartsWith(Platform,ESearchCase::IgnoreCase))
+		{
+			bIsMatched = true;
+			break;
+		}
+	}
+	return bIsMatched;
 }

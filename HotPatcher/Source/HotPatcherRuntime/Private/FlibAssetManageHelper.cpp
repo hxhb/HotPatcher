@@ -390,6 +390,14 @@ bool UFlibAssetManageHelper::GetAssetsData(const TArray<FString>& InFilterPaths,
 	for(const auto& FilterPackageName: InFilterPaths)
 	{
 		FString ValidFilterPackageName = FilterPackageName;
+
+#if ENGINE_MAJOR_VERSION > 4
+		if(ValidFilterPackageName.StartsWith(TEXT("/All/"),ESearchCase::IgnoreCase))
+		{
+			ValidFilterPackageName.RemoveFromStart(TEXT("/All"),ESearchCase::IgnoreCase);
+		}
+#endif
+		
 		while (ValidFilterPackageName.EndsWith("/"))
 		{
 			ValidFilterPackageName.RemoveAt(ValidFilterPackageName.Len() - 1);
@@ -498,7 +506,7 @@ bool UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(const FAssetData& InAs
 #endif
 
 	OutAssetDetail = AssetDetail;
-	return !OutAssetDetail.AssetType.IsNone() && !OutAssetDetail.AssetType.IsNone() && !OutAssetDetail.AssetType.IsNone();
+	return OutAssetDetail.IsValid();
 }
 
 bool UFlibAssetManageHelper::GetSpecifyAssetDetail(const FString& InLongPackageName, FAssetDetail& OutAssetDetail)
@@ -674,7 +682,7 @@ SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAllInValidAssetInProject",FC
 	}
 }
 
-const FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(const FString& InPackageName)
+FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(const FString& InPackageName)
 {
 	FAssetPackageData* AssetPackageData = nullptr;
 	if (InPackageName.IsEmpty())
@@ -705,13 +713,24 @@ const FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(con
 	return NULL;
 }
 
-bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(const FString& InProjectAbsDir, const FString& InPlatformName, const FString& InLongPackageName, TArray<FString>& OutCookedAssetPath, TArray<FString>& OutCookedAssetRelativePath)
+bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(
+	const FString& InProjectAbsDir,
+	const FString& InPlatformName,
+	const FString& InLongPackageName,
+	TArray<FString>& OutCookedAssetPath,
+	TArray<FString>& OutCookedAssetRelativePath,
+	const FString& OverrideCookedDir
+	)
 {
 	if (!FPaths::DirectoryExists(InProjectAbsDir)/* || !IsValidPlatform(InPlatformName)*/)
 		return false;
 
 	FString EngineAbsDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
 	FString CookedRootDir = FPaths::Combine(InProjectAbsDir, TEXT("Saved/Cooked"), InPlatformName);
+	if(!OverrideCookedDir.IsEmpty() && FPaths::DirectoryExists(OverrideCookedDir))
+	{
+		CookedRootDir = FPaths::Combine(OverrideCookedDir,InPlatformName);
+	}
 	FString ProjectName = FApp::GetProjectName();
 	// FString AssetPackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InLongPackageName);
 	FString AssetAbsPath = UFlibAssetManageHelper::LongPackageNameToFilename(InLongPackageName);
@@ -774,7 +793,8 @@ bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(const FString& InPr
 
 
 bool UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
-	const FString& InProjectDir, 
+	const FString& InProjectDir,
+	const FString& OverrideCookedDir,
 	const FString& InPlatformName, 
 	const FAssetDependenciesInfo& InAssetDependencies, 
 	//const TArray<FString> &InCookParams, 
@@ -800,7 +820,7 @@ bool UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 		for (const auto& AssetLongPackageName : AssetList)
 		{
 			TArray<FString> FinalCookedCommand;
-			if (UFlibAssetManageHelper::MakePakCommandFromLongPackageName(InProjectDir, InPlatformName, AssetLongPackageName, /*InCookParams, */FinalCookedCommand,InReceivePakCommand,IsIoStoreAsset))
+			if (UFlibAssetManageHelper::MakePakCommandFromLongPackageName(InProjectDir, OverrideCookedDir,InPlatformName, AssetLongPackageName, /*InCookParams, */FinalCookedCommand,InReceivePakCommand,IsIoStoreAsset))
 			{
 				OutCookCommand.Append(FinalCookedCommand);
 			}
@@ -811,7 +831,8 @@ bool UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 
 
 bool UFlibAssetManageHelper::MakePakCommandFromLongPackageName(
-	const FString& InProjectDir, 
+	const FString& InProjectDir,
+	const FString& OverrideCookedDir,
 	const FString& InPlatformName, 
 	const FString& InAssetLongPackageName, 
 	//const TArray<FString> &InCookParams, 
@@ -827,7 +848,7 @@ bool UFlibAssetManageHelper::MakePakCommandFromLongPackageName(
 	TArray<FString> CookedAssetRelativePath;
 	TArray<FString> FinalCookedPakCommand;
 	TArray<FString> FinalCookedIoStoreCommand;
-	if (UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(InProjectDir, InPlatformName, InAssetLongPackageName, CookedAssetAbsPath, CookedAssetRelativePath))
+	if (UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(InProjectDir, InPlatformName, InAssetLongPackageName, CookedAssetAbsPath, CookedAssetRelativePath,OverrideCookedDir))
 	{
 		if (UFlibAssetManageHelper::CombineCookedAssetCommand(CookedAssetAbsPath, CookedAssetRelativePath,/* InCookParams,*/ FinalCookedPakCommand,FinalCookedIoStoreCommand,IsIoStoreAsset))
 		{
@@ -1069,7 +1090,7 @@ FString UFlibAssetManageHelper::LongPackageNameToPackagePath(const FString& InLo
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::LongPackageNameToPackagePath",FColor::Red);
 	if(InLongPackageName.Contains(TEXT(".")))
 	{
-		UE_LOG(LogHotPatcher,Warning,TEXT("LongPackageNameToPackagePath %s alway is PackagePath!"),*InLongPackageName);
+		// UE_LOG(LogHotPatcher,Warning,TEXT("LongPackageNameToPackagePath %s alway is PackagePath!"),*InLongPackageName);
 		return InLongPackageName;
 	}
 	FString AssetName;
@@ -1135,7 +1156,7 @@ void UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(FAssetDepe
 	ExcludeEditorContent(AssetDependencies.AssetsDependenciesMap);
 }
 
-TArray<FString> UFlibAssetManageHelper::DirectoryPathsToStrings(const TArray<FDirectoryPath>& DirectoryPaths)
+TArray<FString> UFlibAssetManageHelper::DirectoriesToStrings(const TArray<FDirectoryPath>& DirectoryPaths)
 {
 	TArray<FString> Path;
 	for(const auto& DirPath:DirectoryPaths)
@@ -1155,14 +1176,42 @@ TArray<FString> UFlibAssetManageHelper::SoftObjectPathsToStrings(const TArray<FS
 	return result;
 }
 
+TSet<FName> UFlibAssetManageHelper::GetClassesNames(const TArray<UClass*> CLasses)
+{
+	TSet<FName> ForceSkipTypes;
+	for(const auto& Classes:CLasses)
+	{
+		ForceSkipTypes.Add(*Classes->GetName());
+	}
+	return ForceSkipTypes;
+}
+
 FString UFlibAssetManageHelper::NormalizeContentDir(const FString& Dir)
 {
 	FString result = Dir;
+
+#if ENGINE_MAJOR_VERSION > 4
+	if(result.StartsWith(TEXT("/All/"),ESearchCase::IgnoreCase))
+	{
+		result.RemoveFromStart(TEXT("/All"),ESearchCase::IgnoreCase);
+	}
+#endif
 	if(!Dir.EndsWith(TEXT("/")))
 	{
-		result = FString::Printf(TEXT("%s/"),*Dir);
+		result = FString::Printf(TEXT("%s/"),*result);
 	}
+
 	return result;
+}
+
+TArray<FString> UFlibAssetManageHelper::NormalizeContentDirs(const TArray<FString>& Dirs)
+{
+	TArray<FString> NormalizedDirs;
+	for(const auto& Dir:Dirs)
+	{
+		NormalizedDirs.AddUnique(UFlibAssetManageHelper::NormalizeContentDir(Dir));
+	}
+	return NormalizedDirs;
 }
 
 

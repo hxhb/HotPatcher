@@ -29,6 +29,7 @@ The series of UE4 hot update articles I wrote can be used as a reference for eng
 - [UE Resource Management: Engine Packaging Resource Analysis](https://imzlp.com/posts/22570/)
 - [Shader compression scheme based on ZSTD dictionary](https://imzlp.com/posts/24725/)
 - [Runtime reorganization scheme for Pak in Unreal Engine](https://imzlp.com/posts/12188/)
+- [A Flexible and Non-Intrusive Basic Package Splitting Scheme](https://imzlp.com/posts/24350/)
 
 **Resource management framework based on HotPatcher**
 

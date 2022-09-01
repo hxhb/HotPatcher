@@ -115,7 +115,7 @@ public: // base func
     bool IsTickable() const override;
     
 public: // core interface
-    void MakeCookQueue(FCookCluster& InCluser);
+    int32 MakeCookQueue(FCookCluster& InCluser);
     void PreGeneratePlatformData(const FCookCluster& CookCluster);
     void CleanClusterCachedPlatformData(const FCookCluster& CookCluster);
     void ExecCookCluster(const FCookCluster& Cluster);
@@ -185,4 +185,8 @@ private: // worker flow control
     TSharedPtr<FThreadWorker> WaitThreadWorker;
     bool IsAlready()const{ return bAlready; }
     bool bAlready = false;
+
+private:
+    int32 ClusterCount = 0;
+    int32 CookedClusterCount = 0;
 };

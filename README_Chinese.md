@@ -32,6 +32,7 @@ English Document:[README.md](https://github.com/hxhb/HotPatcher/edit/master/READ
 - [UE 资源管理：引擎打包资源分析](https://imzlp.com/posts/22570/)
 - [基于ZSTD字典的Shader压缩方案](https://imzlp.com/posts/24725/)
 - [虚幻引擎中 Pak 的运行时重组方案](https://imzlp.com/posts/12188/)
+- [一种灵活与非侵入式的基础包拆分方案](https://imzlp.com/posts/24350/)
 
 **基于HotPatcher的资源管理框架**
 

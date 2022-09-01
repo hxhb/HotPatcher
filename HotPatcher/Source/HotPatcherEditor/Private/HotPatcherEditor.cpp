@@ -39,9 +39,6 @@
 #include "CreatePatch/AssetActions/AssetTypeActions_PrimaryAssetLabel.h"
 #endif
 
-FExportPatchSettings* GPatchSettings = nullptr;
-FExportReleaseSettings* GReleaseSettings = nullptr;
-
 static const FName HotPatcherTabName("HotPatcher");
 
 #define LOCTEXT_NAMESPACE "FHotPatcherEditorModule"
@@ -128,6 +125,7 @@ void FHotPatcherEditorModule::StartupModule()
 	CreateRootMenu();
 
 	FAssetToolsModule::GetModule().Get().RegisterAssetTypeActions(MakeShareable(new FAssetTypeActions_PrimaryAssetLabel));
+
 #endif
 }
 
@@ -564,24 +562,27 @@ void FHotPatcherEditorModule::CookAndPakByAssetsAndFilters(TArray<FPatcherSpecif
 	FString Name = FDateTime::Now().ToString();
 	PatchSettings = MakeShareable(new FExportPatchSettings);
 	*PatchSettings = MakeTempPatchSettings(Name,IncludePaths,IncludeAssets,TArray<FPlatformExternAssets>{},Platforms,true);
+	CookAndPakByPatchSettings(PatchSettings,bForceStandalone);
+}
 
-	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-	PatcherProxy->AddToRoot();
-	Proxys.Add(PatcherProxy);
-	PatcherProxy->Init(PatchSettings.Get());
-
-	if(bForceStandalone || PatchSettings->IsStandaloneMode())
+void FHotPatcherEditorModule::CookAndPakByPatchSettings(TSharedPtr<FExportPatchSettings> InPatchSettings,bool bForceStandalone)
+{
+	if(bForceStandalone || InPatchSettings->IsStandaloneMode())
 	{
 		FString CurrentConfig;
-		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*PatchSettings,CurrentConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*InPatchSettings.Get(),CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("PatchConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
-		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*PatchSettings->GetCombinedAdditionalCommandletArgs());
-		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*PatchSettings->VersionId,*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);
-		RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,FString::Printf(TEXT("Mission: %s"),*PatchSettings->VersionId));
+		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*InPatchSettings->GetCombinedAdditionalCommandletArgs());
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*InPatchSettings->VersionId,*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);
+		RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,FString::Printf(TEXT("Mission: %s"),*InPatchSettings->VersionId));
 	}
 	else
 	{
+		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
+		PatcherProxy->AddToRoot();
+		Proxys.Add(PatcherProxy);
+		PatcherProxy->Init(InPatchSettings.Get());
 		PatcherProxy->DoExport();
 	}
 }

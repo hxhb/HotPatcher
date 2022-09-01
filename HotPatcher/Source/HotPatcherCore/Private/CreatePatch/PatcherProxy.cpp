@@ -31,6 +31,7 @@
 #include "Cooker/MultiCooker/FlibHotCookerHelper.h"
 #include "Cooker/MultiCooker/FSingleCookerSettings.h"
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
+#include "DependenciesParser/FDefaultAssetDependenciesParser.h"
 #include "Misc/DataDrivenPlatformInfoRegistry.h"
 #include "Serialization/ArrayWriter.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
@@ -151,11 +152,20 @@ namespace PatchWorker
 		{
 			if(Context.GetSettingObject()->IsPackageTracker() && PackageTrackerByDiff.IsValid())
 			{
+				TArray<FString> IgnoreFilters  = UFlibAssetManageHelper::DirectoriesToStrings(Context.GetSettingObject()->GetAssetIgnoreFilters());
+				TArray<FString> ForceSkipFilters = UFlibAssetManageHelper::DirectoriesToStrings(Context.GetSettingObject()->GetForceSkipContentRules());
+				TArray<FString> ForceSkipAssets = UFlibAssetManageHelper::SoftObjectPathsToStrings(Context.GetSettingObject()->GetForceSkipAssets());
+				TSet<FName> ForceSkipTypes = UFlibAssetManageHelper::GetClassesNames(Context.GetSettingObject()->GetForceSkipClasses());
+				
 				TArray<FAssetDetail> TrackerAssetDetails;
 				for(const auto& TrackPackage:PackageTrackerByDiff->GetTrackResult())
 				{
-					TrackerAssetDetails.AddUnique(TrackPackage.Value);
-					Context.AddAsset(ChunkInfo.ChunkName,TrackPackage.Value);
+					bool bSkiped = FAssetDependenciesParser::IsForceSkipAsset(TrackPackage.Key.ToString(),ForceSkipTypes,IgnoreFilters,ForceSkipFilters,ForceSkipAssets);
+					if(!bSkiped)
+					{
+						TrackerAssetDetails.AddUnique(TrackPackage.Value);
+						Context.AddAsset(ChunkInfo.ChunkName,TrackPackage.Value);
+					}
 				}
 			}
 		}
@@ -173,7 +183,11 @@ void UPatcherProxy::Init(FPatcherEntitySettingBase* InSetting)
 {
 	Super::Init(InSetting);
 #if WITH_PACKAGE_CONTEXT
-	PlatformSavePackageContexts = UFlibHotPatcherCoreHelper::CreatePlatformsPackageContexts(GetSettingObject()->GetPakTargetPlatforms(),GetSettingObject()->IoStoreSettings.bIoStore);
+	PlatformSavePackageContexts = UFlibHotPatcherCoreHelper::CreatePlatformsPackageContexts(
+		GetSettingObject()->GetPakTargetPlatforms(),
+		GetSettingObject()->IoStoreSettings.bIoStore,
+		GetSettingObject()->GetStorageCookedDir()
+		);
 #endif
 	UFlibAssetManageHelper::UpdateAssetMangerDatabase(true);
 	GetSettingObject()->Init();
@@ -362,7 +376,10 @@ namespace PatchWorker
 		bool result = true;
 		TimeRecorder CheckRequireTR(TEXT("Check Patch Require"));
 		FString ReceiveMsg;
-		if (!Context.GetSettingObject()->IsCookPatchAssets() && !UFlibHotPatcherCoreHelper::CheckPatchRequire(Context.VersionDiff,Context.GetSettingObject()->GetPakTargetPlatformNames(), ReceiveMsg))
+		if (!Context.GetSettingObject()->IsCookPatchAssets() &&
+			!UFlibHotPatcherCoreHelper::CheckPatchRequire(
+			Context.GetSettingObject()->GetStorageCookedDir(),
+			Context.VersionDiff,Context.GetSettingObject()->GetPakTargetPlatformNames(), ReceiveMsg))
 		{
 			Context.OnShowMsg.Broadcast(ReceiveMsg);
 			result = false;
@@ -591,7 +608,7 @@ namespace PatchWorker
 						// for current impl arch
 						EmptySetting.bForceCookInOneFrame = true;
 						EmptySetting.bDisplayConfig = false;
-						EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
+						EmptySetting.StorageCookedDir = Context.GetSettingObject()->GetStorageCookedDir();//FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 						EmptySetting.StorageMetadataDir = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,TEXT("Metadatas"),Chunk.ChunkName);
 #if WITH_PACKAGE_CONTEXT
 						EmptySetting.bOverrideSavePackageContext = true;
@@ -813,7 +830,7 @@ namespace PatchWorker
 					PatchedPakCommand.AddUnique(PakAssetPath);
 					continue;
 				}
-				FString ProjectCookedDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
+				FString ProjectCookedDir = Context.GetSettingObject()->GetStorageCookedDir();// FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked")));
 				FString OldAsset = PakAssetInfo.AssetAbsPath.Replace(
 					*ProjectCookedDir,
 					*OldCookedDir,ESearchCase::CaseSensitive);
@@ -955,7 +972,7 @@ namespace PatchWorker
 				if (!ChunkPakListCommands.Num())
 				{
 					FString Msg = FString::Printf(TEXT("Chunk:%s not contain any file!!!"), *Chunk.ChunkName);
-					UE_LOG(LogHotPatcher, Error, TEXT("%s"),*Msg);
+					UE_LOG(LogHotPatcher, Warning, TEXT("%s"),*Msg);
 					Context.OnShowMsg.Broadcast(Msg);
 					continue;
 				}
@@ -971,7 +988,7 @@ namespace PatchWorker
 					const FString ChunkPakName = UFlibHotPatcherCoreHelper::MakePakShortName(Context.CurrentVersion,Chunk,PlatformName,Context.GetSettingObject()->GetPakNameRegular());
 					SinglePakForChunk.ChunkStoreName = ChunkPakName;
 					SinglePakForChunk.StorageDirectory = ChunkSaveBasePath;
-					Chunk.PakFileProxys.Add(SinglePakForChunk);
+					Chunk.GetPakFileProxys().Add(SinglePakForChunk);
 				}
 				else
 				{
@@ -999,7 +1016,7 @@ namespace PatchWorker
 						}
 						CurrentPak.ChunkStoreName = Path;
 						CurrentPak.StorageDirectory = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName);
-						Chunk.PakFileProxys.Add(CurrentPak);
+						Chunk.GetPakFileProxys().Add(CurrentPak);
 					}
 				}
 			}
@@ -1033,7 +1050,7 @@ namespace PatchWorker
 			// TMap<FString,TArray<FPakFileInfo>>& PakFilesInfoMap = Context.PakFilesInfoMap;
 				
 			// 创建chunk的pak文件
-			for (const auto& PakFileProxy : Chunk.PakFileProxys)
+			for (const auto& PakFileProxy : Chunk.GetPakFileProxys())
 			{
 				FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(PakFileProxy.Platform);
 				TArray<FString> UnrealPakCommandletOptions;
@@ -1104,7 +1121,7 @@ namespace PatchWorker
 							}
 						}//);
 							
-						if (!Chunk.bStorageUnrealPakList)
+						if (!(Chunk.bStorageUnrealPakList && Chunk.bOutputDebugInfo))
 						{
 							IFileManager::Get().Delete(*PakListFile);
 						}
@@ -1143,14 +1160,14 @@ namespace PatchWorker
 			}
 
 			TArray<FReplaceText> ReplacePakListTexts = Context.GetSettingObject()->GetReplacePakListTexts();
-			if(!Chunk.PakFileProxys.Num())
+			if(!Chunk.GetPakFileProxys().Num())
 			{
 				UE_LOG(LogHotPatcher,Error,TEXT("Chunk %s Not Contain Any valid PakFileProxy!!!"),*Chunk.ChunkName);
 				continue;
 			}
 			// 创建chunk的Io Store文件
 			TArray<FString> IoStoreCommands;
-			for (const auto& PakFileProxy : Chunk.PakFileProxys)
+			for (const auto& PakFileProxy : Chunk.GetPakFileProxys())
 			{
 				if(!IoStoreSettings.PlatformContainers.Contains(PakFileProxy.Platform))
 					return true;
@@ -1200,7 +1217,7 @@ namespace PatchWorker
 #else
 				FString OutputDirectoryCmd = TEXT("");
 #endif
-				FString IoStoreCommandsFile = FPaths::Combine(Chunk.PakFileProxys[0].StorageDirectory,FString::Printf(TEXT("%s_IoStoreCommands.txt"),*Chunk.ChunkName));
+				FString IoStoreCommandsFile = FPaths::Combine(Chunk.GetPakFileProxys()[0].StorageDirectory,FString::Printf(TEXT("%s_IoStoreCommands.txt"),*Chunk.ChunkName));
 					
 				FString PlatformGlocalContainers;
 				// FString BasePacakgeRootDir = FPaths::ConvertRelativePathToFull(UFlibPatchParserHelper::ReplaceMarkPath(Context.GetSettingObject()->GetIoStoreSettings().PlatformContainers.Find(PakFileProxy.Platform)->BasePackageStagedRootDir.Path));
@@ -1214,7 +1231,7 @@ namespace PatchWorker
 					PlatformGlocalContainers = GlobalUtocFile;
 				}
 					
-				FString PlatformCookDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(),TEXT("Saved/Cooked/"),PlatformName));
+				FString PlatformCookDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(Context.GetSettingObject()->GetStorageCookedDir(),PlatformName));
 
 				if(FPaths::FileExists(PlatformGlocalContainers))
 				{

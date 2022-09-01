@@ -106,7 +106,7 @@ TArray<FString> FHotPatcherSettingBase::GetAllSkipContents() const
 
 {
 	TArray<FString> AllSkipContents;;
-	AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(GetForceSkipContentRules()));
+	AllSkipContents.Append(UFlibAssetManageHelper::DirectoriesToStrings(GetForceSkipContentRules()));
 	AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(GetForceSkipAssets()));
 	return AllSkipContents;
 }

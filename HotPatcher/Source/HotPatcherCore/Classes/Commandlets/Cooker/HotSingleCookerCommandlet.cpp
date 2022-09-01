@@ -40,13 +40,13 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*ExportSingleCookerSetting,FinalConfig);
 	}
 	
-	if(IsRunningCommandlet() && ExportSingleCookerSetting->bPackageTracker && ExportSingleCookerSetting->bCookPackageTrackerAssets)
-	{
-		SCOPED_NAMED_EVENT_TEXT("SearchAllAssets",FColor::Red);
-		// load asset registry
-		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-		AssetRegistryModule.Get().SearchAllAssets(true);
-	}
+	// if(IsRunningCommandlet() && ExportSingleCookerSetting->bPackageTracker && ExportSingleCookerSetting->bCookPackageTrackerAssets)
+	// {
+	// 	SCOPED_NAMED_EVENT_TEXT("SearchAllAssets",FColor::Red);
+	// 	// load asset registry
+	// 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+	// 	AssetRegistryModule.Get().SearchAllAssets(true);
+	// }
 	
 	UE_LOG(LogHotSingleCookerCommandlet, Display, TEXT("Cooker %s Id %d,Assets Num %d"), *ExportSingleCookerSetting->MissionName,ExportSingleCookerSetting->MissionID,ExportSingleCookerSetting->CookAssets.Num());
 

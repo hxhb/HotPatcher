@@ -7,3 +7,6 @@
 [submodule "Mods/libzstd"]
 	path = Mods/libzstd
 	url = git@github.com:hxhb/ue-zstd.git
+[submodule "Mods/HotChunker"]
+	path = Mods/HotChunker
+	url = git@github.com:hxhb/HotChunker.git

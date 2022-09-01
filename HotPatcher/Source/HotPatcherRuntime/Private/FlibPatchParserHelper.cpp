@@ -931,37 +931,20 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 	FChunkAssetDescribe ChunkAssetDescribe;
 	// Collect Chunk Assets
 	{
-
-		auto GetAssetFilterPaths = [](const TArray<FDirectoryPath>& InFilters)->TArray<FString>
-		{
-			TArray<FString> Result;
-			for (const auto& Filter : InFilters)
-			{
-				if (!Filter.Path.IsEmpty())
-				{
-					FString FinalFilter = Filter.Path;
-					if(!Filter.Path.EndsWith(TEXT("/")))
-					{
-						FinalFilter = FString::Printf(TEXT("%s/"),*FinalFilter);
-					}
-					Result.AddUnique(FinalFilter);
-				}
-			}
-			return Result;
-		};
+		
 		FAssetDependenciesInfo SpecifyDependAssets;
 		
 		FAssetDependenciesParser Parser;
 		FAssetDependencies Conf;
-		
-		TArray<FString> AssetFilterPaths = GetAssetFilterPaths(Chunk.AssetIncludeFilters);
-		TArray<FString> AsserIgnoreFilterPaths = GetAssetFilterPaths(Chunk.AssetIgnoreFilters);
+		TArray<FString> AssetFilterPaths = UFlibAssetManageHelper::DirectoriesToStrings(Chunk.AssetIncludeFilters);
 		Conf.IncludeFilters = AssetFilterPaths;
-		Conf.IgnoreFilters = AsserIgnoreFilterPaths;
+		Conf.IgnoreFilters = UFlibAssetManageHelper::DirectoriesToStrings(Chunk.AssetIgnoreFilters);
+		Conf.ForceSkipPackageNames = UFlibAssetManageHelper::SoftObjectPathsToStrings(Chunk.ForceSkipAssets);
 		Conf.InIncludeSpecifyAsset = Chunk.IncludeSpecifyAssets;
+		Conf.AssetRegistryDependencyTypes = Chunk.AssetRegistryDependencyTypes;
 		Conf.AnalysicFilterDependencies = Chunk.bAnalysisFilterDependencies;
-		Conf.ForceSkipContents = GetAssetFilterPaths(Chunk.ForceSkipContentRules);
-		Conf.ForceSkipContents.Append(GetAssetFilterPaths(PatcheSettings->GetAssetScanConfig().ForceSkipContentRules));
+		Conf.ForceSkipContents = UFlibAssetManageHelper::DirectoriesToStrings(Chunk.ForceSkipContentRules);
+		Conf.ForceSkipContents.Append(UFlibAssetManageHelper::DirectoriesToStrings(PatcheSettings->GetAssetScanConfig().ForceSkipContentRules));
 		
 		auto AddForceSkipAssets = [&Conf](const TArray<FSoftObjectPath>& Assets)
 		{
@@ -985,13 +968,13 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 		
 		Parser.Parse(Conf);
 		TSet<FName> AssetLongPackageNames = Parser.GetrParseResults();
-		
-		// AssetFilterPaths.Append(GetSpecifyAssets(Chunk.IncludeSpecifyAssets));
-		// AssetFilterPaths.Append(SpecifyDependAssets.GetAssetLongPackageNames());
+
 		for(FName LongPackageName:AssetLongPackageNames)
 		{
 			if(LongPackageName.IsNone())
+			{
 				continue;
+			}
 			AssetFilterPaths.AddUnique(LongPackageName.ToString());
 		}
 
@@ -1044,6 +1027,7 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 			}
 			return ResultAssetDependInfos;
 		};
+		
 		ChunkAssetDescribe.AddAssets = CollectChunkAssets(AddAssetsRef, AssetFilterPaths);
 		ChunkAssetDescribe.ModifyAssets = CollectChunkAssets(ModifyAssetsRef, AssetFilterPaths);
 		ChunkAssetDescribe.Assets = UFlibAssetManageHelper::CombineAssetDependencies(ChunkAssetDescribe.AddAssets, ChunkAssetDescribe.ModifyAssets);
@@ -1215,6 +1199,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 			TArray<FString> AssetsPakCommands;
 			UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 				ProjectDir,
+				PatcheSettings->GetStorageCookedDir(),
 				PlatformName,
 				ChunkAssetsDescrible.AddAssets,
 				// PakOptions,
@@ -1225,6 +1210,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 			AssetsPakCommands.Empty();
 			UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 				ProjectDir,
+				PatcheSettings->GetStorageCookedDir(),
 				PlatformName,
 				ChunkAssetsDescrible.ModifyAssets,
 				// PakOptions,
@@ -1283,7 +1269,7 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 	TArray<FString> AllSkipContents;;
 	if(InChunkInfo.bForceSkipContent)
 	{
-		AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(InChunkInfo.ForceSkipContentRules));
+		AllSkipContents.Append(UFlibAssetManageHelper::DirectoriesToStrings(InChunkInfo.ForceSkipContentRules));
 		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(InChunkInfo.ForceSkipAssets));
 	}
 
@@ -1351,22 +1337,25 @@ void UFlibPatchParserHelper::RunAssetScanner(FAssetScanConfig ScanConfig,FHotPat
 	};
 	
 	FAssetDependencies AssetConfig;
-	AssetConfig.IncludeFilters = ExportVersion.IncludeFilter;
-	AssetConfig.IgnoreFilters = ExportVersion.IgnoreFilter;
+	AssetConfig.IncludeFilters = UFlibAssetManageHelper::NormalizeContentDirs(ExportVersion.IncludeFilter);
+	AssetConfig.IgnoreFilters = UFlibAssetManageHelper::NormalizeContentDirs(ExportVersion.IgnoreFilter);
+	
 	AssetConfig.AssetRegistryDependencyTypes = ScanConfig.AssetRegistryDependencyTypes;
 	AssetConfig.InIncludeSpecifyAsset = ScanConfig.IncludeSpecifyAssets;
 
-	TArray<FString> AllSkipContents;;
+	
 	if(ScanConfig.bForceSkipContent)
 	{
-		AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(ScanConfig.ForceSkipContentRules));
-		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(ScanConfig.ForceSkipAssets));
+		TArray<FString> AllSkipContents;;
+		AllSkipContents.Append(UFlibAssetManageHelper::DirectoriesToStrings(ScanConfig.ForceSkipContentRules));
 		for(auto Class:ScanConfig.ForceSkipClasses)
 		{
 			IgnoreTypes.Add(*Class->GetName());
 		}
+		AssetConfig.ForceSkipContents = UFlibAssetManageHelper::NormalizeContentDirs(AllSkipContents);
+		AssetConfig.ForceSkipPackageNames = UFlibAssetManageHelper::SoftObjectPathsToStrings(ScanConfig.ForceSkipAssets);
 	}
-	AssetConfig.ForceSkipContents = AllSkipContents;
+	
 	AssetConfig.bRedirector = true;
 	AssetConfig.AnalysicFilterDependencies = ScanConfig.bAnalysisFilterDependencies;
 	AssetConfig.IncludeHasRefAssetsOnly = ScanConfig.bIncludeHasRefAssetsOnly;
@@ -1636,9 +1625,11 @@ FString UFlibPatchParserHelper::ReplaceMark(const FString& Src)
 			result = result.Replace(*Key,*FPaths::ConvertRelativePathToFull(*MarkMap.Find(Key)));
 		}
 	}
-	
+	FPaths::NormalizeFilename(result);
+	FPaths::CollapseRelativeDirectories(result);
 	return result;
 }
+
 FString UFlibPatchParserHelper::ReplaceMarkPath(const FString& Src)
 {
 	FString result = UFlibPatchParserHelper::ReplaceMark(Src);
@@ -2095,4 +2086,3 @@ FString UFlibPatchParserHelper::FileHash(const FString& Filename, EHashCalculato
 	}
 	return HashValue;
 }
-
