@@ -2432,6 +2432,14 @@ bool UFlibHotPatcherCoreHelper::SerializeChunksManifests(ITargetPlatform* Target
 	RegistryGenerator->Initialize(TArray<FName>());
 	RegistryGenerator->PreSave(CookedPackageNames);
 	RegistryGenerator->BuildChunkManifest(CookedPackageNames, IgnorePackageNames, TempSandboxFile.Get(), bGenerateStreamingInstallManifest);
+
+#if ENGINE_MAJOR_VERSION > 4 || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 26)
+	FString TempSandboxManifestDir = FPaths::Combine(PlatformSandboxDir,FApp::GetProjectName(),TEXT("Metadata") , TEXT("ChunkManifest"));
+	if(!FPaths::DirectoryExists(TempSandboxManifestDir))
+	{
+		IFileManager::Get().MakeDirectory(*TempSandboxManifestDir, true);
+	}
+#endif
 	bresult = RegistryGenerator->SaveManifests(TempSandboxFile.Get());
 #endif
 	return bresult;
