@@ -101,8 +101,10 @@ namespace ReleaseWorker
 			{
 				AllConfigPlatformSet.Add(PlatformsPakListFile.TargetPlatform);
 			}
-
-			AddProjectDirToTarget = AllConfigPlatformSet.Num() > 1 ? ETargetPlatform::AllPlatforms : AllConfigPlatformSet.Array()[0];
+			if(AllConfigPlatformSet.Num())
+			{
+				AddProjectDirToTarget = AllConfigPlatformSet.Num() > 1 ? ETargetPlatform::AllPlatforms : AllConfigPlatformSet.Array()[0];
+			}
 			
 			UFlibHotPatcherCoreHelper::ImportProjectNotAssetDir(Context.GetSettingObject()->GetAddExternAssetsToPlatform(),AddProjectDirToTarget);
 		}
