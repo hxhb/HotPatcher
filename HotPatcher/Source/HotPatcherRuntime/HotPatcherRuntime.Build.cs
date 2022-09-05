@@ -89,7 +89,7 @@ public class HotPatcherRuntime : ModuleRules
 		bool bEnableAssetDependenciesDebugLog = true;
 		AddPublicDefinitions("ASSET_DEPENDENCIES_DEBUG_LOG", bEnableAssetDependenciesDebugLog);
 		
-		bool bCustomAssetGUID = false;
+		bool bCustomAssetGUID = true;
 		if(bCustomAssetGUID)
 		{
 			PublicDefinitions.Add("CUSTOM_ASSET_GUID");	

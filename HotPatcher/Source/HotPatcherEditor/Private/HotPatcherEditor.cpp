@@ -105,7 +105,12 @@ void FHotPatcherEditorModule::StartupModule()
 #ifndef DISABLE_PLUGIN_TOOLBAR_MENU
 		// settings
 	 	TSharedPtr<FExtender> ToolbarExtender = MakeShareable(new FExtender);
-	 	ToolbarExtender->AddToolBarExtension("Settings", EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddToolbarExtension));
+#if ENGINE_MAJOR_VERSION > 4
+		FName ExtensionHook = "Play";
+#else
+		FName ExtensionHook = "Settings";
+#endif
+	 	ToolbarExtender->AddToolBarExtension(ExtensionHook, EExtensionHook::After, PluginCommands, FToolBarExtensionDelegate::CreateRaw(this, &FHotPatcherEditorModule::AddToolbarExtension));
 		
 	 	LevelEditorModule.GetToolBarExtensibilityManager()->AddExtender(ToolbarExtender);
 #endif

@@ -99,7 +99,7 @@ public class HotPatcherEditor : ModuleRules
 
 		bool bEnablePackageContext = true;
 		AddPublicDefinitions("WITH_PACKAGE_CONTEXT", (Version.MajorVersion > 4 || Version.MinorVersion > 23) && bEnablePackageContext);
-		if (Version.MajorVersion > 4 || Version.MajorVersion > 26)
+		if (Version.MajorVersion > 4 || Version.MinorVersion > 26)
 		{
 			PublicDependencyModuleNames.AddRange(new string[]
 			{

@@ -284,7 +284,7 @@ FString UFlibHotPatcherCoreHelper::GetProjectCookedDir()
 #include "Serialization/BulkDataManifest.h"
 #endif
 
-#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0 
+#if ENGINE_MAJOR_VERSION > 4 /*&& ENGINE_MINOR_VERSION > 0 */
 #include "CookerWriterForUE5/CookerWriterForUE5.h"
 #endif
 
@@ -313,7 +313,7 @@ FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetP
 	SavePackageContext	= new FSavePackageContext(LooseFileWriter, BulkDataManifest, bLegacyBulkDataOffsets);
 #endif
 	
-#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0 
+#if ENGINE_MAJOR_VERSION > 4 /*&& ENGINE_MINOR_VERSION > 0*/
 	ICookedPackageWriter* PackageWriter = nullptr;
 	FString WriterDebugName;
 	if (bUseZenLoader)
@@ -599,7 +599,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			{
 				CurrentPlatformPackageContext = *PlatformSavePackageContext.Find(Platform.Value->PlatformName());
 			}
-		#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
+		#if ENGINE_MAJOR_VERSION > 4 /*&& ENGINE_MINOR_VERSION > 0*/
 				IPackageWriter::FBeginPackageInfo BeginInfo;
 				BeginInfo.PackageName = Package->GetFName();
 				BeginInfo.LooseFilePath = CookedSavePath;
@@ -642,11 +642,11 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			
 	#if WITH_PACKAGE_CONTEXT
 			// in UE5.1
-		#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
+		#if ENGINE_MAJOR_VERSION > 4 /*&& ENGINE_MINOR_VERSION > 0*/
 				// save cooked file to desk in UE5-main
 				if(bSuccessed)
 				{
-					const FAssetPackageData* AssetPackageData = UFlibAssetManageHelper::GetPackageDataByPackagePath(Package->GetFName().ToString());
+					//const FAssetPackageData* AssetPackageData = UFlibAssetManageHelper::GetPackageDataByPackageName(Package->GetFName().ToString());
 					ICookedPackageWriter::FCommitPackageInfo Info;
 					Info.bSucceeded = bSuccessed;
 					Info.PackageName = Package->GetFName();
@@ -1623,7 +1623,9 @@ FProjectPackageAssetCollection UFlibHotPatcherCoreHelper::ImportProjectSettingsP
 	{
 		// allow the game to fill out the asset registry, as well as get a list of objects to always cook
 		TArray<FString> FilesInPathStrings;
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS;
 		FGameDelegates::Get().GetCookModificationDelegate().ExecuteIfBound(FilesInPathStrings);
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS;
 		for(const auto& BuildFilename:FilesInPathStrings)
 		{
 			FString OutPackageName;
@@ -1638,7 +1640,15 @@ FProjectPackageAssetCollection UFlibHotPatcherCoreHelper::ImportProjectSettingsP
 	{
 		TArray<FName> PackageToCook;
 		TArray<FName> PackageToNeverCook;
-		UAssetManager::Get().ModifyCook(PackageToCook,PackageToNeverCook);
+#if ENGINE_MAJOR_VERSION > 4
+		ITargetPlatformManagerModule* TPM = GetTargetPlatformManager();
+		const TArray<ITargetPlatform*>& Platforms = TPM->GetActiveTargetPlatforms();
+		UAssetManager::Get().ModifyCook(Platforms, PackageToCook, PackageToNeverCook);
+#else
+		UAssetManager::Get().ModifyCook(PackageToCook, PackageToNeverCook);
+#endif
+
+
 		for(const auto& Package:PackageToCook)
 		{
 			AddSoftObjectPath(Package.ToString());
@@ -2307,13 +2317,20 @@ void UFlibHotPatcherCoreHelper::SaveGlobalShaderMapFiles(const TArrayView<const 
 		FShaderRecompileData RecompileData;
 		RecompileData.PlatformName = Platforms[Index]->PlatformName();
 		// Compile for all platforms
-		RecompileData.ShaderPlatform = -1;
+		RecompileData.ShaderPlatform = SP_NumPlatforms;
 		RecompileData.ModifiedFiles = &Files;
 		RecompileData.MeshMaterialMaps = NULL;
 
 		check( IsInGameThread() );
 
 		FString OutputDir  = FPaths::Combine(BaseOutputDir,Platforms[Index]->PlatformName());
+
+#if ENGINE_MAJOR_VERSION > 4
+		TArray<uint8> GlobalShaderMap;
+		RecompileData.CommandType = ODSCRecompileCommand::Global;
+		RecompileData.GlobalShaderMap = &GlobalShaderMap;
+		RecompileShadersForRemote(RecompileData, OutputDir);
+#else
 		RecompileShadersForRemote
 			(RecompileData.PlatformName, 
 			RecompileData.ShaderPlatform == -1 ? SP_NumPlatforms : (EShaderPlatform)RecompileData.ShaderPlatform, //-V547
@@ -2327,6 +2344,7 @@ void UFlibHotPatcherCoreHelper::SaveGlobalShaderMapFiles(const TArrayView<const 
 #endif
 			RecompileData.MeshMaterialMaps, 
 			RecompileData.ModifiedFiles);
+#endif
 	}
 }
 
@@ -2431,8 +2449,11 @@ bool UFlibHotPatcherCoreHelper::SerializeChunksManifests(ITargetPlatform* Target
 	RegistryGenerator->CleanManifestDirectories();
 	RegistryGenerator->Initialize(TArray<FName>());
 	RegistryGenerator->PreSave(CookedPackageNames);
+#if ENGINE_MAJOR_VERSION > 4	
+	RegistryGenerator->FinalizeChunkIDs(CookedPackageNames, IgnorePackageNames, *TempSandboxFile, bGenerateStreamingInstallManifest);
+#else
 	RegistryGenerator->BuildChunkManifest(CookedPackageNames, IgnorePackageNames, TempSandboxFile.Get(), bGenerateStreamingInstallManifest);
-
+#endif
 #if ENGINE_MAJOR_VERSION > 4 || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 26)
 	FString TempSandboxManifestDir = FPaths::Combine(PlatformSandboxDir,FApp::GetProjectName(),TEXT("Metadata") , TEXT("ChunkManifest"));
 	if(!FPaths::DirectoryExists(TempSandboxManifestDir))
@@ -2440,7 +2461,7 @@ bool UFlibHotPatcherCoreHelper::SerializeChunksManifests(ITargetPlatform* Target
 		IFileManager::Get().MakeDirectory(*TempSandboxManifestDir, true);
 	}
 #endif
-	bresult = RegistryGenerator->SaveManifests(TempSandboxFile.Get());
+	bresult = RegistryGenerator->SaveManifests(*TempSandboxFile);
 #endif
 	return bresult;
 }

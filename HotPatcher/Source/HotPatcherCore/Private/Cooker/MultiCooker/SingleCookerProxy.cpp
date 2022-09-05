@@ -184,7 +184,11 @@ void USingleCookerProxy::CleanClusterCachedPlatformData(const FCookCluster& Cook
 			}
 			ExportObj->ClearAllCachedCookedPlatformData();
 		}
+#if ENGINE_MAJOR_VERSION > 4
+		Package->MarkAsGarbage();
+#else
 		Package->MarkPendingKill();
+#endif
 	}
 }
 
