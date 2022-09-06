@@ -116,7 +116,11 @@ bool UFlibAssetManageHelper::GetAssetPackageGUID(const FString& InPackageName, F
 	// 	bool bCovStatus = FPackageName::TryConvertLongPackageNameToFilename(LongPackageName,FileName,Extersion);
 	// }
 	
+#if ENGINE_MAJOR_VERSION > 4	
+	FileName = UFlibAssetManageHelper::PackagePathToFilename(InPackageName);
+#else
 	FileName = UFlibAssetManageHelper::PackagePathToFilename(InPackagePath);
+#endif
 
 	if(!FileName.IsEmpty() && FPaths::FileExists(FileName))
 	{
@@ -309,7 +313,11 @@ FAssetDetail UFlibAssetManageHelper::GetAssetDetailByPackageName(const FString& 
 			{
 				AssetDetail.PackagePath = OutAssetData.ObjectPath;
 				AssetDetail.AssetType = OutAssetData.AssetClass;
+#if ENGINE_MAJOR_VERSION > 4				
+				UFlibAssetManageHelper::GetAssetPackageGUID(AssetDetail.PackagePath.ToString(), AssetDetail.Guid);
+#else
 				UFlibAssetManageHelper::GetAssetPackageGUID(InPackageName, AssetDetail.Guid);
+#endif				
 			}
 		}
 	}
@@ -479,7 +487,11 @@ bool UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(const FAssetData& InAs
 	FString PackageName = InAssetData.PackageName.ToString();
 	FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(PackageName);
 	AssetDetail.PackagePath = FName(*PackagePath);
+#if ENGINE_MAJOR_VERSION > 4	
+	UFlibAssetManageHelper::GetAssetPackageGUID(PackagePath, AssetDetail.Guid);
+#else
 	UFlibAssetManageHelper::GetAssetPackageGUID(PackageName, AssetDetail.Guid);
+#endif
 
 	OutAssetDetail = AssetDetail;
 	return !OutAssetDetail.AssetType.IsNone() && !OutAssetDetail.AssetType.IsNone() && !OutAssetDetail.AssetType.IsNone();
@@ -670,7 +682,7 @@ const FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(con
 		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 		// FString TargetLongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(InPackageName);
 		const FString& TargetLongPackageName = InPackageName;
-#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
+#if ENGINE_MAJOR_VERSION > 4 /*&& ENGINE_MINOR_VERSION > 0*/
 		TOptional<FAssetPackageData> PackageDataOpt = AssetRegistryModule.Get().GetAssetPackageDataCopy(*TargetLongPackageName);
 		if(PackageDataOpt.IsSet())
 		{
@@ -683,7 +695,7 @@ const FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(con
 			{
 				return AssetPackageData;
 			}
-#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
+#if ENGINE_MAJOR_VERSION > 4 /*&& ENGINE_MINOR_VERSION > 0*/
 		}
 #endif
 	}
