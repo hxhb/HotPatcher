@@ -3,7 +3,7 @@ Chinese Document：[README_Chinese.md](https://github.com/hxhb/HotPatcher/blob/m
 
 [HotPatcher](https://github.com/hxhb/HotPatcher) is a tool for managing hot update versions and resource packaging. It is used to track changes in the original resources of the project version to create patches. Support resource version management, difference comparison and packaging between versions, support exporting basic package information for multiple platforms, easily cook and package multi-platform Patches, support iterative packaging, rich configuration options, full-featured commandlet support, can be combined with ci/cd platform is integrated.
 
->The currently supported engine version is UE4.21-UE5EA (UE5 official version is not supported yet). I created a group to discuss UE4 hot update and HotPatcher plug-in issues (QQ group 958363331).
+>The currently supported engine version is UE4.21-UE5 (UE5.0.3 is supported in [dev](https://github.com/hxhb/HotPatcher/dev)). I created a group to discuss UE4 hot update and HotPatcher plug-in issues (QQ group 958363331).
 
 Plug-in documentation: [UE4 resource hot update packaging tool HotPatcher](https://imzlp.com/posts/17590/)
 
