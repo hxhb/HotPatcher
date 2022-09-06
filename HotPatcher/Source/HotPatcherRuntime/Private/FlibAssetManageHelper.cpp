@@ -58,6 +58,11 @@ FString UFlibAssetManageHelper::PackagePathToFilename(const FString& InPackagePa
 	return ResultAbsPath;
 }
 
+FString UFlibAssetManageHelper::LongPackageNameToFilename(const FString& InLongPackageName)
+{
+	return UFlibAssetManageHelper::PackagePathToFilename(UFlibAssetManageHelper::LongPackageNameToPackagePath(InLongPackageName));
+}
+
 
 bool UFlibAssetManageHelper::FilenameToPackagePath(const FString& InAbsPath, FString& OutPackagePath)
 {
@@ -115,13 +120,9 @@ bool UFlibAssetManageHelper::GetAssetPackageGUID(const FString& InPackageName, F
 	// 	FString Extersion = Package->ContainsMap() ? FPackageName::GetMapPackageExtension() : FPackageName::GetAssetPackageExtension();
 	// 	bool bCovStatus = FPackageName::TryConvertLongPackageNameToFilename(LongPackageName,FileName,Extersion);
 	// }
-	
-#if ENGINE_MAJOR_VERSION > 4	
-	FileName = UFlibAssetManageHelper::PackagePathToFilename(InPackageName);
-#else
-	FileName = UFlibAssetManageHelper::PackagePathToFilename(InPackagePath);
-#endif
 
+	FileName = UFlibAssetManageHelper::LongPackageNameToFilename(InPackageName);
+	
 	if(!FileName.IsEmpty() && FPaths::FileExists(FileName))
 	{
 		FMD5Hash FileMD5Hash = FMD5Hash::HashFile(*FileName);
@@ -661,9 +662,7 @@ SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAllInValidAssetInProject",FC
 		ModuleDependencies.AssetDependencyDetails.GetKeys(ModuleAssetList);
 		for (const auto& AssetLongPackageName : ModuleAssetList)
 		{
-			FString AssetPackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(AssetLongPackageName);
-			// UE_LOG(LogHotPatcher, Log, TEXT("Asset %s"), *AssetPackagePath);
-			FString AssetAbsPath = UFlibAssetManageHelper::PackagePathToFilename(AssetPackagePath);
+			FString AssetAbsPath = UFlibAssetManageHelper::LongPackageNameToFilename(AssetLongPackageName);
 			if (!FPaths::FileExists(AssetAbsPath))
 			{
 				OutInValidAsset.Add(AssetLongPackageName);
@@ -711,8 +710,8 @@ bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(const FString& InPr
 	FString EngineAbsDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
 	FString CookedRootDir = FPaths::Combine(InProjectAbsDir, TEXT("Saved/Cooked"), InPlatformName);
 	FString ProjectName = FApp::GetProjectName();
-	FString AssetPackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InLongPackageName);
-	FString AssetAbsPath = UFlibAssetManageHelper::PackagePathToFilename(AssetPackagePath);
+	// FString AssetPackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InLongPackageName);
+	FString AssetAbsPath = UFlibAssetManageHelper::LongPackageNameToFilename(InLongPackageName);
 
 	FString AssetModuleName;
 	GetModuleNameByRelativePath(InLongPackageName,AssetModuleName);

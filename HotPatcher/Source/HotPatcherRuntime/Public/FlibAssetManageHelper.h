@@ -68,6 +68,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
 		static FString PackagePathToFilename(const FString& InPackagePath);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
+		static FString LongPackageNameToFilename(const FString& InLongPackageName);
+	
+	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerEx")
 		static bool FilenameToPackagePath(const FString& InAbsPath,FString& OutPackagePath);
 
 

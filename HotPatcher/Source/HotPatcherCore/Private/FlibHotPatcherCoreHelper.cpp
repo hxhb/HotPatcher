@@ -2461,7 +2461,13 @@ bool UFlibHotPatcherCoreHelper::SerializeChunksManifests(ITargetPlatform* Target
 		IFileManager::Get().MakeDirectory(*TempSandboxManifestDir, true);
 	}
 #endif
-	bresult = RegistryGenerator->SaveManifests(*TempSandboxFile);
+	bresult = RegistryGenerator->SaveManifests(
+#if ENGINE_MAJOR_VERSION > 4
+	*TempSandboxFile
+#else
+TempSandboxFile.Get()
+#endif
+	);
 #endif
 	return bresult;
 }
