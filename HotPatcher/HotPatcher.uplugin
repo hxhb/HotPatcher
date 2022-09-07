@@ -40,5 +40,11 @@
 			"Type": "Developer",
 			"LoadingPhase": "PostConfigInit"
 		}
+	],
+	"Plugins":[
+		{
+			"Name": "Paper2D",
+			"Enabled": true
+		},
 	]
 }
