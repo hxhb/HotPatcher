@@ -6,9 +6,6 @@
 #include "Engine/World.h"
 #include "Engine/WorldComposition.h"
 #include "Resources/Version.h"
-#if WITH_EDITOR
-#include "PaperSprite.h"
-#endif
 
 void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 {
@@ -134,28 +131,7 @@ bool FAssetDependenciesParser::IsForceSkipAsset(const FString& LongPackageName,T
 	{
 		bIsIgnore = true;
 	}
-#if WITH_EDITOR
-	if(!bIsIgnore)
-	{
-		TArray<FAssetDetail> AssetDetails;
-		if(UFlibAssetManageHelper::GetAssetReferenceByLongPackageName(LongPackageName,
-				TArray<EAssetRegistryDependencyType::Type>{EAssetRegistryDependencyType::Hard,EAssetRegistryDependencyType::Soft},
-				AssetDetails))
-		{
-			if(AssetDetails.Num() == 1 &&
-				AssetDetails[0].AssetType.IsEqual(TEXT("PaperSprite")))
-			{
-				FSoftObjectPath PaperSprite(AssetDetails[0].PackagePath);
-				UPaperSprite* PaperSpriteObj = Cast<UPaperSprite>(PaperSprite.TryLoad());
-				if(PaperSpriteObj && PaperSpriteObj->GetAtlasGroup())
-				{
-					bIsIgnore = true;
-					MatchIgnoreStr = TEXT("only reference in a PaperSprite");
-				}
-			}
-		}
-	}
-#endif
+
 	if(bIsIgnore)
 	{
 #if ASSET_DEPENDENCIES_DEBUG_LOG
@@ -165,6 +141,31 @@ bool FAssetDependenciesParser::IsForceSkipAsset(const FString& LongPackageName,T
 	return bIsIgnore;
 }
 
+TArray<FName> ParserSkipAssetByDependencies(const FAssetData& CurrentAssetData,const TArray<FName>& CurrentAssetDependencies)
+{
+	SCOPED_NAMED_EVENT_TEXT("ParserSkipAssetByDependencies",FColor::Red);
+	bool bHasAtlsGroup = false;
+	TArray<FName> TextureSrouceRefs;
+	if(CurrentAssetData.AssetClass.IsEqual(TEXT("PaperSprite")))
+	{	
+		for(const auto& DependItemName:CurrentAssetDependencies)
+		{
+			FAssetDetail AssetDetail = UFlibAssetManageHelper::GetAssetDetailByPackageName(DependItemName.ToString());
+			if(AssetDetail.IsValid())
+			{
+				if(AssetDetail.AssetType.IsEqual(TEXT("PaperSpriteAtlas")))
+				{
+					bHasAtlsGroup = true;
+				}
+				if(AssetDetail.AssetType.IsEqual(TEXT("Texture")) || AssetDetail.AssetType.IsEqual(TEXT("Texture2D")))
+				{
+					TextureSrouceRefs.Add(DependItemName);
+				}
+			}
+		}
+	}
+	return bHasAtlsGroup ? TextureSrouceRefs : TArray<FName>{};
+}
 
 TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAssetRegistryModule& InAssetRegistryModule,
                                                                            FName InLongPackageName, const TArray<EAssetRegistryDependencyTypeEx>& InAssetDependencyTypes,
@@ -193,6 +194,11 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 		bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(InLongPackageName, CurrentAssetDependencies, TotalType);
 		PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
+		for(const auto& SkipForDependencies:ParserSkipAssetByDependencies(CurrentAssetData,CurrentAssetDependencies))
+		{
+			CurrentAssetDependencies.Remove(SkipForDependencies);
+		}
+		
 		// collect world composition tile packages to cook 
 		if(ParseConfig.bSupportWorldComposition && CurrentAssetData.GetClass() == UWorld::StaticClass())
 		{
@@ -226,6 +232,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 	
 	{
 		SCOPED_NAMED_EVENT_TEXT("check valid package and ignore rule",FColor::Red);
+		
 		FCriticalSection	SynchronizationObject;
 		ParallelFor(CurrentAssetDependencies.Num(),[&](int32 index)
 		{
@@ -246,7 +253,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(FAsse
 					AssetDependencies.Add(LongPackageName);
 				}
 			}
-		},true);
+		},GForceSingleThread);
 	}
 	
 	if(bRecursively)

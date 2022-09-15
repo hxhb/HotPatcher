@@ -163,7 +163,7 @@ public:
 
 	FORCEINLINE bool IsStorageNewRelease()const{return bStorageNewRelease;}
 	FORCEINLINE bool IsStoragePakFileInfo()const{return bStoragePakFileInfo;}
-	FORCEINLINE bool IsBackupMetadata()const {return bBackupMetadata;}
+	// FORCEINLINE bool IsBackupMetadata()const {return bBackupMetadata;}
 	FORCEINLINE bool IsEnableProfiling()const { return bEnableProfiling; }
 	
 	FORCEINLINE FPakEncryptSettings GetEncryptSettings()const{ return EncryptSettings; }
@@ -288,8 +288,8 @@ public:
 		bool bStorageDiffAnalysisResults = true;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 	// 	bool bStorageAssetDependencies = false;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "SaveTo")
-		bool bBackupMetadata = false;
+	// UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "SaveTo")
+	// 	bool bBackupMetadata = false;
 
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Advanced")
 		bool bEnableMultiThread = false;

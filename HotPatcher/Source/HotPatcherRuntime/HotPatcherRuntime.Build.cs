@@ -31,8 +31,7 @@ public class HotPatcherRuntime : ModuleRules
 		{
 			PublicDependencyModuleNames.AddRange(new string[]
 			{
-				"TargetPlatform",
-				"Paper2D"
+				"TargetPlatform"
 			});
 		}
 		
