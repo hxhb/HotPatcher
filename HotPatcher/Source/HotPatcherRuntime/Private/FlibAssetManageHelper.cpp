@@ -235,10 +235,10 @@ bool UFlibAssetManageHelper::GetAssetReference(const FAssetDetail& InAsset, cons
 }
 
 void UFlibAssetManageHelper::GetAssetReferenceRecursively(const FAssetDetail& InAsset,
-                                                            const TArray<EAssetRegistryDependencyType::Type>&
-                                                            SearchAssetDepTypes,
-                                                            const TArray<FString>& SearchAssetsTypes,
-                                                            TArray<FAssetDetail>& OutRefAsset)
+                                                          const TArray<EAssetRegistryDependencyType::Type>&
+                                                          SearchAssetDepTypes,
+                                                          const TArray<FString>& SearchAssetsTypes,
+                                                          TArray<FAssetDetail>& OutRefAsset, bool bRecursive)
 {
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetReferenceRecursively",FColor::Red);
 	TArray<FAssetDetail> CurrentAssetsRef;
@@ -272,7 +272,10 @@ void UFlibAssetManageHelper::GetAssetReferenceRecursively(const FAssetDetail& In
     		if(!OutRefAsset.Contains(AssetRef))
     		{
     			OutRefAsset.AddUnique(AssetRef);
-    			UFlibAssetManageHelper::GetAssetReferenceRecursively(AssetRef,SearchAssetDepTypes,SearchAssetsTypes,OutRefAsset);
+    			if(bRecursive)
+    			{
+    				UFlibAssetManageHelper::GetAssetReferenceRecursively(AssetRef,SearchAssetDepTypes,SearchAssetsTypes,OutRefAsset, bRecursive);
+    			}
     		}
     	}
     }

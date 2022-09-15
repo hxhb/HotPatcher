@@ -27,6 +27,8 @@
 #include "Serialization/ArrayWriter.h"
 #include "Settings/ProjectPackagingSettings.h"
 #include "ShaderCompiler.h"
+#include "Materials/MaterialInstance.h"
+#include "Materials/MaterialInstanceConstant.h"
 #include "ProfilingDebugging/LoadTimeTracker.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -1127,6 +1129,11 @@ ITargetPlatform* UFlibHotPatcherCoreHelper::GetPlatformByName(const FString& Nam
 	return result;
 }
 
+#include "BaseWidgetBlueprint.h"
+#include "Blueprint/UserWidget.h"
+#include "Blueprint/WidgetTree.h"
+#include "WidgetBlueprint.h"
+
 FPatchVersionDiff UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(const FExportPatchSettings& PatchSetting, const FHotPatcherVersion& Base, const FHotPatcherVersion& New)
 {
 	FPatchVersionDiff VersionDiffInfo;
@@ -1153,7 +1160,11 @@ FPatchVersionDiff UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(co
 	
 	if(PatchSetting.IsRecursiveWidgetTree())
 	{
-		UFlibHotPatcherCoreHelper::AnalysisWidgetTree(Base,New,VersionDiffInfo);
+		AnalysisWidgetTree(Base,New,VersionDiffInfo);
+	}
+	if(PatchSetting.IsAnalysisMatInstance())
+	{
+		AnalysisMaterialInstance(Base,New,VersionDiffInfo);
 	}
 	
 	if(PatchSetting.IsForceSkipContent())
@@ -1181,12 +1192,21 @@ FPatchVersionDiff UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(co
 	return VersionDiffInfo;
 }
 
-#include "BaseWidgetBlueprint.h"
-#include "Blueprint/UserWidget.h"
-#include "Blueprint/WidgetTree.h"
-#include "WidgetBlueprint.h"
 
 void UFlibHotPatcherCoreHelper::AnalysisWidgetTree(const FHotPatcherVersion& Base, const FHotPatcherVersion& New,FPatchVersionDiff& PakDiff,int32 flags)
+{
+	UClass* WidgetBlueprintClass = UWidgetBlueprint::StaticClass();
+	UFlibHotPatcherCoreHelper::AnalysisDependenciesAssets(Base,New,PakDiff,WidgetBlueprintClass,TArray<UClass*>{WidgetBlueprintClass},true);
+}
+
+void UFlibHotPatcherCoreHelper::AnalysisMaterialInstance(const FHotPatcherVersion& Base, const FHotPatcherVersion& New,FPatchVersionDiff& PakDiff,int32 flags)
+{
+	UClass* UMaterialClass = UMaterial::StaticClass();
+	TArray<UClass*> MaterialInstanceClasses = GetDerivedClasses(UMaterialInstance::StaticClass(),true,true);
+	UFlibHotPatcherCoreHelper::AnalysisDependenciesAssets(Base,New,PakDiff,UMaterialClass,MaterialInstanceClasses,false);
+}
+
+void UFlibHotPatcherCoreHelper::AnalysisDependenciesAssets(const FHotPatcherVersion& Base, const FHotPatcherVersion& New,FPatchVersionDiff& PakDiff,UClass* SearchClass,TArray<UClass*> DependenciesClass,bool bRecursive,int32 flags)
 {
 	TArray<FAssetDetail> AnalysisAssets;
 	if(flags & 0x1)
@@ -1202,32 +1222,36 @@ void UFlibHotPatcherCoreHelper::AnalysisWidgetTree(const FHotPatcherVersion& Bas
 	}
 	TArray<EAssetRegistryDependencyTypeEx> AssetRegistryDepTypes {EAssetRegistryDependencyTypeEx::Hard};
 
-	FName WidgetBlueprintName = UWidgetBlueprint::StaticClass()->GetFName();;
+	FName ClassName = SearchClass->GetFName();;
 	
 	for(const auto& OriginAsset:AnalysisAssets)
 	{
-		if(OriginAsset.AssetType.IsEqual(WidgetBlueprintName))
+		if(OriginAsset.AssetType.IsEqual(ClassName))
 		{
-			TArray<FAssetDetail> RefAssets = UFlibHotPatcherCoreHelper::GetReferenceRecursivelyByClassName(OriginAsset,TArray<FString>{WidgetBlueprintName.ToString()},AssetRegistryDepTypes);
-			for(const auto& Asset:RefAssets)
+			for(auto& DepencenciesClassItem:DependenciesClass)
 			{
-				if(!(Asset.AssetType.IsEqual(WidgetBlueprintName)))
+				FName DependenciesName = DepencenciesClassItem->GetFName();
+				TArray<FAssetDetail> RefAssets = UFlibHotPatcherCoreHelper::GetReferenceRecursivelyByClassName(OriginAsset,TArray<FString>{DependenciesName.ToString()},AssetRegistryDepTypes,bRecursive);
+				for(const auto& Asset:RefAssets)
 				{
-					continue;
-				}
-				FString PackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString());
-				bool bInBaseVersion = Base.AssetInfo.HasAsset(PackageName);
-				if(bInBaseVersion)
-				{
-					PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AddAssetsDetail(Asset);
-					UE_LOG(LogHotPatcher,Log,TEXT("Add Parent Widget: %s"),*Asset.PackagePath.ToString());
+					if(!(Asset.AssetType.IsEqual(DependenciesName)))
+					{
+						continue;
+					}
+					FString PackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString());
+					bool bInBaseVersion = Base.AssetInfo.HasAsset(PackageName);
+					if(bInBaseVersion)
+					{
+						PakDiff.AssetDiffInfo.ModifyAssetDependInfo.AddAssetsDetail(Asset);
+						UE_LOG(LogHotPatcher,Log,TEXT("Add Parent: %s"),*Asset.PackagePath.ToString());
+					}
 				}
 			}
 		}
 	}
 }
 
-TArray<FAssetDetail> UFlibHotPatcherCoreHelper::GetReferenceRecursivelyByClassName(const FAssetDetail& AssetDetail,const TArray<FString>& AssetTypeNames,const TArray<EAssetRegistryDependencyTypeEx>& RefType)
+TArray<FAssetDetail> UFlibHotPatcherCoreHelper::GetReferenceRecursivelyByClassName(const FAssetDetail& AssetDetail,const TArray<FString>& AssetTypeNames,const TArray<EAssetRegistryDependencyTypeEx>& RefType,bool bRecursive)
 {
 	TArray<FAssetDetail> Results;
 	
@@ -1239,7 +1263,7 @@ TArray<FAssetDetail> UFlibHotPatcherCoreHelper::GetReferenceRecursivelyByClassNa
 	}
 	
 	TArray<FAssetDetail> CurrentAssetsRef;
-	UFlibAssetManageHelper::GetAssetReferenceRecursively(AssetDetail, SearchTypes, AssetTypeNames, CurrentAssetsRef);
+	UFlibAssetManageHelper::GetAssetReferenceRecursively(AssetDetail, SearchTypes, AssetTypeNames, CurrentAssetsRef,bRecursive);
 	for(const auto& Asset:CurrentAssetsRef)
 	{
 		if(!AssetTypeNames.Contains(Asset.AssetType.ToString()))

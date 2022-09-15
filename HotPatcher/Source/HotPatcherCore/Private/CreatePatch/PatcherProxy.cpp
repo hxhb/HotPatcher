@@ -679,21 +679,25 @@ namespace PatchWorker
 	bool GenerateGlobalAssetRegistryData(FHotPatcherPatchContext& Context)
 	{
 		SCOPED_NAMED_EVENT_TEXT("GenerateGlobalAssetRegistryData",FColor::Red);
-		FAssetDependenciesInfo TotalDiffAssets = UFlibAssetManageHelper::CombineAssetDependencies(Context.VersionDiff.AssetDiffInfo.AddAssetDependInfo,Context.VersionDiff.AssetDiffInfo.ModifyAssetDependInfo);
-		const TArray<FAssetDetail>& AllAssets = TotalDiffAssets.GetAssetDetails();
+		if(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry)
+		{
+			FAssetDependenciesInfo TotalDiffAssets = UFlibAssetManageHelper::CombineAssetDependencies(Context.VersionDiff.AssetDiffInfo.AddAssetDependInfo,Context.VersionDiff.AssetDiffInfo.ModifyAssetDependInfo);
+			const TArray<FAssetDetail>& AllAssets = TotalDiffAssets.GetAssetDetails();
 
-		TSet<FName> PackageAssetsSet;
-		for(const auto& Asset:AllAssets)
-		{
-			FString LongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString());
-			PackageAssetsSet.Add(*LongPackageName);
-		}
-		for(const auto& PlatformName:Context.GetSettingObject()->GetPakTargetPlatformNames())
-		{
-			ITargetPlatform* PlatformIns = UFlibHotPatcherCoreHelper::GetPlatformByName(PlatformName);
+			TSet<FName> PackageAssetsSet;
+			for(const auto& Asset:AllAssets)
+			{
+				FString LongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString());
+				PackageAssetsSet.Add(*LongPackageName);
+			}
+			for(const auto& PlatformName:Context.GetSettingObject()->GetPakTargetPlatformNames())
+			{
+				ITargetPlatform* PlatformIns = UFlibHotPatcherCoreHelper::GetPlatformByName(PlatformName);
 			
-			UFlibHotPatcherCoreHelper::SerializeChunksManifests(PlatformIns,PackageAssetsSet,TSet<FName>{},true);
+				UFlibHotPatcherCoreHelper::SerializeChunksManifests(PlatformIns,PackageAssetsSet,TSet<FName>{},true);
+			}
 		}
+		
 		return true;
 	}
 

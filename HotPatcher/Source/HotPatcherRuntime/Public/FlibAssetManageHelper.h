@@ -102,7 +102,7 @@ public:
 	static void GetAssetReferenceRecursively(const FAssetDetail& InAsset,
 	                                         const TArray<EAssetRegistryDependencyType::Type>& SearchAssetDepTypes,
 	                                         const TArray<FString>& SearchAssetsTypes,
-	                                         TArray<FAssetDetail>& OutRefAsset);
+	                                         TArray<FAssetDetail>& OutRefAsset, bool bRecursive = true);
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool GetAssetReferenceEx(const FAssetDetail& InAsset, const TArray<EAssetRegistryDependencyTypeEx>& SearchAssetDepTypes, TArray<FAssetDetail>& OutRefAsset);
 	
