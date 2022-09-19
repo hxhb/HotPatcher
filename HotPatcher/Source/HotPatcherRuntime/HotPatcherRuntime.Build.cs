@@ -31,8 +31,7 @@ public class HotPatcherRuntime : ModuleRules
 		{
 			PublicDependencyModuleNames.AddRange(new string[]
 			{
-				"TargetPlatform",
-				"Paper2D"
+				"TargetPlatform"
 			});
 		}
 		
@@ -90,6 +89,8 @@ public class HotPatcherRuntime : ModuleRules
 		AddPublicDefinitions("ASSET_DEPENDENCIES_DEBUG_LOG", bEnableAssetDependenciesDebugLog);
 		
 		bool bCustomAssetGUID = false;
+
+		if (Version.MajorVersion > 4) { bCustomAssetGUID = true; }
 		if(bCustomAssetGUID)
 		{
 			PublicDefinitions.Add("CUSTOM_ASSET_GUID");	

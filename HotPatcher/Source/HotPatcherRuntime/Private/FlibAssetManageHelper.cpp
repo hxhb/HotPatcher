@@ -58,6 +58,11 @@ FString UFlibAssetManageHelper::PackagePathToFilename(const FString& InPackagePa
 	return ResultAbsPath;
 }
 
+FString UFlibAssetManageHelper::LongPackageNameToFilename(const FString& InLongPackageName)
+{
+	return UFlibAssetManageHelper::PackagePathToFilename(UFlibAssetManageHelper::LongPackageNameToPackagePath(InLongPackageName));
+}
+
 
 bool UFlibAssetManageHelper::FilenameToPackagePath(const FString& InAbsPath, FString& OutPackagePath)
 {
@@ -115,9 +120,9 @@ bool UFlibAssetManageHelper::GetAssetPackageGUID(const FString& InPackageName, F
 	// 	FString Extersion = Package->ContainsMap() ? FPackageName::GetMapPackageExtension() : FPackageName::GetAssetPackageExtension();
 	// 	bool bCovStatus = FPackageName::TryConvertLongPackageNameToFilename(LongPackageName,FileName,Extersion);
 	// }
-	
-	FileName = UFlibAssetManageHelper::PackagePathToFilename(InPackagePath);
 
+	FileName = UFlibAssetManageHelper::LongPackageNameToFilename(InPackageName);
+	
 	if(!FileName.IsEmpty() && FPaths::FileExists(FileName))
 	{
 		FMD5Hash FileMD5Hash = FMD5Hash::HashFile(*FileName);
@@ -230,10 +235,10 @@ bool UFlibAssetManageHelper::GetAssetReference(const FAssetDetail& InAsset, cons
 }
 
 void UFlibAssetManageHelper::GetAssetReferenceRecursively(const FAssetDetail& InAsset,
-                                                            const TArray<EAssetRegistryDependencyType::Type>&
-                                                            SearchAssetDepTypes,
-                                                            const TArray<FString>& SearchAssetsTypes,
-                                                            TArray<FAssetDetail>& OutRefAsset)
+                                                          const TArray<EAssetRegistryDependencyType::Type>&
+                                                          SearchAssetDepTypes,
+                                                          const TArray<FString>& SearchAssetsTypes,
+                                                          TArray<FAssetDetail>& OutRefAsset, bool bRecursive)
 {
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetReferenceRecursively",FColor::Red);
 	TArray<FAssetDetail> CurrentAssetsRef;
@@ -267,7 +272,10 @@ void UFlibAssetManageHelper::GetAssetReferenceRecursively(const FAssetDetail& In
     		if(!OutRefAsset.Contains(AssetRef))
     		{
     			OutRefAsset.AddUnique(AssetRef);
-    			UFlibAssetManageHelper::GetAssetReferenceRecursively(AssetRef,SearchAssetDepTypes,SearchAssetsTypes,OutRefAsset);
+    			if(bRecursive)
+    			{
+    				UFlibAssetManageHelper::GetAssetReferenceRecursively(AssetRef,SearchAssetDepTypes,SearchAssetsTypes,OutRefAsset, bRecursive);
+    			}
     		}
     	}
     }
@@ -309,7 +317,11 @@ FAssetDetail UFlibAssetManageHelper::GetAssetDetailByPackageName(const FString& 
 			{
 				AssetDetail.PackagePath = OutAssetData.ObjectPath;
 				AssetDetail.AssetType = OutAssetData.AssetClass;
+#if ENGINE_MAJOR_VERSION > 4				
+				UFlibAssetManageHelper::GetAssetPackageGUID(AssetDetail.PackagePath.ToString(), AssetDetail.Guid);
+#else
 				UFlibAssetManageHelper::GetAssetPackageGUID(InPackageName, AssetDetail.Guid);
+#endif				
 			}
 		}
 	}
@@ -479,7 +491,11 @@ bool UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(const FAssetData& InAs
 	FString PackageName = InAssetData.PackageName.ToString();
 	FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(PackageName);
 	AssetDetail.PackagePath = FName(*PackagePath);
+#if ENGINE_MAJOR_VERSION > 4	
+	UFlibAssetManageHelper::GetAssetPackageGUID(PackagePath, AssetDetail.Guid);
+#else
 	UFlibAssetManageHelper::GetAssetPackageGUID(PackageName, AssetDetail.Guid);
+#endif
 
 	OutAssetDetail = AssetDetail;
 	return !OutAssetDetail.AssetType.IsNone() && !OutAssetDetail.AssetType.IsNone() && !OutAssetDetail.AssetType.IsNone();
@@ -649,9 +665,7 @@ SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAllInValidAssetInProject",FC
 		ModuleDependencies.AssetDependencyDetails.GetKeys(ModuleAssetList);
 		for (const auto& AssetLongPackageName : ModuleAssetList)
 		{
-			FString AssetPackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(AssetLongPackageName);
-			// UE_LOG(LogHotPatcher, Log, TEXT("Asset %s"), *AssetPackagePath);
-			FString AssetAbsPath = UFlibAssetManageHelper::PackagePathToFilename(AssetPackagePath);
+			FString AssetAbsPath = UFlibAssetManageHelper::LongPackageNameToFilename(AssetLongPackageName);
 			if (!FPaths::FileExists(AssetAbsPath))
 			{
 				OutInValidAsset.Add(AssetLongPackageName);
@@ -670,7 +684,7 @@ const FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(con
 		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 		// FString TargetLongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(InPackageName);
 		const FString& TargetLongPackageName = InPackageName;
-#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
+#if ENGINE_MAJOR_VERSION > 4 /*&& ENGINE_MINOR_VERSION > 0*/
 		TOptional<FAssetPackageData> PackageDataOpt = AssetRegistryModule.Get().GetAssetPackageDataCopy(*TargetLongPackageName);
 		if(PackageDataOpt.IsSet())
 		{
@@ -683,7 +697,7 @@ const FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(con
 			{
 				return AssetPackageData;
 			}
-#if ENGINE_MAJOR_VERSION > 4 && ENGINE_MINOR_VERSION > 0
+#if ENGINE_MAJOR_VERSION > 4 /*&& ENGINE_MINOR_VERSION > 0*/
 		}
 #endif
 	}
@@ -699,8 +713,8 @@ bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(const FString& InPr
 	FString EngineAbsDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
 	FString CookedRootDir = FPaths::Combine(InProjectAbsDir, TEXT("Saved/Cooked"), InPlatformName);
 	FString ProjectName = FApp::GetProjectName();
-	FString AssetPackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InLongPackageName);
-	FString AssetAbsPath = UFlibAssetManageHelper::PackagePathToFilename(AssetPackagePath);
+	// FString AssetPackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InLongPackageName);
+	FString AssetAbsPath = UFlibAssetManageHelper::LongPackageNameToFilename(InLongPackageName);
 
 	FString AssetModuleName;
 	GetModuleNameByRelativePath(InLongPackageName,AssetModuleName);

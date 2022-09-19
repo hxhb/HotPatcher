@@ -2042,14 +2042,20 @@ TArray<FDirectoryPath> UFlibPatchParserHelper::GetDefaultForceSkipContentDir()
 {
 	TArray<FDirectoryPath> result;
 	TArray<FString> DefaultSkipEditorContentRules = {
-		// TEXT("/Engine/Editor*/")
-		// ,TEXT("/Engine/VREditor/")
+		TEXT("/Engine/Editor*/")
+		,TEXT("/Engine/VREditor/")
 	};
-	for(const auto& Ruls:DefaultSkipEditorContentRules)
+	bool bSkipEditorContent = false;
+	GConfig->GetBool(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("bSkipEditorContent"),bSkipEditorContent,GGameIni);
+	
+	if(bSkipEditorContent)
 	{
-		FDirectoryPath PathIns;
-		PathIns.Path = Ruls;
-		result.Add(PathIns);
+		for(const auto& Ruls:DefaultSkipEditorContentRules)
+		{
+			FDirectoryPath PathIns;
+			PathIns.Path = Ruls;
+			result.Add(PathIns);
+		}
 	}
 	return result;
 }

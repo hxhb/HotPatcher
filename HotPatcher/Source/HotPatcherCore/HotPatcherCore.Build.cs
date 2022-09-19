@@ -156,7 +156,7 @@ public class HotPatcherCore : ModuleRules
 
 		bool bEnablePackageContext = true;
 		AddPublicDefinitions("WITH_PACKAGE_CONTEXT", (Version.MajorVersion > 4 || Version.MinorVersion > 23) && bEnablePackageContext);
-		if (Version.MajorVersion > 4 || Version.MajorVersion > 26)
+		if (Version.MajorVersion > 4 || Version.MinorVersion > 26)
 		{
 			PublicDependencyModuleNames.AddRange(new string[]
 			{
@@ -176,7 +176,7 @@ public class HotPatcherCore : ModuleRules
 			});
 		}
 		
-		if (Version.MajorVersion > 4 && Version.MinorVersion > 0)
+		if (Version.MajorVersion > 4 /*&& Version.MinorVersion > 0*/)
 		{
 			PublicIncludePaths.AddRange(new List<string>()
 			{
@@ -192,7 +192,7 @@ public class HotPatcherCore : ModuleRules
 		{
 			"TOOL_NAME=\"HotPatcher\"",
 			"CURRENT_VERSION_ID=76",
-			"CURRENT_PATCH_ID=2",
+			"CURRENT_PATCH_ID=3",
 			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
 		});
 	}

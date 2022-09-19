@@ -172,7 +172,9 @@ public:
 	* 0x1 Add
 	* 0x2 Modyfy
 	*/
+	static void AnalysisDependenciesAssets(const FHotPatcherVersion& Base, const FHotPatcherVersion& New,FPatchVersionDiff& PakDiff,UClass* SearchClass,TArray<UClass*> DependenciesClass,bool bRecursive,int32 flags = 0x1|0x2);
 	static void AnalysisWidgetTree(const FHotPatcherVersion& Base, const FHotPatcherVersion& New,FPatchVersionDiff& PakDiff,int32 flags = 0x1|0x2);
+	static void AnalysisMaterialInstance(const FHotPatcherVersion& Base, const FHotPatcherVersion& New,FPatchVersionDiff& PakDiff,int32 flags= 0x1|0x2);
 	
 	static FPatchVersionDiff DiffPatchVersionWithPatchSetting(const struct FExportPatchSettings& PatchSetting, const FHotPatcherVersion& Base, const FHotPatcherVersion& New);
 
@@ -255,7 +257,7 @@ public:
 	static uint32 GetCookSaveFlag(UPackage* Package,bool bUnversioned = true,bool bStorageConcurrent = false,bool CookLinkerDiff = false);
 	static EObjectFlags GetObjectFlagForCooked(UPackage* Package);
 	
-	static TArray<FAssetDetail> GetReferenceRecursivelyByClassName(const FAssetDetail& AssetDetail,const TArray<FString>& AssetTypeNames,const TArray<EAssetRegistryDependencyTypeEx>& RefType);
+	static TArray<FAssetDetail> GetReferenceRecursivelyByClassName(const FAssetDetail& AssetDetail,const TArray<FString>& AssetTypeNames,const TArray<EAssetRegistryDependencyTypeEx>& RefType,bool bRecursive = true);
 
 	static TArray<UClass*> GetDerivedClasses(UClass* BaseClass,bool bRecursive,bool bContainSelf = false);
 

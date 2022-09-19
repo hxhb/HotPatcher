@@ -64,6 +64,7 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase:public FPatcherEntitySetting
     // virtual TArray<FString> GetAssetIgnoreFiltersPaths()const;
     FORCEINLINE bool IsAnalysisFilterDependencies()const { return GetAssetScanConfig().bAnalysisFilterDependencies; }
     FORCEINLINE bool IsRecursiveWidgetTree()const {return GetAssetScanConfig().bRecursiveWidgetTree;}
+    FORCEINLINE bool IsAnalysisMatInstance()const { return GetAssetScanConfig().bAnalysisMaterialInstance; }
     FORCEINLINE bool IsIncludeHasRefAssetsOnly()const { return GetAssetScanConfig().bIncludeHasRefAssetsOnly; }
     FORCEINLINE TArray<EAssetRegistryDependencyTypeEx> GetAssetRegistryDependencyTypes()const { return GetAssetScanConfig().AssetRegistryDependencyTypes; }
     FORCEINLINE bool IsPackageTracker()const { return GetAssetScanConfig().bPackageTracker; }

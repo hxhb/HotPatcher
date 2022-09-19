@@ -128,7 +128,7 @@ namespace PatchWorker
 	// setup 14 serialize patch config
 	bool SavePatchConfigWorker(FHotPatcherPatchContext& Context);
 	// setup 15
-	bool BackupMetadataWorker(FHotPatcherPatchContext& Context);
+	// bool BackupMetadataWorker(FHotPatcherPatchContext& Context);
 	// setup 16
 	bool ShowSummaryWorker(FHotPatcherPatchContext& Context);
 	// setup 17
@@ -197,7 +197,7 @@ void UPatcherProxy::Init(FPatcherEntitySettingBase* InSetting)
 	ADD_PATCH_WORKER(PatchWorker::SaveDifferenceWorker);
 	ADD_PATCH_WORKER(PatchWorker::SaveNewReleaseWorker);
 	ADD_PATCH_WORKER(PatchWorker::SavePakFileInfoWorker);
-	ADD_PATCH_WORKER(PatchWorker::BackupMetadataWorker);
+	// ADD_PATCH_WORKER(PatchWorker::BackupMetadataWorker);
 	ADD_PATCH_WORKER(PatchWorker::ShowSummaryWorker);
 	ADD_PATCH_WORKER(PatchWorker::OnFaildDispatchWorker);
 }
@@ -679,21 +679,25 @@ namespace PatchWorker
 	bool GenerateGlobalAssetRegistryData(FHotPatcherPatchContext& Context)
 	{
 		SCOPED_NAMED_EVENT_TEXT("GenerateGlobalAssetRegistryData",FColor::Red);
-		FAssetDependenciesInfo TotalDiffAssets = UFlibAssetManageHelper::CombineAssetDependencies(Context.VersionDiff.AssetDiffInfo.AddAssetDependInfo,Context.VersionDiff.AssetDiffInfo.ModifyAssetDependInfo);
-		const TArray<FAssetDetail>& AllAssets = TotalDiffAssets.GetAssetDetails();
+		if(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry)
+		{
+			FAssetDependenciesInfo TotalDiffAssets = UFlibAssetManageHelper::CombineAssetDependencies(Context.VersionDiff.AssetDiffInfo.AddAssetDependInfo,Context.VersionDiff.AssetDiffInfo.ModifyAssetDependInfo);
+			const TArray<FAssetDetail>& AllAssets = TotalDiffAssets.GetAssetDetails();
 
-		TSet<FName> PackageAssetsSet;
-		for(const auto& Asset:AllAssets)
-		{
-			FString LongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString());
-			PackageAssetsSet.Add(*LongPackageName);
-		}
-		for(const auto& PlatformName:Context.GetSettingObject()->GetPakTargetPlatformNames())
-		{
-			ITargetPlatform* PlatformIns = UFlibHotPatcherCoreHelper::GetPlatformByName(PlatformName);
+			TSet<FName> PackageAssetsSet;
+			for(const auto& Asset:AllAssets)
+			{
+				FString LongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString());
+				PackageAssetsSet.Add(*LongPackageName);
+			}
+			for(const auto& PlatformName:Context.GetSettingObject()->GetPakTargetPlatformNames())
+			{
+				ITargetPlatform* PlatformIns = UFlibHotPatcherCoreHelper::GetPlatformByName(PlatformName);
 			
-			UFlibHotPatcherCoreHelper::SerializeChunksManifests(PlatformIns,PackageAssetsSet,TSet<FName>{},true);
+				UFlibHotPatcherCoreHelper::SerializeChunksManifests(PlatformIns,PackageAssetsSet,TSet<FName>{},true);
+			}
 		}
+		
 		return true;
 	}
 
@@ -1443,28 +1447,28 @@ namespace PatchWorker
 	};
 	
 	// setup 15
-	bool BackupMetadataWorker(FHotPatcherPatchContext& Context)
-	{
-		SCOPED_NAMED_EVENT_TEXT("BackupMetadataWorker",FColor::Red);
-		// backup Metadata
-		if(Context.GetPakFileNum())
-		{
-			TimeRecorder TR(FString::Printf(TEXT("Backup Metadata")));
-			FText DiaLogMsg = FText::Format(NSLOCTEXT("BackupMetadata", "BackupMetadata", "Backup Release {0} Metadatas."), FText::FromString(Context.GetSettingObject()->GetVersionId()));
-			Context.UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
-			if(Context.GetSettingObject()->IsBackupMetadata())
-			{
-				UFlibHotPatcherCoreHelper::BackupMetadataDir(
-					FPaths::ProjectDir(),
-					FApp::GetProjectName(),
-					Context.GetSettingObject()->GetPakTargetPlatforms(),
-					FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),
-					Context.GetSettingObject()->GetVersionId())
-				);
-			}
-		}
-		return true;
-	};
+	// bool BackupMetadataWorker(FHotPatcherPatchContext& Context)
+	// {
+	// 	SCOPED_NAMED_EVENT_TEXT("BackupMetadataWorker",FColor::Red);
+	// 	// backup Metadata
+	// 	if(Context.GetPakFileNum())
+	// 	{
+	// 		TimeRecorder TR(FString::Printf(TEXT("Backup Metadata")));
+	// 		FText DiaLogMsg = FText::Format(NSLOCTEXT("BackupMetadata", "BackupMetadata", "Backup Release {0} Metadatas."), FText::FromString(Context.GetSettingObject()->GetVersionId()));
+	// 		Context.UnrealPakSlowTask->EnterProgressFrame(1.0, DiaLogMsg);
+	// 		if(Context.GetSettingObject()->IsBackupMetadata())
+	// 		{
+	// 			UFlibHotPatcherCoreHelper::BackupMetadataDir(
+	// 				FPaths::ProjectDir(),
+	// 				FApp::GetProjectName(),
+	// 				Context.GetSettingObject()->GetPakTargetPlatforms(),
+	// 				FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),
+	// 				Context.GetSettingObject()->GetVersionId())
+	// 			);
+	// 		}
+	// 	}
+	// 	return true;
+	// };
 
 	// setup 16
 	bool ShowSummaryWorker(FHotPatcherPatchContext& Context)

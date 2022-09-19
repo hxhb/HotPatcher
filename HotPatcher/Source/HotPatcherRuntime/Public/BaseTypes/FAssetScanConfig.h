@@ -39,6 +39,8 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool bRecursiveWidgetTree = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bAnalysisMaterialInstance = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bSupportWorldComposition = true;
 	
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
