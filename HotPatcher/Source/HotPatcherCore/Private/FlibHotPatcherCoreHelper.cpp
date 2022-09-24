@@ -2112,7 +2112,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
 	for(auto Package:Packages)
 	{
 		FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
-		FExecTimeRecoder PreGeneratePlatformDataTimer(FString::Printf(TEXT("PreGeneratePlatformData %s"),*LongPackageName));
+		// FExecTimeRecoder PreGeneratePlatformDataTimer(FString::Printf(TEXT("PreGeneratePlatformData %s"),*LongPackageName));
 		FString FakePackageName = FString(TEXT("Package ")) + LongPackageName;
 
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25
@@ -2249,7 +2249,7 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 	TArray<ITargetPlatform*> TargetPlatforms)
 {
 	SCOPED_NAMED_EVENT_TEXT("WaitObjectsCachePlatformDataComplete",FColor::Red);
-	FExecTimeRecoder WaitObjectsCachePlatformDataCompleteTimer(TEXT("WaitObjectsCachePlatformDataComplete"));
+	// FExecTimeRecoder WaitObjectsCachePlatformDataCompleteTimer(TEXT("WaitObjectsCachePlatformDataComplete"));
 	if (GShaderCompilingManager)
 	{
 		// Wait for all shaders to finish compiling
@@ -2294,7 +2294,8 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 			
 			if(!!PendingCachePlatformDataObjects.Num())
 			{
-				FPlatformProcess::Sleep(0.001f);	
+				FPlatformProcess::Sleep(0.1f);
+				GLog->Flush();
 			}
 		}
 	}
@@ -2494,4 +2495,48 @@ TempSandboxFile.Get()
 	);
 #endif
 	return bresult;
+}
+TArray<UClass*> UFlibHotPatcherCoreHelper::GetClassesByNames(const TArray<FName>& ClassesNames)
+{
+	TArray<UClass*> result;
+	for(const auto& ClassesName:ClassesNames)
+	{
+		for (TObjectIterator<UClass> Itt; Itt; ++Itt)
+		{
+			if((*Itt)->GetName().Equals(ClassesName.ToString()))
+			{
+				result.Add(*Itt);
+				break;
+			}
+		}
+	}
+	return result;
+}
+
+TArray<UClass*> UFlibHotPatcherCoreHelper::GetAllMaterialClasses()
+{
+	TArray<UClass*> Classes;
+	TArray<FName> ParentClassesName = {
+		// materials
+		TEXT("MaterialExpression"),
+		TEXT("MaterialParameterCollection"),
+		TEXT("MaterialFunctionInterface"),
+		TEXT("Material"),
+		TEXT("MaterialInterface"),
+		};
+	for(auto& ParentClass:GetClassesByNames(ParentClassesName))
+	{
+		Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,true,true));
+	}
+	return Classes;
+}
+
+TSet<FName> UFlibHotPatcherCoreHelper::GetAllMaterialClassesNames()
+{
+	TSet<FName> result;
+	for(const auto& Class:GetAllMaterialClasses())
+	{
+		result.Add(Class->GetFName());
+	}
+	return result;
 }

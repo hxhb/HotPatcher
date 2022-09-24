@@ -1636,9 +1636,11 @@ FString UFlibPatchParserHelper::ReplaceMark(const FString& Src)
 			result = result.Replace(*Key,*FPaths::ConvertRelativePathToFull(*MarkMap.Find(Key)));
 		}
 	}
-	
+	FPaths::NormalizeFilename(result);
+	FPaths::CollapseRelativeDirectories(result);
 	return result;
 }
+
 FString UFlibPatchParserHelper::ReplaceMarkPath(const FString& Src)
 {
 	FString result = UFlibPatchParserHelper::ReplaceMark(Src);

@@ -278,4 +278,7 @@ public:
 	// need add UNREALED_API to FAssetRegistryGenerator
 	// all chunksinfo.csv / pakchunklist.txt / assetregistry.bin
 	static bool SerializeChunksManifests(ITargetPlatform* TargetPlatform, const TSet<FName>&, const TSet<FName>&, bool bGenerateStreamingInstallManifest = true);
+	static TArray<UClass*> GetClassesByNames(const TArray<FName>& ClassesNames);
+	static TArray<UClass*> GetAllMaterialClasses();
+	static TSet<FName> GetAllMaterialClassesNames();
 };

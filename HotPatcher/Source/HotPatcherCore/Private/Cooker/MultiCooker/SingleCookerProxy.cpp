@@ -579,16 +579,26 @@ FCookCluster USingleCookerProxy::GetPackageTrackerAsCluster()
 
 	PackageTrackerCluster.CookActionCallback.OnAssetCooked = GetOnPackageSavedCallback();
 	PackageTrackerCluster.CookActionCallback.OnCookBegin = GetOnCookAssetBeginCallback();
-			
+	
 	if(PackageTracker && GetSettingObject()->bCookPackageTrackerAssets)
 	{
 		PackageTrackerCluster.AssetDetails.Empty();
 		for(FName PackagePath:PackageTracker->GetPendingPackageSet())
 		{
-			FAssetDetail AssetDetail = UFlibAssetManageHelper::GetAssetDetailByPackageName(PackagePath.ToString());
-			if(AssetDetail.IsValid())
+			// make asset data to asset registry
+			FSoftObjectPath ObjectPath(PackagePath);
+			FAssetData AssetData;
+			if(UAssetManager::Get().GetAssetDataForPath(ObjectPath,AssetData))
 			{
-				PackageTrackerCluster.AssetDetails.Emplace(AssetDetail);
+				FAssetDetail AssetDetail;
+				if(UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(AssetData,AssetDetail))
+				{
+					PackageTrackerCluster.AssetDetails.Emplace(AssetDetail);
+				}
+			}
+			else
+			{
+				UE_LOG(LogHotPatcher,Warning,TEXT("[GetPackageTrackerAsCluster] Get %s AssetData Failed!"),*PackagePath.ToString());
 			}
 		}
 	}
@@ -708,19 +718,32 @@ void USingleCookerProxy::OnAssetCookedHandle(const FSoftObjectPath& PackagePath,
 {
 	FScopeLock Lock(&SynchronizationObject);
 	SCOPED_NAMED_EVENT_TEXT("OnAssetCookedHandle",FColor::Red);
-
-	FName AssetPathName = PackagePath.GetAssetPathName();
-	GetPaendingCookAssetsSet().Remove(AssetPathName);
 	
-	if(Result == ESavePackageResult::Success)
+	FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
+	FString SavePackageResultStr = UFlibHotPatcherCoreHelper::GetSavePackageResultStr(Result);
+	FName AssetPathName = PackagePath.GetAssetPathName();
+	FString AssetPath = PackagePath.GetAssetPathString();
+	
+	GetPaendingCookAssetsSet().Remove(AssetPathName);
+
+	switch(Result)
 	{
-		GetPlatformCookAssetOrders(Platform).Add(AssetPathName);
-	}
-	else
-	{
-		SCOPED_NAMED_EVENT_TEXT("USingleCookerProxy::OnCookAssetFailed",FColor::Red);
-		UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s for %d Failed (%s)!"),*PackagePath.GetAssetPathString(),(int32)Platform, *UFlibHotPatcherCoreHelper::GetSavePackageResultStr(Result));
-		GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform).PackagePaths.Add(AssetPathName);
+		case ESavePackageResult::Success:
+			{
+				GetPlatformCookAssetOrders(Platform).Add(AssetPathName);
+				break;
+			}
+		case ESavePackageResult::Error:
+		case ESavePackageResult::MissingFile:
+			{
+				UE_LOG(LogHotPatcher,Error,TEXT("CookError %s for %s (%s)!"),*AssetPath,*PlatformName,*SavePackageResultStr);
+				GetCookFailedAssetsCollection().CookFailedAssets.FindOrAdd(Platform).PackagePaths.Add(AssetPathName);
+				break;
+			}
+		default:
+			{
+				UE_LOG(LogHotPatcher,Warning,TEXT("CookWarning %s for %s Failed (%s)!"),*AssetPath,*PlatformName, *SavePackageResultStr);
+			}
 	}
 }
 
@@ -775,22 +798,7 @@ TSet<FName> USingleCookerProxy::GetAdditionalAssets()
 	return TSet<FName>{};
 }
 
-TArray<UClass*> GetClassesByNames(const TArray<FName>& ClassesNames)
-{
-	TArray<UClass*> result;
-	for(const auto& ClassesName:ClassesNames)
-	{
-		for (TObjectIterator<UClass> Itt; Itt; ++Itt)
-		{
-			if((*Itt)->GetName().Equals(ClassesName.ToString()))
-			{
-				result.Add(*Itt);
-				break;
-			}
-		}
-	}
-	return result;
-}
+
 // pre cache asset type order
 TArray<UClass*> USingleCookerProxy::GetPreCacheClasses() const
 {
@@ -802,10 +810,10 @@ TArray<UClass*> USingleCookerProxy::GetPreCacheClasses() const
 		TEXT("Texture"),
 		TEXT("PaperSprite"),
 		// material
-		TEXT("MaterialExpression"),
-		TEXT("MaterialParameterCollection"),
-		TEXT("MaterialFunctionInterface"),
-		TEXT("MaterialInterface"),
+		// TEXT("MaterialExpression"),
+		// TEXT("MaterialParameterCollection"),
+		// TEXT("MaterialFunctionInterface"),
+		// TEXT("MaterialInterface"),
 		// other
 		TEXT("PhysicsAsset"),
 		TEXT("PhysicalMaterial"),
@@ -832,13 +840,13 @@ TArray<UClass*> USingleCookerProxy::GetPreCacheClasses() const
 		// large ref asset
 		TEXT("ActorSequence"),
 		TEXT("LevelSequence"),
-		TEXT("World")
+		TEXT("World") 
 	};
 
-	for(auto& ParentClass:GetClassesByNames(ParentClassesName))
+	for(auto& ParentClass:UFlibHotPatcherCoreHelper::GetClassesByNames(ParentClassesName))
 	{
 		Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,true,true));
 	}
-	
+	Classes.Append(UFlibHotPatcherCoreHelper::GetAllMaterialClasses());
 	return Classes;
 }

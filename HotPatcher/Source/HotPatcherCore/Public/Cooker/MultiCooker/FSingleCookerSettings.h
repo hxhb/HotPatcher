@@ -41,6 +41,8 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	int32 MissionID = -1;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	bool bShaderCooker = false;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString ShaderLibName;
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)

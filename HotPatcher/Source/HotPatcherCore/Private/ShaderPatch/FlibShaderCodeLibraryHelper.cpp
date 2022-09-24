@@ -249,6 +249,7 @@ void UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete()
 			// 	LastRemainingJob = CurrentNumRemaingingJobs;
 			// }
 			FPlatformProcess::Sleep(0.5f);
+			GLog->Flush();
 		}
 
 		// One last process to get the shaders that were compiled at the very end

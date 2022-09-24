@@ -498,7 +498,7 @@ bool UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(const FAssetData& InAs
 #endif
 
 	OutAssetDetail = AssetDetail;
-	return !OutAssetDetail.AssetType.IsNone() && !OutAssetDetail.AssetType.IsNone() && !OutAssetDetail.AssetType.IsNone();
+	return OutAssetDetail.IsValid();
 }
 
 bool UFlibAssetManageHelper::GetSpecifyAssetDetail(const FString& InLongPackageName, FAssetDetail& OutAssetDetail)

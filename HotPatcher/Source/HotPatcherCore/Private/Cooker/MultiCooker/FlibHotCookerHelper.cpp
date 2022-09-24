@@ -59,7 +59,7 @@ FString UFlibHotCookerHelper::GetCookerProcFailedResultPath(const FString& BaseD
 
 FString UFlibHotCookerHelper::GetProfilingCmd()
 {
-	return FString::Printf(TEXT("-trace=cpu,memory,loadtime -statnamedevents implies -llm"));
+	return FString::Printf(TEXT("-tracehost=127.0.0.1 -trace=cpu,memory,loadtime -statnamedevents implies -llm"));
 }
 
 TSharedPtr<FCookShaderCollectionProxy> UFlibHotCookerHelper::CreateCookShaderCollectionProxyByPlatform(
