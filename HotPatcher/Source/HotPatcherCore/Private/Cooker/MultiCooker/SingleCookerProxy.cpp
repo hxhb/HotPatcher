@@ -92,7 +92,7 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 int32 USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
 {
 	SCOPED_NAMED_EVENT_TEXT("MakeCookQueue",FColor::Red);
-	int32 ClusterCount = 0;
+	int32 MakeClusterCount = 0;
 	FString DumpCookerInfo;
 	DumpCookerInfo.Append(TEXT("\n-----------------------------Dump Cooker-----------------------------\n"));
 	DumpCookerInfo.Append(FString::Printf(TEXT("\tTotal Asset: %d\n"),InCluser.AssetDetails.Num()));
@@ -111,8 +111,8 @@ int32 USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
 	if(GetSettingObject()->bForceCookInOneFrame)
 	{
 		CookCluserQueue.Enqueue(InCluser);
-		++ClusterCount;
-		return ClusterCount;
+		++MakeClusterCount;
+		return MakeClusterCount;
 	}
 	else
 	{
@@ -138,7 +138,7 @@ int32 USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
 				NewCluster.CookActionCallback.OnAssetCooked = GetOnPackageSavedCallback();
 				NewCluster.CookActionCallback.OnCookBegin = GetOnCookAssetBeginCallback();
 				CookCluserQueue.Enqueue(NewCluster);
-				++ClusterCount;
+				++MakeClusterCount;
 			}
 		}
 
@@ -157,14 +157,14 @@ int32 USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
 				NewCluster.CookActionCallback.OnAssetCooked = GetOnPackageSavedCallback();
 				NewCluster.CookActionCallback.OnCookBegin = GetOnCookAssetBeginCallback();
 				CookCluserQueue.Enqueue(NewCluster);
-				++ClusterCount;
+				++MakeClusterCount;
 			}
 			DumpCookerInfo.Append(FString::Printf(TEXT("\tOther Assets -- %d, make %d cluster.\n"),InCluser.AssetDetails.Num(),SplitedAssets.Num()));
 		}
 	}
 	DumpCookerInfo.Append(TEXT("---------------------------------------------------------------------\n"));
 	UE_LOG(LogHotPatcher,Display,TEXT("%s"),*DumpCookerInfo);
-	return ClusterCount;
+	return MakeClusterCount;
 }
 
 void USingleCookerProxy::CleanClusterCachedPlatformData(const FCookCluster& CookCluster)
