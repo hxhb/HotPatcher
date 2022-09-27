@@ -13,14 +13,13 @@
 DEFINE_LOG_CATEGORY(LogHotReleaseCommandlet);
 
 
-#define ADD_PLATFORM_PAK_LIST TEXT("AddPlatformPakList")
-TArray<FPlatformPakListFiles> ParserPlatformPakList(const FString& Commandline)
+TArray<FPlatformPakListFiles> ParserPlatformFilesByCmd(const FString& Commandline,const FString& Key,TFunction<void(FPlatformPakListFiles&,const FFilePath& File)> FileCallback)
 {
 	TArray<FPlatformPakListFiles> result;
 	TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Commandline);
-	if(KeyValues.Find(ADD_PLATFORM_PAK_LIST))
+	if(KeyValues.Find(Key))
 	{
-		FString AddPakListInfo = *KeyValues.Find(ADD_PLATFORM_PAK_LIST);
+		FString AddPakListInfo = *KeyValues.Find(Key);
 		TArray<FString> PlatformPakLists;
 		AddPakListInfo.ParseIntoArray(PlatformPakLists,TEXT(","));
 
@@ -40,13 +39,29 @@ TArray<FPlatformPakListFiles> ParserPlatformPakList(const FString& Commandline)
 					{
 						FFilePath PakFilePath;
 						PakFilePath.FilePath = PakListPath;
-						PlatformPakListItem.PakResponseFiles.Add(PakFilePath);
+						FileCallback(PlatformPakListItem,PakFilePath);
 					}
 				}
 				result.Add(PlatformPakListItem);
 			}
 		}
 	}
+	return result;
+}
+
+#define ADD_PLATFORM_PAK_LIST TEXT("AddPlatformPakList")
+#define ADD_PLATFORM_PAK_FILES TEXT("AddPlatformPakFiles")
+TArray<FPlatformPakListFiles> ParserPlatformPakList(const FString& Commandline)
+{
+	TArray<FPlatformPakListFiles> result;
+	result.Append(ParserPlatformFilesByCmd(Commandline,ADD_PLATFORM_PAK_LIST,[](FPlatformPakListFiles& PlatformPakListItem,const FFilePath& File)
+	{
+		PlatformPakListItem.PakResponseFiles.Add(File);
+	}));
+	result.Append(ParserPlatformFilesByCmd(Commandline,ADD_PLATFORM_PAK_FILES,[](FPlatformPakListFiles& PlatformPakListItem,const FFilePath& File)
+	{
+		PlatformPakListItem.PakResponseFiles.Add(File);
+	}));
 	return result;
 }
 

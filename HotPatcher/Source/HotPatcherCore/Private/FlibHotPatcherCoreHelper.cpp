@@ -434,8 +434,8 @@ void UFlibHotPatcherCoreHelper::CookAssets(
 #endif
 			InSavePath,false);
 	}
-	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
-	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+	// UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
+	// UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 }
 
 struct FFilterEditorOnlyFlag
@@ -589,7 +589,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			{
 				TSet<UObject*> ProcessedObjs;
 				TSet<UObject*> PendingProcessObjs;
-				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TArray<ITargetPlatform*>{Platform.Value},ProcessedObjs,PendingProcessObjs,bStorageConcurrent, true);
+				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TArray<ITargetPlatform*>{Platform.Value},ProcessedObjs,PendingProcessObjs,bStorageConcurrent, false);
 			}
 			if(GCookLog)
 			{
@@ -2083,7 +2083,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
 		SCOPED_NAMED_EVENT_TEXT("WaitCacheForCookedPlatformDataComplete",FColor::Red);
 		// Wait for all shaders to finish compiling
 		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
-		UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+		// UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 	}
 }
 
@@ -2299,7 +2299,7 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 			}
 		}
 	}
-	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+	// UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 }
 
 uint32 UFlibHotPatcherCoreHelper::GetCookSaveFlag(UPackage* Package, bool bUnversioned, bool bStorageConcurrent,

@@ -89,10 +89,10 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 	OnAssetCooked.AddUObject(this,&USingleCookerProxy::OnAssetCookedHandle);
 }
 
-void USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
+int32 USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
 {
 	SCOPED_NAMED_EVENT_TEXT("MakeCookQueue",FColor::Red);
-
+	int32 ClusterCount = 0;
 	FString DumpCookerInfo;
 	DumpCookerInfo.Append(TEXT("\n-----------------------------Dump Cooker-----------------------------\n"));
 	DumpCookerInfo.Append(FString::Printf(TEXT("\tTotal Asset: %d\n"),InCluser.AssetDetails.Num()));
@@ -111,7 +111,8 @@ void USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
 	if(GetSettingObject()->bForceCookInOneFrame)
 	{
 		CookCluserQueue.Enqueue(InCluser);
-		return;
+		++ClusterCount;
+		return ClusterCount;
 	}
 	else
 	{
@@ -137,6 +138,7 @@ void USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
 				NewCluster.CookActionCallback.OnAssetCooked = GetOnPackageSavedCallback();
 				NewCluster.CookActionCallback.OnCookBegin = GetOnCookAssetBeginCallback();
 				CookCluserQueue.Enqueue(NewCluster);
+				++ClusterCount;
 			}
 		}
 
@@ -155,12 +157,14 @@ void USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
 				NewCluster.CookActionCallback.OnAssetCooked = GetOnPackageSavedCallback();
 				NewCluster.CookActionCallback.OnCookBegin = GetOnCookAssetBeginCallback();
 				CookCluserQueue.Enqueue(NewCluster);
+				++ClusterCount;
 			}
 			DumpCookerInfo.Append(FString::Printf(TEXT("\tOther Assets -- %d, make %d cluster.\n"),InCluser.AssetDetails.Num(),SplitedAssets.Num()));
 		}
 	}
 	DumpCookerInfo.Append(TEXT("---------------------------------------------------------------------\n"));
 	UE_LOG(LogHotPatcher,Display,TEXT("%s"),*DumpCookerInfo);
+	return ClusterCount;
 }
 
 void USingleCookerProxy::CleanClusterCachedPlatformData(const FCookCluster& CookCluster)
@@ -274,6 +278,9 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 {
 	SCOPED_NAMED_EVENT_TEXT("ExecCookCluster",FColor::Red);
 
+	CookedClusterCount++;
+	UE_LOG(LogHotPatcher,Display,TEXT("ExecuteCookCluster %d with %d assets, total cluster %d"),CookedClusterCount,CookCluster.AssetDetails.Num(),ClusterCount);
+	
 	FExecTimeRecoder ExecCookClusterTimer(TEXT("ExecCookCluster"));
 	
 	if(!CookCluster.AssetDetails.Num())
@@ -359,6 +366,7 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 	// clean cached ddd / release memory
 	// CleanClusterCachedPlatformData(CookCluster);
 	// GEngine->ForceGarbageCollection(true);
+	
 }
 
 void USingleCookerProxy::Tick(float DeltaTime)
@@ -382,7 +390,7 @@ void USingleCookerProxy::Tick(float DeltaTime)
 		FCookCluster PackageTrackerCluster = GetPackageTrackerAsCluster();
 		if(PackageTrackerCluster.AssetDetails.Num())
 		{
-			MakeCookQueue(PackageTrackerCluster);
+			ClusterCount += MakeCookQueue(PackageTrackerCluster);
 			bCookedPackageTracker = true;
 		}
 	}
@@ -651,7 +659,7 @@ bool USingleCookerProxy::DoExport()
 	UFlibAssetManageHelper::ReplaceReditector(GlobalCluser.AssetDetails);
 	UFlibAssetManageHelper::RemoveInvalidAssets(GlobalCluser.AssetDetails);
 	
-	MakeCookQueue(GlobalCluser);
+	ClusterCount = MakeCookQueue(GlobalCluser);
 
 	// force cook all in onece frame
 	if(GetSettingObject()->bForceCookInOneFrame)
