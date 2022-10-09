@@ -21,7 +21,7 @@ public:
 		bool SamebAnalysisAssetDependencies = (bAnalysisAssetDependencies == InAsset.bAnalysisAssetDependencies);
 		bool SameAssetRegistryDependencyTypes = (AssetRegistryDependencyTypes == InAsset.AssetRegistryDependencyTypes);
 
-		return SameAsset && SameAssetRegistryDependencyTypes && SameAssetRegistryDependencyTypes;
+		return SameAsset && SamebAnalysisAssetDependencies && SameAssetRegistryDependencyTypes;
 	}
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		FSoftObjectPath Asset;

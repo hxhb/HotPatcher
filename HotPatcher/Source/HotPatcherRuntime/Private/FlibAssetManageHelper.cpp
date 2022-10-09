@@ -674,7 +674,7 @@ SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAllInValidAssetInProject",FC
 	}
 }
 
-const FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(const FString& InPackageName)
+FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(const FString& InPackageName)
 {
 	FAssetPackageData* AssetPackageData = nullptr;
 	if (InPackageName.IsEmpty())

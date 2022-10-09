@@ -60,7 +60,7 @@ TArray<FPlatformPakListFiles> ParserPlatformPakList(const FString& Commandline)
 	}));
 	result.Append(ParserPlatformFilesByCmd(Commandline,ADD_PLATFORM_PAK_FILES,[](FPlatformPakListFiles& PlatformPakListItem,const FFilePath& File)
 	{
-		PlatformPakListItem.PakResponseFiles.Add(File);
+		PlatformPakListItem.PakFiles.Add(File);
 	}));
 	return result;
 }
