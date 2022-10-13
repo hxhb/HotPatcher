@@ -1069,7 +1069,7 @@ FString UFlibAssetManageHelper::LongPackageNameToPackagePath(const FString& InLo
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::LongPackageNameToPackagePath",FColor::Red);
 	if(InLongPackageName.Contains(TEXT(".")))
 	{
-		UE_LOG(LogHotPatcher,Warning,TEXT("LongPackageNameToPackagePath %s alway is PackagePath!"),*InLongPackageName);
+		// UE_LOG(LogHotPatcher,Warning,TEXT("LongPackageNameToPackagePath %s alway is PackagePath!"),*InLongPackageName);
 		return InLongPackageName;
 	}
 	FString AssetName;
