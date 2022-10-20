@@ -81,7 +81,7 @@ void FAssetTypeActions_HotPatcherAssetLabel::MakeCookAndPakActionsSubMenu(UToolM
 
 void FAssetTypeActions_HotPatcherAssetLabel::OnCookAndPakPlatform(ETargetPlatform Platform,TArray<TWeakObjectPtr<UHotPatcherPrimaryLabel>> Objects)
 {
-	TArray<ETargetPlatform> PakTargetPlatforms;
+	TArray<ETargetPlatform> PakTargetPlatforms = {Platform};
 	for(const auto& Chunk:GetChunksByAssetLabels(Objects))
 	{
 		TSharedPtr<FExportPatchSettings> PatchSettings = UFlibHotPatcherCoreHelper::MakePatcherSettingByChunk(Chunk,PakTargetPlatforms);

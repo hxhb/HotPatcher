@@ -3,6 +3,7 @@
 #pragma once
 #include "FChunkInfo.h"
 #include "CoreMinimal.h"
+#include "Engine/AssetManagerTypes.h"
 #include "Engine/DataAsset.h"
 #include "HotPatcherPrimaryLabel.generated.h"
 

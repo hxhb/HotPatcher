@@ -569,24 +569,24 @@ void FHotPatcherEditorModule::CookAndPakByAssetsAndFilters(TArray<FPatcherSpecif
 	CookAndPakByPatchSettings(PatchSettings,bForceStandalone);
 }
 
-void FHotPatcherEditorModule::CookAndPakByPatchSettings(TSharedPtr<FExportPatchSettings> PatchSettings,bool bForceStandalone)
+void FHotPatcherEditorModule::CookAndPakByPatchSettings(TSharedPtr<FExportPatchSettings> InPatchSettings,bool bForceStandalone)
 {
-	if(bForceStandalone || PatchSettings->IsStandaloneMode())
+	if(bForceStandalone || InPatchSettings->IsStandaloneMode())
 	{
 		FString CurrentConfig;
-		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*PatchSettings.Get(),CurrentConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*InPatchSettings.Get(),CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("PatchConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
-		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*PatchSettings->GetCombinedAdditionalCommandletArgs());
-		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*PatchSettings->VersionId,*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);
-		RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,FString::Printf(TEXT("Mission: %s"),*PatchSettings->VersionId));
+		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*InPatchSettings->GetCombinedAdditionalCommandletArgs());
+		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*InPatchSettings->VersionId,*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);
+		RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,FString::Printf(TEXT("Mission: %s"),*InPatchSettings->VersionId));
 	}
 	else
 	{
 		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
 		PatcherProxy->AddToRoot();
 		Proxys.Add(PatcherProxy);
-		PatcherProxy->Init(PatchSettings.Get());
+		PatcherProxy->Init(InPatchSettings.Get());
 		PatcherProxy->DoExport();
 	}
 }

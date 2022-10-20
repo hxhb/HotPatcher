@@ -1143,14 +1143,14 @@ namespace PatchWorker
 			}
 
 			TArray<FReplaceText> ReplacePakListTexts = Context.GetSettingObject()->GetReplacePakListTexts();
-			if(!Chunk.PakFileProxys.Num())
+			if(!Chunk.GetPakFileProxys().Num())
 			{
 				UE_LOG(LogHotPatcher,Error,TEXT("Chunk %s Not Contain Any valid PakFileProxy!!!"),*Chunk.ChunkName);
 				continue;
 			}
 			// 创建chunk的Io Store文件
 			TArray<FString> IoStoreCommands;
-			for (const auto& PakFileProxy : Chunk.PakFileProxys)
+			for (const auto& PakFileProxy : Chunk.GetPakFileProxys())
 			{
 				if(!IoStoreSettings.PlatformContainers.Contains(PakFileProxy.Platform))
 					return true;
@@ -1200,7 +1200,7 @@ namespace PatchWorker
 #else
 				FString OutputDirectoryCmd = TEXT("");
 #endif
-				FString IoStoreCommandsFile = FPaths::Combine(Chunk.PakFileProxys[0].StorageDirectory,FString::Printf(TEXT("%s_IoStoreCommands.txt"),*Chunk.ChunkName));
+				FString IoStoreCommandsFile = FPaths::Combine(Chunk.GetPakFileProxys()[0].StorageDirectory,FString::Printf(TEXT("%s_IoStoreCommands.txt"),*Chunk.ChunkName));
 					
 				FString PlatformGlocalContainers;
 				// FString BasePacakgeRootDir = FPaths::ConvertRelativePathToFull(UFlibPatchParserHelper::ReplaceMarkPath(Context.GetSettingObject()->GetIoStoreSettings().PlatformContainers.Find(PakFileProxy.Platform)->BasePackageStagedRootDir.Path));

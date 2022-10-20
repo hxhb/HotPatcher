@@ -4,6 +4,7 @@
 
 #include "FlibHotPatcherCoreHelper.h"
 #include "FlibPatchParserHelper.h"
+#include "Engine/AssetManager.h"
 const FName UHotPatcherPrimaryLabel::HotPatherBundleName = FName("Directory");
 
 void UHotPatcherPrimaryLabel::UpdateAssetBundleData()

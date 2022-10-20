@@ -1,6 +1,7 @@
 #include "BaseTypes/FChunkInfo.h"
 
 #include "FlibPatchParserHelper.h"
+#include "Engine/AssetManager.h"
 
 
 FString FChunkInfo::GetShaderLibraryName() const

@@ -98,7 +98,7 @@ private:
 	TSharedPtr<class FUICommandList> PluginCommands;
 	TSharedPtr<SDockTab> DockTab;
 	mutable TSharedPtr<FProcWorkerThread> mProcWorkingThread;
-	UMissionNotificationProxy* MissionNotifyProay;
+	UMissionNotificationProxy* MissionNotifyProay = NULL;
 	TSharedPtr<FExportPatchSettings> PatchSettings;
 	TArray<class UPatcherProxy*> Proxys;
 };

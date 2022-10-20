@@ -2565,11 +2565,11 @@ TSharedPtr<FExportPatchSettings> UFlibHotPatcherCoreHelper::MakePatcherSettingBy
 	TempSettings->CookShaderOptions = Chunk.CookShaderOptions;
 	TempSettings->SerializeAssetRegistryOptions = Chunk.AssetRegistryOptions;
 	TempSettings->PakTargetPlatforms = PakTargetPlatforms;
-	TempSettings->SavePath.Path = Settings->GetTempSavedDir();
-	TempSettings->bStorageNewRelease = false;
-	TempSettings->bStoragePakFileInfo = false;
-	TempSettings->bStorageDeletedAssetsToNewReleaseJson = false;
-	TempSettings->bStandaloneMode = false;
+	// TempSettings->SavePath.Path = Settings->GetTempSavedDir();
+	// TempSettings->bStorageNewRelease = false;
+	// TempSettings->bStoragePakFileInfo = false;
+	// TempSettings->bStorageDeletedAssetsToNewReleaseJson = false;
+	// TempSettings->bStandaloneMode = false;
 	TempSettings->SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher");
 	return TempSettings;
 }
