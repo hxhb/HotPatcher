@@ -37,6 +37,7 @@
 #include "ToolMenuDelegates.h"
 #include "ContentBrowserMenuContexts.h"
 #include "CreatePatch/AssetActions/AssetTypeActions_PrimaryAssetLabel.h"
+#include "CreatePatch/AssetActions/AssetTypeActions_HotPatcherAssetLabel.h"
 #endif
 
 FExportPatchSettings* GPatchSettings = nullptr;
@@ -128,6 +129,7 @@ void FHotPatcherEditorModule::StartupModule()
 	CreateRootMenu();
 
 	FAssetToolsModule::GetModule().Get().RegisterAssetTypeActions(MakeShareable(new FAssetTypeActions_PrimaryAssetLabel));
+	FAssetToolsModule::GetModule().Get().RegisterAssetTypeActions(MakeShareable(new FAssetTypeActions_HotPatcherAssetLabel));
 #endif
 }
 
@@ -564,16 +566,15 @@ void FHotPatcherEditorModule::CookAndPakByAssetsAndFilters(TArray<FPatcherSpecif
 	FString Name = FDateTime::Now().ToString();
 	PatchSettings = MakeShareable(new FExportPatchSettings);
 	*PatchSettings = MakeTempPatchSettings(Name,IncludePaths,IncludeAssets,TArray<FPlatformExternAssets>{},Platforms,true);
+	CookAndPakByPatchSettings(PatchSettings,bForceStandalone);
+}
 
-	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-	PatcherProxy->AddToRoot();
-	Proxys.Add(PatcherProxy);
-	PatcherProxy->Init(PatchSettings.Get());
-
+void FHotPatcherEditorModule::CookAndPakByPatchSettings(TSharedPtr<FExportPatchSettings> PatchSettings,bool bForceStandalone)
+{
 	if(bForceStandalone || PatchSettings->IsStandaloneMode())
 	{
 		FString CurrentConfig;
-		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*PatchSettings,CurrentConfig);
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*PatchSettings.Get(),CurrentConfig);
 		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("PatchConfig.json")));
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*PatchSettings->GetCombinedAdditionalCommandletArgs());
@@ -582,6 +583,10 @@ void FHotPatcherEditorModule::CookAndPakByAssetsAndFilters(TArray<FPatcherSpecif
 	}
 	else
 	{
+		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
+		PatcherProxy->AddToRoot();
+		Proxys.Add(PatcherProxy);
+		PatcherProxy->Init(PatchSettings.Get());
 		PatcherProxy->DoExport();
 	}
 }

@@ -9,6 +9,7 @@
 #include "FPlatformExternFiles.h"
 #include "ETargetPlatform.h"
 #include "BaseTypes/FCookShaderOptions.h"
+#include "BaseTypes/FAssetRegistryOptions.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -27,7 +28,7 @@ enum class EMonolithicPathMode :uint8
 
 // 引擎的数据和ini等配置文件
 USTRUCT(BlueprintType)
-struct FPakInternalInfo
+struct HOTPATCHERRUNTIME_API FPakInternalInfo
 {
 	GENERATED_USTRUCT_BODY()
 public:
@@ -53,7 +54,7 @@ public:
 
 
 USTRUCT(BlueprintType)
-struct FPakCommand
+struct HOTPATCHERRUNTIME_API FPakCommand
 {
 	GENERATED_USTRUCT_BODY()
 public:
@@ -84,7 +85,7 @@ public:
 };
 
 USTRUCT(BlueprintType)
-struct FPakFileProxy
+struct HOTPATCHERRUNTIME_API FPakFileProxy
 {
 	GENERATED_USTRUCT_BODY()
 public:
@@ -105,7 +106,7 @@ public:
 };
 
 USTRUCT(BlueprintType)
-struct FChunkInfo
+struct HOTPATCHERRUNTIME_API FChunkInfo
 {
 	GENERATED_USTRUCT_BODY()
 public:
@@ -120,9 +121,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bMonolithic"))
 		EMonolithicPathMode MonolithicPathMode = EMonolithicPathMode::MountPath;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		bool bStorageUnrealPakList = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		bool bStorageIoStorePakList = false;
+		bool bOutoutDebugInfo = false;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		bool bStorageUnrealPakList = true;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		bool bStorageIoStorePakList = true;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))
 		TArray<FDirectoryPath> AssetIncludeFilters;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Assets", meta = (RelativeToGameContentDir, LongPackageName))
@@ -150,39 +153,25 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shader", meta=(EditCondition = "bCookPatchAssets"))
 		FCookShaderOptions CookShaderOptions;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetRegistry")
+		FAssetRegistryOptions AssetRegistryOptions;
+	
 	FORCEINLINE FCookShaderOptions GetCookShaderOptions()const {return CookShaderOptions;}
 	FString GetShaderLibraryName() const;
 	
+
+	
+	TArray<FSoftObjectPath> GetManagedAssets()const;
+
+	TArray<FPakFileProxy>& GetPakFileProxys(){ return PakFileProxys; }
+	const TArray<FPakFileProxy>& GetPakFileProxys()const { return PakFileProxys; }
+private:
 	TArray<FPakFileProxy> PakFileProxys;
 };
 
-FORCEINLINE FString FChunkInfo::GetShaderLibraryName() const
-{
-	FString ShaderLibraryName;
-	switch (GetCookShaderOptions().ShaderNameRule)
-	{
-	case EShaderLibNameRule::CHUNK_NAME:
-		{
-			ShaderLibraryName = ChunkName;
-			break;
-		}
-	case EShaderLibNameRule::PROJECT_NAME:
-		{
-			ShaderLibraryName = FApp::GetProjectName();
-			break;
-		}
-	case EShaderLibNameRule::CUSTOM:
-		{
-			ShaderLibraryName = GetCookShaderOptions().CustomShaderName;
-			break;
-		}
-	}
-	return ShaderLibraryName;
-}
-
 
 USTRUCT(BlueprintType)
-struct FChunkPakCommand
+struct HOTPATCHERRUNTIME_API FChunkPakCommand
 {
 	GENERATED_USTRUCT_BODY()
 public:
@@ -193,126 +182,26 @@ public:
 };
 
 USTRUCT(BlueprintType)
-struct FChunkAssetDescribe
+struct HOTPATCHERRUNTIME_API FChunkAssetDescribe
 {
 	GENERATED_USTRUCT_BODY()
 public:
 	FAssetDependenciesInfo Assets;
 	FAssetDependenciesInfo AddAssets;
 	FAssetDependenciesInfo ModifyAssets;
-	// TArray<FExternFileInfo> AllExFiles;
 	TMap<ETargetPlatform,FPlatformExternFiles> AllPlatformExFiles;
 	FPakInternalInfo InternalFiles; // general platform
 
-	FORCEINLINE bool HasValidAssets()const
-	{
-		bool bHasValidExFiles = false;
-		for(const auto& Item:AllPlatformExFiles)
-		{
-			if(!!Item.Value.ExternFiles.Num())
-			{
-				bHasValidExFiles = true;
-				break;
-			}
-		}
-		
-		return !!GetAssetsDetail().Num() || InternalFiles.HasValidAssets() || bHasValidExFiles;
-	}
+	bool HasValidAssets()const;
+	TArray<FAssetDetail> GetAssetsDetail()const;
+	TArray<FName> GetAssetsStrings()const;
+	TArray<FExternFileInfo> GetExFilesByPlatform(ETargetPlatform Platform)const;
+	TArray<FName> GetExternalFileNames(ETargetPlatform Platform)const;
+	TArray<FName> GetInternalFileNames()const;
+	FChunkInfo AsChunkInfo(const FString& ChunkName);
 	
-	FORCEINLINE TArray<FAssetDetail> GetAssetsDetail()const
-	{
-		return Assets.GetAssetDetails();
-	}
-	
-	
-	FORCEINLINE TArray<FName> GetAssetsStrings()const
-	{
-		TArray<FName> AllUnselectedAssets;
-		const TArray<FAssetDetail>& OutAssetDetails = GetAssetsDetail();
-
-		for (const auto& AssetDetail : OutAssetDetails)
-		{
-			AllUnselectedAssets.AddUnique(AssetDetail.PackagePath);
-		}
-		return AllUnselectedAssets;
-	}
-
-	FORCEINLINE TArray<FExternFileInfo> GetExFilesByPlatform(ETargetPlatform Platform)const
-	{
-		TArray<FExternFileInfo> result;
-		if(AllPlatformExFiles.Contains(Platform))
-		{
-			result = AllPlatformExFiles.Find(Platform)->ExternFiles;
-		}
-		return result;
-	}
-	FORCEINLINE TArray<FName> GetExternalFileNames(ETargetPlatform Platform)const
-	{
-		TArray<FName> ExFilesResult;
- 		auto CollectExFilesStrings = [](const TArray<FExternFileInfo>& InFiles)->TArray<FName>
-		{
-			TArray<FName> result;
-			for (const auto& File : InFiles)
-			{
-				result.AddUnique(FName(*File.FilePath.FilePath));
-			}
-			return result;
-		};
-		if(AllPlatformExFiles.Contains(Platform))
-		{
-			ExFilesResult = CollectExFilesStrings(GetExFilesByPlatform(Platform));
-		}
-		return ExFilesResult;
-	}
 	FORCEINLINE FPakInternalInfo GetInternalInfo()const{return InternalFiles;}
-	
-	FORCEINLINE TArray<FName> GetInternalFileNames()const
-	{
-		TArray<FName> result;
-		{
-			if (InternalFiles.bIncludeAssetRegistry) { result.Add(TEXT("bIncludeAssetRegistry")); };
-			if (InternalFiles.bIncludeGlobalShaderCache) { result.Add(TEXT("bIncludeGlobalShaderCache")); };
-			if (InternalFiles.bIncludeShaderBytecode) { result.Add(TEXT("bIncludeShaderBytecode")); };
-			if (InternalFiles.bIncludeEngineIni) { result.Add(TEXT("bIncludeEngineIni")); };
-			if (InternalFiles.bIncludePluginIni) { result.Add(TEXT("bIncludePluginIni")); };
-			if (InternalFiles.bIncludeProjectIni) { result.Add(TEXT("bIncludeProjectIni")); };
-		}
-		return result;
-	}
 
-	FORCEINLINE FChunkInfo AsChunkInfo(const FString& ChunkName)
-	{
-		FChunkInfo DefaultChunk;
-
-		DefaultChunk.ChunkName = ChunkName;
-		DefaultChunk.bMonolithic = false;
-		DefaultChunk.InternalFiles = GetInternalInfo();
-		DefaultChunk.bStorageUnrealPakList = true;
-		DefaultChunk.bStorageIoStorePakList = true;
-		for(const auto& AssetDetail:GetAssetsDetail())
-		{
-			FPatcherSpecifyAsset Asset;
-			Asset.Asset.SetPath(AssetDetail.PackagePath.ToString());
-			DefaultChunk.IncludeSpecifyAssets.AddUnique(Asset);
-		}
-		for(const auto& ExFiles:AllPlatformExFiles)
-		{
-			FPlatformExternAssets PlatformFiles;
-			PlatformFiles.TargetPlatform = ExFiles.Key;
-			PlatformFiles.AddExternFileToPak = ExFiles.Value.ExternFiles;
-		}
-		return DefaultChunk;
-	}
 };
-
-//USTRUCT(BlueprintType)
-//struct FChunkAssets
-//{
-//	GENERATED_USTRUCT_BODY()
-//public:
-//	FAssetDependenciesInfo Assets;
-//	TArray<FExternAssetFileInfo> AllExFiles;
-//	TArray<FExternAssetFileInfo> AllInternalFiles;
-//};
 
 

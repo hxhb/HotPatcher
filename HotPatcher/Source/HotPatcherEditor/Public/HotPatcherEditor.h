@@ -74,6 +74,7 @@ public:
 	void OnCookPlatform(ETargetPlatform Platform);
 	void OnCookAndPakPlatform(ETargetPlatform Platform, bool bAnalysicDependencies);
 	void CookAndPakByAssetsAndFilters(TArray<FPatcherSpecifyAsset> IncludeAssets,TArray<FDirectoryPath> IncludePaths,TArray<ETargetPlatform> Platforms,bool bForceStandalone = false);
+	void CookAndPakByPatchSettings(TSharedPtr<FExportPatchSettings> PatchSettings,bool bForceStandalone);
 	void OnPakExternal(FPakExternalInfo Config);
 	void OnPakPreset(FExportPatchSettings Config);
 	void OnObjectSaved( UObject* ObjectSaved );

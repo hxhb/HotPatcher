@@ -971,7 +971,7 @@ namespace PatchWorker
 					const FString ChunkPakName = UFlibHotPatcherCoreHelper::MakePakShortName(Context.CurrentVersion,Chunk,PlatformName,Context.GetSettingObject()->GetPakNameRegular());
 					SinglePakForChunk.ChunkStoreName = ChunkPakName;
 					SinglePakForChunk.StorageDirectory = ChunkSaveBasePath;
-					Chunk.PakFileProxys.Add(SinglePakForChunk);
+					Chunk.GetPakFileProxys().Add(SinglePakForChunk);
 				}
 				else
 				{
@@ -999,7 +999,7 @@ namespace PatchWorker
 						}
 						CurrentPak.ChunkStoreName = Path;
 						CurrentPak.StorageDirectory = FPaths::Combine(ChunkSaveBasePath, Chunk.ChunkName);
-						Chunk.PakFileProxys.Add(CurrentPak);
+						Chunk.GetPakFileProxys().Add(CurrentPak);
 					}
 				}
 			}
@@ -1033,7 +1033,7 @@ namespace PatchWorker
 			// TMap<FString,TArray<FPakFileInfo>>& PakFilesInfoMap = Context.PakFilesInfoMap;
 				
 			// 创建chunk的pak文件
-			for (const auto& PakFileProxy : Chunk.PakFileProxys)
+			for (const auto& PakFileProxy : Chunk.GetPakFileProxys())
 			{
 				FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(PakFileProxy.Platform);
 				TArray<FString> UnrealPakCommandletOptions;
@@ -1104,7 +1104,7 @@ namespace PatchWorker
 							}
 						}//);
 							
-						if (!Chunk.bStorageUnrealPakList)
+						if (!(Chunk.bStorageUnrealPakList && Chunk.bOutoutDebugInfo))
 						{
 							IFileManager::Get().Delete(*PakListFile);
 						}

@@ -27,6 +27,7 @@
 #include "Serialization/ArrayWriter.h"
 #include "Settings/ProjectPackagingSettings.h"
 #include "ShaderCompiler.h"
+#include "CreatePatch/PatcherProxy.h"
 #include "Materials/MaterialInstance.h"
 #include "Materials/MaterialInstanceConstant.h"
 #include "ProfilingDebugging/LoadTimeTracker.h"
@@ -111,6 +112,7 @@ FChunkInfo UFlibHotPatcherCoreHelper::MakeChunkFromPatchSettings(const FExportPa
 	Chunk.MonolithicPathMode = EMonolithicPathMode::MountPath;
 	Chunk.bStorageUnrealPakList = InPatchSetting->GetUnrealPakSettings().bStoragePakList;
 	Chunk.bStorageIoStorePakList = InPatchSetting->GetIoStoreSettings().bStoragePakList;
+	Chunk.bOutoutDebugInfo = Chunk.bStorageIoStorePakList || Chunk.bStorageUnrealPakList;
 	Chunk.AssetIncludeFilters = GetThis()->GetAssetIncludeFilters();
 	Chunk.AssetIgnoreFilters = GetThis()->GetAssetIgnoreFilters();
 	Chunk.bAnalysisFilterDependencies = InPatchSetting->IsAnalysisFilterDependencies();
@@ -2539,4 +2541,47 @@ TSet<FName> UFlibHotPatcherCoreHelper::GetAllMaterialClassesNames()
 		result.Add(Class->GetFName());
 	}
 	return result;
+}
+
+TSharedPtr<FExportPatchSettings> UFlibHotPatcherCoreHelper::MakePatcherSettingByChunk(const FChunkInfo& Chunk,const TArray<ETargetPlatform>& PakTargetPlatforms)
+{
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	Settings->ReloadConfig();
+	TSharedPtr<FExportPatchSettings> TempSettings = MakeShareable(new FExportPatchSettings);
+	
+	*TempSettings = Settings->TempPatchSetting;
+	TempSettings->VersionId = Chunk.ChunkName;
+	for(const auto& AssetPath:Chunk.GetManagedAssets())
+	{
+		FPatcherSpecifyAsset Asset;
+		Asset.Asset = AssetPath;
+		Asset.bAnalysisAssetDependencies = false;
+		
+		TempSettings->GetAssetScanConfigRef().IncludeSpecifyAssets.AddUnique(Asset);
+	}
+	
+	TempSettings->AddExternAssetsToPlatform = Chunk.AddExternAssetsToPlatform;
+	TempSettings->bCookPatchAssets = true;
+	TempSettings->CookShaderOptions = Chunk.CookShaderOptions;
+	TempSettings->SerializeAssetRegistryOptions = Chunk.AssetRegistryOptions;
+	TempSettings->PakTargetPlatforms = PakTargetPlatforms;
+	TempSettings->SavePath.Path = Settings->GetTempSavedDir();
+	TempSettings->bStorageNewRelease = false;
+	TempSettings->bStoragePakFileInfo = false;
+	TempSettings->bStorageDeletedAssetsToNewReleaseJson = false;
+	TempSettings->bStandaloneMode = false;
+	TempSettings->SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher");
+	return TempSettings;
+}
+
+bool UFlibHotPatcherCoreHelper::CookAndPakChunk(const FChunkInfo& ChunkInfo,const TArray<ETargetPlatform>& PakTargetPlatforms)
+{
+	TSharedPtr<FExportPatchSettings> PatchSettings = MakePatcherSettingByChunk(ChunkInfo,PakTargetPlatforms);
+	
+	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
+	PatcherProxy->AddToRoot();
+	PatcherProxy->Init(PatchSettings.Get());
+	bool bStatus = PatcherProxy->DoExport();
+	PatcherProxy->RemoveFromRoot();
+	return bStatus;
 }

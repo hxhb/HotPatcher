@@ -281,4 +281,7 @@ public:
 	static TArray<UClass*> GetClassesByNames(const TArray<FName>& ClassesNames);
 	static TArray<UClass*> GetAllMaterialClasses();
 	static TSet<FName> GetAllMaterialClassesNames();
+
+	static TSharedPtr<FExportPatchSettings> MakePatcherSettingByChunk(const FChunkInfo& Chunk,const TArray<ETargetPlatform>& PakTargetPlatforms);
+	static bool CookAndPakChunk(const FChunkInfo& ChunkInfo,const TArray<ETargetPlatform>& PakTargetPlatforms);
 };

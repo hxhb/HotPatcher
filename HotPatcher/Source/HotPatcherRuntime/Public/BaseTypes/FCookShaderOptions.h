@@ -1,8 +1,8 @@
 #pragma once
+#include "BaseTypes.h"
 
 #include "CoreMinimal.h"
 #include "FCookShaderOptions.generated.h"
-
 
 UENUM(BlueprintType)
 enum class EShaderLibNameRule : uint8
@@ -12,7 +12,6 @@ enum class EShaderLibNameRule : uint8
 	CUSTOM
 };
 
-#define AS_PROJECTDIR_MARK TEXT("[PROJECTDIR]")
 
 USTRUCT(BlueprintType)
 struct FCookShaderOptions
