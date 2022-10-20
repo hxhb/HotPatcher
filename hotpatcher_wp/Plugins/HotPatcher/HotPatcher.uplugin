@@ -1,0 +1,44 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "HotPatcher",
+	"Description": "",
+	"Category": "HotPatcher",
+	"CreatedBy": "imzlp",
+	"CreatedByURL": "https://imzlp.com/",
+	"DocsURL": "https://imzlp.com/posts/17590/",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "HotPatcherEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "HotPatcherCore",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "HotPatcherRuntime",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault"
+		},
+		{
+			"Name": "BinariesPatchFeature",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault"
+		},
+		{
+			"Name": "CmdHandler",
+			"Type": "Developer",
+			"LoadingPhase": "PostConfigInit"
+		}
+	]
+}
