@@ -2543,13 +2543,21 @@ TSet<FName> UFlibHotPatcherCoreHelper::GetAllMaterialClassesNames()
 	return result;
 }
 
-TSharedPtr<FExportPatchSettings> UFlibHotPatcherCoreHelper::MakePatcherSettingByChunk(const FChunkInfo& Chunk,const TArray<ETargetPlatform>& PakTargetPlatforms)
+TSharedPtr<FExportPatchSettings> UFlibHotPatcherCoreHelper::MakePatcherSettingByChunk(const FChunkInfo& Chunk,const TArray<ETargetPlatform>& PakTargetPlatforms,FExportPatchSettings* InTempSettings)
 {
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
 	Settings->ReloadConfig();
 	TSharedPtr<FExportPatchSettings> TempSettings = MakeShareable(new FExportPatchSettings);
+
+	if(InTempSettings)
+	{
+		*TempSettings = *InTempSettings;
+	}
+	else
+	{
+		*TempSettings = Settings->HPLPakSettings;
+	}
 	
-	*TempSettings = Settings->TempPatchSetting;
 	TempSettings->VersionId = Chunk.ChunkName;
 	for(const auto& AssetPath:Chunk.GetManagedAssets())
 	{
@@ -2565,12 +2573,6 @@ TSharedPtr<FExportPatchSettings> UFlibHotPatcherCoreHelper::MakePatcherSettingBy
 	TempSettings->CookShaderOptions = Chunk.CookShaderOptions;
 	TempSettings->SerializeAssetRegistryOptions = Chunk.AssetRegistryOptions;
 	TempSettings->PakTargetPlatforms = PakTargetPlatforms;
-	// TempSettings->SavePath.Path = Settings->GetTempSavedDir();
-	// TempSettings->bStorageNewRelease = false;
-	// TempSettings->bStoragePakFileInfo = false;
-	// TempSettings->bStorageDeletedAssetsToNewReleaseJson = false;
-	// TempSettings->bStandaloneMode = false;
-	TempSettings->SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher");
 	return TempSettings;
 }
 
@@ -2585,9 +2587,9 @@ bool UFlibHotPatcherCoreHelper::CookAndPakChunk(const FChunkInfo& ChunkInfo,cons
 	PatcherProxy->RemoveFromRoot();
 	return bStatus;
 }
-
 #include "Chunker/HotPatcherPrimaryLabel.h"
-void UFlibHotPatcherCoreHelper::CookAndPakHPL(const TArray<FString>& SearchPaths,TArray<ETargetPlatform> TargetPlatforms)
+
+TArray<FChunkInfo> UFlibHotPatcherCoreHelper::GetHPLChunkInfos(const TArray<FString>& SearchPaths)
 {
 	TArray<FAssetData> SearchDatas;
 	UFlibAssetManageHelper::GetAssetDataInPaths(SearchPaths,SearchDatas);
@@ -2608,8 +2610,12 @@ void UFlibHotPatcherCoreHelper::CookAndPakHPL(const TArray<FString>& SearchPaths
 			}
 		}
 	}
-		
-	for(const auto& LabelChunk:ChunkInfos)
+	return ChunkInfos;
+}
+
+void UFlibHotPatcherCoreHelper::CookAndPakHPL(const TArray<FString>& SearchPaths,TArray<ETargetPlatform> TargetPlatforms)
+{
+	for(const auto& LabelChunk:GetHPLChunkInfos(SearchPaths))
 	{
 		UFlibHotPatcherCoreHelper::CookAndPakChunk(LabelChunk,TargetPlatforms);
 	}

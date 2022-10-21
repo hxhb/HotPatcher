@@ -24,4 +24,9 @@ namespace CommandletHelper
 	HOTPATCHERCORE_API void MainTick(TFunction<bool()> IsRequestExit);
 
 	HOTPATCHERCORE_API bool GetCommandletArg(const FString& Token,FString& OutValue);
+
+	HOTPATCHERCORE_API bool IsCookCommandlet();
+	HOTPATCHERCORE_API TArray<ETargetPlatform> GetCookCommandletTargetPlatforms();
+	HOTPATCHERCORE_API TArray<FString> GetCookCommandletTargetPlatformName();
+	
 }

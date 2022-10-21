@@ -32,6 +32,7 @@ public:
     TArray<ETargetPlatform> PlatformWhitelists;
 
     FString GetTempSavedDir()const;
+    FString GetHPLSavedDir()const;
     
     UPROPERTY(EditAnywhere, config, Category = "ConfigTemplate")
     FExportPatchSettings TempPatchSetting;
@@ -48,42 +49,61 @@ public:
 
     UPROPERTY(EditAnywhere, config, Category = "CookCommandlet")
     bool bUseHPL = false;
-    UPROPERTY(EditAnywhere, config, Category = "CookCommandlet",meta = (RelativeToGameContentDir, LongPackageName))
+    UPROPERTY(EditAnywhere, config, Category = "CookCommandlet",meta = (RelativeToGameContentDir, LongPackageName,EditCondition="bUseHPL"))
     TArray<FDirectoryPath> SearchPaths;
-
-    TArray<FString> GeHPLSearchPaths();
+    UPROPERTY(EditAnywhere, config, Category = "CookCommandlet",meta=(EditCondition="bUseHPL"))
+    bool bCopyToStagedBuilds = true;
+    // Relative to the Saved directory
+    UPROPERTY(EditAnywhere, config, Category = "CookCommandlet",meta=(EditCondition="bUseHPL"))
+    FString TempStagedBuildsDir;
+    UPROPERTY(EditAnywhere, config, Category = "CookCommandlet",meta=(EditCondition="bUseHPL"))
+    FExportPatchSettings HPLPakSettings;
+    TArray<FString> GetHPLSearchPaths();
 };
 
-FORCEINLINE_DEBUGGABLE TArray<FString> UHotPatcherSettings::GeHPLSearchPaths()
+FORCEINLINE_DEBUGGABLE TArray<FString> UHotPatcherSettings::GetHPLSearchPaths()
 {
     UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
-    TArray<FString> SearchPaths;
+    TArray<FString> SearchPathStrs;
     for(const auto& Path:Settings->SearchPaths)
     {
-        SearchPaths.Add(Path.Path);
+        SearchPathStrs.Add(Path.Path);
     }
-    return SearchPaths;
+    return SearchPathStrs;
 }
 
 FORCEINLINE FString UHotPatcherSettings::GetTempSavedDir()const
 {
     return UFlibPatchParserHelper::ReplaceMark(TempPatchSetting.SavePath.Path);
 }
+FORCEINLINE FString UHotPatcherSettings::GetHPLSavedDir()const
+{
+    return UFlibPatchParserHelper::ReplaceMark(HPLPakSettings.SavePath.Path);
+}
 
 FORCEINLINE UHotPatcherSettings::UHotPatcherSettings(const FObjectInitializer& Initializer):Super(Initializer)
 {
-    TempPatchSetting.bByBaseVersion=false;
-    // TempPatchSetting.bStorageAssetDependencies = false;
-    TempPatchSetting.bStorageDiffAnalysisResults=false;
-    TempPatchSetting.bStorageDeletedAssetsToNewReleaseJson = false;
-    TempPatchSetting.bStorageConfig = false;
-    TempPatchSetting.bStorageNewRelease = false;
-    TempPatchSetting.bStoragePakFileInfo = false;
-    TempPatchSetting.bCookPatchAssets = true;
-    TempPatchSetting.CookShaderOptions.bSharedShaderLibrary = false;
-    TempPatchSetting.CookShaderOptions.bNativeShader = false;
-    TempPatchSetting.EncryptSettings.bUseDefaultCryptoIni = true;
-    TempPatchSetting.SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/Paks");
+    auto ResetTempSettings = [](FExportPatchSettings& InTempPatchSetting)
+    {
+        InTempPatchSetting.bByBaseVersion=false;
+        // TempPatchSetting.bStorageAssetDependencies = false;
+        InTempPatchSetting.bStorageDiffAnalysisResults=false;
+        InTempPatchSetting.bStorageDeletedAssetsToNewReleaseJson = false;
+        InTempPatchSetting.bStorageConfig = false;
+        InTempPatchSetting.bStorageNewRelease = false;
+        InTempPatchSetting.bStoragePakFileInfo = false;
+        InTempPatchSetting.bCookPatchAssets = true;
+        InTempPatchSetting.CookShaderOptions.bSharedShaderLibrary = false;
+        InTempPatchSetting.CookShaderOptions.bNativeShader = false;
+        InTempPatchSetting.EncryptSettings.bUseDefaultCryptoIni = true;
+        InTempPatchSetting.SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/Paks");
+    };
+    ResetTempSettings(TempPatchSetting);
+    ResetTempSettings(HPLPakSettings);
+    HPLPakSettings.bStandaloneMode = false;
+    HPLPakSettings.PakNameRegular = 
+    HPLPakSettings.SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/HPL");
+    TempStagedBuildsDir = TEXT("[PROJECTDIR]/Saved/HotPatcher/TempStagedBuilds");
 }
 
 #undef LOCTEXT_NAMESPACE

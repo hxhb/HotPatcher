@@ -156,7 +156,6 @@ public:
 	static FString PatchSummary(const FPatchVersionDiff& DiffInfo);
 
 	static FString MakePakShortName(const FHotPatcherVersion& InCurrentVersion, const FChunkInfo& InChunkInfo, const FString& InPlatform,const FString& InRegular);
-
 	static bool CheckSelectedAssetsCookStatus(const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets, FString& OutMsg);
 	static bool CheckPatchRequire(const FPatchVersionDiff& InDiff,const TArray<FString>& PlatformNames,FString& OutMsg);
 
@@ -282,7 +281,8 @@ public:
 	static TArray<UClass*> GetAllMaterialClasses();
 	static TSet<FName> GetAllMaterialClassesNames();
 
-	static TSharedPtr<FExportPatchSettings> MakePatcherSettingByChunk(const FChunkInfo& Chunk,const TArray<ETargetPlatform>& PakTargetPlatforms);
+	static TSharedPtr<FExportPatchSettings> MakePatcherSettingByChunk(const FChunkInfo& Chunk,const TArray<ETargetPlatform>& PakTargetPlatforms,FExportPatchSettings* InTempSettings = nullptr);
 	static bool CookAndPakChunk(const FChunkInfo& ChunkInfo,const TArray<ETargetPlatform>& PakTargetPlatforms);
 	static void CookAndPakHPL(const TArray<FString>& SearchPaths,TArray<ETargetPlatform> TargetPlatforms);
+	static TArray<FChunkInfo> GetHPLChunkInfos(const TArray<FString>& SearchPaths);
 };

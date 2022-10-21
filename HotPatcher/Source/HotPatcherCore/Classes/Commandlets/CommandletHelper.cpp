@@ -135,3 +135,48 @@ bool CommandletHelper::GetCommandletArg(const FString& Token,FString& OutValue)
 	}
 	return bHasToken && !OutValue.IsEmpty();
 }
+
+bool CommandletHelper::IsCookCommandlet()
+{
+	bool bIsCookCommandlet = false;
+
+	if(::IsRunningCommandlet())
+	{
+		FString CommandletName;
+		bool bIsCommandlet = CommandletHelper::GetCommandletArg(TEXT("-run="),CommandletName); //FParse::Value(FCommandLine::Get(), TEXT("-run="), CommandletName);
+	
+		if(bIsCommandlet && !CommandletName.IsEmpty())
+		{
+			bIsCookCommandlet = CommandletName.Equals(TEXT("cook"),ESearchCase::IgnoreCase);
+		}
+	}
+	return bIsCookCommandlet;
+}
+
+TArray<ETargetPlatform> CommandletHelper::GetCookCommandletTargetPlatforms()
+{
+	TArray<ETargetPlatform> TargetPlatforms;
+	{
+		FString PlatformName;
+		if(CommandletHelper::GetCommandletArg(TEXT("-TargetPlatform="),PlatformName))
+		{
+			ETargetPlatform TargetPlatform;
+			THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,TargetPlatform);
+			TargetPlatforms.AddUnique(TargetPlatform);
+		}
+	}
+	return TargetPlatforms;
+}
+
+TArray<FString> CommandletHelper::GetCookCommandletTargetPlatformName()
+{
+	TArray<FString> result;
+	TArray<ETargetPlatform> Platforms = CommandletHelper::GetCookCommandletTargetPlatforms();
+
+	for(const auto& Platform:Platforms)
+	{
+		result.AddUnique(THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
+	}
+
+	return result;
+}
