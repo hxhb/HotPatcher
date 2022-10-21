@@ -284,4 +284,5 @@ public:
 
 	static TSharedPtr<FExportPatchSettings> MakePatcherSettingByChunk(const FChunkInfo& Chunk,const TArray<ETargetPlatform>& PakTargetPlatforms);
 	static bool CookAndPakChunk(const FChunkInfo& ChunkInfo,const TArray<ETargetPlatform>& PakTargetPlatforms);
+	static void CookAndPakHPL(const TArray<FString>& SearchPaths,TArray<ETargetPlatform> TargetPlatforms);
 };

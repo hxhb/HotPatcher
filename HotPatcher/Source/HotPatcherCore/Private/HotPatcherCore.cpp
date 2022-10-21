@@ -6,6 +6,7 @@
 // ENGINE HEADER
 
 #include "AssetToolsModule.h"
+#include "CommandletHelper.h"
 #include "ContentBrowserModule.h"
 #include "IContentBrowserSingleton.h"
 #include "Misc/MessageDialog.h"
@@ -19,6 +20,7 @@
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "PakFileUtilities.h"
+#include "Chunker/HotPatcherPrimaryLabel.h"
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
 #include "CreatePatch/PatcherProxy.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
@@ -60,18 +62,51 @@ FHotPatcherCoreModule& FHotPatcherCoreModule::Get()
 	return Module;
 }
 
+
 void FHotPatcherCoreModule::StartupModule()
 {
 	FParse::Bool(FCommandLine::Get(),TEXT("-cooklog"),GCookLog);
 	UE_LOG(LogHotPatcher,Log,TEXT("GCookLog is %s!!!"),GCookLog ? TEXT("TRUE"): TEXT("FALSE"));
+
+	FString CommandletName;
+	bool bIsCommandlet = CommandletHelper::GetCommandletArg(TEXT("-run="),CommandletName); //FParse::Value(FCommandLine::Get(), TEXT("-run="), CommandletName);
+	bool bIsCookCommandlet = false;
+	if(bIsCommandlet && !CommandletName.IsEmpty())
+	{
+		bIsCookCommandlet = CommandletName.Equals(TEXT("cook"),ESearchCase::IgnoreCase);
+	}
+	
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	if(bIsCookCommandlet && Settings->bUseHPL)
+	{
+	    FCoreDelegates::OnEnginePreExit.AddRaw(this,&FHotPatcherCoreModule::OnCookAndPakHPL);
+	}
 }
-
-
 
 void FHotPatcherCoreModule::ShutdownModule()
 {
 
 }
+
+void FHotPatcherCoreModule::OnCookAndPakHPL()
+{
+	UE_LOG(LogHotPatcher,Log,TEXT("On CookAndPakHPL.."));
+	// -TargetPlatform=IOS
+	TArray<ETargetPlatform> TargetPlatforms;
+	{
+		FString PlatformName;
+		if(CommandletHelper::GetCommandletArg(TEXT("-TargetPlatform"),PlatformName))
+		{
+			ETargetPlatform TargetPlatform;
+			THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,TargetPlatform);
+			TargetPlatforms.AddUnique(TargetPlatform);
+		}
+	}
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	UFlibHotPatcherCoreHelper::CookAndPakHPL(Settings->GeHPLSearchPaths(),TargetPlatforms);
+}
+
+
 #undef LOCTEXT_NAMESPACE
 	
 IMPLEMENT_MODULE(FHotPatcherCoreModule, HotPatcherCore)

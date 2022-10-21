@@ -2585,3 +2585,32 @@ bool UFlibHotPatcherCoreHelper::CookAndPakChunk(const FChunkInfo& ChunkInfo,cons
 	PatcherProxy->RemoveFromRoot();
 	return bStatus;
 }
+
+#include "Chunker/HotPatcherPrimaryLabel.h"
+void UFlibHotPatcherCoreHelper::CookAndPakHPL(const TArray<FString>& SearchPaths,TArray<ETargetPlatform> TargetPlatforms)
+{
+	TArray<FAssetData> SearchDatas;
+	UFlibAssetManageHelper::GetAssetDataInPaths(SearchPaths,SearchDatas);
+	TArray<FChunkInfo> ChunkInfos;
+		
+	for(const auto& AssetData:SearchDatas)
+	{
+		if(AssetData.AssetClass.IsEqual(TEXT("HotPatcherPrimaryLabel")))
+		{
+			FSoftObjectPath LabelPath = AssetData.ToSoftObjectPath();
+			if(LabelPath.IsValid())
+			{
+				UHotPatcherPrimaryLabel* LabelObj = Cast<UHotPatcherPrimaryLabel>(LabelPath.TryLoad());
+				if(LabelObj)
+				{
+					ChunkInfos.Add(LabelObj->LabelRules);
+				}
+			}
+		}
+	}
+		
+	for(const auto& LabelChunk:ChunkInfos)
+	{
+		UFlibHotPatcherCoreHelper::CookAndPakChunk(LabelChunk,TargetPlatforms);
+	}
+}

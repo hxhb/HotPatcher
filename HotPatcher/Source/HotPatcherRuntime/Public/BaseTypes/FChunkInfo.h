@@ -116,6 +116,8 @@ public:
 	}
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 		FString ChunkName;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+		int32 Priority = -1;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool bMonolithic = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bMonolithic"))
@@ -150,7 +152,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Internal", meta = (EditCondition = "!bMonolithic"))
 		FPakInternalInfo InternalFiles;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shader", meta=(EditCondition = "bCookPatchAssets"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shader")
 		FCookShaderOptions CookShaderOptions;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AssetRegistry")

@@ -18,7 +18,7 @@ void UHotPatcherPrimaryLabel::UpdateAssetBundleData()
 
 	UAssetManager& Manager = UAssetManager::Get();
 	IAssetRegistry& AssetRegistry = Manager.GetAssetRegistry();
-	SetPriority(Priority);
+	SetPriority(LabelRules.Priority);
 
 	TArray<FSoftObjectPath> NewPaths = LabelRules.GetManagedAssets();
 	if(NewPaths.Num())
@@ -34,9 +34,9 @@ void UHotPatcherPrimaryLabel::UpdateAssetBundleData()
 
 void UHotPatcherPrimaryLabel::SetPriority(int32 NewPriority)
 {
-	if(NewPriority != Priority)
+	if(NewPriority != LabelRules.Priority)
 	{
-		Priority = NewPriority;
+		LabelRules.Priority = NewPriority;
 	}
 	Rules.Priority = NewPriority;
 }

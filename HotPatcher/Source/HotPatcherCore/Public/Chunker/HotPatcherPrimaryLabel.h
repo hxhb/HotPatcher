@@ -21,18 +21,19 @@ public:
 	FPrimaryAssetRules Rules;
 
 	/** Primary Assets with a higher priority will take precedence over lower priorities when assigning management for referenced assets. If priorities match, both will manage the same Secondary Asset. */
-	UPROPERTY(EditAnywhere, Category = Rules)
-	int32 Priority = -1;
-	
-	/** Set to true if the label asset itself should be cooked and available at runtime. This does not affect the assets that are labeled, they are set with cook rule */
-	UPROPERTY(EditAnywhere, Category = HotPatcherAssetLabel)
-	uint32 bIsRuntimeLabel : 1;
+	// UPROPERTY(EditAnywhere, Category = Rules)
+	// int32 Priority = -1;
+	//
+	// /** Set to true if the label asset itself should be cooked and available at runtime. This does not affect the assets that are labeled, they are set with cook rule */
+	// UPROPERTY(EditAnywhere, Category = HotPatcherAssetLabel)
+	// uint32 bIsRuntimeLabel : 1;
 
 	UPROPERTY(EditAnywhere,Category = HotPatcherAssetLabel)
 	FChunkInfo LabelRules;
 	
 	UHotPatcherPrimaryLabel()
 	{
+		Rules.Priority = -1;
 		Rules.bApplyRecursively = false;
 		Rules.CookRule = EPrimaryAssetCookRule::Unknown;
 	}
@@ -40,7 +41,7 @@ public:
 	/** Set to editor only if this is not available in a cooked build */
 	virtual bool IsEditorOnly() const
 	{
-		return !bIsRuntimeLabel;
+		return true;
 	}
 
 #if WITH_EDITORONLY_DATA

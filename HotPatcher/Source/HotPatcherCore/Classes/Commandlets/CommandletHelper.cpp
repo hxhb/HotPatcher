@@ -123,3 +123,15 @@ void CommandletHelper::MainTick(TFunction<bool()> IsRequestExit)
 
 	GIsRunning = false;
 }
+
+bool CommandletHelper::GetCommandletArg(const FString& Token,FString& OutValue)
+{
+	OutValue.Empty();
+	FString Value;
+	bool bHasToken = FParse::Value(FCommandLine::Get(), *Token, Value);
+	if(bHasToken && !Value.IsEmpty())
+	{
+		OutValue = Value;
+	}
+	return bHasToken && !OutValue.IsEmpty();
+}

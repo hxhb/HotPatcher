@@ -45,7 +45,25 @@ public:
     bool bPreviewTooltips = false;
     UPROPERTY(EditAnywhere, config, Category = "Preview")
     bool bExternalFilesCheck = true;
+
+    UPROPERTY(EditAnywhere, config, Category = "CookCommandlet")
+    bool bUseHPL = false;
+    UPROPERTY(EditAnywhere, config, Category = "CookCommandlet",meta = (RelativeToGameContentDir, LongPackageName))
+    TArray<FDirectoryPath> SearchPaths;
+
+    TArray<FString> GeHPLSearchPaths();
 };
+
+FORCEINLINE_DEBUGGABLE TArray<FString> UHotPatcherSettings::GeHPLSearchPaths()
+{
+    UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+    TArray<FString> SearchPaths;
+    for(const auto& Path:Settings->SearchPaths)
+    {
+        SearchPaths.Add(Path.Path);
+    }
+    return SearchPaths;
+}
 
 FORCEINLINE FString UHotPatcherSettings::GetTempSavedDir()const
 {

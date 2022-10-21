@@ -22,4 +22,6 @@ namespace CommandletHelper
 	HOTPATCHERCORE_API TArray<FDirectoryPath> ParserPatchFilters(const FString& Commandline,const FString& FilterName);
 
 	HOTPATCHERCORE_API void MainTick(TFunction<bool()> IsRequestExit);
+
+	HOTPATCHERCORE_API bool GetCommandletArg(const FString& Token,FString& OutValue);
 }

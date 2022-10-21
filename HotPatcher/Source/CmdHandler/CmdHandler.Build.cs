@@ -30,7 +30,6 @@ public class CmdHandler : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"UnrealEd",
 				"Core",
                 "Json",
                 "SandboxFile",
