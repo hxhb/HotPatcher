@@ -37,11 +37,7 @@
 #include "ToolMenuDelegates.h"
 #include "ContentBrowserMenuContexts.h"
 #include "CreatePatch/AssetActions/AssetTypeActions_PrimaryAssetLabel.h"
-#include "CreatePatch/AssetActions/AssetTypeActions_HotPatcherAssetLabel.h"
 #endif
-
-FExportPatchSettings* GPatchSettings = nullptr;
-FExportReleaseSettings* GReleaseSettings = nullptr;
 
 static const FName HotPatcherTabName("HotPatcher");
 
@@ -129,7 +125,7 @@ void FHotPatcherEditorModule::StartupModule()
 	CreateRootMenu();
 
 	FAssetToolsModule::GetModule().Get().RegisterAssetTypeActions(MakeShareable(new FAssetTypeActions_PrimaryAssetLabel));
-	FAssetToolsModule::GetModule().Get().RegisterAssetTypeActions(MakeShareable(new FAssetTypeActions_HotPatcherAssetLabel));
+
 #endif
 }
 

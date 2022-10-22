@@ -46,41 +46,14 @@ public:
     bool bPreviewTooltips = false;
     UPROPERTY(EditAnywhere, config, Category = "Preview")
     bool bExternalFilesCheck = true;
-
-    UPROPERTY(EditAnywhere, config, Category = "CookCommandlet")
-    bool bUseHPL = false;
-    UPROPERTY(EditAnywhere, config, Category = "CookCommandlet",meta = (RelativeToGameContentDir, LongPackageName,EditCondition="bUseHPL"))
-    TArray<FDirectoryPath> SearchPaths;
-    UPROPERTY(EditAnywhere, config, Category = "CookCommandlet",meta=(EditCondition="bUseHPL"))
-    bool bCopyToStagedBuilds = true;
-    // Relative to the Saved directory
-    UPROPERTY(EditAnywhere, config, Category = "CookCommandlet",meta=(EditCondition="bUseHPL"))
-    FString TempStagedBuildsDir;
-    UPROPERTY(EditAnywhere, config, Category = "CookCommandlet",meta=(EditCondition="bUseHPL"))
-    FExportPatchSettings HPLPakSettings;
-    TArray<FString> GetHPLSearchPaths();
+    
 };
 
-FORCEINLINE_DEBUGGABLE TArray<FString> UHotPatcherSettings::GetHPLSearchPaths()
-{
-    UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
-    TArray<FString> SearchPathStrs;
-    for(const auto& Path:Settings->SearchPaths)
-    {
-        SearchPathStrs.Add(Path.Path);
-    }
-    return SearchPathStrs;
-}
 
 FORCEINLINE FString UHotPatcherSettings::GetTempSavedDir()const
 {
     return UFlibPatchParserHelper::ReplaceMark(TempPatchSetting.SavePath.Path);
 }
-FORCEINLINE FString UHotPatcherSettings::GetHPLSavedDir()const
-{
-    return UFlibPatchParserHelper::ReplaceMark(HPLPakSettings.SavePath.Path);
-}
-
 FORCEINLINE UHotPatcherSettings::UHotPatcherSettings(const FObjectInitializer& Initializer):Super(Initializer)
 {
     auto ResetTempSettings = [](FExportPatchSettings& InTempPatchSetting)
@@ -99,11 +72,6 @@ FORCEINLINE UHotPatcherSettings::UHotPatcherSettings(const FObjectInitializer& I
         InTempPatchSetting.SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/Paks");
     };
     ResetTempSettings(TempPatchSetting);
-    ResetTempSettings(HPLPakSettings);
-    HPLPakSettings.bStandaloneMode = false;
-    HPLPakSettings.PakNameRegular = 
-    HPLPakSettings.SavePath.Path = TEXT("[PROJECTDIR]/Saved/HotPatcher/HPL");
-    TempStagedBuildsDir = TEXT("[PROJECTDIR]/Saved/HotPatcher/TempStagedBuilds");
 }
 
 #undef LOCTEXT_NAMESPACE

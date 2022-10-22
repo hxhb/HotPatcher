@@ -15,6 +15,7 @@
 #include "CreatePatch/FExportReleaseSettings.h"
 #include "Model/FHotPatcherContextBase.h"
 #include "HotPatcherActionManager.h"
+#include "HotPatcherCore.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -29,8 +30,7 @@
 
 class FToolBarBuilder;
 class FMenuBuilder;
-extern FExportPatchSettings* GPatchSettings;
-extern FExportReleaseSettings* GReleaseSettings;
+
 
 struct FContentBrowserSelectedInfo
 {

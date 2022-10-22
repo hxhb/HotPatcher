@@ -281,8 +281,4 @@ public:
 	static TArray<UClass*> GetAllMaterialClasses();
 	static TSet<FName> GetAllMaterialClassesNames();
 
-	static TSharedPtr<FExportPatchSettings> MakePatcherSettingByChunk(const FChunkInfo& Chunk,const TArray<ETargetPlatform>& PakTargetPlatforms,FExportPatchSettings* InTempSettings = nullptr);
-	static bool CookAndPakChunk(const FChunkInfo& ChunkInfo,const TArray<ETargetPlatform>& PakTargetPlatforms);
-	static void CookAndPakHPL(const TArray<FString>& SearchPaths,TArray<ETargetPlatform> TargetPlatforms);
-	static TArray<FChunkInfo> GetHPLChunkInfos(const TArray<FString>& SearchPaths);
 };

@@ -6,6 +6,8 @@
 // engine header
 #include "CoreMinimal.h"
 
+HOTPATCHERCORE_API extern struct FExportPatchSettings* GPatchSettings;
+HOTPATCHERCORE_API extern struct FExportReleaseSettings* GReleaseSettings;
 extern HOTPATCHERCORE_API bool GCookLog;
 extern HOTPATCHERCORE_API FString GToolName;
 extern HOTPATCHERCORE_API FString GRemoteVersionFile;
@@ -24,7 +26,5 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
-private:
-	virtual void OnPreEngineExit_Commandlet();
-	void SetHPLStagedBuildsDirConfig();
+
 };
