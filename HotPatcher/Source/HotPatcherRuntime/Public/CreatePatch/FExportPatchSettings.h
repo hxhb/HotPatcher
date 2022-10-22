@@ -247,4 +247,9 @@ public:
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Advanced")
 		bool bEnableProfiling = false;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Advanced")
+		FString StorageCookedDir = TEXT("[PROJECTDIR]/Saved/Cooked");
+
+	FString GetStorageCookedDir()const;
+	
 };

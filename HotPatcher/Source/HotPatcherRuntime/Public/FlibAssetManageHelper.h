@@ -135,10 +135,18 @@ public:
 		static bool CombineAssetsDetailAsFAssetDepenInfo(const TArray<FAssetDetail>& InAssetsDetailList,FAssetDependenciesInfo& OutAssetInfo);
 
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
-		static bool ConvLongPackageNameToCookedPath(const FString& InProjectAbsDir, const FString& InPlatformName, const FString& InLongPackageName, TArray<FString>& OutCookedAssetPath, TArray<FString>& OutCookedAssetRelativePath);
+		static bool ConvLongPackageNameToCookedPath(
+			const FString& InProjectAbsDir,
+			const FString& InPlatformName,
+			const FString& InLongPackageName,
+			TArray<FString>& OutCookedAssetPath,
+			TArray<FString>& OutCookedAssetRelativePath,
+			const FString& OverrideCookedDir
+			);
 	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool MakePakCommandFromAssetDependencies(
 			const FString& InProjectDir,
+			const FString& OverrideCookedDir,
 			const FString& InPlatformName,
 			const FAssetDependenciesInfo& InAssetDependencies,
 			//const TArray<FString> &InCookParams,
@@ -149,6 +157,7 @@ public:
 	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool MakePakCommandFromLongPackageName(
 			const FString& InProjectDir,
+			const FString& OverrideCookedDir,
 			const FString& InPlatformName,
 			const FString& InAssetLongPackageName,
 			//const TArray<FString> &InCookParams,

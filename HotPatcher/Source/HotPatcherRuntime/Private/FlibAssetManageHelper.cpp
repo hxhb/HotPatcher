@@ -705,13 +705,25 @@ FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(const FSt
 	return NULL;
 }
 
-bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(const FString& InProjectAbsDir, const FString& InPlatformName, const FString& InLongPackageName, TArray<FString>& OutCookedAssetPath, TArray<FString>& OutCookedAssetRelativePath)
+bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(
+	const FString& InProjectAbsDir,
+	const FString& InPlatformName,
+	const FString& InLongPackageName,
+	TArray<FString>& OutCookedAssetPath,
+	TArray<FString>& OutCookedAssetRelativePath,
+	const FString& OverrideCookedDir
+	)
 {
 	if (!FPaths::DirectoryExists(InProjectAbsDir)/* || !IsValidPlatform(InPlatformName)*/)
 		return false;
 
 	FString EngineAbsDir = FPaths::ConvertRelativePathToFull(FPaths::EngineDir());
 	FString CookedRootDir = FPaths::Combine(InProjectAbsDir, TEXT("Saved/Cooked"), InPlatformName);
+	if(!OverrideCookedDir.IsEmpty() && FPaths::DirectoryExists(OverrideCookedDir))
+	{
+		CookedRootDir = FPaths::Combine(OverrideCookedDir,InPlatformName);
+	}
+	UE_LOG(LogHotPatcher,Display,TEXT("OverrideCookedDir: %s"),*CookedRootDir);
 	FString ProjectName = FApp::GetProjectName();
 	// FString AssetPackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InLongPackageName);
 	FString AssetAbsPath = UFlibAssetManageHelper::LongPackageNameToFilename(InLongPackageName);
@@ -774,7 +786,8 @@ bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(const FString& InPr
 
 
 bool UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
-	const FString& InProjectDir, 
+	const FString& InProjectDir,
+	const FString& OverrideCookedDir,
 	const FString& InPlatformName, 
 	const FAssetDependenciesInfo& InAssetDependencies, 
 	//const TArray<FString> &InCookParams, 
@@ -800,7 +813,7 @@ bool UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 		for (const auto& AssetLongPackageName : AssetList)
 		{
 			TArray<FString> FinalCookedCommand;
-			if (UFlibAssetManageHelper::MakePakCommandFromLongPackageName(InProjectDir, InPlatformName, AssetLongPackageName, /*InCookParams, */FinalCookedCommand,InReceivePakCommand,IsIoStoreAsset))
+			if (UFlibAssetManageHelper::MakePakCommandFromLongPackageName(InProjectDir, OverrideCookedDir,InPlatformName, AssetLongPackageName, /*InCookParams, */FinalCookedCommand,InReceivePakCommand,IsIoStoreAsset))
 			{
 				OutCookCommand.Append(FinalCookedCommand);
 			}
@@ -811,7 +824,8 @@ bool UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 
 
 bool UFlibAssetManageHelper::MakePakCommandFromLongPackageName(
-	const FString& InProjectDir, 
+	const FString& InProjectDir,
+	const FString& OverrideCookedDir,
 	const FString& InPlatformName, 
 	const FString& InAssetLongPackageName, 
 	//const TArray<FString> &InCookParams, 
@@ -827,7 +841,7 @@ bool UFlibAssetManageHelper::MakePakCommandFromLongPackageName(
 	TArray<FString> CookedAssetRelativePath;
 	TArray<FString> FinalCookedPakCommand;
 	TArray<FString> FinalCookedIoStoreCommand;
-	if (UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(InProjectDir, InPlatformName, InAssetLongPackageName, CookedAssetAbsPath, CookedAssetRelativePath))
+	if (UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(InProjectDir, InPlatformName, InAssetLongPackageName, CookedAssetAbsPath, CookedAssetRelativePath,OverrideCookedDir))
 	{
 		if (UFlibAssetManageHelper::CombineCookedAssetCommand(CookedAssetAbsPath, CookedAssetRelativePath,/* InCookParams,*/ FinalCookedPakCommand,FinalCookedIoStoreCommand,IsIoStoreAsset))
 		{

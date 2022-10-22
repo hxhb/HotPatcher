@@ -1215,6 +1215,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 			TArray<FString> AssetsPakCommands;
 			UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 				ProjectDir,
+				PatcheSettings->GetStorageCookedDir(),
 				PlatformName,
 				ChunkAssetsDescrible.AddAssets,
 				// PakOptions,
@@ -1225,6 +1226,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 			AssetsPakCommands.Empty();
 			UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 				ProjectDir,
+				PatcheSettings->GetStorageCookedDir(),
 				PlatformName,
 				ChunkAssetsDescrible.ModifyAssets,
 				// PakOptions,

@@ -64,7 +64,11 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 	}
 	else
 	{
-		PlatformSavePackageContexts = UFlibHotPatcherCoreHelper::CreatePlatformsPackageContexts(GetSettingObject()->CookTargetPlatforms,GetSettingObject()->IoStoreSettings.bIoStore);
+		PlatformSavePackageContexts = UFlibHotPatcherCoreHelper::CreatePlatformsPackageContexts(
+			GetSettingObject()->CookTargetPlatforms,
+			GetSettingObject()->IoStoreSettings.bIoStore,
+			GetSettingObject()->GetStorageCookedAbsDir()
+			);
 	}
 #endif
 	InitShaderLibConllections();

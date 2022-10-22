@@ -48,7 +48,8 @@ TArray<FString> UFlibHotPatcherCoreHelper::GetAllCookOption()
 }
 
 void UFlibHotPatcherCoreHelper::CheckInvalidCookFilesByAssetDependenciesInfo(
-	const FString& InProjectAbsDir, 
+	const FString& InProjectAbsDir,
+	const FString& OverrideCookedDir,
 	const FString& InPlatformName, 
 	const FAssetDependenciesInfo& InAssetDependencies, 
 	TArray<FAssetDetail>& OutValidAssets, 
@@ -82,7 +83,9 @@ void UFlibHotPatcherCoreHelper::CheckInvalidCookFilesByAssetDependenciesInfo(
 			InPlatformName,
 			AssetLongPackageName,
 			CookedAssetPath,
-			CookedAssetRelativePath))
+			CookedAssetRelativePath,
+			OverrideCookedDir
+			))
 		{
 			if (CookedAssetPath.Num() > 0)
 			{
@@ -295,14 +298,16 @@ FString UFlibHotPatcherCoreHelper::GetProjectCookedDir()
 
 
 FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetPlatform* TargetPlatform,
-	bool bUseZenLoader)
+	bool bUseZenLoader,
+	const FString& OverrideCookedDir
+	)
 {
 	FSavePackageContext* SavePackageContext = NULL;
 #if WITH_PACKAGE_CONTEXT
 	const FString PlatformString = TargetPlatform->PlatformName();
 
 	// const FString ResolvedRootPath = RootPathSandbox.Replace(TEXT("[Platform]"), *PlatformString);
-	const FString ResolvedProjectPath = FPaths::Combine(FPaths::ProjectDir(),FString::Printf(TEXT("Saved/Cooked/%s/%s"),*TargetPlatform->PlatformName(),FApp::GetProjectName()));
+	const FString ResolvedProjectPath = FPaths::Combine(OverrideCookedDir,FString::Printf(TEXT("%s/%s"),*TargetPlatform->PlatformName(),FApp::GetProjectName()));
 	const FString ResolvedMetadataPath = FPaths::Combine(ResolvedProjectPath,TEXT("Mededata"));
 	
 	FConfigFile PlatformEngineIni;
@@ -340,7 +345,7 @@ FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetP
 
 
 TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>> UFlibHotPatcherCoreHelper::CreatePlatformsPackageContexts(
-	const TArray<ETargetPlatform>& Platforms,bool bIoStore)
+	const TArray<ETargetPlatform>& Platforms,bool bIoStore,const FString& OverrideCookedDir)
 
 {
 	SCOPED_NAMED_EVENT_TEXT("CreatePlatformsPackageContexts",FColor::Red);
@@ -366,7 +371,7 @@ TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>> UFlibHotPatcherCoreHelper
 			
 			ETargetPlatform Platform;
 			THotPatcherTemplateHelper::GetEnumValueByName(TargetPlatform->PlatformName(),Platform);
-			PlatformSavePackageContexts.Add(Platform,MakeShareable(UFlibHotPatcherCoreHelper::CreateSaveContext(TargetPlatform,bIoStore)));
+			PlatformSavePackageContexts.Add(Platform,MakeShareable(UFlibHotPatcherCoreHelper::CreateSaveContext(TargetPlatform,bIoStore,OverrideCookedDir)));
 		}
 	}
 	return PlatformSavePackageContexts;
@@ -972,7 +977,7 @@ FString UFlibHotPatcherCoreHelper::MakePakShortName(const FHotPatcherVersion& In
 	return CustomPakNameRegular(RegularOpList,InRegular);
 }
 
-bool UFlibHotPatcherCoreHelper::CheckSelectedAssetsCookStatus(const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets, FString& OutMsg)
+bool UFlibHotPatcherCoreHelper::CheckSelectedAssetsCookStatus(const FString& OverrideCookedDir,const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets, FString& OutMsg)
 {
 	OutMsg.Empty();
 	// 检查所修改的资源是否被Cook过
@@ -981,7 +986,7 @@ bool UFlibHotPatcherCoreHelper::CheckSelectedAssetsCookStatus(const TArray<FStri
 		TArray<FAssetDetail> ValidCookAssets;
 		TArray<FAssetDetail> InvalidCookAssets;
 
-		UFlibHotPatcherCoreHelper::CheckInvalidCookFilesByAssetDependenciesInfo(UKismetSystemLibrary::GetProjectDirectory(), PlatformName, SelectedAssets, ValidCookAssets, InvalidCookAssets);
+		UFlibHotPatcherCoreHelper::CheckInvalidCookFilesByAssetDependenciesInfo(UKismetSystemLibrary::GetProjectDirectory(),OverrideCookedDir, PlatformName, SelectedAssets, ValidCookAssets, InvalidCookAssets);
 
 		if (InvalidCookAssets.Num() > 0)
 		{
@@ -998,14 +1003,14 @@ bool UFlibHotPatcherCoreHelper::CheckSelectedAssetsCookStatus(const TArray<FStri
 	return OutMsg.IsEmpty();
 }
 
-bool UFlibHotPatcherCoreHelper::CheckPatchRequire(const FPatchVersionDiff& InDiff,const TArray<FString>& PlatformNames,FString& OutMsg)
+bool UFlibHotPatcherCoreHelper::CheckPatchRequire(const FString& OverrideCookedDir,const FPatchVersionDiff& InDiff,const TArray<FString>& PlatformNames,FString& OutMsg)
 {
 	bool Status = false;
 	// 错误处理
 	{
 		FString GenErrorMsg;
 		FAssetDependenciesInfo AllChangedAssetInfo = UFlibAssetManageHelper::CombineAssetDependencies(InDiff.AssetDiffInfo.AddAssetDependInfo, InDiff.AssetDiffInfo.ModifyAssetDependInfo);
-		bool bSelectedCookStatus = CheckSelectedAssetsCookStatus(PlatformNames, AllChangedAssetInfo, GenErrorMsg);
+		bool bSelectedCookStatus = CheckSelectedAssetsCookStatus(OverrideCookedDir,PlatformNames, AllChangedAssetInfo, GenErrorMsg);
 
 		// 如果有错误信息 则输出后退出
 		if (!bSelectedCookStatus)
