@@ -723,7 +723,6 @@ bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(
 	{
 		CookedRootDir = FPaths::Combine(OverrideCookedDir,InPlatformName);
 	}
-	UE_LOG(LogHotPatcher,Display,TEXT("OverrideCookedDir: %s"),*CookedRootDir);
 	FString ProjectName = FApp::GetProjectName();
 	// FString AssetPackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InLongPackageName);
 	FString AssetAbsPath = UFlibAssetManageHelper::LongPackageNameToFilename(InLongPackageName);

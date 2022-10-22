@@ -334,7 +334,7 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 		
 		auto CookPackageLambda = [&](int32 AssetIndex)
 		{
-			FExecTimeRecoder CookTimer(PreCachePackages[AssetIndex]->GetFullName());
+			// FExecTimeRecoder CookTimer(PreCachePackages[AssetIndex]->GetFullName());
 			UFlibHotPatcherCoreHelper::CookPackage(
 				PreCachePackages[AssetIndex],
 				PlatformMaps,
