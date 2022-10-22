@@ -69,8 +69,9 @@ void FHotPatcherCoreModule::StartupModule()
 {
 	FParse::Bool(FCommandLine::Get(),TEXT("-cooklog"),GCookLog);
 	UE_LOG(LogHotPatcher,Log,TEXT("GCookLog is %s!!!"),GCookLog ? TEXT("TRUE"): TEXT("FALSE"));
-	
+#if ENGINE_MAJOR_VERSION > 4 || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 24)
 	FCoreDelegates::OnEnginePreExit.AddRaw(this,&FHotPatcherCoreModule::OnPreEngineExit_Commandlet);
+#endif
 }
 
 void FHotPatcherCoreModule::ShutdownModule()

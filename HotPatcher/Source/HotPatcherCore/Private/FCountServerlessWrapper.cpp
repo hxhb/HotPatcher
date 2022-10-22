@@ -1,11 +1,16 @@
 #pragma once
 #include "FCountServerlessWrapper.h"
+
+#include "Misc/App.h"
+#include "Misc/Base64.h"
 #include "HttpModule.h"
 #include "SocketSubsystem.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
+#include "Resources/Version.h"
+#include "CoreGlobals.h"
 
 FProjectVersionDesc FCountServerlessWrapper::MakeCurrentProject()
 {

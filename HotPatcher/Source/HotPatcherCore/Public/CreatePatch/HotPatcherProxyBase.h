@@ -29,7 +29,7 @@ protected:
     {
         Setting = InSetting;
     }
-
+    const TMap<ETargetPlatform,FName>& GetPlatformNameMapping(){ return PlatformNameMapping; }
 public:
 #if WITH_PACKAGE_CONTEXT
     // virtual void InitPlatformPackageContexts();
@@ -44,6 +44,7 @@ public:
 protected:
     FPatcherEntitySettingBase* Setting;
     IAssetRegistry* AssetRegistry = NULL;
+    TMap<ETargetPlatform,FName> PlatformNameMapping;
 };
 
 inline void UHotPatcherProxyBase::Init(FPatcherEntitySettingBase* InSetting)
@@ -52,6 +53,16 @@ inline void UHotPatcherProxyBase::Init(FPatcherEntitySettingBase* InSetting)
     
     FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
     AssetRegistry = &AssetRegistryModule.Get();
+
+    UEnum* UEnumIns = THotPatcherTemplateHelper::GetUEnum<ETargetPlatform>();
+    for (int64 EnumIndex = 0;EnumIndex < UEnumIns->GetMaxEnumValue();++EnumIndex)
+    {
+        if(UEnumIns->IsValidEnumValue(EnumIndex))
+        {
+            FName EnumtorName = UEnumIns->GetNameByValue(EnumIndex);
+            PlatformNameMapping.Add((ETargetPlatform)EnumIndex,EnumtorName);
+        }
+    }
 }
 
 inline void UHotPatcherProxyBase::Shutdown()

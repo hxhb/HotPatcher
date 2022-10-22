@@ -594,7 +594,7 @@ FCookCluster USingleCookerProxy::GetPackageTrackerAsCluster()
 		for(FName PackagePath:PackageTracker->GetPendingPackageSet())
 		{
 			// make asset data to asset registry
-			FSoftObjectPath ObjectPath(PackagePath);
+			FSoftObjectPath ObjectPath(PackagePath.ToString());
 			FAssetData AssetData;
 			if(UAssetManager::Get().GetAssetDataForPath(ObjectPath,AssetData))
 			{
@@ -727,7 +727,12 @@ void USingleCookerProxy::OnAssetCookedHandle(const FSoftObjectPath& PackagePath,
 	FScopeLock Lock(&SynchronizationObject);
 	SCOPED_NAMED_EVENT_TEXT("OnAssetCookedHandle",FColor::Red);
 	
-	FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
+	FString PlatformName = FString::Printf(TEXT("%lld"),(int64)Platform);
+	if(GetPlatformNameMapping().Contains(Platform))
+	{
+		PlatformName = GetPlatformNameMapping().Find(Platform)->ToString();;
+	}
+		
 	FString SavePackageResultStr = UFlibHotPatcherCoreHelper::GetSavePackageResultStr(Result);
 	FName AssetPathName = PackagePath.GetAssetPathName();
 	FString AssetPath = PackagePath.GetAssetPathString();
