@@ -1343,7 +1343,8 @@ FChunkAssetDescribe UFlibHotPatcherCoreHelper::DiffChunkWithPatchSetting(
 		TotalChunk,
 		//ScanedCaches,
 		PatchSetting.IsIncludeHasRefAssetsOnly(),
-		TotalChunk.bAnalysisFilterDependencies
+		TotalChunk.bAnalysisFilterDependencies,
+		PatchSetting.GetHashCalculator()
 	);
 
 	return UFlibHotPatcherCoreHelper::DiffChunkByBaseVersionWithPatchSetting(PatchSetting, CurrentVersionChunk ,TotalChunk, TotalChunkVersion/*,ScanedCaches*/);
@@ -1365,7 +1366,8 @@ FChunkAssetDescribe UFlibHotPatcherCoreHelper::DiffChunkByBaseVersionWithPatchSe
 		CurrentVersionChunk,
 		//ScanedCaches,
 		PatchSetting.IsIncludeHasRefAssetsOnly(),
-		CurrentVersionChunk.bAnalysisFilterDependencies
+		CurrentVersionChunk.bAnalysisFilterDependencies,
+		PatchSetting.GetHashCalculator()
 	);
 	FPatchVersionDiff ChunkDiffInfo = UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(PatchSetting, BaseVersion, CurrentVersion);
 	
