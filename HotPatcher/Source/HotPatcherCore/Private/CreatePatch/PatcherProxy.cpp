@@ -489,6 +489,7 @@ namespace PatchWorker
 		if (bEnableChunk)
 		{
 			Context.PakChunks.Append(Context.GetSettingObject()->GetChunkInfos());
+			Context.PakChunks.StableSort([](const auto& a, const auto& b) -> bool {return a.Priority > b.Priority;});
 		}
 		else
 		{
@@ -557,6 +558,7 @@ namespace PatchWorker
 		
 		for(const auto& PlatformName :Context.GetSettingObject()->GetPakTargetPlatformNames())
 		{
+			TSet<FString> MultiRefAssetLookUp;
 			for(auto& Chunk:Context.PakChunks)
 			{
 				TimeRecorder CookPlatformChunkAssetsTotalTR(FString::Printf(TEXT("Cook Chunk %s as %s Total time:"),*Chunk.ChunkName,*PlatformName));
@@ -570,7 +572,9 @@ namespace PatchWorker
 					FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 						Context.GetSettingObject(),
 						Context.VersionDiff,
-						Chunk, TArray<ETargetPlatform>{Platform}
+						Chunk,
+						MultiRefAssetLookUp,
+						TArray<ETargetPlatform>{Platform}
 					);
 					
 					const TArray<FAssetDetail>& ChunkAssets = ChunkAssetsDescrible.Assets.GetAssetDetails();
@@ -623,15 +627,18 @@ namespace PatchWorker
 		SCOPED_NAMED_EVENT_TEXT("PatchAssetRegistryWorker",FColor::Red);
 		if(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry)
 		{
-			auto SerializeAssetRegistry = [](FHotPatcherPatchContext& Context,const FChunkInfo& Chunk,const FString& PlatformName)
+			TSet<FString> MultiRefAssetLookUp;
+			auto SerializeAssetRegistry = [&MultiRefAssetLookUp](FHotPatcherPatchContext& Context,const FChunkInfo& Chunk,const FString& PlatformName)
 			{
 				ETargetPlatform Platform;
 				THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
 				FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
-					Context.GetSettingObject(),
-					Context.VersionDiff,
-					Chunk, TArray<ETargetPlatform>{Platform}
-				);
+						Context.GetSettingObject(),
+						Context.VersionDiff,
+						Chunk,
+						MultiRefAssetLookUp,
+						TArray<ETargetPlatform>{Platform}
+					);
 				const TArray<FAssetDetail>& ChunkAssets = ChunkAssetsDescrible.Assets.GetAssetDetails();
 				
 				if(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry)
@@ -869,6 +876,7 @@ namespace PatchWorker
 		{
 			FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
 			// PakModeSingleLambda(PlatformName, CurrentVersionSavePath);
+			TSet<FString> MultiRefAssetLookUp;
 			for (auto& Chunk : Context.PakChunks)
 			{
 				TimeRecorder PakChunkTR(FString::Printf(TEXT("Generate Chunk Platform:%s ChunkName:%s PakProxy Time:"),*PlatformName,*Chunk.ChunkName));
@@ -887,6 +895,7 @@ namespace PatchWorker
 						Context.VersionDiff,
 						Chunk,
 						PlatformName,
+						MultiRefAssetLookUp,
 						Context.GetSettingObject()
 					);
 				}
@@ -962,7 +971,7 @@ namespace PatchWorker
 				if (!ChunkPakListCommands.Num())
 				{
 					FString Msg = FString::Printf(TEXT("Chunk:%s not contain any file!!!"), *Chunk.ChunkName);
-					UE_LOG(LogHotPatcher, Error, TEXT("%s"),*Msg);
+					UE_LOG(LogHotPatcher, Warning, TEXT("%s"),*Msg);
 					Context.OnShowMsg.Broadcast(Msg);
 					continue;
 				}

@@ -925,8 +925,10 @@ TMap<ETargetPlatform,FPlatformExternFiles> UFlibPatchParserHelper::GetAllPlatfor
 FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 	const FHotPatcherSettingBase* PatcheSettings,
 	const FPatchVersionDiff& DiffInfo,
-	const FChunkInfo& Chunk, TArray<ETargetPlatform> Platforms
-)
+	const FChunkInfo& Chunk,
+	TSet<FString>& MultiRefAssetLookUp,
+	TArray<ETargetPlatform> Platforms
+	)
 {
 	FChunkAssetDescribe ChunkAssetDescribe;
 	// Collect Chunk Assets
@@ -999,7 +1001,7 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 		const FAssetDependenciesInfo& ModifyAssetsRef = DiffInfo.AssetDiffInfo.ModifyAssetDependInfo;
 
 
-		auto CollectChunkAssets = [](const FAssetDependenciesInfo& SearchBase, const TArray<FString>& SearchFilters)->FAssetDependenciesInfo
+		auto CollectChunkAssets = [&MultiRefAssetLookUp](const FAssetDependenciesInfo& SearchBase, const TArray<FString>& SearchFilters)->FAssetDependenciesInfo
 		{
 			FAssetDependenciesInfo ResultAssetDependInfos;
 
@@ -1033,10 +1035,14 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 					{
 						if (KeyItem.StartsWith(SearchItem))
 						{
-							FAssetDetail FindedAsset = *SearchBaseModule.AssetDependencyDetails.Find(KeyItem);
-							if (!ResultAssetDependInfos.AssetsDependenciesMap.Find(SearchModuleName)->AssetDependencyDetails.Contains(KeyItem))
+							if (!MultiRefAssetLookUp.Contains(KeyItem))
 							{
-								ResultAssetDependInfos.AssetsDependenciesMap.Find(SearchModuleName)->AssetDependencyDetails.Add(KeyItem, FindedAsset);
+								MultiRefAssetLookUp.Add(KeyItem);
+								FAssetDetail FindedAsset = *SearchBaseModule.AssetDependencyDetails.Find(KeyItem);
+								if (!ResultAssetDependInfos.AssetsDependenciesMap.Find(SearchModuleName)->AssetDependencyDetails.Contains(KeyItem))
+								{
+									ResultAssetDependInfos.AssetsDependenciesMap.Find(SearchModuleName)->AssetDependencyDetails.Add(KeyItem, FindedAsset);
+								}
 							}
 						}
 					}
@@ -1118,13 +1124,14 @@ TArray<FString> UFlibPatchParserHelper::CollectPakCommandsStringsByChunk(
 	const FPatchVersionDiff& DiffInfo,
 	const FChunkInfo& Chunk,
 	const FString& PlatformName,
+	TSet<FString>& MultiRefAssetLookUp,
 	// const TArray<FString>& PakOptions,
 	const FExportPatchSettings* PatcheSettings
 )
 {
 	TArray<FString> ChunkPakCommands;
 	{
-		TArray<FPakCommand> ChunkPakCommands_r = UFlibPatchParserHelper::CollectPakCommandByChunk(DiffInfo, Chunk, PlatformName,/* PakOptions,*/PatcheSettings);
+		TArray<FPakCommand> ChunkPakCommands_r = UFlibPatchParserHelper::CollectPakCommandByChunk(DiffInfo, Chunk, PlatformName, MultiRefAssetLookUp, /* PakOptions,*/PatcheSettings);
 		for (const auto& PakCommand : ChunkPakCommands_r)
 		{
 			ChunkPakCommands.Append(PakCommand.GetPakCommands());
@@ -1138,17 +1145,18 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 	const FPatchVersionDiff& DiffInfo,
 	const FChunkInfo& Chunk,
 	const FString& PlatformName,
+	TSet<FString>& MultiRefAssetLookUp,
 	// const TArray<FString>& PakOptions,
 	const FExportPatchSettings* PatcheSettings
 )
 {
-	auto CollectPakCommandsByChunkLambda = [PatcheSettings](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName/*, const TArray<FString>& PakOptions*/)->TArray<FPakCommand>
+	auto CollectPakCommandsByChunkLambda = [PatcheSettings, &MultiRefAssetLookUp](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName/*, const TArray<FString>& PakOptions*/)->TArray<FPakCommand>
 	{
 		ETargetPlatform Platform;
 		THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
 		TArray<ETargetPlatform> CollectPlatforms = {ETargetPlatform::AllPlatforms};
 		CollectPlatforms.AddUnique(Platform);
-		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(PatcheSettings, DiffInfo ,Chunk, CollectPlatforms);
+		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(PatcheSettings, DiffInfo ,Chunk, MultiRefAssetLookUp, CollectPlatforms);
 
 		TArray<FPakCommand> PakCommands;
 

@@ -153,13 +153,17 @@ public:
 
 	static FChunkAssetDescribe CollectFChunkAssetsDescribeByChunk(
 		const FHotPatcherSettingBase* PatcheSettings,
-		const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, TArray<ETargetPlatform> Platforms
+		const FPatchVersionDiff& DiffInfo,
+		const FChunkInfo& Chunk,
+		TSet<FString>& MultiRefAssetLookUp,
+		TArray<ETargetPlatform> Platforms
 	);
 
 	static TArray<FString> CollectPakCommandsStringsByChunk(
 		const FPatchVersionDiff& DiffInfo,
 		const FChunkInfo& Chunk,
 		const FString& PlatformName,
+		TSet<FString>& MultiRefAssetLookUp,
 		// const TArray<FString>& PakOptions,
 		const FExportPatchSettings* PatcheSettings = nullptr
 	);
@@ -168,6 +172,7 @@ public:
 		const FPatchVersionDiff& DiffInfo,
 		const FChunkInfo& Chunk,
 		const FString& PlatformName,
+		TSet<FString>& MultiRefAssetLookUp,
 		// const TArray<FString>& PakOptions,
 		const FExportPatchSettings* PatcheSettings=nullptr
 	);
