@@ -29,4 +29,5 @@ public:
 		bool bMaster,
 		const FString& InSavePath,
 		bool bCleanSavePath = true);
+	static bool IsAppleMetalPlatform(ITargetPlatform* TargetPlatform);
 };

@@ -1,5 +1,6 @@
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 #include "FlibHotPatcherCoreHelper.h"
+#include "Cooker/MultiCooker/FlibHotCookerHelper.h"
 #include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Resources/Version.h"
@@ -41,21 +42,7 @@ void FCookShaderCollectionProxy::Init()
 	}
 }
 
-bool IsAppleMetalPlatform(ITargetPlatform* TargetPlatform)
-{
-	SCOPED_NAMED_EVENT_TEXT("IsAppleMetalPlatform",FColor::Red);
-	bool bIsMatched = false;
-	TArray<FString> ApplePlatforms = {TEXT("IOS"),TEXT("Mac"),TEXT("TVOS")};
-	for(const auto& Platform:ApplePlatforms)
-	{
-		if(TargetPlatform->PlatformName().StartsWith(Platform,ESearchCase::IgnoreCase))
-		{
-			bIsMatched = true;
-			break;
-		}
-	}
-	return bIsMatched;
-}
+
 
 void FCookShaderCollectionProxy::Shutdown()
 {
@@ -74,7 +61,7 @@ void FCookShaderCollectionProxy::Shutdown()
 			}
 #endif
 			// rename StarterContent_SF_METAL.0.metallib to startercontent_sf_metal.0.metallib
-			if(bSuccessed && bIsNative && IsAppleMetalPlatform(TargetPlatform))
+			if(bSuccessed && bIsNative && UFlibHotCookerHelper::IsAppleMetalPlatform(TargetPlatform))
 			{
 				TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,FPaths::Combine(SaveBaseDir,TargetPlatform->PlatformName()));
 				for(const auto& Shaderlib:FoundShaderLibs)

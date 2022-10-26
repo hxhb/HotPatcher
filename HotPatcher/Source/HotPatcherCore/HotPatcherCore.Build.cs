@@ -176,23 +176,22 @@ public class HotPatcherCore : ModuleRules
 			});
 		}
 		
-		if (Version.MajorVersion > 4 /*&& Version.MinorVersion > 0*/)
+		if (Version.MajorVersion > 4)
 		{
 			PublicIncludePaths.AddRange(new List<string>()
 			{
 				// Path.Combine(EngineDirectory,"Source/Developer/IoStoreUtilities/Internal"),
 				// Path.Combine(EngineDirectory,"Source/Editor/UnrealEd/Private/Cooker"),
 				// Path.Combine(EngineDirectory,"Source/Editor/UnrealEd/Private"),
-				// Path.Combine(EngineDirectory,"Source/Runtime/CoreUObject/Internal"),
-				Path.Combine(ModuleDirectory,"../CookerWriterForUE5")
+				Path.Combine(EngineDirectory,"Source/Runtime/CoreUObject/Internal"),
 			});
 		}
 		
 		PublicDefinitions.AddRange(new string[]
 		{
 			"TOOL_NAME=\"HotPatcher\"",
-			"CURRENT_VERSION_ID=76",
-			"CURRENT_PATCH_ID=3",
+			"CURRENT_VERSION_ID=77",
+			"CURRENT_PATCH_ID=0",
 			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
 		});
 	}

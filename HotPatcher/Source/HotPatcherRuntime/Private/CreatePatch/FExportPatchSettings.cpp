@@ -127,6 +127,11 @@ FString FExportPatchSettings::GetCurrentVersionSavePath() const
 	return CurrentVersionSavePath;
 }
 
+FString FExportPatchSettings::GetStorageCookedDir() const
+{
+	return UFlibPatchParserHelper::ReplaceMark(StorageCookedDir);
+}
+
 TArray<FString> FExportPatchSettings::GetPakTargetPlatformNames() const
 {
 	TArray<FString> Resault;

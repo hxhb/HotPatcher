@@ -22,7 +22,8 @@
 #include "FPakVersion.h"
 #include "FPlatformExternAssets.h"
 #include "BaseTypes/FCookShaderOptions.h"
-
+#include "BaseTypes/FAssetRegistryOptions.h"
+#include "BaseTypes.h"
 // engine header
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"
@@ -33,57 +34,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "FExportPatchSettings.generated.h"
 
-struct FEncryptSetting
-{
-	// -encryptindex
-	bool bEncryptIndex = false;
-	bool bEncryptAllAssetFiles = false;
-	bool bEncryptUAssetFiles = false;
-	bool bEncryptIniFiles = false;
-	// sign pak
-	bool bSign = false;
-};
 
-#define AS_PLUGINDIR_MARK TEXT("[PLUGINDIR]")
-
-
-
-UENUM(BlueprintType)
-enum class EAssetRegistryRule : uint8
-{
-	PATCH,
-	PER_CHUNK,
-	CUSTOM
-};
-
-
-USTRUCT(BlueprintType)
-struct HOTPATCHERRUNTIME_API FAssetRegistryOptions
-{
-	GENERATED_BODY()
-	FAssetRegistryOptions()
-	{
-		AssetRegistryMountPointRegular = FString::Printf(TEXT("%s/AssetRegistry"),AS_PROJECTDIR_MARK);
-		AssetRegistryNameRegular = FString::Printf(TEXT("[CHUNK_NAME]_AssetRegistry.bin"));
-	}
-	FString GetAssetRegistryNameRegular(const FString& ChunkName)const
-	{
-		return AssetRegistryNameRegular.Replace(TEXT("[CHUNK_NAME]"),*ChunkName);
-	}
-	FString GetAssetRegistryMountPointRegular()const { return AssetRegistryMountPointRegular; }
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bSerializeAssetRegistry = false;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString AssetRegistryMountPointRegular;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EAssetRegistryRule AssetRegistryRule = EAssetRegistryRule::PATCH;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bCustomAssetRegistryName = false;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta=(EditCondition="bCustomAssetRegistryName"))
-	FString AssetRegistryNameRegular;
-};
 
 
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
@@ -296,4 +247,9 @@ public:
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Advanced")
 		bool bEnableProfiling = false;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Advanced")
+		FString StorageCookedDir = TEXT("[PROJECTDIR]/Saved/Cooked");
+
+	FString GetStorageCookedDir()const;
+	
 };

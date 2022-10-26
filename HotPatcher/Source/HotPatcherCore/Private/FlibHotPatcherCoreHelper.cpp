@@ -27,6 +27,7 @@
 #include "Serialization/ArrayWriter.h"
 #include "Settings/ProjectPackagingSettings.h"
 #include "ShaderCompiler.h"
+#include "CreatePatch/PatcherProxy.h"
 #include "Materials/MaterialInstance.h"
 #include "Materials/MaterialInstanceConstant.h"
 #include "ProfilingDebugging/LoadTimeTracker.h"
@@ -47,7 +48,8 @@ TArray<FString> UFlibHotPatcherCoreHelper::GetAllCookOption()
 }
 
 void UFlibHotPatcherCoreHelper::CheckInvalidCookFilesByAssetDependenciesInfo(
-	const FString& InProjectAbsDir, 
+	const FString& InProjectAbsDir,
+	const FString& OverrideCookedDir,
 	const FString& InPlatformName, 
 	const FAssetDependenciesInfo& InAssetDependencies, 
 	TArray<FAssetDetail>& OutValidAssets, 
@@ -81,7 +83,9 @@ void UFlibHotPatcherCoreHelper::CheckInvalidCookFilesByAssetDependenciesInfo(
 			InPlatformName,
 			AssetLongPackageName,
 			CookedAssetPath,
-			CookedAssetRelativePath))
+			CookedAssetRelativePath,
+			OverrideCookedDir
+			))
 		{
 			if (CookedAssetPath.Num() > 0)
 			{
@@ -111,6 +115,7 @@ FChunkInfo UFlibHotPatcherCoreHelper::MakeChunkFromPatchSettings(const FExportPa
 	Chunk.MonolithicPathMode = EMonolithicPathMode::MountPath;
 	Chunk.bStorageUnrealPakList = InPatchSetting->GetUnrealPakSettings().bStoragePakList;
 	Chunk.bStorageIoStorePakList = InPatchSetting->GetIoStoreSettings().bStoragePakList;
+	Chunk.bOutputDebugInfo = Chunk.bStorageIoStorePakList || Chunk.bStorageUnrealPakList;
 	Chunk.AssetIncludeFilters = GetThis()->GetAssetIncludeFilters();
 	Chunk.AssetIgnoreFilters = GetThis()->GetAssetIgnoreFilters();
 	Chunk.bAnalysisFilterDependencies = InPatchSetting->IsAnalysisFilterDependencies();
@@ -287,20 +292,23 @@ FString UFlibHotPatcherCoreHelper::GetProjectCookedDir()
 #endif
 
 #if ENGINE_MAJOR_VERSION > 4 /*&& ENGINE_MINOR_VERSION > 0 */
-#include "CookerWriterForUE5/CookerWriterForUE5.h"
+#include "ZenStoreWriter.h"
+#include "Cooker/PackageWriter/HotPatcherPackageWriter.h"
 #endif
 
 
 
 FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetPlatform* TargetPlatform,
-	bool bUseZenLoader)
+	bool bUseZenLoader,
+	const FString& OverrideCookedDir
+	)
 {
 	FSavePackageContext* SavePackageContext = NULL;
 #if WITH_PACKAGE_CONTEXT
 	const FString PlatformString = TargetPlatform->PlatformName();
 
 	// const FString ResolvedRootPath = RootPathSandbox.Replace(TEXT("[Platform]"), *PlatformString);
-	const FString ResolvedProjectPath = FPaths::Combine(FPaths::ProjectDir(),FString::Printf(TEXT("Saved/Cooked/%s/%s"),*TargetPlatform->PlatformName(),FApp::GetProjectName()));
+	const FString ResolvedProjectPath = FPaths::Combine(OverrideCookedDir,FString::Printf(TEXT("%s/%s"),*TargetPlatform->PlatformName(),FApp::GetProjectName()));
 	const FString ResolvedMetadataPath = FPaths::Combine(ResolvedProjectPath,TEXT("Mededata"));
 	
 	FConfigFile PlatformEngineIni;
@@ -325,8 +333,8 @@ FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetP
 	}
 	else
 	{
-		FAsyncIODelete AsyncIODelete{ResolvedProjectPath};
-		PackageWriter = new FLooseCookedPackageWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform,AsyncIODelete,FPackageNameCache{},IPluginManager::Get().GetEnabledPlugins());
+		// FAsyncIODelete AsyncIODelete{ResolvedProjectPath};
+		PackageWriter = new FHotPatcherPackageWriter;// new FLooseCookedPackageWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform,AsyncIODelete,FPackageNameCache{},IPluginManager::Get().GetEnabledPlugins());
 		WriterDebugName = TEXT("DirectoryWriter");
 	}
 	
@@ -338,7 +346,7 @@ FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetP
 
 
 TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>> UFlibHotPatcherCoreHelper::CreatePlatformsPackageContexts(
-	const TArray<ETargetPlatform>& Platforms,bool bIoStore)
+	const TArray<ETargetPlatform>& Platforms,bool bIoStore,const FString& OverrideCookedDir)
 
 {
 	SCOPED_NAMED_EVENT_TEXT("CreatePlatformsPackageContexts",FColor::Red);
@@ -364,7 +372,7 @@ TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>> UFlibHotPatcherCoreHelper
 			
 			ETargetPlatform Platform;
 			THotPatcherTemplateHelper::GetEnumValueByName(TargetPlatform->PlatformName(),Platform);
-			PlatformSavePackageContexts.Add(Platform,MakeShareable(UFlibHotPatcherCoreHelper::CreateSaveContext(TargetPlatform,bIoStore)));
+			PlatformSavePackageContexts.Add(Platform,MakeShareable(UFlibHotPatcherCoreHelper::CreateSaveContext(TargetPlatform,bIoStore,OverrideCookedDir)));
 		}
 	}
 	return PlatformSavePackageContexts;
@@ -434,8 +442,8 @@ void UFlibHotPatcherCoreHelper::CookAssets(
 #endif
 			InSavePath,false);
 	}
-	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
-	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+	// UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
+	// UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 }
 
 struct FFilterEditorOnlyFlag
@@ -589,7 +597,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			{
 				TSet<UObject*> ProcessedObjs;
 				TSet<UObject*> PendingProcessObjs;
-				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TArray<ITargetPlatform*>{Platform.Value},ProcessedObjs,PendingProcessObjs,bStorageConcurrent, true);
+				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TArray<ITargetPlatform*>{Platform.Value},ProcessedObjs,PendingProcessObjs,bStorageConcurrent, false);
 			}
 			if(GCookLog)
 			{
@@ -970,7 +978,7 @@ FString UFlibHotPatcherCoreHelper::MakePakShortName(const FHotPatcherVersion& In
 	return CustomPakNameRegular(RegularOpList,InRegular);
 }
 
-bool UFlibHotPatcherCoreHelper::CheckSelectedAssetsCookStatus(const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets, FString& OutMsg)
+bool UFlibHotPatcherCoreHelper::CheckSelectedAssetsCookStatus(const FString& OverrideCookedDir,const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets, FString& OutMsg)
 {
 	OutMsg.Empty();
 	// 检查所修改的资源是否被Cook过
@@ -979,7 +987,7 @@ bool UFlibHotPatcherCoreHelper::CheckSelectedAssetsCookStatus(const TArray<FStri
 		TArray<FAssetDetail> ValidCookAssets;
 		TArray<FAssetDetail> InvalidCookAssets;
 
-		UFlibHotPatcherCoreHelper::CheckInvalidCookFilesByAssetDependenciesInfo(UKismetSystemLibrary::GetProjectDirectory(), PlatformName, SelectedAssets, ValidCookAssets, InvalidCookAssets);
+		UFlibHotPatcherCoreHelper::CheckInvalidCookFilesByAssetDependenciesInfo(UKismetSystemLibrary::GetProjectDirectory(),OverrideCookedDir, PlatformName, SelectedAssets, ValidCookAssets, InvalidCookAssets);
 
 		if (InvalidCookAssets.Num() > 0)
 		{
@@ -996,14 +1004,14 @@ bool UFlibHotPatcherCoreHelper::CheckSelectedAssetsCookStatus(const TArray<FStri
 	return OutMsg.IsEmpty();
 }
 
-bool UFlibHotPatcherCoreHelper::CheckPatchRequire(const FPatchVersionDiff& InDiff,const TArray<FString>& PlatformNames,FString& OutMsg)
+bool UFlibHotPatcherCoreHelper::CheckPatchRequire(const FString& OverrideCookedDir,const FPatchVersionDiff& InDiff,const TArray<FString>& PlatformNames,FString& OutMsg)
 {
 	bool Status = false;
 	// 错误处理
 	{
 		FString GenErrorMsg;
 		FAssetDependenciesInfo AllChangedAssetInfo = UFlibAssetManageHelper::CombineAssetDependencies(InDiff.AssetDiffInfo.AddAssetDependInfo, InDiff.AssetDiffInfo.ModifyAssetDependInfo);
-		bool bSelectedCookStatus = CheckSelectedAssetsCookStatus(PlatformNames, AllChangedAssetInfo, GenErrorMsg);
+		bool bSelectedCookStatus = CheckSelectedAssetsCookStatus(OverrideCookedDir,PlatformNames, AllChangedAssetInfo, GenErrorMsg);
 
 		// 如果有错误信息 则输出后退出
 		if (!bSelectedCookStatus)
@@ -1170,7 +1178,7 @@ FPatchVersionDiff UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(co
 	if(PatchSetting.IsForceSkipContent())
 	{
 		TArray<FString> AllSkipContents;
-		AllSkipContents.Append(UFlibAssetManageHelper::DirectoryPathsToStrings(PatchSetting.GetForceSkipContentRules()));
+		AllSkipContents.Append(UFlibAssetManageHelper::DirectoriesToStrings(PatchSetting.GetForceSkipContentRules()));
 		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(PatchSetting.GetForceSkipAssets()));
 		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipContents);
 	}
@@ -1336,7 +1344,8 @@ FChunkAssetDescribe UFlibHotPatcherCoreHelper::DiffChunkWithPatchSetting(
 		TotalChunk,
 		//ScanedCaches,
 		PatchSetting.IsIncludeHasRefAssetsOnly(),
-		TotalChunk.bAnalysisFilterDependencies
+		TotalChunk.bAnalysisFilterDependencies,
+		PatchSetting.GetHashCalculator()
 	);
 
 	return UFlibHotPatcherCoreHelper::DiffChunkByBaseVersionWithPatchSetting(PatchSetting, CurrentVersionChunk ,TotalChunk, TotalChunkVersion/*,ScanedCaches*/);
@@ -1358,7 +1367,8 @@ FChunkAssetDescribe UFlibHotPatcherCoreHelper::DiffChunkByBaseVersionWithPatchSe
 		CurrentVersionChunk,
 		//ScanedCaches,
 		PatchSetting.IsIncludeHasRefAssetsOnly(),
-		CurrentVersionChunk.bAnalysisFilterDependencies
+		CurrentVersionChunk.bAnalysisFilterDependencies,
+		PatchSetting.GetHashCalculator()
 	);
 	FPatchVersionDiff ChunkDiffInfo = UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(PatchSetting, BaseVersion, CurrentVersion);
 	
@@ -2083,7 +2093,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
 		SCOPED_NAMED_EVENT_TEXT("WaitCacheForCookedPlatformDataComplete",FColor::Red);
 		// Wait for all shaders to finish compiling
 		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
-		UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+		// UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 	}
 }
 
@@ -2299,7 +2309,7 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 			}
 		}
 	}
-	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+	// UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 }
 
 uint32 UFlibHotPatcherCoreHelper::GetCookSaveFlag(UPackage* Package, bool bUnversioned, bool bStorageConcurrent,

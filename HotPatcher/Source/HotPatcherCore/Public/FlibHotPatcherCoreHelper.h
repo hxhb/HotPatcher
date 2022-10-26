@@ -71,7 +71,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "HotPatcherCore")
 		static TArray<FString> GetAllCookOption();
 
-	static void CheckInvalidCookFilesByAssetDependenciesInfo(const FString& InProjectAbsDir, const FString& InPlatformName, const FAssetDependenciesInfo& InAssetDependencies,TArray<FAssetDetail>& OutValidAssets,TArray<FAssetDetail>& OutInvalidAssets);
+	static void CheckInvalidCookFilesByAssetDependenciesInfo(
+		const FString& InProjectAbsDir,
+		const FString& OverrideCookedDir,
+		const FString& InPlatformName,
+		const FAssetDependenciesInfo& InAssetDependencies,
+		TArray<FAssetDetail>& OutValidAssets,
+		TArray<FAssetDetail>& OutInvalidAssets);
 
 	static FChunkInfo MakeChunkFromPatchSettings(struct FExportPatchSettings const* InPatchSetting);
 	static FChunkInfo MakeChunkFromPatchVerison(const FHotPatcherVersion& InPatchVersion);
@@ -79,8 +85,8 @@ public:
 
 	static FString GetProjectCookedDir();
 #if WITH_PACKAGE_CONTEXT
-	static FSavePackageContext* CreateSaveContext(const ITargetPlatform* TargetPlatform,bool bUseZenLoader);
-	static TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> CreatePlatformsPackageContexts(const TArray<ETargetPlatform>& Platforms,bool bIoStore);
+	static FSavePackageContext* CreateSaveContext(const ITargetPlatform* TargetPlatform,bool bUseZenLoader,const FString& OverrideCookedDir);
+	static TMap<ETargetPlatform,TSharedPtr<FSavePackageContext>> CreatePlatformsPackageContexts(const TArray<ETargetPlatform>& Platforms,bool bIoStore,const FString& OverrideCookedDir);
 	static bool SavePlatformBulkDataManifest(TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>>&PlatformSavePackageContexts,ETargetPlatform Platform);
 #endif
 	//UFUNCTION(BlueprintCallable)
@@ -156,9 +162,8 @@ public:
 	static FString PatchSummary(const FPatchVersionDiff& DiffInfo);
 
 	static FString MakePakShortName(const FHotPatcherVersion& InCurrentVersion, const FChunkInfo& InChunkInfo, const FString& InPlatform,const FString& InRegular);
-
-	static bool CheckSelectedAssetsCookStatus(const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets, FString& OutMsg);
-	static bool CheckPatchRequire(const FPatchVersionDiff& InDiff,const TArray<FString>& PlatformNames,FString& OutMsg);
+	static bool CheckSelectedAssetsCookStatus(const FString& OverrideCookedDir,const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets, FString& OutMsg);
+	static bool CheckPatchRequire(const FString& OverrideCookedDir,const FPatchVersionDiff& InDiff,const TArray<FString>& PlatformNames,FString& OutMsg);
 
 	// WindowsNoEditor to Windows
 	static FString Conv2IniPlatform(const FString& Platform);
@@ -281,4 +286,5 @@ public:
 	static TArray<UClass*> GetClassesByNames(const TArray<FName>& ClassesNames);
 	static TArray<UClass*> GetAllMaterialClasses();
 	static TSet<FName> GetAllMaterialClassesNames();
+
 };

@@ -2,6 +2,9 @@
 
 #include "CmdHandler.h"
 
+#include "Misc/CommandLine.h"
+#include "Misc/ConfigCacheIni.h"
+
 DEFINE_LOG_CATEGORY(LogCmdHandler);
 
 bool OverrideConfigValue(const FString& FileName,const FString& Section,const FString& Key,int32 NewValue)
@@ -37,7 +40,7 @@ void AddMultiCookerBackendToConfig(const FString& DDCAddr)
 		{
 			Section->Remove(*Key);
 		}
-		Section->FindOrAdd(*Key,FConfigValue(*Value));
+		Section->Add(*Key,FConfigValue(*Value));
 	};
 	
 	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("MinimumDaysToKeepFile"),TEXT("7"));
@@ -59,7 +62,7 @@ void AddMultiCookerBackendToConfig(const FString& DDCAddr)
 		FCommandLine::Append(*FString::Printf(TEXT(" -ddc=%s"),*DDCBackendName));
 		UE_LOG(LogCmdHandler, Warning, TEXT("Append cmd: %s"),FCommandLine::Get());
 	}
-	UE_LOG(LogCmdHandler, Warning, TEXT("use MultiCookerDDC: %s"),&DDCBackendName);
+	UE_LOG(LogCmdHandler, Warning, TEXT("use MultiCookerDDC: %s"),*DDCBackendName);
 }
 
 static bool bDDCUrl = false;
