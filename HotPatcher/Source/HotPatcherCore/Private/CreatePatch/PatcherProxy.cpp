@@ -46,30 +46,7 @@ UPatcherProxy::UPatcherProxy(const FObjectInitializer& ObjectInitializer):Super(
 
 bool UPatcherProxy::CanExportPatch()const
 {
-	bool bCanExport = false;
-	FExportPatchSettings* NoConstSettingObject = const_cast<UPatcherProxy*>(this)->GetSettingObject();
-	if (NoConstSettingObject)
-	{
-		bool bHasBase = false;
-		if (NoConstSettingObject->IsByBaseVersion())
-			bHasBase = !NoConstSettingObject->GetBaseVersion().IsEmpty() && FPaths::FileExists(NoConstSettingObject->GetBaseVersion());
-		else
-			bHasBase = true;
-		bool bHasVersionId = !NoConstSettingObject->GetVersionId().IsEmpty();
-		bool bHasFilter = !!NoConstSettingObject->GetAssetIncludeFilters().Num();
-		bool bHasSpecifyAssets = !!NoConstSettingObject->GetIncludeSpecifyAssets().Num();
-		bool bHasSavePath = !NoConstSettingObject->GetSaveAbsPath().IsEmpty();
-		bool bHasPakPlatfotm = !!NoConstSettingObject->GetPakTargetPlatforms().Num();
-
-		bool bHasAnyPakFiles = (
-			bHasFilter || bHasSpecifyAssets ||
-			NoConstSettingObject->IsIncludeEngineIni() ||
-			NoConstSettingObject->IsIncludePluginIni() ||
-			NoConstSettingObject->IsIncludeProjectIni()
-			);
-		bCanExport = bHasBase && bHasVersionId && bHasAnyPakFiles && bHasPakPlatfotm && bHasSavePath;
-	}
-	return bCanExport;
+	return UFlibPatchParserHelper::IsValidPatchSettings(const_cast<UPatcherProxy*>(this)->GetSettingObject(),false);
 }
 
 FString GetShaderLibDeterministicCmdByPlatforms(const TArray<FString>& PlatformNames)
@@ -113,7 +90,7 @@ namespace PatchWorker
 	// setup 7.1
 	bool PatchAssetRegistryWorker(FHotPatcherPatchContext& Context);
 	// setup 7.2
-	bool GenerateGlobalAssetRegistryData(FHotPatcherPatchContext& Context);
+	bool GenerateGlobalAssetRegistryManifest(FHotPatcherPatchContext& Context);
 	// setup 8
 	bool GeneratePakProxysWorker(FHotPatcherPatchContext& Context);
 	// setup 9
@@ -160,7 +137,7 @@ namespace PatchWorker
 				TArray<FAssetDetail> TrackerAssetDetails;
 				for(const auto& TrackPackage:PackageTrackerByDiff->GetTrackResult())
 				{
-					bool bSkiped = FAssetDependenciesParser::IsForceSkipAsset(TrackPackage.Key.ToString(),ForceSkipTypes,IgnoreFilters,ForceSkipFilters,ForceSkipAssets);
+					bool bSkiped = FAssetDependenciesParser::IsForceSkipAsset(TrackPackage.Key.ToString(),ForceSkipTypes,IgnoreFilters,ForceSkipFilters,ForceSkipAssets,true);
 					if(!bSkiped)
 					{
 						TrackerAssetDetails.AddUnique(TrackPackage.Value);
@@ -204,7 +181,7 @@ void UPatcherProxy::Init(FPatcherEntitySettingBase* InSetting)
 	// cook finished
 	ADD_PATCH_WORKER(PatchWorker::PostCookPatchAssets);
 	ADD_PATCH_WORKER(PatchWorker::PatchAssetRegistryWorker);
-	ADD_PATCH_WORKER(PatchWorker::GenerateGlobalAssetRegistryData);
+	ADD_PATCH_WORKER(PatchWorker::GenerateGlobalAssetRegistryManifest);
 	ADD_PATCH_WORKER(PatchWorker::GeneratePakProxysWorker);
 	ADD_PATCH_WORKER(PatchWorker::CreatePakWorker);
 	ADD_PATCH_WORKER(PatchWorker::CreateIoStoreWorker);
@@ -614,6 +591,7 @@ namespace PatchWorker
 						EmptySetting.bOverrideSavePackageContext = true;
 						EmptySetting.PlatformSavePackageContexts = Context.PatchProxy->GetPlatformSavePackageContexts();
 #endif
+						EmptySetting.bPreGeneratePlatformData = true;
 						USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
 						SingleCookerProxy->AddToRoot();
 						SingleCookerProxy->Init(&EmptySetting);
@@ -693,10 +671,10 @@ namespace PatchWorker
 		}
 		return true;
 	};
-	bool GenerateGlobalAssetRegistryData(FHotPatcherPatchContext& Context)
+	bool GenerateGlobalAssetRegistryManifest(FHotPatcherPatchContext& Context)
 	{
-		SCOPED_NAMED_EVENT_TEXT("GenerateGlobalAssetRegistryData",FColor::Red);
-		if(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry)
+		SCOPED_NAMED_EVENT_TEXT("GenerateGlobalAssetRegistryManifest",FColor::Red);
+		if(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistryManifest)
 		{
 			FAssetDependenciesInfo TotalDiffAssets = UFlibAssetManageHelper::CombineAssetDependencies(Context.VersionDiff.AssetDiffInfo.AddAssetDependInfo,Context.VersionDiff.AssetDiffInfo.ModifyAssetDependInfo);
 			const TArray<FAssetDetail>& AllAssets = TotalDiffAssets.GetAssetDetails();

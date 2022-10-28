@@ -34,7 +34,8 @@ struct HOTPATCHERRUNTIME_API FAssetRegistryOptions
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bSerializeAssetRegistry = false;
-	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool bSerializeAssetRegistryManifest = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString AssetRegistryMountPointRegular;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

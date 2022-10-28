@@ -1932,7 +1932,7 @@ FPakEncryptionKeys UFlibPatchParserHelper::GetCryptoByProjectSettings()
 		for(TFieldIterator<FProperty> PropertyIter(Class);PropertyIter;++PropertyIter)
 		{
 			FProperty* PropertyIns = *PropertyIter;
-			UE_LOG(LogTemp,Log,TEXT("%s"),*PropertyIns->GetName());
+			// UE_LOG(LogHotPatcher,Log,TEXT("%s"),*PropertyIns->GetName());
 			if(PropertyIns->GetName().Equals(ENCRYPT_KEY_NAME))
 			{
 				result.EncryptionKey.Key = *PropertyIns->ContainerPtrToValuePtr<FString>(Class->GetDefaultObject());
@@ -2036,18 +2036,33 @@ TArray<FDirectoryPath> UFlibPatchParserHelper::GetDefaultForceSkipContentDir()
 		TEXT("/Engine/Editor*/")
 		,TEXT("/Engine/VREditor/")
 	};
-	bool bSkipEditorContent = false;
-	GConfig->GetBool(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("bSkipEditorContent"),bSkipEditorContent,GGameIni);
+
+	TArray<FString> AlwaySkipTempContentRules = {
+#if ENGINE_MAJOR_VERSION
+		TEXT("/Game/__ExternalActors__")
+		,TEXT("/Game/__ExternalObjects__")
+#endif
+	};
 	
-	if(bSkipEditorContent)
+	auto AddToSkipDirs = [&result](const TArray<FString>& SkipDirs)
 	{
-		for(const auto& Ruls:DefaultSkipEditorContentRules)
+		for(const auto& Ruls:SkipDirs)
 		{
 			FDirectoryPath PathIns;
 			PathIns.Path = Ruls;
 			result.Add(PathIns);
 		}
+	};
+	AddToSkipDirs(AlwaySkipTempContentRules);
+
+	bool bSkipEditorContent = false;
+	GConfig->GetBool(TEXT("/Script/UnrealEd.ProjectPackagingSettings"),TEXT("bSkipEditorContent"),bSkipEditorContent,GGameIni);
+
+	if(bSkipEditorContent)
+	{
+		AddToSkipDirs(DefaultSkipEditorContentRules);
 	}
+	
 	return result;
 }
 
@@ -2085,4 +2100,41 @@ FString UFlibPatchParserHelper::FileHash(const FString& Filename, EHashCalculato
 		};
 	}
 	return HashValue;
+}
+
+bool UFlibPatchParserHelper::IsValidPatchSettings(const FExportPatchSettings* PatchSettings,bool bExternalFilesCheck)
+{
+	bool bCanExport = false;
+	FExportPatchSettings* NoConstSettingObject = const_cast<FExportPatchSettings*>(PatchSettings);
+	if (NoConstSettingObject)
+	{
+		bool bHasBase = false;
+		if (NoConstSettingObject->IsByBaseVersion())
+			bHasBase = !NoConstSettingObject->GetBaseVersion().IsEmpty() && FPaths::FileExists(NoConstSettingObject->GetBaseVersion());
+		else
+			bHasBase = true;
+		bool bHasVersionId = !NoConstSettingObject->GetVersionId().IsEmpty();
+		bool bHasFilter = !!NoConstSettingObject->GetAssetIncludeFilters().Num();
+		bool bHasSpecifyAssets = !!NoConstSettingObject->GetIncludeSpecifyAssets().Num();
+		bool bHasSavePath = !NoConstSettingObject->GetSaveAbsPath().IsEmpty();
+		bool bHasPakPlatfotm = !!NoConstSettingObject->GetPakTargetPlatforms().Num();
+
+		bool bHasExternFiles = true;
+		if(bExternalFilesCheck)
+		{
+			bHasExternFiles = !!NoConstSettingObject->GetAllPlatfotmExternFiles().Num();
+		}
+		
+		bool bHasExDirs = !!NoConstSettingObject->GetAddExternAssetsToPlatform().Num();
+		
+		bool bHasAnyPakFiles = (
+			bHasFilter || bHasSpecifyAssets || bHasExternFiles || bHasExDirs ||
+			NoConstSettingObject->IsIncludeEngineIni() ||
+			NoConstSettingObject->IsIncludePluginIni() ||
+			NoConstSettingObject->IsIncludeProjectIni() ||
+			NoConstSettingObject->bImportProjectSettings
+			);
+		bCanExport = bHasBase && bHasVersionId && bHasAnyPakFiles && bHasPakPlatfotm && bHasSavePath;
+	}
+	return bCanExport;
 }

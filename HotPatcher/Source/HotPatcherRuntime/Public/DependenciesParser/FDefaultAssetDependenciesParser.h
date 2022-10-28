@@ -15,8 +15,8 @@ struct HOTPATCHERRUNTIME_API FAssetDependenciesParser : public IAssetDependencie
 		const TSet<FName>& IgnoreTypes,
 		const TArray<FString>& IgnoreFilters,
 		TArray<FString> ForceSkipFilters,
-		const TArray<FString>& ForceSkipPackageNames
-		);
+		const TArray<FString>& ForceSkipPackageNames, bool bDispalyLog
+	);
 	
 	TSet<FName> GatherAssetDependicesInfoRecursively(
 		FAssetRegistryModule& InAssetRegistryModule,

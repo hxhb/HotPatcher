@@ -237,5 +237,8 @@ public:
 		THotPatcherTemplateHelper::TSerializeStructAsJsonString(SerializeStruct,SerializedJsonContent);
 		return FFileHelper::SaveStringToFile(SerializedJsonContent,*FPaths::ConvertRelativePathToFull(SaveToPath));
 	}
+
+	static bool IsValidPatchSettings(const FExportPatchSettings* PatchSettings,bool bExternalFilesCheck);
+	
 };
 

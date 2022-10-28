@@ -562,11 +562,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 		{
 			UE_LOG(LogHotPatcher,Warning,TEXT("Cook %s Failed! It is EditorOnly Package!"),*LongPackageName);
 		}
-		if(bIsFailedPackage)
-		{
-			CookActionCallback.OnAssetCooked(Package,ETargetPlatform::AllPlatforms,ESavePackageResult::Error);
-			return false;
-		}
+
 		
 		bool bUnversioned = true;
 		bool CookLinkerDiff = false;
@@ -586,6 +582,12 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 		
 		for(auto& Platform:CookPlatforms)
 		{
+			// if(bIsFailedPackage)
+			// {
+			// 	CookActionCallback.OnAssetCooked(Package,Platform,ESavePackageResult::Error);
+			// 	return false;
+			// }
+			
 			FFilterEditorOnlyFlag SetPackageEditorOnlyFlag(Package,Platform.Value);
 
 			FString PackageName = PackageFileName.IsNone() ? LongPackageName :PackageFileName.ToString();

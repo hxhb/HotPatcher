@@ -43,10 +43,9 @@ public:
     TArray<FExportPatchSettings> PresetConfigs;
 
     UPROPERTY(EditAnywhere, config, Category = "Preview")
-    bool bPreviewTooltips = false;
+    bool bPreviewTooltips = true;
     UPROPERTY(EditAnywhere, config, Category = "Preview")
-    bool bExternalFilesCheck = true;
-    
+    bool bExternalFilesCheck = false;
 };
 
 

@@ -467,38 +467,7 @@ EVisibility SHotPatcherPatchWidget::VisibilityPreviewChunkButtons() const
 }
 bool SHotPatcherPatchWidget::CanExportPatch()const
 {
-	bool bCanExport = false;
-	if (ExportPatchSetting)
-	{
-		bool bHasBase = false;
-		if (ExportPatchSetting->IsByBaseVersion())
-			bHasBase = !ExportPatchSetting->GetBaseVersion().IsEmpty() && FPaths::FileExists(ExportPatchSetting->GetBaseVersion());
-		else
-			bHasBase = true;
-		bool bHasVersionId = !ExportPatchSetting->GetVersionId().IsEmpty();
-		bool bHasFilter = !!ExportPatchSetting->GetAssetIncludeFilters().Num();
-		bool bHasSpecifyAssets = !!ExportPatchSetting->GetIncludeSpecifyAssets().Num();
-		// bool bHasExternFiles = !!ExportPatchSetting->GetAddExternFiles().Num();
-		// bool bHasExDirs = !!ExportPatchSetting->GetAddExternDirectory().Num();
-		bool bHasExternFiles = true;
-		if(GetDefault<UHotPatcherSettings>()->bExternalFilesCheck)
-		{
-			bHasExternFiles = !!ExportPatchSetting->GetAllPlatfotmExternFiles().Num();
-		}
-		
-		bool bHasExDirs = !!ExportPatchSetting->GetAddExternAssetsToPlatform().Num();
-		bool bHasSavePath = !ExportPatchSetting->GetSaveAbsPath().IsEmpty();
-		bool bHasPakPlatfotm = !!ExportPatchSetting->GetPakTargetPlatforms().Num();
-		
-		bool bHasAnyPakFiles = (
-			bHasFilter || bHasSpecifyAssets || bHasExternFiles || bHasExDirs ||
-			ExportPatchSetting->IsIncludeEngineIni() ||
-			ExportPatchSetting->IsIncludePluginIni() ||
-			ExportPatchSetting->IsIncludeProjectIni()
-			);
-		bCanExport = bHasBase && bHasVersionId && bHasAnyPakFiles && bHasPakPlatfotm && bHasSavePath;
-	}
-	return bCanExport;
+	return UFlibPatchParserHelper::IsValidPatchSettings(ExportPatchSetting.Get(),GetDefault<UHotPatcherSettings>()->bExternalFilesCheck);
 }
 
 FReply SHotPatcherPatchWidget::DoExportPatch()

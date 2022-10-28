@@ -126,7 +126,7 @@ bool IsValidPackageName(const FString& LongPackageName)
 bool FAssetDependenciesParser::IsIgnoreAsset(const FAssetData& AssetData)
 {
 	FString LongPackageName = AssetData.PackageName.ToString();
-	bool bIsForceSkip = IsForceSkipAsset(LongPackageName,ParseConfig.IgnoreAseetTypes,ParseConfig.IgnoreFilters,ParseConfig.ForceSkipContents,ParseConfig.ForceSkipPackageNames);
+	bool bIsForceSkip = IsForceSkipAsset(LongPackageName,ParseConfig.IgnoreAseetTypes,ParseConfig.IgnoreFilters,ParseConfig.ForceSkipContents,ParseConfig.ForceSkipPackageNames,true);
 	auto HashPackageFlag = [](uint32 Flags,uint32 CheckFlag)->bool
 	{
 		return (Flags & CheckFlag) != 0;	
@@ -136,7 +136,8 @@ bool FAssetDependenciesParser::IsIgnoreAsset(const FAssetData& AssetData)
 	return bIsForceSkip || bIsEditorFlag;
 }
 
-bool FAssetDependenciesParser::IsForceSkipAsset(const FString& LongPackageName,const TSet<FName>& IgnoreTypes,const TArray<FString>& IgnoreFilters,TArray<FString> ForceSkipFilters,const TArray<FString>& ForceSkipPackageNames)
+bool FAssetDependenciesParser::IsForceSkipAsset(const FString& LongPackageName, const TSet<FName>& IgnoreTypes, const TArray<FString>& IgnoreFilters, TArray<FString> ForceSkipFilters, const TArray<FString>& ForceSkipPackageNames, bool
+                                                bDispalyLog)
 {
 	SCOPED_NAMED_EVENT_TEXT("IsForceSkipAsset",FColor::Red);
 	bool bIsIgnore = false;
@@ -161,7 +162,7 @@ bool FAssetDependenciesParser::IsForceSkipAsset(const FString& LongPackageName,c
 		bIsIgnore = true;
 	}
 
-	if(bIsIgnore)
+	if(bIsIgnore && bDispalyLog)
 	{
 #if ASSET_DEPENDENCIES_DEBUG_LOG
 		UE_LOG(LogHotPatcher,Log,TEXT("Force Skip %s (match ignore rule %s)"),*LongPackageName,*MatchIgnoreStr);
@@ -283,7 +284,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(
 			// check is ignore directories or ingore types
 			{
 				SCOPED_NAMED_EVENT_TEXT("check ignore directories",FColor::Red);
-				if(!IsForceSkipAsset(LongPackageNameStr,IgnoreAssetTypes,IgnoreDirectories,ForceSkipDirectories,TempForceSkipPackageNames))
+				if(!IsForceSkipAsset(LongPackageNameStr,IgnoreAssetTypes,IgnoreDirectories,ForceSkipDirectories,TempForceSkipPackageNames,false))
 				{
 					FScopeLock Lock(&SynchronizationObject);
 					AssetDependencies.Add(LongPackageName);
