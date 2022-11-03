@@ -127,9 +127,11 @@ int32 USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
 			{
 				DumpCookerInfo.Append(FString::Printf(TEXT("\t%s -- %d\n"),*Class->GetName(),ObjectAssets.Num()));
 			}
+			int32 ClassesNumberOfAssetsPerFrame = GetClassAssetNumOfPerCluster(Class);
+			
 			while(ObjectAssets.Num())
 			{
-				int32 ClusterAssetNum = NumberOfAssetsPerFrame < 1 ? ObjectAssets.Num() : NumberOfAssetsPerFrame;
+				int32 ClusterAssetNum = ClassesNumberOfAssetsPerFrame < 1 ? ObjectAssets.Num() : ClassesNumberOfAssetsPerFrame;
 				int32 NewClusterAssetNum = FMath::Min(ClusterAssetNum,ObjectAssets.Num());
 			
 				TArray<FAssetDetail> CulsterObjectAssets(ObjectAssets.GetData(),NewClusterAssetNum);
@@ -867,4 +869,16 @@ TArray<UClass*> USingleCookerProxy::GetPreCacheClasses() const
 	}
 	Classes.Append(UFlibHotPatcherCoreHelper::GetAllMaterialClasses());
 	return Classes;
+}
+
+
+int32 USingleCookerProxy::GetClassAssetNumOfPerCluster(UClass* Class)
+{
+	int32 ClassesNumberOfAssetsPerFrame = GetSettingObject()->GetNumberOfAssetsPerFrame();
+			
+	if(UWorld::StaticClass() == Class)
+	{
+		ClassesNumberOfAssetsPerFrame = 2;
+	}
+	return ClassesNumberOfAssetsPerFrame;
 }

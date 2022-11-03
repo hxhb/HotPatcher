@@ -156,6 +156,9 @@ private: // package context
 public: // static function
     static void DumpCluster(const FCookCluster& CookCluster, bool bWriteToLog);
 
+public:
+    int32 GetClassAssetNumOfPerCluster(UClass* Class);
+    
 public: // delegate
     FSingleCookerEvent OnCookBegin;
     FSingleCookerEvent OnCookFinished;
