@@ -27,6 +27,8 @@ struct HOTPATCHERCORE_API FCountServerlessWrapper
 		RequestInfo = InRequestInfo;
 		Desc = InDesc;
 	}
+	~FCountServerlessWrapper();
+	
 	void Processor();
 
 public:
@@ -36,13 +38,15 @@ protected:
 	void RequestObjectID();
 	void OnObjectIdReceived( FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess);
 	
-	void UpdateToServer(const FProjectVersionDesc& Desc,const FString& ObjectID);
+	FHttpRequestPtr UpdateToServer(const FProjectVersionDesc& Desc,const FString& ObjectID);
 	void OnUpdateToServerReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess);
-	void CreateToServer(const FProjectVersionDesc& Desc);
+	FHttpRequestPtr CreateToServer(const FProjectVersionDesc& Desc);
 	void CreateToServerReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess);
 
 	FString Decode(const FString& Encode);
 protected:
 	FServerRequestInfo RequestInfo;
 	FProjectVersionDesc Desc;
+	FHttpRequestPtr ObjectIDRequest;
+	FHttpRequestPtr ToServerRequest;
 };

@@ -11,6 +11,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Resources/Version.h"
 #include "CoreGlobals.h"
+#include "HttpManager.h"
 
 FProjectVersionDesc FCountServerlessWrapper::MakeCurrentProject()
 {
@@ -41,6 +42,20 @@ FServerRequestInfo FCountServerlessWrapper::MakeServerRequestInfo()
 	return Info;
 }
 
+void CancelRequest(FHttpRequestPtr& Request)
+{
+	if(FHttpModule::Get().GetHttpManager().IsValidRequest(Request.Get()))
+	{
+		Request->CancelRequest();
+	}
+}
+
+FCountServerlessWrapper::~FCountServerlessWrapper()
+{
+	CancelRequest(ObjectIDRequest);
+	CancelRequest(ToServerRequest);
+}
+
 void FCountServerlessWrapper::Processor()
 {
 	if(!UE_BUILD_SHIPPING)
@@ -48,16 +63,12 @@ void FCountServerlessWrapper::Processor()
 		RequestObjectID();
 	}
 }
-#if ENGINE_MAJOR_VERSION > 4 || (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION > 25)
-using FHttpRequestType = TSharedRef<IHttpRequest,ESPMode::ThreadSafe>;
-#else
-using FHttpRequestType = TSharedRef<IHttpRequest,ESPMode::NotThreadSafe>;
-#endif
 
 void FCountServerlessWrapper::RequestObjectID()
 {
+	CancelRequest(ObjectIDRequest);
 	FHttpModule::Get().SetHttpTimeout(5.0);
-	FHttpRequestType ObjectIDRequest = FHttpModule::Get().CreateRequest();
+	ObjectIDRequest = FHttpModule::Get().CreateRequest();
 	ObjectIDRequest->OnProcessRequestComplete().BindRaw(this, &FCountServerlessWrapper::OnObjectIdReceived);
 	ObjectIDRequest->SetURL(RequestInfo.Host);
 	ObjectIDRequest->SetHeader(TEXT("X-LC-Id"),Decode(RequestInfo.AppId));
@@ -97,16 +108,16 @@ void FCountServerlessWrapper::OnObjectIdReceived(FHttpRequestPtr Request, FHttpR
 		}
 		if(NameIdMaps.Contains(FApp::GetProjectName()))
 		{
-			UpdateToServer(Desc,*NameIdMaps.Find(FApp::GetProjectName()));
+			ToServerRequest = UpdateToServer(Desc,*NameIdMaps.Find(FApp::GetProjectName()));
 		}
 		else if(!!Count)
 		{
-			CreateToServer(Desc);
+			ToServerRequest = CreateToServer(Desc);
 		}
 	}
 }
 
-void FCountServerlessWrapper::UpdateToServer(const FProjectVersionDesc& InDesc,const FString& ObjectID)
+FHttpRequestPtr FCountServerlessWrapper::UpdateToServer(const FProjectVersionDesc& InDesc,const FString& ObjectID)
 {
 	FString ContentJsonStr = FString::Printf(
 		TEXT("{\"ProjectName\": \"%s\",\"GameName\":\"%s\",\"EngineVersion\":\"%s\",\"PluginVersion\":\"%s\",\"UserName\":\"%s\",%s}"),
@@ -117,8 +128,7 @@ void FCountServerlessWrapper::UpdateToServer(const FProjectVersionDesc& InDesc,c
 		*InDesc.UserName,
 		TEXT("\"Count\":{\"__op\":\"Increment\",\"amount\":1}")
 	);
-	
-	FHttpRequestType CreateToServerRequest = FHttpModule::Get().CreateRequest();
+	FHttpRequestPtr CreateToServerRequest = FHttpModule::Get().CreateRequest();
 	FString UpdateObjectURL = FString::Printf(TEXT("%s/%s"),*RequestInfo.Host,*ObjectID);
 	CreateToServerRequest->SetURL(UpdateObjectURL);
 	CreateToServerRequest->SetHeader(TEXT("X-LC-Id"),Decode(RequestInfo.AppId));
@@ -128,6 +138,7 @@ void FCountServerlessWrapper::UpdateToServer(const FProjectVersionDesc& InDesc,c
 	CreateToServerRequest->SetVerb(TEXT("PUT"));
 	CreateToServerRequest->OnProcessRequestComplete().BindRaw(this, &FCountServerlessWrapper::OnUpdateToServerReceived);
 	CreateToServerRequest->ProcessRequest();
+	return CreateToServerRequest;
 }
 
 void FCountServerlessWrapper::OnUpdateToServerReceived(FHttpRequestPtr Request, FHttpResponsePtr Response,
@@ -139,7 +150,7 @@ void FCountServerlessWrapper::OnUpdateToServerReceived(FHttpRequestPtr Request, 
 	}
 }
 
-void FCountServerlessWrapper::CreateToServer(const FProjectVersionDesc& InDesc)
+FHttpRequestPtr FCountServerlessWrapper::CreateToServer(const FProjectVersionDesc& InDesc)
 {
 	FString ContentJsonStr = FString::Printf(
 		TEXT("{\"ProjectName\": \"%s\",\"GameName\":\"%s\",\"EngineVersion\":\"%s\",\"PluginVersion\":\"%s\",\"UserName\":\"%s\",\"Count\":%d}"),
@@ -151,7 +162,7 @@ void FCountServerlessWrapper::CreateToServer(const FProjectVersionDesc& InDesc)
 		1
 	);
 
-	FHttpRequestType UpdateToServerRequest = FHttpModule::Get().CreateRequest();
+	FHttpRequestPtr UpdateToServerRequest = FHttpModule::Get().CreateRequest();
 	UpdateToServerRequest->SetURL(RequestInfo.Host);
 	UpdateToServerRequest->SetHeader(TEXT("X-LC-Id"),Decode(RequestInfo.AppId));
 	UpdateToServerRequest->SetHeader(TEXT("X-LC-Key"),Decode(RequestInfo.Key));
@@ -160,6 +171,7 @@ void FCountServerlessWrapper::CreateToServer(const FProjectVersionDesc& InDesc)
 	UpdateToServerRequest->SetVerb(TEXT("POST"));
 	UpdateToServerRequest->OnProcessRequestComplete().BindRaw(this, &FCountServerlessWrapper::CreateToServerReceived);
 	UpdateToServerRequest->ProcessRequest();
+	return UpdateToServerRequest;
 }
 
 void FCountServerlessWrapper::CreateToServerReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSuccess)
