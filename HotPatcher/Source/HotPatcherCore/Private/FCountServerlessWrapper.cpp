@@ -56,6 +56,7 @@ using FHttpRequestType = TSharedRef<IHttpRequest,ESPMode::NotThreadSafe>;
 
 void FCountServerlessWrapper::RequestObjectID()
 {
+	FHttpModule::Get().SetHttpTimeout(5.0);
 	FHttpRequestType ObjectIDRequest = FHttpModule::Get().CreateRequest();
 	ObjectIDRequest->OnProcessRequestComplete().BindRaw(this, &FCountServerlessWrapper::OnObjectIdReceived);
 	ObjectIDRequest->SetURL(RequestInfo.Host);
