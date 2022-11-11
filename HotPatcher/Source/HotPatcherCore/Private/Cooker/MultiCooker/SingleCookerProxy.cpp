@@ -371,9 +371,14 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 
 	// clean cached ddd / release memory
 	// CleanClusterCachedPlatformData(CookCluster);
-	// GEngine->ForceGarbageCollection(true);
+		
 	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+	// for GC
+	{
+		GEngine->ForceGarbageCollection(true);
+		CollectGarbage(RF_NoFlags, true);
+	}
 }
 
 void USingleCookerProxy::Tick(float DeltaTime)
@@ -822,53 +827,7 @@ TSet<FName> USingleCookerProxy::GetAdditionalAssets()
 // pre cache asset type order
 TArray<UClass*> USingleCookerProxy::GetPreCacheClasses() const
 {
-	SCOPED_NAMED_EVENT_TEXT("GetPreCacheClasses",FColor::Red);
-	TArray<UClass*> Classes;
-	
-	TArray<FName> ParentClassesName = {
-		// textures
-		TEXT("Texture"),
-		TEXT("PaperSprite"),
-		// material
-		// TEXT("MaterialExpression"),
-		// TEXT("MaterialParameterCollection"),
-		// TEXT("MaterialFunctionInterface"),
-		// TEXT("MaterialInterface"),
-		// other
-		TEXT("PhysicsAsset"),
-		TEXT("PhysicalMaterial"),
-		TEXT("StaticMesh"),
-		// curve
-		TEXT("CurveFloat"),
-		TEXT("CurveVector"),
-		TEXT("CurveLinearColor"),
-		// skeletal and animation
-		TEXT("Skeleton"),
-		TEXT("SkeletalMesh"),
-		TEXT("AnimSequence"),
-		TEXT("BlendSpace1D"),
-		TEXT("BlendSpace"),
-		TEXT("AnimMontage"),
-		TEXT("AnimComposite"),
-		// blueprint
-		TEXT("UserDefinedStruct"),
-		TEXT("Blueprint"),
-		// sound
-		TEXT("SoundWave"),
-		// particles
-		TEXT("FXSystemAsset"),
-		// large ref asset
-		TEXT("ActorSequence"),
-		TEXT("LevelSequence"),
-		TEXT("World") 
-	};
-
-	for(auto& ParentClass:UFlibHotPatcherCoreHelper::GetClassesByNames(ParentClassesName))
-	{
-		Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,true,true));
-	}
-	Classes.Append(UFlibHotPatcherCoreHelper::GetAllMaterialClasses());
-	return Classes;
+	return UFlibHotPatcherCoreHelper::GetPreCacheClasses();
 }
 
 

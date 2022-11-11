@@ -286,5 +286,6 @@ public:
 	static TArray<UClass*> GetClassesByNames(const TArray<FName>& ClassesNames);
 	static TArray<UClass*> GetAllMaterialClasses();
 	static TSet<FName> GetAllMaterialClassesNames();
+	static TArray<UClass*> GetPreCacheClasses();
 
 };

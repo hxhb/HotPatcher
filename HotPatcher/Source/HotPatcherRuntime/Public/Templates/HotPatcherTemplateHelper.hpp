@@ -154,7 +154,20 @@ namespace THotPatcherTemplateHelper
 		}
 		return bStatus;
 	}
-
+	
+	static bool SerializeJsonObjAsJsonString(TSharedPtr<FJsonObject> JsonObject,FString& OutJsonString)
+	{
+		SCOPED_NAMED_EVENT_TEXT("SerializeJsonObjAsJsonString",FColor::Red);
+		bool bRunStatus = false;
+		if(JsonObject.IsValid())
+		{
+			auto JsonWriter = TJsonWriterFactory<>::Create(&OutJsonString);
+			FJsonSerializer::Serialize(JsonObject.ToSharedRef(), JsonWriter);
+			bRunStatus = true;
+		}
+		return bRunStatus;
+	}
+	
 	template<typename TStructType>
     static bool TSerializeStructAsJsonString(const TStructType& InStruct,FString& OutJsonString)
 	{
@@ -222,6 +235,14 @@ namespace THotPatcherTemplateHelper
 		return false;
 	}
 
+	static bool ConvStr2Bool(const FString& Str,bool& bOut)
+	{
+		bool bIsTrue = Str.Equals(TEXT("true"),ESearchCase::IgnoreCase);
+		bool bIsFlase = Str.Equals(TEXT("false"),ESearchCase::IgnoreCase);
+		if(bIsTrue) {	bOut = true;	}
+		if(bIsFlase){	bOut = false;	}
+		return bIsTrue || bIsFlase;
+	}
 	
 	template<typename T>
     static void ReplaceProperty(T& Struct, const TMap<FString, FString>& ParamsMap)
@@ -243,19 +264,25 @@ namespace THotPatcherTemplateHelper
 					TSharedPtr<FJsonObject> JsonObject = DeserializeJsonObject;
 					if(HasPrroperty(T::StaticStruct(),BreakedDot[0]))
 					{
-						for(int32 index=0;index<BreakedDot.Num()-1;++index)
+						int32 lastIndex = BreakedDot.Num()-1;
+						for(int32 index=0;index<lastIndex;++index)
 						{
 							JsonObject = JsonObject->GetObjectField(BreakedDot[index]);
 						}
 
 						if(JsonObject)
 						{
-							JsonObject->SetStringField(BreakedDot[BreakedDot.Num()-1],*ParamsMap.Find(key));
+							FString Value = *ParamsMap.Find(key);
+							FString From = JsonObject->GetStringField(BreakedDot[lastIndex]);
+							JsonObject->SetStringField(BreakedDot[lastIndex],Value);
+							UE_LOG(LogTemp,Display,TEXT("ReplaceProperty %s from %s to %s."),*BreakedDot[0],*From,*Value);
 						}
 					}
 				}
 			}
-			THotPatcherTemplateHelper::TDeserializeJsonObjectAsStruct<T>(DeserializeJsonObject,Struct);
+			FString JsonStr;
+			THotPatcherTemplateHelper::SerializeJsonObjAsJsonString(DeserializeJsonObject,JsonStr);
+			THotPatcherTemplateHelper::TDeserializeJsonObjectAsStruct(DeserializeJsonObject,Struct);
 		}
 	}
 	

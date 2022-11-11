@@ -23,6 +23,7 @@ bool OverrideConfigValue(const FString& FileName,const FString& Section,const FS
 	}
 	return bRet;
 }
+
 static FString MultiCookerDDCBackendName = TEXT("MultiCookerDDC");
 void AddMultiCookerBackendToConfig(const FString& DDCAddr)
 {
@@ -68,29 +69,28 @@ void AddMultiCookerBackendToConfig(const FString& DDCAddr)
 static bool bDDCUrl = false;
 void FCmdHandlerModule::StartupModule()
 {
-	int32 OverrideNumUnusedShaderCompilingThreads;
+	int32 OverrideNumUnusedShaderCompilingThreads = 3;
 	if(FParse::Value(FCommandLine::Get(), TEXT("-MaxShaderWorker="), OverrideNumUnusedShaderCompilingThreads))
 	{
 		OverrideNumUnusedShaderCompilingThreads = FMath::Max(OverrideNumUnusedShaderCompilingThreads,3);
 		const int32 NumVirtualCores = FPlatformMisc::NumberOfCoresIncludingHyperthreads();
 		OverrideNumUnusedShaderCompilingThreads = NumVirtualCores - OverrideNumUnusedShaderCompilingThreads;
-		GConfig->SetInt( TEXT("DevOptions.Shaders"), TEXT("NumUnusedShaderCompilingThreads"), OverrideNumUnusedShaderCompilingThreads, GEngineIni);
-		OverrideConfigValue(GEngineIni,TEXT("DevOptions.Shaders"),TEXT("NumUnusedShaderCompilingThreads"), OverrideNumUnusedShaderCompilingThreads);
 	}
+	GConfig->SetInt( TEXT("DevOptions.Shaders"), TEXT("NumUnusedShaderCompilingThreads"), OverrideNumUnusedShaderCompilingThreads, GEngineIni);
+	OverrideConfigValue(GEngineIni,TEXT("DevOptions.Shaders"),TEXT("NumUnusedShaderCompilingThreads"), OverrideNumUnusedShaderCompilingThreads);
 	
-	int32 OverrideMaxShaderJobBatchSize;
-	if(FParse::Value(FCommandLine::Get(), TEXT("-MaxShaderJobBatchSize="), OverrideMaxShaderJobBatchSize))
-	{
-		OverrideConfigValue( GEngineIni,TEXT("DevOptions.Shaders"), TEXT("MaxShaderJobBatchSize"), OverrideMaxShaderJobBatchSize);
-	}
-
+	int32 OverrideMaxShaderJobBatchSize = 10;
+	FParse::Value(FCommandLine::Get(), TEXT("-MaxShaderJobBatchSize="), OverrideMaxShaderJobBatchSize);
+	OverrideConfigValue( GEngineIni,TEXT("DevOptions.Shaders"), TEXT("MaxShaderJobBatchSize"), OverrideMaxShaderJobBatchSize);
+	
 	int32 OverrideWorkerProcessPriority;
 	if(FParse::Value(FCommandLine::Get(), TEXT("-SCWPriority="), OverrideWorkerProcessPriority))
 	{
 		OverrideConfigValue( GEngineIni,TEXT("DevOptions.Shaders"), TEXT("WorkerProcessPriority"), OverrideWorkerProcessPriority);
 	}
+	
 	FString DDCURL;
-	if(FParse::Value(FCommandLine::Get(),TEXT("-ddcurl="),DDCURL))
+	if(FParse::Value(FCommandLine::Get(),TEXT("-ddcurl="),DDCURL) && !DDCURL.IsEmpty())
 	{
 		AddMultiCookerBackendToConfig(DDCURL);
 		bDDCUrl = true;

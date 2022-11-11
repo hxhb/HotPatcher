@@ -595,12 +595,12 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 
 			ETargetPlatform TargetPlatform = Platform.Key;
 
-			if(!bStorageConcurrent)
-			{
-				TSet<UObject*> ProcessedObjs;
-				TSet<UObject*> PendingProcessObjs;
-				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TArray<ITargetPlatform*>{Platform.Value},ProcessedObjs,PendingProcessObjs,bStorageConcurrent, false);
-			}
+			// if(!bStorageConcurrent)
+			// {
+			// 	TSet<UObject*> ProcessedObjs;
+			// 	TSet<UObject*> PendingProcessObjs;
+			// 	UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TArray<ITargetPlatform*>{Platform.Value},ProcessedObjs,PendingProcessObjs,bStorageConcurrent, false);
+			// }
 			if(GCookLog)
 			{
 				UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*Package->GetName(),*Platform.Value->PlatformName());
@@ -2225,6 +2225,26 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
     			}
     		}
     	}
+		if (bStorageConcurrent)
+		{
+			// Precache the metadata so we don't risk rehashing the map in the parallelfor below
+			Package->GetMetaData();
+		}
+	}
+
+		
+	if (bStorageConcurrent)
+	{
+		// UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("Calling PostSaveRoot on worlds..."));
+		for (auto WorldIt = WorldsToPostSaveRoot.CreateConstIterator(); WorldIt; ++WorldIt)
+		{
+#if ENGINE_MINOR_VERSION < 26
+			FScopedNamedEvent CacheExportEvent(FColor::Red,*FString::Printf(TEXT("World PostSaveRoot")));
+#endif
+			UWorld* World = WorldIt.Key();
+			check(World);
+			World->PostSaveRoot(WorldIt.Value());
+		}
 	}
 	
 	// When saving concurrently, flush async loading since that is normally done internally in SavePackage
@@ -2241,20 +2261,7 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
 	{
 		UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(ProcessedObjs,PendingCachePlatformDataObjects,TargetPlatforms);
 	}
-	
-	if (bStorageConcurrent)
-	{
-		// UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("Calling PostSaveRoot on worlds..."));
-		for (auto WorldIt = WorldsToPostSaveRoot.CreateConstIterator(); WorldIt; ++WorldIt)
-		{
-#if ENGINE_MINOR_VERSION < 26
-			FScopedNamedEvent CacheExportEvent(FColor::Red,*FString::Printf(TEXT("World PostSaveRoot")));
-#endif
-			UWorld* World = WorldIt.Key();
-			check(World);
-			World->PostSaveRoot(WorldIt.Value());
-		}
-	}
+
 }
 
 void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObject*>& CachedPlatformDataObjects,TSet<UObject*>& PendingCachePlatformDataObjects,
@@ -2266,6 +2273,13 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 	{
 		// Wait for all shaders to finish compiling
 		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
+	}
+
+	{
+		SCOPED_NAMED_EVENT_TEXT("FlushAsyncLoading And WaitingAsyncTasks",FColor::Red);
+		FlushAsyncLoading();
+		UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("Waiting for async tasks..."));
+		FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
 	}
 	
 	{
@@ -2290,7 +2304,7 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 						}
 					}
 				}
-				// add to cched set
+				// add to cached set
 				if (bAllPlatformDataLoaded)
 				{
 					CachedPlatformDataObjects.Add(Object);
@@ -2551,4 +2565,60 @@ TSet<FName> UFlibHotPatcherCoreHelper::GetAllMaterialClassesNames()
 		result.Add(Class->GetFName());
 	}
 	return result;
+}
+
+TArray<UClass*> UFlibHotPatcherCoreHelper::GetPreCacheClasses()
+{
+	SCOPED_NAMED_EVENT_TEXT("GetPreCacheClasses",FColor::Red);
+	TArray<UClass*> Classes;
+	
+	TArray<FName> ParentClassesName = {
+		// textures
+		TEXT("Texture"),
+		TEXT("PaperSprite"),
+		// material
+		// TEXT("MaterialExpression"),
+		// TEXT("MaterialParameterCollection"),
+		// TEXT("MaterialFunctionInterface"),
+		// TEXT("MaterialInterface"),
+		// other
+		TEXT("PhysicsAsset"),
+		TEXT("PhysicalMaterial"),
+		TEXT("StaticMesh"),
+		// curve
+		TEXT("CurveFloat"),
+		TEXT("CurveVector"),
+		TEXT("CurveLinearColor"),
+		// skeletal and animation
+		TEXT("Skeleton"),
+		TEXT("SkeletalMesh"),
+		TEXT("AnimSequence"),
+		TEXT("BlendSpace1D"),
+		TEXT("BlendSpace"),
+		TEXT("AnimMontage"),
+		TEXT("AnimComposite"),
+		// blueprint
+		TEXT("UserDefinedStruct"),
+		TEXT("Blueprint"),
+		// sound
+		TEXT("SoundWave"),
+		// particles
+		TEXT("FXSystemAsset"),
+		// large ref asset
+		TEXT("ActorSequence"),
+		TEXT("LevelSequence"),
+		TEXT("World") 
+	};
+
+	for(auto& ParentClass:UFlibHotPatcherCoreHelper::GetClassesByNames(ParentClassesName))
+	{
+		Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,true,true));
+	}
+	Classes.Append(UFlibHotPatcherCoreHelper::GetAllMaterialClasses());
+	TSet<UClass*> Results;
+	for(const auto& Class:Classes)
+	{
+		Results.Add(Class);
+	}
+	return Results.Array();
 }
