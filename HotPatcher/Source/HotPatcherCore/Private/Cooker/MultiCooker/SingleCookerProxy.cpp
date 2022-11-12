@@ -835,9 +835,14 @@ int32 USingleCookerProxy::GetClassAssetNumOfPerCluster(UClass* Class)
 {
 	int32 ClassesNumberOfAssetsPerFrame = GetSettingObject()->GetNumberOfAssetsPerFrame();
 			
-	if(UWorld::StaticClass() == Class)
+
+	for(const auto& OverrideClasses:GetSettingObject()->GetOverrideNumberOfAssetsPerFrame())
 	{
-		ClassesNumberOfAssetsPerFrame = 2;
+		if(OverrideClasses.Key == Class)
+		{
+			ClassesNumberOfAssetsPerFrame = OverrideClasses.Value;
+			break;
+		}
 	}
 	return ClassesNumberOfAssetsPerFrame;
 }

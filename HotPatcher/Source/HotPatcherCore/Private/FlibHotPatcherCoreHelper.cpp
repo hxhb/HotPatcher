@@ -595,12 +595,16 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 
 			ETargetPlatform TargetPlatform = Platform.Key;
 
-			// if(!bStorageConcurrent)
-			// {
-			// 	TSet<UObject*> ProcessedObjs;
-			// 	TSet<UObject*> PendingProcessObjs;
-			// 	UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TArray<ITargetPlatform*>{Platform.Value},ProcessedObjs,PendingProcessObjs,bStorageConcurrent, false);
-			// }
+			/* for material cook
+			 * Illegal call to StaticFindObject() while serializing object data!
+			 * ![](https://img.imzlp.com/imgs/zlp/picgo/2022/202211121451617.png)
+			*/
+			if(!bStorageConcurrent)
+			{
+				TSet<UObject*> ProcessedObjs;
+				TSet<UObject*> PendingProcessObjs;
+				UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(TArray<UPackage*>{Package},TArray<ITargetPlatform*>{Platform.Value},ProcessedObjs,PendingProcessObjs,bStorageConcurrent, false);
+			}
 			if(GCookLog)
 			{
 				UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*Package->GetName(),*Platform.Value->PlatformName());

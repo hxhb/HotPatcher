@@ -1,6 +1,11 @@
 #include "Cooker/MultiCooker/FSingleCookerSettings.h"
 #include "FlibPatchParserHelper.h"
 
+FSingleCookerSettings::FSingleCookerSettings()
+{
+	OverrideNumberOfAssetsPerFrame.Add(UWorld::StaticClass(),2);
+}
+
 FString FSingleCookerSettings::GetStorageCookedAbsDir() const
 {
 	return UFlibPatchParserHelper::ReplaceMark(StorageCookedDir);

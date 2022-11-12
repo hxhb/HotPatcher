@@ -36,6 +36,7 @@ struct HOTPATCHERCORE_API FSingleCookerSettings:public FHotPatcherCookerSettingB
 {
 	GENERATED_BODY()
 public:
+	FSingleCookerSettings();
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString MissionName;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
@@ -85,6 +86,8 @@ public:
 	FORCEINLINE int32 GetNumberOfAssetsPerFrame()const{ return NumberOfAssetsPerFrame; }
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="!bForceCookInOneFrame",ClampMin=0))
 	int32 NumberOfAssetsPerFrame = 100;
+	TMap<UClass*,int32> OverrideNumberOfAssetsPerFrame;
+	FORCEINLINE const TMap<UClass*,int32>& GetOverrideNumberOfAssetsPerFrame()const{ return OverrideNumberOfAssetsPerFrame; }
 	
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
 	bool bAsyncLoad = false;
