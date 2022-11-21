@@ -46,6 +46,9 @@ public:
     bool bPreviewTooltips = true;
     UPROPERTY(EditAnywhere, config, Category = "Preview")
     bool bExternalFilesCheck = false;
+    
+    UPROPERTY(EditAnywhere, config, Category = "Advanced")
+    bool bServerlessCounter = true;
 };
 
 

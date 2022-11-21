@@ -26,8 +26,11 @@ void FVersionUpdaterManager::Update()
 	FServerRequestInfo RequestInfo = FCountServerlessWrapper::MakeServerRequestInfo();
 	auto ProjectInfo = FCountServerlessWrapper::MakeCurrentProject();
 	ProjectInfo.PluginVersion = FString::Printf(TEXT("%d.%d"),GToolMainVersion,GToolPatchVersion);
-	Counter->Init(RequestInfo,ProjectInfo);
-	Counter->Processor();
+	if(GetDefault<UHotPatcherSettings>()->bServerlessCounter)
+	{
+		Counter->Init(RequestInfo,ProjectInfo);
+		Counter->Processor();
+	}
 }
 
 void FVersionUpdaterManager::RequestRemoveVersion(const FString& URL)

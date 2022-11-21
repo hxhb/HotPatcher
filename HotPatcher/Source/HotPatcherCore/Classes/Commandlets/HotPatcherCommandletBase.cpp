@@ -51,9 +51,13 @@ void UHotPatcherCommandletBase::Update(const FString& Params)
 	{
 		ProjectInfo.ProjectName = FString::Printf(TEXT("%s_%s"),*ProjectInfo.ProjectName,*CommandletName);
 	}
+
+	if(GetDefault<UHotPatcherSettings>()->bServerlessCounter)
+	{
+		Counter->Init(RequestInfo,ProjectInfo);
+		Counter->Processor();
+	}
 	
-	Counter->Init(RequestInfo,ProjectInfo);
-	Counter->Processor();
 }
 
 void UHotPatcherCommandletBase::MaybeMarkPackageAsAlreadyLoaded(UPackage* Package)

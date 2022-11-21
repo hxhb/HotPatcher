@@ -2188,6 +2188,29 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
     				GIsCookerLoadingPackage = false;
     			}
     			
+    			if(ExportObj->GetClass()->GetName().Equals(TEXT("LandscapeComponent")) && bStorageConcurrent)
+    			{
+    				UE_LOG(LogHotPatcherCoreHelper,Display,TEXT("Object %s is a LandscapeComponent"),*ExportObj->GetFullName());
+    				TArray<UTexture2D*>* MobileWeightmapTextures = nullptr;
+    				for(TFieldIterator<FProperty> PropertyIter(ExportObj->GetClass());PropertyIter;++PropertyIter)
+    				{
+    					FProperty* PropertyIns = *PropertyIter;
+    					if(PropertyIns->GetName().Equals(TEXT("MobileWeightmapTextures")))
+    					{
+    						MobileWeightmapTextures = PropertyIns->ContainerPtrToValuePtr<TArray<UTexture2D*>>(ExportObj);
+    						break;
+    					}
+    				}
+    				if(MobileWeightmapTextures)
+    				{
+    					UE_LOG(LogHotPatcherCoreHelper,Display,TEXT("Add %s MobileWeightmapTextures to ObjectsInPackage"),*ExportObj->GetFullName());
+    					for(UObject* MobileWeightmapTexture:*MobileWeightmapTextures)
+    					{
+    						ObjectsInPackage.AddUnique(MobileWeightmapTexture);
+    					}
+    				}
+    			}
+    			
     			for(const auto& Platform:TargetPlatforms)
     			{
     				if (bStorageConcurrent)
