@@ -42,22 +42,20 @@ void UHotPatcherCommandletBase::Update(const FString& Params)
 	FString CommandletName;
 	bool bIsCommandlet = FParse::Value(FCommandLine::Get(), TEXT("-run="), CommandletName);
 	
-	Counter = MakeShareable(new FCountServerlessWrapper);
-	FServerRequestInfo RequestInfo = FCountServerlessWrapper::MakeServerRequestInfo();
-	auto ProjectInfo = FCountServerlessWrapper::MakeCurrentProject();
-	ProjectInfo.PluginVersion = FString::Printf(TEXT("%d.%d"),GToolMainVersion,GToolPatchVersion);
-
-	if(bIsCommandlet)
+	if(GetDefault<UHotPatcherSettings>()->bServerlessCounterInCmdlet)
 	{
-		ProjectInfo.ProjectName = FString::Printf(TEXT("%s_%s"),*ProjectInfo.ProjectName,*CommandletName);
-	}
+		Counter = MakeShareable(new FCountServerlessWrapper);
+		FServerRequestInfo RequestInfo = FCountServerlessWrapper::MakeServerRequestInfo();
+		auto ProjectInfo = FCountServerlessWrapper::MakeCurrentProject();
+		ProjectInfo.PluginVersion = FString::Printf(TEXT("%d.%d"),GToolMainVersion,GToolPatchVersion);
 
-	if(GetDefault<UHotPatcherSettings>()->bServerlessCounter)
-	{
+		if(bIsCommandlet)
+		{
+			ProjectInfo.ProjectName = FString::Printf(TEXT("%s_%s"),*ProjectInfo.ProjectName,*CommandletName);
+		}
 		Counter->Init(RequestInfo,ProjectInfo);
 		Counter->Processor();
 	}
-	
 }
 
 void UHotPatcherCommandletBase::MaybeMarkPackageAsAlreadyLoaded(UPackage* Package)

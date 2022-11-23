@@ -47,8 +47,10 @@ public:
     UPROPERTY(EditAnywhere, config, Category = "Preview")
     bool bExternalFilesCheck = false;
     
-    UPROPERTY(EditAnywhere, config, Category = "Advanced")
+    UPROPERTY(config)
     bool bServerlessCounter = true;
+    UPROPERTY(EditAnywhere, config, Category = "Advanced")
+    bool bServerlessCounterInCmdlet = false;
 };
 
 
