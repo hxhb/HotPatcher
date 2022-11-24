@@ -1,5 +1,5 @@
 ## UE4 Plugin: HotPatcher
-**Important notice**: The author does not have any platform or channel to record paid courses, please keep your eyes open and beware of being deceived.
+**Important notice**: The author does not have any platforms and channels to record paid courses, nor does he endorse any third-party business practices. Please keep your eyes open and beware of being deceived.
 
 **The open source agreement of this software**: It allows free use of functions in commercial projects, but does not allow any third party to make any form of secondary charges based on the plug-in, Including but not limited to recording paid courses, secondary distribution of plug-ins and codes, etc.
 
