@@ -3,7 +3,7 @@
 
 **The open source agreement of this software**: It allows free use of functions in commercial projects, but does not allow any third party to make any form of secondary charges based on the plug-in, Including but not limited to recording paid courses, secondary distribution of plug-ins and codes, etc.
 
-Chinese Document：[README_Chinese.md](https://github.com/hxhb/HotPatcher/blob/master/README.md).
+Chinese Document：[README.md](https://github.com/hxhb/HotPatcher/blob/master/README.md).
 
 [HotPatcher](https://github.com/hxhb/HotPatcher) is a tool for managing hot update versions and resource packaging. It is used to track changes in the original resources of the project version to create patches. Support resource version management, difference comparison and packaging between versions, support exporting basic package information for multiple platforms, easily cook and package multi-platform Patches, support iterative packaging, rich configuration options, full-featured commandlet support, can be combined with ci/cd platform is integrated.
 

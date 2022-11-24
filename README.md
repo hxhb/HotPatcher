@@ -3,7 +3,7 @@
 
 **本软件的开源协议：允许在商业项目中免费使用功能，但不允许任何第三方基于该插件进行任何形式的二次收费，包括但不限于录制收费课程、对插件及代码的二次分发等。**
 
-English Document:[README.md](https://github.com/hxhb/HotPatcher/edit/master/README_EN.md)
+English Document:[README_EN.md](https://github.com/hxhb/HotPatcher/blob/master/README_EN.md)
 
 [HotPatcher](https://github.com/hxhb/HotPatcher)是虚幻引擎中涵盖了热更新、构建提升、包体优化、资源审计等全方面流程的资源管理框架。
 
