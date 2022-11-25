@@ -528,7 +528,7 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 	EmptySetting.StorageMetadataDir = FPaths::Combine(UFlibHotCookerHelper::GetCookerBaseDir(),EmptySetting.MissionName);
 
 	USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
-	// SingleCookerProxy->AddToRoot();
+	SingleCookerProxy->AddToRoot();
 	SingleCookerProxy->Init(&EmptySetting);
 	SingleCookerProxy->OnAssetCooked.AddLambda([CookNotifyLambda](const FSoftObjectPath& ObjectPath,ETargetPlatform Platform,ESavePackageResult Result)
 	{
