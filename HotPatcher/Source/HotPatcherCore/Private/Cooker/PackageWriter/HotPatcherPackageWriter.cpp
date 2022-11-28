@@ -1,10 +1,8 @@
 
 #include "Cooker/PackageWriter/HotPatcherPackageWriter.h"
 
-#include "AssetRegistry/IAssetRegistry.h"
-
 #if WITH_PACKAGE_CONTEXT && ENGINE_MAJOR_VERSION > 4
-
+#include "AssetRegistry/IAssetRegistry.h"
 #include "Async/Async.h"
 #include "Serialization/LargeMemoryWriter.h"
 #include "UObject/SavePackage.h"

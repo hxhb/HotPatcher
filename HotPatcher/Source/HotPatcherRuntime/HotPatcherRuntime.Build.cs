@@ -83,7 +83,9 @@ public class HotPatcherRuntime : ModuleRules
 		};
 
 		AddPublicDefinitions("WITH_EDITOR_SECTION", Version.MajorVersion > 4 || Version.MinorVersion > 24);
-		AddPublicDefinitions("FORCE_SINGLE_THREAD",true);// Version.MajorVersion == 4 && Version.MinorVersion < 25);
+		bool bForceSingleThread = (Version.MajorVersion == 4 && Version.MinorVersion < 25) ||
+		                          (Version.MajorVersion == 5 && Version.MinorVersion >= 1);
+		AddPublicDefinitions("FORCE_SINGLE_THREAD",bForceSingleThread);
 		
 		bool bEnableAssetDependenciesDebugLog = true;
 		AddPublicDefinitions("ASSET_DEPENDENCIES_DEBUG_LOG", bEnableAssetDependenciesDebugLog);
