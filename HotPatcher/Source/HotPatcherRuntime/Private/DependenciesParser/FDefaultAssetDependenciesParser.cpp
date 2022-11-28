@@ -176,8 +176,8 @@ TArray<FName> ParserSkipAssetByDependencies(const FAssetData& CurrentAssetData,c
 	SCOPED_NAMED_EVENT_TEXT("ParserSkipAssetByDependencies",FColor::Red);
 	bool bHasAtlsGroup = false;
 	TArray<FName> TextureSrouceRefs;
-	if(CurrentAssetData.AssetClass.IsEqual(TEXT("PaperSprite")))
-	{	
+	if(UFlibAssetManageHelper::GetAssetDataClasses(CurrentAssetData).IsEqual(TEXT("PaperSprite")))
+	{
 		for(const auto& DependItemName:CurrentAssetDependencies)
 		{
 			FAssetDetail AssetDetail = UFlibAssetManageHelper::GetAssetDetailByPackageName(DependItemName.ToString());

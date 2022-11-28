@@ -316,10 +316,14 @@ bool UFlibPakHelper::LoadAssetRegistry(const FString& LibraryName, const FString
 }
 
 
-
+#include "Misc/EngineVersionComparison.h"
 bool UFlibPakHelper::OpenPSO(const FString& Name)
 {
+#if UE_VERSION_OLDER_THAN(5,1,0)
 	return FShaderPipelineCache::OpenPipelineFileCache(Name,GMaxRHIShaderPlatform);
+#else
+	return FShaderPipelineCache::OpenPipelineFileCache(GMaxRHIShaderPlatform);
+#endif
 }
 
 FAES::FAESKey CachedAESKey;

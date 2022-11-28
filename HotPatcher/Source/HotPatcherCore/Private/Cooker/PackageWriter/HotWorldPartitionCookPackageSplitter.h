@@ -8,8 +8,9 @@
 #include "CookPackageSplitter.h"
 #include "Engine/World.h"
 #include "UObject/WeakObjectPtrTemplates.h"
+#include "WorldPartition/Cook/WorldPartitionCookPackageContext.h"
 
-class FHotWorldPartitionCookPackageSplitter : public ICookPackageSplitter
+class FHotWorldPartitionCookPackageSplitter : public FGCObject, public ICookPackageSplitter
 {
 public:
 	//~ Begin of ICookPackageSplitter
@@ -18,22 +19,35 @@ public:
 	FHotWorldPartitionCookPackageSplitter();
 	virtual ~FHotWorldPartitionCookPackageSplitter();
 
+	virtual void Teardown(ETeardown Status) override;
+	virtual bool UseInternalReferenceToAvoidGarbageCollect() override { return true; }
 	virtual TArray<ICookPackageSplitter::FGeneratedPackage> GetGenerateList(const UPackage* OwnerPackage, const UObject* OwnerObject) override;
-	virtual bool TryPopulatePackage(const UPackage* OwnerPackage, const UObject* OwnerObject,
-		const ICookPackageSplitter::FGeneratedPackageForPopulate& GeneratedPackage, bool bWasOwnerReloaded) override;
-	virtual void PreSaveGeneratorPackage(UPackage* OwnerPackage, UObject* OwnerObject,
-		const TArray<ICookPackageSplitter::FGeneratedPackageForPreSave>& GeneratedPackages) override;
+	virtual bool PopulateGeneratedPackage(UPackage* OwnerPackage, UObject* OwnerObject,
+		const FGeneratedPackageForPopulate& GeneratedPackage, TArray<UObject*>& OutObjectsToMove, TArray<UPackage*>& OutModifiedPackages) override;
+	virtual bool PopulateGeneratorPackage(UPackage* OwnerPackage, UObject* OwnerObject,
+		const TArray<ICookPackageSplitter::FGeneratedPackageForPreSave>& GeneratedPackages, TArray<UObject*>& OutObjectsToMove,
+		TArray<UPackage*>& OutModifiedPackages) override;
+	virtual void OnOwnerReloaded(UPackage* OwnerPackage, UObject* OwnerObject) override;
 	//~ End of ICookPackageSplitter
-	static ICookPackageSplitter* CreateInstance(UObject* SplitData) { return new FHotWorldPartitionCookPackageSplitter(); }
 
 private:
+	/** FGCObject interface */
+	virtual void AddReferencedObjects(FReferenceCollector& Collector) override;
+	virtual FString GetReferencerName() const override;
+
 	const UWorld* ValidateDataObject(const UObject* SplitData);
 	UWorld* ValidateDataObject(UObject* SplitData);
-	void PreGarbageCollect();
-	void TeardownWorldPartition();
 
-	TWeakObjectPtr<UWorld> ReferencedWorld;
-	bool bWorldPartitionNeedsTeardown = false;
+	void BuildPackagesToGenerateList(TArray<ICookPackageSplitter::FGeneratedPackage>& PackagesToGenerate) const;
+	bool MapGeneratePackageToCookPackage(const TArray<ICookPackageSplitter::FGeneratedPackageForPreSave>& GeneratedPackages);
+	
+	TObjectPtr<UWorld> ReferencedWorld = nullptr;
+
+	FWorldPartitionCookPackageContext CookContext;
+
+	bool bInitializedWorldPartition = false;
+	bool bForceInitializedWorld = false;
+	bool bInitializedPhysicsSceneForSave = false;
 };
 
 #endif

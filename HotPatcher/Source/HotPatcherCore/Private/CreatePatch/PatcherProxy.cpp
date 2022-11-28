@@ -591,7 +591,6 @@ namespace PatchWorker
 						EmptySetting.bOverrideSavePackageContext = true;
 						EmptySetting.PlatformSavePackageContexts = Context.PatchProxy->GetPlatformSavePackageContexts();
 #endif
-						EmptySetting.bPreGeneratePlatformData = true;
 						USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
 						SingleCookerProxy->AddToRoot();
 						SingleCookerProxy->Init(&EmptySetting);

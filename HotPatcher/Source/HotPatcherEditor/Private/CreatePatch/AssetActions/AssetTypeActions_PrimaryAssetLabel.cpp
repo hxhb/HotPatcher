@@ -2,14 +2,24 @@
 #include "Engine/PrimaryAssetLabel.h"
 #include "HotPatcherEditor.h"
 #include "FlibAssetManageHelper.h"
+#include "Misc/EngineVersionComparison.h"
+
+#if !UE_VERSION_OLDER_THAN(5,1,0)
+	typedef FAppStyle FEditorStyle;
+#endif
 
 #if WITH_EDITOR_SECTION
 #include "ToolMenuSection.h"
 void FAssetTypeActions_PrimaryAssetLabel::GetActions(const TArray<UObject*>& InObjects,
 	FToolMenuSection& Section)
 {
+#if !UE_VERSION_OLDER_THAN(5,1,0)
+	FName StyleSetName = FEditorStyle::GetAppStyleSetName();
+#else
+	FName StyleSetName = FEditorStyle::GetStyleSetName();
+#endif
 	auto Labels = GetTypedWeakObjectPtrs<UPrimaryAssetLabel>(InObjects);
-	const FSlateIcon Icon = FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions.Duplicate");
+	const FSlateIcon Icon = FSlateIcon(StyleSetName, "ContentBrowser.AssetActions.Duplicate");
 	Section.AddMenuEntry(
 	"ObjectContext_AddToPatchIncludeFilters",
 	NSLOCTEXT("AssetTypeActions_PrimaryAssetLabel", "ObjectContext_AddToPatchIncludeFilters", "Add To Patch Include Filters"),
@@ -36,7 +46,7 @@ void FAssetTypeActions_PrimaryAssetLabel::GetActions(const TArray<UObject*>& InO
 			),
 		EUserInterfaceActionType::Button,
 		false, 
-		FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.SaveAllCurrentFolder")
+		FSlateIcon(StyleSetName, "ContentBrowser.SaveAllCurrentFolder")
 		);
 	
 }

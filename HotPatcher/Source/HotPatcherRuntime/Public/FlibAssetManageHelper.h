@@ -248,6 +248,8 @@ public:
 	static void ReplaceReditector(TArray<FAssetDetail>& SrcAssets);
 	static void RemoveInvalidAssets(TArray<FAssetDetail>& SrcAssets);
 
+	static FName GetAssetDataClasses(const FAssetData& Data);
+	static FName GetObjectPathByAssetData(const FAssetData& Data);
 	static bool bIncludeOnlyOnDiskAssets;
 };
 

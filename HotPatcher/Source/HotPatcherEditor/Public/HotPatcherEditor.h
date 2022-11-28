@@ -101,4 +101,5 @@ private:
 	UMissionNotificationProxy* MissionNotifyProay = NULL;
 	TSharedPtr<FExportPatchSettings> PatchSettings;
 	TArray<class UPatcherProxy*> Proxys;
+	FString StyleSetName;
 };

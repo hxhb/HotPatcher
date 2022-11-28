@@ -1,6 +1,8 @@
 
 #include "Cooker/PackageWriter/HotPatcherPackageWriter.h"
 
+#include "AssetRegistry/IAssetRegistry.h"
+
 #if WITH_PACKAGE_CONTEXT && ENGINE_MAJOR_VERSION > 4
 
 #include "Async/Async.h"
@@ -23,10 +25,10 @@ void FHotPatcherPackageWriter::BeginCook(){}
 
 void FHotPatcherPackageWriter::EndCook(){}
 
-void FHotPatcherPackageWriter::Flush()
-{
-	UPackage::WaitForAsyncFileWrites();
-}
+// void FHotPatcherPackageWriter::Flush()
+// {
+// 	UPackage::WaitForAsyncFileWrites();
+// }
 
 TUniquePtr<FAssetRegistryState> FHotPatcherPackageWriter::LoadPreviousAssetRegistry()
 {
@@ -233,16 +235,22 @@ TFuture<FMD5Hash> FHotPatcherPackageWriter::AsyncSaveOutputFiles(FRecord& Record
 	});
 }
 
-TFuture<FMD5Hash> FHotPatcherPackageWriter::CommitPackageInternal(FPackageRecord&& Record,
+FDateTime FHotPatcherPackageWriter::GetPreviousCookTime() const
+{
+	FString MetadataDirectoryPath = FPaths::ProjectDir() / TEXT("Metadata");
+	const FString PreviousAssetRegistry = FPaths::Combine(MetadataDirectoryPath, GetDevelopmentAssetRegistryFilename());
+	return IFileManager::Get().GetTimeStamp(*PreviousAssetRegistry);
+}
+
+void FHotPatcherPackageWriter::CommitPackageInternal(FPackageRecord&& Record,
 	const IPackageWriter::FCommitPackageInfo& Info)
 {
 	FRecord& InRecord = static_cast<FRecord&>(Record);
 	TFuture<FMD5Hash> CookedHash;
-	if (Info.bSucceeded)
+	if (Info.Status == ECommitStatus::Success)
 	{
 		CookedHash = AsyncSave(InRecord, Info);
 	}
-	return CookedHash;
 }
 
 /** Version of the superclass's per-package record that includes our class-specific data. */

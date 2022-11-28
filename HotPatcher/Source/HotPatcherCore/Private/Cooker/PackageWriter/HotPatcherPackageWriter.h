@@ -4,17 +4,25 @@
 
 #if WITH_PACKAGE_CONTEXT && ENGINE_MAJOR_VERSION > 4
 #include "Serialization/PackageWriter.h"
-#include "Serialization/PackageWriterToSharedBuffer.h"
+#include "PackageWriterToSharedBuffer.h"
 
 class FHotPatcherPackageWriter:public TPackageWriterToSharedBuffer<ICookedPackageWriter>
 {
 public:
-	virtual void Initialize(const FCookInfo& Info) override;
+	virtual FCookCapabilities GetCookCapabilities() const override
+	{
+		FCookCapabilities Result;
+		Result.bDiffModeSupported = true;
+		return Result;
+	}
+
+	virtual void BeginPackage(const FBeginPackageInfo& Info) override;
 	virtual void AddToExportsSize(int64& ExportsSize) override;
-	virtual void BeginPackage(const FBeginPackageInfo& Info) override;;
+	virtual FDateTime GetPreviousCookTime() const override;
+	virtual void Initialize(const FCookInfo& Info) override;
 	virtual void BeginCook() override;
 	virtual void EndCook() override;
-	virtual void Flush() override;
+	// virtual void Flush() override;
 	virtual TUniquePtr<FAssetRegistryState> LoadPreviousAssetRegistry()override;
 	
 	virtual FCbObject GetOplogAttachment(FName PackageName, FUtf8StringView AttachmentKey) override;
@@ -24,8 +32,7 @@ public:
 	virtual bool GetPreviousCookedBytes(const FPackageInfo& Info, FPreviousCookedBytesData& OutData) override;
 	virtual void CompleteExportsArchiveForDiff(const FPackageInfo& Info, FLargeMemoryWriter& ExportsArchive) override;
 
-	virtual TFuture<FMD5Hash> CommitPackageInternal(FPackageRecord&& Record,
-			const IPackageWriter::FCommitPackageInfo& Info)override;
+	virtual void CommitPackageInternal(FPackageRecord&& Record,const IPackageWriter::FCommitPackageInfo& Info)override;
 
 	virtual FPackageWriterRecords::FPackage* ConstructRecord() override;
 	
@@ -77,10 +84,16 @@ private:
 	void CollectForSaveAdditionalFileRecords(FRecord& Record, FCommitContext& Context);
 	void CollectForSaveExportsFooter(FRecord& Record, FCommitContext& Context);
 	void CollectForSaveExportsBuffers(FRecord& Record, FCommitContext& Context);
+
+	TMap<FName, TRefCountPtr<FPackageHashes>>& GetPackageHashes() override
+	{
+		return AllPackageHashes;
+	}
+	// If EWriteOptions::ComputeHash is not set, the package will not get added to this.
+	TMap<FName, TRefCountPtr<FPackageHashes>> AllPackageHashes;
 	
 	TFuture<FMD5Hash> AsyncSave(FRecord& Record, const FCommitPackageInfo& Info);
 	TFuture<FMD5Hash> AsyncSaveOutputFiles(FRecord& Record, FCommitContext& Context);
-	
 };
 
 #endif

@@ -4,6 +4,7 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "Interfaces/IPluginManager.h"
+#include "Misc/EngineVersionComparison.h"
 
 TSharedPtr< FSlateStyleSet > FVersionUpdaterStyle::StyleInstance = NULL;
 
@@ -30,6 +31,7 @@ FName FVersionUpdaterStyle::GetStyleSetName()
 }
 
 #define IMAGE_BRUSH( RelativePath, ... ) FSlateImageBrush( Style->RootToContentDir( RelativePath, TEXT(".png") ), __VA_ARGS__ )
+#define IMAGE_CORE_BRUSH( RelativePath, ... ) FSlateImageBrush( Style->RootToCoreContentDir( RelativePath, TEXT(".png") ), __VA_ARGS__ )
 #define BOX_BRUSH( RelativePath, ... ) FSlateBoxBrush( Style->RootToContentDir( RelativePath, TEXT(".png") ), __VA_ARGS__ )
 #define BORDER_BRUSH( RelativePath, ... ) FSlateBorderBrush( Style->RootToContentDir( RelativePath, TEXT(".png") ), __VA_ARGS__ )
 #define TTF_FONT( RelativePath, ... ) FSlateFontInfo( Style->RootToContentDir( RelativePath, TEXT(".ttf") ), __VA_ARGS__ )
@@ -43,13 +45,19 @@ const FVector2D Updater_Icon40x40(40.0f, 40.0f);
 TSharedRef< FSlateStyleSet > FVersionUpdaterStyle::Create(const FString& Name)
 {
 	TSharedRef< FSlateStyleSet > Style = MakeShareable(new FSlateStyleSet(*Name));
-	Style->SetContentRoot( FPaths::EngineContentDir() / TEXT("Editor/Slate") );
-	Style->SetCoreContentRoot(FPaths::EngineContentDir() / TEXT("Slate"));
-
+	Style->SetContentRoot( FPaths::EngineContentDir() / TEXT("Slate") );
+	Style->SetCoreContentRoot( FPaths::EngineContentDir() / TEXT("Editor/Slate") );
+	
 	Style->Set("Updater.GroupBorder", new BOX_BRUSH("Common/GroupBorder", FMargin(4.0f/16.0f)));
+
+#if !UE_VERSION_OLDER_THAN(5,1,0)
 	Style->Set("Updater.QuickLaunch", new IMAGE_BRUSH("Launcher/Launcher_Launch", Updater_Icon40x40));
-	Style->Set("Updater.Star", new IMAGE_BRUSH("Sequencer/Star", Updater_Icon12x12));
-	Style->Set("Updater.SpawnableIconOverlay", new IMAGE_BRUSH(TEXT("Sequencer/SpawnableIconOverlay"), FVector2D(13, 13)));
+#else
+	Style->Set("Updater.QuickLaunch", new IMAGE_CORE_BRUSH("Launcher/Launcher_Launch", Updater_Icon40x40));
+#endif
+	
+	Style->Set("Updater.Star", new IMAGE_CORE_BRUSH("Sequencer/Star", Updater_Icon12x12));
+	Style->Set("Updater.SpawnableIconOverlay", new IMAGE_CORE_BRUSH(TEXT("Sequencer/SpawnableIconOverlay"), FVector2D(13, 13)));
 
 	return Style;
 }

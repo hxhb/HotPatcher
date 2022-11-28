@@ -1,3 +1,4 @@
+#pragma once
 // engine header
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"

@@ -27,6 +27,11 @@
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "PakFileUtilities.h"
+#include "Misc/EngineVersionComparison.h"
+
+#if !UE_VERSION_OLDER_THAN(5,1,0)
+	typedef FAppStyle FEditorStyle;
+#endif
 
 #if ENGINE_MAJOR_VERSION < 5
 #include "Widgets/Docking/SDockableTab.h"
@@ -69,6 +74,14 @@ void FHotPatcherEditorModule::StartupModule()
 	FHotPatcherCommands::Register();
 
 	FHotPatcherActionManager::Get().Init();
+
+	
+#if !UE_VERSION_OLDER_THAN(5,1,0)
+	StyleSetName = FEditorStyle::GetAppStyleSetName().ToString();
+#else
+	StyleSetName = FEditorStyle::GetStyleSetName().ToString();
+#endif
+
 	
 	FHotPatcherDelegates::Get().GetNotifyFileGenerated().AddLambda([](FText Msg,const FString& File)
 	{
@@ -226,7 +239,7 @@ void FHotPatcherEditorModule::CreateRootMenu()
 			),
 		EUserInterfaceActionType::Button,
 		false, 
-		FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.SaveAllCurrentFolder")
+		FSlateIcon(*StyleSetName, "ContentBrowser.SaveAllCurrentFolder")
 		);
 	
 	RootSection.AddSubMenu(
@@ -239,7 +252,7 @@ void FHotPatcherEditorModule::CreateRootMenu()
 			),
 		EUserInterfaceActionType::Button,
 		false, 
-		FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.SaveAllCurrentFolder")
+		FSlateIcon(*StyleSetName, "ContentBrowser.SaveAllCurrentFolder")
 		);
 }
 
@@ -255,7 +268,7 @@ void FHotPatcherEditorModule::CreateAssetContextMenu(FToolMenuSection& InSection
 			),
 		EUserInterfaceActionType::Button,
 		false, 
-		FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions")
+		FSlateIcon(*StyleSetName, "ContentBrowser.AssetActions")
 		);
 	InSection.AddSubMenu(
 		"CookAndPakActionsSubMenu",
@@ -267,7 +280,7 @@ void FHotPatcherEditorModule::CreateAssetContextMenu(FToolMenuSection& InSection
 			),
 		EUserInterfaceActionType::Button,
 		false, 
-		FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.SaveAllCurrentFolder")
+		FSlateIcon(*StyleSetName, "ContentBrowser.SaveAllCurrentFolder")
 		);
 	
 	// InSection.AddMenuEntry(FHotPatcherCommands::Get().AddToPakSettingsAction);
@@ -275,7 +288,7 @@ void FHotPatcherEditorModule::CreateAssetContextMenu(FToolMenuSection& InSection
 	{
 		const TAttribute<FText> Label = LOCTEXT("CookUtilities_AddToPatchSettings", "Add To Patch Settings");
 		const TAttribute<FText> ToolTip = LOCTEXT("CookUtilities_AddToPatchSettingsTooltip", "Add Selected Assets To HotPatcher Patch Settings");
-		const FSlateIcon Icon = FSlateIcon(FEditorStyle::GetStyleSetName(), "ContentBrowser.AssetActions.Duplicate");
+		const FSlateIcon Icon = FSlateIcon(*StyleSetName, "ContentBrowser.AssetActions.Duplicate");
 		const FToolMenuExecuteAction UIAction = FToolMenuExecuteAction::CreateRaw(this,&FHotPatcherEditorModule::OnAddToPatchSettings);
 	
 		InSection.AddMenuEntry("CookUtilities_AddToPatchSettings", Label, ToolTip, Icon, UIAction);
@@ -341,7 +354,7 @@ void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
 	FToolMenuSection& Section = Menu->AddSection("CookAndPakActionsSection");
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
 	Settings->ReloadConfig();
-	for (auto Platform : GetAllCookPlatforms())
+	for (ETargetPlatform Platform : GetAllCookPlatforms())
 	{
 		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
 		if(PlatformName.StartsWith(TEXT("All")))
@@ -354,11 +367,11 @@ void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
 			FNewMenuDelegate::CreateLambda([=](FMenuBuilder& SubMenuBuilder){
 				SubMenuBuilder.AddMenuEntry(
 					LOCTEXT("AnalysisDependencies", "AnalysisDependencies"), FText(),
-					FSlateIcon(FEditorStyle::GetStyleSetName(),TEXT("WorldBrowser.LevelsMenuBrush")),
+					FSlateIcon(*StyleSetName,TEXT("WorldBrowser.LevelsMenuBrush")),
 					FUIAction(FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookAndPakPlatform, Platform,true)), NAME_None, EUserInterfaceActionType::Button);
 				SubMenuBuilder.AddMenuEntry(
 					LOCTEXT("NoDependencies", "NoDependencies"), FText(),
-					FSlateIcon(FEditorStyle::GetStyleSetName(),TEXT("Level.SaveIcon16x")),
+					FSlateIcon(*StyleSetName,TEXT("Level.SaveIcon16x")),
 					FUIAction(FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnCookAndPakPlatform, Platform,false)), NAME_None, EUserInterfaceActionType::Button);
 			}
 			));

@@ -9,6 +9,7 @@
 #include "IPlatformFileSandboxWrapper.h"
 #include "Interfaces/IPluginManager.h"
 #include "Interfaces/ITargetPlatform.h"
+#include "Misc/EngineVersionComparison.h"
 
 #define REMAPPED_PLUGINS TEXT("RemappedPlugins")
 
@@ -119,7 +120,12 @@ bool UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* Targ
 		#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 		FString ErrorString;
-		bSaved = SHADER_COOKER_CLASS::SaveShaderLibraryWithoutChunking(TargetPlatform, FApp::GetProjectName(), ShaderCodeDir, RootMetaDataPath, PlatformSCLCSVPaths, ErrorString);
+		bool bOutHasData;
+		bSaved = SHADER_COOKER_CLASS::SaveShaderLibraryWithoutChunking(TargetPlatform, FApp::GetProjectName(), ShaderCodeDir, RootMetaDataPath, PlatformSCLCSVPaths, ErrorString
+#if !UE_VERSION_OLDER_THAN(5,1,0)
+		,bOutHasData
+#endif
+		);
 #else
 		TArray<TSet<FName>> ChunkAssignments;
 		bSaved = FShaderCodeLibrary::SaveShaderCode(ShaderCodeDir, RootMetaDataPath, ShaderFormats, PlatformSCLCSVPaths, &ChunkAssignments);

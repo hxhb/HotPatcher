@@ -9,7 +9,6 @@
 #include "HotPatcherLog.h"
 #include "CreatePatch/FExportPatchSettings.h"
 #include "DependenciesParser/FDefaultAssetDependenciesParser.h"
-#include "DependenciesParser/FOldAssetDependenciesParser.h"
 
 // engine header
 #include "Misc/App.h"

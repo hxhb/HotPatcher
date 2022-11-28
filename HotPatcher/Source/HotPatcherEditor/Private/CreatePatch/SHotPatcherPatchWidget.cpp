@@ -27,7 +27,11 @@
 #include "HAL/FileManager.h"
 #include "PakFileUtilities.h"
 #include "Kismet/KismetTextLibrary.h"
+#include "Misc/EngineVersionComparison.h"
 
+#if !UE_VERSION_OLDER_THAN(5,1,0)
+	typedef FAppStyle FEditorStyle;
+#endif
 
 #define LOCTEXT_NAMESPACE "SHotPatcherCreatePatch"
 

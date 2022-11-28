@@ -165,10 +165,10 @@ public class HotPatcherCore : ModuleRules
 			});
 		}
 		
-		bool bGenerateChunksManifest = true;
+		bool bGenerateChunksManifest = false;
+		AddPublicDefinitions("GENERATE_CHUNKS_MANIFEST", bGenerateChunksManifest);
 		if (bGenerateChunksManifest)
 		{
-			AddPublicDefinitions("GENERATE_CHUNKS_MANIFEST", true);
 			PublicIncludePaths.AddRange(new string[]
 			{
 				Path.Combine(EngineDirectory,"Source/Editor/UnrealEd/Public"),
@@ -183,7 +183,7 @@ public class HotPatcherCore : ModuleRules
 				// Path.Combine(EngineDirectory,"Source/Developer/IoStoreUtilities/Internal"),
 				// Path.Combine(EngineDirectory,"Source/Editor/UnrealEd/Private/Cooker"),
 				// Path.Combine(EngineDirectory,"Source/Editor/UnrealEd/Private"),
-				Path.Combine(EngineDirectory,"Source/Runtime/CoreUObject/Internal"),
+				Path.Combine(EngineDirectory,"Source/Runtime/CoreUObject/Internal/Serialization"),
 			});
 		}
 		

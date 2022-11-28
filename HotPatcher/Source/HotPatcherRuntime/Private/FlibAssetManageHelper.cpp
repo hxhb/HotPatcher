@@ -23,6 +23,7 @@
 #include "Templates/HotPatcherTemplateHelper.hpp"
 #include "UObject/MetaData.h"
 #include "UObject/UObjectHash.h"
+#include "Misc/EngineVersionComparison.h"
 
 bool UFlibAssetManageHelper::bIncludeOnlyOnDiskAssets = !GForceSingleThread;
 
@@ -297,10 +298,16 @@ FName UFlibAssetManageHelper::GetAssetType(FSoftObjectPath SoftObjectPath)
 {
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetTypeByPackageName",FColor::Red);
 	UAssetManager& AssetManager = UAssetManager::Get();
-	FAssetData OutAssetData = AssetManager.GetAssetRegistry().GetAssetByObjectPath(*SoftObjectPath.GetAssetPathString(), bIncludeOnlyOnDiskAssets);
+	FAssetData OutAssetData = AssetManager.GetAssetRegistry().GetAssetByObjectPath(
+#if !UE_VERSION_OLDER_THAN(5,0,0)
+	SoftObjectPath,
+#else
+*SoftObjectPath.GetAssetPathString(),
+#endif
+	bIncludeOnlyOnDiskAssets);
 	// UAssetManager::Get().GetAssetDataForPath(SoftObjectPath, OutAssetData) && OutAssetData.IsValid();
 	
-	return OutAssetData.AssetClass;
+	return UFlibAssetManageHelper::GetAssetDataClasses(OutAssetData);
 }
 
 FAssetDetail UFlibAssetManageHelper::GetAssetDetailByPackageName(const FString& InPackageName)
@@ -312,11 +319,17 @@ FAssetDetail UFlibAssetManageHelper::GetAssetDetailByPackageName(const FString& 
 	{
 		FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InPackageName);
 		{
-			FAssetData OutAssetData = AssetManager.GetAssetRegistry().GetAssetByObjectPath(FName(*PackagePath), bIncludeOnlyOnDiskAssets);
-			if (/*AssetManager.GetAssetDataForPath(FSoftObjectPath{ PackagePath }, OutAssetData) && */!OutAssetData.PackagePath.IsNone() && !OutAssetData.AssetClass.IsNone())
+			FAssetData OutAssetData = AssetManager.GetAssetRegistry().GetAssetByObjectPath(
+#if !UE_VERSION_OLDER_THAN(5,0,0)
+			FSoftObjectPath(PackagePath),
+#else
+			FName(*PackagePath),
+#endif
+			bIncludeOnlyOnDiskAssets);
+			if(OutAssetData.IsValid())
 			{
-				AssetDetail.PackagePath = OutAssetData.ObjectPath;
-				AssetDetail.AssetType = OutAssetData.AssetClass;
+				AssetDetail.PackagePath = UFlibAssetManageHelper::GetObjectPathByAssetData(OutAssetData);
+				AssetDetail.AssetType = UFlibAssetManageHelper::GetAssetDataClasses(OutAssetData);
 #if ENGINE_MAJOR_VERSION > 4				
 				UFlibAssetManageHelper::GetAssetPackageGUID(AssetDetail.PackagePath.ToString(), AssetDetail.Guid);
 #else
@@ -357,7 +370,7 @@ bool UFlibAssetManageHelper::IsRedirector(const FAssetDetail& Src,FAssetDetail& 
 	{
 		if ((AssetData.IsValid() && AssetData.IsRedirector()) ||
 			UObjectRedirector::StaticClass()->GetFName() == Src.AssetType ||
-			Src.PackagePath != AssetData.ObjectPath
+			Src.PackagePath != UFlibAssetManageHelper::GetObjectPathByAssetData(AssetData)
 			)
 		{
 			FAssetDetail AssetDetail;
@@ -464,7 +477,13 @@ bool UFlibAssetManageHelper::GetSingleAssetsData(const FString& InPackagePath, F
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetSingleAssetsData",FColor::Red);
 	UAssetManager& AssetManager = UAssetManager::Get();
 
-	OutAssetData = AssetManager.GetAssetRegistry().GetAssetByObjectPath(FName(*InPackagePath), bIncludeOnlyOnDiskAssets);
+	OutAssetData = AssetManager.GetAssetRegistry().GetAssetByObjectPath(
+#if !UE_VERSION_OLDER_THAN(5,0,0)
+	FSoftObjectPath(InPackagePath),
+#else
+	FName(*InPackagePath),
+#endif
+	bIncludeOnlyOnDiskAssets);
 	
 	return OutAssetData.IsValid();//AssetManager.GetAssetDataForPath(FSoftObjectPath{ InPackagePath }, OutAssetData);
 }
@@ -482,7 +501,7 @@ bool UFlibAssetManageHelper::GetClassStringFromFAssetData(const FAssetData& InAs
 	bool bRunState = false;
 	if (InAssetData.IsValid())
 	{
-		OutAssetType = InAssetData.AssetClass.ToString();
+		OutAssetType = UFlibAssetManageHelper::GetAssetDataClasses(InAssetData).ToString();
 		bRunState = true;
 	}
 	return bRunState;
@@ -495,7 +514,7 @@ bool UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(const FAssetData& InAs
 	if (!InAssetData.IsValid())
 		return false;
 	FAssetDetail AssetDetail;
-	AssetDetail.AssetType = FName(*InAssetData.AssetClass.ToString());
+	AssetDetail.AssetType = UFlibAssetManageHelper::GetAssetDataClasses(InAssetData);
 	FString PackageName = InAssetData.PackageName.ToString();
 	FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(PackageName);
 	AssetDetail.PackagePath = FName(*PackagePath);
@@ -549,8 +568,9 @@ void UFlibAssetManageHelper::FilterNoRefAssets(const TArray<FAssetDetail>& InAss
 			FAssetData CurrentAssetData;
 			if (UFlibAssetManageHelper::GetSingleAssetsData(AssetDetail.PackagePath.ToString(), CurrentAssetData) && CurrentAssetData.IsValid())
 			{
-				if (CurrentAssetData.AssetClass == TEXT("World") || 
-					CurrentAssetData.AssetClass == TEXT("MapBuildDataRegistry")
+				FName ClassName = UFlibAssetManageHelper::GetAssetDataClasses(CurrentAssetData);
+				if (ClassName == TEXT("World") || 
+					ClassName == TEXT("MapBuildDataRegistry")
 				)
 				{
 					OutHasRefAssetsDetail.Add(AssetDetail);
@@ -588,8 +608,9 @@ void UFlibAssetManageHelper::FilterNoRefAssetsWithIgnoreFilter(const TArray<FAss
 			FAssetData CurrentAssetData;
 			if (UFlibAssetManageHelper::GetSingleAssetsData(AssetDetail.PackagePath.ToString(), CurrentAssetData) && CurrentAssetData.IsValid())
 			{
-				if (CurrentAssetData.AssetClass == TEXT("World") ||
-					CurrentAssetData.AssetClass == TEXT("MapBuildDataRegistry")
+				FName ClassName = UFlibAssetManageHelper::GetAssetDataClasses(CurrentAssetData);
+				if (ClassName == TEXT("World") ||
+					ClassName == TEXT("MapBuildDataRegistry")
 				)
 				{
 					bool bIsIgnoreAsset = false;
@@ -1346,8 +1367,9 @@ bool UFlibAssetManageHelper::MatchIgnoreTypes(const FString& LongPackageName, TS
 	if(UFlibAssetManageHelper::GetAssetsDataByPackageName(LongPackageName,AssetData))
 	{
 		SCOPED_NAMED_EVENT_TEXT("is ignore types",FColor::Red);
-		MatchTypeStr = AssetData.AssetClass.ToString();
-		bIgnoreType = IgnoreTypes.Contains(AssetData.AssetClass);
+		MatchTypeStr = UFlibAssetManageHelper::GetAssetDataClasses(AssetData).ToString();
+		FName ClassName = UFlibAssetManageHelper::GetAssetDataClasses(AssetData);
+		bIgnoreType = IgnoreTypes.Contains(ClassName);
 
 		if(!bIgnoreType)
 		{
@@ -1449,11 +1471,11 @@ bool UFlibAssetManageHelper::ContainsRedirector(const FName& PackageName, TMap<F
 
 				if (bDestinationValid)
 				{
-					RedirectedPaths.Add(Asset.ObjectPath, RedirectedPath);
+					RedirectedPaths.Add(UFlibAssetManageHelper::GetObjectPathByAssetData(Asset), RedirectedPath);
 				}
 				else
 				{
-					RedirectedPaths.Add(Asset.ObjectPath, NAME_None);
+					RedirectedPaths.Add(UFlibAssetManageHelper::GetObjectPathByAssetData(Asset), NAME_None);
 					UE_LOG(LogHotPatcher, Log, TEXT("Found redirector in package %s pointing to deleted object %s"), *PackageName.ToString(), *RedirectedPathString);
 				}
 
@@ -1535,6 +1557,32 @@ void UFlibAssetManageHelper::RemoveInvalidAssets(TArray<FAssetDetail>& SrcAssets
 			SrcAssets.RemoveAt(index);
 		}
 	}
+}
+#include "Misc/EngineVersionComparison.h"
+FName UFlibAssetManageHelper::GetAssetDataClasses(const FAssetData& Data)
+{
+	if(Data.IsValid())
+	{
+#if !UE_VERSION_OLDER_THAN(5,1,0)
+		return Data.AssetClassPath.GetAssetName();
+#else
+		return Data.AssetClass;
+#endif
+	}
+	return NAME_None;
+}
+
+FName UFlibAssetManageHelper::GetObjectPathByAssetData(const FAssetData& Data)
+{
+	if(Data.IsValid())
+	{
+#if !UE_VERSION_OLDER_THAN(5,1,0)
+		return *UFlibAssetManageHelper::LongPackageNameToPackagePath(Data.PackageName.ToString());
+#else
+		return Data.ObjectPath;
+#endif
+	}
+	return NAME_None;
 }
 
 // PRAGMA_ENABLE_DEPRECATION_WARNINGS

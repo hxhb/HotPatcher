@@ -32,6 +32,7 @@
 #include "Materials/MaterialInstanceConstant.h"
 #include "ProfilingDebugging/LoadTimeTracker.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Misc/EngineVersionComparison.h"
 
 DEFINE_LOG_CATEGORY(LogHotPatcherCoreHelper);
 
@@ -664,7 +665,11 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 				{
 					//const FAssetPackageData* AssetPackageData = UFlibAssetManageHelper::GetPackageDataByPackageName(Package->GetFName().ToString());
 					ICookedPackageWriter::FCommitPackageInfo Info;
+#if UE_VERSION_OLDER_THAN(5,1,0)
 					Info.bSucceeded = bSuccessed;
+#else
+					Info.Status = bSuccessed ? IPackageWriter::ECommitStatus::Success : IPackageWriter::ECommitStatus::Error;
+#endif
 					Info.PackageName = Package->GetFName();
 					// PRAGMA_DISABLE_DEPRECATION_WARNINGS
 					Info.PackageGuid = FGuid::NewGuid(); //AssetPackageData ? AssetPackageData->PackageGuid : FGuid::NewGuid();
