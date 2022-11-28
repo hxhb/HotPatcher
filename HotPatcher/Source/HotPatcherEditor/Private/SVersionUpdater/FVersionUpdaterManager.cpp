@@ -76,7 +76,6 @@ void FVersionUpdaterManager::OnRequestComplete(FHttpRequestPtr RequestPtr, FHttp
 					RemoteVersion.Website = ToolJsonObject->Get()->GetStringField(TEXT("Website"));
 					RemoteVersion.b3rdMods = ToolJsonObject->Get()->GetBoolField(TEXT("3rdMods"));
 					ToolJsonObject->Get()->TryGetNumberField(TEXT("PatchVersion"),RemoteVersion.PatchVersion);
-					const TSharedPtr<FJsonObject>& Actions = ToolJsonObject->Get()->GetObjectField(TEXT("Actions"));
 					
 					auto GetActionArray = [](const TSharedPtr<FJsonObject>& ActionObject,const FString& Name)->TSet<FName>
 					{
@@ -94,11 +93,15 @@ void FVersionUpdaterManager::OnRequestComplete(FHttpRequestPtr RequestPtr, FHttp
 					};
 					TArray<FString> ActionsName;
 					
-					if(Actions->TryGetStringArrayField(TEXT("ActionNames"),ActionsName))
+					const TSharedPtr<FJsonObject>* Actions;
+					if(ToolJsonObject->Get()->TryGetObjectField(TEXT("Actions"),Actions))
 					{
-						for(auto Name:ActionsName)
+						if(Actions && (*Actions)->TryGetStringArrayField(TEXT("ActionNames"),ActionsName))
 						{
-							RemoteVersion.ActiveActions.Add(*Name,GetActionArray(Actions,*Name));
+							for(auto Name:ActionsName)
+							{
+								RemoteVersion.ActiveActions.Add(*Name,GetActionArray(*Actions,*Name));
+							}
 						}
 					}
 					Remotes.Add(*ToolName,RemoteVersion);
