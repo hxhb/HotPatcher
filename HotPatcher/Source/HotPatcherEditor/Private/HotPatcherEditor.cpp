@@ -330,13 +330,8 @@ void FHotPatcherEditorModule::ExtendContentBrowserPathSelectionMenu()
 void FHotPatcherEditorModule::MakeCookActionsSubMenu(UToolMenu* Menu)
 {
 	FToolMenuSection& Section = Menu->AddSection("CookActionsSection");
-	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
-	Settings->ReloadConfig();
-	
-	for (auto Platform : GetAllCookPlatforms())
+	for (auto Platform : GetAllowCookPlatforms())
 	{
-		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
-			continue;
 		Section.AddMenuEntry(
             FName(*THotPatcherTemplateHelper::GetEnumNameByValue(Platform)),
             FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(THotPatcherTemplateHelper::GetEnumNameByValue(Platform))),
@@ -354,13 +349,9 @@ void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
 	FToolMenuSection& Section = Menu->AddSection("CookAndPakActionsSection");
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
 	Settings->ReloadConfig();
-	for (ETargetPlatform Platform : GetAllCookPlatforms())
+	for (ETargetPlatform Platform : GetAllowCookPlatforms())
 	{
 		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
-		if(PlatformName.StartsWith(TEXT("All")))
-			continue;
-		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
-			continue;
 		FToolMenuEntry& PlatformEntry = Section.AddSubMenu(FName(*PlatformName),
 			FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(THotPatcherTemplateHelper::GetEnumNameByValue(Platform))),
 			FText(),
@@ -693,6 +684,28 @@ TArray<ETargetPlatform> FHotPatcherEditorModule::GetAllCookPlatforms() const
 			
 	}
 	return TargetPlatforms;
+}
+
+TArray<ETargetPlatform> FHotPatcherEditorModule::GetAllowCookPlatforms() const
+{
+	TArray<ETargetPlatform> results;
+	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
+	Settings->ReloadConfig();
+	for (auto Platform : GetAllCookPlatforms())
+	{
+		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
+			continue;
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
+		if(PlatformName.StartsWith(TEXT("All")))
+			continue;
+		results.AddUnique(Platform);
+	}
+	return results;
+}
+
+void FHotPatcherEditorModule::OnCookPlatformForExterner(ETargetPlatform Platform)
+{
+	FHotPatcherEditorModule::Get().OnCookPlatform(Platform);
 }
 
 TSharedPtr<FProcWorkerThread> FHotPatcherEditorModule::RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName)
