@@ -120,10 +120,12 @@ bool UFlibShaderCodeLibraryHelper::SaveShaderLibrary(const ITargetPlatform* Targ
 		#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 25
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 		FString ErrorString;
-		
+#if !UE_VERSION_OLDER_THAN(5,1,0)
+		bool bOutHasData = false;
+#endif
 		bSaved = SHADER_COOKER_CLASS::SaveShaderLibraryWithoutChunking(TargetPlatform, FApp::GetProjectName(), ShaderCodeDir, RootMetaDataPath, PlatformSCLCSVPaths, ErrorString
 #if !UE_VERSION_OLDER_THAN(5,1,0)
-		,false
+		,bOutHasData
 #endif
 		);
 #else
