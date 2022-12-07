@@ -56,7 +56,7 @@ public:
 
 	TSharedPtr<FProcWorkerThread> CreateProcMissionThread(const FString& Bin, const FString& Command, const FString& MissionName);
 	
-	TSharedPtr<FProcWorkerThread> RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName);
+	TSharedPtr<FProcWorkerThread> RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName, const FText& NotifyTextOverride = FText{});
 
 	
 #if WITH_EDITOR_SECTION

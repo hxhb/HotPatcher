@@ -135,6 +135,18 @@ bool UFlibAssetManageHelper::GetAssetPackageGUID(const FString& InPackageName, F
 	return bResult;
 }
 
+FSoftObjectPath UFlibAssetManageHelper::CreateSoftObjectPathByPackage(UPackage* Package)
+{
+	FString AssetPathName = Package->GetPathName();	
+	FSoftObjectPath Path(UFlibAssetManageHelper::LongPackageNameToPackagePath(AssetPathName));
+	return Path;
+}
+
+FName UFlibAssetManageHelper::GetAssetTypeByPackage(UPackage* Package)
+{
+	return UFlibAssetManageHelper::GetAssetType(CreateSoftObjectPathByPackage(Package));
+}
+
 
 FAssetDependenciesInfo UFlibAssetManageHelper::CombineAssetDependencies(const FAssetDependenciesInfo& A, const FAssetDependenciesInfo& B)
 {
@@ -1585,4 +1597,14 @@ FName UFlibAssetManageHelper::GetObjectPathByAssetData(const FAssetData& Data)
 	return NAME_None;
 }
 
+void UFlibAssetManageHelper::UpdateAssetRegistryData(const FString& PackageName)
+{
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
+	FString PackageFilename;
+	if (FPackageName::FindPackageFileWithoutExtension(FPackageName::LongPackageNameToFilename(PackageName), PackageFilename))
+	{
+		AssetRegistry.ScanModifiedAssetFiles(TArray<FString>{PackageFilename});
+	}
+}
 // PRAGMA_ENABLE_DEPRECATION_WARNINGS

@@ -568,6 +568,17 @@ void FHotPatcherEditorModule::CookAndPakByAssetsAndFilters(TArray<FPatcherSpecif
 	*PatchSettings = MakeTempPatchSettings(Name,IncludePaths,IncludeAssets,TArray<FPlatformExternAssets>{},Platforms,true);
 	CookAndPakByPatchSettings(PatchSettings,bForceStandalone);
 }
+FString GetPlatformsStr(TArray<ETargetPlatform> Platforms)
+{
+	FString result;
+	for(auto Platform:Platforms)
+	{
+		FString PlatformStr = THotPatcherTemplateHelper::GetEnumNameByValue(Platform,false);
+		result+=FString::Printf(TEXT("%s,"),*PlatformStr);
+	}
+	result.RemoveFromEnd(TEXT(","));
+	return result;
+}
 
 void FHotPatcherEditorModule::CookAndPakByPatchSettings(TSharedPtr<FExportPatchSettings> InPatchSettings,bool bForceStandalone)
 {
@@ -579,7 +590,9 @@ void FHotPatcherEditorModule::CookAndPakByPatchSettings(TSharedPtr<FExportPatchS
 		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
 		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*InPatchSettings->GetCombinedAdditionalCommandletArgs());
 		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*InPatchSettings->VersionId,*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);
-		RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,FString::Printf(TEXT("Mission: %s"),*InPatchSettings->VersionId));
+		
+		FText DisplayText = UKismetTextLibrary::Conv_StringToText(FString::Printf(TEXT("Packaging %s for %s..."),*InPatchSettings->VersionId,*GetPlatformsStr(InPatchSettings->PakTargetPlatforms)));
+		RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,InPatchSettings->VersionId,DisplayText);
 	}
 	else
 	{
@@ -708,7 +721,7 @@ void FHotPatcherEditorModule::OnCookPlatformForExterner(ETargetPlatform Platform
 	FHotPatcherEditorModule::Get().OnCookPlatform(Platform);
 }
 
-TSharedPtr<FProcWorkerThread> FHotPatcherEditorModule::RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName)
+TSharedPtr<FProcWorkerThread> FHotPatcherEditorModule::RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName, const FText& NotifyTextOverride)
 {
 	if (mProcWorkingThread.IsValid() && mProcWorkingThread->GetThreadStatus()==EThreadStatus::Busy)
 	{
@@ -722,8 +735,13 @@ TSharedPtr<FProcWorkerThread> FHotPatcherEditorModule::RunProcMission(const FStr
 		mProcWorkingThread->ProcSuccessedDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnMissionSuccessedNotification);
 		mProcWorkingThread->ProcFaildDelegate.AddUObject(MissionNotifyProay,&UMissionNotificationProxy::SpawnMissionFaildNotification);
 		MissionNotifyProay->SetMissionName(*FString::Printf(TEXT("%s"),*MissionName));
+		FText DisplayText = NotifyTextOverride;
+		if(DisplayText.IsEmpty())
+		{
+			DisplayText = FText::FromString(FString::Printf(TEXT("%s in progress"),*MissionName));
+		}
 		MissionNotifyProay->SetMissionNotifyText(
-			FText::FromString(FString::Printf(TEXT("%s in progress"),*MissionName)),
+		DisplayText,
 			LOCTEXT("RunningCookNotificationCancelButton", "Cancel"),
 			FText::FromString(FString::Printf(TEXT("%s Mission Finished!"),*MissionName)),
 			FText::FromString(FString::Printf(TEXT("%s Failed!"),*MissionName))

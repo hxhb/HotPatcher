@@ -285,7 +285,10 @@ public:
 	static bool SerializeChunksManifests(ITargetPlatform* TargetPlatform, const TSet<FName>&, const TSet<FName>&, bool bGenerateStreamingInstallManifest = true);
 	static TArray<UClass*> GetClassesByNames(const TArray<FName>& ClassesNames);
 	static TArray<UClass*> GetAllMaterialClasses();
+	static bool IsMaterialClasses(UClass* Class);
+	static bool IsMaterialClassName(FName ClassName);
+	static bool AssetDetailsHasClasses(const TArray<FAssetDetail>& AssetDetails,TSet<FName> ClasssName);
 	static TSet<FName> GetAllMaterialClassesNames();
 	static TArray<UClass*> GetPreCacheClasses();
-
+	static void DumpActiveTargetPlatforms();
 };

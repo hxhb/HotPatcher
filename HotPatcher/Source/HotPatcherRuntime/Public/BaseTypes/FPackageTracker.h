@@ -111,3 +111,36 @@ protected:
 	TSet<FName>	 PackagesPendingSave;
 	TSet<FName>& ExisitAssets;
 };
+
+struct FClassesPackageTracker : public FPackageTrackerBase
+{
+	virtual void OnPackageCreated(UPackage* Package) override
+	{
+		FName ClassName = UFlibAssetManageHelper::GetAssetTypeByPackage(Package);
+		
+		if(!ClassMapping.Contains(ClassName))
+		{
+			ClassMapping.Add(ClassName,TArray<UPackage*>{});
+		}
+		ClassMapping.Find(ClassName)->AddUnique(Package);
+	};
+	virtual void OnPackageDeleted(UPackage* Package) override
+	{
+		FName ClassName = UFlibAssetManageHelper::GetAssetTypeByPackage(Package);
+		if(ClassMapping.Contains(ClassName))
+		{
+			ClassMapping.Find(ClassName)->Remove(Package);
+		}
+	}
+	TArray<UPackage*> GetPackagesByClassName(FName ClassName)
+	{
+		TArray<UPackage*> result;
+		if(ClassMapping.Contains(ClassName))
+		{
+			result = *ClassMapping.Find(ClassName);
+		}
+		return result;
+	}
+protected:
+	TMap<FName,TArray<UPackage*>> ClassMapping;
+};

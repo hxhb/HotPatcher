@@ -158,6 +158,7 @@ namespace PatchWorker
 
 void UPatcherProxy::Init(FPatcherEntitySettingBase* InSetting)
 {
+	SCOPED_NAMED_EVENT_TEXT("UPatcherProxy::Init",FColor::Red);
 	Super::Init(InSetting);
 #if WITH_PACKAGE_CONTEXT
 	PlatformSavePackageContexts = UFlibHotPatcherCoreHelper::CreatePlatformsPackageContexts(
@@ -200,6 +201,7 @@ void UPatcherProxy::Shutdown()
 
 bool UPatcherProxy::DoExport()
 {
+	SCOPED_NAMED_EVENT_TEXT("UPatcherProxy::DoExport",FColor::Red);
 	PatchContext = MakeShareable(new FHotPatcherPatchContext);
 	PatchContext->PatchProxy = this;
 	PatchContext->OnPaking.AddLambda([this](const FString& One,const FString& Msg){this->OnPaking.Broadcast(One,Msg);});
@@ -584,6 +586,7 @@ namespace PatchWorker
 						EmptySetting.bConcurrentSave = false;
 						// for current impl arch
 						EmptySetting.bForceCookInOneFrame = true;
+						EmptySetting.NumberOfAssetsPerFrame = 200;
 						EmptySetting.bDisplayConfig = false;
 						EmptySetting.StorageCookedDir = Context.GetSettingObject()->GetStorageCookedDir();//FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 						EmptySetting.StorageMetadataDir = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,TEXT("Metadatas"),Chunk.ChunkName);

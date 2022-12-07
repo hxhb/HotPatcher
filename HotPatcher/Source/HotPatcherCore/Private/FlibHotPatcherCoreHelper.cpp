@@ -2554,8 +2554,10 @@ TempSandboxFile.Get()
 #endif
 	return bresult;
 }
+
 TArray<UClass*> UFlibHotPatcherCoreHelper::GetClassesByNames(const TArray<FName>& ClassesNames)
 {
+	SCOPED_NAMED_EVENT_TEXT("GetClassesByNames",FColor::Red);
 	TArray<UClass*> result;
 	for(const auto& ClassesName:ClassesNames)
 	{
@@ -2573,6 +2575,7 @@ TArray<UClass*> UFlibHotPatcherCoreHelper::GetClassesByNames(const TArray<FName>
 
 TArray<UClass*> UFlibHotPatcherCoreHelper::GetAllMaterialClasses()
 {
+	SCOPED_NAMED_EVENT_TEXT("GetAllMaterialClasses",FColor::Red);
 	TArray<UClass*> Classes;
 	TArray<FName> ParentClassesName = {
 		// materials
@@ -2589,8 +2592,34 @@ TArray<UClass*> UFlibHotPatcherCoreHelper::GetAllMaterialClasses()
 	return Classes;
 }
 
+bool UFlibHotPatcherCoreHelper::IsMaterialClasses(UClass* Class)
+{
+	return UFlibHotPatcherCoreHelper::IsMaterialClassName(Class->GetFName());
+};
+
+bool UFlibHotPatcherCoreHelper::IsMaterialClassName(FName ClassName)
+{
+	return UFlibHotPatcherCoreHelper::GetAllMaterialClassesNames().Contains(ClassName);
+}
+
+bool UFlibHotPatcherCoreHelper::AssetDetailsHasClasses(const TArray<FAssetDetail>& AssetDetails, TSet<FName> ClasssName)
+{
+	SCOPED_NAMED_EVENT_TEXT("AssetDetailsHasClasses",FColor::Red);
+	bool bHas = false;
+	for(const auto& Detail:AssetDetails)
+	{
+		if(ClasssName.Contains(Detail.AssetType))
+		{
+			bHas = true;
+			break;
+		}
+	}
+	return bHas;
+}
+
 TSet<FName> UFlibHotPatcherCoreHelper::GetAllMaterialClassesNames()
 {
+	SCOPED_NAMED_EVENT_TEXT("GetAllMaterialClassesNames",FColor::Red);
 	TSet<FName> result;
 	for(const auto& Class:GetAllMaterialClasses())
 	{
@@ -2653,4 +2682,20 @@ TArray<UClass*> UFlibHotPatcherCoreHelper::GetPreCacheClasses()
 		Results.Add(Class);
 	}
 	return Results.Array();
+}
+
+void UFlibHotPatcherCoreHelper::DumpActiveTargetPlatforms()
+{
+	FString ActiveTargetPlatforms;
+	ITargetPlatformManagerModule* TPM = GetTargetPlatformManager();
+	if (TPM && (TPM->RestrictFormatsToRuntimeOnly() == false))
+	{
+		TArray<ITargetPlatform*> Platforms = TPM->GetActiveTargetPlatforms();
+		for(auto& Platform:Platforms)
+		{
+			ActiveTargetPlatforms += FString::Printf(TEXT("%s,"),*Platform->PlatformName());
+		}
+		ActiveTargetPlatforms.RemoveFromEnd(TEXT(","));
+	}
+	UE_LOG(LogHotPatcherCoreHelper,Display,TEXT("[IMPORTTENT] ActiveTargetPlatforms: %s"),*ActiveTargetPlatforms);
 }

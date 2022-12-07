@@ -65,7 +65,7 @@ void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 				continue;
 			}
 			FAssetData AssetData;
-			if(UFlibAssetManageHelper::GetAssetsDataByPackageName(LongPackageName,AssetData))
+			if(!LongPackageName.IsEmpty() && UFlibAssetManageHelper::GetAssetsDataByPackageName(LongPackageName,AssetData))
 			{
 				if(IsIgnoreAsset(AssetData))
 				{

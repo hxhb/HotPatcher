@@ -124,6 +124,8 @@ public:
 	FORCEINLINE FCookShaderOptions GetCookShaderOptions()const {return CookShaderOptions;}
 	FORCEINLINE FAssetRegistryOptions GetSerializeAssetRegistryOptions()const{return SerializeAssetRegistryOptions;}
 	FORCEINLINE bool IsImportProjectSettings()const{ return bImportProjectSettings; }
+
+	virtual FString GetCombinedAdditionalCommandletArgs()const override;
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = false;

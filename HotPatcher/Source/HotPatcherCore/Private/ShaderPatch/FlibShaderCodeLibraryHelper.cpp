@@ -246,7 +246,6 @@ void UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete()
 	if (GShaderCompilingManager)
 	{
 		SCOPED_NAMED_EVENT_TEXT("WaitShaderCompileComplete",FColor::Red);
-		int32 LastRemainingJob = 0;
 		while(GShaderCompilingManager->IsCompiling())
 		{
 			GShaderCompilingManager->ProcessAsyncResults(false, false);
@@ -256,12 +255,14 @@ void UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete()
 			// 	UE_LOG(LogHotPatcher,Display,TEXT("Remaining Shader %d"),CurrentNumRemaingingJobs);
 			// 	LastRemainingJob = CurrentNumRemaingingJobs;
 			// }
+			// GShaderCompilingManager->FinishAllCompilation();
 			FPlatformProcess::Sleep(0.5f);
 			GLog->Flush();
 		}
 
 		// One last process to get the shaders that were compiled at the very end
 		GShaderCompilingManager->ProcessAsyncResults(false, false);
+		GShaderCompilingManager->FinishAllCompilation();
 	}
 }
 
@@ -270,5 +271,20 @@ void UFlibShaderCodeLibraryHelper::CleanShaderWorkerDir()
 	if (FPaths::DirectoryExists(FPaths::ShaderWorkingDir()) && !IFileManager::Get().DeleteDirectory(*FPaths::ShaderWorkingDir(), false, true))
 	{
 		UE_LOG(LogHotPatcher, Warning, TEXT("Could not delete the shader compiler working directory '%s'."), *FPaths::ShaderWorkingDir());
+	}
+}
+
+void UFlibShaderCodeLibraryHelper::CancelMaterialShaderCompile(UMaterialInterface* MaterialInterface)
+{
+	if(MaterialInterface)
+	{
+		UMaterial* Material = MaterialInterface->GetMaterial();
+		for (int32 FeatureLevel = 0; FeatureLevel < ERHIFeatureLevel::Num; ++FeatureLevel)
+		{
+			if (FMaterialResource* Res = Material->GetMaterialResource((ERHIFeatureLevel::Type)FeatureLevel))
+			{
+				Res->CancelCompilation();
+			}
+		}
 	}
 }

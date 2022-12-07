@@ -127,6 +127,15 @@ FString FExportPatchSettings::GetCurrentVersionSavePath() const
 	return CurrentVersionSavePath;
 }
 
+FString FExportPatchSettings::GetCombinedAdditionalCommandletArgs() const
+{
+	FString Result = FString::Printf(TEXT("%s %s"),
+		*FHotPatcherSettingBase::GetCombinedAdditionalCommandletArgs(),
+		*UFlibPatchParserHelper::GetTargetPlatformsCmdLine(GetPakTargetPlatforms())
+		);
+	return Result;
+}
+
 FString FExportPatchSettings::GetStorageCookedDir() const
 {
 	return UFlibPatchParserHelper::ReplaceMark(StorageCookedDir);

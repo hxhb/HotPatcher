@@ -1,9 +1,7 @@
 #pragma once
 
+#include "CoreMinimal.h"
 #include "ETargetPlatform.h"
-#include "FlibPatchParserHelper.h"
-#include "ThreadUtils/FProcWorkerThread.hpp"
-#include "HotPatcherLog.h"
 
 #define PATCHER_CONFIG_PARAM_NAME TEXT("-config=")
 #define ADD_PATCH_PLATFORMS TEXT("AddPatchPlatforms")

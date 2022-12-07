@@ -102,6 +102,21 @@ FString FHotPatcherSettingBase::GetSaveAbsPath()const
 }
 
 
+FString FHotPatcherSettingBase::GetCombinedAdditionalCommandletArgs() const
+{
+	FString Result;
+	
+	// for(const auto& Option:GetAdditionalCommandletArgs())
+	// {
+	// 	Result+=FString::Printf(TEXT("%s "),*Option);
+	// }
+	
+	TArray<FString> Options = GetAdditionalCommandletArgs();
+	Options.AddUnique(TEXT("-NoPostLoadCacheDDC"));
+	Result = UFlibPatchParserHelper::MergeOptionsAsCmdline(Options);
+	return Result;
+}
+
 TArray<FString> FHotPatcherSettingBase::GetAllSkipContents() const
 
 {
