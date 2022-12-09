@@ -476,25 +476,10 @@ bool SHotPatcherPatchWidget::CanExportPatch()const
 
 FReply SHotPatcherPatchWidget::DoExportPatch()
 {
-	if(!GetConfigSettings()->IsStandaloneMode())
-	{
-		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-		PatcherProxy->AddToRoot();
-		PatcherProxy->Init(ExportPatchSetting.Get());
-		PatcherProxy->OnShowMsg.AddRaw(this,&SHotPatcherPatchWidget::ShowMsg);
-		PatcherProxy->DoExport();
-	}
-	else
-	{
-		FString CurrentConfig;
-		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*GetConfigSettings(),CurrentConfig);
-		FString SaveConfigTo = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("HotPatcher"),TEXT("PatchConfig.json")));
-		FFileHelper::SaveStringToFile(CurrentConfig,*SaveConfigTo);
-		FString ProfilingCmd = GetConfigSettings()->IsEnableProfiling() ? TEXT("-trace=cpu,loadtimetrace") : TEXT("");
-		FString MissionCommand = FString::Printf(TEXT("\"%s\" -run=HotPatcher -config=\"%s\" %s %s"),*UFlibPatchParserHelper::GetProjectFilePath(),*SaveConfigTo,*GetConfigSettings()->GetCombinedAdditionalCommandletArgs(),*ProfilingCmd);
-		UE_LOG(LogHotPatcher,Log,TEXT("HotPatcher %s Mission: %s %s"),*GetMissionName(),*UFlibHotPatcherCoreHelper::GetUECmdBinary(),*MissionCommand);
-		FHotPatcherEditorModule::Get().RunProcMission(UFlibHotPatcherCoreHelper::GetUECmdBinary(),MissionCommand,GetMissionName());
-	}
+	TSharedPtr<FExportPatchSettings> PatchSettings = MakeShareable(new FExportPatchSettings);
+	*PatchSettings = *GetConfigSettings();
+	FHotPatcherEditorModule::Get().CookAndPakByPatchSettings(PatchSettings,PatchSettings->IsStandaloneMode());
+
 	return FReply::Handled();
 }
 

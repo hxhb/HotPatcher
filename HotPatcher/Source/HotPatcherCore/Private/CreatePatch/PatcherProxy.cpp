@@ -589,7 +589,14 @@ namespace PatchWorker
 						EmptySetting.NumberOfAssetsPerFrame = 200;
 						EmptySetting.bDisplayConfig = false;
 						EmptySetting.StorageCookedDir = Context.GetSettingObject()->GetStorageCookedDir();//FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
-						EmptySetting.StorageMetadataDir = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,TEXT("Metadatas"),Chunk.ChunkName);
+						FReplacePakRegular PakSaveDirRegular{
+							Context.CurrentVersion.VersionId,
+							Context.CurrentVersion.BaseVersionId,
+							Chunk.ChunkName,
+							PlatformName
+						};
+						FString ReplacedPakSaveDirRegular = UFlibHotPatcherCoreHelper::ReplacePakRegular(PakSaveDirRegular,Context.GetSettingObject()->GetPakSaveDirRegular());
+						EmptySetting.StorageMetadataDir = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),ReplacedPakSaveDirRegular,TEXT("Metadatas"));
 #if WITH_PACKAGE_CONTEXT
 						EmptySetting.bOverrideSavePackageContext = true;
 						EmptySetting.PlatformSavePackageContexts = Context.PatchProxy->GetPlatformSavePackageContexts();
@@ -868,7 +875,14 @@ namespace PatchWorker
 					Context.OnPaking.Broadcast(TEXT("ExportPatch"),*Dialog.ToString());
 					Context.UnrealPakSlowTask->EnterProgressFrame(1.0, Dialog);
 				}
-				FString ChunkSaveBasePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(), Context.CurrentVersion.VersionId, PlatformName);
+				FReplacePakRegular PakSaveDirRegular{
+					Context.CurrentVersion.VersionId,
+					Context.CurrentVersion.BaseVersionId,
+					Chunk.ChunkName,
+					PlatformName
+				};
+				FString ReplacedPakSaveDirRegular = UFlibHotPatcherCoreHelper::ReplacePakRegular(PakSaveDirRegular,Context.GetSettingObject()->GetPakSaveDirRegular());
+				FString ChunkSaveBasePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),ReplacedPakSaveDirRegular);
 				
 				TArray<FPakCommand> ChunkPakListCommands;
 				{
@@ -964,8 +978,8 @@ namespace PatchWorker
 					SinglePakForChunk.PakCommands = ChunkPakListCommands;
 					// add extern file to pak(version file)
 					SinglePakForChunk.PakCommands.Append(Context.AdditionalFileToPak);
-					
-					const FString ChunkPakName = UFlibHotPatcherCoreHelper::MakePakShortName(Context.CurrentVersion,Chunk,PlatformName,Context.GetSettingObject()->GetPakNameRegular());
+
+					const FString ChunkPakName = UFlibHotPatcherCoreHelper::ReplacePakRegular(PakSaveDirRegular,Context.GetSettingObject()->GetPakNameRegular());
 					SinglePakForChunk.ChunkStoreName = ChunkPakName;
 					SinglePakForChunk.StorageDirectory = ChunkSaveBasePath;
 					Chunk.GetPakFileProxys().Add(SinglePakForChunk);

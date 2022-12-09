@@ -129,11 +129,11 @@ FString FExportPatchSettings::GetCurrentVersionSavePath() const
 
 FString FExportPatchSettings::GetCombinedAdditionalCommandletArgs() const
 {
-	FString Result = FString::Printf(TEXT("%s %s"),
-		*FHotPatcherSettingBase::GetCombinedAdditionalCommandletArgs(),
-		*UFlibPatchParserHelper::GetTargetPlatformsCmdLine(GetPakTargetPlatforms())
-		);
-	return Result;
+	return UFlibPatchParserHelper::MergeOptionsAsCmdline(TArray<FString>{
+		FHotPatcherSettingBase::GetCombinedAdditionalCommandletArgs(),
+		UFlibPatchParserHelper::GetTargetPlatformsCmdLine(GetPakTargetPlatforms()),
+		IsEnableProfiling() ? TEXT("-trace=cpu,loadtimetrace") : TEXT("")
+	});
 }
 
 FString FExportPatchSettings::GetStorageCookedDir() const

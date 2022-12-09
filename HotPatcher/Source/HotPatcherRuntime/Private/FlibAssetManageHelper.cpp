@@ -82,6 +82,7 @@ bool UFlibAssetManageHelper::FilenameToPackagePath(const FString& InAbsPath, FSt
 
 void UFlibAssetManageHelper::UpdateAssetMangerDatabase(bool bForceRefresh)
 {
+	SCOPED_NAMED_EVENT_TEXT("UpdateAssetMangerDatabase",FColor::Red);
 #if WITH_EDITOR
 	UAssetManager& AssetManager = UAssetManager::Get();
 	AssetManager.UpdateManagementDatabase(bForceRefresh);
@@ -843,11 +844,12 @@ bool UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 	// TArray<FString> resault;
 	TArray<FString> Keys;
 	InAssetDependencies.AssetsDependenciesMap.GetKeys(Keys);
-
-	for (const auto& Key : Keys)
+	FCriticalSection	LocalSynchronizationObject;
+	ParallelFor(Keys.Num(),[&](int32 index)
 	{
+		const FString& Key = Keys[index];
 		if (Key.Equals(TEXT("Script")))
-			continue;
+			return;
 		TArray<FString> AssetList;
 		InAssetDependencies.AssetsDependenciesMap.Find(Key)->AssetDependencyDetails.GetKeys(AssetList);
 		for (const auto& AssetLongPackageName : AssetList)
@@ -855,10 +857,11 @@ bool UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 			TArray<FString> FinalCookedCommand;
 			if (UFlibAssetManageHelper::MakePakCommandFromLongPackageName(InProjectDir, OverrideCookedDir,InPlatformName, AssetLongPackageName, /*InCookParams, */FinalCookedCommand,InReceivePakCommand,IsIoStoreAsset))
 			{
+				FScopeLock Lock(&LocalSynchronizationObject);
 				OutCookCommand.Append(FinalCookedCommand);
 			}
 		}
-	}
+	},GForceSingleThread);
 	return true;
 }
 

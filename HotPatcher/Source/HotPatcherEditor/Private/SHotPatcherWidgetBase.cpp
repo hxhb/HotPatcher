@@ -10,6 +10,7 @@
 // engine header
 #include "IDesktopPlatform.h"
 #include "DesktopPlatformModule.h"
+#include "FlibHotPatcherEditorHelper.h"
 
 #include "Misc/FileHelper.h"
 #include "Widgets/Input/SHyperlink.h"
@@ -44,42 +45,28 @@ FText SHotPatcherWidgetInterface::GetGenerateTooltipText() const
 
 TArray<FString> SHotPatcherWidgetInterface::OpenFileDialog()const
 {
-	IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
 	TArray<FString> SelectedFiles;
-	
-	if (DesktopPlatform)
-	{
-		const bool bOpened = DesktopPlatform->OpenFileDialog(
-			nullptr,
+	SelectedFiles = UFlibHotPatcherEditorHelper::OpenFileDialog(
 			LOCTEXT("OpenHotPatchConfigDialog", "Open .json").ToString(),
 			FString(TEXT("")),
 			TEXT(""),
 			TEXT("HotPatcher json (*.json)|*.json"),
-			EFileDialogFlags::None,
-			SelectedFiles
+			EFileDialogFlags::None
 		);
-	}
 	return SelectedFiles;
 }
 
 
 TArray<FString> SHotPatcherWidgetInterface::SaveFileDialog()const
 {
-	IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
-
 	TArray<FString> SaveFilenames;
-	if (DesktopPlatform)
-	{
-		const bool bOpened = DesktopPlatform->SaveFileDialog(
-			nullptr,
+	SaveFilenames = UFlibHotPatcherEditorHelper::SaveFileDialog(
 			LOCTEXT("SvedHotPatcherConfig", "Save .json").ToString(),
 			FString(TEXT("")),
 			TEXT(""),
 			TEXT("HotPatcher json (*.json)|*.json"),
-			EFileDialogFlags::None,
-			SaveFilenames
+			EFileDialogFlags::None
 		);
-	}
 	return SaveFilenames;
 }
 
