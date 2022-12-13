@@ -1129,16 +1129,15 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 	const FExportPatchSettings* PatcheSettings
 )
 {
-	auto CollectPakCommandsByChunkLambda = [PatcheSettings](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName/*, const TArray<FString>& PakOptions*/)->TArray<FPakCommand>
+	TArray<FPakCommand> PakCommands;
+	auto CollectPakCommandsByChunkLambda = [&PakCommands,PatcheSettings](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName/*, const TArray<FString>& PakOptions*/)
 	{
 		ETargetPlatform Platform;
 		THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
 		TArray<ETargetPlatform> CollectPlatforms = {ETargetPlatform::AllPlatforms};
 		CollectPlatforms.AddUnique(Platform);
 		FChunkAssetDescribe ChunkAssetsDescrible = UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(PatcheSettings, DiffInfo ,Chunk, CollectPlatforms);
-
-		TArray<FPakCommand> PakCommands;
-
+		
 		bool bIoStore =false;
 		bool bAllowBulkDataInIoStore = false;
 #if ENGINE_MAJOR_VERSION > 4 ||ENGINE_MINOR_VERSION > 25
@@ -1254,10 +1253,9 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 		// 	NotCompressOptions.Remove(TEXT("-compress"));
 		auto ReceivePakCommandExFilesLambda = [&PakCommands](const FPakCommand& InCommand){ PakCommands.Emplace(InCommand); };
 		UFlibPatchParserHelper::GetPakCommandsFromInternalInfo(ChunkAssetsDescrible.InternalFiles, PlatformName,/* NotCompressOptions,*/ ReceivePakCommandExFilesLambda);
-		return PakCommands;
 	};
-
-	return CollectPakCommandsByChunkLambda(DiffInfo, Chunk, PlatformName/*, PakOptions*/);
+	CollectPakCommandsByChunkLambda(DiffInfo, Chunk, PlatformName/*, PakOptions*/);
+	return PakCommands;
 }
 
 FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
@@ -2199,3 +2197,15 @@ FString UFlibPatchParserHelper::MergeOptionsAsCmdline(const TArray<FString>& InO
 	Cmdline.RemoveFromEnd(TEXT(" "));
 	return Cmdline;
 };
+
+FString UFlibPatchParserHelper::GetPlatformsStr(TArray<ETargetPlatform> Platforms)
+{
+	FString result;
+	for(auto Platform:Platforms)
+	{
+		FString PlatformStr = THotPatcherTemplateHelper::GetEnumNameByValue(Platform,false);
+		result+=FString::Printf(TEXT("%s,"),*PlatformStr);
+	}
+	result.RemoveFromEnd(TEXT(","));
+	return result;
+}

@@ -88,7 +88,9 @@ void CommandletHelper::MainTick(TFunction<bool()> IsRequestExit)
 	// main loop
 	FDateTime LastConnectionTime = FDateTime::UtcNow();
 
-	while (GIsRunning && !IsRequestingExit() && !IsRequestExit())
+	while (GIsRunning &&
+		// !IsRequestingExit() &&
+		!IsRequestExit())
 	{
 		GEngine->UpdateTimeAndHandleMaxTickRate();
 		GEngine->Tick(FApp::GetDeltaTime(), false);
