@@ -984,10 +984,15 @@ FString UFlibHotPatcherCoreHelper::ReplacePakRegular(const FReplacePakRegular& R
 		{
 			Result = Result.Replace(*Operator.Name,*(Operator.Do()));
 		}
-		while(Result.Contains(TEXT("__")))
+		auto ReplaceDoubleLambda = [](FString& Src,const FString& From,const FString& To)
 		{
-			Result = Result.Replace(TEXT("__"),TEXT("_"));
-		}
+			while(Src.Contains(From))
+			{
+				Src = Src.Replace(*From,*To);
+			}
+		};
+		ReplaceDoubleLambda(Result,TEXT("__"),TEXT("_"));
+		ReplaceDoubleLambda(Result,TEXT("--"),TEXT("-"));
 		return Result;
 	};
 	
@@ -2708,12 +2713,5 @@ void UFlibHotPatcherCoreHelper::DumpActiveTargetPlatforms()
 
 FString UFlibHotPatcherCoreHelper::GetPlatformsStr(TArray<ETargetPlatform> Platforms)
 {
-	FString result;
-	for(auto Platform:Platforms)
-	{
-		FString PlatformStr = THotPatcherTemplateHelper::GetEnumNameByValue(Platform,false);
-		result+=FString::Printf(TEXT("%s,"),*PlatformStr);
-	}
-	result.RemoveFromEnd(TEXT(","));
-	return result;
+	return UFlibPatchParserHelper::GetPlatformsStr(Platforms);
 }

@@ -242,5 +242,6 @@ public:
 	static void SetPropertyTransient(UStruct* Struct,const FString& PropertyName,bool bTransient);
 	static FString GetTargetPlatformsCmdLine(const TArray<ETargetPlatform>& Platforms);
 	static FString MergeOptionsAsCmdline(const TArray<FString>& InOptions);
+	static FString GetPlatformsStr(TArray<ETargetPlatform> Platforms);
 };
 
