@@ -454,9 +454,9 @@ void FHotPatcherEditorModule::OnAddToPatchSettings(const FToolMenuContext& MenuC
 
 void FHotPatcherEditorModule::OnPakPreset(FExportPatchSettings Config)
 {
-	TSharedPtr<FExportPatchSettings> PatchSettings = MakeShareable(new FExportPatchSettings);
-	*PatchSettings = Config;
-	CookAndPakByPatchSettings(PatchSettings,PatchSettings->IsStandaloneMode());
+	TSharedPtr<FExportPatchSettings> TmpPatchSettings = MakeShareable(new FExportPatchSettings);
+	*TmpPatchSettings = Config;
+	CookAndPakByPatchSettings(TmpPatchSettings,TmpPatchSettings->IsStandaloneMode());
 }
 
 #endif
