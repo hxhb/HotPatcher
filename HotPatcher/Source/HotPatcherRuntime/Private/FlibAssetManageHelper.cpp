@@ -82,6 +82,7 @@ bool UFlibAssetManageHelper::FilenameToPackagePath(const FString& InAbsPath, FSt
 
 void UFlibAssetManageHelper::UpdateAssetMangerDatabase(bool bForceRefresh)
 {
+	SCOPED_NAMED_EVENT_TEXT("UpdateAssetMangerDatabase",FColor::Red);
 #if WITH_EDITOR
 	UAssetManager& AssetManager = UAssetManager::Get();
 	AssetManager.UpdateManagementDatabase(bForceRefresh);
@@ -133,6 +134,18 @@ bool UFlibAssetManageHelper::GetAssetPackageGUID(const FString& InPackageName, F
 	}
 #endif
 	return bResult;
+}
+
+FSoftObjectPath UFlibAssetManageHelper::CreateSoftObjectPathByPackage(UPackage* Package)
+{
+	FString AssetPathName = Package->GetPathName();	
+	FSoftObjectPath Path(UFlibAssetManageHelper::LongPackageNameToPackagePath(AssetPathName));
+	return Path;
+}
+
+FName UFlibAssetManageHelper::GetAssetTypeByPackage(UPackage* Package)
+{
+	return UFlibAssetManageHelper::GetAssetType(CreateSoftObjectPathByPackage(Package));
 }
 
 
@@ -702,7 +715,8 @@ SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAllInValidAssetInProject",FC
 		}
 	}
 }
-
+#pragma warning(push)
+#pragma warning(disable:4172)
 FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(const FString& InPackageName)
 {
 	FAssetPackageData* AssetPackageData = nullptr;
@@ -733,6 +747,7 @@ FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(const FSt
 
 	return NULL;
 }
+#pragma warning(pop)
 
 bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(
 	const FString& InProjectAbsDir,
@@ -831,11 +846,12 @@ bool UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 	// TArray<FString> resault;
 	TArray<FString> Keys;
 	InAssetDependencies.AssetsDependenciesMap.GetKeys(Keys);
-
-	for (const auto& Key : Keys)
+	FCriticalSection	LocalSynchronizationObject;
+	ParallelFor(Keys.Num(),[&](int32 index)
 	{
+		const FString& Key = Keys[index];
 		if (Key.Equals(TEXT("Script")))
-			continue;
+			return;
 		TArray<FString> AssetList;
 		InAssetDependencies.AssetsDependenciesMap.Find(Key)->AssetDependencyDetails.GetKeys(AssetList);
 		for (const auto& AssetLongPackageName : AssetList)
@@ -843,10 +859,11 @@ bool UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 			TArray<FString> FinalCookedCommand;
 			if (UFlibAssetManageHelper::MakePakCommandFromLongPackageName(InProjectDir, OverrideCookedDir,InPlatformName, AssetLongPackageName, /*InCookParams, */FinalCookedCommand,InReceivePakCommand,IsIoStoreAsset))
 			{
+				FScopeLock Lock(&LocalSynchronizationObject);
 				OutCookCommand.Append(FinalCookedCommand);
 			}
 		}
-	}
+	},GForceSingleThread);
 	return true;
 }
 
@@ -1585,4 +1602,14 @@ FName UFlibAssetManageHelper::GetObjectPathByAssetData(const FAssetData& Data)
 	return NAME_None;
 }
 
+void UFlibAssetManageHelper::UpdateAssetRegistryData(const FString& PackageName)
+{
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
+	FString PackageFilename;
+	if (FPackageName::FindPackageFileWithoutExtension(FPackageName::LongPackageNameToFilename(PackageName), PackageFilename))
+	{
+		AssetRegistry.ScanModifiedAssetFiles(TArray<FString>{PackageFilename});
+	}
+}
 // PRAGMA_ENABLE_DEPRECATION_WARNINGS

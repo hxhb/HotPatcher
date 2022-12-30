@@ -21,7 +21,8 @@ struct FHotPatcherVersion
 	GENERATED_USTRUCT_BODY()
 
 public:
-
+	FHotPatcherVersion()=default;
+	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FString VersionId;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

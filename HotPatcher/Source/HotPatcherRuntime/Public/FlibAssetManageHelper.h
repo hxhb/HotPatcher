@@ -86,7 +86,9 @@ public:
 	static FAssetPackageData* GetPackageDataByPackageName(const FString& InPackageName);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerExEx")
 	static bool GetAssetPackageGUID(const FString& InPackageName, FName& OutGUID);
-	
+
+	static FSoftObjectPath CreateSoftObjectPathByPackage(UPackage* Package);
+	static FName GetAssetTypeByPackage(UPackage* Package);
 	static FName GetAssetType(FSoftObjectPath InPackageName);
 	
 	// Combine AssetDependencies Filter repeat asset
@@ -251,6 +253,8 @@ public:
 	static FName GetAssetDataClasses(const FAssetData& Data);
 	static FName GetObjectPathByAssetData(const FAssetData& Data);
 	static bool bIncludeOnlyOnDiskAssets;
+
+	static void UpdateAssetRegistryData(const FString& PackageName);
 };
 
 

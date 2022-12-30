@@ -37,15 +37,7 @@ struct HOTPATCHERRUNTIME_API FHotPatcherSettingBase:public FPatcherEntitySetting
     FORCEINLINE virtual bool IsStandaloneMode()const {return bStandaloneMode;}
     FORCEINLINE virtual bool IsSaveConfig()const {return bStorageConfig;}
     FORCEINLINE virtual TArray<FString> GetAdditionalCommandletArgs()const{return AdditionalCommandletArgs;}
-    FORCEINLINE virtual FString GetCombinedAdditionalCommandletArgs()const
-    {
-        FString Result;
-        for(const auto& Option:GetAdditionalCommandletArgs())
-        {
-            Result+=FString::Printf(TEXT("%s "),*Option);
-        }
-        return Result;
-    }
+    virtual FString GetCombinedAdditionalCommandletArgs()const;
 
     FORCEINLINE virtual bool IsForceSkipContent()const{return GetAssetScanConfig().bForceSkipContent;}
     FORCEINLINE virtual TArray<FDirectoryPath> GetForceSkipContentRules()const {return GetAssetScanConfig().ForceSkipContentRules;}

@@ -949,8 +949,7 @@ FString UFlibHotPatcherCoreHelper::PatchSummary(const FPatchVersionDiff& DiffInf
 	return result;
 }
 
-
-FString UFlibHotPatcherCoreHelper::MakePakShortName(const FHotPatcherVersion& InCurrentVersion, const FChunkInfo& InChunkInfo, const FString& InPlatform,const FString& InRegular)
+FString UFlibHotPatcherCoreHelper::ReplacePakRegular(const FReplacePakRegular& RegularConf, const FString& InRegular)
 {
 	struct FResularOperator
 	{
@@ -961,15 +960,21 @@ FString UFlibHotPatcherCoreHelper::MakePakShortName(const FHotPatcherVersion& In
 	};
 	
 	TArray<FResularOperator> RegularOpList;
-	RegularOpList.Emplace(TEXT("{VERSION}"),[&InCurrentVersion]()->FString{return InCurrentVersion.VersionId;});
-	RegularOpList.Emplace(TEXT("{BASEVERSION}"),[&InCurrentVersion]()->FString{return InCurrentVersion.BaseVersionId;});
-	RegularOpList.Emplace(TEXT("{PLATFORM}"),[&InPlatform]()->FString{return InPlatform;});
-	RegularOpList.Emplace(TEXT("{CHUNKNAME}"),[&InChunkInfo,&InCurrentVersion]()->FString
+	RegularOpList.Emplace(TEXT("{VERSION}"),[&RegularConf]()->FString{return RegularConf.VersionId;});
+	RegularOpList.Emplace(TEXT("{BASEVERSION}"),[&RegularConf]()->FString{return RegularConf.BaseVersionId;});
+	RegularOpList.Emplace(TEXT("{PLATFORM}"),[&RegularConf]()->FString{return RegularConf.PlatformName;});
+	RegularOpList.Emplace(TEXT("{CHUNKNAME}"),[&RegularConf,InRegular]()->FString
 	{
-		if(!InCurrentVersion.VersionId.Equals(InChunkInfo.ChunkName))
-			return InChunkInfo.ChunkName;
-		else
+		if(InRegular.Contains(TEXT("{VERSION}")) &&
+			InRegular.Contains(TEXT("{CHUNKNAME}")) &&
+			RegularConf.VersionId.Equals(RegularConf.ChunkName))
+		{
 			return TEXT("");
+		}
+		else
+		{
+			return RegularConf.ChunkName;
+		}
 	});
 	
 	auto CustomPakNameRegular = [](const TArray<FResularOperator>& Operators,const FString& Regular)->FString
@@ -979,10 +984,15 @@ FString UFlibHotPatcherCoreHelper::MakePakShortName(const FHotPatcherVersion& In
 		{
 			Result = Result.Replace(*Operator.Name,*(Operator.Do()));
 		}
-		while(Result.Contains(TEXT("__")))
+		auto ReplaceDoubleLambda = [](FString& Src,const FString& From,const FString& To)
 		{
-			Result = Result.Replace(TEXT("__"),TEXT("_"));
-		}
+			while(Src.Contains(From))
+			{
+				Src = Src.Replace(*From,*To);
+			}
+		};
+		ReplaceDoubleLambda(Result,TEXT("__"),TEXT("_"));
+		ReplaceDoubleLambda(Result,TEXT("--"),TEXT("-"));
 		return Result;
 	};
 	
@@ -1155,6 +1165,7 @@ ITargetPlatform* UFlibHotPatcherCoreHelper::GetPlatformByName(const FString& Nam
 
 FPatchVersionDiff UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(const FExportPatchSettings& PatchSetting, const FHotPatcherVersion& Base, const FHotPatcherVersion& New)
 {
+	SCOPED_NAMED_EVENT_TEXT("DiffPatchVersionWithPatchSetting",FColor::Red);
 	FPatchVersionDiff VersionDiffInfo;
 	const FAssetDependenciesInfo& BaseVersionAssetDependInfo = Base.AssetInfo;
 	const FAssetDependenciesInfo& CurrentVersionAssetDependInfo = New.AssetInfo;
@@ -2554,8 +2565,10 @@ TempSandboxFile.Get()
 #endif
 	return bresult;
 }
+
 TArray<UClass*> UFlibHotPatcherCoreHelper::GetClassesByNames(const TArray<FName>& ClassesNames)
 {
+	SCOPED_NAMED_EVENT_TEXT("GetClassesByNames",FColor::Red);
 	TArray<UClass*> result;
 	for(const auto& ClassesName:ClassesNames)
 	{
@@ -2573,6 +2586,7 @@ TArray<UClass*> UFlibHotPatcherCoreHelper::GetClassesByNames(const TArray<FName>
 
 TArray<UClass*> UFlibHotPatcherCoreHelper::GetAllMaterialClasses()
 {
+	SCOPED_NAMED_EVENT_TEXT("GetAllMaterialClasses",FColor::Red);
 	TArray<UClass*> Classes;
 	TArray<FName> ParentClassesName = {
 		// materials
@@ -2589,8 +2603,34 @@ TArray<UClass*> UFlibHotPatcherCoreHelper::GetAllMaterialClasses()
 	return Classes;
 }
 
+bool UFlibHotPatcherCoreHelper::IsMaterialClasses(UClass* Class)
+{
+	return UFlibHotPatcherCoreHelper::IsMaterialClassName(Class->GetFName());
+};
+
+bool UFlibHotPatcherCoreHelper::IsMaterialClassName(FName ClassName)
+{
+	return UFlibHotPatcherCoreHelper::GetAllMaterialClassesNames().Contains(ClassName);
+}
+
+bool UFlibHotPatcherCoreHelper::AssetDetailsHasClasses(const TArray<FAssetDetail>& AssetDetails, TSet<FName> ClasssName)
+{
+	SCOPED_NAMED_EVENT_TEXT("AssetDetailsHasClasses",FColor::Red);
+	bool bHas = false;
+	for(const auto& Detail:AssetDetails)
+	{
+		if(ClasssName.Contains(Detail.AssetType))
+		{
+			bHas = true;
+			break;
+		}
+	}
+	return bHas;
+}
+
 TSet<FName> UFlibHotPatcherCoreHelper::GetAllMaterialClassesNames()
 {
+	SCOPED_NAMED_EVENT_TEXT("GetAllMaterialClassesNames",FColor::Red);
 	TSet<FName> result;
 	for(const auto& Class:GetAllMaterialClasses())
 	{
@@ -2653,4 +2693,25 @@ TArray<UClass*> UFlibHotPatcherCoreHelper::GetPreCacheClasses()
 		Results.Add(Class);
 	}
 	return Results.Array();
+}
+
+void UFlibHotPatcherCoreHelper::DumpActiveTargetPlatforms()
+{
+	FString ActiveTargetPlatforms;
+	ITargetPlatformManagerModule* TPM = GetTargetPlatformManager();
+	if (TPM && (TPM->RestrictFormatsToRuntimeOnly() == false))
+	{
+		TArray<ITargetPlatform*> Platforms = TPM->GetActiveTargetPlatforms();
+		for(auto& Platform:Platforms)
+		{
+			ActiveTargetPlatforms += FString::Printf(TEXT("%s,"),*Platform->PlatformName());
+		}
+		ActiveTargetPlatforms.RemoveFromEnd(TEXT(","));
+	}
+	UE_LOG(LogHotPatcherCoreHelper,Display,TEXT("[IMPORTTENT] ActiveTargetPlatforms: %s"),*ActiveTargetPlatforms);
+}
+
+FString UFlibHotPatcherCoreHelper::GetPlatformsStr(TArray<ETargetPlatform> Platforms)
+{
+	return UFlibPatchParserHelper::GetPlatformsStr(Platforms);
 }

@@ -3,6 +3,8 @@
 #include "FPlatformExternFiles.h"
 #include "HotPatcherLog.h"
 
+#include "Misc/EngineVersionComparison.h"
+
 FHotPatcherSettingBase::FHotPatcherSettingBase()
 {
 	GetAssetScanConfigRef().bAnalysisFilterDependencies = true;
@@ -101,9 +103,18 @@ FString FHotPatcherSettingBase::GetSaveAbsPath()const
 	return TEXT("");
 }
 
+FString FHotPatcherSettingBase::GetCombinedAdditionalCommandletArgs() const
+{
+	FString Result;
+	TArray<FString> Options = GetAdditionalCommandletArgs();
+#if UE_VERSION_OLDER_THAN(5,0,0)
+	Options.AddUnique(TEXT("-NoPostLoadCacheDDC"));
+#endif
+	Result = UFlibPatchParserHelper::MergeOptionsAsCmdline(Options);
+	return Result;
+}
 
 TArray<FString> FHotPatcherSettingBase::GetAllSkipContents() const
-
 {
 	TArray<FString> AllSkipContents;;
 	AllSkipContents.Append(UFlibAssetManageHelper::DirectoriesToStrings(GetForceSkipContentRules()));

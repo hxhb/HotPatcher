@@ -138,7 +138,7 @@ void FAssetTypeActions_PrimaryAssetLabel::MakeCookAndPakActionsSubMenu(UToolMenu
 	FToolMenuSection& Section = Menu->AddSection("CookAndPakActionsSection");
 	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
 	Settings->ReloadConfig();
-	for (auto Platform : FHotPatcherEditorModule::Get().GetAllCookPlatforms())
+	for (auto Platform : FHotPatcherEditorModule::Get().GetAllowCookPlatforms())
 	{
 		if(Settings->bWhiteListCookInEditor && !Settings->PlatformWhitelists.Contains(Platform))
 			continue;

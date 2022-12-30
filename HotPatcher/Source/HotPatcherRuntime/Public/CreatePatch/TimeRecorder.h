@@ -1,8 +1,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "HotPatcherLog.h"
 
-struct TimeRecorder
+struct HOTPATCHERRUNTIME_API TimeRecorder
 {
     TimeRecorder(const FString& InDisplay=TEXT(""),bool InAuto = true):Display(InDisplay),bAuto(InAuto)
     {

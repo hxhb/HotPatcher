@@ -15,7 +15,7 @@
 #include "Editor.h"
 
 // Register FHotWorldPartitionCookPackageSplitter for UWorld class
-REGISTER_COOKPACKAGE_SPLITTER(FHotWorldPartitionCookPackageSplitter, UWorld);
+// REGISTER_COOKPACKAGE_SPLITTER(FHotWorldPartitionCookPackageSplitter, UWorld);
 
 bool FHotWorldPartitionCookPackageSplitter::ShouldSplit(UObject* SplitData)
 {

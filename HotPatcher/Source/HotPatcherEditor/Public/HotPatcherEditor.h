@@ -56,7 +56,7 @@ public:
 
 	TSharedPtr<FProcWorkerThread> CreateProcMissionThread(const FString& Bin, const FString& Command, const FString& MissionName);
 	
-	TSharedPtr<FProcWorkerThread> RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName);
+	TSharedPtr<FProcWorkerThread> RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName, const FText& NotifyTextOverride = FText{});
 
 	
 #if WITH_EDITOR_SECTION
@@ -70,7 +70,8 @@ public:
 	void MakeHotPatcherPresetsActionsSubMenu(UToolMenu* Menu);
 	void OnAddToPatchSettings(const FToolMenuContext& MenuContent);
 #endif
-	TArray<ETargetPlatform> GetAllCookPlatforms()const;
+	TArray<ETargetPlatform> GetAllowCookPlatforms() const;
+	static void OnCookPlatformForExterner(ETargetPlatform Platform);;
 	void OnCookPlatform(ETargetPlatform Platform);
 	void OnCookAndPakPlatform(ETargetPlatform Platform, bool bAnalysicDependencies);
 	void CookAndPakByAssetsAndFilters(TArray<FPatcherSpecifyAsset> IncludeAssets,TArray<FDirectoryPath> IncludePaths,TArray<ETargetPlatform> Platforms,bool bForceStandalone = false);
@@ -89,6 +90,7 @@ public:
 		bool bCook
 	);
 private:
+	TArray<ETargetPlatform> GetAllCookPlatforms()const;
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& InSpawnTabArgs);
 	void OnTabClosed(TSharedRef<SDockTab> InTab);
 	TArray<FAssetData> GetSelectedAssetsInBrowserContent();

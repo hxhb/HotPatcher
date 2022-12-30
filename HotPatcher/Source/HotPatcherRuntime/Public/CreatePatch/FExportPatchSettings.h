@@ -98,11 +98,11 @@ public:
 
 	FORCEINLINE bool IsCustomPakNameRegular()const {return bCustomPakNameRegular;}
 	FORCEINLINE FString GetPakNameRegular()const { return PakNameRegular;}
+	FORCEINLINE bool IsCustomPakSaveDirRegular()const {return bCustomPakSaveDirRegular;}
+	FORCEINLINE FString GetPakSaveDirRegular()const { return PakSaveDirRegular;}
 	FORCEINLINE bool IsCookPatchAssets()const {return bCookPatchAssets;}
 	FORCEINLINE bool IsIgnoreDeletedAssetsInfo()const {return bIgnoreDeletedAssetsInfo;}
 	FORCEINLINE bool IsSaveDeletedAssetsToNewReleaseJson()const {return bStorageDeletedAssetsToNewReleaseJson;}
-	
-	
 	
 	FORCEINLINE FIoStoreSettings GetIoStoreSettings()const { return IoStoreSettings; }
 	FORCEINLINE FUnrealPakSettings GetUnrealPakSettings()const {return UnrealPakSettings;}
@@ -124,6 +124,8 @@ public:
 	FORCEINLINE FCookShaderOptions GetCookShaderOptions()const {return CookShaderOptions;}
 	FORCEINLINE FAssetRegistryOptions GetSerializeAssetRegistryOptions()const{return SerializeAssetRegistryOptions;}
 	FORCEINLINE bool IsImportProjectSettings()const{ return bImportProjectSettings; }
+
+	virtual FString GetCombinedAdditionalCommandletArgs()const override;
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = false;
@@ -223,8 +225,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		bool bCustomPakNameRegular = false;
 	// Can use value: {VERSION} {BASEVERSION} {CHUNKNAME} {PLATFORM} 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options",meta=(EditCondition = "bCustomPakNameRegular"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options|Regular",meta=(EditCondition = "bCustomPakNameRegular"))
 		FString PakNameRegular = TEXT("{VERSION}_{CHUNKNAME}_{PLATFORM}_001_P");
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options|Regular")
+		bool bCustomPakSaveDirRegular = false;
+	// Can use value: {VERSION} {BASEVERSION} {CHUNKNAME} {PLATFORM} 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options",meta=(EditCondition = "bCustomPakSaveDirRegular"))
+		FString PakSaveDirRegular = TEXT("{CHUNKNAME}/{PLATFORM}");
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 		bool bStorageNewRelease = true;

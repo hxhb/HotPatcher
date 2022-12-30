@@ -68,7 +68,7 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 		
 		FString FinalConfig;
 		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*ExportPatchSetting,FinalConfig);
-		UE_LOG(LogHotPatcherCommandlet, Display, TEXT("%s"), *FinalConfig);
+		// UE_LOG(LogHotPatcherCommandlet, Display, TEXT("%s"), *FinalConfig);
 
 		
 		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();

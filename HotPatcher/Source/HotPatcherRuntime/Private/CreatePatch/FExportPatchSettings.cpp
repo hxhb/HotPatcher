@@ -127,6 +127,15 @@ FString FExportPatchSettings::GetCurrentVersionSavePath() const
 	return CurrentVersionSavePath;
 }
 
+FString FExportPatchSettings::GetCombinedAdditionalCommandletArgs() const
+{
+	return UFlibPatchParserHelper::MergeOptionsAsCmdline(TArray<FString>{
+		FHotPatcherSettingBase::GetCombinedAdditionalCommandletArgs(),
+		UFlibPatchParserHelper::GetTargetPlatformsCmdLine(GetPakTargetPlatforms()),
+		IsEnableProfiling() ? TEXT("-trace=cpu,loadtimetrace") : TEXT("")
+	});
+}
+
 FString FExportPatchSettings::GetStorageCookedDir() const
 {
 	return UFlibPatchParserHelper::ReplaceMark(StorageCookedDir);

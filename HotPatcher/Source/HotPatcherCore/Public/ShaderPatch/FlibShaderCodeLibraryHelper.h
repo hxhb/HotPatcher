@@ -58,6 +58,7 @@ public:
 	static TArray<FString> FindCookedShaderLibByShaderFrmat(const FString& ShaderFormatName,const FString& Directory);
 
 	static void WaitShaderCompilingComplete();
-
+	static void CancelMaterialShaderCompile(UMaterialInterface* MaterialInterface);
+	
 	static void CleanShaderWorkerDir();
 };
