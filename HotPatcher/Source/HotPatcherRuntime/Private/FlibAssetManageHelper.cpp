@@ -715,7 +715,8 @@ SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAllInValidAssetInProject",FC
 		}
 	}
 }
-
+#pragma warning(push)
+#pragma warning(disable:4172)
 FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(const FString& InPackageName)
 {
 	FAssetPackageData* AssetPackageData = nullptr;
@@ -746,6 +747,7 @@ FAssetPackageData* UFlibAssetManageHelper::GetPackageDataByPackageName(const FSt
 
 	return NULL;
 }
+#pragma warning(pop)
 
 bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(
 	const FString& InProjectAbsDir,
