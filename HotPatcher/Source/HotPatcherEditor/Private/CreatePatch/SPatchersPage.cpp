@@ -4,7 +4,6 @@
 #include "CreatePatch/SHotPatcherPatchWidget.h"
 #include "CreatePatch/SHotPatcherReleaseWidget.h"
 #include "ShaderPatch/SShaderPatchWidget.h"
-#include "GameFeature/SGameFeaturePackageWidget.h"
 
 // engine header
 #include "HotPatcherEditor.h"

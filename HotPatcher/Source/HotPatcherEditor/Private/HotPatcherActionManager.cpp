@@ -4,7 +4,7 @@
 #include "CreatePatch/SHotPatcherPatchWidget.h"
 #include "CreatePatch/SHotPatcherReleaseWidget.h"
 #include "ShaderPatch/SShaderPatchWidget.h"
-#include "GameFeature/SGameFeaturePackageWidget.h"
+
 #include "Cooker/OriginalCooker/SOriginalCookWidget.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "SVersionUpdater/FVersionUpdaterManager.h"
@@ -135,14 +135,6 @@ void FHotPatcherActionManager::SetupDefaultActions()
 		CREATE_ACTION_WIDGET_LAMBDA(SShaderPatchWidget,TEXT("ByShaderPatch")),
 		-1
 		);
-#if ENGINE_GAME_FEATURE
-	DefaultActions.Emplace(
-		TEXT("Patcher"),LOCTEXT("ByGameFeature", "ByGameFeature"), LOCTEXT("CreateGameFeatureActionHint", "Create an Game Feature Package."), FSlateIcon(),nullptr,
-		CREATE_ACTION_WIDGET_LAMBDA(SGameFeaturePackageWidget,TEXT("ByGameFeature")),
-		0
-		);
-#endif
-
 #if ENABLE_ORIGINAL_COOKER
 	DefaultActions.Emplace(
 		TEXT("Cooker"),LOCTEXT("ByOriginal", "ByOriginal"),LOCTEXT("OriginalCookerActionHint", "Use single-process Cook Content(UE Default)"),FSlateIcon(),nullptr,
