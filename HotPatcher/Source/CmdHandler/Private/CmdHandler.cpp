@@ -24,6 +24,8 @@ bool OverrideConfigValue(const FString& FileName,const FString& Section,const FS
 	return bRet;
 }
 
+#if WITH_EDITOR
+static bool bDDCUrl = false;
 static FString MultiCookerDDCBackendName = TEXT("MultiCookerDDC");
 void AddMultiCookerBackendToConfig(const FString& DDCAddr)
 {
@@ -66,8 +68,7 @@ void AddMultiCookerBackendToConfig(const FString& DDCAddr)
 	UE_LOG(LogCmdHandler, Warning, TEXT("use MultiCookerDDC: %s"),*DDCBackendName);
 }
 
-static bool bDDCUrl = false;
-void FCmdHandlerModule::StartupModule()
+void OverrideEditorEnv()
 {
 	int32 OverrideNumUnusedShaderCompilingThreads = 3;
 	if(FParse::Value(FCommandLine::Get(), TEXT("-MaxShaderWorker="), OverrideNumUnusedShaderCompilingThreads))
@@ -97,7 +98,7 @@ void FCmdHandlerModule::StartupModule()
 	}
 }
 
-void FCmdHandlerModule::ShutdownModule()
+void UnOverrideEditorEnv()
 {
 	if(bDDCUrl)
 	{
@@ -105,6 +106,38 @@ void FCmdHandlerModule::ShutdownModule()
 		EngineIniIns->Remove(MultiCookerDDCBackendName);
 	}
 }
+
+#else
+
+void OverrideRuntimeEnv()
+{
+	
+}
+
+void UnOverrideRuntimeEnv()
+{
+	
+}
+#endif
+
+void FCmdHandlerModule::StartupModule()
+{
+#if WITH_EDITOR
+	OverrideEditorEnv();
+#else
+	OverrideRuntimeEnv();
+#endif
+}
+
+void FCmdHandlerModule::ShutdownModule()
+{
+#if WITH_EDITOR
+	UnOverrideEditorEnv();
+#else
+	UnOverrideRuntimeEnv();
+#endif
+}
+
 #undef LOCTEXT_NAMESPACE
 	
 IMPLEMENT_MODULE(FCmdHandlerModule, CmdHandler)

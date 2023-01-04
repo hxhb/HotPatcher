@@ -34,7 +34,6 @@ public class CmdHandler : ModuleRules
                 "Json",
                 "SandboxFile",
                 "JsonUtilities",
-                "Settings",
                 // ... add other public dependencies that you statically link with here ...
 			}
 			);

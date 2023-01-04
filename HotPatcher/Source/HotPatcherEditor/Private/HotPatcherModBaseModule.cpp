@@ -2,17 +2,10 @@
 
 void FHotPatcherModBaseModule::StartupModule()
 {
-	for(const auto& ActionDesc:GetModActions())
-	{
-		RegistedActions.Add(ActionDesc);
-		FHotPatcherActionManager::Get().RegisteHotPatcherAction(ActionDesc);
-	}
+	FHotPatcherActionManager::Get().RegisteHotPatcherMod(GetModDesc());
 }
 
 void FHotPatcherModBaseModule::ShutdownModule()
 {
-	for(const auto& ActionDesc:RegistedActions)
-	{
-		FHotPatcherActionManager::Get().UnRegisteHotPatcherAction(ActionDesc.Category,ActionDesc.ActionName);
-	}
+	FHotPatcherActionManager::Get().UnRegisteHotPatcherMod(GetModDesc());
 }

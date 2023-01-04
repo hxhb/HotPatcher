@@ -8,7 +8,7 @@
 #include "UObject/UObjectHash.h"
 #include "UObject/UObjectIterator.h"
 #include "Async/ParallelFor.h"
-#include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
+#include "ShaderLibUtils/FlibShaderCodeLibraryHelper.h"
 #include "ThreadUtils/FThreadUtils.hpp"
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 #include "Engine/Engine.h"

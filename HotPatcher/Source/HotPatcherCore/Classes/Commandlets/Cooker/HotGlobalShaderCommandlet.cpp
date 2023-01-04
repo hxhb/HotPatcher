@@ -1,15 +1,15 @@
 #include "HotGlobalShaderCommandlet.h"
-#include "ShaderPatch/FExportShaderPatchSettings.h"
 #include "CommandletHelper.h"
 // engine header
 #include "CoreMinimal.h"
 #include "FlibHotPatcherCoreHelper.h"
 #include "Async/ParallelFor.h"
 #include "Cooker/MultiCooker/FlibHotCookerHelper.h"
+#include "Kismet/KismetStringLibrary.h"
 #include "Misc/FileHelper.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Paths.h"
-#include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
+#include "ShaderLibUtils/FlibShaderCodeLibraryHelper.h"
 
 #define PLATFORMS_PARAM_NAME TEXT("-platforms=")
 #define SAVETO_PARAM_NAME TEXT("-saveto=")

@@ -11,7 +11,7 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
-	virtual TArray<FHotPatcherActionDesc> GetModActions()const { return TArray<FHotPatcherActionDesc>{}; };
-protected:
-	TArray<FHotPatcherActionDesc> RegistedActions;
+	virtual FHotPatcherModDesc GetModDesc()const { return ModDesc; };
+private:
+	FHotPatcherModDesc ModDesc;
 };

@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
+#include "ShaderLibUtils//FlibShaderCodeLibraryHelper.h"
 #include "HotPatcherLog.h"
 #include "FlibHotPatcherCoreHelper.h"
 #include "HotPatcherCore.h"
@@ -12,6 +12,10 @@
 #include "Misc/EngineVersionComparison.h"
 
 #define REMAPPED_PLUGINS TEXT("RemappedPlugins")
+
+FString UFlibShaderCodeLibraryHelper::ShaderExtension = TEXT(".ushaderbytecode");
+FString UFlibShaderCodeLibraryHelper::ShaderAssetInfoExtension = TEXT(".assetinfo.json");
+FString UFlibShaderCodeLibraryHelper::StableExtension = TEXT(".scl.csv");
 
 // FMergeShaderCollectionProxy::FMergeShaderCollectionProxy(const TArray<FShaderCodeFormatMap>& InShaderCodeFiles):ShaderCodeFiles(InShaderCodeFiles)
 // {

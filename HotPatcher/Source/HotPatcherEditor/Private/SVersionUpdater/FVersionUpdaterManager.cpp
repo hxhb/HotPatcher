@@ -5,6 +5,7 @@
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "HttpModule.h"
+#include "Kismet/KismetStringLibrary.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 
@@ -101,6 +102,33 @@ void FVersionUpdaterManager::OnRequestComplete(FHttpRequestPtr RequestPtr, FHttp
 							for(auto Name:ActionsName)
 							{
 								RemoteVersion.ActiveActions.Add(*Name,GetActionArray(*Actions,*Name));
+							}
+						}
+
+						const TArray<TSharedPtr<FJsonValue>>* ActionDescs = nullptr;
+						if(Actions && (*Actions)->TryGetArrayField(TEXT("ModsDesc"),ActionDescs))
+						{
+							for(const TSharedPtr<FJsonValue>& ModDescJsonValue:*ActionDescs)
+							{
+								const TSharedPtr<FJsonObject>& ModDescJsonObject = ModDescJsonValue.Get()->AsObject();
+								FChildModDesc ModDesc;
+								ModDescJsonObject->TryGetStringField(TEXT("ModName"),ModDesc.ModName);
+								
+								FString Version;
+								if(ModDescJsonObject->TryGetStringField(TEXT("Version"),Version))
+								{
+									ModDesc.RemoteVersion = UKismetStringLibrary::Conv_StringToFloat(Version);
+								}
+								ModDescJsonObject->TryGetStringField(TEXT("Desc"),ModDesc.Description);
+								ModDescJsonObject->TryGetStringField(TEXT("URL"),ModDesc.URL);
+								ModDescJsonObject->TryGetStringField(TEXT("UpdateURL"),ModDesc.UpdateURL);
+								ModDescJsonObject->TryGetBoolField(TEXT("bIsBuiltInMod"),ModDesc.bIsBuiltInMod);
+								
+								if(ModCurrentVersionGetter)
+								{
+									ModDesc.CurrentVersion = ModCurrentVersionGetter(ModDesc.ModName);
+								}
+								RemoteVersion.ModsDesc.Add(*ModDesc.ModName,ModDesc);
 							}
 						}
 					}

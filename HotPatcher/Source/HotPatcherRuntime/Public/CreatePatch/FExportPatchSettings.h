@@ -222,7 +222,7 @@ public:
 		TArray<FReplaceText> ReplacePakListTexts;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		TArray<ETargetPlatform> PakTargetPlatforms;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options|Regular")
 		bool bCustomPakNameRegular = false;
 	// Can use value: {VERSION} {BASEVERSION} {CHUNKNAME} {PLATFORM} 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options|Regular",meta=(EditCondition = "bCustomPakNameRegular"))
@@ -230,7 +230,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options|Regular")
 		bool bCustomPakSaveDirRegular = false;
 	// Can use value: {VERSION} {BASEVERSION} {CHUNKNAME} {PLATFORM} 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options",meta=(EditCondition = "bCustomPakSaveDirRegular"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options|Regular",meta=(EditCondition = "bCustomPakSaveDirRegular"))
 		FString PakSaveDirRegular = TEXT("{CHUNKNAME}/{PLATFORM}");
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")

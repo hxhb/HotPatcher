@@ -8,6 +8,58 @@
 
 #include "FVersionUpdaterManager.h"
 
+class SChildModWidget : public SCompoundWidget
+{
+public:
+	SLATE_BEGIN_ARGS(SChildModWidget):
+	_ModName(),
+	_CurrentVersion(),
+	_RemoteVersion(),
+	_Description(),
+	_URL(),
+	_UpdateURL(),
+	_bIsBuiltInMod()
+	{}
+	SLATE_ATTRIBUTE( FString, ModName )
+	SLATE_ATTRIBUTE( float, CurrentVersion )
+	SLATE_ATTRIBUTE( float, RemoteVersion )
+	SLATE_ATTRIBUTE( FString, Description )
+	SLATE_ATTRIBUTE( FString, URL )
+	SLATE_ATTRIBUTE( FString, UpdateURL )
+	SLATE_ATTRIBUTE( bool, bIsBuiltInMod )
+	SLATE_END_ARGS()
+	
+	FText GetModDisplay() const
+	{
+		return FText::FromString(
+			FString::Printf(TEXT("%s v%.1f"),*GetModName(),GetCurrentVersion())
+			);
+	};
+	
+public:
+	/**
+	* Construct the widget
+	*
+	* @param	InArgs			A declaration from which to construct the widget
+	*/
+	void Construct(const FArguments& InArgs);
+
+	float GetCurrentVersion()const { return CurrentVersion; }
+	float GetRemoteVersion()const { return RemoteVersion; }
+	FString GetModName()const { return ModName; };
+	
+private:
+	float CurrentVersion = 0;
+	FString ModName;
+	float RemoteVersion = 0;
+	FString Description;
+	FString URL;
+	FString UpdateURL;
+	bool bIsBuiltInMod = false;
+	TSharedPtr<SHorizontalBox> HorizontalBox;
+};
+
+
 class SVersionUpdaterWidget : public SCompoundWidget
 {
 
@@ -52,7 +104,8 @@ public:
 	virtual void SetToolUpdateInfo(const FString& ToolName,const FString& DeveloperName,const FString& DeveloperWebsite,const FString& UpdateWebsite);
 	int32 GetCurrentVersion()const { return CurrentVersion; }
 	int32 GetPatchVersion()const { return PatchVersion; }
-
+	bool AddChildMod(const FChildModDesc& ModDesc);
+	
 private:
 	void OnRemoveVersionFinished();
 	
@@ -64,5 +117,11 @@ private:
 	FString DeveloperName;
 	TSharedPtr<SHorizontalBox> UpdateInfoWidget;
 	FRemteVersionDescrible RemoteVersion;
+
+	// child mod
+	TSharedPtr<SButton> ExpanderButton;
+	TSharedPtr<SBorder> ChildModBorder;
+	TSharedPtr<SVerticalBox> ChildModBox;
+	TSharedPtr<SVerticalBox> PayBox;
 };
 

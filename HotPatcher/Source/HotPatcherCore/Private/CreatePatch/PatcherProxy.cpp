@@ -7,7 +7,7 @@
 #include "CreatePatch/HotPatcherContext.h"
 
 #include "FlibHotPatcherCoreHelper.h"
-#include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
+#include "ShaderLibUtils/FlibShaderCodeLibraryHelper.h"
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 
 // engine header

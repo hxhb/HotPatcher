@@ -10,15 +10,17 @@ using FRequestWidgetPtr = TFunction<TSharedRef<SHotPatcherWidgetInterface>(TShar
 
 struct HOTPATCHEREDITOR_API FHotPatcherActionDesc
 {
-	FHotPatcherActionDesc(FString InCategory,FString InActionName,FString InToolTip,FRequestWidgetPtr InRequestWidgetPtr,int32 InPriority = 0):
-	Category(InCategory),ActionName(InActionName),ToolTip(InToolTip),RequestWidgetPtr(InRequestWidgetPtr),Priority(InPriority){}
+	FHotPatcherActionDesc()=default;
+	FHotPatcherActionDesc(FString InCategory,FString InModName,FString InActionName,FString InToolTip,FRequestWidgetPtr InRequestWidgetPtr,int32 InPriority = 0):
+	Category(InCategory),ModName(InModName),ActionName(InActionName),ToolTip(InToolTip),RequestWidgetPtr(InRequestWidgetPtr),Priority(InPriority)
+	{}
 	
 	FString Category;
+	FString ModName;
 	FString ActionName;
 	FString ToolTip;
 	FRequestWidgetPtr RequestWidgetPtr;
 	int32 Priority = 0;
-	
 };
 
 struct HOTPATCHEREDITOR_API FHotPatcherAction
@@ -26,6 +28,7 @@ struct HOTPATCHEREDITOR_API FHotPatcherAction
 	FHotPatcherAction()=default;
 	FHotPatcherAction(
 		FName InCategory,
+		FName InModName,
 		const TAttribute<FText>& InActionName,
 		const TAttribute<FText>& InActionToolTip,
 		const FSlateIcon& InIcon,
@@ -33,16 +36,27 @@ struct HOTPATCHEREDITOR_API FHotPatcherAction
 		FRequestWidgetPtr InRequestWidget,
 		int32 InPriority
 		)
-	:Category(InCategory),ActionName(InActionName),ActionToolTip(InActionToolTip),Icon(InIcon),ActionCallback(InCallback),RequestWidget(InRequestWidget),Priority(InPriority){}
-
+	:Category(InCategory),ModName(InModName),ActionName(InActionName),ActionToolTip(InActionToolTip),Icon(InIcon),ActionCallback(InCallback),RequestWidget(InRequestWidget),Priority(InPriority){}
 	
 	FName Category;
+	FName ModName;
 	TAttribute<FText> ActionName;
 	TAttribute<FText> ActionToolTip;
 	FSlateIcon Icon;
 	TFunction<void(void)> ActionCallback;
 	FRequestWidgetPtr RequestWidget;
 	int32 Priority = 0;
+};
+
+struct HOTPATCHEREDITOR_API FHotPatcherModDesc
+{
+	FString ModName;
+	bool bIsBuiltInMod = false;
+	float CurrentVersion = 0.f;
+	FString Description;
+	FString URL;
+	FString UpdateURL;
+	TArray<FHotPatcherActionDesc> ModActions;
 };
 
 struct FHotPatcherCategory
@@ -71,7 +85,8 @@ struct HOTPATCHEREDITOR_API FHotPatcherActionManager
 	
 	void RegisteHotPatcherAction(const FString& Category,const FString& ActionName,const FHotPatcherAction& Action);
 	void RegisteHotPatcherAction(const FHotPatcherActionDesc& NewAction);
-	
+	void RegisteHotPatcherMod(const FHotPatcherModDesc& ModDesc);
+	void UnRegisteHotPatcherMod(const FHotPatcherModDesc& ModDesc);
 	void UnRegisteHotPatcherAction(const FString& Category, const FString& ActionName);
 
 	FHotPatcherActionDelegate OnHotPatcherActionRegisted;
@@ -84,13 +99,22 @@ struct HOTPATCHEREDITOR_API FHotPatcherActionManager
 	FHotPatcherActionsType& GetHotPatcherActions() { return HotPatcherActions; }
 	
 	FHotPatcherAction* GetTopActionByCategory(const FString CategoryName);
+
+	bool IsActiviteMod(const FString& ModName);
+	
+	bool IsSupportEditorAction(FString ActionName);
 	bool IsActiveAction(FString ActionName);
 
+	bool GetActionDescByName(const FString& ActionName,FHotPatcherActionDesc& Desc);
+	bool GetModDescByName(const FString& ModName,FHotPatcherModDesc& ModDesc);
 private:
 	virtual ~FHotPatcherActionManager(){}
 protected:
 	void SetupDefaultActions();
 	FHotPatcherActionsType HotPatcherActions;
 	FHotPatcherCategoryType HotPatcherCategorys;
-	
+	TMap<FString,FHotPatcherActionDesc> ActionsDesc;
+	TMap<FName,FHotPatcherModDesc> ModsDesc;
 };
+
+
