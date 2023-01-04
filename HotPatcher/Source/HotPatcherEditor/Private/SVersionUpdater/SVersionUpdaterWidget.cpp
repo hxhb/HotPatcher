@@ -300,7 +300,8 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 				[
 					SNew(SHorizontalBox)
 					+SHorizontalBox::Slot()
-					.VAlign(VAlign_Fill)
+					.VAlign(VAlign_Center)
+					.HAlign(HAlign_Fill)
 					.Padding(20,0,20,0)
 					[
 						SAssignNew(ChildModBox,SVerticalBox)
