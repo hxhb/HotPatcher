@@ -1,0 +1,30 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "ShaderPatcher",
+	"Description": "",
+	"Category": "Other",
+	"CreatedBy": "lipengzha",
+	"CreatedByURL": "https://imzlp.com/",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Plugins": [
+		{
+			"Name": "HotPatcher",
+			"Enabled": true
+		}
+	],
+	"Modules": [
+		{
+			"Name": "ShaderPatcherEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	]
+}
