@@ -33,6 +33,8 @@ void SChildModWidget::Construct(const FArguments& InArgs)
 	URL = InArgs._URL.Get();
 	UpdateURL = InArgs._UpdateURL.Get();
 	bIsBuiltInMod = InArgs._bIsBuiltInMod.Get();
+
+	bool bIsInstalled = GetCurrentVersion() > 0.f;
 	
 	ChildSlot
 	[
@@ -43,16 +45,20 @@ void SChildModWidget::Construct(const FArguments& InArgs)
 		.Padding(0.0f, 0.0f, 0.0f, 0.0f)
 		[
 			SNew(STextBlock)
-			.Text_Lambda([this]()->FText
+			.Text_Lambda([this,bIsInstalled]()->FText
 			{
 				FString DisplayStr;
 				if(bIsBuiltInMod)
 				{
 					DisplayStr = FString::Printf(TEXT("%s (Built-in Mod)"),*GetModName());
 				}
-				else
+				else if(bIsInstalled)
 				{
 					DisplayStr = FString::Printf(TEXT("%s v%.1f"),*GetModName(),GetCurrentVersion());
+				}
+				else if(GetRemoteVersion() > 0.f)
+				{
+					DisplayStr = FString::Printf(TEXT("%s v%.1f"),*GetModName(),GetRemoteVersion());
 				}
 				return UKismetTextLibrary::Conv_StringToText(DisplayStr);
 			})
@@ -75,7 +81,7 @@ void SChildModWidget::Construct(const FArguments& InArgs)
 	];
 
 	// Update Version
-	if(!bIsBuiltInMod && RemoteVersion > CurrentVersion)
+	if(!bIsBuiltInMod && bIsInstalled && RemoteVersion > CurrentVersion)
 	{
 		FString LaunchURL = UpdateURL;
 		if(LaunchURL.IsEmpty()){ LaunchURL = URL;}
@@ -176,9 +182,9 @@ void SChildModManageWidget::Construct(const FArguments& InArgs)
 				[
 					SNew(SHorizontalBox)
 					+SHorizontalBox::Slot()
-					.VAlign(VAlign_Center)
+					.VAlign(VAlign_Top)
 					.HAlign(HAlign_Fill)
-					.Padding(20,0,20,0)
+					.Padding(5,0,20,0)
 					[
 						SAssignNew(ChildModBox,SVerticalBox)
 					]
@@ -206,12 +212,10 @@ void SChildModManageWidget::Construct(const FArguments& InArgs)
 		PayBox->AddSlot()
 		.VAlign(VAlign_Center)
 		.HAlign(HAlign_Center)
-		.AutoHeight()
+		.FillHeight(1.0)
 		.Padding(0.f,2.f,0.f,0.f)
 		[
 			SNew(SBox)
-			.HeightOverride(100.f)
-			.WidthOverride(100.f)
 			[
 				SAssignNew(PayImage,SImage)
 				.Image(FVersionUpdaterStyle::GetBrush("Updater.WechatPay"))
@@ -232,6 +236,30 @@ void SChildModManageWidget::Construct(const FArguments& InArgs)
 	}
 }
 
+bool SChildModManageWidget::AddModCategory(const FString& Category,const TArray<FChildModDesc>& ModsDesc)
+{
+	bool bStatus = false;
+	if(ChildModBox.IsValid() && ModsDesc.Num())
+	{
+		ChildModBox.Get()->AddSlot()
+		.AutoHeight()
+		.VAlign(EVerticalAlignment::VAlign_Center)
+		.Padding(5.f,2.f,0.f,2.f)
+		[
+			SNew(STextBlock)
+			.ColorAndOpacity(FColor::Green)
+			.Text(UKismetTextLibrary::Conv_StringToText(Category))
+		];
+		
+		for(const auto& ModDesc:ModsDesc)
+		{
+			AddChildMod(ModDesc);
+		}
+		bStatus = true;
+	}
+	return bStatus;
+}
+
 bool SChildModManageWidget::AddChildMod(const FChildModDesc& ModDesc)
 {
 	bool bStatus = false;
@@ -240,7 +268,7 @@ bool SChildModManageWidget::AddChildMod(const FChildModDesc& ModDesc)
 		ChildModBox.Get()->AddSlot()
 		.AutoHeight()
 		.VAlign(EVerticalAlignment::VAlign_Center)
-		.Padding(0.f,2.f,0.f,2.f)
+		.Padding(15.f,2.f,0.f,2.f)
 		[
 			SNew(SChildModWidget)
 			.ModName(ModDesc.ModName)
@@ -498,43 +526,66 @@ void SVersionUpdaterWidget::OnRemoveVersionFinished()
 			UpdateInfoWidget->SetVisibility(EVisibility::Visible);
 		}
 		RemoteVersion = *ToolRemoteVersion;
-		
-		auto CreateChildMod = [this](const TMap<FName,FChildModDesc>& ModsDesc,TFunction<bool(const FChildModDesc&)> Condition = [](const FChildModDesc&)->bool{return true;})
+
+		TArray<FChildModDesc> RemoteOfficalMods;
+		for(const auto& ModDesc:RemoteVersion.ModsDesc)
 		{
+			RemoteOfficalMods.Add(ModDesc.Value);
+		}
+
+		auto GetChildModsByCondition = [this](const TArray<FChildModDesc>& ModsDesc,TFunction<bool(const FChildModDesc&)> Condition = [](const FChildModDesc&)->bool{return true;}) ->TArray<FChildModDesc>
+		{
+			TArray<FChildModDesc> ChildMods;
 			for(const auto& ModDesc:ModsDesc)
 			{
-				if(FVersionUpdaterManager::Get().ModIsActivteCallback &&
-					FVersionUpdaterManager::Get().ModIsActivteCallback(ModDesc.Value.ModName))
+				if(Condition && Condition(ModDesc))
 				{
-					if(Condition && Condition(ModDesc.Value))
-					{
-						ChildModManageWidget->AddChildMod(ModDesc.Value);
-					}
+					ChildMods.Add(ModDesc);
 				}
 			}
+			return ChildMods;
 		};
-		// Built-in Mods
-		CreateChildMod(RemoteVersion.ModsDesc,[](const FChildModDesc& Desc)->bool { return Desc.bIsBuiltInMod;});
-		// Not Built-in Mods
-		CreateChildMod(RemoteVersion.ModsDesc,[](const FChildModDesc& Desc)->bool { return !Desc.bIsBuiltInMod;});
-		// local 3rd mods
-		auto GetLocalModsLabme = [this]()->TMap<FName,FChildModDesc>
+		
+		auto DiffMods = [](const TArray<FChildModDesc>& L,const TArray<FChildModDesc>& R,bool bReverse = true)->TArray<FChildModDesc>
 		{
-			TMap<FName,FChildModDesc> LocalModsMap;
-			if(FVersionUpdaterManager::Get().RequestLocalRegistedMods)
+			TArray<FChildModDesc> ResultMods;
+			TArray<FChildModDesc> LocalMods = FVersionUpdaterManager::Get().RequestLocalRegistedMods();
+			for(const auto& LMod:L)
 			{
-				TArray<FChildModDesc> LocalMods = FVersionUpdaterManager::Get().RequestLocalRegistedMods();
-				for(const auto& LocalMod:LocalMods)
+				bool bContainInR  = false;
+				for(const auto& RMod:R)
 				{
-					if(!RemoteVersion.ModsDesc.Contains(*LocalMod.ModName))
-					{
-						LocalModsMap.Add(*LocalMod.ModName,LocalMod);
-					}
+					if(RMod.ModName.Equals(LMod.ModName)){ bContainInR = true;break; }
 				}
+				if(bReverse)
+				{
+					bContainInR = !bContainInR;
+				}
+				if(bContainInR) { ResultMods.Add(LMod); }
 			}
-			return LocalModsMap;
+			return ResultMods;
 		};
-		CreateChildMod(GetLocalModsLabme());
+		
+		TArray<FChildModDesc> InstalledLocalMods;
+		if(FVersionUpdaterManager::Get().RequestLocalRegistedMods)
+		{
+			InstalledLocalMods = FVersionUpdaterManager::Get().RequestLocalRegistedMods();
+		}
+		
+		TArray<FChildModDesc> BuiltInMods = GetChildModsByCondition(InstalledLocalMods,[](const FChildModDesc& Desc)->bool { return Desc.bIsBuiltInMod;});
+		TArray<FChildModDesc> NotBuiltInMods = GetChildModsByCondition(InstalledLocalMods,[](const FChildModDesc& Desc)->bool { return !Desc.bIsBuiltInMod;});
+		TArray<FChildModDesc> ThirdPartyMods = DiffMods(NotBuiltInMods,RemoteOfficalMods);
+		TArray<FChildModDesc> InstalledOfficalMods = DiffMods(NotBuiltInMods,ThirdPartyMods);
+		TArray<FChildModDesc> NotInstalledOfficalMods = DiffMods(RemoteOfficalMods,InstalledLocalMods);
+		
+		// Built-in Mods
+		ChildModManageWidget->AddModCategory(TEXT("Built-In"),DiffMods(RemoteOfficalMods,BuiltInMods,false));
+		// Not Installed Offical Mod
+		ChildModManageWidget->AddModCategory(TEXT("Installed"),DiffMods(RemoteOfficalMods,InstalledOfficalMods,false));
+		// local 3rd mods
+		ChildModManageWidget->AddModCategory(TEXT("ThirdParty"),ThirdPartyMods);
+		// Not-Installed Offical Mod
+		ChildModManageWidget->AddModCategory(TEXT("Not-Installed (Professional Mods)"),NotInstalledOfficalMods);
 	}
 }
 

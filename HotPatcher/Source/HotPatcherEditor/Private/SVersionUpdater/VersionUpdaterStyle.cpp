@@ -41,7 +41,7 @@ const FVector2D Updater_Icon12x12(12.0f, 12.0f);
 const FVector2D Updater_Icon16x16(16.0f, 16.0f);
 const FVector2D Updater_Icon20x20(20.0f, 20.0f);
 const FVector2D Updater_Icon40x40(40.0f, 40.0f);
-const FVector2D Updater_IconPay(100.0f, 100.0f);
+const FVector2D Updater_IconPay(120.0f, 120.0f);
 
 TSharedRef< FSlateStyleSet > FVersionUpdaterStyle::Create(const FString& Name)
 {

@@ -72,6 +72,7 @@ public:
 
 public:
 	void Construct(const FArguments& InArgs);
+	bool AddModCategory(const FString& Category,const TArray<FChildModDesc>& ModsDesc);
 	bool AddChildMod(const FChildModDesc& ModDesc);
 	bool AddPayment(const FString& Name,const FString& ImageBrushName);
 	void SetPaymentFocus(const FString& Name);
