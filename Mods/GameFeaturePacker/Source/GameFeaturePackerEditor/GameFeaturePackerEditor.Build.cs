@@ -58,6 +58,14 @@ public class GameFeaturePackerEditor : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
+		System.Func<string, bool,bool> AddPublicDefinitions = (string MacroName,bool bEnable) =>
+		{
+			PublicDefinitions.Add(string.Format("{0}={1}",MacroName, bEnable ? 1 : 0));
+			return true;
+		};
+		
+		bool bEnableGameFeature = false;
+		AddPublicDefinitions("ENGINE_GAME_FEATURE", bEnableGameFeature || (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 26));
 		
 		PublicDefinitions.AddRange(new string[]
 		{
