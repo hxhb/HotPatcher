@@ -1,4 +1,6 @@
 #include "SGameFeaturePackageWidget.h"
+
+#include "Editor.h"
 #include "FlibPatchParserHelper.h"
 #include "FlibHotPatcherCoreHelper.h"
 #include "FlibHotPatcherEditorHelper.h"

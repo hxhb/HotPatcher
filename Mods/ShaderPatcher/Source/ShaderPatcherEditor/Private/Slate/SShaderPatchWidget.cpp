@@ -8,8 +8,12 @@
 #include "RHI.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "ShaderPatch/ShaderPatchProxy.h"
-
+#include "Misc/EngineVersionComparison.h"
 #define LOCTEXT_NAMESPACE "SHotPatcherShaderPatch"
+
+#if !UE_VERSION_OLDER_THAN(5,1,0)
+	typedef FAppStyle FEditorStyle;
+#endif
 
 void SShaderPatchWidget::Construct(const FArguments& InArgs,
 	TSharedPtr<FHotPatcherContextBase> InContext)

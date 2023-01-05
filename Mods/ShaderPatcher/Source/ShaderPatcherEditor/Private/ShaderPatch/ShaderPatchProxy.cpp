@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "ShaderPatch/ShaderPatchProxy.h"
 #include "FlibHotPatcherCoreHelper.h"
-#include "FlibShaderCodeLibraryHelper.h"
+#include "ShaderLibUtils/FlibShaderCodeLibraryHelper.h"
 #include "ShaderPatch/FlibShaderPatchHelper.h"
 #include "ShaderPatcherEditor.h"
 

@@ -15,6 +15,11 @@
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Interfaces/IPluginManager.h"
+#include "Misc/EngineVersionComparison.h"
+
+#if !UE_VERSION_OLDER_THAN(5,1,0)
+	typedef FAppStyle FEditorStyle;
+#endif
 
 #define LOCTEXT_NAMESPACE "VersionUpdaterWidget"
 
