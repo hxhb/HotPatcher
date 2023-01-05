@@ -116,6 +116,191 @@ void SChildModWidget::Construct(const FArguments& InArgs)
 	}
 }
 
+void SChildModManageWidget::Construct(const FArguments& InArgs)
+{
+	ToolName = InArgs._ToolName.Get();
+	bShowPayInfo = InArgs._bShowPayInfo.Get();
+	
+	ChildSlot
+	[
+			SNew(SVerticalBox)
+			+SVerticalBox::Slot()
+			.VAlign(VAlign_Center)
+			.AutoHeight()
+			[
+				SAssignNew(ExpanderButton,SButton)
+				.ButtonStyle(FEditorStyle::Get(), "NoBorder")
+				.HAlign(HAlign_Center)
+				.ContentPadding(2)
+				.OnClicked_Lambda([this]()->FReply
+				{
+					EVisibility ChildModVisibility = ChildModBorder->GetVisibility();
+					if (ChildModVisibility == EVisibility::Visible)
+					{
+						ChildModBorder->SetVisibility(EVisibility::Collapsed);
+					}
+					if (ChildModVisibility == EVisibility::Collapsed)
+					{
+						ChildModBorder->SetVisibility(EVisibility::Visible);
+					}
+							
+					return FReply::Handled();
+				})
+				.ToolTipText_Lambda([this]()->FText { return UKismetTextLibrary::Conv_StringToText(FString::Printf(TEXT("%s Mods"),*ToolName)); })
+				[
+					SNew(SImage)
+					.Image_Lambda([this]()->const FSlateBrush*
+					{
+						if( ExpanderButton->IsHovered() )
+						{
+							return FEditorStyle::GetBrush("DetailsView.PulldownArrow.Down.Hovered");
+						}
+						else
+						{
+							return FEditorStyle::GetBrush("DetailsView.PulldownArrow.Down");
+						}
+					})
+				]
+			]
+			+SVerticalBox::Slot()
+			.VAlign(VAlign_Center)
+			.AutoHeight()
+			[
+				SAssignNew(ChildModBorder,SBorder)
+				.BorderImage(FVersionUpdaterStyle::GetBrush("Updater.GroupBorder"))
+				[
+					SNew(SHorizontalBox)
+					+SHorizontalBox::Slot()
+					.VAlign(VAlign_Center)
+					.HAlign(HAlign_Fill)
+					.Padding(20,0,20,0)
+					[
+						SAssignNew(ChildModBox,SVerticalBox)
+					]
+					+SHorizontalBox::Slot()
+					.VAlign(VAlign_Center)
+					.Padding(20,0,20,0)
+					.AutoWidth()
+					[
+						SAssignNew(PayBox,SVerticalBox)
+					]
+				]
+			]
+	];
+	if(bShowPayInfo)
+	{
+		PayBox->AddSlot()
+		.VAlign(VAlign_Center)
+		.HAlign(HAlign_Center)
+		.AutoHeight()
+		.Padding(0.f,2.f,0.f,2.f)
+		[
+			SNew(STextBlock)
+			.Text_Lambda([]()->FText{ return UKismetTextLibrary::Conv_StringToText(TEXT("Help me make HotPatcher better.")); })
+		];
+		PayBox->AddSlot()
+		.VAlign(VAlign_Center)
+		.HAlign(HAlign_Center)
+		.AutoHeight()
+		.Padding(0.f,2.f,0.f,0.f)
+		[
+			SNew(SBox)
+			.HeightOverride(100.f)
+			.WidthOverride(100.f)
+			[
+				SAssignNew(PayImage,SImage)
+				.Image(FVersionUpdaterStyle::GetBrush("Updater.WechatPay"))
+			]
+		];
+		
+		PayBox->AddSlot()
+		.VAlign(VAlign_Center)
+		.HAlign(HAlign_Center)
+		.AutoHeight()
+		.Padding(0.f,2.f,0.f,0.f)
+		[
+			SAssignNew(PaymentButtonWrapper,SHorizontalBox)
+		];
+		AddPayment(TEXT("WechatPay"),"Updater.WechatPay");
+		AddPayment(TEXT("AliPay"),"Updater.AliPay");
+		SetPaymentFocus(TEXT("WechatPay"));
+	}
+}
+
+bool SChildModManageWidget::AddChildMod(const FChildModDesc& ModDesc)
+{
+	bool bStatus = false;
+	if(ChildModBox.IsValid())
+	{
+		ChildModBox.Get()->AddSlot()
+		.AutoHeight()
+		.VAlign(EVerticalAlignment::VAlign_Center)
+		.Padding(0.f,2.f,0.f,2.f)
+		[
+			SNew(SChildModWidget)
+			.ModName(ModDesc.ModName)
+			.CurrentVersion(ModDesc.CurrentVersion)
+			.RemoteVersion(ModDesc.RemoteVersion)
+			.Description(ModDesc.Description)
+			.URL(ModDesc.URL)
+			.UpdateURL(ModDesc.UpdateURL)
+			.bIsBuiltInMod(ModDesc.bIsBuiltInMod)
+		];
+		bStatus = true;
+	}
+	return bStatus;
+}
+
+bool SChildModManageWidget::AddPayment(const FString& Name, const FString& ImageBrushName)
+{
+	bool bStatus = false;
+	if(PaymentButtonWrapper.IsValid())
+	{
+		TSharedPtr<STextBlock> TmpPayTextBlock = nullptr;
+		SChildModManageWidget::FPaymentInfo PaymentInfo;
+		PaymentInfo.Name = Name;
+		PaymentInfo.BrushName = ImageBrushName;
+		
+		PaymentButtonWrapper->AddSlot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		.AutoWidth()
+		[
+			SAssignNew(PaymentInfo.Button,SButton)
+			.ButtonColorAndOpacity(FLinearColor::Transparent)
+			.OnClicked_Lambda([this,Name]()->FReply
+			{
+				SetPaymentFocus(Name);
+				return FReply::Handled();
+			})
+			[
+				SAssignNew(PaymentInfo.TextBlock,STextBlock)
+				.ColorAndOpacity(FLinearColor::White)
+				.Text_Lambda([Name]()->FText{ return UKismetTextLibrary::Conv_StringToText(Name); })
+			]
+		];
+		
+		PaymentInfoMap.Add(Name,PaymentInfo);
+		bStatus = true;
+	}
+	return bStatus;
+}
+
+void SChildModManageWidget::SetPaymentFocus(const FString& Name)
+{
+	for(const auto& PaymentInfo:PaymentInfoMap)
+	{
+		PaymentInfo.Value.TextBlock->SetColorAndOpacity(FLinearColor::White);
+	}
+
+	if(PaymentInfoMap.Contains(Name))
+	{
+		SChildModManageWidget::FPaymentInfo& FocusPaymentInfo = *PaymentInfoMap.Find(Name);
+		FocusPaymentInfo.TextBlock->SetColorAndOpacity(FColor::Orange);
+		PayImage->SetImage(FVersionUpdaterStyle::GetBrush(*FocusPaymentInfo.BrushName));
+	}
+}
+
 void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 {
 	static bool GBrushInited = false;
@@ -134,6 +319,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 		);
 	CurrentVersion = InArgs._CurrentVersion.Get();
 	PatchVersion = InArgs._PatchVersion.Get();
+	bool bhPayment = FPaths::FileExists(IPluginManager::Get().FindPlugin(ToolName)->GetBaseDir() / TEXT("Resources/hPayment.txt"));
 	
 	ChildSlot
 	[
@@ -251,101 +437,9 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 		.Padding(0,4,0,4)
 		.AutoHeight()
 		[
-			
-			SNew(SVerticalBox)
-			+SVerticalBox::Slot()
-			.VAlign(VAlign_Center)
-			.AutoHeight()
-			[
-				SAssignNew(ExpanderButton,SButton)
-				.ButtonStyle(FEditorStyle::Get(), "NoBorder")
-				.HAlign(HAlign_Center)
-				.ContentPadding(2)
-				.OnClicked_Lambda([this]()->FReply
-				{
-					EVisibility ChildModVisibility = ChildModBorder->GetVisibility();
-					if (ChildModVisibility == EVisibility::Visible)
-					{
-						ChildModBorder->SetVisibility(EVisibility::Collapsed);
-					}
-					if (ChildModVisibility == EVisibility::Collapsed)
-					{
-						ChildModBorder->SetVisibility(EVisibility::Visible);
-					}
-							
-					return FReply::Handled();
-				})
-				.ToolTipText_Lambda([this]()->FText { return UKismetTextLibrary::Conv_StringToText(FString::Printf(TEXT("%s Mods"),*ToolName)); })
-				[
-					SNew(SImage)
-					.Image_Lambda([this]()->const FSlateBrush*
-					{
-						if( ExpanderButton->IsHovered() )
-						{
-							return FEditorStyle::GetBrush("DetailsView.PulldownArrow.Down.Hovered");
-						}
-						else
-						{
-							return FEditorStyle::GetBrush("DetailsView.PulldownArrow.Down");
-						}
-					})
-				]
-			]
-			+SVerticalBox::Slot()
-			.VAlign(VAlign_Center)
-			.AutoHeight()
-			[
-				SAssignNew(ChildModBorder,SBorder)
-				.BorderImage(FVersionUpdaterStyle::GetBrush("Updater.GroupBorder"))
-				[
-					SNew(SHorizontalBox)
-					+SHorizontalBox::Slot()
-					.VAlign(VAlign_Center)
-					.HAlign(HAlign_Fill)
-					.Padding(20,0,20,0)
-					[
-						SAssignNew(ChildModBox,SVerticalBox)
-					]
-					+SHorizontalBox::Slot()
-					.VAlign(VAlign_Center)
-					.Padding(20,0,20,0)
-					.AutoWidth()
-					[
-						SAssignNew(PayBox,SVerticalBox)
-						+SVerticalBox::Slot()
-						.VAlign(VAlign_Center)
-						.HAlign(HAlign_Center)
-						.AutoHeight()
-						.Padding(0.f,2.f,0.f,2.f)
-						[
-							SNew(STextBlock)
-							.Text_Lambda([]()->FText{ return UKismetTextLibrary::Conv_StringToText(TEXT("Help me make HotPatcher better.")); })
-						]
-						+SVerticalBox::Slot()
-						.VAlign(VAlign_Center)
-						.HAlign(HAlign_Center)
-						.AutoHeight()
-						[
-							SNew(SBox)
-							.HeightOverride(100.f)
-							.WidthOverride(100.f)
-							[
-								SNew(SImage)
-								.Image(FVersionUpdaterStyle::GetBrush("Updater.WechatPay"))
-							]
-						]
-						+SVerticalBox::Slot()
-						.VAlign(VAlign_Center)
-						.HAlign(HAlign_Center)
-						.AutoHeight()
-						.Padding(0.f,2.f,0.f,2.f)
-						[
-							SNew(STextBlock)
-							.Text_Lambda([]()->FText{ return UKismetTextLibrary::Conv_StringToText(TEXT("Wechat Pay")); })
-						]
-					]
-				]
-			]
+			SAssignNew(ChildModManageWidget,SChildModManageWidget)
+			.ToolName(ToolName)
+			.bShowPayInfo(!bhPayment)
 		]
 	];
 	if(!FVersionUpdaterManager::Get().IsRequestFinished())
@@ -360,14 +454,6 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 	else
 	{
 		OnRemoveVersionFinished();
-	}
-
-	FString PluginResourceDir = IPluginManager::Get().FindPlugin(ToolName)->GetBaseDir() / TEXT("Resources");
-	if(FPaths::DirectoryExists(PluginResourceDir) &&
-		FPaths::FileExists(FPaths::Combine(PluginResourceDir,TEXT("hidepayinfo.txt")))
-	)
-	{
-		PayBox->SetVisibility(EVisibility::Hidden);
 	}
 	
 	FVersionUpdaterManager::Get().Update();
@@ -392,29 +478,6 @@ void SVersionUpdaterWidget::SetToolUpdateInfo(const FString& InToolName, const F
 	UpdateWebsite = InUpdateWebsite;
 }
 
-bool SVersionUpdaterWidget::AddChildMod(const FChildModDesc& ModDesc)
-{
-	bool bStatus = false;
-	if(ChildModBox.IsValid())
-	{
-		ChildModBox.Get()->AddSlot()
-		.AutoHeight()
-		.VAlign(EVerticalAlignment::VAlign_Center)
-		.Padding(0.f,2.f,0.f,2.f)
-		[
-			SNew(SChildModWidget)
-			.ModName(ModDesc.ModName)
-			.CurrentVersion(ModDesc.CurrentVersion)
-			.RemoteVersion(ModDesc.RemoteVersion)
-			.Description(ModDesc.Description)
-			.URL(ModDesc.URL)
-			.UpdateURL(ModDesc.UpdateURL)
-			.bIsBuiltInMod(ModDesc.bIsBuiltInMod)
-		];
-		bStatus = true;
-	}
-	return bStatus;
-}
 
 void SVersionUpdaterWidget::OnRemoveVersionFinished()
 {
@@ -431,36 +494,42 @@ void SVersionUpdaterWidget::OnRemoveVersionFinished()
 		}
 		RemoteVersion = *ToolRemoteVersion;
 		
-		auto CreateChildMod = [this](const TMap<FName,FChildModDesc>& ModsDesc,bool bBuiltInMod)
+		auto CreateChildMod = [this](const TMap<FName,FChildModDesc>& ModsDesc,TFunction<bool(const FChildModDesc&)> Condition = [](const FChildModDesc&)->bool{return true;})
 		{
 			for(const auto& ModDesc:ModsDesc)
 			{
 				if(FVersionUpdaterManager::Get().ModIsActivteCallback &&
 					FVersionUpdaterManager::Get().ModIsActivteCallback(ModDesc.Value.ModName))
 				{
-					if(ModDesc.Value.bIsBuiltInMod == bBuiltInMod)
+					if(Condition && Condition(ModDesc.Value))
 					{
-						AddChildMod(ModDesc.Value);
+						ChildModManageWidget->AddChildMod(ModDesc.Value);
 					}
 				}
 			}
 		};
 		// Built-in Mods
-		CreateChildMod(RemoteVersion.ModsDesc,true);
+		CreateChildMod(RemoteVersion.ModsDesc,[](const FChildModDesc& Desc)->bool { return Desc.bIsBuiltInMod;});
 		// Not Built-in Mods
-		CreateChildMod(RemoteVersion.ModsDesc,false);
+		CreateChildMod(RemoteVersion.ModsDesc,[](const FChildModDesc& Desc)->bool { return !Desc.bIsBuiltInMod;});
 		// local 3rd mods
-		if(FVersionUpdaterManager::Get().RequestLocalRegistedMods)
+		auto GetLocalModsLabme = [this]()->TMap<FName,FChildModDesc>
 		{
-			TArray<FChildModDesc> LocalMods = FVersionUpdaterManager::Get().RequestLocalRegistedMods();
-			for(const auto& LocalMod:LocalMods)
+			TMap<FName,FChildModDesc> LocalModsMap;
+			if(FVersionUpdaterManager::Get().RequestLocalRegistedMods)
 			{
-				if(!RemoteVersion.ModsDesc.Contains(*LocalMod.ModName))
+				TArray<FChildModDesc> LocalMods = FVersionUpdaterManager::Get().RequestLocalRegistedMods();
+				for(const auto& LocalMod:LocalMods)
 				{
-					AddChildMod(LocalMod);
+					if(!RemoteVersion.ModsDesc.Contains(*LocalMod.ModName))
+					{
+						LocalModsMap.Add(*LocalMod.ModName,LocalMod);
+					}
 				}
 			}
-		}
+			return LocalModsMap;
+		};
+		CreateChildMod(GetLocalModsLabme());
 	}
 }
 

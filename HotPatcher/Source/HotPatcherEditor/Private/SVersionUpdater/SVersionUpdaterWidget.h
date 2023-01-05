@@ -59,6 +59,45 @@ private:
 	TSharedPtr<SHorizontalBox> HorizontalBox;
 };
 
+class SChildModManageWidget : public SCompoundWidget
+{
+public:
+	SLATE_BEGIN_ARGS(SChildModManageWidget):
+	_ToolName(),
+	_bShowPayInfo()
+	{}
+	SLATE_ATTRIBUTE( FString, ToolName )
+	SLATE_ATTRIBUTE( bool, bShowPayInfo )
+	SLATE_END_ARGS()
+
+public:
+	void Construct(const FArguments& InArgs);
+	bool AddChildMod(const FChildModDesc& ModDesc);
+	bool AddPayment(const FString& Name,const FString& ImageBrushName);
+	void SetPaymentFocus(const FString& Name);
+	
+protected:
+	FString ToolName;
+	bool bShowPayInfo = true;
+	
+	// child mod
+	TSharedPtr<SButton> ExpanderButton;
+	TSharedPtr<SBorder> ChildModBorder;
+	TSharedPtr<SVerticalBox> ChildModBox;
+	// payment
+	TSharedPtr<SVerticalBox> PayBox;
+	TSharedPtr<SHorizontalBox> PaymentButtonWrapper;
+	TSharedPtr<SImage> PayImage;
+
+	struct FPaymentInfo
+	{
+		FString Name;
+		FString BrushName;
+		TSharedPtr<SButton> Button;
+		TSharedPtr<STextBlock> TextBlock;
+	};
+	TMap<FString,FPaymentInfo> PaymentInfoMap;
+};
 
 class SVersionUpdaterWidget : public SCompoundWidget
 {
@@ -104,7 +143,7 @@ public:
 	virtual void SetToolUpdateInfo(const FString& ToolName,const FString& DeveloperName,const FString& DeveloperWebsite,const FString& UpdateWebsite);
 	int32 GetCurrentVersion()const { return CurrentVersion; }
 	int32 GetPatchVersion()const { return PatchVersion; }
-	bool AddChildMod(const FChildModDesc& ModDesc);
+	
 	
 private:
 	void OnRemoveVersionFinished();
@@ -117,11 +156,6 @@ private:
 	FString DeveloperName;
 	TSharedPtr<SHorizontalBox> UpdateInfoWidget;
 	FRemteVersionDescrible RemoteVersion;
-
-	// child mod
-	TSharedPtr<SButton> ExpanderButton;
-	TSharedPtr<SBorder> ChildModBorder;
-	TSharedPtr<SVerticalBox> ChildModBox;
-	TSharedPtr<SVerticalBox> PayBox;
+	TSharedPtr<SChildModManageWidget> ChildModManageWidget;
 };
 
