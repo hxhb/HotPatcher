@@ -184,13 +184,13 @@ void SChildModManageWidget::Construct(const FArguments& InArgs)
 					+SHorizontalBox::Slot()
 					.VAlign(VAlign_Top)
 					.HAlign(HAlign_Fill)
-					.Padding(5,0,20,0)
+					.Padding(5,4,20,4)
 					[
 						SAssignNew(ChildModBox,SVerticalBox)
 					]
 					+SHorizontalBox::Slot()
 					.VAlign(VAlign_Center)
-					.Padding(20,0,20,0)
+					.Padding(20,4,20,4)
 					.AutoWidth()
 					[
 						SAssignNew(PayBox,SVerticalBox)
