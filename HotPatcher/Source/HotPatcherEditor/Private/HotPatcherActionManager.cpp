@@ -222,6 +222,10 @@ void FHotPatcherActionManager::SetupDefaultActions()
 	HotPatcherCoreMod.ModName = HOTPATCHEER_CORE_MODENAME;
 	HotPatcherCoreMod.bIsBuiltInMod = true;
 	HotPatcherCoreMod.CurrentVersion = 1.0;
+	HotPatcherCoreMod.Description = TEXT("Unreal Engine Asset Manage and Package Solution.");
+	HotPatcherCoreMod.URL = TEXT("https://imzlp.com/posts/17590/");
+	HotPatcherCoreMod.UpdateURL = TEXT("https://github.com/hxhb/HotPatcher");
+	
 	HotPatcherCoreMod.ModActions.Emplace(
 		TEXT("Patcher"),HOTPATCHEER_CORE_MODENAME,TEXT("ByRelease"), TEXT("Export Release ALL Asset Dependencies."),
 		CREATE_ACTION_WIDGET_LAMBDA(SHotPatcherReleaseWidget,TEXT("ByRelease")),

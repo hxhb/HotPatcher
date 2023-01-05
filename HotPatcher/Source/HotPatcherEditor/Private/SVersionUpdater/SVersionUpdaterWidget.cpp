@@ -353,6 +353,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 	CurrentVersion = InArgs._CurrentVersion.Get();
 	PatchVersion = InArgs._PatchVersion.Get();
 	bool bhPayment = FPaths::FileExists(IPluginManager::Get().FindPlugin(ToolName)->GetBaseDir() / TEXT("Resources/hPayment.txt"));
+	bool bhMods = FPaths::FileExists(IPluginManager::Get().FindPlugin(ToolName)->GetBaseDir() / TEXT("Resources/hMods.txt"));
 	
 	ChildSlot
 	[
@@ -473,6 +474,11 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 			SAssignNew(ChildModManageWidget,SChildModManageWidget)
 			.ToolName(ToolName)
 			.bShowPayInfo(!bhPayment)
+			.Visibility_Lambda([bhMods]()->EVisibility{
+				EVisibility Visibility = EVisibility::Visible;
+				if(bhMods) { Visibility = EVisibility::Collapsed; }
+				return Visibility;
+			})
 		]
 	];
 	if(!FVersionUpdaterManager::Get().IsRequestFinished())

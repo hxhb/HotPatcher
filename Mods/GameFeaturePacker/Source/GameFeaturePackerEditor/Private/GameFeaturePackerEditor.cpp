@@ -21,7 +21,9 @@ FHotPatcherModDesc FGameFeaturePackerEditorModule::GetModDesc() const
 	TmpModDesc.ModName = MOD_NAME;
 	TmpModDesc.CurrentVersion = MOD_VERSION;
 	TmpModDesc.bIsBuiltInMod = IS_INTERNAL_MODE;
-	
+	TmpModDesc.Description = TEXT("Plugin/GameFeature Packager");
+	TmpModDesc.URL = TEXT("https://imzlp.com/posts/17658/");
+	TmpModDesc.UpdateURL = TEXT("https://github.com/hxhb/HotPatcher/Mods/GameFeaturePacker");
 	TArray<FHotPatcherActionDesc> ActionDescs;
 	TmpModDesc.ModActions.Emplace(
 		TEXT("Patcher"),MOD_NAME,TEXT("ByGameFeature"), TEXT("Create an Game Feature Package."),
