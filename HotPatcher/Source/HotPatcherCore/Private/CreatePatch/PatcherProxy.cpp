@@ -1030,7 +1030,7 @@ namespace PatchWorker
 				
 			// // Update SlowTask Progress
 			{
-				FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Pak list of Chunk {0}."), FText::FromString(Chunk.ChunkName));
+				FText Dialog = FText::Format(NSLOCTEXT("ExportPatch_GeneratedPakList", "GeneratedPak", "Generating Pak list of Chunk {0}."), FText::FromString(Chunk.ChunkName));
 				Context.OnPaking.Broadcast(TEXT("GeneratedPak"),*Dialog.ToString());
 				Context.UnrealPakSlowTask->EnterProgressFrame(1.0, Dialog);
 			}
@@ -1094,7 +1094,7 @@ namespace PatchWorker
 									Context.OnPaking.Broadcast(TEXT("SavedPakFile"),Msg);
 								}else
 								{
-									FText Msg = LOCTEXT("SavedPakFileMsg", "Successed to Package the patch as Pak.");
+									FText Msg = LOCTEXT("SavedPakFileMsg_PackageSuccessed", "Successed to Package the patch as Pak.");
 									FHotPatcherDelegates::Get().GetNotifyFileGenerated().Broadcast(Msg,PakSavePath);
 								}
 								FPakFileInfo CurrentPakInfo;
@@ -1148,7 +1148,7 @@ namespace PatchWorker
 				
 			// // Update SlowTask Progress
 			{
-				FText Dialog = FText::Format(NSLOCTEXT("ExportPatch", "GeneratedPak", "Generating Io Store list of Chunk {0}."), FText::FromString(Chunk.ChunkName));
+				FText Dialog = FText::Format(NSLOCTEXT("ExportPatch_GeneratedPak", "GeneratedPak", "Generating Io Store list of Chunk {0}."), FText::FromString(Chunk.ChunkName));
 				Context.OnPaking.Broadcast(TEXT("GeneratedIoStore"),*Dialog.ToString());
 				Context.UnrealPakSlowTask->EnterProgressFrame(1.0, Dialog);
 			}
@@ -1406,7 +1406,7 @@ namespace PatchWorker
 						Context.OnPaking.Broadcast(TEXT("SavedPakFileMsg"),Msg);
 					}else
 					{
-						FText Msg = LOCTEXT("SavedPakFileMsg", "Successed to Export the Pak File info.");
+						FText Msg = LOCTEXT("SavedPakFileMsg_ExportSuccessed", "Successed to Export the Pak File info.");
 						FHotPatcherDelegates::Get().GetNotifyFileGenerated().Broadcast(Msg, SavePakFilesPath);
 					}
 				}
