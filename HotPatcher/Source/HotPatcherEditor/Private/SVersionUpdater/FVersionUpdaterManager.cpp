@@ -113,12 +113,20 @@ void FVersionUpdaterManager::OnRequestComplete(FHttpRequestPtr RequestPtr, FHttp
 								const TSharedPtr<FJsonObject>& ModDescJsonObject = ModDescJsonValue.Get()->AsObject();
 								FChildModDesc ModDesc;
 								ModDescJsonObject->TryGetStringField(TEXT("ModName"),ModDesc.ModName);
-								
-								FString Version;
-								if(ModDescJsonObject->TryGetStringField(TEXT("Version"),Version))
+
+								auto ReadFloatValue = [](const TSharedPtr<FJsonObject>& ModDescJsonObject,const FString& Name)->float
 								{
-									ModDesc.RemoteVersion = UKismetStringLibrary::Conv_StringToFloat(Version);
-								}
+									float Result = 0.f;
+									FString ValueStr;
+									if(ModDescJsonObject->TryGetStringField(Name,ValueStr))
+									{
+										Result = UKismetStringLibrary::Conv_StringToFloat(ValueStr);
+									}
+									return Result;
+								};
+								
+								ModDesc.RemoteVersion = ReadFloatValue(ModDescJsonObject,TEXT("Version"));
+								ModDesc.MinToolVersion = ReadFloatValue(ModDescJsonObject,TEXT("MinToolVersion"));
 								ModDescJsonObject->TryGetStringField(TEXT("Desc"),ModDesc.Description);
 								ModDescJsonObject->TryGetStringField(TEXT("URL"),ModDesc.URL);
 								ModDescJsonObject->TryGetStringField(TEXT("UpdateURL"),ModDesc.UpdateURL);

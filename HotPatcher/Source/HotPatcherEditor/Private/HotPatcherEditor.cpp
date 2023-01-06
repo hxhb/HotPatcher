@@ -46,6 +46,8 @@
 
 static const FName HotPatcherTabName("HotPatcher");
 
+DEFINE_LOG_CATEGORY(LogHotPatcherEdotor)
+
 #define LOCTEXT_NAMESPACE "FHotPatcherEditorModule"
 
 

@@ -1,11 +1,10 @@
 #include "HotPatcherActionManager.h"
-
 #include "HotPatcherCore.h"
+#include "HotPatcherEditor.h"
+#include "Kismet/KismetTextLibrary.h"
 #include "CreatePatch/SHotPatcherPatchWidget.h"
 #include "CreatePatch/SHotPatcherReleaseWidget.h"
-
 #include "Cooker/OriginalCooker/SOriginalCookWidget.h"
-#include "Kismet/KismetTextLibrary.h"
 #include "SVersionUpdater/FVersionUpdaterManager.h"
 
 #define LOCTEXT_NAMESPACE "FHotPatcherActionManager"
@@ -29,15 +28,15 @@ void FHotPatcherActionManager::Init()
 	{
 		return IsActiviteMod(*ModName);
 	};
-	
-	FVersionUpdaterManager::Get().RequestLocalRegistedMods = [this]()->TArray<FChildModDesc>
+	auto HotPatcherModDescMap2ChildModDesc = [](const TMap<FName,FHotPatcherModDesc>& HotPatcherModDescMap)->TArray<FChildModDesc>
 	{
 		TArray<FChildModDesc> result;
-		for(const auto& HotPatcherMod:ModsDesc)
+		for(const auto& HotPatcherMod:HotPatcherModDescMap)
 		{
 			FChildModDesc ChildModDesc;
 			ChildModDesc.ModName = HotPatcherMod.Value.ModName;
 			ChildModDesc.CurrentVersion = HotPatcherMod.Value.CurrentVersion;
+			ChildModDesc.MinToolVersion = HotPatcherMod.Value.MinHotPatcherVersion;
 			ChildModDesc.bIsBuiltInMod = HotPatcherMod.Value.bIsBuiltInMod;
 			ChildModDesc.Description = HotPatcherMod.Value.Description;
 			ChildModDesc.URL = HotPatcherMod.Value.URL;
@@ -45,6 +44,15 @@ void FHotPatcherActionManager::Init()
 			result.Add(ChildModDesc);
 		}
 		return result;
+	};
+	
+	FVersionUpdaterManager::Get().RequestLocalRegistedMods = [this,HotPatcherModDescMap2ChildModDesc]()->TArray<FChildModDesc>
+	{
+		return HotPatcherModDescMap2ChildModDesc(ModsDesc);
+	};
+	FVersionUpdaterManager::Get().RequestUnsupportLocalMods = [this,HotPatcherModDescMap2ChildModDesc]()->TArray<FChildModDesc>
+	{
+		return HotPatcherModDescMap2ChildModDesc(UnSupportModsDesc);
 	};
 	
 	SetupDefaultActions();
@@ -103,11 +111,19 @@ void FHotPatcherActionManager::RegisteHotPatcherAction(const FHotPatcherActionDe
 
 void FHotPatcherActionManager::RegisteHotPatcherMod(const FHotPatcherModDesc& ModDesc)
 {
-	for(const auto& ActionDesc:ModDesc.ModActions)
+	if(ModDesc.MinHotPatcherVersion > GetHotPatcherVersion())
 	{
-		FHotPatcherActionManager::Get().RegisteHotPatcherAction(ActionDesc);
+		UE_LOG(LogHotPatcherEdotor,Warning,TEXT("%s Min Support Version is %.1f,Current HotPatcher Version is %.1f"),*ModDesc.ModName,ModDesc.MinHotPatcherVersion,GetHotPatcherVersion());
+		UnSupportModsDesc.Add(*ModDesc.ModName,ModDesc);
 	}
-	ModsDesc.Add(*ModDesc.ModName,ModDesc);
+	else
+	{
+		for(const auto& ActionDesc:ModDesc.ModActions)
+		{
+			FHotPatcherActionManager::Get().RegisteHotPatcherAction(ActionDesc);
+		}
+		ModsDesc.Add(*ModDesc.ModName,ModDesc);
+	}
 }
 
 void FHotPatcherActionManager::UnRegisteHotPatcherMod(const FHotPatcherModDesc& ModDesc)
@@ -130,6 +146,16 @@ void FHotPatcherActionManager::UnRegisteHotPatcherAction(const FString& Category
 	}
 	ActionsDesc.Remove(*ActionName);
 	OnHotPatcherActionUnRegisted.Broadcast(Category,ActionName,Action);
+}
+
+float FHotPatcherActionManager::GetHotPatcherVersion() const
+{
+	FString Version = FString::Printf(
+		TEXT("%d.%d"),
+		FHotPatcherCoreModule::Get().GetMainVersion(),
+		FHotPatcherCoreModule::Get().GetPatchVersion()
+		);
+	return UKismetStringLibrary::Conv_StringToFloat(Version);
 }
 
 FHotPatcherAction* FHotPatcherActionManager::GetTopActionByCategory(const FString CategoryName)

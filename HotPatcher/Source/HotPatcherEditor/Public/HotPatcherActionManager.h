@@ -56,6 +56,7 @@ struct HOTPATCHEREDITOR_API FHotPatcherModDesc
 	FString Description;
 	FString URL;
 	FString UpdateURL;
+	float MinHotPatcherVersion = 0.0f;
 	TArray<FHotPatcherActionDesc> ModActions;
 };
 
@@ -89,6 +90,8 @@ struct HOTPATCHEREDITOR_API FHotPatcherActionManager
 	void UnRegisteHotPatcherMod(const FHotPatcherModDesc& ModDesc);
 	void UnRegisteHotPatcherAction(const FString& Category, const FString& ActionName);
 
+	float GetHotPatcherVersion()const;
+	
 	FHotPatcherActionDelegate OnHotPatcherActionRegisted;
 	FHotPatcherActionDelegate OnHotPatcherActionUnRegisted;
 
@@ -115,6 +118,7 @@ protected:
 	FHotPatcherCategoryType HotPatcherCategorys;
 	TMap<FString,FHotPatcherActionDesc> ActionsDesc;
 	TMap<FName,FHotPatcherModDesc> ModsDesc;
+	TMap<FName,FHotPatcherModDesc> UnSupportModsDesc;
 };
 
 

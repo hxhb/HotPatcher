@@ -23,18 +23,14 @@
 
 #define LOCTEXT_NAMESPACE "VersionUpdaterWidget"
 
-
 void SChildModWidget::Construct(const FArguments& InArgs)
 {
-	CurrentVersion = InArgs._CurrentVersion.Get();
-	ModName = InArgs._ModName.Get();
-	Description = InArgs._Description.Get();
-	RemoteVersion = InArgs._RemoteVersion.Get();
-	URL = InArgs._URL.Get();
-	UpdateURL = InArgs._UpdateURL.Get();
-	bIsBuiltInMod = InArgs._bIsBuiltInMod.Get();
+	ToolName = InArgs._ToolName.Get();
+	ToolVersion = InArgs._ToolVersion.Get();
+	ModDesc = InArgs._ModDesc.Get();
 
 	bool bIsInstalled = GetCurrentVersion() > 0.f;
+	bool bUnSupportMod = ModDesc.MinToolVersion > ToolVersion;
 	
 	ChildSlot
 	[
@@ -48,7 +44,7 @@ void SChildModWidget::Construct(const FArguments& InArgs)
 			.Text_Lambda([this,bIsInstalled]()->FText
 			{
 				FString DisplayStr;
-				if(bIsBuiltInMod)
+				if(ModDesc.bIsBuiltInMod)
 				{
 					DisplayStr = FString::Printf(TEXT("%s (Built-in Mod)"),*GetModName());
 				}
@@ -63,28 +59,50 @@ void SChildModWidget::Construct(const FArguments& InArgs)
 				return UKismetTextLibrary::Conv_StringToText(DisplayStr);
 			})
 		]
-		+ SHorizontalBox::Slot()
+	];
+	
+	if(!ModDesc.Description.IsEmpty())
+	{
+		HorizontalBox->AddSlot()
 		.AutoWidth()
 		.VAlign(VAlign_Center)
 		.Padding(10.0f, 0.0f, 0.0f, 0.0f)
 		[
 			SNew(SHyperlink)
-			.Text(UKismetTextLibrary::Conv_StringToText(Description))
+			.Text(UKismetTextLibrary::Conv_StringToText(ModDesc.Description))
 			.OnNavigate_Lambda([this]()
 			{
-				if(!URL.IsEmpty())
+				if(!ModDesc.URL.IsEmpty())
 				{
-					FPlatformProcess::LaunchURL(*URL, NULL, NULL);
+					FPlatformProcess::LaunchURL(*ModDesc.URL, NULL, NULL);
 				}
 			})
-		]
-	];
-
-	// Update Version
-	if(!bIsBuiltInMod && bIsInstalled && RemoteVersion > CurrentVersion)
+		];
+	}
+	
+	if(bUnSupportMod && !ModDesc.bIsBuiltInMod)
 	{
-		FString LaunchURL = UpdateURL;
-		if(LaunchURL.IsEmpty()){ LaunchURL = URL;}
+		HorizontalBox->AddSlot()
+		.Padding(8.0f, 0.0f, 4.0f, 0.0f)
+		.AutoWidth()
+		.VAlign(VAlign_Center)
+		[
+			SNew(STextBlock)
+			.Text_Lambda([this]()->FText
+			{
+				FString UnSupportDisplay = FString::Printf(TEXT("(Require %s v%.1f)"),*ToolName,ModDesc.MinToolVersion);
+				return UKismetTextLibrary::Conv_StringToText(UnSupportDisplay);
+			})
+		];
+	}
+	// Update Version
+	if(!ModDesc.bIsBuiltInMod &&
+		bIsInstalled &&
+		!bUnSupportMod &&
+		ModDesc.RemoteVersion > ModDesc.CurrentVersion)
+	{
+		FString LaunchURL = ModDesc.UpdateURL;
+		if(LaunchURL.IsEmpty()){ LaunchURL = ModDesc.URL;}
 
 		if(!LaunchURL.IsEmpty())
 		{
@@ -117,7 +135,7 @@ void SChildModWidget::Construct(const FArguments& InArgs)
 			.VAlign(VAlign_Center)
 			[
 				SNew(SHyperlink)
-				.Text(UKismetTextLibrary::Conv_StringToText(FString::Printf(TEXT("%.1f"),RemoteVersion)))
+				.Text(UKismetTextLibrary::Conv_StringToText(FString::Printf(TEXT("%.1f"),ModDesc.RemoteVersion)))
 				.OnNavigate_Lambda([LaunchURL]()
 				{
 					FPlatformProcess::LaunchURL(*LaunchURL, NULL, NULL);
@@ -130,6 +148,7 @@ void SChildModWidget::Construct(const FArguments& InArgs)
 void SChildModManageWidget::Construct(const FArguments& InArgs)
 {
 	ToolName = InArgs._ToolName.Get();
+	ToolVersion = InArgs._ToolVersion.Get();
 	bShowPayInfo = InArgs._bShowPayInfo.Get();
 	
 	ChildSlot
@@ -271,13 +290,9 @@ bool SChildModManageWidget::AddChildMod(const FChildModDesc& ModDesc)
 		.Padding(15.f,2.f,0.f,2.f)
 		[
 			SNew(SChildModWidget)
-			.ModName(ModDesc.ModName)
-			.CurrentVersion(ModDesc.CurrentVersion)
-			.RemoteVersion(ModDesc.RemoteVersion)
-			.Description(ModDesc.Description)
-			.URL(ModDesc.URL)
-			.UpdateURL(ModDesc.UpdateURL)
-			.bIsBuiltInMod(ModDesc.bIsBuiltInMod)
+			.ToolName(ToolName)
+			.ToolVersion(ToolVersion)
+			.ModDesc(ModDesc)
 		];
 		bStatus = true;
 	}
@@ -350,6 +365,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 		InArgs._DeveloperWebsite.Get().ToString(),
 		InArgs._UpdateWebsite.Get().ToString()
 		);
+	ToolVersion = InArgs._ToolVersion.Get();
 	CurrentVersion = InArgs._CurrentVersion.Get();
 	PatchVersion = InArgs._PatchVersion.Get();
 	bool bhPayment = FPaths::FileExists(IPluginManager::Get().FindPlugin(ToolName)->GetBaseDir() / TEXT("Resources/hPayment.txt"));
@@ -473,6 +489,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 		[
 			SAssignNew(ChildModManageWidget,SChildModManageWidget)
 			.ToolName(ToolName)
+			.ToolVersion(ToolVersion)
 			.bShowPayInfo(!bhPayment)
 			.Visibility_Lambda([bhMods]()->EVisibility{
 				EVisibility Visibility = EVisibility::Visible;
@@ -583,13 +600,19 @@ void SVersionUpdaterWidget::OnRemoveVersionFinished()
 		TArray<FChildModDesc> ThirdPartyMods = DiffMods(NotBuiltInMods,RemoteOfficalMods);
 		TArray<FChildModDesc> InstalledOfficalMods = DiffMods(NotBuiltInMods,ThirdPartyMods);
 		TArray<FChildModDesc> NotInstalledOfficalMods = DiffMods(RemoteOfficalMods,InstalledLocalMods);
-		
+		TArray<FChildModDesc> UnSupportLocalMods;
+		if(FVersionUpdaterManager::Get().RequestUnsupportLocalMods)
+		{
+			UnSupportLocalMods = FVersionUpdaterManager::Get().RequestUnsupportLocalMods();
+		}
 		// Built-in Mods
 		ChildModManageWidget->AddModCategory(TEXT("Built-In"),DiffMods(RemoteOfficalMods,BuiltInMods,false));
 		// Not Installed Offical Mod
 		ChildModManageWidget->AddModCategory(TEXT("Installed"),DiffMods(RemoteOfficalMods,InstalledOfficalMods,false));
 		// local 3rd mods
 		ChildModManageWidget->AddModCategory(TEXT("ThirdParty"),ThirdPartyMods);
+		// Unsupport Mods (MinToolVersion > CurrentToolMod)
+		ChildModManageWidget->AddModCategory(TEXT("Unsupport Mods"),UnSupportLocalMods);
 		// Not-Installed Offical Mod
 		ChildModManageWidget->AddModCategory(TEXT("Not-Installed (Professional Mods)"),NotInstalledOfficalMods);
 	}

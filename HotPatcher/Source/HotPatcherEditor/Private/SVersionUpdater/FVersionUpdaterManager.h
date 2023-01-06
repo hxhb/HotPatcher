@@ -9,6 +9,7 @@ struct FChildModDesc
 	FString ModName;
 	float CurrentVersion = 0.f;
 	float RemoteVersion = 0.f;
+	float MinToolVersion = 0.f;
 	FString Description;
 	FString URL;
 	FString UpdateURL;
@@ -58,4 +59,5 @@ public:
 	TFunction<bool(const FString& ModName)> ModIsActivteCallback = nullptr;
 
 	TFunction<TArray<FChildModDesc>()> RequestLocalRegistedMods = nullptr;
+	TFunction<TArray<FChildModDesc>()> RequestUnsupportLocalMods = nullptr;
 };

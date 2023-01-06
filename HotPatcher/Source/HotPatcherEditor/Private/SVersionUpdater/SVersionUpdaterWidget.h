@@ -12,21 +12,13 @@ class SChildModWidget : public SCompoundWidget
 {
 public:
 	SLATE_BEGIN_ARGS(SChildModWidget):
-	_ModName(),
-	_CurrentVersion(),
-	_RemoteVersion(),
-	_Description(),
-	_URL(),
-	_UpdateURL(),
-	_bIsBuiltInMod()
+	_ToolName(),
+	_ToolVersion(),
+	_ModDesc()
 	{}
-	SLATE_ATTRIBUTE( FString, ModName )
-	SLATE_ATTRIBUTE( float, CurrentVersion )
-	SLATE_ATTRIBUTE( float, RemoteVersion )
-	SLATE_ATTRIBUTE( FString, Description )
-	SLATE_ATTRIBUTE( FString, URL )
-	SLATE_ATTRIBUTE( FString, UpdateURL )
-	SLATE_ATTRIBUTE( bool, bIsBuiltInMod )
+	SLATE_ATTRIBUTE( FString, ToolName )
+	SLATE_ATTRIBUTE( float, ToolVersion )
+	SLATE_ATTRIBUTE( FChildModDesc, ModDesc )
 	SLATE_END_ARGS()
 	
 	FText GetModDisplay() const
@@ -44,18 +36,14 @@ public:
 	*/
 	void Construct(const FArguments& InArgs);
 
-	float GetCurrentVersion()const { return CurrentVersion; }
-	float GetRemoteVersion()const { return RemoteVersion; }
-	FString GetModName()const { return ModName; };
+	float GetCurrentVersion()const { return ModDesc.CurrentVersion; }
+	float GetRemoteVersion()const { return ModDesc.RemoteVersion; }
+	FString GetModName()const { return ModDesc.ModName; };
 	
 private:
-	float CurrentVersion = 0;
-	FString ModName;
-	float RemoteVersion = 0;
-	FString Description;
-	FString URL;
-	FString UpdateURL;
-	bool bIsBuiltInMod = false;
+	FString ToolName;
+	float ToolVersion = 0.f;
+	FChildModDesc ModDesc;
 	TSharedPtr<SHorizontalBox> HorizontalBox;
 };
 
@@ -64,9 +52,11 @@ class SChildModManageWidget : public SCompoundWidget
 public:
 	SLATE_BEGIN_ARGS(SChildModManageWidget):
 	_ToolName(),
+	_ToolVersion(),
 	_bShowPayInfo()
 	{}
 	SLATE_ATTRIBUTE( FString, ToolName )
+	SLATE_ATTRIBUTE( float, ToolVersion )
 	SLATE_ATTRIBUTE( bool, bShowPayInfo )
 	SLATE_END_ARGS()
 
@@ -79,6 +69,7 @@ public:
 	
 protected:
 	FString ToolName;
+	float ToolVersion = 0.f;
 	bool bShowPayInfo = true;
 	
 	// child mod
@@ -107,6 +98,7 @@ public:
 	SLATE_BEGIN_ARGS(SVersionUpdaterWidget):
 	_CurrentVersion(),
 	_ToolName(),
+	_ToolVersion(),
 	_DeveloperName(),
 	_DeveloperWebsite(),
 	_UpdateWebsite()
@@ -114,6 +106,7 @@ public:
 	SLATE_ATTRIBUTE( int32, CurrentVersion )
 	SLATE_ATTRIBUTE( int32, PatchVersion )
 	SLATE_ATTRIBUTE( FText, ToolName )
+	SLATE_ATTRIBUTE( float, ToolVersion )
 	SLATE_ATTRIBUTE( FText, DeveloperName )
 	SLATE_ATTRIBUTE( FText, DeveloperWebsite )
 	SLATE_ATTRIBUTE( FText, UpdateWebsite )
@@ -152,6 +145,7 @@ private:
 	int32 CurrentVersion = 0;
 	int32 PatchVersion = 0;
 	FString ToolName;
+	float ToolVersion = 0.f;
 	FString UpdateWebsite;
 	FString DeveloperWebsite;
 	FString DeveloperName;

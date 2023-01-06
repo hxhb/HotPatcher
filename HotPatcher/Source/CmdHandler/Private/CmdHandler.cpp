@@ -29,6 +29,7 @@ static bool bDDCUrl = false;
 static FString MultiCookerDDCBackendName = TEXT("MultiCookerDDC");
 void AddMultiCookerBackendToConfig(const FString& DDCAddr)
 {
+	UE_LOG(LogCmdHandler,Display,TEXT("-ddcurl: %s"),*DDCAddr);
 	if(DDCAddr.IsEmpty())
 	{
 		UE_LOG(LogCmdHandler, Warning, TEXT("not use MultiCookerDDC"));
