@@ -16,3 +16,6 @@
 [submodule "Mods/GameFeaturePacker"]
 	path = Mods/GameFeaturePacker
 	url = git@github.com:hxhb/GameFeaturePacker.git
+[submodule "Mods/Mods/ShaderPatcherUE"]
+	path = Mods/Mods/ShaderPatcherUE
+	url = git@github.com:hxhb/ShaderPatcherUE.git
