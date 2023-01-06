@@ -23,6 +23,7 @@ FHotPatcherModDesc FShaderPatcherEditorModule::GetModDesc() const
 	TmpModDesc.ModName = MOD_NAME;
 	TmpModDesc.CurrentVersion = MOD_VERSION;
 	TmpModDesc.bIsBuiltInMod = IS_INTERNAL_MODE;
+	TmpModDesc.MinHotPatcherVersion = 80.0f;
 	TmpModDesc.Description = TEXT("Create Shader Library Patch");
 	TmpModDesc.URL = TEXT("https://imzlp.com/posts/5867/");
 	TmpModDesc.UpdateURL = TEXT("https://github.com/hxhb/HotPatcher/Mods/ShaderPatcher");

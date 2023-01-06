@@ -24,7 +24,7 @@
 		{
 			"Name": "ShaderPatcherEditor",
 			"Type": "Editor",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "PostDefault"
 		}
 	]
 }
