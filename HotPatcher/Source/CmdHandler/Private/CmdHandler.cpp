@@ -53,7 +53,7 @@ bool AddMultiCookerBackendToConfig(const FString& DDCAddr)
 	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("MinimumDaysToKeepFile"),TEXT("7"));
 	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("Root"),TEXT("(Type=KeyLength, Length=120, Inner=AsyncPut)"));
 	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("AsyncPut"),TEXT("(Type=AsyncPut, Inner=Hierarchy)"));
-	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("Hierarchy"),TEXT("(Type=Hierarchical, Inner=Boot, Inner=PakWrite, Inner=PakRead, Inner=Local, Inner=Shared)"));
+	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("Hierarchy"),TEXT("(Type=Hierarchical, Inner=Boot, Inner=Pak, Inner=EnginePak, Inner=Local, Inner=Shared)"));
 	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("Boot"),TEXT("(Type=Boot, Filename=\"%GAMEDIR%DerivedDataCache/Boot.ddc\", MaxCacheSize=512)"));
 
 	FString DDC = FString::Printf(
