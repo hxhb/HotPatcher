@@ -3,8 +3,6 @@
 #include "CreatePatch/SPatchersPage.h"
 #include "CreatePatch/SHotPatcherPatchWidget.h"
 #include "CreatePatch/SHotPatcherReleaseWidget.h"
-#include "ShaderPatch/SShaderPatchWidget.h"
-#include "GameFeature/SGameFeaturePackageWidget.h"
 
 // engine header
 #include "HotPatcherEditor.h"
@@ -31,7 +29,7 @@ void SPatchersPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCo
 	{
 		for(const auto& Action:*Patchers)
 		{
-			if(FHotPatcherActionManager::Get().IsActiveAction(Action.Key))
+			if(FHotPatcherActionManager::Get().IsSupportEditorAction(Action.Key))
 			{
 				FUIAction UIAction = FExecuteAction::CreateSP(this, &SPatchersPage::HandleHotPatcherMenuEntryClicked, Action.Value.ActionName.Get().ToString(),Action.Value.ActionCallback);
 				PatchModeMenuBuilder.AddMenuEntry(Action.Value.ActionName, Action.Value.ActionToolTip, Action.Value.Icon, UIAction);
@@ -111,12 +109,15 @@ void SPatchersPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCo
 	{
 		for(const auto& Patcher:*Patchers)
 		{
-			TSharedRef<SHotPatcherWidgetInterface> Action = Patcher.Value.RequestWidget(GetContext());
-			 Widget->AddSlot().AutoHeight().Padding(0.0, 8.0, 0.0, 0.0)
-			 [
-			 	Action
-			 ];
-			ActionWidgetMap.Add(*Patcher.Key,Action);
+			if(Patcher.Value.RequestWidget)
+			{
+				TSharedRef<SHotPatcherWidgetInterface> Action = Patcher.Value.RequestWidget(GetContext());
+				Widget->AddSlot().AutoHeight().Padding(0.0, 8.0, 0.0, 0.0)
+				[
+					Action
+				];
+				ActionWidgetMap.Add(*Patcher.Key,Action);
+			}
 		}
 	}
 	

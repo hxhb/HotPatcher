@@ -7,7 +7,7 @@
 #include "FlibPatchParserHelper.h"
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 #include "Interfaces/IPluginManager.h"
-#include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
+#include "ShaderLibUtils/FlibShaderCodeLibraryHelper.h"
 
 // FString UFlibHotCookerHelper::GetMultiCookerBaseDir()
 // {

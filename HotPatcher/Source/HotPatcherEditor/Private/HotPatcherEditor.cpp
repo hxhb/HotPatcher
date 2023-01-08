@@ -46,6 +46,8 @@
 
 static const FName HotPatcherTabName("HotPatcher");
 
+DEFINE_LOG_CATEGORY(LogHotPatcherEdotor)
+
 #define LOCTEXT_NAMESPACE "FHotPatcherEditorModule"
 
 
@@ -395,7 +397,7 @@ void FHotPatcherEditorModule::MakePakExternalActionsSubMenu(UToolMenu* Menu)
 		
 		Section.AddMenuEntry(
 			FName(*PakExternalConfig.PakName),
-			FText::Format(LOCTEXT("PakExternal", "{0} ({1})"), UKismetTextLibrary::Conv_StringToText(PakExternalConfig.PakName),UKismetTextLibrary::Conv_StringToText(AppendPlatformName)),
+			FText::Format(LOCTEXT("PakExternal_PakNamePlatform", "{0} ({1})"), UKismetTextLibrary::Conv_StringToText(PakExternalConfig.PakName),UKismetTextLibrary::Conv_StringToText(AppendPlatformName)),
 			FText(),
 			FSlateIcon(),
 			FUIAction(
@@ -414,7 +416,7 @@ void FHotPatcherEditorModule::MakeHotPatcherPresetsActionsSubMenu(UToolMenu* Men
 	{
 		Section.AddMenuEntry(
 			FName(*PakConfig.VersionId),
-			FText::Format(LOCTEXT("PakExternal", "VersionID: {0}"), UKismetTextLibrary::Conv_StringToText(PakConfig.VersionId)),
+			FText::Format(LOCTEXT("PakExternal_VersionID", "VersionID: {0}"), UKismetTextLibrary::Conv_StringToText(PakConfig.VersionId)),
 			FText(),
 			FSlateIcon(),
 			FUIAction(

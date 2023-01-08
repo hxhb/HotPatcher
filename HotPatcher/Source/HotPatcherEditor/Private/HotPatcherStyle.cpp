@@ -45,9 +45,7 @@ TSharedRef< FSlateStyleSet > FHotPatcherStyle::Create()
 {
 	TSharedRef< FSlateStyleSet > Style = MakeShareable(new FSlateStyleSet("HotPatcherStyle"));
 	Style->SetContentRoot(IPluginManager::Get().FindPlugin("HotPatcher")->GetBaseDir() / TEXT("Resources"));
-
 	Style->Set("HotPatcher.PluginAction", new IMAGE_BRUSH(TEXT("ButtonIcon_40x"), Icon40x40));
-
 	return Style;
 }
 

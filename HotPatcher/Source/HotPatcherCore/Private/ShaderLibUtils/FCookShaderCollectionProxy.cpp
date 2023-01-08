@@ -1,7 +1,7 @@
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 #include "FlibHotPatcherCoreHelper.h"
 #include "Cooker/MultiCooker/FlibHotCookerHelper.h"
-#include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
+#include "ShaderLibUtils//FlibShaderCodeLibraryHelper.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Resources/Version.h"
 

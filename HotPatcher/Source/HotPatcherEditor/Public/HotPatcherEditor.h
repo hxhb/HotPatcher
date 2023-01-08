@@ -28,6 +28,8 @@
 	#define InvokeTab TryInvokeTab
 #endif
 
+DECLARE_LOG_CATEGORY_EXTERN(LogHotPatcherEdotor,All,All)
+
 class FToolBarBuilder;
 class FMenuBuilder;
 

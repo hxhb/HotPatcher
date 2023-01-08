@@ -5,7 +5,7 @@
 #include "HotPatcherCore.h"
 #include "CreatePatch/FExportPatchSettings.h"
 #include "CreatePatch/FExportReleaseSettings.h"
-#include "ShaderPatch/FlibShaderCodeLibraryHelper.h"
+#include "ShaderLibUtils/FlibShaderCodeLibraryHelper.h"
 #include "ThreadUtils/FThreadUtils.hpp"
 
 // engine header

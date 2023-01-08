@@ -1,14 +1,12 @@
 #include "HotAssetScannerCommandlet.h"
-#include "ShaderPatch/FExportShaderPatchSettings.h"
 #include "CommandletHelper.h"
 // engine header
 #include "CoreMinimal.h"
+#include "FlibPatchParserHelper.h"
 #include "Async/ParallelFor.h"
 #include "Misc/FileHelper.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Paths.h"
-#include "ShaderPatch/FExportShaderPatchSettings.h"
-#include "ShaderPatch/ShaderPatchProxy.h"
 #include "BaseTypes/FPackageTracker.h"
 DEFINE_LOG_CATEGORY(LogHotAssetScannerCommandlet);
 

@@ -21,7 +21,7 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 	HotPatcherCategorys.Add(TEXT("Cooker"),FHotPatcherCategory(TEXT("Cooker"),SNew(SCookersPage, MakeShareable(new FCookersModeContext))));
 	HotPatcherCategorys.Add(TEXT("Patcher"),FHotPatcherCategory(TEXT("Patcher"),SNew(SPatchersPage, MakeShareable(new FPatchersModeContext))));
 	HotPatcherCategorys.Append(FHotPatcherActionManager::Get().GetHotPatcherCategorys());
-	
+	float HotPatcherVersion = FHotPatcherActionManager::Get().GetHotPatcherVersion();
 	ChildSlot
 	[
 		SNew(SOverlay)
@@ -39,6 +39,7 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 				[
 					SAssignNew(VersionUpdaterWidget,SVersionUpdaterWidget)
 					.ToolName(FText::FromString(GToolName))
+					.ToolVersion(HotPatcherVersion)
 					.DeveloperName(FText::FromString(TEXT("lipengzha")))
 					.DeveloperWebsite(FText::FromString(TEXT("https://imzlp.com")))
 					.UpdateWebsite(FText::FromString(TEXT("https://imzlp.com/posts/17590/")))

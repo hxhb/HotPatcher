@@ -14,44 +14,50 @@ bool OverrideConfigValue(const FString& FileName,const FString& Section,const FS
 	if(GConfig->GetInt( *Section, *Key, DefaultValue, FileName ))
 	{
 		GConfig->SetInt(  *Section, *Key, NewValue, FileName );
-		UE_LOG(LogCmdHandler, Display, TEXT("Override section: %s key: %s from %d to %d."), *Section,*Key,DefaultValue,NewValue);
+		UE_LOG(LogCmdHandler, Display, TEXT("Override Section: %s key: %s from %d to %d."), *Section,*Key,DefaultValue,NewValue);
 		bRet = true;
 	}
 	else
 	{
-		UE_LOG(LogCmdHandler, Warning, TEXT("section: %s key: %s is not found!"), *Section,*Key);
+		UE_LOG(LogCmdHandler, Warning, TEXT("Override Section: %s key: %s is not found!"), *Section,*Key);
 	}
 	return bRet;
 }
 
+#if WITH_EDITOR
+static bool bDDCUrl = false;
 static FString MultiCookerDDCBackendName = TEXT("MultiCookerDDC");
-void AddMultiCookerBackendToConfig(const FString& DDCAddr)
+bool AddMultiCookerBackendToConfig(const FString& DDCAddr)
 {
-	if(DDCAddr.IsEmpty())
+	bool bStatus = false;
+	UE_LOG(LogCmdHandler,Display,TEXT("-ddcurl: %s"),*DDCAddr);
+	if(DDCAddr.IsEmpty() || DDCAddr.StartsWith(TEXT(" ")))
 	{
 		UE_LOG(LogCmdHandler, Warning, TEXT("not use MultiCookerDDC"));
-		return;
+		return bStatus;
 	}
 	auto EngineIniIns = GConfig->FindConfigFile(GEngineIni);
 	auto MultiCookerDDCBackendSection = EngineIniIns->FindOrAddSection(MultiCookerDDCBackendName);
-
+	MultiCookerDDCBackendSection->Empty();
+	
 	auto UpdateKeyLambda = [](FConfigSection* Section,const FString& Key,const FString& Value)
 	{
 		if(Section->Find(*Key))
 		{
 			Section->Remove(*Key);
 		}
+		UE_LOG(LogCmdHandler, Display, TEXT("Override Section MultiCookerDDC key: %s to %d."),*Key,*Value);
 		Section->Add(*Key,FConfigValue(*Value));
 	};
 	
 	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("MinimumDaysToKeepFile"),TEXT("7"));
 	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("Root"),TEXT("(Type=KeyLength, Length=120, Inner=AsyncPut)"));
 	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("AsyncPut"),TEXT("(Type=AsyncPut, Inner=Hierarchy)"));
-	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("Hierarchy"),TEXT("(Type=Hierarchical, Inner=Boot, Inner=PakWrite, Inner=PakRead, Inner=Local, Inner=Shared)"));
+	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("Hierarchy"),TEXT("(Type=Hierarchical, Inner=Boot, Inner=Pak, Inner=EnginePak, Inner=Local, Inner=Shared)"));
 	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("Boot"),TEXT("(Type=Boot, Filename=\"%GAMEDIR%DerivedDataCache/Boot.ddc\", MaxCacheSize=512)"));
 
 	FString DDC = FString::Printf(
-		TEXT("(Type=FileSystem, ReadOnly=false, Clean=true, Flush=false, DeleteUnused=true, UnusedFileAge=10, FoldersToClean=10, MaxFileChecksPerSec=1, ConsiderSlowAt=70, PromptIfMissing=false, Path=%s, EnvPathOverride=UE-SharedDataCachePath, EditorOverrideSetting=SharedDerivedDataCache)"),
+		TEXT("(Type=FileSystem, ReadOnly=false, Clean=true, Flush=false, DeleteUnused=false, UnusedFileAge=10, FoldersToClean=10, MaxFileChecksPerSec=1, Path=%s, EnvPathOverride=UE-SharedDataCachePath, EditorOverrideSetting=SharedDerivedDataCache)"),
 		*DDCAddr
 	);
 	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("Shared"),DDC);
@@ -61,13 +67,15 @@ void AddMultiCookerBackendToConfig(const FString& DDCAddr)
 	{
 		DDCBackendName = MultiCookerDDCBackendName;
 		FCommandLine::Append(*FString::Printf(TEXT(" -ddc=%s"),*DDCBackendName));
-		UE_LOG(LogCmdHandler, Warning, TEXT("Append cmd: %s"),FCommandLine::Get());
+		UE_LOG(LogCmdHandler, Display, TEXT("Append cmd: %s"),FCommandLine::Get());
+		bStatus = true;
 	}
-	UE_LOG(LogCmdHandler, Warning, TEXT("use MultiCookerDDC: %s"),*DDCBackendName);
+	
+	UE_LOG(LogCmdHandler, Display, TEXT("Use DDCBackend: %s"),*DDCBackendName);
+	return bStatus;
 }
 
-static bool bDDCUrl = false;
-void FCmdHandlerModule::StartupModule()
+void OverrideEditorEnv()
 {
 	int32 OverrideNumUnusedShaderCompilingThreads = 3;
 	if(FParse::Value(FCommandLine::Get(), TEXT("-MaxShaderWorker="), OverrideNumUnusedShaderCompilingThreads))
@@ -92,12 +100,11 @@ void FCmdHandlerModule::StartupModule()
 	FString DDCURL;
 	if(FParse::Value(FCommandLine::Get(),TEXT("-ddcurl="),DDCURL) && !DDCURL.IsEmpty())
 	{
-		AddMultiCookerBackendToConfig(DDCURL);
-		bDDCUrl = true;
+		bDDCUrl = AddMultiCookerBackendToConfig(DDCURL);
 	}
 }
 
-void FCmdHandlerModule::ShutdownModule()
+void UnOverrideEditorEnv()
 {
 	if(bDDCUrl)
 	{
@@ -105,6 +112,38 @@ void FCmdHandlerModule::ShutdownModule()
 		EngineIniIns->Remove(MultiCookerDDCBackendName);
 	}
 }
+
+#else
+
+void OverrideRuntimeEnv()
+{
+	
+}
+
+void UnOverrideRuntimeEnv()
+{
+	
+}
+#endif
+
+void FCmdHandlerModule::StartupModule()
+{
+#if WITH_EDITOR
+	OverrideEditorEnv();
+#else
+	OverrideRuntimeEnv();
+#endif
+}
+
+void FCmdHandlerModule::ShutdownModule()
+{
+#if WITH_EDITOR
+	UnOverrideEditorEnv();
+#else
+	UnOverrideRuntimeEnv();
+#endif
+}
+
 #undef LOCTEXT_NAMESPACE
 	
 IMPLEMENT_MODULE(FCmdHandlerModule, CmdHandler)

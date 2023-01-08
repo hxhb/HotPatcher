@@ -225,9 +225,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		bool bCustomPakNameRegular = false;
 	// Can use value: {VERSION} {BASEVERSION} {CHUNKNAME} {PLATFORM} 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options|Regular",meta=(EditCondition = "bCustomPakNameRegular"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options",meta=(EditCondition = "bCustomPakNameRegular"))
 		FString PakNameRegular = TEXT("{VERSION}_{CHUNKNAME}_{PLATFORM}_001_P");
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options|Regular")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		bool bCustomPakSaveDirRegular = false;
 	// Can use value: {VERSION} {BASEVERSION} {CHUNKNAME} {PLATFORM} 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options",meta=(EditCondition = "bCustomPakSaveDirRegular"))

@@ -41,6 +41,7 @@ const FVector2D Updater_Icon12x12(12.0f, 12.0f);
 const FVector2D Updater_Icon16x16(16.0f, 16.0f);
 const FVector2D Updater_Icon20x20(20.0f, 20.0f);
 const FVector2D Updater_Icon40x40(40.0f, 40.0f);
+const FVector2D Updater_IconPay(120.0f, 120.0f);
 
 TSharedRef< FSlateStyleSet > FVersionUpdaterStyle::Create(const FString& Name)
 {
@@ -58,7 +59,18 @@ TSharedRef< FSlateStyleSet > FVersionUpdaterStyle::Create(const FString& Name)
 	
 	Style->Set("Updater.Star", new IMAGE_CORE_BRUSH("Sequencer/Star", Updater_Icon12x12));
 	Style->Set("Updater.SpawnableIconOverlay", new IMAGE_CORE_BRUSH(TEXT("Sequencer/SpawnableIconOverlay"), FVector2D(13, 13)));
-
+	
+	FString PluginResourceDir = IPluginManager::Get().FindPlugin("HotPatcher")->GetBaseDir() / TEXT("Resources/Payments");
+	Style->Set(
+		"Updater.WechatPay",
+		new FSlateImageBrush( FPaths::Combine(PluginResourceDir , TEXT("wechatpay.png")),
+			Updater_IconPay)
+			);
+	Style->Set(
+		"Updater.AliPay",
+		new FSlateImageBrush( FPaths::Combine(PluginResourceDir , TEXT("alipay.png")),
+			Updater_IconPay)
+			);
 	return Style;
 }
 

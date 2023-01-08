@@ -10,3 +10,12 @@
 [submodule "Mods/HotChunker"]
 	path = Mods/HotChunker
 	url = git@github.com:hxhb/HotChunker.git
+[submodule "Mods/HDiffPatchUE"]
+	path = Mods/HDiffPatchUE
+	url = git@github.com:hxhb/HDiffPatchUE.git
+[submodule "Mods/GameFeaturePacker"]
+	path = Mods/GameFeaturePacker
+	url = git@github.com:hxhb/GameFeaturePacker.git
+[submodule "Mods/ShaderPatcherUE"]
+	path = Mods/ShaderPatcherUE
+	url = git@github.com:hxhb/ShaderPatcherUE.git

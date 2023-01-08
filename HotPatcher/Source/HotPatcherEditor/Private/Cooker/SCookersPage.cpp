@@ -29,7 +29,7 @@ void SCookersPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCon
 		{
 			for(const auto& Cooker:*Cookers)
 			{
-				if(FHotPatcherActionManager::Get().IsActiveAction(Cooker.Key))
+				if(FHotPatcherActionManager::Get().IsSupportEditorAction(Cooker.Key))
 				{
 					FUIAction Action = FExecuteAction::CreateSP(this, &SCookersPage::HandleHotPatcherMenuEntryClicked, Cooker.Key,Cooker.Value.ActionCallback);
 					PatchModeMenuBuilder.AddMenuEntry(Cooker.Value.ActionName, Cooker.Value.ActionToolTip, Cooker.Value.Icon, Action);
@@ -110,13 +110,16 @@ void SCookersPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCon
 	{
 		for(const auto& Cooker:*Cookers)
 		{
-			TSharedRef<SHotPatcherWidgetInterface> Action = Cooker.Value.RequestWidget(GetContext());
+			if(Cooker.Value.RequestWidget)
+			{
+				TSharedRef<SHotPatcherWidgetInterface> Action = Cooker.Value.RequestWidget(GetContext());
 		
-			Widget->AddSlot().AutoHeight().Padding(0.0, 8.0, 0.0, 0.0)
-			[
-				Action
-			];
-			ActionWidgetMap.Add(*Cooker.Key,Action);
+				Widget->AddSlot().AutoHeight().Padding(0.0, 8.0, 0.0, 0.0)
+				[
+					Action
+				];
+				ActionWidgetMap.Add(*Cooker.Key,Action);
+			}
 		}
 	}
 	ChildSlot

@@ -81,10 +81,7 @@ public class HotPatcherEditor : ModuleRules
 		BuildVersion Version;
 		BuildVersion.TryRead(BuildVersion.GetDefaultFileName(), out Version);
 		AddPublicDefinitions("WITH_EDITOR_SECTION", Version.MajorVersion > 4 || Version.MinorVersion > 24);
-		// Game feature
-		bool bEnableGameFeature = false;
-		AddPublicDefinitions("ENGINE_GAME_FEATURE", bEnableGameFeature || (Target.Version.MajorVersion > 4 || Target.Version.MinorVersion > 26));
-		
+
 		System.Console.WriteLine("MajorVersion {0} MinorVersion: {1} PatchVersion {2}",Target.Version.MajorVersion,Target.Version.MinorVersion,Target.Version.PatchVersion);
 
 		PublicDefinitions.AddRange(new string[]

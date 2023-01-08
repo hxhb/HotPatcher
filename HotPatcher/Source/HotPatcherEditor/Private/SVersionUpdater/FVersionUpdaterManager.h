@@ -4,6 +4,18 @@
 #include "Misc/RemoteConfigIni.h"
 #include "FCountServerlessWrapper.h"
 
+struct FChildModDesc
+{
+	FString ModName;
+	float CurrentVersion = 0.f;
+	float RemoteVersion = 0.f;
+	float MinToolVersion = 0.f;
+	FString Description;
+	FString URL;
+	FString UpdateURL;
+	bool bIsBuiltInMod = false;
+};
+
 struct FRemteVersionDescrible
 {
 	FRemteVersionDescrible()=default;
@@ -16,8 +28,8 @@ struct FRemteVersionDescrible
 	FString URL;
 	bool b3rdMods;
 	TMap<FName,TSet<FName>> ActiveActions;
+	TMap<FName,FChildModDesc> ModsDesc;
 };
-
 
 struct FVersionUpdaterManager
 {
@@ -40,4 +52,12 @@ protected:
 	bool bRequestFinished = false;
 	TArray<TFunction<void(void)>> OnRequestFinishedCallback;
 	TSharedPtr<FCountServerlessWrapper> Counter;
+public:
+	// get mod current version.
+	TFunction<float(const FString& ModName)> ModCurrentVersionGetter = nullptr;
+	// check is valid activite mod callback;
+	TFunction<bool(const FString& ModName)> ModIsActivteCallback = nullptr;
+
+	TFunction<TArray<FChildModDesc>()> RequestLocalRegistedMods = nullptr;
+	TFunction<TArray<FChildModDesc>()> RequestUnsupportLocalMods = nullptr;
 };
