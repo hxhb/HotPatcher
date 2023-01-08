@@ -23,7 +23,7 @@
 		{
 			"Name": "HotPatcherCore",
 			"Type": "Editor",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "PreDefault"
 		},
 		{
 			"Name": "HotPatcherRuntime",
