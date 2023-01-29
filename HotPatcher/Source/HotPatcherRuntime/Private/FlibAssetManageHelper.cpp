@@ -1612,4 +1612,19 @@ void UFlibAssetManageHelper::UpdateAssetRegistryData(const FString& PackageName)
 		AssetRegistry.ScanModifiedAssetFiles(TArray<FString>{PackageFilename});
 	}
 }
+TArray<FString> UFlibAssetManageHelper::GetPackgeFiles(const FString& LongPackageName,const FString& Extension)
+{
+	SCOPED_NAMED_EVENT_TEXT("GetPackgeFiles",FColor::Red);
+	TArray<FString> Files;
+			
+	FString FilePath = FPackageName::LongPackageNameToFilename(LongPackageName) + Extension;
+
+	if(FPaths::FileExists(FilePath))
+	{
+		FPaths::MakeStandardFilename(FilePath);
+		Files.Add(FilePath);
+	}
+	return Files;
+};
+
 // PRAGMA_ENABLE_DEPRECATION_WARNINGS

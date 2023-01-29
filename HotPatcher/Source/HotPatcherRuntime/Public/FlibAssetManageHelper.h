@@ -255,6 +255,7 @@ public:
 	static bool bIncludeOnlyOnDiskAssets;
 
 	static void UpdateAssetRegistryData(const FString& PackageName);
+	static TArray<FString> GetPackgeFiles(const FString& LongPackageName,const FString& Extension);
 };
 
 
