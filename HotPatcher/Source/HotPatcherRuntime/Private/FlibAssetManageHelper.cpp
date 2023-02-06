@@ -863,7 +863,7 @@ bool UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 				OutCookCommand.Append(FinalCookedCommand);
 			}
 		}
-	},GForceSingleThread);
+	},true);
 	return true;
 }
 
