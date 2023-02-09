@@ -1410,8 +1410,9 @@ bool UFlibAssetManageHelper::MatchIgnoreFilters(const FString& LongPackageName, 
 {
 	for(const auto& IgnoreFilter:IgnoreDirs)
 	{
-		if(LongPackageName.StartsWith(IgnoreFilter) ||
-			IgnoreFilter.Contains(TEXT("*")) ? LongPackageName.MatchesWildcard(IgnoreFilter,ESearchCase::CaseSensitive):false)
+		bool bWithInSkipDir = LongPackageName.StartsWith(IgnoreFilter);
+		bool bMatchSkipWildcard = IgnoreFilter.Contains(TEXT("*")) ? LongPackageName.MatchesWildcard(IgnoreFilter,ESearchCase::CaseSensitive) : false;
+		if( bWithInSkipDir || bMatchSkipWildcard)
 		{
 			MatchDir = IgnoreFilter;
 			return true;

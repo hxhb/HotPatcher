@@ -1287,13 +1287,13 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 	ScanConfig.AssetIncludeFilters = InChunkInfo.AssetIncludeFilters;
 	ScanConfig.AssetIgnoreFilters = InChunkInfo.AssetIgnoreFilters;
 	ScanConfig.bAnalysisFilterDependencies = bInAnalysisFilterDependencies;
-	ScanConfig.bForceSkipContent = InChunkInfo.bForceSkipContent;
 	ScanConfig.bRecursiveWidgetTree = false;
+	ScanConfig.IncludeSpecifyAssets = InChunkInfo.IncludeSpecifyAssets;
+	ScanConfig.bForceSkipContent = InChunkInfo.bForceSkipContent;
 	ScanConfig.ForceSkipAssets = InChunkInfo.ForceSkipAssets;
 	ScanConfig.ForceSkipClasses = InChunkInfo.ForceSkipClasses;
-	ScanConfig.IncludeSpecifyAssets = InChunkInfo.IncludeSpecifyAssets;
-	ScanConfig.AssetRegistryDependencyTypes = InChunkInfo.AssetRegistryDependencyTypes;
 	ScanConfig.ForceSkipContentRules = InChunkInfo.ForceSkipContentRules;
+	ScanConfig.AssetRegistryDependencyTypes = InChunkInfo.AssetRegistryDependencyTypes;
 	ScanConfig.bIncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
 	RunAssetScanner(ScanConfig,ExportVersion);
 
