@@ -39,12 +39,11 @@ bool FAssetDependenciesInfo::HasAsset(const FString& InAssetPackageName)const
 	return bHas;
 }
 
-TArray<FAssetDetail> FAssetDependenciesInfo::GetAssetDetails()const
+TArray<FAssetDetail>& FAssetDependenciesInfo::GetAssetDetails()const
 {
 	SCOPED_NAMED_EVENT_TEXT("FAssetDependenciesInfo::GetAssetDetails",FColor::Red);
-	TArray<FAssetDetail> OutAssetDetails;
 	
-	OutAssetDetails.Empty();
+	AssetDetails.Empty();
 	TArray<FString> Keys;
 	AssetsDependenciesMap.GetKeys(Keys);
 
@@ -59,11 +58,11 @@ TArray<FAssetDetail> FAssetDependenciesInfo::GetAssetDetails()const
 		for (const auto& ModuleAssetKey : ModuleAssetKeys)
 		{
 			FScopeLock Lock(&SynchronizationObject);
-			OutAssetDetails.Add(*ModuleAssetDetails.Find(ModuleAssetKey));
+			AssetDetails.Add(*ModuleAssetDetails.Find(ModuleAssetKey));
 		}
 	},GForceSingleThread);
 	
-	return OutAssetDetails;
+	return AssetDetails;
 }
 
 bool FAssetDependenciesInfo::GetAssetDetailByPackageName(const FString& InAssetPackageName,FAssetDetail& OutDetail) const
@@ -91,4 +90,9 @@ TArray<FString> FAssetDependenciesInfo::GetAssetLongPackageNames()const
 		}
 	}
 	return OutAssetLongPackageName;
+}
+
+void FAssetDependenciesInfo::RemoveAssetDetail(const FAssetDetail& AssetDetail)
+{
+	AssetDetails.Remove(AssetDetail);
 }

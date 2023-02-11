@@ -603,10 +603,15 @@ FCookCluster USingleCookerProxy::GetPackageTrackerAsCluster()
 		PackageTrackerCluster.AssetDetails.Empty();
 		for(FName LongPackageName:PackageTracker->GetPendingPackageSet())
 		{
+			if(!FPackageName::DoesPackageExist(LongPackageName.ToString()))
+			{
+				continue;
+			}
+			
 			// make asset data to asset registry
-			FSoftObjectPath ObjectPath(
-				UFlibAssetManageHelper::LongPackageNameToPackagePath(LongPackageName.ToString())
-			);
+			FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(LongPackageName.ToString());
+			
+			FSoftObjectPath ObjectPath(PackagePath);
 			UFlibAssetManageHelper::UpdateAssetRegistryData(ObjectPath.GetLongPackageName());
 			
 			FAssetData AssetData;
