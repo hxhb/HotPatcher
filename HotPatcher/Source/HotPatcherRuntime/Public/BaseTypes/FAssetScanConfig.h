@@ -41,7 +41,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bAnalysisMaterialInstance = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bSupportWorldComposition = true;
+	bool bSupportWorldComposition = false;
 	
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool bForceSkipContent = true;
