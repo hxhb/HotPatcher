@@ -5,10 +5,6 @@
 #include "ETargetPlatform.h"
 #include "Misc/EnumRange.h"
 
-#if WITH_EDITOR
-#include "Interfaces/ITargetPlatform.h"
-#include "Interfaces/ITargetPlatformManagerModule.h"
-#endif
 
 #define LOCTEXT_NAMESPACE "FHotPatcherRuntimeModule"
 
@@ -16,24 +12,7 @@ bool GForceSingleThread = (bool)FORCE_SINGLE_THREAD;
 
 void FHotPatcherRuntimeModule::StartupModule()
 {
-	TArray<FString> AppendPlatformEnums;
-	
-#if WITH_EDITOR
-	TArray<FString> RealPlatformEnums;
-	ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
-	const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetTargetPlatforms();
-	for (ITargetPlatform *TargetPlatformIns : TargetPlatforms)
-	{
-		FString PlatformName = TargetPlatformIns->PlatformName();
-		if(!PlatformName.IsEmpty())
-		{
-			RealPlatformEnums.AddUnique(PlatformName);
-		}
-	}
-	AppendPlatformEnums = RealPlatformEnums;
-#endif
-	
-	TArray<TPair<FName, int64>> EnumNames = THotPatcherTemplateHelper::AppendEnumeraters<ETargetPlatform>(AppendPlatformEnums);
+
 }
 
 void FHotPatcherRuntimeModule::ShutdownModule()

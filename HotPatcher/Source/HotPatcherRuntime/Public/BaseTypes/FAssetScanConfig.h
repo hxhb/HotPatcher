@@ -53,4 +53,6 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition="bForceSkipContent"))
     TArray<UClass*> ForceSkipClasses;
 
+	bool IsMatchForceSkip(const FSoftObjectPath& ObjectPath,FString& OutReason);
+
 };
