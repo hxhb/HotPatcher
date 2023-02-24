@@ -1566,11 +1566,11 @@ bool UFlibPatchParserHelper::GetCookProcCommandParams(const FCookerConfig& InCon
 	return true;
 }
 
-void UFlibPatchParserHelper::ExcludeContentForVersionDiff(FPatchVersionDiff& VersionDiff,const TArray<FString>& ExcludeRules)
+void UFlibPatchParserHelper::ExcludeContentForVersionDiff(FPatchVersionDiff& VersionDiff,const TArray<FString>& ExcludeRules,EHotPatcherMatchModEx matchMod)
 {
-	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.AddAssetDependInfo,ExcludeRules);
-	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.ModifyAssetDependInfo,ExcludeRules);
-	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.DeleteAssetDependInfo,ExcludeRules);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.AddAssetDependInfo,ExcludeRules,matchMod);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.ModifyAssetDependInfo,ExcludeRules,matchMod);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.DeleteAssetDependInfo,ExcludeRules,matchMod);
 }
 
 FString UFlibPatchParserHelper::MountPathToRelativePath(const FString& InMountPath)

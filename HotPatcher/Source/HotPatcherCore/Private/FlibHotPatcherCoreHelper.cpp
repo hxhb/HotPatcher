@@ -1200,10 +1200,10 @@ FPatchVersionDiff UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(co
 	
 	if(PatchSetting.IsForceSkipContent())
 	{
-		TArray<FString> AllSkipContents;
-		AllSkipContents.Append(UFlibAssetManageHelper::DirectoriesToStrings(PatchSetting.GetForceSkipContentRules()));
-		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(PatchSetting.GetForceSkipAssets()));
-		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipContents);
+		TArray<FString> AllSkipDirContents = UFlibAssetManageHelper::DirectoriesToStrings(PatchSetting.GetForceSkipContentRules());
+		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipDirContents,EHotPatcherMatchModEx::StartWith);
+		TArray<FString> AllSkipAssets = UFlibAssetManageHelper::SoftObjectPathsToStrings(PatchSetting.GetForceSkipAssets());
+		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipAssets,EHotPatcherMatchModEx::Equal);
 	}
 	// clean deleted asset info in patch
 	if(PatchSetting.IsIgnoreDeletedAssetsInfo())

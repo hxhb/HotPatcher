@@ -1151,14 +1151,14 @@ FString UFlibAssetManageHelper::PackagePathToLongPackageName(const FString& Pack
 	return ObjectPath.GetLongPackageName();
 }
 
-void UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(FAssetDependenciesInfo& AssetDependencies,const TArray<FString>& ExcludeRules)
+void UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(FAssetDependenciesInfo& AssetDependencies,const TArray<FString>& ExcludeRules,EHotPatcherMatchModEx matchMod)
 {
 	SCOPED_NAMED_EVENT_TEXT("ExcludeContentForAssetDependenciesDetail",FColor::Red);
-	auto ExcludeEditorContent = [&ExcludeRules](TMap<FString,FAssetDependenciesDetail>& AssetCategorys)
+	auto ExcludeEditorContent = [&ExcludeRules,matchMod](TMap<FString,FAssetDependenciesDetail>& AssetCategorys)
 	{
 		TArray<FString> Keys;
 		AssetCategorys.GetKeys(Keys);
-
+		
 		for(const auto& Key:Keys)
 		{
 			FAssetDependenciesDetail&  ModuleAssetList = *AssetCategorys.Find(Key);
@@ -1175,7 +1175,9 @@ void UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(FAssetDepe
 				FString MatchRule;
 				for(const auto& Rule:ExcludeRules)
 				{
-					if(AssetKeys[index].StartsWith(Rule))
+					if(matchMod == EHotPatcherMatchModEx::StartWith && AssetKeys[index].StartsWith(Rule)||
+						matchMod == EHotPatcherMatchModEx::Equal && AssetKeys[index].Equals(Rule)
+					)
 					{
 						MatchRule = Rule;
 						customStartWith = true;

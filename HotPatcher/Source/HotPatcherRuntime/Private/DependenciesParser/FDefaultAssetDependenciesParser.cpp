@@ -286,7 +286,7 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(
 			// check is ignore directories or ingore types
 			{
 				SCOPED_NAMED_EVENT_TEXT("check ignore directories",FColor::Red);
-				if(!IsForceSkipAsset(LongPackageNameStr,IgnoreAssetTypes,IgnoreDirectories,ForceSkipDirectories,TempForceSkipPackageNames,false))
+				if(!IsForceSkipAsset(LongPackageNameStr,IgnoreAssetTypes,IgnoreDirectories,ForceSkipDirectories,TempForceSkipPackageNames,true))
 				{
 					FScopeLock Lock(&SynchronizationObject);
 					AssetDependencies.Add(LongPackageName);

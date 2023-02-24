@@ -59,6 +59,12 @@ enum class EAssetRegistryDependencyTypeEx :uint8
 	All = Soft | Hard | SearchableName | SoftManage | HardManage
 };
 
+UENUM(BlueprintType)
+enum class EHotPatcherMatchModEx :uint8
+{
+	StartWith,
+	Equal
+};
 UCLASS()
 class HOTPATCHERRUNTIME_API UFlibAssetManageHelper : public UBlueprintFunctionLibrary
 {
@@ -210,9 +216,8 @@ public:
 	static EAssetRegistryDependencyType::Type ConvAssetRegistryDependencyToInternal(const EAssetRegistryDependencyTypeEx& InType);
 
 	static void GetAssetDataInPaths(const TArray<FString>& Paths, TArray<FAssetData>& OutAssetData);
-
-	static void ExcludeContentForAssetDependenciesDetail(FAssetDependenciesInfo& AssetDependencies,const TArray<FString>& ExcludeRules = {TEXT("")});
-
+	
+	static void ExcludeContentForAssetDependenciesDetail(FAssetDependenciesInfo& AssetDependencies,const TArray<FString>& ExcludeRules = {TEXT("")},EHotPatcherMatchModEx MatchMod = EHotPatcherMatchModEx::StartWith);
 	
 	static TArray<FString> DirectoriesToStrings(const TArray<FDirectoryPath>& DirectoryPaths);
 	static TArray<FString> SoftObjectPathsToStrings(const TArray<FSoftObjectPath>& SoftObjectPaths);
