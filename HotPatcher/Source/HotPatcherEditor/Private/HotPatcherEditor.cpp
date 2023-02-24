@@ -44,11 +44,6 @@
 #include "CreatePatch/AssetActions/AssetTypeActions_PrimaryAssetLabel.h"
 #endif
 
-#ifdef _WIN64
-#include "Utils/CommonUtil.h"
-#endif
-
-
 static const FName HotPatcherTabName("HotPatcher");
 
 DEFINE_LOG_CATEGORY(LogHotPatcherEdotor)
@@ -171,30 +166,13 @@ void FHotPatcherEditorModule::OpenDockTab()
 
 void FHotPatcherEditorModule::PluginButtonClicked()
 {
-	auto FuncContent = [this]()
+	if (!DockTab.IsValid())
 	{
-		if (!DockTab.IsValid())
-		{
-			FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateRaw(this, &FHotPatcherEditorModule::OnSpawnPluginTab))
-				.SetDisplayName(LOCTEXT("FHotPatcherTabTitle", "HotPatcher"))
-				.SetMenuType(ETabSpawnerMenuType::Hidden);
-		}
-		FGlobalTabmanager::Get()->InvokeTab(HotPatcherTabName);
-	};
-
-#ifdef _WIN64
-	if (UCommonUtil::IsEditorModulePermit(TEXT("HotPatcher")))
-	{
-		FuncContent();
+		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateRaw(this, &FHotPatcherEditorModule::OnSpawnPluginTab))
+			.SetDisplayName(LOCTEXT("FHotPatcherTabTitle", "HotPatcher"))
+			.SetMenuType(ETabSpawnerMenuType::Hidden);
 	}
-	else
-	{
-		FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(TEXT("没有相关权限！")));
-	}
-#else
-	FuncContent();
-#endif
-
+	FGlobalTabmanager::Get()->InvokeTab(HotPatcherTabName);
 }
 
 void FHotPatcherEditorModule::OnTabClosed(TSharedRef<SDockTab> InTab)

@@ -104,10 +104,5 @@ public class HotPatcherEditor : ModuleRules
 				"UnrealEd"
 			});
 		}
-
-		if (Target.bBuildEditor && Target.Platform == UnrealTargetPlatform.Win64)
-		{
-			PublicDependencyModuleNames.Add("FGame");
-		}
 	}
 }
