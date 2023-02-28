@@ -2209,3 +2209,22 @@ FString UFlibPatchParserHelper::GetPlatformsStr(TArray<ETargetPlatform> Platform
 	result.RemoveFromEnd(TEXT(","));
 	return result;
 }
+
+
+bool UFlibPatchParserHelper::GetCmdletBoolValue(const FString& Token, bool& OutValue)
+{
+	FString bTokenValue;
+	bool bHasToken = FParse::Value(FCommandLine::Get(), *Token.ToLower(), bTokenValue);
+	if(bHasToken)
+	{
+		if(bTokenValue.Equals(TEXT("true"),ESearchCase::IgnoreCase))
+		{
+			OutValue = true;
+		}
+		if(bTokenValue.Equals(TEXT("false"),ESearchCase::IgnoreCase))
+		{
+			OutValue = false;
+		}
+	}
+	return bHasToken;
+}

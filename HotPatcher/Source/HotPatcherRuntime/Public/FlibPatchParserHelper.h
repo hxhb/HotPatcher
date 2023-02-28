@@ -243,5 +243,7 @@ public:
 	static FString GetTargetPlatformsCmdLine(const TArray<ETargetPlatform>& Platforms);
 	static FString MergeOptionsAsCmdline(const TArray<FString>& InOptions);
 	static FString GetPlatformsStr(TArray<ETargetPlatform> Platforms);
+
+	static bool GetCmdletBoolValue(const FString& Token,bool& OutValue);
 };
 
