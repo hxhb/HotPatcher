@@ -26,5 +26,4 @@ namespace CommandletHelper
 	HOTPATCHERCORE_API bool IsCookCommandlet();
 	HOTPATCHERCORE_API TArray<ETargetPlatform> GetCookCommandletTargetPlatforms();
 	HOTPATCHERCORE_API TArray<FString> GetCookCommandletTargetPlatformName();
-	
 }
