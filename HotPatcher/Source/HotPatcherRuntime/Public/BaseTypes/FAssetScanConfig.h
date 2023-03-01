@@ -41,7 +41,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bAnalysisMaterialInstance = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bSupportWorldComposition = true;
+	bool bSupportWorldComposition = false;
 	
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool bForceSkipContent = true;
@@ -52,5 +52,7 @@ public:
     TArray<FSoftObjectPath> ForceSkipAssets;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition="bForceSkipContent"))
     TArray<UClass*> ForceSkipClasses;
+
+	bool IsMatchForceSkip(const FSoftObjectPath& ObjectPath,FString& OutReason);
 
 };

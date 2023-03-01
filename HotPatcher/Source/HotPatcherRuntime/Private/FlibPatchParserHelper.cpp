@@ -1287,13 +1287,13 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 	ScanConfig.AssetIncludeFilters = InChunkInfo.AssetIncludeFilters;
 	ScanConfig.AssetIgnoreFilters = InChunkInfo.AssetIgnoreFilters;
 	ScanConfig.bAnalysisFilterDependencies = bInAnalysisFilterDependencies;
-	ScanConfig.bForceSkipContent = InChunkInfo.bForceSkipContent;
 	ScanConfig.bRecursiveWidgetTree = false;
+	ScanConfig.IncludeSpecifyAssets = InChunkInfo.IncludeSpecifyAssets;
+	ScanConfig.bForceSkipContent = InChunkInfo.bForceSkipContent;
 	ScanConfig.ForceSkipAssets = InChunkInfo.ForceSkipAssets;
 	ScanConfig.ForceSkipClasses = InChunkInfo.ForceSkipClasses;
-	ScanConfig.IncludeSpecifyAssets = InChunkInfo.IncludeSpecifyAssets;
-	ScanConfig.AssetRegistryDependencyTypes = InChunkInfo.AssetRegistryDependencyTypes;
 	ScanConfig.ForceSkipContentRules = InChunkInfo.ForceSkipContentRules;
+	ScanConfig.AssetRegistryDependencyTypes = InChunkInfo.AssetRegistryDependencyTypes;
 	ScanConfig.bIncludeHasRefAssetsOnly = InIncludeHasRefAssetsOnly;
 	RunAssetScanner(ScanConfig,ExportVersion);
 
@@ -1566,11 +1566,11 @@ bool UFlibPatchParserHelper::GetCookProcCommandParams(const FCookerConfig& InCon
 	return true;
 }
 
-void UFlibPatchParserHelper::ExcludeContentForVersionDiff(FPatchVersionDiff& VersionDiff,const TArray<FString>& ExcludeRules)
+void UFlibPatchParserHelper::ExcludeContentForVersionDiff(FPatchVersionDiff& VersionDiff,const TArray<FString>& ExcludeRules,EHotPatcherMatchModEx matchMod)
 {
-	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.AddAssetDependInfo,ExcludeRules);
-	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.ModifyAssetDependInfo,ExcludeRules);
-	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.DeleteAssetDependInfo,ExcludeRules);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.AddAssetDependInfo,ExcludeRules,matchMod);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.ModifyAssetDependInfo,ExcludeRules,matchMod);
+	UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(VersionDiff.AssetDiffInfo.DeleteAssetDependInfo,ExcludeRules,matchMod);
 }
 
 FString UFlibPatchParserHelper::MountPathToRelativePath(const FString& InMountPath)
@@ -2208,4 +2208,23 @@ FString UFlibPatchParserHelper::GetPlatformsStr(TArray<ETargetPlatform> Platform
 	}
 	result.RemoveFromEnd(TEXT(","));
 	return result;
+}
+
+
+bool UFlibPatchParserHelper::GetCmdletBoolValue(const FString& Token, bool& OutValue)
+{
+	FString bTokenValue;
+	bool bHasToken = FParse::Value(FCommandLine::Get(), *Token.ToLower(), bTokenValue);
+	if(bHasToken)
+	{
+		if(bTokenValue.Equals(TEXT("true"),ESearchCase::IgnoreCase))
+		{
+			OutValue = true;
+		}
+		if(bTokenValue.Equals(TEXT("false"),ESearchCase::IgnoreCase))
+		{
+			OutValue = false;
+		}
+	}
+	return bHasToken;
 }

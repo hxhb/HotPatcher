@@ -27,6 +27,7 @@
 #include "Serialization/ArrayWriter.h"
 #include "Settings/ProjectPackagingSettings.h"
 #include "ShaderCompiler.h"
+#include "Async/ParallelFor.h"
 #include "CreatePatch/PatcherProxy.h"
 #include "Materials/MaterialInstance.h"
 #include "Materials/MaterialInstanceConstant.h"
@@ -1199,10 +1200,10 @@ FPatchVersionDiff UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(co
 	
 	if(PatchSetting.IsForceSkipContent())
 	{
-		TArray<FString> AllSkipContents;
-		AllSkipContents.Append(UFlibAssetManageHelper::DirectoriesToStrings(PatchSetting.GetForceSkipContentRules()));
-		AllSkipContents.Append(UFlibAssetManageHelper::SoftObjectPathsToStrings(PatchSetting.GetForceSkipAssets()));
-		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipContents);
+		TArray<FString> AllSkipDirContents = UFlibAssetManageHelper::DirectoriesToStrings(PatchSetting.GetForceSkipContentRules());
+		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipDirContents,EHotPatcherMatchModEx::StartWith);
+		TArray<FString> AllSkipAssets = UFlibAssetManageHelper::SoftObjectPathsToStrings(PatchSetting.GetForceSkipAssets());
+		UFlibPatchParserHelper::ExcludeContentForVersionDiff(VersionDiffInfo,AllSkipAssets,EHotPatcherMatchModEx::Equal);
 	}
 	// clean deleted asset info in patch
 	if(PatchSetting.IsIgnoreDeletedAssetsInfo())
@@ -1620,8 +1621,9 @@ void UFlibHotPatcherCoreHelper::AppendPakCommandOptions(TArray<FString>& OriginC
 	const TArray<FString>& Options, bool bAppendAllMatch, const TArray<FString>& AppendFileExtersions,
 	const TArray<FString>& IgnoreFormats, const TArray<FString>& InIgnoreOptions)
 {
-	for(auto& Command:OriginCommands)
+	ParallelFor(OriginCommands.Num(),[&](int32 index)
 	{
+		FString& Command = OriginCommands[index];
 		FString PakOptionsStr;
 		for (const auto& Param : Options)
 		{
@@ -1640,7 +1642,7 @@ void UFlibHotPatcherCoreHelper::AppendPakCommandOptions(TArray<FString>& OriginC
 			PakOptionsStr += AppendOptionStr;
 		}
 		Command = FString::Printf(TEXT("%s%s"),*Command,*PakOptionsStr);
-	}
+	});
 }
 
 FProjectPackageAssetCollection UFlibHotPatcherCoreHelper::ImportProjectSettingsPackages()

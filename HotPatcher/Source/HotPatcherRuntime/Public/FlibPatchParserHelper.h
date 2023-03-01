@@ -174,7 +174,7 @@ public:
 
 	static TArray<FString> GetPakCommandStrByCommands(const TArray<FPakCommand>& PakCommands, const TArray<FReplaceText>& InReplaceTexts = TArray<FReplaceText>{},bool bIoStore=false);
 	static bool GetCookProcCommandParams(const FCookerConfig& InConfig,FString& OutParams);
-	static void ExcludeContentForVersionDiff(FPatchVersionDiff& VersionDiff,const TArray<FString>& ExcludeRules = {TEXT("")});
+	static void ExcludeContentForVersionDiff(FPatchVersionDiff& VersionDiff,const TArray<FString>& ExcludeRules = {TEXT("")},EHotPatcherMatchModEx matchMod=EHotPatcherMatchModEx::StartWith);
 	static FString MountPathToRelativePath(const FString& InMountPath);
 
 
@@ -243,5 +243,7 @@ public:
 	static FString GetTargetPlatformsCmdLine(const TArray<ETargetPlatform>& Platforms);
 	static FString MergeOptionsAsCmdline(const TArray<FString>& InOptions);
 	static FString GetPlatformsStr(TArray<ETargetPlatform> Platforms);
+
+	static bool GetCmdletBoolValue(const FString& Token,bool& OutValue);
 };
 

@@ -207,6 +207,8 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(
     const TSet<FName>& IgnoreAssetTypes,
     FScanedCachesType& InScanedCaches)
 {
+	static bool bVerboseLog = FParse::Param(FCommandLine::Get(), TEXT("VerboseLog"));
+	
 	TSet<FName> AssetDependencies;
 	SCOPED_NAMED_EVENT_TEXT("GatherAssetDependicesInfoRecursively",FColor::Red);
 	TArray<FString> TempForceSkipPackageNames = ForceSkipPackageNames;
@@ -284,18 +286,28 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(
 			// check is ignore directories or ingore types
 			{
 				SCOPED_NAMED_EVENT_TEXT("check ignore directories",FColor::Red);
-				if(!IsForceSkipAsset(LongPackageNameStr,IgnoreAssetTypes,IgnoreDirectories,ForceSkipDirectories,TempForceSkipPackageNames,false))
+				if(!IsForceSkipAsset(LongPackageNameStr,IgnoreAssetTypes,IgnoreDirectories,ForceSkipDirectories,TempForceSkipPackageNames,true))
 				{
 					FScopeLock Lock(&SynchronizationObject);
 					AssetDependencies.Add(LongPackageName);
 				}
 			}
-		},GForceSingleThread);
+		},true);
 	}
 	
 	if(bRecursively)
 	{
 		TSet<FName> Dependencies;
+#if ASSET_DEPENDENCIES_DEBUG_LOG
+		if(bVerboseLog)
+		{
+			UE_LOG(LogHotPatcher,Display,TEXT("AssetParser %s Dependencies: (%d)"),*InLongPackageName.ToString(),AssetDependencies.Num());
+			for(const auto& AssetPackageName:AssetDependencies)
+			{
+				UE_LOG(LogHotPatcher,Display,TEXT("\t%s"),*AssetPackageName.ToString());
+			}
+		}
+#endif
 		for(const auto& AssetPackageName:AssetDependencies)
 		{
 			if(AssetPackageName.IsNone())

@@ -166,11 +166,11 @@ void FHotPatcherEditorModule::OpenDockTab()
 
 void FHotPatcherEditorModule::PluginButtonClicked()
 {
-	if(!DockTab.IsValid())
+	if (!DockTab.IsValid())
 	{
 		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateRaw(this, &FHotPatcherEditorModule::OnSpawnPluginTab))
-	    .SetDisplayName(LOCTEXT("FHotPatcherTabTitle", "HotPatcher"))
-	    .SetMenuType(ETabSpawnerMenuType::Hidden);
+			.SetDisplayName(LOCTEXT("FHotPatcherTabTitle", "HotPatcher"))
+			.SetMenuType(ETabSpawnerMenuType::Hidden);
 	}
 	FGlobalTabmanager::Get()->InvokeTab(HotPatcherTabName);
 }

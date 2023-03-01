@@ -42,9 +42,8 @@ bool FAssetDependenciesInfo::HasAsset(const FString& InAssetPackageName)const
 TArray<FAssetDetail> FAssetDependenciesInfo::GetAssetDetails()const
 {
 	SCOPED_NAMED_EVENT_TEXT("FAssetDependenciesInfo::GetAssetDetails",FColor::Red);
-	TArray<FAssetDetail> OutAssetDetails;
 	
-	OutAssetDetails.Empty();
+	TArray<FAssetDetail> AssetDetails;
 	TArray<FString> Keys;
 	AssetsDependenciesMap.GetKeys(Keys);
 
@@ -59,11 +58,11 @@ TArray<FAssetDetail> FAssetDependenciesInfo::GetAssetDetails()const
 		for (const auto& ModuleAssetKey : ModuleAssetKeys)
 		{
 			FScopeLock Lock(&SynchronizationObject);
-			OutAssetDetails.Add(*ModuleAssetDetails.Find(ModuleAssetKey));
+			AssetDetails.Add(*ModuleAssetDetails.Find(ModuleAssetKey));
 		}
 	},GForceSingleThread);
 	
-	return OutAssetDetails;
+	return AssetDetails;
 }
 
 bool FAssetDependenciesInfo::GetAssetDetailByPackageName(const FString& InAssetPackageName,FAssetDetail& OutDetail) const
@@ -91,4 +90,29 @@ TArray<FString> FAssetDependenciesInfo::GetAssetLongPackageNames()const
 		}
 	}
 	return OutAssetLongPackageName;
+}
+
+void FAssetDependenciesInfo::RemoveAssetDetail(const FAssetDetail& AssetDetail)
+{
+	SCOPED_NAMED_EVENT_TEXT("FAssetDependenciesInfo::RemoveAssetDetail",FColor::Red);
+	FString LongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(AssetDetail.PackagePath.ToString());
+	RemoveAssetDetail(LongPackageName);
+}
+
+void FAssetDependenciesInfo::RemoveAssetDetail(const FString& LongPackageName)
+{
+	FString BelongModuleName = UFlibAssetManageHelper::GetAssetBelongModuleName(LongPackageName);
+	if (AssetsDependenciesMap.Contains(BelongModuleName))
+	{
+		TMap<FString,FAssetDetail>& AssetDependencyDetails = AssetsDependenciesMap.Find(BelongModuleName)->AssetDependencyDetails;
+		bool bHas = AssetDependencyDetails.Contains(LongPackageName);
+		if(bHas)
+		{
+			AssetDependencyDetails.Remove(LongPackageName);
+			if(!AssetDependencyDetails.Num())
+			{
+				AssetsDependenciesMap.Remove(BelongModuleName);
+			}
+		}
+	}
 }

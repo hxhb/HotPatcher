@@ -190,7 +190,7 @@ public class HotPatcherCore : ModuleRules
 		{
 			"TOOL_NAME=\"HotPatcher\"",
 			"CURRENT_VERSION_ID=80",
-			"CURRENT_PATCH_ID=0",
+			"CURRENT_PATCH_ID=1",
 			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
 		});
 	}

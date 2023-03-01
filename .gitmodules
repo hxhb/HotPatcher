@@ -19,3 +19,6 @@
 [submodule "Mods/ShaderPatcherUE"]
 	path = Mods/ShaderPatcherUE
 	url = git@github.com:hxhb/ShaderPatcherUE.git
+[submodule "Mods/PakAnalyzerUE"]
+	path = Mods/PakAnalyzerUE
+	url = git@github.com:hxhb/PakAnalyzerUE.git

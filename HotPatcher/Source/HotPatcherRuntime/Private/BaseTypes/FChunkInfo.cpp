@@ -31,7 +31,7 @@ FString FChunkInfo::GetShaderLibraryName() const
 
 TArray<FSoftObjectPath> FChunkInfo::GetManagedAssets() const
 {
-	SCOPED_NAMED_EVENT_TEXT("FChunkInfo::GetManagedAssets",FColor::Red);
+	FScopedNamedEventStatic GetManagedAssetsTag(FColor::Red,*FString::Printf(TEXT("GetManagedAssets_%s"),*ChunkName));
 	TArray<FSoftObjectPath> NewPaths;
 	
 	UAssetManager& Manager = UAssetManager::Get();

@@ -21,5 +21,7 @@ struct HOTPATCHERRUNTIME_API FAssetDependenciesInfo
 	TArray<FAssetDetail> GetAssetDetails()const;
 	bool GetAssetDetailByPackageName(const FString& InAssetPackageName,FAssetDetail& OutDetail)const;
 	TArray<FString> GetAssetLongPackageNames()const;
+	void RemoveAssetDetail(const FAssetDetail& AssetDetail);
+	void RemoveAssetDetail(const FString& LongPackageName);
 };
 

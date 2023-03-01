@@ -863,7 +863,7 @@ bool UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 				OutCookCommand.Append(FinalCookedCommand);
 			}
 		}
-	},GForceSingleThread);
+	},true);
 	return true;
 }
 
@@ -1151,14 +1151,14 @@ FString UFlibAssetManageHelper::PackagePathToLongPackageName(const FString& Pack
 	return ObjectPath.GetLongPackageName();
 }
 
-void UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(FAssetDependenciesInfo& AssetDependencies,const TArray<FString>& ExcludeRules)
+void UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(FAssetDependenciesInfo& AssetDependencies,const TArray<FString>& ExcludeRules,EHotPatcherMatchModEx matchMod)
 {
 	SCOPED_NAMED_EVENT_TEXT("ExcludeContentForAssetDependenciesDetail",FColor::Red);
-	auto ExcludeEditorContent = [&ExcludeRules](TMap<FString,FAssetDependenciesDetail>& AssetCategorys)
+	auto ExcludeEditorContent = [&ExcludeRules,matchMod](TMap<FString,FAssetDependenciesDetail>& AssetCategorys)
 	{
 		TArray<FString> Keys;
 		AssetCategorys.GetKeys(Keys);
-
+		
 		for(const auto& Key:Keys)
 		{
 			FAssetDependenciesDetail&  ModuleAssetList = *AssetCategorys.Find(Key);
@@ -1175,7 +1175,9 @@ void UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(FAssetDepe
 				FString MatchRule;
 				for(const auto& Rule:ExcludeRules)
 				{
-					if(AssetKeys[index].StartsWith(Rule))
+					if(matchMod == EHotPatcherMatchModEx::StartWith && AssetKeys[index].StartsWith(Rule)||
+						matchMod == EHotPatcherMatchModEx::Equal && AssetKeys[index].Equals(Rule)
+					)
 					{
 						MatchRule = Rule;
 						customStartWith = true;
@@ -1410,8 +1412,9 @@ bool UFlibAssetManageHelper::MatchIgnoreFilters(const FString& LongPackageName, 
 {
 	for(const auto& IgnoreFilter:IgnoreDirs)
 	{
-		if(LongPackageName.StartsWith(IgnoreFilter) ||
-			IgnoreFilter.Contains(TEXT("*")) ? LongPackageName.MatchesWildcard(IgnoreFilter,ESearchCase::CaseSensitive):false)
+		bool bWithInSkipDir = LongPackageName.StartsWith(IgnoreFilter);
+		bool bMatchSkipWildcard = IgnoreFilter.Contains(TEXT("*")) ? LongPackageName.MatchesWildcard(IgnoreFilter,ESearchCase::CaseSensitive) : false;
+		if( bWithInSkipDir || bMatchSkipWildcard)
 		{
 			MatchDir = IgnoreFilter;
 			return true;
@@ -1612,4 +1615,19 @@ void UFlibAssetManageHelper::UpdateAssetRegistryData(const FString& PackageName)
 		AssetRegistry.ScanModifiedAssetFiles(TArray<FString>{PackageFilename});
 	}
 }
+TArray<FString> UFlibAssetManageHelper::GetPackgeFiles(const FString& LongPackageName,const FString& Extension)
+{
+	SCOPED_NAMED_EVENT_TEXT("GetPackgeFiles",FColor::Red);
+	TArray<FString> Files;
+			
+	FString FilePath = FPackageName::LongPackageNameToFilename(LongPackageName) + Extension;
+
+	if(FPaths::FileExists(FilePath))
+	{
+		FPaths::MakeStandardFilename(FilePath);
+		Files.Add(FilePath);
+	}
+	return Files;
+};
+
 // PRAGMA_ENABLE_DEPRECATION_WARNINGS

@@ -504,7 +504,7 @@ namespace PatchWorker
 			{
 				for(auto& Chunk:Context.PakChunks)
 				{
-					FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,TEXT("Metadatas"),Chunk.ChunkName,PlatformName);
+					FString SavePath = FPaths::Combine(Context.GetSettingObject()->GetSaveAbsPath(),Context.CurrentVersion.VersionId,PlatformName,TEXT("Metadatas"),PlatformName,TEXT("Metadata/ShaderLibrarySource"));
 					TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath);
 		
 					if(Context.PakChunks.Num())
@@ -563,7 +563,8 @@ namespace PatchWorker
 					);
 					
 					const TArray<FAssetDetail>& ChunkAssets = ChunkAssetsDescrible.Assets.GetAssetDetails();
-
+					Context.PatchProxy->GetPatcherResult().PatcherAssetDetails.Append(ChunkAssets);
+					
 					if(Context.GetSettingObject()->IsCookPatchAssets())
 					{
 						FTrackPackageAction TrackChunkPackageAction(Context,Chunk,TArray<ETargetPlatform>{Platform});
@@ -605,6 +606,22 @@ namespace PatchWorker
 						SingleCookerProxy->AddToRoot();
 						SingleCookerProxy->Init(&EmptySetting);
 						bool bExportStatus = SingleCookerProxy->DoExport();
+						const FCookCluster& AdditionalCluster = SingleCookerProxy->GetPackageTrackerAsCluster();
+						for(const auto& AssetDetail:AdditionalCluster.AssetDetails)
+						{
+							FSoftObjectPath ObjectPath{AssetDetail.PackagePath};
+							FString ReceiveReason;
+							if(!Context.GetSettingObject()->GetAssetScanConfig().IsMatchForceSkip(ObjectPath,ReceiveReason))
+							{
+								Context.PatchProxy->GetPatcherResult().PatcherAssetDetails.Add(AssetDetail);
+								Context.VersionDiff.AssetDiffInfo.AddAssetDependInfo.AddAssetsDetail(AssetDetail);
+							}
+							else
+							{
+								UE_LOG(LogHotPatcher,Display,TEXT("[PackageTracker] %s Match ForceSkipRule,Reason %s"),*ObjectPath.GetLongPackageName(),*ReceiveReason);
+							}
+						}
+						
 						SingleCookerProxy->Shutdown();
 						SingleCookerProxy->RemoveFromRoot();
 					}
