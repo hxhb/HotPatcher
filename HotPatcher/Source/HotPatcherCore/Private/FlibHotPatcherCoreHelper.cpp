@@ -2048,7 +2048,7 @@ TArray<FExternDirectoryInfo> UFlibHotPatcherCoreHelper::GetProjectNotAssetDirCon
 	TArray<FExternDirectoryInfo> result;
 	const UProjectPackagingSettings* const PackagingSettings = GetDefault<UProjectPackagingSettings>();
 
-	FString BasePath = FString::Printf(TEXT("../../../%s/Content/%s"),FApp::GetProjectName());
+	FString BasePath = FString::Printf(TEXT("../../../%s/Content/"),FApp::GetProjectName());
 	auto FixPath = [](const FString& BasePath,const FString& Path)->FString
 	{
 		FString result;
