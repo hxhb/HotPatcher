@@ -1517,7 +1517,7 @@ namespace PatchWorker
 		SCOPED_NAMED_EVENT_TEXT("OnFaildDispatchWorker",FColor::Red);
 		if (!Context.GetPakFileNum())
 		{
-			UE_LOG(LogHotPatcher, Error, TEXT("The Patch not contain any invalie file!"));
+			UE_LOG(LogHotPatcher, Warning, TEXT("The Patch not contain any invalie file!"));
 			Context.OnShowMsg.Broadcast(TEXT("The Patch not contain any invalie file!"));
 		}
 		else

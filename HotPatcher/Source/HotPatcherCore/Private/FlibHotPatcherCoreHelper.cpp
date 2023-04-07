@@ -34,6 +34,8 @@
 #include "ProfilingDebugging/LoadTimeTracker.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Misc/EngineVersionComparison.h"
+#include "Misc/CoreMisc.h"
+#include "DerivedDataCacheInterface.h"
 
 DEFINE_LOG_CATEGORY(LogHotPatcherCoreHelper);
 
@@ -1987,6 +1989,12 @@ void UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites()
 		}));
 	WaitThreadWorker->Execute();
 	WaitThreadWorker->Join();
+}
+
+void UFlibHotPatcherCoreHelper::WaitDDCComplete()
+{
+	SCOPED_NAMED_EVENT_TEXT("WaitForAsyncFileWrites",FColor::Red);
+	GetDerivedDataCacheRef().WaitForQuiescence(true);
 }
 
 bool UFlibHotPatcherCoreHelper::IsCanCookPackage(const FString& LongPackageName)

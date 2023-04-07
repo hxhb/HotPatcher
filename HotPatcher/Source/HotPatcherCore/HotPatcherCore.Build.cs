@@ -61,7 +61,8 @@ public class HotPatcherCore : ModuleRules
 				"InputCore",
 				"CoreUObject",
 				"Engine",
-				"Sockets"
+				"Sockets",
+				"DerivedDataCache"
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);

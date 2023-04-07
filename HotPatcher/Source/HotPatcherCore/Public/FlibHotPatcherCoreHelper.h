@@ -242,7 +242,7 @@ public:
 	static FProjectPackageAssetCollection ImportProjectSettingsPackages();
 
 	static void WaitForAsyncFileWrites();
-
+	static void WaitDDCComplete();
 	static bool IsCanCookPackage(const FString& LongPackageName);
 	
 	static void ImportProjectSettingsToScannerConfig(FAssetScanConfig& AssetScanConfig);
