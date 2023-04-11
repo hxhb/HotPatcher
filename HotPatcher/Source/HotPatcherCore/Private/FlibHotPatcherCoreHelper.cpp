@@ -1993,7 +1993,7 @@ void UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites()
 
 void UFlibHotPatcherCoreHelper::WaitDDCComplete()
 {
-	SCOPED_NAMED_EVENT_TEXT("WaitForAsyncFileWrites",FColor::Red);
+	SCOPED_NAMED_EVENT_TEXT("WaitDDCComplete",FColor::Red);
 	GetDerivedDataCacheRef().WaitForQuiescence(true);
 }
 
