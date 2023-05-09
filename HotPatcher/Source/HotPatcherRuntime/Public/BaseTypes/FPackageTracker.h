@@ -2,8 +2,6 @@
 #include "FlibAssetManageHelper.h"
 #include "CoreMinimal.h"
 #include "UObject/UObjectArray.h"
-#include "HAL/PlatformFilemanager.h"
-#include "HAL/FileManager.h"
 #include "HotPatcherLog.h"
 
 struct FPackageTrackerBase : public FUObjectArray::FUObjectCreateListener, public FUObjectArray::FUObjectDeleteListener

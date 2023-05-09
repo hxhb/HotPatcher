@@ -1529,6 +1529,7 @@ bool UFlibAssetManageHelper::HasClassObjInPackage(UPackage* Package,UClass* Find
 TArray<FAssetDetail> UFlibAssetManageHelper::GetAssetDetailsByClass(TArray<FAssetDetail>& AllAssetDetails,
 	UClass* Class, bool RemoveFromSrc)
 {
+	SCOPED_NAMED_EVENT_TEXT("GetAssetDetailsByClass",FColor::Red);
 	return THotPatcherTemplateHelper::GetArrayBySrcWithCondition<FAssetDetail>(AllAssetDetails,[&](FAssetDetail AssetDetail)->bool
 				{
 					return AssetDetail.AssetType.IsEqual(*Class->GetName());
