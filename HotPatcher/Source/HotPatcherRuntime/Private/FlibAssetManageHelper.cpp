@@ -1175,8 +1175,8 @@ void UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(FAssetDepe
 				FString MatchRule;
 				for(const auto& Rule:ExcludeRules)
 				{
-					if(matchMod == EHotPatcherMatchModEx::StartWith && AssetKeys[index].StartsWith(Rule)||
-						matchMod == EHotPatcherMatchModEx::Equal && AssetKeys[index].Equals(Rule)
+					if((matchMod == EHotPatcherMatchModEx::StartWith && AssetKeys[index].StartsWith(Rule)) ||
+						(matchMod == EHotPatcherMatchModEx::Equal && AssetKeys[index].Equals(Rule))
 					)
 					{
 						MatchRule = Rule;
