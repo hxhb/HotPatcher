@@ -1430,11 +1430,11 @@ namespace PatchWorker
 				{
 					if(::IsRunningCommandlet())
 					{
-						FString Msg = FString::Printf(TEXT("Successed to Export the Pak File info to ."),*SavePakFilesPath);
+						FString Msg = FString::Printf(TEXT("Export PakFileInfo to %s."),*SavePakFilesPath);
 						Context.OnPaking.Broadcast(TEXT("SavedPakFileMsg"),Msg);
 					}else
 					{
-						FText Msg = LOCTEXT("SavedPakFileMsg_ExportSuccessed", "Successed to Export the Pak File info.");
+						FText Msg = LOCTEXT("SavedPakFileMsg_ExportSuccessed", "Export PakFileInfo Successfuly.");
 						FHotPatcherDelegates::Get().GetNotifyFileGenerated().Broadcast(Msg, SavePakFilesPath);
 					}
 				}
@@ -1460,7 +1460,7 @@ namespace PatchWorker
 		}
 		if (Context.GetSettingObject()->IsSaveConfig())
 		{
-			auto ExportPatchConfig = [&Context](const FExportPatchSettings& Settings,const FString& SaveTo)
+			auto ExportPatchConfig = [&Context](const FExportPatchSettings& Settings,const FString& SaveTo,bool bNotify)
 			{
 				FString SerializedJsonStr;
 				THotPatcherTemplateHelper::TSerializeStructAsJsonString(Settings,SerializedJsonStr);
@@ -1468,11 +1468,11 @@ namespace PatchWorker
 				{
 					if(::IsRunningCommandlet())
 					{
-						FString Msg = FString::Printf(TEXT("Successed to Export the Patch Config to %s."),*SaveTo);
+						FString Msg = FString::Printf(TEXT("Export PatchConfig to %s."),*SaveTo);
 						Context.OnPaking.Broadcast(TEXT("SavedPatchConfig"),Msg);
-					}else
+					}else if(bNotify)
 					{
-						FText Msg = LOCTEXT("SavedPatchConfig", "Successed to Export the Patch Config.");
+						FText Msg = LOCTEXT("SavedPatchConfig", "Export PatchConfig Successfuly.");
 						FHotPatcherDelegates::Get().GetNotifyFileGenerated().Broadcast(Msg, SaveTo);
 					}
 				}
@@ -1489,7 +1489,7 @@ namespace PatchWorker
 				FExportPatchSettings TempPatchSettings = *Context.GetSettingObject();
 				TempPatchSettings.PakTargetPlatforms.Empty();
 				TempPatchSettings.PakTargetPlatforms.Add(Platform);
-				ExportPatchConfig(TempPatchSettings,SaveConfigPath);
+				ExportPatchConfig(TempPatchSettings,SaveConfigPath,false);
 			}
 			if(PakTargetPlatforms.Num())
 			{
@@ -1497,7 +1497,7 @@ namespace PatchWorker
 					Context.GetSettingObject()->GetCurrentVersionSavePath(),
 					FString::Printf(TEXT("%s_PatchConfig.json"),*Context.CurrentVersion.VersionId)
 				);
-				ExportPatchConfig(*Context.GetSettingObject(),SaveConfigPath);
+				ExportPatchConfig(*Context.GetSettingObject(),SaveConfigPath,true);
 			}
 		}
 		
