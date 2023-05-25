@@ -995,14 +995,14 @@ namespace PatchWorker
 					// add extern file to pak(version file)
 					SinglePakForChunk.PakCommands.Append(Context.AdditionalFileToPak);
 
-					FReplacePakRegular PakSaveDirRegular{
+					FReplacePakRegular PakPathRegular{
 						Context.CurrentVersion.VersionId,
 						Context.CurrentVersion.BaseVersionId,
 						Chunk.ChunkName,
 						PlatformName
 					};
 					
-					const FString ChunkPakName = UFlibHotPatcherCoreHelper::ReplacePakRegular(PakSaveDirRegular,Context.GetSettingObject()->GetPakNameRegular());
+					const FString ChunkPakName = UFlibHotPatcherCoreHelper::ReplacePakRegular(PakPathRegular,Context.GetSettingObject()->GetPakNameRegular());
 					SinglePakForChunk.ChunkStoreName = ChunkPakName;
 					SinglePakForChunk.StorageDirectory = ChunkSaveBasePath;
 					Chunk.GetPakFileProxys().Add(SinglePakForChunk);

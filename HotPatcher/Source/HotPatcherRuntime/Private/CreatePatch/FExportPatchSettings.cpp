@@ -122,14 +122,14 @@ bool FExportPatchSettings::GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion
 
 FString FExportPatchSettings::GetChunkSavedDir(const FString& InVersionId,const FString& InBaseVersionId,const FString& InChunkName,const FString& InPlatformName)const
 {
-	FReplacePakRegular TmpPakSaveDirRegular{
+	FReplacePakRegular TmpPakPathRegular{
 		InVersionId,
 		InBaseVersionId,
 		InChunkName,
 		InPlatformName
 	};
-	FString ReplacedPakSaveDirRegular = UFlibPatchParserHelper::ReplacePakRegular(TmpPakSaveDirRegular,GetPakSaveDirRegular());
-	return FPaths::Combine(GetSaveAbsPath(),ReplacedPakSaveDirRegular);
+	FString ReplacedPakPathRegular = UFlibPatchParserHelper::ReplacePakRegular(TmpPakPathRegular,GetPakPathRegular());
+	return FPaths::Combine(GetSaveAbsPath(),ReplacedPakPathRegular);
 }
 
 FString FExportPatchSettings::GetCurrentVersionSavePath() const
