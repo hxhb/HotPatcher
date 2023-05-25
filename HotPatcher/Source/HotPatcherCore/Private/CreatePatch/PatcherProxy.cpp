@@ -1473,7 +1473,7 @@ namespace PatchWorker
 		for(ETargetPlatform Platform:Context.GetSettingObject()->PakTargetPlatforms)
 		{
 			FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
-			FString SavedBaseDir = Context.PatchProxy->GetChunkSavedDir(Context.CurrentVersion.VersionId,Context.CurrentVersion.BaseVersionId,TEXT(""),PlatformName);
+			FString SavedBaseDir = Context.PatchProxy->GetChunkSavedDir(Context.CurrentVersion.VersionId,Context.CurrentVersion.BaseVersionId,Context.GetSettingObject()->GetVersionId(),PlatformName);
 			FString SaveConfigPath = FPaths::Combine(
 			SavedBaseDir,
 				FString::Printf(TEXT("%s_PatchConfig.json"),*Context.CurrentVersion.VersionId)
