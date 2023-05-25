@@ -51,8 +51,6 @@ public:
     FORCEINLINE const FPatchWorkers& GetPatchWorkers()const{ return PatchWorkers; }
     FORCEINLINE FPatherResult& GetPatcherResult(){ return PatcherResult; }
 
-    FString GetChunkSavedDir(const FString& VersionId,const FString& BaseVersionId,const FString& ChunkName,const FString& PlatformName);
-    
 public:
     FOnPakListGenerated OnPakListGenerated;
     

@@ -955,52 +955,7 @@ FString UFlibHotPatcherCoreHelper::PatchSummary(const FPatchVersionDiff& DiffInf
 
 FString UFlibHotPatcherCoreHelper::ReplacePakRegular(const FReplacePakRegular& RegularConf, const FString& InRegular)
 {
-	struct FResularOperator
-	{
-		FResularOperator(const FString& InName,TFunction<FString(void)> InOperator)
-			:Name(InName),Do(InOperator){}
-		FString Name;
-		TFunction<FString(void)> Do;
-	};
-	
-	TArray<FResularOperator> RegularOpList;
-	RegularOpList.Emplace(TEXT("{VERSION}"),[&RegularConf]()->FString{return RegularConf.VersionId;});
-	RegularOpList.Emplace(TEXT("{BASEVERSION}"),[&RegularConf]()->FString{return RegularConf.BaseVersionId;});
-	RegularOpList.Emplace(TEXT("{PLATFORM}"),[&RegularConf]()->FString{return RegularConf.PlatformName;});
-	RegularOpList.Emplace(TEXT("{CHUNKNAME}"),[&RegularConf,InRegular]()->FString
-	{
-		if(InRegular.Contains(TEXT("{VERSION}")) &&
-			InRegular.Contains(TEXT("{CHUNKNAME}")) &&
-			RegularConf.VersionId.Equals(RegularConf.ChunkName))
-		{
-			return TEXT("");
-		}
-		else
-		{
-			return RegularConf.ChunkName;
-		}
-	});
-	
-	auto CustomPakNameRegular = [](const TArray<FResularOperator>& Operators,const FString& Regular)->FString
-	{
-		FString Result = Regular;
-		for(auto& Operator:Operators)
-		{
-			Result = Result.Replace(*Operator.Name,*(Operator.Do()));
-		}
-		auto ReplaceDoubleLambda = [](FString& Src,const FString& From,const FString& To)
-		{
-			while(Src.Contains(From))
-			{
-				Src = Src.Replace(*From,*To);
-			}
-		};
-		ReplaceDoubleLambda(Result,TEXT("__"),TEXT("_"));
-		ReplaceDoubleLambda(Result,TEXT("--"),TEXT("-"));
-		return Result;
-	};
-	
-	return CustomPakNameRegular(RegularOpList,InRegular);
+	return UFlibPatchParserHelper::ReplacePakRegular(RegularConf,InRegular);
 }
 
 bool UFlibHotPatcherCoreHelper::CheckSelectedAssetsCookStatus(const FString& OverrideCookedDir,const TArray<FString>& PlatformNames, const FAssetDependenciesInfo& SelectedAssets, FString& OutMsg)

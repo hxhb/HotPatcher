@@ -258,5 +258,17 @@ public:
 		FString StorageCookedDir = TEXT("[PROJECTDIR]/Saved/Cooked");
 
 	FString GetStorageCookedDir()const;
+	FString GetChunkSavedDir(const FString& InVersionId,const FString& InBaseVersionId,const FString& InChunkName,const FString& InPlatformName)const;
 	
+};
+
+struct HOTPATCHERRUNTIME_API FReplacePakRegular
+{
+	FReplacePakRegular()=default;
+	FReplacePakRegular(const FString& InVersionId,const FString& InBaseVersionId,const FString& InChunkName,const FString& InPlatformName):
+	VersionId(InVersionId),BaseVersionId(InBaseVersionId),ChunkName(InChunkName),PlatformName(InPlatformName){}
+	FString VersionId;
+	FString BaseVersionId;
+	FString ChunkName;
+	FString PlatformName;
 };

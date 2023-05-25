@@ -120,10 +120,32 @@ bool FExportPatchSettings::GetBaseVersionInfo(FHotPatcherVersion& OutBaseVersion
 	return bDeserializeStatus;
 }
 
+FString FExportPatchSettings::GetChunkSavedDir(const FString& InVersionId,const FString& InBaseVersionId,const FString& InChunkName,const FString& InPlatformName)const
+{
+	FReplacePakRegular TmpPakSaveDirRegular{
+		InVersionId,
+		InBaseVersionId,
+		InChunkName,
+		InPlatformName
+	};
+	FString ReplacedPakSaveDirRegular = UFlibPatchParserHelper::ReplacePakRegular(TmpPakSaveDirRegular,GetPakSaveDirRegular());
+	return FPaths::Combine(GetSaveAbsPath(),ReplacedPakSaveDirRegular);
+}
 
 FString FExportPatchSettings::GetCurrentVersionSavePath() const
 {
-	FString CurrentVersionSavePath = FPaths::Combine(GetSaveAbsPath(), /*const_cast<FExportPatchSettings*>(this)->GetNewPatchVersionInfo().*/VersionId);
+	FString CurrentVersionSavePath;
+	if(GetPakTargetPlatforms().Num())
+	{
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(GetPakTargetPlatforms()[0]);
+		FString SavedBaseDir = GetChunkSavedDir(GetVersionId(),TEXT(""),GetVersionId(),PlatformName);
+		CurrentVersionSavePath = FPaths::Combine(SavedBaseDir,TEXT(".."));
+	}
+	else
+	{
+		CurrentVersionSavePath = FPaths::Combine(GetSaveAbsPath(), /*const_cast<FExportPatchSettings*>(this)->GetNewPatchVersionInfo().*/VersionId);
+	}
+	FPaths::NormalizeFilename(CurrentVersionSavePath);
 	return CurrentVersionSavePath;
 }
 

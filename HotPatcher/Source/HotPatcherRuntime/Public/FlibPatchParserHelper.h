@@ -245,5 +245,7 @@ public:
 	static FString GetPlatformsStr(TArray<ETargetPlatform> Platforms);
 
 	static bool GetCmdletBoolValue(const FString& Token,bool& OutValue);
+
+	static FString ReplacePakRegular(const FReplacePakRegular& RegularConf, const FString& InRegular);
 };
 

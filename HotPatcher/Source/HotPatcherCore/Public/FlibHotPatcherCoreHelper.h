@@ -59,17 +59,6 @@ struct FProjectPackageAssetCollection
 	TArray<FSoftObjectPath> NeverCookPackages;
 };
 
-
-struct HOTPATCHERCORE_API FReplacePakRegular
-{
-	FReplacePakRegular()=default;
-	FReplacePakRegular(const FString& InVersionId,const FString& InBaseVersionId,const FString& InChunkName,const FString& InPlatformName):
-	VersionId(InVersionId),BaseVersionId(InBaseVersionId),ChunkName(InChunkName),PlatformName(InPlatformName){}
-	FString VersionId;
-	FString BaseVersionId;
-	FString ChunkName;
-	FString PlatformName;
-};
 /**
  * 
  */
