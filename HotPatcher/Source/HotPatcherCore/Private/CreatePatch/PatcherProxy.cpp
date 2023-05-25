@@ -1113,11 +1113,12 @@ namespace PatchWorker
 							{
 								if(::IsRunningCommandlet())
 								{
-									FString Msg = FString::Printf(TEXT("Successed to Package the patch as %s."),*PakSavePath);
+									FString Msg = FString::Printf(TEXT("Package the Patch as %s."),*PakSavePath);
 									Context.OnPaking.Broadcast(TEXT("SavedPakFile"),Msg);
 								}else
 								{
-									FText Msg = LOCTEXT("SavedPakFileMsg_PackageSuccessed", "Successed to Package the patch as Pak.");
+									FString MsgStr = FString::Printf(TEXT("Package %s for %s Successfuly."),*Chunk.ChunkName,*PlatformName);
+									FText Msg = UKismetTextLibrary::Conv_StringToText(MsgStr);
 									FHotPatcherDelegates::Get().GetNotifyFileGenerated().Broadcast(Msg,PakSavePath);
 								}
 								FPakFileInfo CurrentPakInfo;
@@ -1387,11 +1388,11 @@ namespace PatchWorker
 			{
 				if(::IsRunningCommandlet())
 				{
-					FString Msg = FString::Printf(TEXT("Succeed to export New Release Info to %s."),*SaveCurrentVersionToFile);
+					FString Msg = FString::Printf(TEXT("Export NewRelease to %s."),*SaveCurrentVersionToFile);
 					Context.OnPaking.Broadcast(TEXT("SavePatchDiffInfo"),Msg);
 				}else
 				{
-					auto Msg = LOCTEXT("SavePatchDiffInfo", "Succeed to export New Release Info.");
+					auto Msg = LOCTEXT("SavePatchDiffInfo", "Export NewRelease Successfuly.");
 					FHotPatcherDelegates::Get().GetNotifyFileGenerated().Broadcast(Msg, SaveCurrentVersionToFile);
 				}
 			}
