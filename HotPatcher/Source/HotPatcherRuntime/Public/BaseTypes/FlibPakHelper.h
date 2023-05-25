@@ -74,7 +74,7 @@ public:
 	UFUNCTION(BlueprintCallable,Exec)
 		static void ReloadShaderbytecode();
 	UFUNCTION(BlueprintCallable,Exec)
-		static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir);
+		static bool LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir,bool bNative = false);
 	UFUNCTION(BlueprintCallable,Exec)
 		static bool LoadShaderbytecodeInDefaultDir(const FString& LibraryName);	
 	UFUNCTION(BlueprintCallable,Exec)

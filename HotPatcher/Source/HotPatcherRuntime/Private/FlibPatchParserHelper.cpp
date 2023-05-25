@@ -2147,7 +2147,9 @@ FString UFlibPatchParserHelper::GetTargetPlatformsCmdLine(const TArray<ETargetPl
 	if(Platforms.Num())
 	{
 		FString PlatformArrayStr;
-		for(ETargetPlatform Platform:Platforms)
+		TArray<ETargetPlatform> UniquePlatforms;
+		for(ETargetPlatform Platform:Platforms){ UniquePlatforms.AddUnique(Platform);}
+		for(ETargetPlatform Platform:UniquePlatforms)
 		{
 			FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
 			PlatformArrayStr += FString::Printf(TEXT("%s+"),*PlatformName);

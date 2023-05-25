@@ -227,12 +227,15 @@ void UFlibPakHelper::ReloadShaderbytecode()
 }
 
 
-bool UFlibPakHelper::LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir)
+bool UFlibPakHelper::LoadShaderbytecode(const FString& LibraryName, const FString& LibraryDir,bool bNative)
 {
 	bool result = true;
 	FString FinalLibraryDir = LibraryDir;
 #if PLATFORM_IOS
-	FinalLibraryDir = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*LibraryDir);;
+	if(bNative)
+	{
+		FinalLibraryDir = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*LibraryDir);
+	}
 #endif
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >= 23
 	result = FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
