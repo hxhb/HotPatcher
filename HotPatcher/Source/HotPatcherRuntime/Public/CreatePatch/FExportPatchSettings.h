@@ -35,6 +35,13 @@
 #include "FExportPatchSettings.generated.h"
 
 
+USTRUCT()
+struct HOTPATCHERRUNTIME_API FPatherResult
+{
+	GENERATED_BODY()
+	UPROPERTY()
+	TArray<FAssetDetail> PatcherAssetDetails;
+};
 
 
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */

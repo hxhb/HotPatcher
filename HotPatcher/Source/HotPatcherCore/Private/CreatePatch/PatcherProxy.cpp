@@ -152,6 +152,26 @@ namespace PatchWorker
 		TArray<ETargetPlatform> Platforms;
 		TSharedPtr<FPackageTrackerByDiff> PackageTrackerByDiff;
 	};
+
+	template<typename T>
+	void ExportStructToFile(FHotPatcherPatchContext& Context,T& Settings,const FString& SaveTo,bool bNotify,const FString& NotifyName)
+	{
+		FString SerializedJsonStr;
+		THotPatcherTemplateHelper::TSerializeStructAsJsonString(Settings,SerializedJsonStr);
+		if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveTo))
+		{
+			if(::IsRunningCommandlet())
+			{
+				FString Msg = FString::Printf(TEXT("Export %s to %s."),*NotifyName,*SaveTo);
+				Context.OnPaking.Broadcast(TEXT("SavedPatchConfig"),Msg);
+			}else if(bNotify)
+			{
+				FString MsgStr = FString::Printf(TEXT("Export %s to Successfuly."),*NotifyName);
+				FText Msg = UKismetTextLibrary::Conv_StringToText(MsgStr);
+				FHotPatcherDelegates::Get().GetNotifyFileGenerated().Broadcast(Msg, SaveTo);
+			}
+		}
+	};
 }
 
 #define ADD_PATCH_WORKER(FUNC_NAME) AddPatchWorker(ANSI_TO_TCHAR(#FUNC_NAME),&FUNC_NAME);
@@ -598,7 +618,7 @@ namespace PatchWorker
 						EmptySetting.bConcurrentSave = false;
 						// for current impl arch
 						EmptySetting.bForceCookInOneFrame = true;
-						EmptySetting.NumberOfAssetsPerFrame = 200;
+						EmptySetting.NumberOfAssetsPerFrame = 100;
 						EmptySetting.bDisplayConfig = false;
 						EmptySetting.StorageCookedDir = Context.GetSettingObject()->GetStorageCookedDir();//FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 
@@ -1404,6 +1424,13 @@ namespace PatchWorker
 	bool SavePakFileInfoWorker(FHotPatcherPatchContext& Context)
 	{
 		SCOPED_NAMED_EVENT_TEXT("SavePakFileInfoWorker",FColor::Red);
+		const FPatherResult& PatherResult = Context.PatchProxy->GetPatcherResult();
+		FString PakResultPath = FPaths::Combine(
+			Context.GetSettingObject()->GetCurrentVersionSavePath(),
+			FString::Printf(TEXT("%s_PakResults.json"),*Context.CurrentVersion.VersionId)
+		);
+		ExportStructToFile(Context,PatherResult,PakResultPath,true,TEXT("PakResults"));
+		
 		if(!Context.GetSettingObject()->IsStoragePakFileInfo())
 			return true;
 		if(Context.GetSettingObject())
@@ -1461,23 +1488,6 @@ namespace PatchWorker
 		}
 		if (Context.GetSettingObject()->IsSaveConfig())
 		{
-			auto ExportPatchConfig = [&Context](const FExportPatchSettings& Settings,const FString& SaveTo,bool bNotify)
-			{
-				FString SerializedJsonStr;
-				THotPatcherTemplateHelper::TSerializeStructAsJsonString(Settings,SerializedJsonStr);
-				if (FFileHelper::SaveStringToFile(SerializedJsonStr, *SaveTo))
-				{
-					if(::IsRunningCommandlet())
-					{
-						FString Msg = FString::Printf(TEXT("Export PatchConfig to %s."),*SaveTo);
-						Context.OnPaking.Broadcast(TEXT("SavedPatchConfig"),Msg);
-					}else if(bNotify)
-					{
-						FText Msg = LOCTEXT("SavedPatchConfig", "Export PatchConfig Successfuly.");
-						FHotPatcherDelegates::Get().GetNotifyFileGenerated().Broadcast(Msg, SaveTo);
-					}
-				}
-			};
 			TArray<ETargetPlatform> PakTargetPlatforms = Context.GetSettingObject()->GetPakTargetPlatforms();
 			for(ETargetPlatform Platform:PakTargetPlatforms)
 			{
@@ -1490,7 +1500,7 @@ namespace PatchWorker
 				FExportPatchSettings TempPatchSettings = *Context.GetSettingObject();
 				TempPatchSettings.PakTargetPlatforms.Empty();
 				TempPatchSettings.PakTargetPlatforms.Add(Platform);
-				ExportPatchConfig(TempPatchSettings,SaveConfigPath,false);
+				ExportStructToFile(Context,TempPatchSettings,SaveConfigPath,false,TEXT("PatchConfig"));
 			}
 			if(PakTargetPlatforms.Num())
 			{
@@ -1498,7 +1508,7 @@ namespace PatchWorker
 					Context.GetSettingObject()->GetCurrentVersionSavePath(),
 					FString::Printf(TEXT("%s_PatchConfig.json"),*Context.CurrentVersion.VersionId)
 				);
-				ExportPatchConfig(*Context.GetSettingObject(),SaveConfigPath,true);
+				ExportStructToFile(Context,*Context.GetSettingObject(),SaveConfigPath,true,TEXT("PatchConfig"));
 			}
 		}
 		
