@@ -2141,20 +2141,26 @@ bool UFlibPatchParserHelper::IsValidPatchSettings(const FExportPatchSettings* Pa
 	return bCanExport;
 }
 
+FString UFlibPatchParserHelper::GetTargetPlatformsStr(const TArray<ETargetPlatform>& Platforms)
+{
+	FString PlatformArrayStr;
+	TArray<ETargetPlatform> UniquePlatforms;
+	for(ETargetPlatform Platform:Platforms){ UniquePlatforms.AddUnique(Platform);}
+	for(ETargetPlatform Platform:UniquePlatforms)
+	{
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
+		PlatformArrayStr += FString::Printf(TEXT("%s+"),*PlatformName);
+	}
+	PlatformArrayStr.RemoveFromEnd(TEXT("+"));
+	return PlatformArrayStr;
+}
+
 FString UFlibPatchParserHelper::GetTargetPlatformsCmdLine(const TArray<ETargetPlatform>& Platforms)
 {
 	FString Result;
 	if(Platforms.Num())
 	{
-		FString PlatformArrayStr;
-		TArray<ETargetPlatform> UniquePlatforms;
-		for(ETargetPlatform Platform:Platforms){ UniquePlatforms.AddUnique(Platform);}
-		for(ETargetPlatform Platform:UniquePlatforms)
-		{
-			FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
-			PlatformArrayStr += FString::Printf(TEXT("%s+"),*PlatformName);
-		}
-		PlatformArrayStr.RemoveFromEnd(TEXT("+"));
+		FString PlatformArrayStr = UFlibPatchParserHelper::GetTargetPlatformsStr(Platforms);
 		if(!PlatformArrayStr.IsEmpty())
 		{
 			Result = FString::Printf(TEXT("-TargetPlatform=%s"),*PlatformArrayStr);

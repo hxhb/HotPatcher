@@ -182,3 +182,17 @@ TArray<FString> CommandletHelper::GetCookCommandletTargetPlatformName()
 
 	return result;
 }
+
+
+void CommandletHelper::ModifyTargetPlatforms(const FString& InParams,const FString& InToken,TArray<ETargetPlatform>& OutTargetPlatforms,bool Replace)
+{
+	TArray<ETargetPlatform> TargetPlatforms = CommandletHelper::ParserPlatforms(InParams,InToken);
+	if(TargetPlatforms.Num())
+	{
+		if(Replace){
+			OutTargetPlatforms = TargetPlatforms;
+		}else{
+			for(ETargetPlatform Platform:TargetPlatforms){ OutTargetPlatforms.AddUnique(Platform); }
+		}
+	}
+};

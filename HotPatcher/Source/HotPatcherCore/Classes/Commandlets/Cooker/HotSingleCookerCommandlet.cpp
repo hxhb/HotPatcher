@@ -34,6 +34,7 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 	TMap<FString, FString> KeyValues = THotPatcherTemplateHelper::GetCommandLineParamsMap(Params);
 	THotPatcherTemplateHelper::ReplaceProperty(*ExportSingleCookerSetting, KeyValues);
 	
+	CommandletHelper::ModifyTargetPlatforms(Params,TARGET_PLATFORMS_OVERRIDE,ExportSingleCookerSetting->CookTargetPlatforms,true);
 	if(ExportSingleCookerSetting->bDisplayConfig)
 	{
 		FString FinalConfig;

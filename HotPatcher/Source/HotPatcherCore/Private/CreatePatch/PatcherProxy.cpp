@@ -138,13 +138,26 @@ namespace PatchWorker
 				for(const auto& TrackPackage:PackageTrackerByDiff->GetTrackResult())
 				{
 					bool bSkiped = FAssetDependenciesParser::IsForceSkipAsset(TrackPackage.Key.ToString(),ForceSkipTypes,IgnoreFilters,ForceSkipFilters,ForceSkipAssets,true);
-					if(!bSkiped)
+					bool bContainInBaseVersion = FTrackPackageAction::IsAssetContainIn(Context.BaseVersion.AssetInfo,TrackPackage.Value);
+					if(!bSkiped && !bContainInBaseVersion)
 					{
 						TrackerAssetDetails.AddUnique(TrackPackage.Value);
 						Context.AddAsset(ChunkInfo.ChunkName,TrackPackage.Value);
 					}
 				}
 			}
+		}
+		static bool IsAssetContainIn(const FAssetDependenciesInfo& InAssetInfo,const FAssetDetail& InAssetDetail)
+		{
+			bool bContainInBaseVersion = false;
+			FSoftObjectPath SoftObjectPath{InAssetDetail.PackagePath};
+			FAssetDetail BaseAssetDetail;
+			bool bHasInBase = InAssetInfo.GetAssetDetailByPackageName(SoftObjectPath.GetLongPackageName(),BaseAssetDetail);
+			if(bHasInBase)
+			{
+				bContainInBaseVersion = (BaseAssetDetail.Guid == InAssetDetail.Guid);
+			}
+			return bContainInBaseVersion;
 		}
 	private:
 		FHotPatcherPatchContext& Context;
@@ -636,8 +649,10 @@ namespace PatchWorker
 						for(const auto& AssetDetail:AdditionalCluster.AssetDetails)
 						{
 							FSoftObjectPath ObjectPath{AssetDetail.PackagePath};
+							bool bContainInBaseVersion = FTrackPackageAction::IsAssetContainIn(Context.BaseVersion.AssetInfo,AssetDetail);
+							
 							FString ReceiveReason;
-							if(!Context.GetSettingObject()->GetAssetScanConfig().IsMatchForceSkip(ObjectPath,ReceiveReason))
+							if(!Context.GetSettingObject()->GetAssetScanConfig().IsMatchForceSkip(ObjectPath,ReceiveReason) && !bContainInBaseVersion)
 							{
 								Context.PatchProxy->GetPatcherResult().PatcherAssetDetails.Add(AssetDetail);
 								Context.VersionDiff.AssetDiffInfo.AddAssetDependInfo.AddAssetsDetail(AssetDetail);

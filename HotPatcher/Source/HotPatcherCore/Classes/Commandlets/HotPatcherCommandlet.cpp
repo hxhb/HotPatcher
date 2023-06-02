@@ -63,6 +63,7 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 				ExportPatchSetting->PakTargetPlatforms.AddUnique(Platform);
 			}
 		}
+		CommandletHelper::ModifyTargetPlatforms(Params,TARGET_PLATFORMS_OVERRIDE,ExportPatchSetting->PakTargetPlatforms,true);
 		ExportPatchSetting->GetAssetScanConfigRef().AssetIncludeFilters.Append(CommandletHelper::ParserPatchFilters(Params,TEXT("AssetIncludeFilters")));
 		ExportPatchSetting->GetAssetScanConfigRef().AssetIgnoreFilters.Append(CommandletHelper::ParserPatchFilters(Params,TEXT("AssetIgnoreFilters")));
 		
