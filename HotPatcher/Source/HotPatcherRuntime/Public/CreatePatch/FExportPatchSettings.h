@@ -43,6 +43,16 @@ struct HOTPATCHERRUNTIME_API FPatherResult
 	TArray<FAssetDetail> PatcherAssetDetails;
 };
 
+USTRUCT(BlueprintType)
+struct FCookAdvancedOptions
+{
+	GENERATED_BODY()
+	// ConcurrentSave for cooking
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bCookParallelSerialize = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 NumberOfAssetsPerFrame = 100;
+};
 
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */
 USTRUCT(BlueprintType)
@@ -133,6 +143,7 @@ public:
 	FORCEINLINE bool IsImportProjectSettings()const{ return bImportProjectSettings; }
 
 	virtual FString GetCombinedAdditionalCommandletArgs()const override;
+	virtual bool IsCookParallelSerialize() const { return CookAdvancedOptions.bCookParallelSerialize; }
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion")
 		bool bByBaseVersion = false;
@@ -205,6 +216,8 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options")
 		bool bCookPatchAssets = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "bCookPatchAssets"))
+		FCookAdvancedOptions CookAdvancedOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "bCookPatchAssets"))
 		FCookShaderOptions CookShaderOptions;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pak Options", meta=(EditCondition = "bCookPatchAssets"))

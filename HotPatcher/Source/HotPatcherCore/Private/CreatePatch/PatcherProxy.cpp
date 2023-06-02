@@ -626,12 +626,12 @@ namespace PatchWorker
 						EmptySetting.IoStoreSettings = Context.GetSettingObject()->GetIoStoreSettings();
 						EmptySetting.IoStoreSettings.bStorageBulkDataInfo = false;// dont save platform context data to disk
 						EmptySetting.bSerializeAssetRegistry = Context.GetSettingObject()->GetSerializeAssetRegistryOptions().bSerializeAssetRegistry;
-						EmptySetting.bPreGeneratePlatformData = false;
-						EmptySetting.bWaitEachAssetCompleted = false;
-						EmptySetting.bConcurrentSave = false;
+						EmptySetting.bPreGeneratePlatformData = Context.GetSettingObject()->IsCookParallelSerialize();
+						EmptySetting.bWaitEachAssetCompleted = Context.GetSettingObject()->IsCookParallelSerialize();
+						EmptySetting.bConcurrentSave = Context.GetSettingObject()->IsCookParallelSerialize();
 						// for current impl arch
 						EmptySetting.bForceCookInOneFrame = true;
-						EmptySetting.NumberOfAssetsPerFrame = 100;
+						EmptySetting.NumberOfAssetsPerFrame = Context.GetSettingObject()->CookAdvancedOptions.NumberOfAssetsPerFrame;
 						EmptySetting.bDisplayConfig = false;
 						EmptySetting.StorageCookedDir = Context.GetSettingObject()->GetStorageCookedDir();//FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 
