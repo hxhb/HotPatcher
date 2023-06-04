@@ -46,7 +46,7 @@ bool AddMultiCookerBackendToConfig(const FString& DDCAddr)
 		{
 			Section->Remove(*Key);
 		}
-		UE_LOG(LogCmdHandler, Display, TEXT("Override Section MultiCookerDDC key: %s to %d."),*Key,*Value);
+		UE_LOG(LogCmdHandler, Display, TEXT("Override Section MultiCookerDDC key: %s to %s."),*Key,*Value);
 		Section->Add(*Key,FConfigValue(*Value));
 	};
 	
@@ -57,7 +57,7 @@ bool AddMultiCookerBackendToConfig(const FString& DDCAddr)
 	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("Boot"),TEXT("(Type=Boot, Filename=\"%GAMEDIR%DerivedDataCache/Boot.ddc\", MaxCacheSize=512)"));
 
 	FString DDC = FString::Printf(
-		TEXT("(Type=FileSystem, ReadOnly=false, Clean=true, Flush=false, DeleteUnused=false, UnusedFileAge=10, FoldersToClean=10, MaxFileChecksPerSec=1, Path=%s, EnvPathOverride=UE-SharedDataCachePath, EditorOverrideSetting=SharedDerivedDataCache)"),
+		TEXT("(Type=FileSystem, ReadOnly=false, Clean=false, Flush=false, DeleteUnused=false, UnusedFileAge=10, FoldersToClean=10, MaxFileChecksPerSec=1, Path=%s, EnvPathOverride=UE-SharedDataCachePath, EditorOverrideSetting=SharedDerivedDataCache)"),
 		*DDCAddr
 	);
 	UpdateKeyLambda(MultiCookerDDCBackendSection,TEXT("Shared"),DDC);

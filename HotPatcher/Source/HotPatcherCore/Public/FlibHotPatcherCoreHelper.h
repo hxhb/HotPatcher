@@ -59,17 +59,6 @@ struct FProjectPackageAssetCollection
 	TArray<FSoftObjectPath> NeverCookPackages;
 };
 
-
-struct HOTPATCHERCORE_API FReplacePakRegular
-{
-	FReplacePakRegular()=default;
-	FReplacePakRegular(const FString& InVersionId,const FString& InBaseVersionId,const FString& InChunkName,const FString& InPlatformName):
-	VersionId(InVersionId),BaseVersionId(InBaseVersionId),ChunkName(InChunkName),PlatformName(InPlatformName){}
-	FString VersionId;
-	FString BaseVersionId;
-	FString ChunkName;
-	FString PlatformName;
-};
 /**
  * 
  */
@@ -242,7 +231,7 @@ public:
 	static FProjectPackageAssetCollection ImportProjectSettingsPackages();
 
 	static void WaitForAsyncFileWrites();
-
+	static void WaitDDCComplete();
 	static bool IsCanCookPackage(const FString& LongPackageName);
 	
 	static void ImportProjectSettingsToScannerConfig(FAssetScanConfig& AssetScanConfig);

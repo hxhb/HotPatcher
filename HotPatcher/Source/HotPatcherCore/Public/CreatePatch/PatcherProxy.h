@@ -24,14 +24,6 @@ DECLARE_MULTICAST_DELEGATE_FourParams(FOnPakListGenerated,FHotPatcherPatchContex
 DECLARE_MULTICAST_DELEGATE_FourParams(FAddPatchWorkerEvent,FHotPatcherPatchContext&,FChunkInfo&,ETargetPlatform,TArray<FPakCommand>&);
 
 
-USTRUCT()
-struct HOTPATCHERCORE_API FPatherResult
-{
-    GENERATED_BODY()
-    UPROPERTY()
-    TArray<FAssetDetail> PatcherAssetDetails;
-};
-
 UCLASS()
 class HOTPATCHERCORE_API UPatcherProxy:public UHotPatcherProxyBase
 {
@@ -50,7 +42,7 @@ public:
     }
     FORCEINLINE const FPatchWorkers& GetPatchWorkers()const{ return PatchWorkers; }
     FORCEINLINE FPatherResult& GetPatcherResult(){ return PatcherResult; }
-    
+
 public:
     FOnPakListGenerated OnPakListGenerated;
     

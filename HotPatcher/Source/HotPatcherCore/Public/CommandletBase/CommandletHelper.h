@@ -5,6 +5,7 @@
 
 #define PATCHER_CONFIG_PARAM_NAME TEXT("-config=")
 #define ADD_PATCH_PLATFORMS TEXT("AddPatchPlatforms")
+#define TARGET_PLATFORMS_OVERRIDE TEXT("TargetPlatformsOverride")
 
 DECLARE_LOG_CATEGORY_EXTERN(LogHotPatcherCommandlet, All, All);
 
@@ -26,4 +27,5 @@ namespace CommandletHelper
 	HOTPATCHERCORE_API bool IsCookCommandlet();
 	HOTPATCHERCORE_API TArray<ETargetPlatform> GetCookCommandletTargetPlatforms();
 	HOTPATCHERCORE_API TArray<FString> GetCookCommandletTargetPlatformName();
+	HOTPATCHERCORE_API void ModifyTargetPlatforms(const FString& InParams,const FString& InToken,TArray<ETargetPlatform>& OutTargetPlatforms,bool Replace);
 }

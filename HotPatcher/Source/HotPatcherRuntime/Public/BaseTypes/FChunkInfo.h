@@ -117,6 +117,8 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 		FString ChunkName;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+		FString ChunkAliasName;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 		int32 Priority = -1;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool bMonolithic = false;

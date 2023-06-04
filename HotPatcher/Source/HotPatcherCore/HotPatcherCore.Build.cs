@@ -61,7 +61,8 @@ public class HotPatcherCore : ModuleRules
 				"InputCore",
 				"CoreUObject",
 				"Engine",
-				"Sockets"
+				"Sockets",
+				"DerivedDataCache"
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);
@@ -189,8 +190,8 @@ public class HotPatcherCore : ModuleRules
 		PublicDefinitions.AddRange(new string[]
 		{
 			"TOOL_NAME=\"HotPatcher\"",
-			"CURRENT_VERSION_ID=80",
-			"CURRENT_PATCH_ID=1",
+			"CURRENT_VERSION_ID=81",
+			"CURRENT_PATCH_ID=0",
 			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
 		});
 	}

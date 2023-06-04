@@ -311,6 +311,7 @@ namespace THotPatcherTemplateHelper
 	template <typename T>
 	TArray<T> GetArrayBySrcWithCondition(TArray<T>& SrcArray, TFunction<bool(T)> Matcher, bool RemoveFromSrc)
 	{
+		SCOPED_NAMED_EVENT_TEXT("GetArrayBySrcWithCondition",FColor::Red);
 		TArray<T> result;
 		for(int32 Index = SrcArray.Num() - 1 ;Index >= 0;--Index)
 		{

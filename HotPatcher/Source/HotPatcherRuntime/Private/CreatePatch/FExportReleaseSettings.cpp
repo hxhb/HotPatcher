@@ -40,6 +40,7 @@ void FExportReleaseSettings::Init()
 			{
 				PakFileConf->PakFiles.AddUnique(FPaths::ConvertRelativePathToFull(PakFile.FilePath));
 			}
+			PakFileConf->AESKey = PlatformPakList.AESKey;
 			if(!!PakFileConf->PakFiles.Num())
 			{
 				FReleasePakParser PakFileParser;

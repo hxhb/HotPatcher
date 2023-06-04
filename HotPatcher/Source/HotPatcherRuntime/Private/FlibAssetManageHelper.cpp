@@ -1175,8 +1175,8 @@ void UFlibAssetManageHelper::ExcludeContentForAssetDependenciesDetail(FAssetDepe
 				FString MatchRule;
 				for(const auto& Rule:ExcludeRules)
 				{
-					if(matchMod == EHotPatcherMatchModEx::StartWith && AssetKeys[index].StartsWith(Rule)||
-						matchMod == EHotPatcherMatchModEx::Equal && AssetKeys[index].Equals(Rule)
+					if((matchMod == EHotPatcherMatchModEx::StartWith && AssetKeys[index].StartsWith(Rule)) ||
+						(matchMod == EHotPatcherMatchModEx::Equal && AssetKeys[index].Equals(Rule))
 					)
 					{
 						MatchRule = Rule;
@@ -1290,6 +1290,7 @@ UPackage* UFlibAssetManageHelper::LoadPackage(UPackage* InOuter, const TCHAR* In
 #if ENGINE_MINOR_VERSION < 26
 	FScopedNamedEvent CookPackageEvent(FColor::Red,*FString::Printf(TEXT("LoadPackage %s"),InLongPackageName));
 #endif
+	UE_LOG(LogHotPatcher,Verbose,TEXT("Load %s,outer %s"),InLongPackageName,InOuter ? *InOuter->GetFullName():TEXT("null"));
 	return ::LoadPackage(InOuter,InLongPackageName,LoadFlags,InReaderOverride);
 }
 
@@ -1529,6 +1530,7 @@ bool UFlibAssetManageHelper::HasClassObjInPackage(UPackage* Package,UClass* Find
 TArray<FAssetDetail> UFlibAssetManageHelper::GetAssetDetailsByClass(TArray<FAssetDetail>& AllAssetDetails,
 	UClass* Class, bool RemoveFromSrc)
 {
+	SCOPED_NAMED_EVENT_TEXT("GetAssetDetailsByClass",FColor::Red);
 	return THotPatcherTemplateHelper::GetArrayBySrcWithCondition<FAssetDetail>(AllAssetDetails,[&](FAssetDetail AssetDetail)->bool
 				{
 					return AssetDetail.AssetType.IsEqual(*Class->GetName());

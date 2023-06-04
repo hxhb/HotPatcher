@@ -241,9 +241,12 @@ public:
 	static bool IsValidPatchSettings(const FExportPatchSettings* PatchSettings,bool bExternalFilesCheck);
 	static void SetPropertyTransient(UStruct* Struct,const FString& PropertyName,bool bTransient);
 	static FString GetTargetPlatformsCmdLine(const TArray<ETargetPlatform>& Platforms);
+	static FString GetTargetPlatformsStr(const TArray<ETargetPlatform>& Platforms);
 	static FString MergeOptionsAsCmdline(const TArray<FString>& InOptions);
 	static FString GetPlatformsStr(TArray<ETargetPlatform> Platforms);
 
 	static bool GetCmdletBoolValue(const FString& Token,bool& OutValue);
+
+	static FString ReplacePakRegular(const FReplacePakRegular& RegularConf, const FString& InRegular);
 };
 
