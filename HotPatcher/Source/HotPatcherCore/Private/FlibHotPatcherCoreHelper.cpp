@@ -36,6 +36,7 @@
 #include "Misc/EngineVersionComparison.h"
 #include "Misc/CoreMisc.h"
 #include "DerivedDataCacheInterface.h"
+#include "DistanceFieldAtlas.h"
 
 DEFINE_LOG_CATEGORY(LogHotPatcherCoreHelper);
 
@@ -860,8 +861,21 @@ FString UFlibHotPatcherCoreHelper::GetMetadataDir(const FString& ProjectDir, con
 	return FPaths::Combine(ProjectDir,TEXT("Saved/Cooked"),PlatformName,ProjectName,TEXT("Metadata"));
 }
 
+void UFlibHotPatcherCoreHelper::CleanDefaultMetadataCache(const TArray<ETargetPlatform>& TargetPlatforms)
+{
+	SCOPED_NAMED_EVENT_TEXT("CleanDefaultMetadataCache",FColor::Red);
+	for(ETargetPlatform Platform:TargetPlatforms)
+	{
+		FString MetadataDir = GetMetadataDir(FPaths::ProjectDir(),FApp::GetProjectName(),Platform);
+		if(FPaths::DirectoryExists(MetadataDir))
+		{
+			IFileManager::Get().DeleteDirectory(*MetadataDir,false,true);
+		}
+	}
+}
+
 void UFlibHotPatcherCoreHelper::BackupMetadataDir(const FString& ProjectDir, const FString& ProjectName,
-	const TArray<ETargetPlatform>& Platforms, const FString& OutDir)
+                                                  const TArray<ETargetPlatform>& Platforms, const FString& OutDir)
 {
 	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 	for(const auto& Platform:Platforms)
@@ -2284,6 +2298,15 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 	}
 
+	{
+		SCOPED_NAMED_EVENT_TEXT("GDistanceFieldAsyncQueue BlockUntilAllBuildsComplete",FColor::Red);
+		if (GDistanceFieldAsyncQueue)
+		{
+			UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("Waiting for distance field async operations..."));
+			GDistanceFieldAsyncQueue->BlockUntilAllBuildsComplete();
+		}
+	}
+	
 	{
 		SCOPED_NAMED_EVENT_TEXT("FlushAsyncLoading And WaitingAsyncTasks",FColor::Red);
 		FlushAsyncLoading();

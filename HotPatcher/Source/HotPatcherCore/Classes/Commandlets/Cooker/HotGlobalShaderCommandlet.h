@@ -13,4 +13,5 @@ class UHotGlobalShaderCommandlet :public UHotPatcherCommandletBase
 
 public:
 	virtual int32 Main(const FString& Params)override;
+	virtual FString GetCmdletName()const override{ return TEXT("GlobalShaderCmdlet"); }
 };

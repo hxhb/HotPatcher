@@ -632,6 +632,7 @@ namespace PatchWorker
 						// for current impl arch
 						EmptySetting.bForceCookInOneFrame = true;
 						EmptySetting.NumberOfAssetsPerFrame = Context.GetSettingObject()->CookAdvancedOptions.NumberOfAssetsPerFrame;
+						EmptySetting.OverrideNumberOfAssetsPerFrame = Context.GetSettingObject()->CookAdvancedOptions.GetOverrideNumberOfAssetsPerFrame();
 						EmptySetting.bDisplayConfig = false;
 						EmptySetting.StorageCookedDir = Context.GetSettingObject()->GetStorageCookedDir();//FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 

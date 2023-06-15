@@ -2,7 +2,12 @@
 #include "FlibAssetManageHelper.h"
 #include "HotPatcherLog.h"
 #include "FlibPatchParserHelper.h"
+#include "Engine/World.h"
 
+FCookAdvancedOptions::FCookAdvancedOptions()
+{
+	OverrideNumberOfAssetsPerFrame.Add(UWorld::StaticClass(),2);
+}
 
 FExportPatchSettings::FExportPatchSettings()
 	:bEnableExternFilesDiff(true),

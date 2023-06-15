@@ -47,11 +47,15 @@ USTRUCT(BlueprintType)
 struct FCookAdvancedOptions
 {
 	GENERATED_BODY()
+	FCookAdvancedOptions();
 	// ConcurrentSave for cooking
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bCookParallelSerialize = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 NumberOfAssetsPerFrame = 100;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TMap<UClass*,int32> OverrideNumberOfAssetsPerFrame;
+	FORCEINLINE const TMap<UClass*,int32>& GetOverrideNumberOfAssetsPerFrame()const{ return OverrideNumberOfAssetsPerFrame; }
 };
 
 /** Singleton wrapper to allow for using the setting structure in SSettingsView */

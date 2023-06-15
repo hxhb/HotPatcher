@@ -15,6 +15,15 @@ class UHotSingleCookerCommandlet :public UHotPatcherCommandletBase
 public:
 
 	virtual int32 Main(const FString& Params)override;
+	virtual FString GetCmdletName()const override
+	{
+		FString Result = TEXT("SingleCookerCmdlet");
+		if(ExportSingleCookerSetting.IsValid())
+		{
+			Result = FString::Printf(TEXT("%s_%s"),*Result,*ExportSingleCookerSetting.Get()->MissionName);
+		}
+		return Result;
+	}
 protected:
 	TSharedPtr<FSingleCookerSettings> ExportSingleCookerSetting;
 };
