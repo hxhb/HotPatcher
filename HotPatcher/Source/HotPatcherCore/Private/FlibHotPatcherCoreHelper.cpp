@@ -2352,7 +2352,12 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 			
 			if(!!PendingCachePlatformDataObjects.Num())
 			{
-				FPlatformProcess::Sleep(0.1f);
+				// call ProcessAsyncTasks instead of pure wait using Sleep
+				while (FAssetCompilingManager::Get().GetNumRemainingAssets() > 0)
+				{
+					// Process any asynchronous Asset compile results that are ready, limit execution time
+					FAssetCompilingManager::Get().ProcessAsyncTasks(true);
+				}
 				GLog->Flush();
 			}
 		}
