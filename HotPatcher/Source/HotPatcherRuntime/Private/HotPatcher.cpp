@@ -4,7 +4,7 @@
 #include "FlibPatchParserHelper.h"
 #include "ETargetPlatform.h"
 #include "Misc/EnumRange.h"
-
+#include "HotPatcherLog.h"
 
 #define LOCTEXT_NAMESPACE "FHotPatcherRuntimeModule"
 
@@ -12,7 +12,7 @@ bool GForceSingleThread = (bool)FORCE_SINGLE_THREAD;
 
 void FHotPatcherRuntimeModule::StartupModule()
 {
-
+	UE_LOG(LogHotPatcher,Display,TEXT("HotPatcherRuntime StartupModule"));
 }
 
 void FHotPatcherRuntimeModule::ShutdownModule()

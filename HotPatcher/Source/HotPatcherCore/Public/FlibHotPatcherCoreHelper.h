@@ -230,7 +230,8 @@ public:
 		const TArray<FString>& InIgnoreOptions);
 
 	static FProjectPackageAssetCollection ImportProjectSettingsPackages();
-
+	
+	static void WaitDistanceFieldAsyncQueueComplete();
 	static void WaitForAsyncFileWrites();
 	static void WaitDDCComplete();
 	static bool IsCanCookPackage(const FString& LongPackageName);

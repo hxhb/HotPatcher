@@ -118,5 +118,12 @@ int32 UHotPatcherCommandletBase::Main(const FString& Params)
 	}
 	
 	FCoreDelegates::OnHandleSystemError.AddLambda([this](){ this->OnHandleSystemError(); });
+
+	if(IsRunningCommandlet() && !FParse::Param(FCommandLine::Get(), TEXT("NoSearchAllAssets")))
+	{
+		SCOPED_NAMED_EVENT_TEXT("SearchAllAssets",FColor::Red);
+		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+		AssetRegistryModule.Get().SearchAllAssets(true);
+	}
 	return 0;
 }

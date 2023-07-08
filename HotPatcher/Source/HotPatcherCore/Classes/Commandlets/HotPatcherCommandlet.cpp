@@ -40,13 +40,6 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 	bool bExportStatus = false;
 	if (FFileHelper::LoadFileToString(JsonContent, *config_path))
 	{
-		if(IsRunningCommandlet() && !FParse::Param(FCommandLine::Get(), TEXT("NoSearchAllAssets")))
-		{
-			SCOPED_NAMED_EVENT_TEXT("SearchAllAssets",FColor::Red);
-			FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-			AssetRegistryModule.Get().SearchAllAssets(true);
-		}
-		
 		TSharedPtr<FExportPatchSettings> ExportPatchSetting = MakeShareable(new FExportPatchSettings);
 		THotPatcherTemplateHelper::TDeserializeJsonStringAsStruct(JsonContent,*ExportPatchSetting);
 		// adaptor old version config

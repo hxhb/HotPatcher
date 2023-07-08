@@ -70,6 +70,7 @@ FHotPatcherEditorModule& FHotPatcherEditorModule::Get()
 
 void FHotPatcherEditorModule::StartupModule()
 {
+	UE_LOG(LogHotPatcherEdotor,Display,TEXT("FHotPatcherEditorModule StartupModule"));
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 	FHotPatcherStyle::Initialize();
 	FHotPatcherStyle::ReloadTextures();
@@ -233,22 +234,9 @@ void FHotPatcherEditorModule::CreateRootMenu()
 	FToolMenuSection& RootSection = RootMenu->AddSection("HotPatcherUtilities", LOCTEXT("HotPatcherUtilities", "HotPatcherUtilities"));;
 	RootSection.AddSubMenu(
 		"PatcherPresetsActionsSubMenu",
-		LOCTEXT("PatcherPresetsActionsSubMenuLabel", "HotPatcher Preset Actions"),
-		LOCTEXT("PatcherPresetsActionsSubMenuToolTip", "HotPatcher Preset Actions"),
+		LOCTEXT("PatcherPresetsActionsSubMenuLabel", "Preset Actions"),
+		LOCTEXT("PatcherPresetsActionsSubMenuToolTip", "Preset Actions"),
 		FNewToolMenuDelegate::CreateRaw(this, &FHotPatcherEditorModule::MakeHotPatcherPresetsActionsSubMenu),
-		FUIAction(
-			FExecuteAction()
-			),
-		EUserInterfaceActionType::Button,
-		false, 
-		FSlateIcon(*StyleSetName, "ContentBrowser.SaveAllCurrentFolder")
-		);
-	
-	RootSection.AddSubMenu(
-		"PakExternalFilesActionsSubMenu",
-		LOCTEXT("PakExternalFilesActionsSubMenuLabel", "Pak External Actions"),
-		LOCTEXT("PakExternalFilesActionsSubMenuToolTip", "Pak External Actions"),
-		FNewToolMenuDelegate::CreateRaw(this, &FHotPatcherEditorModule::MakePakExternalActionsSubMenu),
 		FUIAction(
 			FExecuteAction()
 			),
@@ -381,32 +369,6 @@ void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
 	}
 }
 
-void FHotPatcherEditorModule::MakePakExternalActionsSubMenu(UToolMenu* Menu)
-{
-	FToolMenuSection& Section = Menu->AddSection("PakExternalActionsSection");
-	UHotPatcherSettings* Settings = GetMutableDefault<UHotPatcherSettings>();
-	Settings->ReloadConfig();
-	for (FPakExternalInfo PakExternalConfig : Settings->PakExternalConfigs)
-	{
-		FString AppendPlatformName;
-		for(const auto& Platform:PakExternalConfig.TargetPlatforms)
-		{
-			AppendPlatformName += FString::Printf(TEXT("%s/"),*THotPatcherTemplateHelper::GetEnumNameByValue(Platform));
-		}
-		AppendPlatformName.RemoveFromEnd(TEXT("/"));
-		
-		Section.AddMenuEntry(
-			FName(*PakExternalConfig.PakName),
-			FText::Format(LOCTEXT("PakExternal_PakNamePlatform", "{0} ({1})"), UKismetTextLibrary::Conv_StringToText(PakExternalConfig.PakName),UKismetTextLibrary::Conv_StringToText(AppendPlatformName)),
-			FText(),
-			FSlateIcon(),
-			FUIAction(
-				FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnPakExternal,PakExternalConfig)
-			)
-		);
-	}
-}
-
 void FHotPatcherEditorModule::MakeHotPatcherPresetsActionsSubMenu(UToolMenu* Menu)
 {
 	FToolMenuSection& Section = Menu->AddSection("HotPatcherPresetsActionsSection");
@@ -414,15 +376,21 @@ void FHotPatcherEditorModule::MakeHotPatcherPresetsActionsSubMenu(UToolMenu* Men
 	Settings->ReloadConfig();
 	for (FExportPatchSettings PakConfig : Settings->PresetConfigs)
 	{
-		Section.AddMenuEntry(
-			FName(*PakConfig.VersionId),
-			FText::Format(LOCTEXT("PakExternal_VersionID", "VersionID: {0}"), UKismetTextLibrary::Conv_StringToText(PakConfig.VersionId)),
+		Section.AddSubMenu(FName(*PakConfig.VersionId),
+		FText::Format(LOCTEXT("PakExternal_VersionID", "{0}"), UKismetTextLibrary::Conv_StringToText(PakConfig.VersionId)),
 			FText(),
-			FSlateIcon(),
-			FUIAction(
-				FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnPakPreset,PakConfig)
-			)
-		);
+			FNewMenuDelegate::CreateLambda([=](FMenuBuilder& SubMenuBuilder)
+			{
+				for (ETargetPlatform Platform : GetAllowCookPlatforms())
+				{
+					FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
+					SubMenuBuilder.AddMenuEntry(
+						FText::Format(LOCTEXT("PakPresetPlatform", "{0}"), UKismetTextLibrary::Conv_StringToText(PlatformName)),
+						FText(),
+						FSlateIcon(*StyleSetName,TEXT("WorldBrowser.LevelsMenuBrush")),
+						FUIAction(FExecuteAction::CreateRaw(this, &FHotPatcherEditorModule::OnPakPreset,PakConfig, Platform)), NAME_None, EUserInterfaceActionType::Button);
+				}
+			}));
 	}
 }
 
@@ -525,22 +493,11 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 	SingleCookerProxy->Shutdown();
 }
 
-void FHotPatcherEditorModule::OnPakExternal(FPakExternalInfo PakExternConfig)
+void FHotPatcherEditorModule::OnPakPreset(FExportPatchSettings Config, ETargetPlatform Platform)
 {
-	PatchSettings = MakeShareable(new FExportPatchSettings);
-	*PatchSettings = MakeTempPatchSettings(
-		PakExternConfig.PakName,
-		TArray<FDirectoryPath>{},
-		TArray<FPatcherSpecifyAsset>{},
-		TArray<FPlatformExternAssets>{PakExternConfig.AddExternAssetsToPlatform},
-		PakExternConfig.TargetPlatforms,
-		false
-	);
-
-	UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
-	PatcherProxy->Init(PatchSettings.Get());
-
-	PatcherProxy->DoExport();
+	Config.PakTargetPlatforms.Empty();
+	Config.PakTargetPlatforms.Add(Platform);
+	OnPakPreset(Config);
 }
 
 void FHotPatcherEditorModule::CookAndPakByAssetsAndFilters(TArray<FPatcherSpecifyAsset> IncludeAssets,TArray<FDirectoryPath> IncludePaths,TArray<ETargetPlatform> Platforms,bool bForceStandalone)

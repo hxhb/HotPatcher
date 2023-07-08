@@ -378,6 +378,7 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 	// clean cached ddd / release memory
 	// CleanClusterCachedPlatformData(CookCluster);
 	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
+	UFlibHotPatcherCoreHelper::WaitDistanceFieldAsyncQueueComplete();
 	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 	UFlibHotPatcherCoreHelper::WaitDDCComplete();
 }

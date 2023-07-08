@@ -38,8 +38,6 @@ public:
     FExportPatchSettings TempPatchSetting;
     
     UPROPERTY(EditAnywhere, config, Category = "Preset")
-    TArray<FPakExternalInfo> PakExternalConfigs;
-    UPROPERTY(EditAnywhere, config, Category = "Preset")
     TArray<FExportPatchSettings> PresetConfigs;
 
     UPROPERTY(EditAnywhere, config, Category = "Preview")

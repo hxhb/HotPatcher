@@ -36,7 +36,7 @@
 #include "Misc/EngineVersionComparison.h"
 #include "Misc/CoreMisc.h"
 #include "DerivedDataCacheInterface.h"
-#include "DistanceFieldAtlas.h"
+
 
 DEFINE_LOG_CATEGORY(LogHotPatcherCoreHelper);
 
@@ -2297,15 +2297,7 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 		// Wait for all shaders to finish compiling
 		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 	}
-
-	{
-		SCOPED_NAMED_EVENT_TEXT("GDistanceFieldAsyncQueue BlockUntilAllBuildsComplete",FColor::Red);
-		if (GDistanceFieldAsyncQueue)
-		{
-			UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("Waiting for distance field async operations..."));
-			GDistanceFieldAsyncQueue->BlockUntilAllBuildsComplete();
-		}
-	}
+	UFlibHotPatcherCoreHelper::WaitDistanceFieldAsyncQueueComplete();
 	
 	{
 		SCOPED_NAMED_EVENT_TEXT("FlushAsyncLoading And WaitingAsyncTasks",FColor::Red);
@@ -2703,4 +2695,15 @@ void UFlibHotPatcherCoreHelper::DumpActiveTargetPlatforms()
 FString UFlibHotPatcherCoreHelper::GetPlatformsStr(TArray<ETargetPlatform> Platforms)
 {
 	return UFlibPatchParserHelper::GetPlatformsStr(Platforms);
+}
+
+#include "DistanceFieldAtlas.h"
+void UFlibHotPatcherCoreHelper::WaitDistanceFieldAsyncQueueComplete()
+{
+	SCOPED_NAMED_EVENT_TEXT("WaitDistanceFieldAsyncQueueComplete",FColor::Red);
+	if (GDistanceFieldAsyncQueue)
+	{
+		UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("Waiting for distance field async operations..."));
+		GDistanceFieldAsyncQueue->BlockUntilAllBuildsComplete();
+	}
 }
