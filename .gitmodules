@@ -22,3 +22,6 @@
 [submodule "Mods/PakAnalyzerUE"]
 	path = Mods/PakAnalyzerUE
 	url = git@github.com:hxhb/PakAnalyzerUE.git
+[submodule "Mods/PSOPackerUE"]
+	path = Mods/PSOPackerUE
+	url = git@github.com:hxhb/PSOPackerUE.git
