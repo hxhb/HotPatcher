@@ -1175,7 +1175,7 @@ namespace PatchWorker
 							}
 						}//);
 							
-						if (!(Chunk.bStorageUnrealPakList && Chunk.bOutputDebugInfo))
+						if (!(Context.GetSettingObject()->bStorageUnrealPakList && Chunk.bStorageUnrealPakList && Chunk.bOutputDebugInfo))
 						{
 							IFileManager::Get().Delete(*PakListFile);
 						}
@@ -1445,8 +1445,10 @@ namespace PatchWorker
 			Context.GetSettingObject()->GetCurrentVersionSavePath(),
 			FString::Printf(TEXT("%s_PakResults.json"),*Context.CurrentVersion.VersionId)
 		);
-		ExportStructToFile(Context,PatherResult,PakResultPath,true,TEXT("PakResults"));
-		
+		if(PatherResult.PatcherAssetDetails.Num())
+		{
+			ExportStructToFile(Context,PatherResult,PakResultPath,true,TEXT("PakResults"));
+		}
 		if(!Context.GetSettingObject()->IsStoragePakFileInfo())
 			return true;
 		if(Context.GetSettingObject())

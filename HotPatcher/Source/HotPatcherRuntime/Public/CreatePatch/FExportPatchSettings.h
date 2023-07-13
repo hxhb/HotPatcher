@@ -268,6 +268,8 @@ public:
 		bool bStorageDeletedAssetsToNewReleaseJson = true;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo",meta=(EditCondition="bByBaseVersion"))
 		bool bStorageDiffAnalysisResults = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
+		bool bStorageUnrealPakList = true;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveTo")
 	// 	bool bStorageAssetDependencies = false;
 	// UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "SaveTo")
