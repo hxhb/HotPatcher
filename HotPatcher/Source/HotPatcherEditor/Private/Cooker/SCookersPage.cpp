@@ -133,6 +133,13 @@ void SCookersPage::Construct(const FArguments& InArgs, TSharedPtr<FHotPatcherCon
 	}
 }
 
+void SCookersPage::SelectToAction(const FString& ActionName)
+{
+	if(FHotPatcherActionManager::Get().IsContainAction(GetPageName(),ActionName))
+	{
+		HandleHotPatcherMenuEntryClicked(ActionName,nullptr);
+	}
+}
 
 EVisibility SCookersPage::HandleOperatorConfigVisibility()const
 {

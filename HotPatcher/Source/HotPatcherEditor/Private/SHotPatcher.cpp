@@ -15,9 +15,10 @@
 
 #define LOCTEXT_NAMESPACE "SHotPatcher"
 
-void SHotPatcher::Construct(const FArguments& InArgs)
+void SHotPatcher::Construct(const FArguments& InArgs,const FSHotPatcherContext& Context)
 {
 	TMap<FString,FHotPatcherCategory> HotPatcherCategorys;
+	
 	HotPatcherCategorys.Add(TEXT("Cooker"),FHotPatcherCategory(TEXT("Cooker"),SNew(SCookersPage, MakeShareable(new FCookersModeContext))));
 	HotPatcherCategorys.Add(TEXT("Patcher"),FHotPatcherCategory(TEXT("Patcher"),SNew(SPatchersPage, MakeShareable(new FPatchersModeContext))));
 	HotPatcherCategorys.Append(FHotPatcherActionManager::Get().GetHotPatcherCategorys());
@@ -62,6 +63,10 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 	for(auto ActionPage:HotPatcherCategorys)
 	{
 		FString ActionCategoryName = ActionPage.Key;
+		if(!Context.Category.IsEmpty() && !Context.Category.Equals(ActionCategoryName))
+		{
+			continue;
+		}
 		if(TMap<FString,FHotPatcherAction>* ActionCategory = FHotPatcherActionManager::Get().GetHotPatcherActions().Find(ActionCategoryName))
 		{
 			bool bHasActiveActions = false;
@@ -103,6 +108,10 @@ void SHotPatcher::Construct(const FArguments& InArgs)
 				}
 			}
 		}
+	}
+	if(!Context.Category.IsEmpty() && !Context.ActionName.IsEmpty())
+	{
+		HotPatcherCategorys.Find(Context.Category)->Widget->SelectToAction(Context.ActionName);
 	}
 }
 

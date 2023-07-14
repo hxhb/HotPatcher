@@ -41,7 +41,5 @@ public:
 	void HandleHotPatcherMenuEntryClicked(FString InModeName,TFunction<void(void)> ActionCallback);
 	EVisibility HandleOperatorConfigVisibility()const;
 	EVisibility HandleImportProjectConfigVisibility()const;
-//
-// private:
-// 	TSharedPtr<FOriginalCookerContext> OriginalCookerContext;
+	virtual void SelectToAction(const FString& ActionName);
 };

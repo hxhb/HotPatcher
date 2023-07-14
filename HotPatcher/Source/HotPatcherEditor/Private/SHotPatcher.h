@@ -21,7 +21,7 @@ public:
 	*
 	* @param	InArgs			A declaration from which to construct the widget
 	*/
-	void Construct(const FArguments& InArgs);
+	void Construct(const FArguments& InArgs,const FSHotPatcherContext& Context);
 	TSharedPtr<SNotificationList> GetNotificationListPtr()const;
 
 

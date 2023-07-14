@@ -144,6 +144,14 @@ EVisibility SPatchersPage::HandleImportProjectConfigVisibility() const
 	return bEnable ? EVisibility::Visible : EVisibility::Hidden;
 }
 
+void SPatchersPage::SelectToAction(const FString& ActionName)
+{
+	if(FHotPatcherActionManager::Get().IsContainAction(GetPageName(),ActionName))
+	{
+		HandleHotPatcherMenuEntryClicked(ActionName,nullptr);
+	}
+}
+
 void SPatchersPage::HandleHotPatcherMenuEntryClicked(FString InModeName,TFunction<void(void)> ActionCallback)
 {
 	if(ActionCallback)

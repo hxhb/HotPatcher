@@ -1,6 +1,7 @@
 #pragma once
 // engine header
 #include "CoreMinimal.h"
+#include "SHotPatcherPageBase.h"
 #include "SHotPatcherWidgetBase.h"
 #include "Widgets/SCompoundWidget.h"
 #include "Model/FHotPatcherContextBase.h"
@@ -64,10 +65,10 @@ struct FHotPatcherCategory
 {
 	FHotPatcherCategory()=default;
 	FHotPatcherCategory(const FHotPatcherCategory&)=default;
-	FHotPatcherCategory(const FString InCategoryName,TSharedRef<SCompoundWidget> InWidget):CategoryName(InCategoryName),Widget(InWidget){}
+	FHotPatcherCategory(const FString InCategoryName,TSharedRef<SHotPatcherPageBase> InWidget):CategoryName(InCategoryName),Widget(InWidget){}
 	
 	FString CategoryName;
-	TSharedRef<SCompoundWidget> Widget;
+	TSharedRef<SHotPatcherPageBase> Widget;
 };
 
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FHotPatcherActionDelegate,const FString&,const FString&,const FHotPatcherAction&);
@@ -102,7 +103,7 @@ struct HOTPATCHEREDITOR_API FHotPatcherActionManager
 	FHotPatcherActionsType& GetHotPatcherActions() { return HotPatcherActions; }
 	
 	FHotPatcherAction* GetTopActionByCategory(const FString CategoryName);
-
+	bool IsContainAction(const FString& CategoryName,const FString& ActionName);
 	bool IsActiviteMod(const FString& ModName);
 	
 	bool IsSupportEditorAction(FString ActionName);

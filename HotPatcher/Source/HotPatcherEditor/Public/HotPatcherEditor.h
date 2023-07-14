@@ -16,7 +16,6 @@
 #include "Model/FHotPatcherContextBase.h"
 #include "HotPatcherActionManager.h"
 #include "HotPatcherCore.h"
-
 // engine header
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
@@ -41,6 +40,12 @@ struct FContentBrowserSelectedInfo
 	TArray<FName> OutAllAssetPackages;
 };
 
+struct HOTPATCHEREDITOR_API FSHotPatcherContext
+{
+	FString Category;
+	FString ActionName;
+};
+
 class HOTPATCHEREDITOR_API FHotPatcherEditorModule : public IModuleInterface
 {
 public:
@@ -48,16 +53,23 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
-	void OpenDockTab();
-	/** This function will be bound to Command. */
-	void PluginButtonClicked();
-	
-public:
-	void AddToolbarExtension(FToolBarBuilder& Builder);
-	void AddMenuExtension(FMenuBuilder& Builder);
 
-	TSharedPtr<FProcWorkerThread> CreateProcMissionThread(const FString& Bin, const FString& Command, const FString& MissionName);
+public:
+	void OpenDockTab();
+private: // for slate
+	void AddToolbarExtension(FToolBarBuilder& Builder);
+	TSharedRef<SWidget> HandlePickingModeContextMenu();
+	TSharedRef<class SDockTab> SpawnHotPatcherTab(const FSHotPatcherContext& Context);
+	void AddMenuExtension(FMenuBuilder& Builder);
 	
+	/** This function will be bound to Command. */
+	void PluginButtonClicked(const FSHotPatcherContext& Context);
+
+	void OnTabClosed(TSharedRef<SDockTab> InTab);
+	TArray<FAssetData> GetSelectedAssetsInBrowserContent();
+	TArray<FString> GetSelectedFolderInBrowserContent();
+public:
+	TSharedPtr<FProcWorkerThread> CreateProcMissionThread(const FString& Bin, const FString& Command, const FString& MissionName);
 	TSharedPtr<FProcWorkerThread> RunProcMission(const FString& Bin, const FString& Command, const FString& MissionName, const FText& NotifyTextOverride = FText{});
 
 	
@@ -92,10 +104,6 @@ public:
 	);
 private:
 	TArray<ETargetPlatform> GetAllCookPlatforms()const;
-	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& InSpawnTabArgs);
-	void OnTabClosed(TSharedRef<SDockTab> InTab);
-	TArray<FAssetData> GetSelectedAssetsInBrowserContent();
-	TArray<FString> GetSelectedFolderInBrowserContent();
 	
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
@@ -106,3 +114,4 @@ private:
 	TArray<class UPatcherProxy*> Proxys;
 	FString StyleSetName;
 };
+

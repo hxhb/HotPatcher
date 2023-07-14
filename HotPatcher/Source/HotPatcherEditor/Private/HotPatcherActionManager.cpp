@@ -176,6 +176,16 @@ FHotPatcherAction* FHotPatcherActionManager::GetTopActionByCategory(const FStrin
 	return result;
 }
 
+bool FHotPatcherActionManager::IsContainAction(const FString& CategoryName, const FString& ActionName)
+{
+	bool bContain = false;
+	if(HotPatcherActions.Contains(CategoryName))
+	{
+		bContain = HotPatcherActions.Find(CategoryName)->Contains(ActionName);
+	}
+	return bContain;
+}
+
 bool FHotPatcherActionManager::IsActiviteMod(const FString& ModName)
 {
 	return ModsDesc.Contains(*ModName);

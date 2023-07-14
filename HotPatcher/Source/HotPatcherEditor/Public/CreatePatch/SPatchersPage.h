@@ -40,6 +40,6 @@ public:
 	virtual FString GetPageName()const override { return TEXT("Patcher"); };
 	EVisibility HandleOperatorConfigVisibility()const;
 	EVisibility HandleImportProjectConfigVisibility()const;
-
+	virtual void SelectToAction(const FString& ActionName);
 
 };
