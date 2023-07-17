@@ -56,14 +56,13 @@ public:
 
 public:
 	void OpenDockTab();
+	/** This function will be bound to Command. */
+	void PluginButtonClicked(const FSHotPatcherContext& Context);
 private: // for slate
 	void AddToolbarExtension(FToolBarBuilder& Builder);
 	TSharedRef<SWidget> HandlePickingModeContextMenu();
 	TSharedRef<class SDockTab> SpawnHotPatcherTab(const FSHotPatcherContext& Context);
 	void AddMenuExtension(FMenuBuilder& Builder);
-	
-	/** This function will be bound to Command. */
-	void PluginButtonClicked(const FSHotPatcherContext& Context);
 
 	void OnTabClosed(TSharedRef<SDockTab> InTab);
 	TArray<FAssetData> GetSelectedAssetsInBrowserContent();

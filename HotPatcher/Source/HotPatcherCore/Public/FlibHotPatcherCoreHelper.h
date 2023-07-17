@@ -133,6 +133,19 @@ public:
 		bool bStorageConcurrent
 	);
 
+	static bool RunCmdlet(const FString& CmdletName,const FString& Params,int32& OutRetValue);
+	static bool CookPackageByCmdlet(
+		UPackage* Package,
+		TMap<ETargetPlatform,ITargetPlatform*> CookPlatforms,
+		FCookActionCallback CookActionCallback,
+		const TMap<FName,FString>& CookedPlatformSavePaths
+	);
+	static bool CookByCmdlet(
+		const TArray<FString>& LongPackageNames,
+		ETargetPlatform TargetPlatform,
+		const FString& SaveToCookedDir = TEXT("")
+	);
+
 	static void CookChunkAssets(
 		TArray<FAssetDetail> Assets,
 		const TArray<ETargetPlatform>& Platforms,
