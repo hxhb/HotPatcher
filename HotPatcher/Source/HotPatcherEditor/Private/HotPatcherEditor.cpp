@@ -272,7 +272,7 @@ TSharedRef<SWidget> FHotPatcherEditorModule::HandlePickingModeContextMenu()
 						FText::FromString(ActionName),
 						FText::FromString(ActionName),
 						FSlateIcon(),
-						FUIAction(FExecuteAction::CreateLambda([=,this]()
+						FUIAction(FExecuteAction::CreateLambda([=]()
 						{
 							this->PluginButtonClicked(Context);
 						}))
