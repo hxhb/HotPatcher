@@ -5,20 +5,18 @@
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "AssetManager/FAssetDependenciesDetail.h"
 #include "AssetManager/FFileArrayDirectoryVisitor.hpp"
-
-#include "AssetRegistryModule.h"
-#include "ARFilter.h"
+#include "AssetRegistry.h"
+#include "HotPatcherLog.h"
+#include "HotPatcherRuntime.h"
+// engine header
 #include "Kismet/KismetStringLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Json.h"
 #include "Templates/SharedPointer.h"
 #include "Interfaces/IPluginManager.h"
 #include "Engine/AssetManager.h"
-#include "AssetData.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Resources/Version.h"
-#include "HotPatcherLog.h"
-#include "HotPatcherRuntime.h"
 #include "Async/ParallelFor.h"
 #include "Templates/HotPatcherTemplateHelper.hpp"
 #include "UObject/MetaData.h"
@@ -1443,7 +1441,7 @@ bool UFlibAssetManageHelper::ContainsRedirector(const FName& PackageName, TMap<F
 			{
 				ConstructorHelpers::StripObjectClass(RedirectedPathString);
 				RedirectedPath = FName(*RedirectedPathString);
-				FAssetData DestinationData = AssetRegistry->GetAssetByObjectPath(RedirectedPath, true);
+				FAssetData DestinationData = GetAssetByObjectPath(RedirectedPath); // AssetRegistry->GetAssetByObjectPath(RedirectedPath, true);
 				TSet<FName> SeenPaths;
 
 				SeenPaths.Add(RedirectedPath);
@@ -1464,7 +1462,7 @@ bool UFlibAssetManageHelper::ContainsRedirector(const FName& PackageName, TMap<F
 						else
 						{
 							SeenPaths.Add(RedirectedPath);
-							DestinationData = AssetRegistry->GetAssetByObjectPath(RedirectedPath, true);
+							DestinationData = GetAssetByObjectPath(RedirectedPath);
 						}
 					}
 					else
@@ -1598,10 +1596,15 @@ FName UFlibAssetManageHelper::GetObjectPathByAssetData(const FAssetData& Data)
 {
 	if(Data.IsValid())
 	{
-#if !UE_VERSION_OLDER_THAN(5,1,0)
-		return *UFlibAssetManageHelper::LongPackageNameToPackagePath(Data.PackageName.ToString());
+// #if !UE_VERSION_OLDER_THAN(5,1,0)
+// 		return *UFlibAssetManageHelper::LongPackageNameToPackagePath(Data.PackageName.ToString());
+// #else
+// 		return Data.ObjectPath;
+// #endif
+#if WITH_UE5
+		return *Data.GetSoftObjectPath().GetAssetPath().ToString();
 #else
-		return Data.ObjectPath;
+		return *UFlibAssetManageHelper::LongPackageNameToPackagePath(Data.PackageName.ToString());
 #endif
 	}
 	return NAME_None;
@@ -1630,6 +1633,26 @@ TArray<FString> UFlibAssetManageHelper::GetPackgeFiles(const FString& LongPackag
 		Files.Add(FilePath);
 	}
 	return Files;
+}
+
+FString UFlibAssetManageHelper::GetAssetPath(const FSoftObjectPath& ObjectPath)
+{
+#if WITH_UE5
+	return ObjectPath.GetAssetPath().ToString();
+#else
+	return ObjectPath.GetAssetPathName().ToString();
+#endif
+}
+
+FAssetData UFlibAssetManageHelper::GetAssetByObjectPath(FName Path)
+{
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	IAssetRegistry* AssetRegistry = &AssetRegistryModule.Get();
+#if WITH_UE5
+	return  AssetRegistry->GetAssetByObjectPath(FSoftObjectPath{Path}, true);
+#else
+	return  AssetRegistry->GetAssetByObjectPath(Path, true);
+#endif
 };
 
 // PRAGMA_ENABLE_DEPRECATION_WARNINGS

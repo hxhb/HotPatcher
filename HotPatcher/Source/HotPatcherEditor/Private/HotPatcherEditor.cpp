@@ -173,7 +173,7 @@ void FHotPatcherEditorModule::PluginButtonClicked(const FSHotPatcherContext& Con
 	
 	if (!DockTab.IsValid())
 	{
-		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateLambda([=,this](const class FSpawnTabArgs& InSpawnTabArgs)
+		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateLambda([=](const class FSpawnTabArgs& InSpawnTabArgs)
 		{
 			return SpawnHotPatcherTab(Context);
 		}))
@@ -195,7 +195,7 @@ void FHotPatcherEditorModule::AddMenuExtension(FMenuBuilder& Builder)
 	Builder.AddSubMenu(
 		FText::FromString(TEXT("HotPatcher")),
 		FText::FromString(TEXT("HotPatcher")),
-		FNewMenuDelegate::CreateLambda([=,this](FMenuBuilder& Menu)
+		FNewMenuDelegate::CreateLambda([=](FMenuBuilder& Menu)
 		{
 			Menu.AddWidget(this->HandlePickingModeContextMenu(),FText::FromString(TEXT("")),true);
 		}),
@@ -240,7 +240,7 @@ TSharedRef<SWidget> FHotPatcherEditorModule::HandlePickingModeContextMenu()
 			FText::FromString(TEXT("MAIN")),
 			FText::FromString(TEXT("MAIN")),
 			HotPatcherIcon,
-			FUIAction(FExecuteAction::CreateLambda([=,this]()
+			FUIAction(FExecuteAction::CreateLambda([=]()
 			{
 				this->PluginButtonClicked(Context);
 			})));
@@ -338,6 +338,7 @@ void FHotPatcherEditorModule::CreateRootMenu()
 
 void FHotPatcherEditorModule::CreateAssetContextMenu(FToolMenuSection& InSection)
 {
+#if !WITH_UE5
 	InSection.AddSubMenu(
 		"CookActionsSubMenu",
 		LOCTEXT("CookActionsSubMenuLabel", "Cook Actions"),
@@ -350,6 +351,7 @@ void FHotPatcherEditorModule::CreateAssetContextMenu(FToolMenuSection& InSection
 		false, 
 		FSlateIcon(*StyleSetName, "ContentBrowser.AssetActions")
 		);
+#endif
 	InSection.AddSubMenu(
 		"CookAndPakActionsSubMenu",
 		LOCTEXT("CookAndPakActionsSubMenuLabel", "Cook And Pak Actions"),
@@ -494,7 +496,7 @@ void FHotPatcherEditorModule::OnAddToPatchSettings(const FToolMenuContext& MenuC
 	{
 		FPatcherSpecifyAsset PatchSettingAssetElement;
 		FSoftObjectPath AssetObjectPath;
-		AssetObjectPath.SetPath(AssetData.ObjectPath.ToString());
+		AssetObjectPath.SetPath(UFlibAssetManageHelper::GetObjectPathByAssetData(AssetData));
 		PatchSettingAssetElement.Asset = AssetObjectPath;
 		AssetsSoftPath.AddUnique(PatchSettingAssetElement);
 	}

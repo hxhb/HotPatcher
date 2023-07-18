@@ -17,6 +17,7 @@
 #include "FCookerConfig.h"
 #include "FPlatformExternFiles.h"
 #include "Templates/HotPatcherTemplateHelper.hpp"
+#include "AssetRegistry.h"
 
 // engine header
 #include "CoreMinimal.h"
@@ -24,7 +25,6 @@
 #include "JsonObjectConverter.h"
 #include "Misc/CommandLine.h"
 #include "FPlatformExternAssets.h"
-#include "AssetRegistryState.h"
 #include "Containers/UnrealString.h"
 #include "CreatePatch/FExportPatchSettings.h"
 #include "Templates/SharedPointer.h"

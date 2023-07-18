@@ -83,14 +83,20 @@ struct FPackageTracker : public FPackageTrackerBase
 		LoadedPackages.Add(AssetPathName);
 		if(!ExisitAssets.Contains(AssetPathName))
 		{
-			if(FPackageName::DoesPackageExist(AssetPathName.ToString()))
+			FString AssetPathNameStr = AssetPathName.ToString();
+			if(FPackageName::DoesPackageExist(AssetPathNameStr)
+#if WITH_UE5
+				 && !AssetPathNameStr.StartsWith(TEXT("/Game/__ExternalActors__")) &&
+				!AssetPathNameStr.StartsWith(TEXT("/Game/__ExternalObjects__"))
+#endif
+				)
 			{
-				UE_LOG(LogHotPatcher,Display,TEXT("[PackageTracker] Add %s"),*AssetPathName.ToString());
+				UE_LOG(LogHotPatcher,Display,TEXT("[PackageTracker] Add %s"),*AssetPathNameStr);
 				PackagesPendingSave.Add(AssetPathName);
 			}
 			else
 			{
-				UE_LOG(LogHotPatcher,Display,TEXT("[PackageTracker] %s is not valid package!"),*AssetPathName.ToString());
+				UE_LOG(LogHotPatcher,Verbose,TEXT("[PackageTracker] %s is not valid package!"),*AssetPathNameStr);
 			}
 		}
 	}

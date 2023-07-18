@@ -97,7 +97,7 @@ public class HotPatcherRuntime : ModuleRules
 		{
 			PublicDefinitions.Add("CUSTOM_ASSET_GUID");	
 		}
-		
+		AddPublicDefinitions("WITH_UE5", Version.MajorVersion > 4);
 		bLegacyPublicIncludePaths = false;
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
 	}

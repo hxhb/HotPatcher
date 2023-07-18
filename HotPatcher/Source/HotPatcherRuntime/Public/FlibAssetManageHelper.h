@@ -4,14 +4,12 @@
 
 #include "AssetManager/FAssetDependenciesInfo.h"
 #include "AssetManager/FAssetDetail.h"
-
+#include "AssetRegistry.h"
 // engine
 #include "Engine/StreamableManager.h"
-
 #include "Engine/EngineTypes.h"
 #include "Dom/JsonValue.h"
 #include "Templates/SharedPointer.h"
-#include "AssetRegistryModule.h"
 #include "CoreMinimal.h"
 #include "Templates/SharedPointer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -261,6 +259,9 @@ public:
 
 	static void UpdateAssetRegistryData(const FString& PackageName);
 	static TArray<FString> GetPackgeFiles(const FString& LongPackageName,const FString& Extension);
+
+	static FString GetAssetPath(const FSoftObjectPath& ObjectPath);
+	static FAssetData GetAssetByObjectPath(FName Path);
 };
 
 

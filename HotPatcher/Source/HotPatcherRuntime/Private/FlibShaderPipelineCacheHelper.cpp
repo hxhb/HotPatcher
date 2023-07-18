@@ -9,9 +9,34 @@
 #include "HAL/IConsoleManager.h"
 #include "Misc/EngineVersionComparison.h"
 
+#if WITH_UE5
+#include "DataDrivenShaderPlatformInfo.h"
+static FName ShaderPlatformToShaderFormatName(EShaderPlatform Platform)
+{
+	FString PlatformName;
+	const FName ShaderFormatName = FDataDrivenShaderPlatformInfo::IsValid(Platform)
+		? FDataDrivenShaderPlatformInfo::GetShaderFormat(Platform) : NAME_None;
+
+	if (ShaderFormatName != NAME_None)
+	{
+		FString FormatName = ShaderFormatName.ToString();
+		if (FormatName.StartsWith(TEXT("SF_")))
+		{
+			FormatName.MidInline(3, MAX_int32, false);
+		}
+		PlatformName = MoveTemp(FormatName);
+	}
+	else
+	{
+		PlatformName =TEXT("unknown");
+	}
+	return *PlatformName;
+}
+#endif
+
 bool UFlibShaderPipelineCacheHelper::LoadShaderPipelineCache(const FString& Name)
 {
-	UE_LOG(LogHotPatcher,Display,TEXT("Load Shader pipeline cache %s for platform %d"),*Name,*ShaderPlatformToShaderFormatName(GMaxRHIShaderPlatform).ToString());
+	UE_LOG(LogHotPatcher,Display,TEXT("Load Shader pipeline cache %s for platform %s"),*Name,*ShaderPlatformToShaderFormatName(GMaxRHIShaderPlatform).ToString());
 #if UE_VERSION_OLDER_THAN(5,1,0)
 	return FShaderPipelineCache::OpenPipelineFileCache(Name,GMaxRHIShaderPlatform);
 #else

@@ -298,12 +298,9 @@ FString UFlibHotPatcherCoreHelper::GetProjectCookedDir()
 #include "Serialization/BulkDataManifest.h"
 #endif
 
-#if ENGINE_MAJOR_VERSION > 4 /*&& ENGINE_MINOR_VERSION > 0 */
+#if WITH_UE5
 #include "ZenStoreWriter.h"
-#include "Cooker/PackageWriter/HotPatcherPackageWriter.h"
 #endif
-
-
 
 FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetPlatform* TargetPlatform,
 	bool bUseZenLoader,
@@ -337,12 +334,6 @@ FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetP
 	{
 		PackageWriter = new FZenStoreWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform);
 		WriterDebugName = TEXT("ZenStore");
-	}
-	else
-	{
-		// FAsyncIODelete AsyncIODelete{ResolvedProjectPath};
-		PackageWriter = new FHotPatcherPackageWriter;// new FLooseCookedPackageWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform,AsyncIODelete,FPackageNameCache{},IPluginManager::Get().GetEnabledPlugins());
-		WriterDebugName = TEXT("DirectoryWriter");
 	}
 	
 	SavePackageContext	= new FSavePackageContext(TargetPlatform, PackageWriter);
@@ -516,12 +507,13 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	bool bStorageConcurrent
 )
 {
-	FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
+	// FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
 	TMap<FName,FString> PlatformSavePaths;
 	for(auto Platform: CookPlatforms)
 	{
-		FString SavePath = UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(InSavePath,LongPackageName, Platform.Value->PlatformName());
-		PlatformSavePaths.Add(*Platform.Value->PlatformName(),SavePath);
+		FString PlatformName = *Platform.Value->PlatformName();
+		// FString SavePath = UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(InSavePath,LongPackageName, Platform.Value->PlatformName());
+		PlatformSavePaths.Add(*PlatformName,FPaths::Combine(InSavePath,PlatformName));
 	}
 	
 	return UFlibHotPatcherCoreHelper::CookPackage(Package,CookPlatforms,CookActionCallback,
@@ -542,6 +534,9 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	bool bStorageConcurrent
 )
 {
+#if WITH_UE5
+	return CookPackageByCmdlet(Package,CookPlatforms,CookActionCallback,CookedPlatformSavePaths);
+#endif
 	bool bSuccessed = false;
 
 	FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
@@ -589,17 +584,12 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 		
 		for(auto& Platform:CookPlatforms)
 		{
-			// if(bIsFailedPackage)
-			// {
-			// 	CookActionCallback.OnAssetCooked(Package,Platform,ESavePackageResult::Error);
-			// 	return false;
-			// }
-			
 			FFilterEditorOnlyFlag SetPackageEditorOnlyFlag(Package,Platform.Value);
 
 			FString PackageName = PackageFileName.IsNone() ? LongPackageName :PackageFileName.ToString();
-			FString CookedSavePath = *CookedPlatformSavePaths.Find(*Platform.Value->PlatformName());
-
+			FString CookedSaveBaseDir = *CookedPlatformSavePaths.Find(*Platform.Value->PlatformName());
+			FString CookedSavePath = UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(CookedSaveBaseDir,PackageName, Platform.Value->PlatformName());
+			
 			ETargetPlatform TargetPlatform = Platform.Key;
 
 			/* for material cook
@@ -622,12 +612,6 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			{
 				CurrentPlatformPackageContext = *PlatformSavePackageContext.Find(Platform.Value->PlatformName());
 			}
-		#if ENGINE_MAJOR_VERSION > 4 /*&& ENGINE_MINOR_VERSION > 0*/
-				IPackageWriter::FBeginPackageInfo BeginInfo;
-				BeginInfo.PackageName = Package->GetFName();
-				BeginInfo.LooseFilePath = CookedSavePath;
-				CurrentPlatformPackageContext->PackageWriter->BeginPackage(BeginInfo);
-		#endif
 	#endif
 
 			if(CookActionCallback.OnCookBegin)
@@ -662,36 +646,6 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			{
 				CookActionCallback.OnAssetCooked(Package,TargetPlatform,Result.Result);
 			}
-			
-	#if WITH_PACKAGE_CONTEXT
-			// in UE5.1
-		#if ENGINE_MAJOR_VERSION > 4 /*&& ENGINE_MINOR_VERSION > 0*/
-				// save cooked file to desk in UE5-main
-				if(bSuccessed)
-				{
-					//const FAssetPackageData* AssetPackageData = UFlibAssetManageHelper::GetPackageDataByPackageName(Package->GetFName().ToString());
-					ICookedPackageWriter::FCommitPackageInfo Info;
-#if UE_VERSION_OLDER_THAN(5,1,0)
-					Info.bSucceeded = bSuccessed;
-#else
-					Info.Status = bSuccessed ? IPackageWriter::ECommitStatus::Success : IPackageWriter::ECommitStatus::Error;
-#endif
-					Info.PackageName = Package->GetFName();
-					// PRAGMA_DISABLE_DEPRECATION_WARNINGS
-					Info.PackageGuid = FGuid::NewGuid(); //AssetPackageData ? AssetPackageData->PackageGuid : FGuid::NewGuid();
-					// PRAGMA_ENABLE_DEPRECATION_WARNINGS
-					// Info.Attachments.Add({ "Dependencies", TargetDomainDependencies });
-					// TODO: Reenable BuildDefinitionList once FCbPackage support for empty FCbObjects is in
-					//Info.Attachments.Add({ "BuildDefinitionList", BuildDefinitionList });
-					Info.WriteOptions = IPackageWriter::EWriteOptions::Write;
-					if (!!(SaveFlags & SAVE_ComputeHash))
-					{
-						Info.WriteOptions |= IPackageWriter::EWriteOptions::ComputeHash;
-					}
-					CurrentPlatformPackageContext->PackageWriter->CommitPackage(MoveTemp(Info));
-				}
-		#endif
-	#endif
 		}
 
 		Package->SetPackageFlagsTo(OriginalPackageFlags);
@@ -701,6 +655,11 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 
 bool UFlibHotPatcherCoreHelper::RunCmdlet(const FString& CmdletName,const FString& Params,int32& OutRetValue)
 {
+	static int32 Counter = 0;
+	ON_SCOPE_EXIT{
+		Counter++;
+	};
+	
 	bool bStatus = false;
 	FString CmdletNameStr = CmdletName;
 	if(!CmdletNameStr.EndsWith(TEXT("Commandlet")))
@@ -711,12 +670,15 @@ bool UFlibHotPatcherCoreHelper::RunCmdlet(const FString& CmdletName,const FStrin
 	UClass* SPCTCmdletClass = FindObject<UClass>(ANY_PACKAGE, *CmdletNameStr, false);
 	if(SPCTCmdletClass && SPCTCmdletClass->IsChildOf(UCommandlet::StaticClass()))
 	{
-		CmdletCDO = Cast<UCommandlet>(SPCTCmdletClass->GetDefaultObject());
+		// CmdletCDO = Cast<UCommandlet>(SPCTCmdletClass->GetDefaultObject());
+		CmdletCDO = NewObject<UCommandlet>(SPCTCmdletClass,SPCTCmdletClass,*FString::Printf(TEXT("Cooker_%d"),Counter),RF_NoFlags,SPCTCmdletClass->GetDefaultObject());
+		CmdletCDO->AddToRoot();
 	}
 	if(CmdletCDO)
 	{
 		OutRetValue = CmdletCDO->Main(Params);
 		bStatus = true;
+		CmdletCDO->RemoveFromRoot();
 	}
 	return bStatus;
 }
@@ -728,7 +690,7 @@ bool UFlibHotPatcherCoreHelper::CookPackageByCmdlet(UPackage* Package,
 	for(auto& CookPlatformPair:CookPlatforms)
 	{
 		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(CookPlatformPair.Key);
-		FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
+		FString LongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(Package->GetPathName());
 		FString TargetPlatformName = CookPlatformPair.Value->PlatformName();
 		FString CookedSavePath = FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked"),PlatformName);
 		if(CookedPlatformSavePaths.Contains(*TargetPlatformName))
@@ -756,11 +718,19 @@ bool UFlibHotPatcherCoreHelper::CookByCmdlet(const TArray<FString>& LongPackageN
 	{
 		CookedSavePath = SaveToCookedDir;
 	}
-		
+	
 	FString CookCmdline;
-	CookCmdline = FString::Printf(TEXT("%s -cooksinglepackage"),*CookCmdline);
+	CookCmdline = FString::Printf(
+#if UE_VERSION_NEWER_THAN(4,25,3)
+TEXT("%s -cooksinglepackagenorefs"),
+#else
+	TEXT("%s -cooksinglepackage"),
+#endif
+	*CookCmdline);
 	CookCmdline = FString::Printf(TEXT("%s -TARGETPLATFORM=%s"),*CookCmdline,*PlatformName);
 	CookCmdline = FString::Printf(TEXT("%s -OutputDir=%s"),*CookCmdline,*CookedSavePath);
+	CookCmdline = FString::Printf(TEXT("%s -SkipZenStore"),*CookCmdline);
+	CookCmdline = FString::Printf(TEXT("%s -FastCook"),*CookCmdline);
 	if(LongPackageNames.Num())
 	{
 		UProjectPackagingSettings* PackagingSettings = GetMutableDefault<UProjectPackagingSettings>();
@@ -1527,9 +1497,10 @@ bool UFlibHotPatcherCoreHelper::SerializeAssetRegistry(IAssetRegistry* AssetRegi
 		FAssetData* AssetData = new FAssetData();
 		if (UFlibAssetManageHelper::GetSingleAssetsData(AssetPackagePath, *AssetData))
 		{
-			if (AssetPackagePath != AssetData->ObjectPath.ToString())
+			FString ObjectPath = UFlibAssetManageHelper::GetObjectPathByAssetData(*AssetData).ToString();
+			if (AssetPackagePath != ObjectPath)
 			{
-				UE_LOG(LogHotPatcherCoreHelper, Warning, TEXT("%s is a redirector of %s, skip!"), *AssetPackagePath, *AssetData->ObjectPath.ToString());
+				UE_LOG(LogHotPatcherCoreHelper, Warning, TEXT("%s is a redirector of %s, skip!"), *AssetPackagePath, *ObjectPath);
 				delete AssetData;
 				continue;
 			}

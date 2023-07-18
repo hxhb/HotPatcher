@@ -14,6 +14,10 @@ DEFINE_LOG_CATEGORY(LogHotPatcherCommandlet);
 
 int32 UHotPatcherCommandlet::Main(const FString& Params)
 {
+#if WITH_UE5
+	PRIVATE_GIsRunningCookCommandlet = true;
+#endif
+	
 	Super::Main(Params);
 
 	FCommandLine::Append(TEXT(" -buildmachine"));

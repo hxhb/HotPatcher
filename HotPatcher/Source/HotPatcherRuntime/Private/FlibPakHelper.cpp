@@ -8,11 +8,12 @@
 #include "HotPatcherLog.h"
 #include "FlibAssetManageHelper.h"
 #include "HotPatcherTemplateHelper.hpp"
+#include "AssetRegistry.h"
+
 // Engine Header
 #include "Resources/Version.h"
 #include "Serialization/ArrayReader.h"
-#include "AssetRegistryModule.h"
-#include "IAssetRegistry.h"
+
 #include "Misc/ScopeExit.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonReader.h"
@@ -20,7 +21,6 @@
 #include "IPlatformFilePak.h"
 #include "ShaderPipelineCache.h"
 #include "RHI.h"
-#include "AssetRegistryState.h"
 #include "Misc/Base64.h"
 #include "Misc/CoreDelegates.h"
 #include "Serialization/LargeMemoryReader.h"

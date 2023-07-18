@@ -175,18 +175,8 @@ public class HotPatcherCore : ModuleRules
 				Path.Combine(EngineDirectory,"Source/Editor/UnrealEd/Private"),
 			});
 		}
-		
-		if (Version.MajorVersion > 4)
-		{
-			PublicIncludePaths.AddRange(new List<string>()
-			{
-				// Path.Combine(EngineDirectory,"Source/Developer/IoStoreUtilities/Internal"),
-				// Path.Combine(EngineDirectory,"Source/Editor/UnrealEd/Private/Cooker"),
-				// Path.Combine(EngineDirectory,"Source/Editor/UnrealEd/Private"),
-				Path.Combine(EngineDirectory,"Source/Runtime/CoreUObject/Internal/Serialization"),
-			});
-		}
-		
+
+		AddPublicDefinitions("WITH_UE5", Version.MajorVersion > 4);
 		PublicDefinitions.AddRange(new string[]
 		{
 			"TOOL_NAME=\"HotPatcher\"",
