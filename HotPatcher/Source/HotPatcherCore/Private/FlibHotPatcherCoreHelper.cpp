@@ -398,11 +398,13 @@ bool UFlibHotPatcherCoreHelper::SavePlatformBulkDataManifest(TMap<ETargetPlatfor
 bool UFlibHotPatcherCoreHelper::CookPackages(const TArray<UPackage*> Packages,
 	TMap<ETargetPlatform, ITargetPlatform*> CookPlatforms, FCookActionCallback CookActionCallback,
 	TMap<FString, FSavePackageContext*> PlatformSavePackageContext, const TMap<FName, FString>& CookedPlatformSavePaths,
-	bool bStorageConcurrent)
+	bool bStorageConcurrent,
+	bool bUseCmdletImpl)
 {
-#if WITH_UE5
-	return CookPackagesByCmdlet(Packages,CookPlatforms,CookActionCallback,CookedPlatformSavePaths);
-#endif
+	if(bUseCmdletImpl)
+	{
+		return CookPackagesByCmdlet(Packages,CookPlatforms,CookActionCallback,CookedPlatformSavePaths);
+	}
 	GIsSavingPackage = true;
 	ParallelFor(Packages.Num(), [&](int32 AssetIndex)
 	{
@@ -465,12 +467,14 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
 #endif
 	const TMap<FName,FString>& CookedPlatformSavePaths,
-	bool bStorageConcurrent
+	bool bStorageConcurrent,
+	bool bUseCmdletImpl
 )
 {
-#if WITH_UE5
-	return CookPackagesByCmdlet(TArray<UPackage*>{Package},CookPlatforms,CookActionCallback,CookedPlatformSavePaths);
-#endif
+	if(bUseCmdletImpl)
+	{
+		return CookPackagesByCmdlet(TArray<UPackage*>{Package},CookPlatforms,CookActionCallback,CookedPlatformSavePaths);
+	}
 	bool bSuccessed = false;
 
 	FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());

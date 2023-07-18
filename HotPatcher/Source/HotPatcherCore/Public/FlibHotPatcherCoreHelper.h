@@ -98,7 +98,13 @@ public:
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
 	#endif
 		const TMap<FName,FString>& CookedPlatformSavePaths,
-		bool bStorageConcurrent
+		bool bStorageConcurrent,
+		bool bUseCmdletImpl =
+#if WITH_UE5
+		true
+#else
+		flase
+#endif
 	);
 	
 	static bool CookPackage(
@@ -109,7 +115,13 @@ public:
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
 #endif
 		const TMap<FName,FString>& CookedPlatformSavePaths,
-		bool bStorageConcurrent
+		bool bStorageConcurrent,
+		bool bUseCmdletImpl =
+#if WITH_UE5
+		true
+#else
+		flase
+#endif
 	);
 
 	static bool RunCmdlet(const FString& CmdletName,const FString& Params,int32& OutRetValue);
