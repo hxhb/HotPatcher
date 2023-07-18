@@ -309,7 +309,8 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 #endif
 	
 	TSharedPtr<FClassesPackageTracker> ClassesPackageTracker = MakeShareable(new FClassesPackageTracker);
-	TArray<UPackage*> PreCachePackages = UFlibAssetManageHelper::LoadPackagesForCooking(CookCluster.AsSoftObjectPaths(),GetSettingObject()->bConcurrentSave);
+	const TArray<FSoftObjectPath>& CookClusterPaths = CookCluster.AsSoftObjectPaths();
+	TArray<UPackage*> PreCachePackages = UFlibAssetManageHelper::LoadPackagesForCooking(CookClusterPaths,GetSettingObject()->bConcurrentSave);
 
 	bool bCanConcurrentSave = GetSettingObject()->bConcurrentSave && CookCluster.bPreGeneratePlatformData;
 	// pre cahce platform data
@@ -321,52 +322,27 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 	// for cooking
 	{
 		TMap<ETargetPlatform,ITargetPlatform*> PlatformMaps;
+		TMap<FName,FString> CookedPlatformSavePaths;
 		for(auto Platform:TargetPlatforms)
 		{
 			ETargetPlatform EnumPlatform;
-			THotPatcherTemplateHelper::GetEnumValueByName(*Platform->PlatformName(),EnumPlatform);
+			FString PlatformName = *Platform->PlatformName();
+			THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,EnumPlatform);
 			PlatformMaps.Add(EnumPlatform,Platform);
+			CookedPlatformSavePaths.Add(*PlatformName,FPaths::Combine(CookBaseDir,PlatformName));
 		}
-		
-		auto CookPackageLambda = [&](int32 AssetIndex)
-		{
-			// FExecTimeRecoder CookTimer(PreCachePackages[AssetIndex]->GetFullName());
-			UPackage* CookPackageIns = PreCachePackages[AssetIndex];
-			if(IsValid(CookPackageIns))
-			{
-				UFlibHotPatcherCoreHelper::CookPackage(
-					CookPackageIns,
-					PlatformMaps,
-					CookCluster.CookActionCallback,
-	#if WITH_PACKAGE_CONTEXT
-					SavePackageContextsNameMapping,
-	#endif
-					CookBaseDir,
-					GetSettingObject()->bConcurrentSave
-				);
-			}
-		};
-		
-		if(bCanConcurrentSave)
-		{
-			for(auto& Platform:TargetPlatforms)
-			{
-				ETargetPlatform TargetPlatform;
-				THotPatcherTemplateHelper::GetEnumValueByName(Platform->PlatformName(),TargetPlatform);
-			}
-			GIsSavingPackage = true;
-			ParallelFor(PreCachePackages.Num(), CookPackageLambda,GForceSingleThread ? true : !bCanConcurrentSave);
-			GIsSavingPackage = false;
-		}
-		else
-		{
-			for(int32 index = 0;index<PreCachePackages.Num();++index)
-			{
-				CookPackageLambda(index);
-			}
-		}
-	}
 
+		UFlibHotPatcherCoreHelper::CookPackages(
+						PreCachePackages,
+						PlatformMaps,
+						CookCluster.CookActionCallback,
+		#if WITH_PACKAGE_CONTEXT
+						SavePackageContextsNameMapping,
+		#endif
+						CookedPlatformSavePaths,
+						bCanConcurrentSave
+					);
+	}
 	// clean cached ddd / release memory
 	// CleanClusterCachedPlatformData(CookCluster);
 	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();

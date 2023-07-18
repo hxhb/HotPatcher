@@ -36,6 +36,7 @@
 #include "Misc/EngineVersionComparison.h"
 #include "Misc/CoreMisc.h"
 #include "DerivedDataCacheInterface.h"
+#include "HotPatcherRuntime.h"
 #include "Misc/ScopeExit.h"
 
 
@@ -265,7 +266,7 @@ FString ConvertToFullSandboxPath( const FString &FileName, bool bForWrite )
 	return Result;
 }
 
-FString UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(const FString& BaseDir, const FString PacakgeName, const FString& Platform)
+FString UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(const FString& BaseDir, const FString PacakgeName, const FString& Platform,bool bSkipPlatform)
 {
 	SCOPED_NAMED_EVENT_TEXT("UFlibHotPatcherCoreHelper::GetCookAssetsSaveDir",FColor::Red);
 	FString CookDir;
@@ -278,10 +279,10 @@ FString UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(const FString& BaseDir
 	{
 		StandardFilename = FPaths::ConvertRelativePathToFull(Filename);
 		FString SandboxFilename = ConvertToFullSandboxPath(*StandardFilename, true);
-		CookDir = FPaths::Combine(BaseDir,Platform,SandboxFilename);
+		CookDir = FPaths::Combine(BaseDir,bSkipPlatform ? TEXT(""): Platform,SandboxFilename);
+		FPaths::NormalizeFilename(CookDir);
 	}
 	PRAGMA_ENABLE_DEPRECATION_WARNINGS
-	
 	return 	CookDir;
 }
 
@@ -393,56 +394,37 @@ bool UFlibHotPatcherCoreHelper::SavePlatformBulkDataManifest(TMap<ETargetPlatfor
 #endif
 	return bRet;
 }
-#endif
 
-void UFlibHotPatcherCoreHelper::CookAssets(
-	const TArray<FSoftObjectPath>& Assets,
-	const TArray<ETargetPlatform>& Platforms,
-	FCookActionCallback CookActionCallback,
-#if WITH_PACKAGE_CONTEXT
-	class TMap<ETargetPlatform, FSavePackageContext*> PlatformSavePackageContext,
-#endif
-	const FString& InSavePath
-)
+bool UFlibHotPatcherCoreHelper::CookPackages(const TArray<UPackage*> Packages,
+	TMap<ETargetPlatform, ITargetPlatform*> CookPlatforms, FCookActionCallback CookActionCallback,
+	TMap<FString, FSavePackageContext*> PlatformSavePackageContext, const TMap<FName, FString>& CookedPlatformSavePaths,
+	bool bStorageConcurrent)
 {
-	SCOPED_NAMED_EVENT_TEXT("CookAssets",FColor::Red);
-	TArray<FString> StringPlatforms;
-#if WITH_PACKAGE_CONTEXT
-	TMap<FString,FSavePackageContext*> FinalPlatformSavePackageContext;
+#if WITH_UE5
+	return CookPackagesByCmdlet(Packages,CookPlatforms,CookActionCallback,CookedPlatformSavePaths);
 #endif
-	TMap<ETargetPlatform,ITargetPlatform*> CookPlatforms; 
-	for(const auto& Platform:Platforms)
+	GIsSavingPackage = true;
+	ParallelFor(Packages.Num(), [&](int32 AssetIndex)
 	{
-		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
-		StringPlatforms.AddUnique(PlatformName);
-#if WITH_PACKAGE_CONTEXT
-		FSavePackageContext* CurrentPackageContext = NULL;
-		if(PlatformSavePackageContext.Contains(Platform))
+		UPackage* CookPackageIns = Packages[AssetIndex];
+		if(IsValid(CookPackageIns))
 		{
-			CurrentPackageContext = *PlatformSavePackageContext.Find(Platform);
-		}
-		 
-		FinalPlatformSavePackageContext.Add(PlatformName,CurrentPackageContext);
-#endif
-		ITargetPlatform* PlatformIns = GetPlatformByName(PlatformName);
-		if(PlatformIns)
-		{
-			CookPlatforms.Add(Platform,PlatformIns);
-		}
-	}
-	
-	for(int32 index = 0; index < Assets.Num();++index)
-	{
-		UE_LOG(LogHotPatcherCoreHelper,Display,TEXT("%d packages is cooked,Remain %d Total %d"), index, Assets.Num() - index, Assets.Num());
-		CookPackage(Assets[index],CookPlatforms,CookActionCallback,
+			UFlibHotPatcherCoreHelper::CookPackage(
+				CookPackageIns,
+				CookPlatforms,
+				CookActionCallback,
 #if WITH_PACKAGE_CONTEXT
-			FinalPlatformSavePackageContext,
+				PlatformSavePackageContext,
 #endif
-			InSavePath,false);
-	}
-	// UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
-	// UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+				CookedPlatformSavePaths,
+				bStorageConcurrent
+			);
+		}
+	},GForceSingleThread ? true : !bStorageConcurrent);
+	GIsSavingPackage = false;
+	return true;
 }
+#endif
 
 struct FFilterEditorOnlyFlag
 {
@@ -476,54 +458,6 @@ UE_TRACE_EVENT_END()
 #endif
 
 bool UFlibHotPatcherCoreHelper::CookPackage(
-	const FSoftObjectPath& AssetObjectPath,
-	TMap<ETargetPlatform,ITargetPlatform*> CookPlatforms,
-	FCookActionCallback CookActionCallback,
-#if WITH_PACKAGE_CONTEXT
-	class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
-#endif
-	const FString& InSavePath,
-	bool bStorageConcurrent 
-)
-{
-	SCOPED_NAMED_EVENT_TEXT("CookPackageForObjectPath",FColor::Red);
-	UPackage* Package = UFlibAssetManageHelper::GetPackage(*AssetObjectPath.GetLongPackageName());
-	return UFlibHotPatcherCoreHelper::CookPackage(Package,CookPlatforms,CookActionCallback,
-#if WITH_PACKAGE_CONTEXT
-	PlatformSavePackageContext,
-#endif
-	InSavePath,bStorageConcurrent);
-}
-
-
-bool UFlibHotPatcherCoreHelper::CookPackage(
-	UPackage* Package,
-	TMap<ETargetPlatform,ITargetPlatform*> CookPlatforms,
-	FCookActionCallback CookActionCallback,
-#if WITH_PACKAGE_CONTEXT
-	class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
-#endif
-	const FString& InSavePath,
-	bool bStorageConcurrent
-)
-{
-	// FString LongPackageName = UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName());
-	TMap<FName,FString> PlatformSavePaths;
-	for(auto Platform: CookPlatforms)
-	{
-		FString PlatformName = *Platform.Value->PlatformName();
-		// FString SavePath = UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(InSavePath,LongPackageName, Platform.Value->PlatformName());
-		PlatformSavePaths.Add(*PlatformName,FPaths::Combine(InSavePath,PlatformName));
-	}
-	
-	return UFlibHotPatcherCoreHelper::CookPackage(Package,CookPlatforms,CookActionCallback,
-#if WITH_PACKAGE_CONTEXT
-	PlatformSavePackageContext,
-#endif
-	PlatformSavePaths,bStorageConcurrent);
-}
-
-bool UFlibHotPatcherCoreHelper::CookPackage(
 	UPackage* Package,
 	TMap<ETargetPlatform,ITargetPlatform*> CookPlatforms,
 	FCookActionCallback CookActionCallback,
@@ -535,7 +469,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 )
 {
 #if WITH_UE5
-	return CookPackageByCmdlet(Package,CookPlatforms,CookActionCallback,CookedPlatformSavePaths);
+	return CookPackagesByCmdlet(TArray<UPackage*>{Package},CookPlatforms,CookActionCallback,CookedPlatformSavePaths);
 #endif
 	bool bSuccessed = false;
 
@@ -588,7 +522,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 
 			FString PackageName = PackageFileName.IsNone() ? LongPackageName :PackageFileName.ToString();
 			FString CookedSaveBaseDir = *CookedPlatformSavePaths.Find(*Platform.Value->PlatformName());
-			FString CookedSavePath = UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(CookedSaveBaseDir,PackageName, Platform.Value->PlatformName());
+			FString CookedSavePath = UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(CookedSaveBaseDir,PackageName, Platform.Value->PlatformName(),true);
 			
 			ETargetPlatform TargetPlatform = Platform.Key;
 
@@ -683,27 +617,34 @@ bool UFlibHotPatcherCoreHelper::RunCmdlet(const FString& CmdletName,const FStrin
 	return bStatus;
 }
 
-bool UFlibHotPatcherCoreHelper::CookPackageByCmdlet(UPackage* Package,
+bool UFlibHotPatcherCoreHelper::CookPackagesByCmdlet(
+	const TArray<UPackage*> Packages,
 	TMap<ETargetPlatform, ITargetPlatform*> CookPlatforms, FCookActionCallback CookActionCallback,
 	const TMap<FName, FString>& CookedPlatformSavePaths)
 {
 	for(auto& CookPlatformPair:CookPlatforms)
 	{
 		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(CookPlatformPair.Key);
-		FString LongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(Package->GetPathName());
+		TArray<FString> LongPackageNames;
+		TArray<FSoftObjectPath> ObjectPaths;
+		for(UPackage* Package:Packages)
+		{
+			FString LongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(Package->GetPathName());
+			LongPackageNames.Add(LongPackageName);
+			ObjectPaths.Emplace(LongPackageName);
+			
+		}
+		
 		FString TargetPlatformName = CookPlatformPair.Value->PlatformName();
 		FString CookedSavePath = FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked"),PlatformName);
 		if(CookedPlatformSavePaths.Contains(*TargetPlatformName))
 		{
 			CookedSavePath = *CookedPlatformSavePaths.Find(*CookPlatformPair.Value->PlatformName());
 		}
-
-		FSoftObjectPath ObjectPath{LongPackageName};
-		CookActionCallback.OnCookBegin(ObjectPath,CookPlatformPair.Key);
-		bool bCookStatus = CookByCmdlet(TArray<FString>{LongPackageName},CookPlatformPair.Key,CookedSavePath);
-		
+		for(const auto& SoftObjectPath:ObjectPaths){ CookActionCallback.OnCookBegin(SoftObjectPath,CookPlatformPair.Key); }
+		bool bCookStatus = CookByCmdlet(LongPackageNames,CookPlatformPair.Key,CookedSavePath);
         ESavePackageResult result = bCookStatus ? ESavePackageResult::Success : ESavePackageResult::Error;
-        CookActionCallback.OnAssetCooked(ObjectPath,CookPlatformPair.Key,result);
+		for(const auto& SoftObjectPath:ObjectPaths){ CookActionCallback.OnAssetCooked(SoftObjectPath,CookPlatformPair.Key,result); }
 	}
 	return true;
 }
@@ -749,6 +690,7 @@ TEXT("%s -cooksinglepackagenorefs"),
 			MapParams.RemoveFromEnd(TEXT("+"));
 		}
 		CookCmdline = FString::Printf(TEXT("%s %s"),*CookCmdline,*MapParams);
+		UE_LOG(LogHotPatcherCoreHelper,Verbose,TEXT("CookCommandlet: %s"),*CookCmdline);
 		int32 RetValue = -1;
 		if(RunCmdlet(TEXT("Cook"),CookCmdline,RetValue))
 		{
@@ -769,6 +711,17 @@ void UFlibHotPatcherCoreHelper::CookChunkAssets(
 	const FString& InSavePath
 )
 {
+	TMap<FName,FString> CookedPlatformSavePaths;
+	TMap<ETargetPlatform,ITargetPlatform*> CookPlatforms;
+	TMap<FString,FSavePackageContext*> PlatformSavePackageContextMap;
+	for(const auto& Platform:Platforms)
+	{
+		FString PlatformName = THotPatcherTemplateHelper::GetEnumNameByValue(Platform);
+		CookedPlatformSavePaths.Add(*PlatformName,FPaths::Combine(InSavePath,PlatformName));
+		ITargetPlatform* TargetPlatform = UFlibHotPatcherCoreHelper::GetTargetPlatformByName(PlatformName);
+		CookPlatforms.Add(Platform,TargetPlatform);
+		PlatformSavePackageContextMap.Add(PlatformName,*PlatformSavePackageContext.Find(Platform));
+	}
 	
 	TArray<FSoftObjectPath> SoftObjectPaths;
 
@@ -778,11 +731,16 @@ void UFlibHotPatcherCoreHelper::CookChunkAssets(
 	}
 	if(!!SoftObjectPaths.Num())
 	{
-		UFlibHotPatcherCoreHelper::CookAssets(SoftObjectPaths,Platforms,CookActionCallback,
-#if WITH_PACKAGE_CONTEXT
-		PlatformSavePackageContext,
-#endif
-		InSavePath);
+		for(const auto& AssetObjectPath:SoftObjectPaths)
+		{
+			UPackage* Package = UFlibAssetManageHelper::GetPackage(*AssetObjectPath.GetLongPackageName());
+		
+			UFlibHotPatcherCoreHelper::CookPackage(Package,CookPlatforms,CookActionCallback,
+	#if WITH_PACKAGE_CONTEXT
+			PlatformSavePackageContextMap,
+	#endif
+			CookedPlatformSavePaths,false);
+		}
 	}
 }
 
