@@ -6,12 +6,7 @@
 
 FCookAdvancedOptions::FCookAdvancedOptions()
 {
-#if WITH_UE5
-	NumberOfAssetsPerFrame =1;
-	OverrideNumberOfAssetsPerFrame.Empty();
-#else
 	OverrideNumberOfAssetsPerFrame.Add(UWorld::StaticClass(),2);
-#endif
 }
 
 FExportPatchSettings::FExportPatchSettings()
