@@ -405,7 +405,7 @@ bool UFlibHotPatcherCoreHelper::CookPackages(const TArray<UPackage*> Packages,
 	{
 		return CookPackagesByCmdlet(Packages,CookPlatforms,CookActionCallback,CookedPlatformSavePaths);
 	}
-	GIsSavingPackage = true;
+	if(bStorageConcurrent) { GIsSavingPackage = true; }
 	ParallelFor(Packages.Num(), [&](int32 AssetIndex)
 	{
 		UPackage* CookPackageIns = Packages[AssetIndex];
@@ -423,7 +423,7 @@ bool UFlibHotPatcherCoreHelper::CookPackages(const TArray<UPackage*> Packages,
 			);
 		}
 	},GForceSingleThread ? true : !bStorageConcurrent);
-	GIsSavingPackage = false;
+	if(bStorageConcurrent) { GIsSavingPackage = false; }
 	return true;
 }
 #endif
