@@ -78,8 +78,9 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 			);
 	}
 #endif
+#if !WITH_UE5 // for UE4
 	InitShaderLibConllections();
-	
+#endif
 	// cook package tracker
 	if(GetSettingObject()->bPackageTracker)
 	{
@@ -118,6 +119,7 @@ int32 USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
 	DumpCookerInfo.Append(FString::Printf(TEXT("\tTarget Platforms: %s\n"),*PlatformsStr));
 	
 	const int32 NumberOfAssetsPerFrame = GetSettingObject()->GetNumberOfAssetsPerFrame();
+	TArray<UClass*> MaterialClasses = UFlibHotPatcherCoreHelper::GetAllMaterialClasses();
 	
 	for(auto Class:GetPreCacheClasses())
 	{
@@ -127,7 +129,8 @@ int32 USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
 			DumpCookerInfo.Append(FString::Printf(TEXT("\t%s -- %d\n"),*Class->GetName(),ObjectAssets.Num()));
 		}
 		int32 ClassesNumberOfAssetsPerFrame = GetClassAssetNumOfPerCluster(Class);
-			
+		bool bIsShaderCluster = MaterialClasses.Contains(Class);
+		
 		while(ObjectAssets.Num())
 		{
 			int32 ClusterAssetNum = ClassesNumberOfAssetsPerFrame < 1 ? ObjectAssets.Num() : ClassesNumberOfAssetsPerFrame;
@@ -135,6 +138,7 @@ int32 USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
 			
 			TArray<FAssetDetail> CulsterObjectAssets(ObjectAssets.GetData(),NewClusterAssetNum);
 			FCookCluster NewCluster;
+			NewCluster.bShaderCluster = bIsShaderCluster;
 			NewCluster.AssetDetails = std::move(CulsterObjectAssets);
 			ObjectAssets.RemoveAt(0,NewClusterAssetNum);
 			NewCluster.Platforms = GetSettingObject()->CookTargetPlatforms;
@@ -341,7 +345,10 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 		#endif
 						CookedPlatformSavePaths,
 						bCanConcurrentSave
-					);
+#if WITH_UE5 && WITH_UE5_CUSTOM_SHADERLIB// FOR UE5 ShaderLibrary
+						,!(CookCluster.bShaderCluster && GetSettingObject()->ShaderOptions.bSharedShaderLibrary)
+#endif
+						);
 	}
 	// clean cached ddd / release memory
 	// CleanClusterCachedPlatformData(CookCluster);
@@ -397,8 +404,10 @@ void USingleCookerProxy::Shutdown()
 		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 		UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 	}
-	
+
+#if !WITH_UE5 // for UE4
 	ShutdowShaderLibCollections();
+#endif
 	FString StorageMetadataAbsDir = GetSettingObject()->GetStorageMetadataAbsDir();
 	// serialize cook failed assets to json
 	if(GetCookFailedAssetsCollection().CookFailedAssets.Num())
@@ -554,6 +563,7 @@ void USingleCookerProxy::ShutdowShaderLibCollections()
 		if(PlatformCookShaderCollection.IsValid())
 		{
 			PlatformCookShaderCollection->Shutdown();
+			PlatformCookShaderCollection.Reset();
 		}
 	}
 }
@@ -655,23 +665,35 @@ bool USingleCookerProxy::DoExport()
 	// force cook all in onece frame
 	if(GetSettingObject()->bForceCookInOneFrame)
 	{
-		auto ExecAllCookCluster = [&]()
-		{
-			while(!CookCluserQueue.IsEmpty())
-			{
+#if WITH_UE5 && WITH_UE5_CUSTOM_SHADERLIB// for UE5 Shader Library
+		if(GetSettingObject()->ShaderOptions.bSharedShaderLibrary){
+			InitShaderLibConllections();
+		}
+#endif
+		auto ExecAllCookCluster = [&](bool bShutdownShaderLib = false){
+			while(!CookCluserQueue.IsEmpty()){
 				FCookCluster CookCluster;
 				CookCluserQueue.Dequeue(CookCluster);
+#if WITH_UE5 && WITH_UE5_CUSTOM_SHADERLIB // for UE5 Shader Library
+				if(bShutdownShaderLib &&
+					GetSettingObject()->ShaderOptions.bSharedShaderLibrary &&
+					!CookCluster.bShaderCluster
+					){
+					ShutdowShaderLibCollections();
+				}
+#endif
 				ExecCookCluster(CookCluster);
 			}
 		};
-		ExecAllCookCluster();
+		
+		ExecAllCookCluster(true);
 		
 		if(CookCluserQueue.IsEmpty())
 		{
 			FCookCluster PackageTrackerCluster = GetPackageTrackerAsCluster();
 			int32 PackageTackerClusterCount = MakeCookQueue(PackageTrackerCluster);
 			ClusterCount+=PackageTackerClusterCount;
-			ExecAllCookCluster();
+			ExecAllCookCluster(false);
 		}
 	}
 	

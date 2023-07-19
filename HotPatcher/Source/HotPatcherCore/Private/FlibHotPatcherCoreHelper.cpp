@@ -301,6 +301,7 @@ FString UFlibHotPatcherCoreHelper::GetProjectCookedDir()
 
 #if WITH_UE5
 #include "ZenStoreWriter.h"
+#include "Cooker/PackageWriter/HotPatcherPackageWriter.h"
 #endif
 
 FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetPlatform* TargetPlatform,
@@ -328,13 +329,19 @@ FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetP
 	SavePackageContext	= new FSavePackageContext(LooseFileWriter, BulkDataManifest, bLegacyBulkDataOffsets);
 #endif
 	
-#if ENGINE_MAJOR_VERSION > 4 /*&& ENGINE_MINOR_VERSION > 0*/
+#if WITH_UE5
 	ICookedPackageWriter* PackageWriter = nullptr;
 	FString WriterDebugName;
 	if (bUseZenLoader)
 	{
 		PackageWriter = new FZenStoreWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform);
 		WriterDebugName = TEXT("ZenStore");
+	}
+	else
+	{
+		// FAsyncIODelete AsyncIODelete{ResolvedProjectPath};
+		PackageWriter = new FHotPatcherPackageWriter;// new FLooseCookedPackageWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform,AsyncIODelete,FPackageNameCache{},IPluginManager::Get().GetEnabledPlugins());
+		WriterDebugName = TEXT("DirectoryWriter");
 	}
 	
 	SavePackageContext	= new FSavePackageContext(TargetPlatform, PackageWriter);
@@ -419,7 +426,8 @@ bool UFlibHotPatcherCoreHelper::CookPackages(const TArray<UPackage*> Packages,
 				PlatformSavePackageContext,
 #endif
 				CookedPlatformSavePaths,
-				bStorageConcurrent
+				bStorageConcurrent,
+				bUseCmdletImpl
 			);
 		}
 	},GForceSingleThread ? true : !bStorageConcurrent);
@@ -550,6 +558,12 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			{
 				CurrentPlatformPackageContext = *PlatformSavePackageContext.Find(Platform.Value->PlatformName());
 			}
+	#if WITH_UE5
+				IPackageWriter::FBeginPackageInfo BeginInfo;
+				BeginInfo.PackageName = Package->GetFName();
+				BeginInfo.LooseFilePath = CookedSavePath;
+				CurrentPlatformPackageContext->PackageWriter->BeginPackage(BeginInfo);
+	#endif
 	#endif
 
 			if(CookActionCallback.OnCookBegin)
@@ -584,6 +598,36 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			{
 				CookActionCallback.OnAssetCooked(Package,TargetPlatform,Result.Result);
 			}
+					
+#if WITH_PACKAGE_CONTEXT
+			// in UE5.1
+			#if WITH_UE5
+			// save cooked file to desk in UE5-main
+			if(bSuccessed)
+			{
+				//const FAssetPackageData* AssetPackageData = UFlibAssetManageHelper::GetPackageDataByPackageName(Package->GetFName().ToString());
+				ICookedPackageWriter::FCommitPackageInfo Info;
+#if UE_VERSION_OLDER_THAN(5,1,0)
+				Info.bSucceeded = bSuccessed;
+#else
+				Info.Status = bSuccessed ? IPackageWriter::ECommitStatus::Success : IPackageWriter::ECommitStatus::Error;
+#endif
+				Info.PackageName = Package->GetFName();
+				// PRAGMA_DISABLE_DEPRECATION_WARNINGS
+				Info.PackageGuid = FGuid::NewGuid(); //AssetPackageData ? AssetPackageData->PackageGuid : FGuid::NewGuid();
+				// PRAGMA_ENABLE_DEPRECATION_WARNINGS
+				// Info.Attachments.Add({ "Dependencies", TargetDomainDependencies });
+				// TODO: Reenable BuildDefinitionList once FCbPackage support for empty FCbObjects is in
+				//Info.Attachments.Add({ "BuildDefinitionList", BuildDefinitionList });
+				Info.WriteOptions = IPackageWriter::EWriteOptions::Write;
+				if (!!(SaveFlags & SAVE_ComputeHash))
+				{
+					Info.WriteOptions |= IPackageWriter::EWriteOptions::ComputeHash;
+				}
+				CurrentPlatformPackageContext->PackageWriter->CommitPackage(MoveTemp(Info));
+			}
+		#endif
+#endif
 		}
 
 		Package->SetPackageFlagsTo(OriginalPackageFlags);
@@ -2657,50 +2701,58 @@ TArray<UClass*> UFlibHotPatcherCoreHelper::GetPreCacheClasses()
 {
 	SCOPED_NAMED_EVENT_TEXT("GetPreCacheClasses",FColor::Red);
 	TArray<UClass*> Classes;
-	
-	TArray<FName> ParentClassesName = {
-		// textures
-		TEXT("Texture"),
-		TEXT("PaperSprite"),
-		// material
-		// TEXT("MaterialExpression"),
-		// TEXT("MaterialParameterCollection"),
-		// TEXT("MaterialFunctionInterface"),
-		// TEXT("MaterialInterface"),
-		// other
-		TEXT("PhysicsAsset"),
-		TEXT("PhysicalMaterial"),
-		TEXT("StaticMesh"),
-		// curve
-		TEXT("CurveFloat"),
-		TEXT("CurveVector"),
-		TEXT("CurveLinearColor"),
-		// skeletal and animation
-		TEXT("Skeleton"),
-		TEXT("SkeletalMesh"),
-		TEXT("AnimSequence"),
-		TEXT("BlendSpace1D"),
-		TEXT("BlendSpace"),
-		TEXT("AnimMontage"),
-		TEXT("AnimComposite"),
-		// blueprint
-		TEXT("UserDefinedStruct"),
-		TEXT("Blueprint"),
-		// sound
-		TEXT("SoundWave"),
-		// particles
-		TEXT("FXSystemAsset"),
-		// large ref asset
-		TEXT("ActorSequence"),
-		TEXT("LevelSequence"),
-		TEXT("World") 
-	};
-
-	for(auto& ParentClass:UFlibHotPatcherCoreHelper::GetClassesByNames(ParentClassesName))
 	{
-		Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,true,true));
+#if !(WITH_UE5 && WITH_UE5_CUSTOM_SHADERLIB) // FOR UE5, materials asset Append to begin
+	ON_SCOPE_EXIT{	
+#endif
+		Classes.Append(UFlibHotPatcherCoreHelper::GetAllMaterialClasses());
+#if !(WITH_UE5 && WITH_UE5_CUSTOM_SHADERLIB)
+		};	
+#endif
+		
+		TArray<FName> ParentClassesName = {
+			// textures
+			TEXT("Texture"),
+			TEXT("PaperSprite"),
+			// material
+			// TEXT("MaterialExpression"),
+			// TEXT("MaterialParameterCollection"),
+			// TEXT("MaterialFunctionInterface"),
+			// TEXT("MaterialInterface"),
+			// other
+			TEXT("PhysicsAsset"),
+			TEXT("PhysicalMaterial"),
+			TEXT("StaticMesh"),
+			// curve
+			TEXT("CurveFloat"),
+			TEXT("CurveVector"),
+			TEXT("CurveLinearColor"),
+			// skeletal and animation
+			TEXT("Skeleton"),
+			TEXT("SkeletalMesh"),
+			TEXT("AnimSequence"),
+			TEXT("BlendSpace1D"),
+			TEXT("BlendSpace"),
+			TEXT("AnimMontage"),
+			TEXT("AnimComposite"),
+			// blueprint
+			TEXT("UserDefinedStruct"),
+			TEXT("Blueprint"),
+			// sound
+			TEXT("SoundWave"),
+			// particles
+			TEXT("FXSystemAsset"),
+			// large ref asset
+			TEXT("ActorSequence"),
+			TEXT("LevelSequence"),
+			TEXT("World") 
+		};
+
+		for(auto& ParentClass:UFlibHotPatcherCoreHelper::GetClassesByNames(ParentClassesName))
+		{
+			Classes.Append(UFlibHotPatcherCoreHelper::GetDerivedClasses(ParentClass,true,true));
+		}
 	}
-	Classes.Append(UFlibHotPatcherCoreHelper::GetAllMaterialClasses());
 	TSet<UClass*> Results;
 	for(const auto& Class:Classes)
 	{

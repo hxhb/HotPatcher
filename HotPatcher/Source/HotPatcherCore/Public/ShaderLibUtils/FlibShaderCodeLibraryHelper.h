@@ -51,7 +51,7 @@ public:
 #endif
 	static TArray<FName> GetShaderFormatsByTargetPlatform(ITargetPlatform* TargetPlatform);
 	static FString GenerateShaderCodeLibraryName(FString const& Name, bool bIsIterateSharedBuild);
-	static bool SaveShaderLibrary(const ITargetPlatform* TargetPlatform,TArray<FName> ShaderFormats, const FString& ShaderCodeDir,const FString& RootMetaDataPath, bool bMaster);
+	static bool SaveShaderLibrary(const ITargetPlatform* TargetPlatform,TArray<FName> ShaderFormats, FString const& Name, const FString& ShaderCodeDir,const FString& RootMetaDataPath, bool bMaster);
 	static bool SaveShaderLibrary(const ITargetPlatform* TargetPlatform, const TArray<TSet<FName>>* ChunkAssignments, FString const& Name, const FString&
 	                              SaveBaseDir, bool bMaster);
 	static TArray<FString> FindCookedShaderLibByPlatform(const FString& PlatfomName,const FString& Directory,bool bRecursive = false);

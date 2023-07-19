@@ -79,6 +79,9 @@ struct FCookCluster
     UPROPERTY()
     bool bPreGeneratePlatformData = false;
 
+public: // for advanced cook
+    UPROPERTY()
+    bool bShaderCluster = false;
 
     FORCEINLINE_DEBUGGABLE TArray<FSoftObjectPath> AsSoftObjectPaths()const
     {

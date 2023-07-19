@@ -177,6 +177,16 @@ public class HotPatcherCore : ModuleRules
 		}
 
 		AddPublicDefinitions("WITH_UE5", Version.MajorVersion > 4);
+		bool bShaderLibraryForUE5 = true;
+		AddPublicDefinitions("WITH_UE5_CUSTOM_SHADERLIB", (Version.MajorVersion > 4) && bShaderLibraryForUE5);
+		if (Version.MajorVersion > 4)
+		{
+			PublicIncludePaths.AddRange(new List<string>()
+			{
+				Path.Combine(EngineDirectory,"Source/Runtime/CoreUObject/Internal/Serialization"),
+			});
+		}
+		
 		PublicDefinitions.AddRange(new string[]
 		{
 			"TOOL_NAME=\"HotPatcher\"",
