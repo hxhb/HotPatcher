@@ -103,7 +103,7 @@ public:
 #if WITH_UE5
 		true
 #else
-		flase
+		false
 #endif
 	);
 	
@@ -120,7 +120,7 @@ public:
 #if WITH_UE5
 		true
 #else
-		flase
+		false
 #endif
 	);
 
