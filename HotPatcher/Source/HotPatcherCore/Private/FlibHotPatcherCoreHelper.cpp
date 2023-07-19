@@ -2740,12 +2740,16 @@ TArray<UClass*> UFlibHotPatcherCoreHelper::GetPreCacheClasses()
 			TEXT("Blueprint"),
 			// sound
 			TEXT("SoundWave"),
+			TEXT("SoundCue"),
+			// font
+			TEXT("Font"),
 			// particles
 			TEXT("FXSystemAsset"),
 			// large ref asset
 			TEXT("ActorSequence"),
 			TEXT("LevelSequence"),
-			TEXT("World") 
+			TEXT("MapBuildDataRegistry"),
+			TEXT("World")
 		};
 
 		for(auto& ParentClass:UFlibHotPatcherCoreHelper::GetClassesByNames(ParentClassesName))
