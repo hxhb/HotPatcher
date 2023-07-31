@@ -22,6 +22,7 @@ FExportPatchSettings::FExportPatchSettings()
 	);
 #if WITH_UE5
 	StorageCookedDir = TEXT("[PROJECTDIR]/Saved/HotPatcher/Cooked");
+	bStandaloneMode = true;
 #endif
 }
 

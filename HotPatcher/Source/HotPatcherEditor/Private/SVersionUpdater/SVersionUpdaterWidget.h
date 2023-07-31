@@ -124,9 +124,11 @@ public:
 
 	FText GetCurrentVersionText() const
 	{
-		return FText::FromString(
-			FString::Printf(TEXT("Current Version v%d.%d"),GetCurrentVersion(),GetPatchVersion())
-			);
+		return FText::FromString(FString::Printf(TEXT("Current Version v%d.%d"),GetCurrentVersion(),GetPatchVersion()));
+	};
+	FText GetEngineVersionText() const
+	{
+		return FText::FromString(FString::Printf(TEXT("Engine Version %d.%d.%d"),ENGINE_MAJOR_VERSION,ENGINE_MINOR_VERSION,ENGINE_PATCH_VERSION));
 	};
 	FText GetToolName() const {return FText::FromString(ToolName);};
 	FText GetDeveloperName() const {return FText::FromString(DeveloperName);};

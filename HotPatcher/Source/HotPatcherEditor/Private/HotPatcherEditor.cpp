@@ -644,7 +644,11 @@ void FHotPatcherEditorModule::OnCookAndPakPlatform(ETargetPlatform Platform, boo
 		CurrentAsset.AssetRegistryDependencyTypes.AddUnique(EAssetRegistryDependencyTypeEx::Packages);
 		IncludeAssets.AddUnique(CurrentAsset);
 	}
-	CookAndPakByAssetsAndFilters(IncludeAssets,IncludePaths,TArray<ETargetPlatform>{Platform});
+	CookAndPakByAssetsAndFilters(IncludeAssets,IncludePaths,TArray<ETargetPlatform>{Platform}
+#if WITH_UE5
+	,true
+#endif
+	);
 }
 
 void FHotPatcherEditorModule::OnObjectSaved(UObject* ObjectSaved)

@@ -394,8 +394,8 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 					.VAlign(VAlign_Center)
 					[
 						SNew(SBox)
-						.WidthOverride(40)
-						.HeightOverride(40)
+						.WidthOverride(50)
+						.HeightOverride(50)
 						[
 							SNew(SImage)
 							.Image(FVersionUpdaterStyle::GetBrush("Updater.QuickLaunch"))
@@ -409,7 +409,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot()
 						.AutoHeight()
-						.Padding(2, 4, 2, 4)
+						.Padding(2, 2, 2, 2)
 						[
 							SNew(SHorizontalBox)
 							+ SHorizontalBox::Slot()
@@ -427,7 +427,7 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 						]
 						+ SVerticalBox::Slot()
 							.AutoHeight()
-							.Padding(2, 4, 2, 4)
+							.Padding(2, 2, 2, 2)
 							[
 								SNew(SHorizontalBox)
 								+ SHorizontalBox::Slot()
@@ -461,6 +461,19 @@ void SVersionUpdaterWidget::Construct(const FArguments& InArgs)
 										.Text_Raw(this,&SVersionUpdaterWidget::GetLatstVersionText)
 										.OnNavigate(this, &SVersionUpdaterWidget::HyLinkClickEventOpenUpdateWebsite)
 									]
+								]
+							]
+						+ SVerticalBox::Slot()
+							.AutoHeight()
+							.Padding(2, 2, 2, 2)
+							[
+								SNew(SHorizontalBox)
+								+ SHorizontalBox::Slot()
+								.AutoWidth()
+								.Padding(0,0,4,0)
+								[
+									SNew(STextBlock)
+									.Text_Raw(this,&SVersionUpdaterWidget::GetEngineVersionText)
 								]
 							]
 					]
