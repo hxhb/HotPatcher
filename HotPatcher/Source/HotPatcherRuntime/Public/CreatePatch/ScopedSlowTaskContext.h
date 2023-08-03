@@ -38,7 +38,7 @@ public:
         if(ProgressPtr.IsValid() && !IsRunningCommandlet())
         {
             ProgressPtr->Destroy();
-            ProgressPtr.Release();
+            auto Result = ProgressPtr.Release();
         }
     }
 

@@ -38,7 +38,7 @@
 #include "DerivedDataCacheInterface.h"
 #include "HotPatcherRuntime.h"
 #include "Misc/ScopeExit.h"
-
+#include "Misc/EngineVersionComparison.h"
 
 DEFINE_LOG_CATEGORY(LogHotPatcherCoreHelper);
 
@@ -583,13 +583,27 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			PRAGMA_DISABLE_DEPRECATION_WARNINGS
 			GIsCookerLoadingPackage = true;
 			PRAGMA_ENABLE_DEPRECATION_WARNINGS
-			FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, CookedFlags, *CookedSavePath, 
+			
+#if UE_VERSION_OLDER_THAN(5,3,0)
+			FSavePackageResultStruct Result = GEditor->Save(	Package, nullptr, CookedFlags, *CookedSavePath,
 	                                                GError, nullptr, false, false, SaveFlags, Platform.Value, 
 	                                                FDateTime::MinValue(), false, /*DiffMap*/ nullptr
 	#if WITH_PACKAGE_CONTEXT
 	                                                ,CurrentPlatformPackageContext
 	#endif
 	                                                );
+#else
+			FSavePackageArgs PackageArgs;
+			PackageArgs.TopLevelFlags = CookedFlags;
+			PackageArgs.SaveFlags = SaveFlags;
+			PackageArgs.Error = GError;
+			PackageArgs.SavePackageContext = CurrentPlatformPackageContext;
+			PackageArgs.TargetPlatform = Platform.Value;
+			PackageArgs.bSlowTask = false;
+			PackageArgs.FinalTimeStamp = FDateTime::MinValue();
+			FSavePackageResultStruct Result = GEditor->Save(nullptr, Package, *CookedSavePath, PackageArgs);
+
+#endif
 			GIsCookerLoadingPackage = false;
 			
 			bSuccessed = Result == ESavePackageResult::Success;
@@ -2041,7 +2055,11 @@ bool UFlibHotPatcherCoreHelper::IsCanCookPackage(const FString& LongPackageName)
 	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	if (!LongPackageName.IsEmpty() && !FPackageName::IsScriptPackage(LongPackageName) && !FPackageName::IsMemoryPackage(LongPackageName))
 	{
-		bResult = UAssetManager::Get().VerifyCanCookPackage(FName(*LongPackageName),false);
+		bResult = UAssetManager::Get().VerifyCanCookPackage(
+#if !UE_VERSION_OLDER_THAN(5,3,0)
+			nullptr,
+#endif
+			FName(*LongPackageName),false);
 	}
 	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	return bResult;
@@ -2243,7 +2261,14 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
     	
     				GIsCookerLoadingPackage = true;
     				{
+#if UE_VERSION_OLDER_THAN(5,3,0)
     					GEditor->OnPreSaveWorld(SaveFlags, World);
+#else
+						FObjectSaveContextData ContextData;
+						ContextData.SaveFlags = SaveFlags;
+						FObjectPreSaveContext Context(ContextData);
+						GEditor->OnPreSaveWorld(World, Context);
+#endif
     				}
     				{
     					bool bCleanupIsRequired = World->PreSaveRoot(TEXT(""));

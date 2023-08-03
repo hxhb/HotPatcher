@@ -65,12 +65,14 @@ bool FHotPatcherPackageWriter::GetPreviousCookedBytes(const FPackageInfo& Info, 
 {
 	return ICookedPackageWriter::GetPreviousCookedBytes(Info, OutData);
 }
-
+#if UE_VERSION_OLDER_THAN(5,3,0)
 void FHotPatcherPackageWriter::CompleteExportsArchiveForDiff(const FPackageInfo& Info,
 	FLargeMemoryWriter& ExportsArchive)
 {
+
 	ICookedPackageWriter::CompleteExportsArchiveForDiff(Info, ExportsArchive);
 }
+#endif
 
 void FHotPatcherPackageWriter::CollectForSavePackageData(FRecord& Record, FCommitContext& Context)
 {

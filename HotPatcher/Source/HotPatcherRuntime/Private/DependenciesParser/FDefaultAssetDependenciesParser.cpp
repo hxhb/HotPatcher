@@ -6,6 +6,7 @@
 #include "Engine/World.h"
 #include "Engine/WorldComposition.h"
 #include "Resources/Version.h"
+#include "Misc/EngineVersionComparison.h"
 
 void FAssetDependenciesParser::Parse(const FAssetDependencies& InParseConfig)
 {
@@ -230,7 +231,14 @@ TSet<FName> FAssetDependenciesParser::GatherAssetDependicesInfoRecursively(
 	{
 		SCOPED_NAMED_EVENT_TEXT("GetDependencies",FColor::Red);
 		PRAGMA_DISABLE_DEPRECATION_WARNINGS
-		bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(InLongPackageName, CurrentAssetDependencies, TotalType);
+			bGetDependenciesSuccess = InAssetRegistryModule.Get().GetDependencies(InLongPackageName, CurrentAssetDependencies,
+
+#if UE_VERSION_OLDER_THAN(5,3,0)
+				TotalType
+#else
+				UE::AssetRegistry::EDependencyCategory::Package
+#endif
+		);
 		PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 		for(const auto& SkipForDependencies:ParserSkipAssetByDependencies(CurrentAssetData,CurrentAssetDependencies))
