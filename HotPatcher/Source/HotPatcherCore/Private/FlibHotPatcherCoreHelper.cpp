@@ -601,7 +601,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			PackageArgs.TargetPlatform = Platform.Value;
 			PackageArgs.bSlowTask = false;
 			PackageArgs.FinalTimeStamp = FDateTime::MinValue();
-			FSavePackageResultStruct Result = GEditor->Save(nullptr, Package, *CookedSavePath, PackageArgs);
+			FSavePackageResultStruct Result = GEditor->Save(Package,nullptr, *CookedSavePath, PackageArgs);
 
 #endif
 			GIsCookerLoadingPackage = false;
@@ -739,8 +739,20 @@ TEXT("%s -cooksinglepackagenorefs"),
 		UProjectPackagingSettings* PackagingSettings = GetMutableDefault<UProjectPackagingSettings>();
 		bool bShareMaterialShaderCodeBak = PackagingSettings->bShareMaterialShaderCode;
 		PackagingSettings->bShareMaterialShaderCode = false;
+#if UE_VERSION_NEWER_THAN(5,2,1) // for GC Crash in 5.3
+		bool bOriginalbUseSoftGC = false;
+		GConfig->GetBool(TEXT("CookSettings"), TEXT("bUseSoftGC"), bOriginalbUseSoftGC, GEditorIni);
+		GConfig->SetBool(TEXT("CookSettings"), TEXT("bUseSoftGC"), false, GEditorIni);
+		FString OriginalConfigText(TEXT("None"));
+		GConfig->GetString(TEXT("CookSettings"), TEXT("MemoryTriggerGCAtPressureLevel"), OriginalConfigText, GEditorIni);
+		GConfig->SetString(TEXT("CookSettings"), TEXT("MemoryTriggerGCAtPressureLevel"), TEXT("Critical"), GEditorIni);
+#endif
 		ON_SCOPE_EXIT{
 			PackagingSettings->bShareMaterialShaderCode = bShareMaterialShaderCodeBak;
+#if UE_VERSION_NEWER_THAN(5,2,1)
+			GConfig->SetBool(TEXT("CookSettings"), TEXT("bUseSoftGC"), bOriginalbUseSoftGC, GEditorIni);
+			GConfig->SetString(TEXT("CookSettings"), TEXT("MemoryTriggerGCAtPressureLevel"), *OriginalConfigText, GEditorIni);
+#endif 
 		};
 		FString MapParams = FString::Printf(TEXT("-MAP="));
 		for(const auto& LongPackageName:LongPackageNames)
