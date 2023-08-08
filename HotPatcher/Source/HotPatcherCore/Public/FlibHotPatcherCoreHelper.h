@@ -297,4 +297,5 @@ public:
 	static TArray<UClass*> GetPreCacheClasses();
 	static void DumpActiveTargetPlatforms();
 	static FString GetPlatformsStr(TArray<ETargetPlatform> Platforms);
+	static FPakCommandItem ParsePakResponseFileLine(const FString& Line);
 };

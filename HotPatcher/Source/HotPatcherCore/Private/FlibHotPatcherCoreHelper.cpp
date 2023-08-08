@@ -2796,3 +2796,34 @@ void UFlibHotPatcherCoreHelper::WaitDistanceFieldAsyncQueueComplete()
 		GDistanceFieldAsyncQueue->BlockUntilAllBuildsComplete();
 	}
 }
+
+
+FPakCommandItem UFlibHotPatcherCoreHelper::ParsePakResponseFileLine(const FString& Line)
+{
+	auto RemoveDoubleQuoteLambda = [](const FString& InStr)->FString
+	{
+		FString resultStr = InStr;
+		if(resultStr.StartsWith(TEXT("\"")))
+		{
+			resultStr.RemoveAt(0);
+		}
+		if(resultStr.EndsWith(TEXT("\"")))
+		{
+			resultStr.RemoveAt(resultStr.Len() - 1);
+		}
+		return resultStr;
+	};
+
+	auto ParseUassetLambda = [&RemoveDoubleQuoteLambda](const FString& InAsset)->FPakCommandItem
+	{
+		FPakCommandItem result;
+		TArray<FString> AssetPakCmd = UKismetStringLibrary::ParseIntoArray(InAsset,TEXT("\" "));
+
+		FString AssetAbsPath = AssetPakCmd[0];
+		FString AssetMountPath = AssetPakCmd[1];
+		result.AssetAbsPath = RemoveDoubleQuoteLambda(AssetAbsPath);
+		result.AssetMountPath = RemoveDoubleQuoteLambda(AssetMountPath);
+		return result;
+	};
+	return ParseUassetLambda(Line);
+}

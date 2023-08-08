@@ -884,33 +884,7 @@ namespace PatchWorker
 			TArray<FString> PatchedPakCommand;
 			for(const auto& PakAssetPath: PakCommand.PakCommands)
 			{
-				auto RemoveDoubleQuoteLambda = [](const FString& InStr)->FString
-				{
-					FString resultStr = InStr;
-					if(resultStr.StartsWith(TEXT("\"")))
-					{
-						resultStr.RemoveAt(0);
-					}
-					if(resultStr.EndsWith(TEXT("\"")))
-					{
-						resultStr.RemoveAt(resultStr.Len() - 1);
-					}
-					return resultStr;
-				};
-
-				auto ParseUassetLambda = [&RemoveDoubleQuoteLambda](const FString& InAsset)->FPakCommandItem
-				{
-					FPakCommandItem result;
-					TArray<FString> AssetPakCmd = UKismetStringLibrary::ParseIntoArray(InAsset,TEXT("\" "));
-
-					FString AssetAbsPath = AssetPakCmd[0];
-					FString AssetMountPath = AssetPakCmd[1];
-					result.AssetAbsPath = RemoveDoubleQuoteLambda(AssetAbsPath);
-					result.AssetMountPath = RemoveDoubleQuoteLambda(AssetMountPath);
-					return result;
-				};
-
-				FPakCommandItem PakAssetInfo = ParseUassetLambda(PakAssetPath);
+				FPakCommandItem PakAssetInfo = UFlibHotPatcherCoreHelper::ParsePakResponseFileLine(PakAssetPath);
 				if(Context.GetSettingObject()->GetBinariesPatchConfig().IsMatchIgnoreRules(PakAssetInfo))
 				{
 					PatchedPakCommand.AddUnique(PakAssetPath);
