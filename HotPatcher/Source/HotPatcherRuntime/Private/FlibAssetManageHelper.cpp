@@ -211,8 +211,17 @@ bool UFlibAssetManageHelper::GetAssetReferenceByLongPackageName(const FString& L
 			for (const auto& AssetDepType : SearchAssetDepTypes)
 			{
 				TArray<FAssetIdentifier> CurrentTypeReferenceNames;
+			
+				UE::AssetRegistry::EDependencyCategory Category = UE::AssetRegistry::EDependencyCategory::Package;
+
 				PRAGMA_DISABLE_DEPRECATION_WARNINGS
-				AssetRegistryModule.Get().GetReferencers(AssetId, CurrentTypeReferenceNames, AssetDepType);
+				AssetRegistryModule.Get().GetReferencers(AssetId, CurrentTypeReferenceNames,
+#if UE_VERSION_OLDER_THAN(5,3,0)
+					AssetDepType
+#else
+					Category
+#endif
+				);
 				PRAGMA_ENABLE_DEPRECATION_WARNINGS
 				for (const auto& Name : CurrentTypeReferenceNames)
 				{
@@ -1272,6 +1281,7 @@ TSharedPtr<FStreamableHandle> UFlibAssetManageHelper::LoadObjectAsync(FSoftObjec
 
 void UFlibAssetManageHelper::LoadPackageAsync(FSoftObjectPath ObjectPath,TFunction<void(FSoftObjectPath,bool)> Callback,uint32 Priority)
 {
+#if UE_VERSION_OLDER_THAN(5,3,0)
 	::LoadPackageAsync(ObjectPath.GetLongPackageName(), nullptr,nullptr,FLoadPackageAsyncDelegate::CreateLambda([=](const FName& PackageName, UPackage* Package, EAsyncLoadingResult::Type Result)
 	{
 		if(Callback && Result == EAsyncLoadingResult::Succeeded)
@@ -1280,6 +1290,7 @@ void UFlibAssetManageHelper::LoadPackageAsync(FSoftObjectPath ObjectPath,TFuncti
 			Callback(UFlibAssetManageHelper::LongPackageNameToPackagePath(Package->GetPathName()),Result == EAsyncLoadingResult::Succeeded);
 		}
 	}));
+#endif
 }
 
 UPackage* UFlibAssetManageHelper::LoadPackage(UPackage* InOuter, const TCHAR* InLongPackageName, uint32 LoadFlags,

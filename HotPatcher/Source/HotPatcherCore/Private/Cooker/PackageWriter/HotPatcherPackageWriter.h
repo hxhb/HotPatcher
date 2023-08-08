@@ -40,8 +40,9 @@ public:
 	virtual void RemoveCookedPackages() override;
 	virtual void MarkPackagesUpToDate(TArrayView<const FName> UpToDatePackages) override;
 	virtual bool GetPreviousCookedBytes(const FPackageInfo& Info, FPreviousCookedBytesData& OutData) override;
-	virtual void CompleteExportsArchiveForDiff(const FPackageInfo& Info, FLargeMemoryWriter& ExportsArchive) override;
-
+#if UE_VERSION_OLDER_THAN(5,3,0)
+	virtual void CompleteExportsArchiveForDiff(const FPackageInfo& Info, FLargeMemoryWriter& ExportsArchive)override;
+#endif
 	virtual void CommitPackageInternal(FPackageRecord&& Record,const IPackageWriter::FCommitPackageInfo& Info)override;
 
 	virtual FPackageWriterRecords::FPackage* ConstructRecord() override;
