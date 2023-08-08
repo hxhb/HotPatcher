@@ -211,15 +211,13 @@ bool UFlibAssetManageHelper::GetAssetReferenceByLongPackageName(const FString& L
 			for (const auto& AssetDepType : SearchAssetDepTypes)
 			{
 				TArray<FAssetIdentifier> CurrentTypeReferenceNames;
-			
-				UE::AssetRegistry::EDependencyCategory Category = UE::AssetRegistry::EDependencyCategory::Package;
 
 				PRAGMA_DISABLE_DEPRECATION_WARNINGS
 				AssetRegistryModule.Get().GetReferencers(AssetId, CurrentTypeReferenceNames,
 #if UE_VERSION_OLDER_THAN(5,3,0)
 					AssetDepType
 #else
-					Category
+					UE::AssetRegistry::EDependencyCategory::Package
 #endif
 				);
 				PRAGMA_ENABLE_DEPRECATION_WARNINGS
