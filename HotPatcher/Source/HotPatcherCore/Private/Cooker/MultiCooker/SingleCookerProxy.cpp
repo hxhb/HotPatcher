@@ -323,7 +323,9 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 		PreGeneratePlatformData(CookCluster);
 	}
 
+	bool bCacheDDCOnly = GetSettingObject()->bPreGeneratePlatformData && GetSettingObject()->bCachePlatformDataOnly;
 	// for cooking
+	if(!bCacheDDCOnly)
 	{
 		TMap<ETargetPlatform,ITargetPlatform*> PlatformMaps;
 		TMap<FName,FString> CookedPlatformSavePaths;
