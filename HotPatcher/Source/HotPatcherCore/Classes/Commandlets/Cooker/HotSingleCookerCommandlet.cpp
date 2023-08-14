@@ -63,7 +63,7 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 	});
 	
 	SingleCookerProxy->Shutdown();
-	UE_LOG(LogHotSingleCookerCommandlet,Display,TEXT("Single Cook Misstion %s %d is %s!"),*ExportSingleCookerSetting->MissionName,ExportSingleCookerSetting->MissionID,bExportStatus?TEXT("Successed"):TEXT("Failure"));
+	UE_LOG(LogHotSingleCookerCommandlet,Display,TEXT("Single Cook Mission %s %d is %s!"),*ExportSingleCookerSetting->MissionName,ExportSingleCookerSetting->MissionID,bExportStatus?TEXT("Successed"):TEXT("Failure"));
 	
 	if(FParse::Param(FCommandLine::Get(), TEXT("wait")))
 	{

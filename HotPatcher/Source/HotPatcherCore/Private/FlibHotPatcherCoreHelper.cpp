@@ -412,7 +412,11 @@ bool UFlibHotPatcherCoreHelper::CookPackages(const TArray<UPackage*> Packages,
 	{
 		return CookPackagesByCmdlet(Packages,CookPlatforms,CookActionCallback,CookedPlatformSavePaths);
 	}
-	if(bStorageConcurrent) { GIsSavingPackage = true; }
+	if(bStorageConcurrent) 
+	{ 
+		GIsSavingPackage = true;
+		GIsCookerLoadingPackage = true;
+	}
 	ParallelFor(Packages.Num(), [&](int32 AssetIndex)
 	{
 		UPackage* CookPackageIns = Packages[AssetIndex];
@@ -431,7 +435,11 @@ bool UFlibHotPatcherCoreHelper::CookPackages(const TArray<UPackage*> Packages,
 			);
 		}
 	},GForceSingleThread ? true : !bStorageConcurrent);
-	if(bStorageConcurrent) { GIsSavingPackage = false; }
+	if(bStorageConcurrent) 
+	{
+		GIsSavingPackage = false;
+		GIsCookerLoadingPackage = true;
+	}
 	return true;
 }
 #endif
@@ -581,7 +589,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			}
 			
 			PRAGMA_DISABLE_DEPRECATION_WARNINGS
-			GIsCookerLoadingPackage = true;
+			if (!bStorageConcurrent) { GIsCookerLoadingPackage = true; }
 			PRAGMA_ENABLE_DEPRECATION_WARNINGS
 			
 #if UE_VERSION_OLDER_THAN(5,3,0)
@@ -604,7 +612,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			FSavePackageResultStruct Result = GEditor->Save(Package,nullptr, *CookedSavePath, PackageArgs);
 
 #endif
-			GIsCookerLoadingPackage = false;
+			if (!bStorageConcurrent) { GIsCookerLoadingPackage = false; }
 			
 			bSuccessed = Result == ESavePackageResult::Success;
 
