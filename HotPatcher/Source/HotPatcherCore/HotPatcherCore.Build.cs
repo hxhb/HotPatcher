@@ -10,7 +10,7 @@ public class HotPatcherCore : ModuleRules
 	public HotPatcherCore(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		bLegacyPublicIncludePaths = false;
+		bLegacyPublicIncludePaths = true;
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
 
 		PublicIncludePaths.AddRange(
