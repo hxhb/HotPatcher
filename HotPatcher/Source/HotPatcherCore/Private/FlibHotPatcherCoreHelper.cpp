@@ -1188,7 +1188,10 @@ FPatchVersionDiff UFlibHotPatcherCoreHelper::DiffPatchVersionWithPatchSetting(co
 		}
 		for(const auto& Platform:PatchSetting.GetPakTargetPlatforms())
 		{
-			VersionDiffInfo.PlatformExternDiffInfo.Find(Platform)->DeleteExternalFiles.Empty();
+			if (auto PlatExtDiffInfo = VersionDiffInfo.PlatformExternDiffInfo.Find(Platform))
+			{
+				PlatExtDiffInfo->DeleteExternalFiles.Empty();
+			}
 		}
 	}
 	
