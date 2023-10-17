@@ -73,7 +73,7 @@ protected:
 
 struct FPackageTracker : public FPackageTrackerBase
 {
-	FPackageTracker(TSet<FName>& InExisitAssets):ExisitAssets(InExisitAssets), bPackageVisiting(false) {}
+	FPackageTracker(TSet<FName>& InExisitAssets):bPackageVisiting(false),ExisitAssets(InExisitAssets){}
 
 	virtual ~FPackageTracker(){}
 
