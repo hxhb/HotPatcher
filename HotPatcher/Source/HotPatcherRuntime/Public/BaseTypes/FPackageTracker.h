@@ -73,7 +73,7 @@ protected:
 
 struct FPackageTracker : public FPackageTrackerBase
 {
-	FPackageTracker(TSet<FName>& InExisitAssets):ExisitAssets(InExisitAssets){}
+	FPackageTracker(TSet<FName>& InExisitAssets):ExisitAssets(InExisitAssets), bPackageVisiting(false) {}
 
 	virtual ~FPackageTracker(){}
 
@@ -86,7 +86,14 @@ struct FPackageTracker : public FPackageTrackerBase
 			if(FPackageName::DoesPackageExist(AssetPathName.ToString()))
 			{
 				UE_LOG(LogHotPatcher,Display,TEXT("[PackageTracker] Add %s"),*AssetPathName.ToString());
-				PackagesPendingSave.Add(AssetPathName);
+				if (bPackageVisiting)
+				{
+					PackagesPendingAdd.Add(AssetPathName);
+				}
+				else
+				{
+					PackagesPendingSave.Add(AssetPathName);
+				}
 			}
 			else
 			{
@@ -102,13 +109,34 @@ struct FPackageTracker : public FPackageTrackerBase
 			PackagesPendingSave.Remove(AssetPathName);
 		}
 	}
+
+	void VisitTrackedPackages(const TFunction<void(const FName& PackageName)>& PackageVisitor)
+	{
+		bPackageVisiting = true;
+		TSet<FName> PackagesForVisiting = PackagesPendingSave;
+		while (PackagesForVisiting.Num())
+		{
+			for (const FName& PackageName : PackagesForVisiting)
+			{
+				PackageVisitor(PackageName);
+			}
+			if (PackagesPendingAdd.Num())
+			{
+				PackagesPendingSave.Append(PackagesPendingAdd);
+			}
+			PackagesForVisiting = MoveTemp(PackagesPendingAdd);
+		}
+		bPackageVisiting = false;
+	}
 	
 public:
 	// typedef TSet<UPackage*> PendingPackageSet;
 	const TSet<FName>& GetPendingPackageSet()const {return PackagesPendingSave; }
 protected:
+	bool bPackageVisiting;
 	TSet<FName>	 PackagesPendingSave;
 	TSet<FName>& ExisitAssets;
+	TSet<FName> PackagesPendingAdd;
 };
 
 struct FClassesPackageTracker : public FPackageTrackerBase

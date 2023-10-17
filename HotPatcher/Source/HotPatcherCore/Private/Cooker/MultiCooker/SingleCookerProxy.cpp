@@ -605,33 +605,32 @@ FCookCluster USingleCookerProxy::GetPackageTrackerAsCluster()
 	if(PackageTracker && GetSettingObject()->bCookPackageTrackerAssets)
 	{
 		PackageTrackerCluster.AssetDetails.Empty();
-		for(FName LongPackageName:PackageTracker->GetPendingPackageSet())
-		{
-			if(!FPackageName::DoesPackageExist(LongPackageName.ToString()))
+		PackageTracker->VisitTrackedPackages([&PackageTrackerCluster](const FName& LongPackageName) {
+			if (!LongPackageName.IsValid() || !FPackageName::DoesPackageExist(LongPackageName.ToString()))
 			{
-				continue;
+				return;
 			}
-			
+
 			// make asset data to asset registry
 			FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(LongPackageName.ToString());
-			
+
 			FSoftObjectPath ObjectPath(PackagePath);
 			UFlibAssetManageHelper::UpdateAssetRegistryData(ObjectPath.GetLongPackageName());
-			
+
 			FAssetData AssetData;
-			if(UAssetManager::Get().GetAssetDataForPath(ObjectPath,AssetData))
+			if (UAssetManager::Get().GetAssetDataForPath(ObjectPath, AssetData))
 			{
 				FAssetDetail AssetDetail;
-				if(UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(AssetData,AssetDetail))
+				if (UFlibAssetManageHelper::ConvFAssetDataToFAssetDetail(AssetData, AssetDetail))
 				{
 					PackageTrackerCluster.AssetDetails.Emplace(AssetDetail);
 				}
 			}
 			else
 			{
-				UE_LOG(LogHotPatcher,Warning,TEXT("[GetPackageTrackerAsCluster] Get %s AssetData Failed!"),*LongPackageName.ToString());
+				UE_LOG(LogHotPatcher, Warning, TEXT("[GetPackageTrackerAsCluster] Get %s AssetData Failed!"), *LongPackageName.ToString());
 			}
-		}
+		});
 	}
 	return PackageTrackerCluster;
 };
