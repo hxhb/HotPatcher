@@ -357,7 +357,10 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 	UFlibHotPatcherCoreHelper::WaitDistanceFieldAsyncQueueComplete();
 	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
-	UFlibHotPatcherCoreHelper::WaitDDCComplete();
+	if(!bCacheDDCOnly)
+	{
+		UFlibHotPatcherCoreHelper::WaitDDCComplete();
+	}
 }
 
 void USingleCookerProxy::Tick(float DeltaTime)
@@ -405,6 +408,7 @@ void USingleCookerProxy::Shutdown()
 		// Wait for all shaders to finish compiling
 		UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
 		UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
+		UFlibHotPatcherCoreHelper::WaitDDCComplete();
 	}
 
 #if !WITH_UE5 // for UE4
