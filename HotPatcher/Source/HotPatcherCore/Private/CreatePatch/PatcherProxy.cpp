@@ -537,8 +537,8 @@ namespace PatchWorker
 				for(auto& Chunk:Context.PakChunks)
 				{
 					FString ChunkSavedDir = Context.GetSettingObject()->GetChunkSavedDir(Context.CurrentVersion.VersionId,Context.CurrentVersion.BaseVersionId,Chunk.ChunkName,PlatformName);
-					FString SavePath = FPaths::Combine(ChunkSavedDir,TEXT("Metadatas"),PlatformName,TEXT("Metadata/ShaderLibrarySource"));
-					TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath);
+					FString SavePath = FPaths::Combine(ChunkSavedDir,TEXT("Metadatas"),PlatformName);
+					TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath,true);
 		
 					if(Context.PakChunks.Num())
 					{
