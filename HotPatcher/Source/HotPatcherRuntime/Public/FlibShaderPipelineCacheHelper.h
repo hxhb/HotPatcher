@@ -1,8 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
-
+#include "RHIDefinitions.h"
 #include "CoreMinimal.h"
+#include "ShaderPipelineCache.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "FlibShaderPipelineCacheHelper.generated.h"
 
@@ -47,4 +48,16 @@ public:
 	UFUNCTION(BlueprintCallable)
 	static bool IsEnabledSaveBoundPSOLog();
 	
+	static FString GetGamePathStable(const FString& FileName,EShaderPlatform ShaderPlatform);
+	static FGuid GetStablePipelineCacheGUID(const FString& FilePath);
+
+#if PLATFORM_ANDROID
+	static FString GetOpenGLProgramBinaryName();
+	static FString GetOpenGLProgramBinaryFile();
+	static FGuid GetOpenGLProgramBinaryGUID(const FString& FilePath);
+#endif
+#if PLATFORM_IOS
+	static bool HasValidMetalSystemCache();
+#endif
+	static void SetPsoBatchMode(FShaderPipelineCache::BatchMode BatchMode,bool bOverrideVar = false,int32 BatchSize = 50,float BatchTime = 0.f);
 };
