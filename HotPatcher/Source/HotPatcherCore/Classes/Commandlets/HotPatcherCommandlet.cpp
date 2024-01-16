@@ -12,6 +12,8 @@
 
 DEFINE_LOG_CATEGORY(LogHotPatcherCommandlet);
 
+#define ADD_ASSETS_BY_FILE TEXT("-AddAssetsByFile=")
+
 int32 UHotPatcherCommandlet::Main(const FString& Params)
 {
 #if WITH_UE5
@@ -68,7 +70,27 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 		THotPatcherTemplateHelper::TSerializeStructAsJsonString(*ExportPatchSetting,FinalConfig);
 		// UE_LOG(LogHotPatcherCommandlet, Display, TEXT("%s"), *FinalConfig);
 
-		
+		// -AddAssetsByFile=
+		{
+			FString AddAssetByFile;
+			bool bHasAssetByFileStatus = FParse::Value(*Params, *FString(ADD_ASSETS_BY_FILE).ToLower(), AddAssetByFile);
+			if(bHasAssetByFileStatus && FPaths::FileExists(AddAssetByFile))
+			{
+				TArray<FString> PackageNames;
+				FFileHelper::LoadFileToStringArray(PackageNames,*AddAssetByFile);
+				for(const auto& PackageName:PackageNames)
+				{
+					if(!PackageName.IsEmpty() && FPackageName::DoesPackageExist(PackageName))
+					{
+						FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(PackageName);
+						FPatcherSpecifyAsset SpecifyAsset;
+						SpecifyAsset.Asset = FSoftObjectPath{PackagePath};
+						SpecifyAsset.bAnalysisAssetDependencies = false;
+						ExportPatchSetting->GetAssetScanConfigRef().IncludeSpecifyAssets.Add(SpecifyAsset);
+					}
+				}
+			}
+		}
 		UPatcherProxy* PatcherProxy = NewObject<UPatcherProxy>();
 		PatcherProxy->AddToRoot();
 		PatcherProxy->Init(ExportPatchSetting.Get());

@@ -209,17 +209,20 @@ TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(cons
 	
 	if(PlatfomName.StartsWith(TEXT("IOS"),ESearchCase::IgnoreCase) || PlatfomName.StartsWith(TEXT("Mac"),ESearchCase::IgnoreCase))
 	{
-		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("metallib"),bRecursive));
-		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("metalmap"),bRecursive));
+		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("*.metallib"),bRecursive));
+		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("*.metalmap"),bRecursive));
 	}
 	
 	if(!FoundFiles.Num())
 	{
-		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("ushaderbytecode"),bRecursive));
+		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("*.ushaderbytecode"),bRecursive));
 	}
-	for(auto& File:FoundFiles)
+	if(!bRecursive)
 	{
-		File = FPaths::Combine(Directory,File);
+		for(auto& File:FoundFiles)
+		{
+			File = FPaths::Combine(Directory,File);
+		}
 	}
 	return FoundFiles;
 }

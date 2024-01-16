@@ -220,7 +220,7 @@ void USingleCookerProxy::PreGeneratePlatformData(const FCookCluster& CookCluster
 			UPackage* CurrentPackage = PreCachePackages[Index];
 			if(GCookLog)
 			{
-				UE_LOG(LogHotPatcher,Log,TEXT("PreCache %s, pending %d total %d"),*CurrentPackage->GetPathName(),PreCachePackages.Num()-1,TotalPackagesNum);
+				UE_LOG(LogHotPatcher,Display,TEXT("PreCache %s, pending %d total %d"),*CurrentPackage->GetPathName(),PreCachePackages.Num()-1,TotalPackagesNum);
 			}
 			
 			UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
