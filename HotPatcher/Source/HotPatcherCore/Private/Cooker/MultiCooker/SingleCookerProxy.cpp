@@ -145,6 +145,13 @@ int32 USingleCookerProxy::MakeCookQueue(FCookCluster& InCluser)
 			NewCluster.bPreGeneratePlatformData = GetSettingObject()->bPreGeneratePlatformData;
 			NewCluster.CookActionCallback.OnAssetCooked = GetOnPackageSavedCallback();
 			NewCluster.CookActionCallback.OnCookBegin = GetOnCookAssetBeginCallback();
+			for(const auto& AssetDetail:NewCluster.AssetDetails)
+			{
+				if(!NewCluster.AssetTypes.Contains(AssetDetail.AssetType))
+				{
+					NewCluster.AssetTypes.Add(AssetDetail.AssetType);
+				}
+			}
 			CookCluserQueue.Enqueue(NewCluster);
 			++MakeClusterCount;
 		}
@@ -355,7 +362,10 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster)
 	// clean cached ddd / release memory
 	// CleanClusterCachedPlatformData(CookCluster);
 	UFlibShaderCodeLibraryHelper::WaitShaderCompilingComplete();
-	UFlibHotPatcherCoreHelper::WaitDistanceFieldAsyncQueueComplete();
+	if(CookCluster.AssetTypes.Contains(*UStaticMesh::StaticClass()->GetName()))
+	{
+		UFlibHotPatcherCoreHelper::WaitDistanceFieldAsyncQueueComplete();
+	}
 	UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
 	if(!bCacheDDCOnly)
 	{

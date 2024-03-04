@@ -1,5 +1,6 @@
 #include "HotSingleCookerCommandlet.h"
 #include "CommandletBase/CommandletHelper.h"
+#include "HotPatcherCore.h"
 // engine header
 #include "CoreMinimal.h"
 #include "Cooker/MultiCooker/FSingleCookerSettings.h"
@@ -51,6 +52,12 @@ int32 UHotSingleCookerCommandlet::Main(const FString& Params)
 	
 	UE_LOG(LogHotSingleCookerCommandlet, Display, TEXT("Cooker %s Id %d,Assets Num %d"), *ExportSingleCookerSetting->MissionName,ExportSingleCookerSetting->MissionID,ExportSingleCookerSetting->CookAssets.Num());
 
+	if(ExportSingleCookerSetting->bAllowRegisteAdditionalWorker)
+	{
+		FHotPatcherCoreModule::Get().GetSingleCookerAdditionalWorkerRegister().Broadcast(ExportSingleCookerSetting);
+		GEngine->ForceGarbageCollection(false);
+		CollectGarbage(RF_NoFlags, false);
+	}
 	GAlwaysReportCrash = false;
 	USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
 	SingleCookerProxy->AddToRoot();

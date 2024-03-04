@@ -75,6 +75,9 @@ struct FCookCluster
     UPROPERTY()
     TArray<FAssetDetail> AssetDetails;
     UPROPERTY()
+    TSet<FName> AssetTypes;
+    
+    UPROPERTY()
     TArray<ETargetPlatform> Platforms;
     UPROPERTY()
     bool bPreGeneratePlatformData = false;

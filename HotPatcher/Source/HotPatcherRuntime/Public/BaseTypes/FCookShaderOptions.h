@@ -26,7 +26,7 @@ struct FCookShaderOptions
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bSharedShaderLibrary = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bNativeShader = false;
+	bool bNativeShader = true;
 	// metallib and metalmap to pak?
 	bool bNativeShaderToPak = false;
 	// if name is StartContent to ShaderArchive-StarterContent-PCD3D_SM5.ushaderbytecode

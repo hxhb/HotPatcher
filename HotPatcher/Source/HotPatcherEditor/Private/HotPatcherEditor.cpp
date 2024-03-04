@@ -562,7 +562,7 @@ void FHotPatcherEditorModule::OnCookPlatform(ETargetPlatform Platform)
 	EmptySetting.bForceCookInOneFrame = true;
 	EmptySetting.StorageCookedDir = FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 	EmptySetting.StorageMetadataDir = FPaths::Combine(UFlibHotCookerHelper::GetCookerBaseDir(),EmptySetting.MissionName);
-
+	
 	USingleCookerProxy* SingleCookerProxy = NewObject<USingleCookerProxy>();
 	SingleCookerProxy->AddToRoot();
 	SingleCookerProxy->Init(&EmptySetting);
