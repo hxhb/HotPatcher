@@ -11,7 +11,25 @@
 #include "ThreadUtils/FThreadUtils.hpp"
 #include "SingleCookerProxy.generated.h"
 
+USTRUCT()
+struct FCookerPreCacheDDC
+{
+    GENERATED_BODY()
+    
+    UPROPERTY()
+    TArray<UPackage*> Packages;
+    UPROPERTY()
+    TSet<UObject*> ProcessedObjects;
+    UPROPERTY()
+    TSet<UObject*> PendingCachePlatformDataObjects;
 
+    void Empty()
+    {
+        Packages.Empty();
+        ProcessedObjects.Empty();
+        ProcessedObjects.Empty();
+    }
+};
 
 bool IsAlwayPostLoadClasses(UPackage* Package, UObject* Object);
 
@@ -68,6 +86,14 @@ DECLARE_MULTICAST_DELEGATE(FSingleCookerEvent);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FSingleCookActionEvent,const FSoftObjectPath&,ETargetPlatform);
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FSingleCookResultEvent,const FSoftObjectPath&,ETargetPlatform,ESavePackageResult);
 
+
+UENUM()
+enum class ECookClusterType:uint8
+{
+    Normal,
+    Accompany
+};
+
 USTRUCT()
 struct FCookCluster
 {
@@ -81,7 +107,11 @@ struct FCookCluster
     TArray<ETargetPlatform> Platforms;
     UPROPERTY()
     bool bPreGeneratePlatformData = false;
+    UPROPERTY()
+    bool bCacheDDCOnly = false;
 
+    UPROPERTY()
+    ECookClusterType ClusterType;
 public: // for advanced cook
     UPROPERTY()
     bool bShaderCluster = false;
@@ -102,15 +132,53 @@ public: // for advanced cook
 };
 
 
+struct FCookClusterPack
+{
+    virtual ~FCookClusterPack(){}
+    FCookClusterPack()=default;
+    
+    ECookClusterType Type;
+    bool Enqueue(const FCookCluster& CookCluster)
+    {
+        ++TotalClusterCount;
+        return CluserQueue.Enqueue(CookCluster);
+    }
+    bool Dequeue(FCookCluster& CookCluster)
+    {
+        ++ExectedCount;
+        return CluserQueue.Dequeue(CookCluster);
+    }
+    bool IsEmpty(){ return CluserQueue.IsEmpty(); }
+    TSharedPtr<FCookCluster>& GetExecutingCluserRef(){ return ExecutingCluser; }
+
+    enum EClusterCountType
+    {
+        Total,
+        Executed
+    };
+    int32 GetClusterCount(EClusterCountType Type)const
+    {
+        return Type == EClusterCountType::Total ? TotalClusterCount:ExectedCount;
+    }
+private:
+    TQueue<FCookCluster> CluserQueue;
+    TSharedPtr<FCookCluster> ExecutingCluser = nullptr;
+    int32 TotalClusterCount = 0;
+    int32 ExectedCount = 0;
+};
+
 UCLASS()
 class HOTPATCHERCORE_API USingleCookerProxy:public UHotPatcherProxyBase, public FTickableEditorObject
 {
-    GENERATED_BODY()
+    GENERATED_UCLASS_BODY()
 public:
     virtual void Init(FPatcherEntitySettingBase* InSetting)override;
     virtual void Shutdown() override;
     
     virtual bool DoExport()override;
+
+    void ExecuteNextCluster();
+    
     bool IsFinsihed();
     bool HasError();
     virtual FSingleCookerSettings* GetSettingObject()override {return (FSingleCookerSettings*)(Setting);};
@@ -122,9 +190,9 @@ public: // base func
     
 public: // core interface
     int32 MakeCookQueue(FCookCluster& InCluser);
-    void PreGeneratePlatformData(const FCookCluster& CookCluster);
+    void PreGeneratePlatformData(const FCookCluster& CookCluster,bool bWaitFinished = true);
     void CleanClusterCachedPlatformData(const FCookCluster& CookCluster);
-    void ExecCookCluster(const FCookCluster& Cluster);
+    void ExecCookCluster(const FCookCluster& Cluster,bool bWaitFinished = true);
     FCookerFailedCollection& GetCookFailedAssetsCollection(){return CookFailedAssetsCollection;};
     void CleanOldCooked(const FString& CookBaseDir,const TArray<FSoftObjectPath>& ObjectPaths,const TArray<ETargetPlatform>& CookPlatforms);
     // cook classes order
@@ -172,10 +240,21 @@ public: // delegate
     FSingleCookResultEvent OnAssetCooked;
 
 private: // cook assets manager
-    FCookCluster GlobalCluser;
-    TQueue<FCookCluster> CookCluserQueue;
     FCookerFailedCollection CookFailedAssetsCollection;
+    TMap<ECookClusterType,TSharedPtr<FCookClusterPack>> CookClusterPackMap;
+    FCookClusterPack& GetClusterPackByType(ECookClusterType Type)
+    {
+        if(!CookClusterPackMap.Contains(Type) || !CookClusterPackMap.Find(Type)->IsValid())
+        {
+            CookClusterPackMap.Add(Type,MakeShareable(new FCookClusterPack));
+        }
+        return **CookClusterPackMap.Find(Type);
+    }
     
+    int32 GetClusterCount(FCookClusterPack::EClusterCountType CountType);
+
+    UPROPERTY()
+    FCookerPreCacheDDC CookerPreCacheDDC;
 private: // metadate
     TSharedPtr<struct FCookShaderCollectionProxy> PlatformCookShaderCollection;
     TMap<ETargetPlatform,TArray<FName>> CookAssetOrders;
@@ -194,8 +273,4 @@ private: // worker flow control
     TSharedPtr<FThreadWorker> WaitThreadWorker;
     bool IsAlready()const{ return bAlready; }
     bool bAlready = false;
-
-private:
-    int32 ClusterCount = 0;
-    int32 CookedClusterCount = 0;
 };

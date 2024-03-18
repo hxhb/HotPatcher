@@ -33,7 +33,9 @@ public:
 	virtual int32 GetPatchVersion()const { return CURRENT_PATCH_ID; }
 
 public:
-	FSingleCookerAdditionalWorkerRegister& GetSingleCookerAdditionalWorkerRegister(){ return SingleCookerAdditionalWorkerRegister; }
+	FSingleCookerAdditionalWorkerRegister& GetSingleCookerAdditionalPreWorkerRegister(){ return SingleCookerAdditionalPreWorkerRegister; }
+	FSingleCookerAdditionalWorkerRegister& GetSingleCookerAdditionalPostWorkerRegister(){ return SingleCookerAdditionalPostWorkerRegister; }
 private:
-	FSingleCookerAdditionalWorkerRegister SingleCookerAdditionalWorkerRegister;
+	FSingleCookerAdditionalWorkerRegister SingleCookerAdditionalPreWorkerRegister;
+	FSingleCookerAdditionalWorkerRegister SingleCookerAdditionalPostWorkerRegister;
 };

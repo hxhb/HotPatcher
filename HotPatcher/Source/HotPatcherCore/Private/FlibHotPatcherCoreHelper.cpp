@@ -434,6 +434,11 @@ bool UFlibHotPatcherCoreHelper::CookPackages(const TArray<UPackage*> Packages,
 				bUseCmdletImpl
 			);
 		}
+		if(!bStorageConcurrent && GShaderCompilingManager && GShaderCompilingManager->IsCompiling())
+		{
+			SCOPED_NAMED_EVENT_TEXT("GShaderCompilingManager::ProcessAsyncResults",FColor::Red);
+			GShaderCompilingManager->ProcessAsyncResults(false,false);
+		}
 	},GForceSingleThread ? true : !bStorageConcurrent);
 	if(bStorageConcurrent) 
 	{
@@ -558,7 +563,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			}
 			if(GCookLog)
 			{
-				UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*Package->GetName(),*Platform.Value->PlatformName());
+				UE_LOG(LogHotPatcher,Display,TEXT("Cook %s for %s"),*Package->GetName(),*Platform.Value->PlatformName());
 			}
 	#if WITH_PACKAGE_CONTEXT
 			FSavePackageContext* CurrentPlatformPackageContext = nullptr;
@@ -1495,7 +1500,7 @@ FChunkAssetDescribe UFlibHotPatcherCoreHelper::DiffChunkByBaseVersionWithPatchSe
 bool UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(IAssetRegistry* AssetRegistry,
                                                                 const FString& PlatformName, const TArray<FAssetDetail>& AssetDetails, const FString& SavePath)
 {
-	
+	SCOPED_NAMED_EVENT_TEXT("SerializeAssetRegistryByDetails",FColor::Red);
 	ITargetPlatform* TargetPlatform =  UFlibHotPatcherCoreHelper::GetPlatformByName(PlatformName);
 	FAssetRegistrySerializationOptions SaveOptions;
 	AssetRegistry->InitializeSerializationOptions(SaveOptions, TargetPlatform->IniPlatformName());
@@ -1520,7 +1525,7 @@ bool UFlibHotPatcherCoreHelper::SerializeAssetRegistryByDetails(IAssetRegistry* 
 bool UFlibHotPatcherCoreHelper::SerializeAssetRegistry(IAssetRegistry* AssetRegistry,
                                                        const FString& PlatformName, const TArray<FString>& PackagePaths, const FString& SavePath, FAssetRegistrySerializationOptions SaveOptions)
 {
-	
+	SCOPED_NAMED_EVENT_TEXT("SerializeAssetRegistry",FColor::Red);
 	FAssetRegistryState State;
 	// FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
 	// IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
@@ -1666,22 +1671,22 @@ FHotPatcherVersion UFlibHotPatcherCoreHelper::MakeNewReleaseByDiff(const FHotPat
 
 FString UFlibHotPatcherCoreHelper::GetPakCommandExtersion(const FString& InCommand)
 {
-	auto GetPakCommandFileExtensionLambda = [](const FString& Command)->FString
+	SCOPED_NAMED_EVENT_TEXT("GetPakCommandExtersion", FColor::Red);
+	FString result;
+	if (!InCommand.IsEmpty())
 	{
-		FString result;
-		int32 DotPos = Command.Find(TEXT("."), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+		int32 DotPos = InCommand.Find(TEXT("."), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
 		if (DotPos != INDEX_NONE)
 		{
-			result =  Command.Mid(DotPos + 1);
+			result = InCommand.Mid(DotPos + 1);
 			int32 FirstDoubleQuotesPos = -1;
-			if(result.FindChar('"',FirstDoubleQuotesPos))
+			if (result.FindChar('"', FirstDoubleQuotesPos))
 			{
-				result.RemoveAt(FirstDoubleQuotesPos,result.Len()-FirstDoubleQuotesPos);
+				result.RemoveAt(FirstDoubleQuotesPos, result.Len() - FirstDoubleQuotesPos);
 			}
 		}
-		return result;
-	};
-	return GetPakCommandFileExtensionLambda(InCommand);
+	}
+	return result;
 }
 
 TArray<FString> UFlibHotPatcherCoreHelper::GetExtensionsToNotUsePluginCompressionByGConfig()
@@ -1695,28 +1700,32 @@ void UFlibHotPatcherCoreHelper::AppendPakCommandOptions(TArray<FString>& OriginC
 	const TArray<FString>& Options, bool bAppendAllMatch, const TArray<FString>& AppendFileExtersions,
 	const TArray<FString>& IgnoreFormats, const TArray<FString>& InIgnoreOptions)
 {
-	ParallelFor(OriginCommands.Num(),[&](int32 index)
+	SCOPED_NAMED_EVENT_TEXT("AppendPakCommandOptions",FColor::Red);
+	if(OriginCommands.Num())
 	{
-		FString& Command = OriginCommands[index];
-		FString PakOptionsStr;
-		for (const auto& Param : Options)
+		ParallelFor(OriginCommands.Num(),[&](int32 index)
 		{
-			FString FileExtension = UFlibHotPatcherCoreHelper::GetPakCommandExtersion(Command);
-			if(IgnoreFormats.Contains(FileExtension) && InIgnoreOptions.Contains(Param))
+			FString& Command = OriginCommands[index];
+			FString PakOptionsStr;
+			for (const auto& Param : Options)
 			{
-				continue;
-			}
+				FString FileExtension = UFlibHotPatcherCoreHelper::GetPakCommandExtersion(Command);
+				if(IgnoreFormats.Contains(FileExtension) && InIgnoreOptions.Contains(Param))
+				{
+					continue;
+				}
 							
-			FString AppendOptionStr = TEXT("");
-			if(bAppendAllMatch || AppendFileExtersions.Contains(FileExtension))
-			{
-				AppendOptionStr += TEXT(" ") + Param;
-			}
+				FString AppendOptionStr = TEXT("");
+				if(bAppendAllMatch || AppendFileExtersions.Contains(FileExtension))
+				{
+					AppendOptionStr += TEXT(" ") + Param;
+				}
 							
-			PakOptionsStr += AppendOptionStr;
-		}
-		Command = FString::Printf(TEXT("%s%s"),*Command,*PakOptionsStr);
-	});
+				PakOptionsStr += AppendOptionStr;
+			}
+			Command += PakOptionsStr;
+		},false);
+	}
 }
 
 FProjectPackageAssetCollection UFlibHotPatcherCoreHelper::ImportProjectSettingsPackages()
@@ -2835,9 +2844,9 @@ FString UFlibHotPatcherCoreHelper::GetPlatformsStr(TArray<ETargetPlatform> Platf
 void UFlibHotPatcherCoreHelper::WaitDistanceFieldAsyncQueueComplete()
 {
 	SCOPED_NAMED_EVENT_TEXT("WaitDistanceFieldAsyncQueueComplete",FColor::Red);
-	if (GDistanceFieldAsyncQueue)
+	if (GDistanceFieldAsyncQueue && GDistanceFieldAsyncQueue->GetNumOutstandingTasks())
 	{
-		UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("Waiting for distance field async operations..."));
+		UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("Waiting for distance field async operations...(OutstandingTask: %d)"),GDistanceFieldAsyncQueue->GetNumOutstandingTasks());
 		GDistanceFieldAsyncQueue->BlockUntilAllBuildsComplete();
 	}
 }

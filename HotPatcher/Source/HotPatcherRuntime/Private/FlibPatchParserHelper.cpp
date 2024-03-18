@@ -1030,9 +1030,11 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 	const FExportPatchSettings* PatcheSettings
 )
 {
+	SCOPED_NAMED_EVENT_TEXT("CollectPakCommandByChunk",FColor::Red);
 	TArray<FPakCommand> PakCommands;
 	auto CollectPakCommandsByChunkLambda = [&PakCommands,PatcheSettings](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName/*, const TArray<FString>& PakOptions*/)
 	{
+		SCOPED_NAMED_EVENT_TEXT("CollectPakCommandsByChunkLambda",FColor::Red);
 		ETargetPlatform Platform;
 		THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
 		TArray<ETargetPlatform> CollectPlatforms = {ETargetPlatform::AllPlatforms};
@@ -1078,9 +1080,10 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 		{
 			struct PakCommandReceiver
 			{
-				PakCommandReceiver(TArray<FPakCommand>& InPakCommandsRef,EPatchAssetType InType):PakCommands(InPakCommandsRef),Type(InType){}
+				PakCommandReceiver(TArray<FPakCommand>& InPakCommandsRef,EPatchAssetType InType,FCriticalSection& InLocker):PakCommands(InPakCommandsRef),Type(InType),LockSynchronizationObject(InLocker){}
 				void operator()(const TArray<FString>& InPakCommand,const TArray<FString>& InIoStoreCommand, const FString& InMountPath,const FString& InLongPackageName)
 				{
+					FScopeLock Lock(&LockSynchronizationObject);
 					FPakCommand CurrentPakCommand;
 					CurrentPakCommand.PakCommands = InPakCommand;
 					CurrentPakCommand.IoStoreCommands = InIoStoreCommand;
@@ -1091,13 +1094,16 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 				}
 				TArray<FPakCommand>& PakCommands;
 				EPatchAssetType Type;
+				FCriticalSection& LockSynchronizationObject;
+		
 			};
 			// auto ReceivePakCommandAssetLambda = [&PakCommands](const TArray<FString>& InPakCommand,const TArray<FString>& InIoStoreCommand, const FString& InMountPath,const FString& InLongPackageName)
 			// {
 			// 	
 			// };
-			PakCommandReceiver AddReceiver(PakCommands,EPatchAssetType::NEW);
-			PakCommandReceiver ModifyReceiver(PakCommands,EPatchAssetType::MODIFY);
+			FCriticalSection	LocalSynchronizationObject;
+			PakCommandReceiver AddReceiver(PakCommands,EPatchAssetType::NEW, LocalSynchronizationObject);
+			PakCommandReceiver ModifyReceiver(PakCommands,EPatchAssetType::MODIFY, LocalSynchronizationObject);
 			FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 			TArray<FString> AssetsPakCommands;
 			UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
@@ -1256,7 +1262,7 @@ void UFlibPatchParserHelper::RunAssetScanner(FAssetScanConfig ScanConfig,FHotPat
 			IgnoreTypes.Add(*Class->GetName());
 		}
 		AssetConfig.ForceSkipContents = UFlibAssetManageHelper::NormalizeContentDirs(AllSkipContents);
-		AssetConfig.ForceSkipPackageNames = UFlibAssetManageHelper::SoftObjectPathsToStrings(ScanConfig.ForceSkipAssets);
+		AssetConfig.ForceSkipPackageNames = UFlibAssetManageHelper::SoftObjectPathsToStringsSet(ScanConfig.ForceSkipAssets);
 	}
 	
 	AssetConfig.bRedirector = true;

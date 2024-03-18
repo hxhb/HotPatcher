@@ -140,6 +140,7 @@ public:
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool CombineAssetsDetailAsFAssetDepenInfo(const TArray<FAssetDetail>& InAssetsDetailList,FAssetDependenciesInfo& OutAssetInfo);
 
+	static FString GetCookedPathByLongPackageName(	const FString& InProjectAbsDir,const FString& InPlatformName,const FString& InLongPackageName,const FString& OverrideCookedDir);
 	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool ConvLongPackageNameToCookedPath(
 			const FString& InProjectAbsDir,
@@ -218,6 +219,7 @@ public:
 	static void ExcludeContentForAssetDependenciesDetail(FAssetDependenciesInfo& AssetDependencies,const TArray<FString>& ExcludeRules = {TEXT("")},EHotPatcherMatchModEx MatchMod = EHotPatcherMatchModEx::StartWith);
 	
 	static TArray<FString> DirectoriesToStrings(const TArray<FDirectoryPath>& DirectoryPaths);
+	static TSet<FString> SoftObjectPathsToStringsSet(const TArray<FSoftObjectPath>& SoftObjectPaths);
 	static TArray<FString> SoftObjectPathsToStrings(const TArray<FSoftObjectPath>& SoftObjectPaths);
 	static TSet<FName> GetClassesNames(const TArray<UClass*> CLasses);
 	
