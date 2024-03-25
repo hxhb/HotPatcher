@@ -55,6 +55,7 @@ void FReleasePakParser::Parser(TSharedPtr<FReleaseParserConf> ParserConf, EHashC
 			RelativePath.RemoveFromStart(ModuleName);
 			FString FinalFilePath = FPaths::Combine(ModuleAbsPath,RelativePath);
 			FPaths::NormalizeFilename(FinalFilePath);
+			FinalFilePath = FinalFilePath.Replace(TEXT("//"),TEXT("/"));
 			currentFile.FilePath.FilePath = FinalFilePath;
 			currentFile.MountPath = MountFile;
 			currentFile.GenerateFileHash(HashCalculator);

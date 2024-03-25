@@ -1356,7 +1356,7 @@ UPackage* UFlibAssetManageHelper::LoadPackage(UPackage* InOuter, const TCHAR* In
 #if ENGINE_MINOR_VERSION < 26
 	FScopedNamedEvent CookPackageEvent(FColor::Red,*FString::Printf(TEXT("LoadPackage %s"),InLongPackageName));
 #endif
-	UE_LOG(LogHotPatcher,Display,TEXT("Load %s,outer %s"),InLongPackageName,InOuter ? *InOuter->GetFullName():TEXT("null"));
+	UE_LOG(LogHotPatcher,Verbose,TEXT("Load %s"),InLongPackageName);
 	return ::LoadPackage(InOuter,InLongPackageName,LoadFlags,InReaderOverride);
 }
 

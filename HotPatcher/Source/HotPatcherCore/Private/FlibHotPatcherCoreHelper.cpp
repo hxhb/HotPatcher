@@ -563,7 +563,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			}
 			if(GCookLog)
 			{
-				UE_LOG(LogHotPatcher,Display,TEXT("Cook %s for %s"),*Package->GetName(),*Platform.Value->PlatformName());
+				UE_LOG(LogHotPatcher,Log,TEXT("Cook %s for %s"),*Package->GetName(),*Platform.Value->PlatformName());
 			}
 	#if WITH_PACKAGE_CONTEXT
 			FSavePackageContext* CurrentPlatformPackageContext = nullptr;
