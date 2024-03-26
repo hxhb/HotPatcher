@@ -832,7 +832,7 @@ bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(
 	FString AssetCookedPath = GetCookedPathByLongPackageName(InProjectAbsDir,InPlatformName,InLongPackageName,CookedRootDir);
 	
 	FString SearchDir = FPaths::GetPath(AssetCookedPath);
-	FString SearchCleanName = FPaths::GetBaseFilename(AssetCookedPath);
+	FString SearchCleanName = UFlibAssetManageHelper::GetBaseFilename(AssetCookedPath,ESearchDir::FromStart);
 	
 	static TMap<FString,TMap<FString,TArray<FString>>> SearchDirCaches;
 	static FCriticalSection	LocalSynchronizationObject;
@@ -844,13 +844,12 @@ bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(
 			SCOPED_NAMED_EVENT_TEXT("FindFiles",FColor::Red);
 			TMap<FString,TArray<FString>>& FileMapping = SearchDirCaches.FindOrAdd(SearchDir);
 			TArray<FString> FoundCookedFiles;
-			// FString SearchCleanName = FPaths::GetBaseFilename(AssetCookedPath);
 			IFileManager::Get().FindFiles(FoundCookedFiles,*SearchDir,TEXT("*"));
 			{
 				SCOPED_NAMED_EVENT_TEXT("AddToMap",FColor::Red);
 				for(const FString& CookedFile:FoundCookedFiles)
 				{
-					FString CurrentCookedBaseFilename = FPaths::GetBaseFilename(CookedFile);
+					FString CurrentCookedBaseFilename = UFlibAssetManageHelper::GetBaseFilename(CookedFile,ESearchDir::FromStart);
 					FileMapping.FindOrAdd(CurrentCookedBaseFilename).Add(CookedFile);
 				}
 			}
@@ -1721,6 +1720,37 @@ FAssetData UFlibAssetManageHelper::GetAssetByObjectPath(FName Path)
 #else
 	return  AssetRegistry->GetAssetByObjectPath(Path, true);
 #endif
+}
+
+template<typename T>
+FString GetBaseFilenameExImpl(T&& InPath, bool bRemovePath,ESearchDir::Type SearchMode)
+{
+	FString Wk = bRemovePath ? FPaths::GetCleanFilename(Forward<T>(InPath)) : Forward<T>(InPath);
+
+	// remove the extension
+	const int32 ExtPos = Wk.Find(TEXT("."), ESearchCase::CaseSensitive, SearchMode);
+
+	if (ExtPos != INDEX_NONE)
+	{
+		// determine the position of the path/leaf separator
+		int32 LeafPos = INDEX_NONE;
+		if (!bRemovePath)
+		{
+			LeafPos = Wk.FindLastCharByPredicate([](TCHAR C) { return C == TEXT('/') || C == TEXT('\\'); });
+		}
+
+		if (LeafPos == INDEX_NONE || ExtPos > LeafPos)
+		{
+			Wk.LeftInline(ExtPos);
+		}
+	}
+
+	return Wk;
+}
+
+FString UFlibAssetManageHelper::GetBaseFilename(const FString& InPath, ESearchDir::Type SearchMode, bool bRemovePath)
+{
+	return GetBaseFilenameExImpl(InPath,bRemovePath,SearchMode);
 };
 
 // PRAGMA_ENABLE_DEPRECATION_WARNINGS

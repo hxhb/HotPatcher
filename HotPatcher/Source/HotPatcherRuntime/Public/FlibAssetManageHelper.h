@@ -264,6 +264,8 @@ public:
 
 	static FString GetAssetPath(const FSoftObjectPath& ObjectPath);
 	static FAssetData GetAssetByObjectPath(FName Path);
+
+	static FString GetBaseFilename(const FString& InPath,ESearchDir::Type SearchMode,bool bRemovePath = true);
 };
 
 
