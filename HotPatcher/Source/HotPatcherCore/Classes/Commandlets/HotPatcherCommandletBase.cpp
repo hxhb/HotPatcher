@@ -104,6 +104,15 @@ int32 UHotPatcherCommandletBase::Main(const FString& Params)
 	}
 #endif
 	
+	FCoreDelegates::OnHandleSystemError.AddLambda([this](){ this->OnHandleSystemError(); });
+
+	if(IsRunningCommandlet() && !FParse::Param(FCommandLine::Get(), TEXT("NoSearchAllAssets")))
+	{
+		SCOPED_NAMED_EVENT_TEXT("SearchAllAssets",FColor::Red);
+		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+		AssetRegistryModule.Get().SearchAllAssets(true);
+	}
+
 	bool bStatus = FParse::Value(*Params, *FString(PATCHER_CONFIG_PARAM_NAME).ToLower(), CmdConfigPath);
 	if (!bStatus)
 	{
@@ -115,15 +124,6 @@ int32 UHotPatcherCommandletBase::Main(const FString& Params)
 	{
 		UE_LOG(LogHotPatcherCommandletBase, Error, TEXT("cofnig file %s not exists."), *CmdConfigPath);
 		return -1;
-	}
-	
-	FCoreDelegates::OnHandleSystemError.AddLambda([this](){ this->OnHandleSystemError(); });
-
-	if(IsRunningCommandlet() && !FParse::Param(FCommandLine::Get(), TEXT("NoSearchAllAssets")))
-	{
-		SCOPED_NAMED_EVENT_TEXT("SearchAllAssets",FColor::Red);
-		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
-		AssetRegistryModule.Get().SearchAllAssets(true);
 	}
 	return 0;
 }

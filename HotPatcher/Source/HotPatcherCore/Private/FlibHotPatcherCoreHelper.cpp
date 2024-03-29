@@ -62,6 +62,7 @@ void UFlibHotPatcherCoreHelper::CheckInvalidCookFilesByAssetDependenciesInfo(
 	TArray<FAssetDetail>& OutValidAssets, 
 	TArray<FAssetDetail>& OutInvalidAssets)
 {
+	static FCriticalSection LocalSynchronizationObject;
 	OutValidAssets.Empty();
 	OutInvalidAssets.Empty();
 	const TArray<FAssetDetail>& AllAssetDetails = InAssetDependencies.GetAssetDetails();
@@ -92,8 +93,8 @@ void UFlibHotPatcherCoreHelper::CheckInvalidCookFilesByAssetDependenciesInfo(
 			AssetLongPackageName,
 			CookedAssetPath,
 			CookedAssetRelativePath,
-			OverrideCookedDir
-			))
+			OverrideCookedDir,
+			LocalSynchronizationObject))
 		{
 			if (CookedAssetPath.Num() > 0)
 			{

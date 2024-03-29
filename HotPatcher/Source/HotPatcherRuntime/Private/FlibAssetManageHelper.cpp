@@ -813,7 +813,8 @@ bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(
 	const FString& InLongPackageName,
 	TArray<FString>& OutCookedAssetPath,
 	TArray<FString>& OutCookedAssetRelativePath,
-	const FString& OverrideCookedDir
+	const FString& OverrideCookedDir,
+	FCriticalSection& LocalSynchronizationObject
 	)
 {
 	SCOPED_NAMED_EVENT_TEXT("ConvLongPackageNameToCookedPath",FColor::Red);
@@ -835,7 +836,6 @@ bool UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(
 	FString SearchCleanName = UFlibAssetManageHelper::GetBaseFilename(AssetCookedPath,ESearchDir::FromStart);
 	
 	static TMap<FString,TMap<FString,TArray<FString>>> SearchDirCaches;
-	static FCriticalSection	LocalSynchronizationObject;
 	TArray<FString> FoundMatchFiles;
 	{
 		FScopeLock Lock(&LocalSynchronizationObject);
@@ -888,41 +888,37 @@ bool UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 	const FString& OverrideCookedDir,
 	const FString& InPlatformName, 
 	const FAssetDependenciesInfo& InAssetDependencies, 
-	//const TArray<FString> &InCookParams, 
-	TArray<FString>& OutCookCommand, 
-	TFunction<void(const TArray<FString>&,const TArray<FString>&, const FString&, const FString&)> InReceivePakCommand,
+	TFunction<void(const TArray<FString>&,const TArray<FString>&, const FString&, const FString&,FCriticalSection&)> InReceivePakCommand,
 	TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset
 )
 {
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::MakePakCommandFromAssetDependencies",FColor::Red);
+	static FCriticalSection LocalSynchronizationObject;
 	if (!FPaths::DirectoryExists(InProjectDir) /*|| !UFlibAssetManageHelper::IsValidPlatform(InPlatformName)*/)
 		return false;
-	OutCookCommand.Empty();
-	// TArray<FString> resault;
 	TArray<FString> Keys;
 	InAssetDependencies.AssetsDependenciesMap.GetKeys(Keys);
-	FCriticalSection	LocalSynchronizationObject;
-	ParallelFor(Keys.Num(),[&](int32 index)
+	for(const auto& Key:Keys)
 	{
-		const FString& Key = Keys[index];
 		if (Key.Equals(TEXT("Script")))
-			return;
+			continue;
 		TArray<FString> AssetList;
 		InAssetDependencies.AssetsDependenciesMap.Find(Key)->AssetDependencyDetails.GetKeys(AssetList);
 		if(AssetList.Num())
 		{
 			ParallelFor(AssetList.Num(),[&](int32 Listindex)
-			// for (const auto& AssetLongPackageName : AssetList)
 			{
-				TArray<FString> FinalCookedCommand;
-				if (UFlibAssetManageHelper::MakePakCommandFromLongPackageName(InProjectDir, OverrideCookedDir,InPlatformName, AssetList[Listindex], /*InCookParams, */FinalCookedCommand,InReceivePakCommand,IsIoStoreAsset))
-				{
-					FScopeLock Lock(&LocalSynchronizationObject);
-					OutCookCommand.Append(FinalCookedCommand);
-				}
+				UFlibAssetManageHelper::MakePakCommandFromLongPackageName(
+					InProjectDir,
+					OverrideCookedDir,
+					InPlatformName,
+					AssetList[Listindex],
+					LocalSynchronizationObject,
+					InReceivePakCommand,
+					IsIoStoreAsset);
 			},false);
 		}
-	},true);
+	}
 	return true;
 }
 
@@ -930,28 +926,25 @@ bool UFlibAssetManageHelper::MakePakCommandFromLongPackageName(
 	const FString& InProjectDir,
 	const FString& OverrideCookedDir,
 	const FString& InPlatformName, 
-	const FString& InAssetLongPackageName, 
-	//const TArray<FString> &InCookParams, 
-	TArray<FString>& OutCookCommand,
-	TFunction<void(const TArray<FString>&,const TArray<FString>&, const FString&, const FString&)> InReceivePakCommand,
+	const FString& InAssetLongPackageName,
+	FCriticalSection& LocalSynchronizationObject,
+	TFunction<void(const TArray<FString>&,const TArray<FString>&, const FString&, const FString&,FCriticalSection&)> InReceivePakCommand,
 	TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset
 )
 {
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::MakePakCommandFromLongPackageName",FColor::Red);
-	OutCookCommand.Empty();
 	bool bStatus = false;
 	TArray<FString> CookedAssetAbsPath;
 	TArray<FString> CookedAssetRelativePath;
 	TArray<FString> FinalCookedPakCommand;
 	TArray<FString> FinalCookedIoStoreCommand;
-	if (UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(InProjectDir, InPlatformName, InAssetLongPackageName, CookedAssetAbsPath, CookedAssetRelativePath,OverrideCookedDir))
+	if (UFlibAssetManageHelper::ConvLongPackageNameToCookedPath(InProjectDir, InPlatformName, InAssetLongPackageName, CookedAssetAbsPath, CookedAssetRelativePath,OverrideCookedDir,LocalSynchronizationObject))
 	{
 		if (UFlibAssetManageHelper::CombineCookedAssetCommand(CookedAssetAbsPath, CookedAssetRelativePath,/* InCookParams,*/ FinalCookedPakCommand,FinalCookedIoStoreCommand,IsIoStoreAsset))
 		{
 			if (!!CookedAssetRelativePath.Num() && !!FinalCookedPakCommand.Num())
 			{
-				InReceivePakCommand(FinalCookedPakCommand,FinalCookedIoStoreCommand, CookedAssetRelativePath[0],InAssetLongPackageName);
-				OutCookCommand.Append(FinalCookedPakCommand);
+				InReceivePakCommand(FinalCookedPakCommand,FinalCookedIoStoreCommand, CookedAssetRelativePath[0],InAssetLongPackageName,LocalSynchronizationObject);
 				bStatus = true;
 			}
 		}

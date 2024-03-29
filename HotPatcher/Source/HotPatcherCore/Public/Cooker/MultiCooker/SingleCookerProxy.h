@@ -205,11 +205,13 @@ public: // callback
 public: // packae tracker interface
     TSet<FName> GetCookerAssets();
     TSet<FName> GetAdditionalAssets();
-    FCookCluster GetPackageTrackerAsCluster();
-    FORCEINLINE_DEBUGGABLE TSet<FName>& GetPaendingCookAssetsSet(){ return PaendingCookAssetsSet; }
-    
+    /*
+     * 获取PackageTracker追踪到的资源
+     * bPadding：为true则获取GetPendingPackageSet，为false则获取所有追踪到的资源GetAdditionalPackageSet
+     */
+    FCookCluster GetPackageTrackerAsCluster(bool bPadding);
     TArray<FName>& GetPlatformCookAssetOrders(ETargetPlatform Platform);
-    
+    bool HasValidPackageTracker();
 protected: // on asset cooked call func
     void OnAssetCookedHandle(const FSoftObjectPath& PackagePath,ETargetPlatform Platform,ESavePackageResult Result);
 
@@ -260,7 +262,6 @@ private: // metadate
     TMap<ETargetPlatform,TArray<FName>> CookAssetOrders;
     
 private: // package tracker
-    TSet<FName> PaendingCookAssetsSet;
     TSharedPtr<FPackageTracker> PackageTracker;
     TSharedPtr<FOtherCookerPackageTracker> OtherCookerPackageTracker;
     TSharedPtr<FFreezePackageTracker> FreezePackageTracker;

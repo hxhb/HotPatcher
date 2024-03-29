@@ -1080,8 +1080,8 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 		{
 			struct PakCommandReceiver
 			{
-				PakCommandReceiver(TArray<FPakCommand>& InPakCommandsRef,EPatchAssetType InType,FCriticalSection& InLocker):PakCommands(InPakCommandsRef),Type(InType),LockSynchronizationObject(InLocker){}
-				void operator()(const TArray<FString>& InPakCommand,const TArray<FString>& InIoStoreCommand, const FString& InMountPath,const FString& InLongPackageName)
+				PakCommandReceiver(TArray<FPakCommand>& InPakCommandsRef,EPatchAssetType InType):PakCommands(InPakCommandsRef),Type(InType){}
+				void operator()(const TArray<FString>& InPakCommand,const TArray<FString>& InIoStoreCommand, const FString& InMountPath,const FString& InLongPackageName,FCriticalSection& LockSynchronizationObject)
 				{
 					FScopeLock Lock(&LockSynchronizationObject);
 					FPakCommand CurrentPakCommand;
@@ -1094,36 +1094,26 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 				}
 				TArray<FPakCommand>& PakCommands;
 				EPatchAssetType Type;
-				FCriticalSection& LockSynchronizationObject;
+				;
 		
 			};
-			// auto ReceivePakCommandAssetLambda = [&PakCommands](const TArray<FString>& InPakCommand,const TArray<FString>& InIoStoreCommand, const FString& InMountPath,const FString& InLongPackageName)
-			// {
-			// 	
-			// };
-			FCriticalSection	LocalSynchronizationObject;
-			PakCommandReceiver AddReceiver(PakCommands,EPatchAssetType::NEW, LocalSynchronizationObject);
-			PakCommandReceiver ModifyReceiver(PakCommands,EPatchAssetType::MODIFY, LocalSynchronizationObject);
+			
+			PakCommandReceiver AddReceiver(PakCommands,EPatchAssetType::NEW);
+			PakCommandReceiver ModifyReceiver(PakCommands,EPatchAssetType::MODIFY);
 			FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-			TArray<FString> AssetsPakCommands;
 			UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 				ProjectDir,
 				PatcheSettings->GetStorageCookedDir(),
 				PlatformName,
 				ChunkAssetsDescrible.AddAssets,
-				// PakOptions,
-				AssetsPakCommands,
 				AddReceiver,
 				IsIoStoreAssetsLambda
 			);
-			AssetsPakCommands.Empty();
 			UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 				ProjectDir,
 				PatcheSettings->GetStorageCookedDir(),
 				PlatformName,
 				ChunkAssetsDescrible.ModifyAssets,
-				// PakOptions,
-				AssetsPakCommands,
 				ModifyReceiver,
 				IsIoStoreAssetsLambda
 			);

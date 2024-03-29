@@ -647,7 +647,7 @@ namespace PatchWorker
 						SingleCookerProxy->AddToRoot();
 						SingleCookerProxy->Init(&EmptySetting);
 						bool bExportStatus = SingleCookerProxy->DoExport();
-						const FCookCluster& AdditionalCluster = SingleCookerProxy->GetPackageTrackerAsCluster();
+						const FCookCluster& AdditionalCluster = SingleCookerProxy->GetPackageTrackerAsCluster(false);
 						for(const auto& AssetDetail:AdditionalCluster.AssetDetails)
 						{
 							FSoftObjectPath ObjectPath{AssetDetail.PackagePath};

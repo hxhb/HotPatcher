@@ -316,6 +316,7 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster,bool bW
 {
 	SCOPED_NAMED_EVENT_TEXT("ExecCookCluster",FColor::Red);
 
+	FScopedNamedEvent ClusterCounter(FColor::Green,*FString::Printf(TEXT("%d/%d"),GetClusterCount(FCookClusterPack::EClusterCountType::Executed),GetClusterCount(FCookClusterPack::EClusterCountType::Total)));
 	// for GC
 	{
 		SCOPED_NAMED_EVENT_TEXT("ExecCookCluster_ForGC",FColor::Red);
@@ -324,7 +325,8 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster,bool bW
 		CollectGarbage(RF_NoFlags, false);
 	}
 
-	UE_LOG(LogHotPatcher,Display,TEXT("ExecuteCluster(%s) %d with %d assets, total cluster %d/%d.(Normal:%d/%d, Accompany: %d/%d)"),
+	UE_LOG(LogHotPatcher,Display,TEXT("[%s]ExecuteCluster(%s) %d with %d assets, total cluster %d/%d.(Normal:%d/%d, Accompany: %d/%d)"),
+		*GetSettingObject()->MissionName,
 		*THotPatcherTemplateHelper::GetEnumNameByValue(CookCluster.ClusterType),
 		GetClusterCount(FCookClusterPack::EClusterCountType::Executed),
 		CookCluster.AssetDetails.Num(),
@@ -407,10 +409,10 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster,bool bW
 			UFlibHotPatcherCoreHelper::WaitDistanceFieldAsyncQueueComplete();
 		}
 		UFlibHotPatcherCoreHelper::WaitForAsyncFileWrites();
-		// if(!CookCluster.bCacheDDCOnly)
-		// {
-		// 	UFlibHotPatcherCoreHelper::WaitDDCComplete();
-		// }
+		if(!CookCluster.bCacheDDCOnly)
+		{
+			UFlibHotPatcherCoreHelper::WaitDDCComplete();
+		}
 	}
 }
 
@@ -462,6 +464,7 @@ void USingleCookerProxy::Shutdown()
 	
 	if(PackageTracker)
 	{
+		PackageTracker->SetTracking(false);
 		auto SerializePackageSetToString = [](const TSet<FName>& Packages)->FString
 		{
 			FString OutString;
@@ -474,7 +477,7 @@ void USingleCookerProxy::Shutdown()
 			return OutString;
 		};
 		const TSet<FName>& AllLoadedPackagePaths = PackageTracker->GetLoadedPackages();
-		const TSet<FName>& AdditionalPackageSet = PackageTracker->GetPendingPackageSet();
+		const TSet<FName>& AdditionalPackageSet = PackageTracker->GetAdditionalPackageSet();
 		const TSet<FName> LoadedOtherCookerAssets = OtherCookerPackageTracker->GetLoadOtherCookerAssets();
 
 		if(AllLoadedPackagePaths.Num())
@@ -608,7 +611,7 @@ void USingleCookerProxy::ShutdowShaderLibCollections()
 	}
 }
 
-FCookCluster USingleCookerProxy::GetPackageTrackerAsCluster()
+FCookCluster USingleCookerProxy::GetPackageTrackerAsCluster(bool bPadding)
 {
 	SCOPED_NAMED_EVENT_TEXT("GetPackageTrackerAsCluster",FColor::Red);
 	
@@ -623,7 +626,7 @@ FCookCluster USingleCookerProxy::GetPackageTrackerAsCluster()
 	if(PackageTracker && GetSettingObject()->bCookPackageTrackerAssets)
 	{
 		PackageTrackerCluster.AssetDetails.Empty();
-		for(FName LongPackageName:PackageTracker->GetPendingPackageSet())
+		for(FName LongPackageName:bPadding ? PackageTracker->GetPendingPackageSet() : PackageTracker->GetAdditionalPackageSet())
 		{
 			if(!FPackageName::DoesPackageExist(LongPackageName.ToString()))
 			{
@@ -703,44 +706,9 @@ bool USingleCookerProxy::DoExport()
 	
 	MakeCookQueue(GlobalCluser);
 
-//	// force cook all in onece frame
-// 	if(GetSettingObject()->bForceCookInOneFrame)
-// 	{
-// #if WITH_UE5 && WITH_UE5_CUSTOM_SHADERLIB// for UE5 Shader Library
-// 		if(GetSettingObject()->ShaderOptions.bSharedShaderLibrary){
-// 			InitShaderLibConllections();
-// 		}
-// #endif
-// 		
-// 		auto ExecAllCookCluster = [&](TQueue<FCookCluster>& CookQueue ,bool bShutdownShaderLib = false){
-// 			while(!CookQueue.IsEmpty()){
-// 				FCookCluster CookCluster;
-// 				CookQueue.Dequeue(CookCluster);
-// #if WITH_UE5 && WITH_UE5_CUSTOM_SHADERLIB // for UE5 Shader Library
-// 				if(bShutdownShaderLib &&
-// 					GetSettingObject()->ShaderOptions.bSharedShaderLibrary &&
-// 					!CookCluster.bShaderCluster
-// 					){
-// 					ShutdowShaderLibCollections();
-// 				}
-// #endif
-// 				ExecCookCluster(CookCluster);
-// 			}
-// 		};
-// 		
-// 		ExecAllCookCluster(CookCluserQueue,true);
-// 		
-// 		if(CookCluserQueue.IsEmpty())
-// 		{
-// 			FCookCluster PackageTrackerCluster = GetPackageTrackerAsCluster();
-// 			int32 PackageTackerClusterCount = MakeCookQueue(PackageTrackerCluster);
-// 			ClusterCount+=PackageTackerClusterCount;
-// 			ExecAllCookCluster(CookCluserQueue,false);
-// 		}
-// 	}
 	if(GetSettingObject()->bForceCookInOneFrame)
 	{
-		while(!GetClusterPackByType(ECookClusterType::Normal).IsEmpty() || !GetClusterPackByType(ECookClusterType::Accompany).IsEmpty())
+		while(!IsFinsihed())
 		{
 			ExecuteNextCluster();
 		}
@@ -753,59 +721,55 @@ void USingleCookerProxy::ExecuteNextCluster()
 {
 	SCOPED_NAMED_EVENT_TEXT("ExecuteNextCluster",FColor::Blue);
 	FCookClusterPack& NormalClusterPack = GetClusterPackByType(ECookClusterType::Normal);
-	if(GetSettingObject()->bAccompanyCook && !GShaderCompilingManager->IsCompiling()) // 当前没有shader在编译
+	if(GetSettingObject()->bAccompanyCook) // 当前没有shader在编译
 	{
-		FCookClusterPack& AccompanyClusterPack = GetClusterPackByType(ECookClusterType::Accompany);
-		// 控制资源的AddToRoot，bToRoot true为Add, flase为Remove
-		// auto ControlPackagetoToRoot = [&](const FCookCluster& Cluster,bool bToRoot){
-		// 	TArray<UPackage*> PreCachePackages = UFlibAssetManageHelper::LoadPackagesForCooking(Cluster.AsSoftObjectPaths(),GetSettingObject()->bConcurrentSave);
-		// 	for(UPackage* Package:PreCachePackages){
-		// 		if(bToRoot){
-		// 			Package->AddToRoot();
-		// 		}else{
-		// 			Package->RemoveFromRoot();
-		// 		}
-		// 	}
-		// };
-		auto SetClusterForAccompany = [](FCookCluster& Cluster,bool bAccompany)
+		if(GShaderCompilingManager->IsCompiling())
 		{
-			Cluster.bPreGeneratePlatformData = bAccompany;
-			Cluster.bCacheDDCOnly = bAccompany;
-		};
-		// for latst shader cluster serialize
-		if(AccompanyClusterPack.GetExecutingCluserRef().IsValid())
-		{
-			TSharedPtr<FCookCluster>& CurrentShaderCluser = AccompanyClusterPack.GetExecutingCluserRef();
-			UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(
-				CookerPreCacheDDC.ProcessedObjects,
-				CookerPreCacheDDC.PendingCachePlatformDataObjects,
-				UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(CurrentShaderCluser->Platforms));
-			
-			SCOPED_NAMED_EVENT_TEXT("ExecShaderCluster_ForSerialize",FColor::Red);
-			SetClusterForAccompany(*CurrentShaderCluser,false); // do serialize
-			// 序列化到本地
-			ExecCookCluster(*CurrentShaderCluser,true);
-			// ControlPackagetoToRoot(*CurrentShaderCluser,true);
-			CurrentShaderCluser.Reset();
-			CurrentShaderCluser = nullptr;
-			CookerPreCacheDDC.Empty();
+			GShaderCompilingManager->ProcessAsyncResults(false,false);
 		}
-		if(!AccompanyClusterPack.IsEmpty()) // 执行新的shader编译任务
+		else // 执行新的Accompany任务
 		{
-			SCOPED_NAMED_EVENT_TEXT("ExecShaderCluster_ForDDC",FColor::Red);
-			TSharedPtr<FCookCluster> TmpCurrentShaderCluser = MakeShareable(new FCookCluster);
-			AccompanyClusterPack.Dequeue(*TmpCurrentShaderCluser);
-			bool bAccompany = !NormalClusterPack.IsEmpty();
-			if(bAccompany) // for ddc only
+			FCookClusterPack& AccompanyClusterPack = GetClusterPackByType(ECookClusterType::Accompany);
+			auto SetClusterForAccompany = [](FCookCluster& Cluster,bool bAccompany)
 			{
-				SetClusterForAccompany(*TmpCurrentShaderCluser,true); 
-			}
+				Cluster.bPreGeneratePlatformData = bAccompany;
+				Cluster.bCacheDDCOnly = bAccompany;
+			};
+			// for latst shader cluster serialize
+			if(AccompanyClusterPack.GetExecutingCluserRef().IsValid())
+			{
+				TSharedPtr<FCookCluster>& CurrentShaderCluser = AccompanyClusterPack.GetExecutingCluserRef();
+				UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(
+					CookerPreCacheDDC.ProcessedObjects,
+					CookerPreCacheDDC.PendingCachePlatformDataObjects,
+					UFlibHotPatcherCoreHelper::GetTargetPlatformsByNames(CurrentShaderCluser->Platforms));
 			
-			ExecCookCluster(*TmpCurrentShaderCluser,!bAccompany); // 在CookCluserQueue为空时，不再执行precache-dcc与序列化分拆执行
-			if(bAccompany)
+				SCOPED_NAMED_EVENT_TEXT("ExecShaderCluster_ForSerialize",FColor::Red);
+				SetClusterForAccompany(*CurrentShaderCluser,false); // do serialize
+				// 序列化到本地
+				ExecCookCluster(*CurrentShaderCluser,true);
+				// ControlPackagetoToRoot(*CurrentShaderCluser,true);
+				CurrentShaderCluser.Reset();
+				CurrentShaderCluser = nullptr;
+				CookerPreCacheDDC.Empty();
+			}
+			if(!AccompanyClusterPack.IsEmpty()) // 执行新的shader编译任务
 			{
-				// ControlPackagetoToRoot(*TmpCurrentShaderCluser,true);
-				AccompanyClusterPack.GetExecutingCluserRef() = TmpCurrentShaderCluser;
+				SCOPED_NAMED_EVENT_TEXT("ExecShaderCluster_ForDDC",FColor::Red);
+				TSharedPtr<FCookCluster> TmpCurrentShaderCluser = MakeShareable(new FCookCluster);
+				AccompanyClusterPack.Dequeue(*TmpCurrentShaderCluser);
+				bool bAccompany = !NormalClusterPack.IsEmpty();
+				if(bAccompany) // for ddc only
+					{
+					SetClusterForAccompany(*TmpCurrentShaderCluser,true); 
+					}
+			
+				ExecCookCluster(*TmpCurrentShaderCluser,!bAccompany); // 在CookCluserQueue为空时，不再执行precache-dcc与序列化分拆执行
+				if(bAccompany)
+				{
+					// ControlPackagetoToRoot(*TmpCurrentShaderCluser,true);
+					AccompanyClusterPack.GetExecutingCluserRef() = TmpCurrentShaderCluser;
+				}
 			}
 		}
 	}
@@ -818,17 +782,22 @@ void USingleCookerProxy::ExecuteNextCluster()
 		ExectuingCluster.Reset();
 		ExectuingCluster = nullptr;
 	}
-	static bool bCookedPackageTracker = false;
-	
-	if(!bCookedPackageTracker &&
-		GetClusterPackByType(ECookClusterType::Normal).IsEmpty() && GetClusterPackByType(ECookClusterType::Accompany).IsEmpty() &&
-		GetSettingObject()->bPackageTracker && GetSettingObject()->bCookPackageTrackerAssets)
+
+	bool bNormalIsEmpty = GetClusterPackByType(ECookClusterType::Normal).IsEmpty();
+	bool bAccompanyIsEmpty = GetClusterPackByType(ECookClusterType::Accompany).IsEmpty();
+	if( bNormalIsEmpty && bAccompanyIsEmpty &&
+		HasValidPackageTracker())
 	{
-		FCookCluster PackageTrackerCluster = GetPackageTrackerAsCluster();
-		if(PackageTrackerCluster.AssetDetails.Num())
+		SCOPED_NAMED_EVENT_TEXT("MakePackageTrackerCluster",FColor::Red);
+		FCookCluster PackageTrackerCluster = GetPackageTrackerAsCluster(true);
+		// 清理等待COOK的资源
+		PackageTracker->CleanPaddingSet();
+		
+		int32 PackageTrackerAssetNum = PackageTrackerCluster.AssetDetails.Num();
+		UE_LOG(LogHotPatcher,Display,TEXT("[MakePackageTrackerCluster] for %s(%d assets)"),*GetSettingObject()->MissionName,PackageTrackerAssetNum);
+		if(PackageTrackerAssetNum)
 		{
 			MakeCookQueue(PackageTrackerCluster);
-			bCookedPackageTracker = true;
 		}
 	}
 }
@@ -889,8 +858,6 @@ void USingleCookerProxy::OnAssetCookedHandle(const FSoftObjectPath& PackagePath,
 	FName AssetPathName = *UFlibAssetManageHelper::GetAssetPath(PackagePath);
 	FString AssetPath = PackagePath.GetAssetPathString();
 	
-	GetPaendingCookAssetsSet().Remove(AssetPathName);
-
 	switch(Result)
 	{
 		case ESavePackageResult::Success:
@@ -914,7 +881,9 @@ void USingleCookerProxy::OnAssetCookedHandle(const FSoftObjectPath& PackagePath,
 
 bool USingleCookerProxy::IsFinsihed()
 {
-	return !GetPaendingCookAssetsSet().Num() && GetClusterPackByType(ECookClusterType::Normal).IsEmpty() && GetClusterPackByType(ECookClusterType::Accompany).IsEmpty();
+	return GetClusterPackByType(ECookClusterType::Normal).IsEmpty() &&
+		GetClusterPackByType(ECookClusterType::Accompany).IsEmpty() &&
+		!HasValidPackageTracker();
 }
 
 #if WITH_PACKAGE_CONTEXT
@@ -953,12 +922,17 @@ TArray<FName>& USingleCookerProxy::GetPlatformCookAssetOrders(ETargetPlatform Pl
 	return CookAssetOrders.FindOrAdd(Platform);
 }
 
+bool USingleCookerProxy::HasValidPackageTracker()
+{ 
+	return (GetSettingObject()->bPackageTracker && GetSettingObject()->bCookPackageTrackerAssets) ? PackageTracker->GetPendingPackageSet().Num() : false;
+}
+
 TSet<FName> USingleCookerProxy::GetAdditionalAssets()
 {
 	SCOPED_NAMED_EVENT_TEXT("GetAdditionalAssets",FColor::Red);
 	if(GetSettingObject()->bPackageTracker && PackageTracker.IsValid())
 	{
-		return PackageTracker->GetPendingPackageSet();
+		return PackageTracker->GetAdditionalPackageSet();
 	}
 	return TSet<FName>{};
 }
