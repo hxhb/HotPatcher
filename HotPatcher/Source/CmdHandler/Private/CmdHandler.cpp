@@ -1,11 +1,12 @@
 // Copyright 2019 Lipeng Zha, Inc. All Rights Reserved.
 
 #include "CmdHandler.h"
-
 #include "Misc/CommandLine.h"
 #include "Misc/ConfigCacheIni.h"
 
 DEFINE_LOG_CATEGORY(LogCmdHandler);
+
+#define LOCTEXT_NAMESPACE "CmdHandler"
 
 bool OverrideConfigValue(const FString& FileName,const FString& Section,const FString& Key,int32 NewValue)
 {
@@ -147,3 +148,4 @@ void FCmdHandlerModule::ShutdownModule()
 #undef LOCTEXT_NAMESPACE
 	
 IMPLEMENT_MODULE(FCmdHandlerModule, CmdHandler)
+

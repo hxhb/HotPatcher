@@ -924,7 +924,7 @@ TArray<FName>& USingleCookerProxy::GetPlatformCookAssetOrders(ETargetPlatform Pl
 
 bool USingleCookerProxy::HasValidPackageTracker()
 { 
-	return (GetSettingObject()->bPackageTracker && GetSettingObject()->bCookPackageTrackerAssets) ? PackageTracker->GetPendingPackageSet().Num() : false;
+	return (GetSettingObject()->bPackageTracker && GetSettingObject()->bCookPackageTrackerAssets) ? !!PackageTracker->GetPendingPackageSet().Num() : false;
 }
 
 TSet<FName> USingleCookerProxy::GetAdditionalAssets()

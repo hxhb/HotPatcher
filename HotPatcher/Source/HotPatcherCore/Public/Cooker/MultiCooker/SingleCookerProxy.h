@@ -156,9 +156,9 @@ struct FCookClusterPack
         Total,
         Executed
     };
-    int32 GetClusterCount(EClusterCountType Type)const
+    int32 GetClusterCount(EClusterCountType InType)const
     {
-        return Type == EClusterCountType::Total ? TotalClusterCount:ExectedCount;
+        return InType == EClusterCountType::Total ? TotalClusterCount : ExectedCount;
     }
 private:
     TQueue<FCookCluster> CluserQueue;

@@ -4,6 +4,7 @@
 
 // engine header
 #include "CoreMinimal.h"
+#include "Modules/ModuleInterface.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCmdHandler,All,All);
 
