@@ -58,7 +58,7 @@ FString UFlibAssetManageHelper::PackagePathToFilename(const FString& InPackagePa
 	
 	for (const auto& Item : localFindFiles)
 	{
-		if(UassetExtensions.Contains(FPaths::GetExtension(Item)))
+		if(UassetExtensions.Contains(FPaths::GetExtension(Item,true)))
 		{
 			ResultAbsPath = FPaths::Combine(SearchDir, Item);
 			break;

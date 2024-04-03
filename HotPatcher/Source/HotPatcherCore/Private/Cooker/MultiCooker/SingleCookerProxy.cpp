@@ -15,7 +15,7 @@
 #include "Misc/ScopeExit.h"
 #include "Engine/AssetManager.h"
 #include "Interfaces/ITargetPlatform.h"
-
+#include "Misc/EngineVersionComparison.h"
 #if WITH_PACKAGE_CONTEXT
 // // engine header
 #include "UObject/SavePackage.h"
@@ -86,9 +86,8 @@ void USingleCookerProxy::Init(FPatcherEntitySettingBase* InSetting)
 			);
 	}
 #endif
-#if !WITH_UE5 // for UE4
 	InitShaderLibConllections();
-#endif
+	
 	// cook package tracker
 	if(GetSettingObject()->bPackageTracker)
 	{
@@ -378,7 +377,13 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster,bool bW
 			FString PlatformName = *Platform->PlatformName();
 			THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,EnumPlatform);
 			PlatformMaps.Add(EnumPlatform,Platform);
-			CookedPlatformSavePaths.Add(*PlatformName,FPaths::Combine(CookBaseDir,PlatformName));
+			CookedPlatformSavePaths.Add(*PlatformName,FPaths::Combine(CookBaseDir,
+#if WITH_UE5_BY_COOKCMDLT
+				TEXT("[Platform]")
+#else
+				PlatformName
+#endif
+				));
 		}
 
 		UFlibHotPatcherCoreHelper::CookPackages(
@@ -390,8 +395,9 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster,bool bW
 		#endif
 						CookedPlatformSavePaths,
 						bCanConcurrentSave
-#if WITH_UE5 && WITH_UE5_CUSTOM_SHADERLIB// FOR UE5 ShaderLibrary
-						,!(CookCluster.bShaderCluster && GetSettingObject()->ShaderOptions.bSharedShaderLibrary)
+#if WITH_UE5_BY_COOKCMDLT
+						,false, // !(CookCluster.bShaderCluster && GetSettingObject()->ShaderOptions.bSharedShaderLibrary)
+						false //,(CookCluster.bShaderCluster && GetSettingObject()->ShaderOptions.bSharedShaderLibrary)
 #endif
 						);
 	}
@@ -447,9 +453,8 @@ void USingleCookerProxy::Shutdown()
 		UFlibHotPatcherCoreHelper::WaitDDCComplete();
 	}
 
-#if !WITH_UE5 // for UE4
 	ShutdowShaderLibCollections();
-#endif
+	
 	FString StorageMetadataAbsDir = GetSettingObject()->GetStorageMetadataAbsDir();
 	// serialize cook failed assets to json
 	if(GetCookFailedAssetsCollection().CookFailedAssets.Num())
