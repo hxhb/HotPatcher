@@ -409,6 +409,11 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster,bool bW
 		{
 			UFlibHotPatcherCoreHelper::WaitDDCComplete();
 		}
+		// ProcessThreadUntilIdle
+		{
+			FlushAsyncLoading();
+			FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
+		}
 	}
 }
 
@@ -824,6 +829,15 @@ void USingleCookerProxy::CleanOldCooked(const FString& CookBaseDir,const TArray<
 			if(!FileName.IsEmpty() && FPaths::FileExists(FileName))
 			{
 				IFileManager::Get().Delete(*FileName,true,true,true);
+			}
+			// for WP
+			{
+				FString Extension = FPaths::GetExtension(FileName,true);
+				FString Dir = FileName.Replace(*Extension,TEXT(""));
+				if(FPaths::DirectoryExists(Dir))
+				{
+					IFileManager::Get().DeleteDirectory(*Dir,true,true);
+				}
 			}
 		},GForceSingleThread);
 	}

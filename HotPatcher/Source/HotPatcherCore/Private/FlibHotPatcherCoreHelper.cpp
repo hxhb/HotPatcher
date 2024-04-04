@@ -508,7 +508,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	bool bStorageConcurrent
 )
 {
-	FPackageLocalizationManager::Get().ConditionalUpdateCache();
+	// FPackageLocalizationManager::Get().ConditionalUpdateCache();
 #if WITH_UE5_BY_COOKCMDLT
 	if(UseCookCmdlet(Package,CookPlatforms))
 	{
@@ -747,19 +747,30 @@ bool UFlibHotPatcherCoreHelper::CookPackagesByCmdlet(
 		}
 		
 		FString TargetPlatformName = CookPlatformPair.Value->PlatformName();
-		FString CookedSavePath = FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked"),PlatformName);
+		FString RealCookedSavePath = FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Cooked"),PlatformName);
+		FString SrcCookedPath;
 		if(CookedPlatformSavePaths.Contains(*TargetPlatformName))
 		{
-			CookedSavePath = *CookedPlatformSavePaths.Find(*CookPlatformPair.Value->PlatformName());
-			if(!CookedSavePath.Contains(TEXT("[Platform]")))
+			SrcCookedPath = *CookedPlatformSavePaths.Find(*CookPlatformPair.Value->PlatformName());
+			if(!SrcCookedPath.Contains(TEXT("[Platform]")))
 			{
-				CookedSavePath = CookedSavePath.Replace(*FString::Printf(TEXT("/%s"),*TargetPlatformName),TEXT("/[Platform]"));
+				RealCookedSavePath = SrcCookedPath.Replace(*FString::Printf(TEXT("/%s"),*TargetPlatformName),TEXT("/[Platform]"));
 			}
 		}
+		RealCookedSavePath = RealCookedSavePath.Replace(TEXT("/Cooked/"),TEXT("/CmdletCooked/"));
 		for(const auto& SoftObjectPath:ObjectPaths){ CookActionCallback.OnCookBegin(SoftObjectPath,CookPlatformPair.Key); }
-		bool bCookStatus = CookByCmdlet(LongPackageNames,CookPlatformPair.Key,CookedSavePath, bSharedMaterialLibrary);
+		bool bCookStatus = CookByCmdlet(LongPackageNames,CookPlatformPair.Key,RealCookedSavePath, bSharedMaterialLibrary);
         ESavePackageResult result = bCookStatus ? ESavePackageResult::Success : ESavePackageResult::Error;
 		for(const auto& SoftObjectPath:ObjectPaths){ CookActionCallback.OnAssetCooked(SoftObjectPath,CookPlatformPair.Key,result); }
+
+		FString CleanCmdletDir = SrcCookedPath.Replace(*PlatformName,TEXT(""));
+		CleanCmdletDir = CleanCmdletDir.Replace(TEXT("/Cooked/"),TEXT("/CmdletCooked/"));
+		FPaths::NormalizeDirectoryName(CleanCmdletDir);
+		if(!CleanCmdletDir.IsEmpty() && FPaths::DirectoryExists(CleanCmdletDir))
+		{
+			IFileManager::Get().DeleteDirectory(*CleanCmdletDir,true,true);
+		}
+		
 	}
 	return true;
 }
@@ -788,7 +799,6 @@ TEXT("%s -cooksinglepackagenorefs"),
 	CookCmdline = FString::Printf(TEXT("%s -OutputDir=%s"),*CookCmdline,*CookedSavePath);
 	CookCmdline = FString::Printf(TEXT("%s -SkipZenStore"),*CookCmdline);
 	CookCmdline = FString::Printf(TEXT("%s -FastCook"),*CookCmdline);
-	CookCmdline = FString::Printf(TEXT("%s -iterate"),*CookCmdline);
 	FString CookAssetsCmdline;
 	if(LongPackageNames.Num())
 	{
@@ -820,11 +830,24 @@ TEXT("%s -cooksinglepackagenorefs"),
 		}
 		CookCmdline = FString::Printf(TEXT("%s -MAP=%s"),*CookCmdline,*CookAssetsCmdline);
 		UE_LOG(LogHotPatcherCoreHelper,Verbose,TEXT("CookCommandlet: %s"),*CookCmdline);
+		
 		int32 RetValue = -1;
 		if(RunCmdlet(TEXT("Cook"),CookCmdline,RetValue))
 		{
 			bRet = (RetValue == 0);
 			ESavePackageResult result = bRet ? ESavePackageResult::Success : ESavePackageResult::Error;
+			if(bRet)
+			{
+				FString CookCmdletCookedDir = CookedSavePath.Replace(TEXT("[PLATFORM]"),*PlatformName);
+				FString CookedDir = CookCmdletCookedDir.Replace(TEXT("/CmdletCooked/"),TEXT("/Cooked/"));
+
+				FString TmpMetadataDir = FPaths::Combine(CookCmdletCookedDir,FApp::GetProjectName(),TEXT("Metadata"));
+				FString TmpAssetRegistryBin = FPaths::Combine(CookCmdletCookedDir,FApp::GetProjectName(),TEXT("AssetRegistry.bin"));
+				IFileManager::Get().DeleteDirectory(*TmpMetadataDir,true,true);
+				IFileManager::Get().Delete(*TmpAssetRegistryBin);
+				CopyDirectoryRecursively(CookCmdletCookedDir,CookedDir);
+				IFileManager::Get().DeleteDirectory(*CookCmdletCookedDir,true,true);
+			}
 		}
 	}
 
@@ -2920,4 +2943,36 @@ FPakCommandItem UFlibHotPatcherCoreHelper::ParsePakResponseFileLine(const FStrin
 		return result;
 	};
 	return ParseUassetLambda(Line);
+}
+
+#include "DesktopPlatformModule.h"
+#include "Misc/FileHelper.h"
+#include "HAL/PlatformFilemanager.h"
+
+void UFlibHotPatcherCoreHelper::CopyDirectoryRecursively(const FString& SourceDirectory, const FString& DestinationDirectory)
+{
+	// 获取平台文件系统的引用
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+
+	// 确保目标目录存在，如果不存在则创建
+	if (!PlatformFile.DirectoryExists(*DestinationDirectory))
+	{
+		PlatformFile.CreateDirectoryTree(*DestinationDirectory);
+	}
+
+	// 查找源目录中的所有文件和目录
+	TArray<FString> SourceFiles;
+	PlatformFile.FindFilesRecursively(SourceFiles, *SourceDirectory, TEXT(""));
+
+	// 复制文件
+	for (const FString& File : SourceFiles)
+	{
+		FString NewFilePath = File.Replace(*SourceDirectory, *DestinationDirectory);
+		FString NewDirPath = FPaths::GetPath(NewFilePath);
+		if (!PlatformFile.DirectoryExists(*NewDirPath))
+		{
+			PlatformFile.CreateDirectoryTree(*NewDirPath);
+		}
+		PlatformFile.CopyFile(*NewFilePath, *File);
+	}
 }
