@@ -99,10 +99,6 @@ public:
 	#endif
 		const TMap<FName,FString>& CookedPlatformSavePaths,
 		bool bStorageConcurrent
-#if WITH_UE5_BY_COOKCMDLT
-		,bool bUseCmdletImpl = false
-		, bool bSharedMaterialLibrary = false
-#endif
 	);
 	
 	static bool CookPackage(
@@ -114,11 +110,9 @@ public:
 #endif
 		const TMap<FName,FString>& CookedPlatformSavePaths,
 		bool bStorageConcurrent
-#if WITH_UE5_BY_COOKCMDLT
-		,bool bUseCmdletImpl = true;
-#endif
 	);
 
+	static bool UseCookCmdlet(UPackage* Package,TMap<ETargetPlatform,ITargetPlatform*> CookPlatforms);
 	static bool RunCmdlet(const FString& CmdletName,const FString& Params,int32& OutRetValue);
 	static bool CookPackagesByCmdlet(
 		const TArray<UPackage*> Packages,

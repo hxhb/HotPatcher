@@ -178,7 +178,7 @@ public class HotPatcherCore : ModuleRules
 
 		AddPublicDefinitions("WITH_UE5", Version.MajorVersion > 4);
 
-		AddPublicDefinitions("WITH_UE5_BY_COOKCMDLT", false);
+		AddPublicDefinitions("WITH_UE5_BY_COOKCMDLT", (Version.MajorVersion > 4) && true);
 		if (Version.MajorVersion > 4)
 		{
 			PublicIncludePaths.AddRange(new List<string>()

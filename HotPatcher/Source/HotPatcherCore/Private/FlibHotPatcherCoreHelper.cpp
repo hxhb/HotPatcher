@@ -349,28 +349,27 @@ FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetP
 		PackageWriter = new FHotPatcherPackageWriter;// new FLooseCookedPackageWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform,AsyncIODelete,FPackageNameCache{},IPluginManager::Get().GetEnabledPlugins());
 		WriterDebugName = TEXT("DirectoryWriter");
 	}
-#if WITH_UE5_BY_COOKCMDLT
-	UCookOnTheFlyServer* CookOnTheFlyServerCDO = nullptr;
-	UClass* CookOnTheFlyServerClass = FindObject<UClass>(ANY_PACKAGE, TEXT("CookOnTheFlyServer"), false);
-	if (CookOnTheFlyServerClass)
-	{
-		// CmdletCDO = Cast<UCommandlet>(SPCTCmdletClass->GetDefaultObject());
-		CookOnTheFlyServerCDO = NewObject<UCookOnTheFlyServer>(CookOnTheFlyServerClass, CookOnTheFlyServerClass, TEXT("CookOnTheFlyServerTemplateObj"), RF_NoFlags, CookOnTheFlyServerClass->GetDefaultObject());
-		CookOnTheFlyServerCDO->AddToRoot();
-		CookOnTheFlyServerCDO->Initialize(ECookMode::CookByTheBook, ECookInitializationFlags::TestCook, OverrideCookedDir);
-		GET_REF_PRIVATE_DATA_MEMBER(SandboxFileRef, CookOnTheFlyServerCDO, UCookOnTheFlyServer, SandboxFile);
-		SandboxFileRef = FSandboxPlatformFile::Create(false);
-		SandboxFileRef->Initialize(&FPlatformFileManager::Get().GetPlatformFile(), *FString::Printf(TEXT("-sandbox=\"%s\""), *OverrideCookedDir));
-		auto CookOnTheFlyServer_FindOrCreatePackageWriter = GET_PRIVATE_MEMBER_FUNCTION(UCookOnTheFlyServer, FindOrCreatePackageWriter);
-		PackageWriter = &CALL_MEMBER_FUNCTION(CookOnTheFlyServerCDO, CookOnTheFlyServer_FindOrCreatePackageWriter, TargetPlatform);
-	}
-#endif
+// #if WITH_UE5_BY_COOKCMDLT
+// 	UCookOnTheFlyServer* CookOnTheFlyServerCDO = nullptr;
+// 	UClass* CookOnTheFlyServerClass = FindObject<UClass>(ANY_PACKAGE, TEXT("CookOnTheFlyServer"), false);
+// 	if (CookOnTheFlyServerClass)
+// 	{
+// 		// CmdletCDO = Cast<UCommandlet>(SPCTCmdletClass->GetDefaultObject());
+// 		CookOnTheFlyServerCDO = NewObject<UCookOnTheFlyServer>(CookOnTheFlyServerClass, CookOnTheFlyServerClass, TEXT("CookOnTheFlyServerTemplateObj"), RF_NoFlags, CookOnTheFlyServerClass->GetDefaultObject());
+// 		CookOnTheFlyServerCDO->AddToRoot();
+// 		CookOnTheFlyServerCDO->Initialize(ECookMode::CookByTheBook, ECookInitializationFlags::TestCook, OverrideCookedDir);
+// 		GET_REF_PRIVATE_DATA_MEMBER(SandboxFileRef, CookOnTheFlyServerCDO, UCookOnTheFlyServer, SandboxFile);
+// 		SandboxFileRef = FSandboxPlatformFile::Create(false);
+// 		SandboxFileRef->Initialize(&FPlatformFileManager::Get().GetPlatformFile(), *FString::Printf(TEXT("-sandbox=\"%s\""), *OverrideCookedDir));
+// 		auto CookOnTheFlyServer_FindOrCreatePackageWriter = GET_PRIVATE_MEMBER_FUNCTION(UCookOnTheFlyServer, FindOrCreatePackageWriter);
+// 		PackageWriter = &CALL_MEMBER_FUNCTION(CookOnTheFlyServerCDO, CookOnTheFlyServer_FindOrCreatePackageWriter, TargetPlatform);
+// 	}
+// #endif
 	SavePackageContext	= new FSavePackageContext(TargetPlatform, PackageWriter);
 #endif
 #endif
 	return SavePackageContext;
 }
-
 
 TMap<ETargetPlatform, TSharedPtr<FSavePackageContext>> UFlibHotPatcherCoreHelper::CreatePlatformsPackageContexts(
 	const TArray<ETargetPlatform>& Platforms,bool bIoStore,const FString& OverrideCookedDir)
@@ -427,18 +426,8 @@ bool UFlibHotPatcherCoreHelper::CookPackages(const TArray<UPackage*> Packages,
 	TMap<ETargetPlatform, ITargetPlatform*> CookPlatforms, FCookActionCallback CookActionCallback,
 	TMap<FString, FSavePackageContext*> PlatformSavePackageContext, const TMap<FName, FString>& CookedPlatformSavePaths,
 	bool bStorageConcurrent
-#if WITH_UE5_BY_COOKCMDLT
-	,bool bUseCmdletImpl,
-	bool bSharedMaterialLibrary
-#endif
 	)
 {
-#if WITH_UE5_BY_COOKCMDLT
-	if(bUseCmdletImpl)
-	{
-		return CookPackagesByCmdlet(Packages,CookPlatforms,CookActionCallback,CookedPlatformSavePaths, bSharedMaterialLibrary);
-	}
-#endif
 	if(bStorageConcurrent) 
 	{ 
 		GIsSavingPackage = true;
@@ -458,9 +447,6 @@ bool UFlibHotPatcherCoreHelper::CookPackages(const TArray<UPackage*> Packages,
 #endif
 				CookedPlatformSavePaths,
 				bStorageConcurrent
-#if WITH_UE5_BY_COOKCMDLT
-				,bUseCmdletImpl
-#endif
 			);
 		}
 		if(!bStorageConcurrent && GShaderCompilingManager && GShaderCompilingManager->IsCompiling())
@@ -520,14 +506,11 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 #endif
 	const TMap<FName,FString>& CookedPlatformSavePaths,
 	bool bStorageConcurrent
-#if WITH_UE5_BY_COOKCMDLT
-	,bool bUseCmdletImpl
-#endif
 )
 {
 	FPackageLocalizationManager::Get().ConditionalUpdateCache();
 #if WITH_UE5_BY_COOKCMDLT
-	if(bUseCmdletImpl)
+	if(UseCookCmdlet(Package,CookPlatforms))
 	{
 		return CookPackagesByCmdlet(TArray<UPackage*>{Package},CookPlatforms,CookActionCallback,CookedPlatformSavePaths);
 	}
@@ -701,6 +684,19 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	return bSuccessed;
 }
 
+bool UFlibHotPatcherCoreHelper::UseCookCmdlet(UPackage* Package, TMap<ETargetPlatform, ITargetPlatform*> CookPlatforms)
+{
+	bool bUse = false;
+	if(IsValid(Package))
+	{
+		bool bPackageIsMap = Package->ContainsMap();
+		UWorld* World = UWorld::FindWorldInPackage(Package);
+		bool bIsWP = World ? World->IsPartitionedWorld(): false;
+		bUse = (bPackageIsMap && World && bIsWP);
+	}
+	return bUse;
+}
+
 bool UFlibHotPatcherCoreHelper::RunCmdlet(const FString& CmdletName,const FString& Params,int32& OutRetValue)
 {
 	static int32 Counter = 0;
@@ -725,7 +721,7 @@ bool UFlibHotPatcherCoreHelper::RunCmdlet(const FString& CmdletName,const FStrin
 	if(CmdletCDO)
 	{
 		OutRetValue = CmdletCDO->Main(Params);
-		bStatus = true;
+		bStatus = (OutRetValue == 0);
 		CmdletCDO->RemoveFromRoot();
 	}
 	return bStatus;
@@ -755,6 +751,10 @@ bool UFlibHotPatcherCoreHelper::CookPackagesByCmdlet(
 		if(CookedPlatformSavePaths.Contains(*TargetPlatformName))
 		{
 			CookedSavePath = *CookedPlatformSavePaths.Find(*CookPlatformPair.Value->PlatformName());
+			if(!CookedSavePath.Contains(TEXT("[Platform]")))
+			{
+				CookedSavePath = CookedSavePath.Replace(*FString::Printf(TEXT("/%s"),*TargetPlatformName),TEXT("/[Platform]"));
+			}
 		}
 		for(const auto& SoftObjectPath:ObjectPaths){ CookActionCallback.OnCookBegin(SoftObjectPath,CookPlatformPair.Key); }
 		bool bCookStatus = CookByCmdlet(LongPackageNames,CookPlatformPair.Key,CookedSavePath, bSharedMaterialLibrary);
@@ -788,6 +788,8 @@ TEXT("%s -cooksinglepackagenorefs"),
 	CookCmdline = FString::Printf(TEXT("%s -OutputDir=%s"),*CookCmdline,*CookedSavePath);
 	CookCmdline = FString::Printf(TEXT("%s -SkipZenStore"),*CookCmdline);
 	CookCmdline = FString::Printf(TEXT("%s -FastCook"),*CookCmdline);
+	CookCmdline = FString::Printf(TEXT("%s -iterate"),*CookCmdline);
+	FString CookAssetsCmdline;
 	if(LongPackageNames.Num())
 	{
 		UProjectPackagingSettings* PackagingSettings = GetMutableDefault<UProjectPackagingSettings>();
@@ -808,16 +810,15 @@ TEXT("%s -cooksinglepackagenorefs"),
 			GConfig->SetString(TEXT("CookSettings"), TEXT("MemoryTriggerGCAtPressureLevel"), *OriginalConfigText, GEditorIni);
 #endif 
 		};
-		FString MapParams = FString::Printf(TEXT("-MAP="));
 		for(const auto& LongPackageName:LongPackageNames)
 		{
-			MapParams += FString::Printf(TEXT("%s+"),*LongPackageName);
+			CookAssetsCmdline += FString::Printf(TEXT("%s+"),*LongPackageName);
 		}
-		while(MapParams.EndsWith(TEXT("+")))
+		while(CookAssetsCmdline.EndsWith(TEXT("+")))
 		{
-			MapParams.RemoveFromEnd(TEXT("+"));
+			CookAssetsCmdline.RemoveFromEnd(TEXT("+"));
 		}
-		CookCmdline = FString::Printf(TEXT("%s %s"),*CookCmdline,*MapParams);
+		CookCmdline = FString::Printf(TEXT("%s -MAP=%s"),*CookCmdline,*CookAssetsCmdline);
 		UE_LOG(LogHotPatcherCoreHelper,Verbose,TEXT("CookCommandlet: %s"),*CookCmdline);
 		int32 RetValue = -1;
 		if(RunCmdlet(TEXT("Cook"),CookCmdline,RetValue))
@@ -826,6 +827,8 @@ TEXT("%s -cooksinglepackagenorefs"),
 			ESavePackageResult result = bRet ? ESavePackageResult::Success : ESavePackageResult::Error;
 		}
 	}
+
+	UE_LOG(LogHotPatcherCoreHelper,Display,TEXT("[CookByCmdlet] COOK %s for %s.\n\t %s"),*CookAssetsCmdline,*PlatformName,*CookCmdline);
 	return bRet;
 }
 
@@ -2797,13 +2800,9 @@ TArray<UClass*> UFlibHotPatcherCoreHelper::GetPreCacheClasses()
 	SCOPED_NAMED_EVENT_TEXT("GetPreCacheClasses",FColor::Red);
 	TArray<UClass*> Classes;
 	{
-#if !(WITH_UE5 && WITH_UE5_BY_COOKCMDLT) // FOR UE5, materials asset Append to begin
-	ON_SCOPE_EXIT{	
-#endif
-		Classes.Append(UFlibHotPatcherCoreHelper::GetAllMaterialClasses());
-#if !(WITH_UE5 && WITH_UE5_BY_COOKCMDLT)
-		};	
-#endif
+		ON_SCOPE_EXIT{	
+			Classes.Append(UFlibHotPatcherCoreHelper::GetAllMaterialClasses());
+		};
 		
 		TArray<FName> ParentClassesName = {
 			// textures

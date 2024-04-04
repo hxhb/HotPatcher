@@ -377,13 +377,7 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster,bool bW
 			FString PlatformName = *Platform->PlatformName();
 			THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,EnumPlatform);
 			PlatformMaps.Add(EnumPlatform,Platform);
-			CookedPlatformSavePaths.Add(*PlatformName,FPaths::Combine(CookBaseDir,
-#if WITH_UE5_BY_COOKCMDLT
-				TEXT("[Platform]")
-#else
-				PlatformName
-#endif
-				));
+			CookedPlatformSavePaths.Add(*PlatformName,FPaths::Combine(CookBaseDir,PlatformName));
 		}
 
 		UFlibHotPatcherCoreHelper::CookPackages(
@@ -395,10 +389,6 @@ void USingleCookerProxy::ExecCookCluster(const FCookCluster& CookCluster,bool bW
 		#endif
 						CookedPlatformSavePaths,
 						bCanConcurrentSave
-#if WITH_UE5_BY_COOKCMDLT
-						,false, // !(CookCluster.bShaderCluster && GetSettingObject()->ShaderOptions.bSharedShaderLibrary)
-						false //,(CookCluster.bShaderCluster && GetSettingObject()->ShaderOptions.bSharedShaderLibrary)
-#endif
 						);
 	}
 	// clean cached ddd / release memory
