@@ -115,6 +115,15 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 		TArray<FString> InBaseAssetModuleKeysList;
 		InBaseVersion.AssetsDependenciesMap.GetKeys(InBaseAssetModuleKeysList);
 
+		auto InsertToDependenciesInfo = [](FAssetDependenciesInfo& OutAssetDependenciesInfo,const FString& InBaseVersionAssetModule,FString LongPackageName,const FAssetDetail& AssetDetail)
+		{
+			if (!OutAssetDependenciesInfo.AssetsDependenciesMap.Contains(InBaseVersionAssetModule))
+			{
+				OutAssetDependenciesInfo.AssetsDependenciesMap.Add(InBaseVersionAssetModule, FAssetDependenciesDetail{ InBaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
+			}
+			OutAssetDependenciesInfo.AssetsDependenciesMap.Find(InBaseVersionAssetModule)->AssetDependencyDetails.Add(LongPackageName, AssetDetail);
+		};
+		
 		// Parser Add new asset
 		for (const auto& NewVersionAssetModule : InNewAssetModuleKeyList)
 		{
@@ -141,24 +150,19 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 					if (!BaseVersionDependAssetsList.Contains(NewAssetItem))
 					{
 						FString BelongModuneName = UFlibAssetManageHelper::GetAssetBelongModuleName(NewAssetItem);
-						if (!OutAddAsset.AssetsDependenciesMap.Contains(BelongModuneName))
-						{
-							OutAddAsset.AssetsDependenciesMap.Add(BelongModuneName, FAssetDependenciesDetail{ BelongModuneName,TMap<FString,FAssetDetail>{} });
-						}
-						TMap<FString, FAssetDetail>& CurrentModuleAssetDetails = OutAddAsset.AssetsDependenciesMap.Find(BelongModuneName)->AssetDependencyDetails;
-						CurrentModuleAssetDetails.Add(NewAssetItem, *NewVersionAssetModuleDetail.Find(NewAssetItem));
+						InsertToDependenciesInfo(OutAddAsset,BelongModuneName,NewAssetItem,*NewVersionAssetModuleDetail.Find(NewAssetItem));
 					}
 				}
 			}	
 		}
 
+		
 		// Parser Modify Asset
 		for (const auto& BaseVersionAssetModule : InBaseAssetModuleKeysList)
 		{
 			const FAssetDependenciesDetail& BaseVersionModuleAssetsDetail = *InBaseVersion.AssetsDependenciesMap.Find(BaseVersionAssetModule);
 			const FAssetDependenciesDetail& NewVersionModuleAssetsDetail = *InNewVersion.AssetsDependenciesMap.Find(BaseVersionAssetModule);
-
-
+			
 			if (InNewVersion.AssetsDependenciesMap.Contains(BaseVersionAssetModule))
 			{
 				TArray<FString> BeseVersionCurrentModuleAssetListKeys;
@@ -170,22 +174,14 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 					const FAssetDetail* NewVersionAssetDetail = NewVersionModuleAssetsDetail.AssetDependencyDetails.Find(AssetItem);
 					if (!NewVersionAssetDetail)
 					{
-						if (!OutDeleteAsset.AssetsDependenciesMap.Contains(BaseVersionAssetModule))
-						{
-							OutDeleteAsset.AssetsDependenciesMap.Add(BaseVersionAssetModule, FAssetDependenciesDetail{ BaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
-						}
-						OutDeleteAsset.AssetsDependenciesMap.Find(BaseVersionAssetModule)->AssetDependencyDetails.Add(AssetItem, *BaseVersionAssetDetail);
+						InsertToDependenciesInfo(OutDeleteAsset,BaseVersionAssetModule,AssetItem,*BaseVersionAssetDetail);
 						continue;
 					}
 
 					if (!(*NewVersionAssetDetail == *BaseVersionAssetDetail))
 					{
 						UE_LOG(LogHotPatcher,Display,TEXT("Modify Asset: %s"),*AssetItem);
-						if (!OutModifyAsset.AssetsDependenciesMap.Contains(BaseVersionAssetModule))
-						{
-							OutModifyAsset.AssetsDependenciesMap.Add(BaseVersionAssetModule, FAssetDependenciesDetail{ BaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
-						}
-						OutModifyAsset.AssetsDependenciesMap.Find(BaseVersionAssetModule)->AssetDependencyDetails.Add(AssetItem, *NewVersionAssetDetail);
+						InsertToDependenciesInfo(OutModifyAsset,BaseVersionAssetModule,AssetItem,*NewVersionAssetDetail);
 					}
 				}
 			}
