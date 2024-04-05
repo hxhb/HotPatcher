@@ -79,6 +79,10 @@ struct FPackageTracker : public FPackageTrackerBase
 
 	virtual void OnPackageCreated(UPackage* Package) override
 	{
+		if(!IsTracking())
+		{
+			return;
+		}
 		FName AssetPathName = FName(*Package->GetPathName());
 		LoadedPackages.Add(AssetPathName);
 		if(!ExisitAssets.Contains(AssetPathName))
@@ -92,7 +96,7 @@ struct FPackageTracker : public FPackageTrackerBase
 				)
 			{
 				UE_LOG(LogHotPatcher,Display,TEXT("[PackageTracker] Add %s"),*AssetPathNameStr);
-				PackagesPendingSave.Add(AssetPathName);
+				AddTrackPackage(AssetPathName);
 			}
 			else
 			{
@@ -103,18 +107,34 @@ struct FPackageTracker : public FPackageTrackerBase
 	virtual void OnPackageDeleted(UPackage* Package) override
 	{
 		FName AssetPathName = FName(*Package->GetPathName());
-		if(PackagesPendingSave.Contains(AssetPathName))
-		{
-			PackagesPendingSave.Remove(AssetPathName);
-		}
+		RemoveTrackPackage(AssetPathName);
 	}
 	
 public:
 	// typedef TSet<UPackage*> PendingPackageSet;
+	const TSet<FName>& GetAdditionalPackageSet(){ return AdditionalPackageSet; }
 	const TSet<FName>& GetPendingPackageSet()const {return PackagesPendingSave; }
+	void CleanPaddingSet(){ PackagesPendingSave.Empty(); }
+	void SetTracking(bool bEnable){ bIsTracking = bEnable; }
+	bool IsTracking()const { return bIsTracking; }
 protected:
+	void AddTrackPackage(FName PackageName)
+	{
+		if(!AdditionalPackageSet.Contains(PackageName))
+		{
+			AdditionalPackageSet.Add(PackageName);
+			PackagesPendingSave.Add(PackageName);
+		}
+	}
+	void RemoveTrackPackage(FName PackageName)
+	{
+		AdditionalPackageSet.Remove(PackageName);
+		PackagesPendingSave.Remove(PackageName);
+	}
+	TSet<FName> AdditionalPackageSet;
 	TSet<FName>	 PackagesPendingSave;
 	TSet<FName>& ExisitAssets;
+	bool bIsTracking = true;
 };
 
 struct FClassesPackageTracker : public FPackageTrackerBase

@@ -1,10 +1,9 @@
 #include "FReleasePaklistParser.h"
-
 #include "Misc/FileHelper.h"
 #include "FlibPatchParserHelper.h"
 #include "HotPatcherLog.h"
 #include "Kismet/KismetStringLibrary.h"
-// #include "Misc/PathViews.h"
+#include "Misc/EngineVersionComparison.h"
 
 
 FString NormalizePaklistPath(const FString& InStr)
@@ -55,7 +54,11 @@ void FReleasePaklistParser::Parser(TSharedPtr<FReleaseParserConf> ParserConf, EH
 				{
 					FPakListAssetItem LineItem = BreakPakListLine(PakListLine);
 					FString Extersion = FPaths::GetExtension(LineItem.MountPak,true);
-					if(UFlibPatchParserHelper::GetCookedUassetExtensions().Contains(Extersion))
+					bool bIsWPFiles = false;
+				#if UE_VERSION_NEWER_THAN(5,0,0)
+					bIsWPFiles = LineItem.MountPak.Contains(TEXT("/_Generated_/"));
+				#endif
+					if(!bIsWPFiles && UFlibPatchParserHelper::GetCookedUassetExtensions().Contains(Extersion))
 					{
 						if(UFlibPatchParserHelper::GetUnCookUassetExtensions().Contains(Extersion))
 						{

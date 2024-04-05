@@ -130,7 +130,7 @@ namespace PatchWorker
 			{
 				TArray<FString> IgnoreFilters  = UFlibAssetManageHelper::DirectoriesToStrings(Context.GetSettingObject()->GetAssetIgnoreFilters());
 				TArray<FString> ForceSkipFilters = UFlibAssetManageHelper::DirectoriesToStrings(Context.GetSettingObject()->GetForceSkipContentRules());
-				TArray<FString> ForceSkipAssets = UFlibAssetManageHelper::SoftObjectPathsToStrings(Context.GetSettingObject()->GetForceSkipAssets());
+				TSet<FString> ForceSkipAssets = UFlibAssetManageHelper::SoftObjectPathsToStringsSet(Context.GetSettingObject()->GetForceSkipAssets());
 				TSet<FName> ForceSkipTypes = UFlibAssetManageHelper::GetClassesNames(Context.GetSettingObject()->GetForceSkipClasses());
 				
 				TArray<FAssetDetail> TrackerAssetDetails;
@@ -386,15 +386,15 @@ namespace PatchWorker
 		SCOPED_NAMED_EVENT_TEXT("PatchRequireChekerWorker",FColor::Red);
 		bool result = true;
 		TimeRecorder CheckRequireTR(TEXT("Check Patch Require"));
-		FString ReceiveMsg;
-		if (!Context.GetSettingObject()->IsCookPatchAssets() &&
-			!UFlibHotPatcherCoreHelper::CheckPatchRequire(
-			Context.GetSettingObject()->GetStorageCookedDir(),
-			Context.VersionDiff,Context.GetSettingObject()->GetPakTargetPlatformNames(), ReceiveMsg))
-		{
-			Context.OnShowMsg.Broadcast(ReceiveMsg);
-			result = false;
-		}
+		// FString ReceiveMsg;
+		// if (!Context.GetSettingObject()->IsCookPatchAssets() &&
+		// 	!UFlibHotPatcherCoreHelper::CheckPatchRequire(
+		// 	Context.GetSettingObject()->GetStorageCookedDir(),
+		// 	Context.VersionDiff,Context.GetSettingObject()->GetPakTargetPlatformNames(), ReceiveMsg))
+		// {
+		// 	Context.OnShowMsg.Broadcast(ReceiveMsg);
+		// 	result = false;
+		// }
 		return result;
 	};
 
@@ -538,7 +538,7 @@ namespace PatchWorker
 				{
 					FString ChunkSavedDir = Context.GetSettingObject()->GetChunkSavedDir(Context.CurrentVersion.VersionId,Context.CurrentVersion.BaseVersionId,Chunk.ChunkName,PlatformName);
 					FString SavePath = FPaths::Combine(ChunkSavedDir,TEXT("Metadatas"),PlatformName);
-					TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath,true);
+					TArray<FString> FoundShaderLibs = UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(PlatformName,SavePath,false);
 		
 					if(Context.PakChunks.Num())
 					{
@@ -635,6 +635,8 @@ namespace PatchWorker
 						EmptySetting.bDisplayConfig = false;
 						EmptySetting.StorageCookedDir = Context.GetSettingObject()->GetStorageCookedDir();//FPaths::Combine(FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()),TEXT("Cooked"));
 
+						EmptySetting.bAccompanyCook = Context.GetSettingObject()->CookAdvancedOptions.bAccompanyCookForShader;
+						
 						FString ChunkSavedDir = Context.GetSettingObject()->GetChunkSavedDir(Context.CurrentVersion.VersionId,Context.CurrentVersion.BaseVersionId,Chunk.ChunkName,PlatformName);
 						EmptySetting.StorageMetadataDir = FPaths::Combine(ChunkSavedDir,TEXT("Metadatas"));
 #if WITH_PACKAGE_CONTEXT
@@ -645,7 +647,7 @@ namespace PatchWorker
 						SingleCookerProxy->AddToRoot();
 						SingleCookerProxy->Init(&EmptySetting);
 						bool bExportStatus = SingleCookerProxy->DoExport();
-						const FCookCluster& AdditionalCluster = SingleCookerProxy->GetPackageTrackerAsCluster();
+						const FCookCluster& AdditionalCluster = SingleCookerProxy->GetPackageTrackerAsCluster(false);
 						for(const auto& AssetDetail:AdditionalCluster.AssetDetails)
 						{
 							FSoftObjectPath ObjectPath{AssetDetail.PackagePath};

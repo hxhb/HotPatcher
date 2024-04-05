@@ -79,5 +79,5 @@ public:
 	{
 		return BaseDir / FString::Printf(TEXT("ShaderStableInfo-%s-"), *LibraryName) + Platform.ToString() + StableExtension;
 	}
-	
+	static bool RHISupportsNativeShaderLibraries(const FStaticShaderPlatform Platform);
 };

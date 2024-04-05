@@ -177,8 +177,8 @@ public class HotPatcherCore : ModuleRules
 		}
 
 		AddPublicDefinitions("WITH_UE5", Version.MajorVersion > 4);
-		bool bShaderLibraryForUE5 = true;
-		AddPublicDefinitions("WITH_UE5_CUSTOM_SHADERLIB", (Version.MajorVersion > 4) && bShaderLibraryForUE5);
+
+		AddPublicDefinitions("WITH_UE5_BY_COOKCMDLT", (Version.MajorVersion > 4) && true);
 		if (Version.MajorVersion > 4)
 		{
 			PublicIncludePaths.AddRange(new List<string>()
@@ -190,7 +190,7 @@ public class HotPatcherCore : ModuleRules
 		PublicDefinitions.AddRange(new string[]
 		{
 			"TOOL_NAME=\"HotPatcher\"",
-			"CURRENT_VERSION_ID=81",
+			"CURRENT_VERSION_ID=82",
 			"CURRENT_PATCH_ID=0",
 			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
 		});

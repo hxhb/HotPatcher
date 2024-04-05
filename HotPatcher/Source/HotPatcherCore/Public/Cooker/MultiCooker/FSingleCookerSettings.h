@@ -99,6 +99,10 @@ public:
 	bool bCachePlatformDataOnly = false;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker",meta=(EditCondition="bPreGeneratePlatformData && !bCachePlatformDataOnly"))
 	bool bConcurrentSave = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bAllowRegisteAdditionalWorker = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cooker")
+	bool bAccompanyCook = false;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool bDisplayConfig = false;

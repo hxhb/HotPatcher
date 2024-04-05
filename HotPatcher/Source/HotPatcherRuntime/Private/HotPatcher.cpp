@@ -13,6 +13,9 @@ bool GForceSingleThread = (bool)FORCE_SINGLE_THREAD;
 void FHotPatcherRuntimeModule::StartupModule()
 {
 	UE_LOG(LogHotPatcher,Display,TEXT("HotPatcherRuntime StartupModule"));
+#if AUTOLOAD_SHADERLIB_AT_RUNTIME && !WITH_EDITOR
+	UFlibPakHelper::LoadHotPatcherAllShaderLibrarys();
+#endif
 }
 
 void FHotPatcherRuntimeModule::ShutdownModule()

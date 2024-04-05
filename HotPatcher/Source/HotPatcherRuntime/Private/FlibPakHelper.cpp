@@ -25,6 +25,9 @@
 #include "Misc/CoreDelegates.h"
 #include "Serialization/LargeMemoryReader.h"
 #include "ShaderCodeLibrary.h"
+#include "Misc/EngineVersionComparison.h"
+
+TSet<FName> UFlibPakHelper::LoadShaderLibraryNames;
 
 void UFlibPakHelper::ExecMountPak(FString InPakPath, int32 InPakOrder, FString InMountPoint)
 {
@@ -237,8 +240,12 @@ bool UFlibPakHelper::LoadShaderbytecode(const FString& LibraryName, const FStrin
 		FinalLibraryDir = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*LibraryDir);
 	}
 #endif
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >= 23
-	result = FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
+#if UE_VERSION_NEWER_THAN(4,23,0)
+	result = FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir
+	#if !UE_VERSION_OLDER_THAN(5,3,0)
+	,true
+	#endif
+	);
 #else
 	FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
 #endif
@@ -254,6 +261,85 @@ bool UFlibPakHelper::LoadShaderbytecodeInDefaultDir(const FString& LibraryName)
 void UFlibPakHelper::CloseShaderbytecode(const FString& LibraryName)
 {
 	FShaderCodeLibrary::CloseLibrary(LibraryName);
+}
+
+#if !UE_VERSION_OLDER_THAN(5,2,0)
+#include "DataDrivenShaderPlatformInfo.h"
+#endif
+void UFlibPakHelper::LoadShaderLibrary(const FString& ScanShaderLibs)
+{
+	UE_LOG(LogHotPatcher, Display, TEXT("Searching ShaderLibrary in %s."),*ScanShaderLibs);
+	TArray<FString> ShaderLibFiles;
+	bool bExist = UFlibPakHelper::ScanPlatformDirectory(ScanShaderLibs,true,false,true,ShaderLibFiles);
+	
+	if(bExist)
+	{
+		EShaderPlatform ShaderPlatform = FShaderCodeLibrary::GetRuntimeShaderPlatform();
+		bool bIOSPlatform = ::RHISupportsNativeShaderLibraries(ShaderPlatform);
+		const FString PlatformName = LegacyShaderPlatformToShaderFormat(ShaderPlatform).ToString();
+		// ShaderArchive-Base_EffectTemp-GLSL_ES3_1_ANDROID.ushaderbytecode
+		auto ParseShaderLibName = [](const FString& FileName,const FString& PlatformName)->FString
+		{
+			FString result = FileName;
+			if(result.EndsWith(TEXT(".ushaderbytecode")))
+			{
+				result.RemoveFromStart(TEXT("ShaderArchive-"),ESearchCase::IgnoreCase); // Base_EffectTemp-GLSL_ES3_1_ANDROID.ushaderbytecode
+				result.RemoveFromEnd(TEXT(".ushaderbytecode"),ESearchCase::IgnoreCase); // Base_EffectTemp-GLSL_ES3_1_ANDROID
+				while(result.EndsWith(PlatformName))// Base_EffectTemp
+				{
+					result.RemoveFromEnd(FString::Printf(TEXT("-%s"),*PlatformName),ESearchCase::IgnoreCase);
+				}
+			}
+			if(result.EndsWith(TEXT("_sf_metal.metalmap")))
+			{
+				result.RemoveFromEnd(TEXT("_sf_metal.metalmap"),ESearchCase::IgnoreCase);
+			}
+			return result;
+		};
+		auto IsIOSNativeLib = [](const FString& Filename)->bool
+		{
+			return Filename.EndsWith(TEXT(".metalmap"),ESearchCase::IgnoreCase) ||
+				Filename.EndsWith(TEXT(".metallib"),ESearchCase::IgnoreCase);
+		};
+		auto IsValidShaderLibFile = [](const FString& FileName)->bool
+		{
+			return (FileName.EndsWith(TEXT(".ushaderbytecode")) || FileName.EndsWith(TEXT("_sf_metal.metalmap")));
+		};
+
+		int32 NewShdaerLibCount = 0;
+		for(const auto& File:ShaderLibFiles)
+		{
+			FString Filename = FPaths::GetBaseFilename(File,true) + FPaths::GetExtension(File,true);
+			if(!IsValidShaderLibFile(Filename))
+			{
+				continue;
+			}
+			FString ShaderLibName = ParseShaderLibName(Filename,PlatformName);
+			if(!LoadShaderLibraryNames.Contains(*ShaderLibName))
+			{
+				bool bIsIOSNative = IsIOSNativeLib(Filename);
+				UE_LOG(LogHotPatcher,Log,TEXT("Load Shaderbytecode,file %s,name %s,Platform %s,IsIOSNative %s."),*Filename,*ShaderLibName,*PlatformName,bIsIOSNative?TEXT("true"):TEXT("false"));
+				if(UFlibPakHelper::LoadShaderbytecode(ShaderLibName,ScanShaderLibs,bIsIOSNative))
+				{
+					LoadShaderLibraryNames.Add(*ShaderLibName);
+				}
+				++NewShdaerLibCount;
+			}
+		}
+		UE_LOG(LogHotPatcher, Display, TEXT("Found ShaderLibrary %d in %s."),NewShdaerLibCount,*ScanShaderLibs);
+	}
+}
+
+void UFlibPakHelper::LoadHotPatcherAllShaderLibrarys()
+{
+	LoadShaderLibrary(FPaths::Combine(FPaths::ProjectContentDir(),TEXT("Paks"))); // Content/Psk
+	FString ShaderLibsDir = TEXT("ShaderLibs");
+#if PLATFORM_IOS //  // shdaerlibs
+	ShaderLibsDir = ShaderLibsDir.ToLower();
+#endif
+	LoadShaderLibrary(FPaths::Combine(FPaths::ProjectDir(),ShaderLibsDir)); // ShaderLibs
+	LoadShaderLibrary(FPaths::Combine(FPaths::ProjectContentDir(),ShaderLibsDir)); // shdaerlibs
+	LoadShaderLibrary(FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Paks"))); // Saved/Paks
 }
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26

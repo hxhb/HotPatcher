@@ -12,7 +12,7 @@ struct FAssetDependencies
 	TArray<FPatcherSpecifyAsset> InIncludeSpecifyAsset;
 	// like /Game/EditorOnly /Engine/VREditor
 	TArray<FString> ForceSkipContents;
-	TArray<FString> ForceSkipPackageNames;
+	TSet<FString> ForceSkipPackageNames;
 	TSet<FName> IgnoreAseetTypes;
 	bool bSupportWorldComposition = true;
 	bool bRedirector = true;

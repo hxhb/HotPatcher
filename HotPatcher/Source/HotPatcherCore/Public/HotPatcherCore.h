@@ -3,6 +3,7 @@
 #pragma once
 
 #include "HotPatcherSettings.h"
+#include "Cooker/MultiCooker/FSingleCookerSettings.h"
 // engine header
 #include "CoreMinimal.h"
 
@@ -16,7 +17,9 @@ extern HOTPATCHERCORE_API int32 GToolPatchVersion;
 
 HOTPATCHERCORE_API void ReceiveOutputMsg(class FProcWorkerThread* Worker,const FString& InMsg);
 
+// delegate
 DECLARE_MULTICAST_DELEGATE_TwoParams(FNotificationEvent,FText,const FString&)
+DECLARE_MULTICAST_DELEGATE_OneParam(FSingleCookerAdditionalWorkerRegister,const TSharedPtr<FSingleCookerSettings>&);
 
 
 class HOTPATCHERCORE_API FHotPatcherCoreModule : public IModuleInterface
@@ -28,4 +31,11 @@ public:
 	virtual void ShutdownModule() override;
 	virtual int32 GetMainVersion()const{ return CURRENT_VERSION_ID; }
 	virtual int32 GetPatchVersion()const { return CURRENT_PATCH_ID; }
+
+public:
+	FSingleCookerAdditionalWorkerRegister& GetSingleCookerAdditionalPreWorkerRegister(){ return SingleCookerAdditionalPreWorkerRegister; }
+	FSingleCookerAdditionalWorkerRegister& GetSingleCookerAdditionalPostWorkerRegister(){ return SingleCookerAdditionalPostWorkerRegister; }
+private:
+	FSingleCookerAdditionalWorkerRegister SingleCookerAdditionalPreWorkerRegister;
+	FSingleCookerAdditionalWorkerRegister SingleCookerAdditionalPostWorkerRegister;
 };

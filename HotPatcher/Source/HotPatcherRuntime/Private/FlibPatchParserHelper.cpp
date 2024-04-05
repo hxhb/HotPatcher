@@ -115,6 +115,15 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 		TArray<FString> InBaseAssetModuleKeysList;
 		InBaseVersion.AssetsDependenciesMap.GetKeys(InBaseAssetModuleKeysList);
 
+		auto InsertToDependenciesInfo = [](FAssetDependenciesInfo& OutAssetDependenciesInfo,const FString& InBaseVersionAssetModule,FString LongPackageName,const FAssetDetail& AssetDetail)
+		{
+			if (!OutAssetDependenciesInfo.AssetsDependenciesMap.Contains(InBaseVersionAssetModule))
+			{
+				OutAssetDependenciesInfo.AssetsDependenciesMap.Add(InBaseVersionAssetModule, FAssetDependenciesDetail{ InBaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
+			}
+			OutAssetDependenciesInfo.AssetsDependenciesMap.Find(InBaseVersionAssetModule)->AssetDependencyDetails.Add(LongPackageName, AssetDetail);
+		};
+		
 		// Parser Add new asset
 		for (const auto& NewVersionAssetModule : InNewAssetModuleKeyList)
 		{
@@ -141,24 +150,19 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 					if (!BaseVersionDependAssetsList.Contains(NewAssetItem))
 					{
 						FString BelongModuneName = UFlibAssetManageHelper::GetAssetBelongModuleName(NewAssetItem);
-						if (!OutAddAsset.AssetsDependenciesMap.Contains(BelongModuneName))
-						{
-							OutAddAsset.AssetsDependenciesMap.Add(BelongModuneName, FAssetDependenciesDetail{ BelongModuneName,TMap<FString,FAssetDetail>{} });
-						}
-						TMap<FString, FAssetDetail>& CurrentModuleAssetDetails = OutAddAsset.AssetsDependenciesMap.Find(BelongModuneName)->AssetDependencyDetails;
-						CurrentModuleAssetDetails.Add(NewAssetItem, *NewVersionAssetModuleDetail.Find(NewAssetItem));
+						InsertToDependenciesInfo(OutAddAsset,BelongModuneName,NewAssetItem,*NewVersionAssetModuleDetail.Find(NewAssetItem));
 					}
 				}
 			}	
 		}
 
+		
 		// Parser Modify Asset
 		for (const auto& BaseVersionAssetModule : InBaseAssetModuleKeysList)
 		{
 			const FAssetDependenciesDetail& BaseVersionModuleAssetsDetail = *InBaseVersion.AssetsDependenciesMap.Find(BaseVersionAssetModule);
 			const FAssetDependenciesDetail& NewVersionModuleAssetsDetail = *InNewVersion.AssetsDependenciesMap.Find(BaseVersionAssetModule);
-
-
+			
 			if (InNewVersion.AssetsDependenciesMap.Contains(BaseVersionAssetModule))
 			{
 				TArray<FString> BeseVersionCurrentModuleAssetListKeys;
@@ -170,22 +174,14 @@ bool UFlibPatchParserHelper::DiffVersionAssets(
 					const FAssetDetail* NewVersionAssetDetail = NewVersionModuleAssetsDetail.AssetDependencyDetails.Find(AssetItem);
 					if (!NewVersionAssetDetail)
 					{
-						if (!OutDeleteAsset.AssetsDependenciesMap.Contains(BaseVersionAssetModule))
-						{
-							OutDeleteAsset.AssetsDependenciesMap.Add(BaseVersionAssetModule, FAssetDependenciesDetail{ BaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
-						}
-						OutDeleteAsset.AssetsDependenciesMap.Find(BaseVersionAssetModule)->AssetDependencyDetails.Add(AssetItem, *BaseVersionAssetDetail);
+						InsertToDependenciesInfo(OutDeleteAsset,BaseVersionAssetModule,AssetItem,*BaseVersionAssetDetail);
 						continue;
 					}
 
 					if (!(*NewVersionAssetDetail == *BaseVersionAssetDetail))
 					{
 						UE_LOG(LogHotPatcher,Display,TEXT("Modify Asset: %s"),*AssetItem);
-						if (!OutModifyAsset.AssetsDependenciesMap.Contains(BaseVersionAssetModule))
-						{
-							OutModifyAsset.AssetsDependenciesMap.Add(BaseVersionAssetModule, FAssetDependenciesDetail{ BaseVersionAssetModule,TMap<FString,FAssetDetail>{} });
-						}
-						OutModifyAsset.AssetsDependenciesMap.Find(BaseVersionAssetModule)->AssetDependencyDetails.Add(AssetItem, *NewVersionAssetDetail);
+						InsertToDependenciesInfo(OutModifyAsset,BaseVersionAssetModule,AssetItem,*NewVersionAssetDetail);
 					}
 				}
 			}
@@ -1030,9 +1026,11 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 	const FExportPatchSettings* PatcheSettings
 )
 {
+	SCOPED_NAMED_EVENT_TEXT("CollectPakCommandByChunk",FColor::Red);
 	TArray<FPakCommand> PakCommands;
 	auto CollectPakCommandsByChunkLambda = [&PakCommands,PatcheSettings](const FPatchVersionDiff& DiffInfo, const FChunkInfo& Chunk, const FString& PlatformName/*, const TArray<FString>& PakOptions*/)
 	{
+		SCOPED_NAMED_EVENT_TEXT("CollectPakCommandsByChunkLambda",FColor::Red);
 		ETargetPlatform Platform;
 		THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
 		TArray<ETargetPlatform> CollectPlatforms = {ETargetPlatform::AllPlatforms};
@@ -1079,8 +1077,9 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 			struct PakCommandReceiver
 			{
 				PakCommandReceiver(TArray<FPakCommand>& InPakCommandsRef,EPatchAssetType InType):PakCommands(InPakCommandsRef),Type(InType){}
-				void operator()(const TArray<FString>& InPakCommand,const TArray<FString>& InIoStoreCommand, const FString& InMountPath,const FString& InLongPackageName)
+				void operator()(const TArray<FString>& InPakCommand,const TArray<FString>& InIoStoreCommand, const FString& InMountPath,const FString& InLongPackageName,FCriticalSection& LockSynchronizationObject)
 				{
+					FScopeLock Lock(&LockSynchronizationObject);
 					FPakCommand CurrentPakCommand;
 					CurrentPakCommand.PakCommands = InPakCommand;
 					CurrentPakCommand.IoStoreCommands = InIoStoreCommand;
@@ -1091,33 +1090,26 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 				}
 				TArray<FPakCommand>& PakCommands;
 				EPatchAssetType Type;
+				;
+		
 			};
-			// auto ReceivePakCommandAssetLambda = [&PakCommands](const TArray<FString>& InPakCommand,const TArray<FString>& InIoStoreCommand, const FString& InMountPath,const FString& InLongPackageName)
-			// {
-			// 	
-			// };
+			
 			PakCommandReceiver AddReceiver(PakCommands,EPatchAssetType::NEW);
 			PakCommandReceiver ModifyReceiver(PakCommands,EPatchAssetType::MODIFY);
 			FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-			TArray<FString> AssetsPakCommands;
 			UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 				ProjectDir,
 				PatcheSettings->GetStorageCookedDir(),
 				PlatformName,
 				ChunkAssetsDescrible.AddAssets,
-				// PakOptions,
-				AssetsPakCommands,
 				AddReceiver,
 				IsIoStoreAssetsLambda
 			);
-			AssetsPakCommands.Empty();
 			UFlibAssetManageHelper::MakePakCommandFromAssetDependencies(
 				ProjectDir,
 				PatcheSettings->GetStorageCookedDir(),
 				PlatformName,
 				ChunkAssetsDescrible.ModifyAssets,
-				// PakOptions,
-				AssetsPakCommands,
 				ModifyReceiver,
 				IsIoStoreAssetsLambda
 			);
@@ -1256,7 +1248,7 @@ void UFlibPatchParserHelper::RunAssetScanner(FAssetScanConfig ScanConfig,FHotPat
 			IgnoreTypes.Add(*Class->GetName());
 		}
 		AssetConfig.ForceSkipContents = UFlibAssetManageHelper::NormalizeContentDirs(AllSkipContents);
-		AssetConfig.ForceSkipPackageNames = UFlibAssetManageHelper::SoftObjectPathsToStrings(ScanConfig.ForceSkipAssets);
+		AssetConfig.ForceSkipPackageNames = UFlibAssetManageHelper::SoftObjectPathsToStringsSet(ScanConfig.ForceSkipAssets);
 	}
 	
 	AssetConfig.bRedirector = true;

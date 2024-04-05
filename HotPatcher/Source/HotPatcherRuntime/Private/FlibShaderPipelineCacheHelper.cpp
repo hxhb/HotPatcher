@@ -11,7 +11,7 @@
 
 bool UFlibShaderPipelineCacheHelper::LoadShaderPipelineCache(const FString& Name)
 {
-	UE_LOG(LogHotPatcher,Display,TEXT("Load Shader pipeline cache %s for platform %d"),*Name,*ShaderPlatformToShaderFormatName(GMaxRHIShaderPlatform).ToString());
+	// UE_LOG(LogHotPatcher,Display,TEXT("Load Shader pipeline cache %s for platform %d"),*Name,*ShaderPlatformToShaderFormatName(GMaxRHIShaderPlatform).ToString());
 #if UE_VERSION_OLDER_THAN(5,1,0)
 	return FShaderPipelineCache::OpenPipelineFileCache(Name,GMaxRHIShaderPlatform);
 #else

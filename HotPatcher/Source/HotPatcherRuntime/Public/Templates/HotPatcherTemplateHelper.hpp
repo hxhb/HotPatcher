@@ -5,6 +5,7 @@
 #include "HAL/PlatformMisc.h"
 #include "Misc/EnumRange.h"
 #include "Resources/Version.h"
+#include "Misc/CommandLine.h"
 
 // cpp standard
 #include <typeinfo>

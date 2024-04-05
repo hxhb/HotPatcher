@@ -209,17 +209,20 @@ TArray<FString> UFlibShaderCodeLibraryHelper::FindCookedShaderLibByPlatform(cons
 	
 	if(PlatfomName.StartsWith(TEXT("IOS"),ESearchCase::IgnoreCase) || PlatfomName.StartsWith(TEXT("Mac"),ESearchCase::IgnoreCase))
 	{
-		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("metallib"),bRecursive));
-		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("metalmap"),bRecursive));
+		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("*.metallib"),bRecursive));
+		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("*.metalmap"),bRecursive));
 	}
 	
 	if(!FoundFiles.Num())
 	{
-		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("ushaderbytecode"),bRecursive));
+		FoundFiles.Append(GetMetalShaderFormatLambda(Directory,TEXT("*.ushaderbytecode"),bRecursive));
 	}
-	for(auto& File:FoundFiles)
+	if(!bRecursive)
 	{
-		File = FPaths::Combine(Directory,File);
+		for(auto& File:FoundFiles)
+		{
+			File = FPaths::Combine(Directory,File);
+		}
 	}
 	return FoundFiles;
 }
@@ -256,6 +259,14 @@ void UFlibShaderCodeLibraryHelper::CleanShaderWorkerDir()
 	{
 		UE_LOG(LogHotPatcher, Warning, TEXT("Could not delete the shader compiler working directory '%s'."), *FPaths::ShaderWorkingDir());
 	}
+}
+
+#if !UE_VERSION_OLDER_THAN(5,2,0)
+#include "DataDrivenShaderPlatformInfo.h"
+#endif
+bool UFlibShaderCodeLibraryHelper::RHISupportsNativeShaderLibraries(const FStaticShaderPlatform Platform)
+{
+	return ::RHISupportsNativeShaderLibraries(Platform);;
 }
 
 void UFlibShaderCodeLibraryHelper::CancelMaterialShaderCompile(UMaterialInterface* MaterialInterface)

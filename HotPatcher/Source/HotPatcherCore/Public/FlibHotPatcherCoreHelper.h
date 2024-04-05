@@ -98,13 +98,7 @@ public:
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
 	#endif
 		const TMap<FName,FString>& CookedPlatformSavePaths,
-		bool bStorageConcurrent,
-		bool bUseCmdletImpl =
-#if WITH_UE5
-		true
-#else
-		false
-#endif
+		bool bStorageConcurrent
 	);
 	
 	static bool CookPackage(
@@ -115,26 +109,23 @@ public:
 		class TMap<FString,FSavePackageContext*> PlatformSavePackageContext,
 #endif
 		const TMap<FName,FString>& CookedPlatformSavePaths,
-		bool bStorageConcurrent,
-		bool bUseCmdletImpl =
-#if WITH_UE5
-		true
-#else
-		false
-#endif
+		bool bStorageConcurrent
 	);
 
+	static bool UseCookCmdlet(UPackage* Package,TMap<ETargetPlatform,ITargetPlatform*> CookPlatforms);
 	static bool RunCmdlet(const FString& CmdletName,const FString& Params,int32& OutRetValue);
 	static bool CookPackagesByCmdlet(
 		const TArray<UPackage*> Packages,
 		TMap<ETargetPlatform,ITargetPlatform*> CookPlatforms,
 		FCookActionCallback CookActionCallback,
-		const TMap<FName,FString>& CookedPlatformSavePaths
+		const TMap<FName,FString>& CookedPlatformSavePaths,
+		bool bSharedMaterialLibrary = false
 	);
 	static bool CookByCmdlet(
 		const TArray<FString>& LongPackageNames,
 		ETargetPlatform TargetPlatform,
-		const FString& SaveToCookedDir = TEXT("")
+		const FString& SaveToCookedDir = TEXT(""),
+		bool bSharedMaterialLibrary = false
 	);
 
 	static void CookChunkAssets(
@@ -298,4 +289,5 @@ public:
 	static void DumpActiveTargetPlatforms();
 	static FString GetPlatformsStr(TArray<ETargetPlatform> Platforms);
 	static FPakCommandItem ParsePakResponseFileLine(const FString& Line);
+	static void CopyDirectoryRecursively(const FString& SourceDirectory, const FString& DestinationDirectory);
 };

@@ -88,8 +88,10 @@ public:
 	static FString PackagePathToLongPackageName(const FString& PackagePath);
 	
 	static FAssetPackageData* GetPackageDataByPackageName(const FString& InPackageName);
-	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerExEx")
+
 	static bool GetAssetPackageGUID(const FString& InPackageName, FName& OutGUID);
+	static bool GetAssetPackageGUID(FAssetDetail& AssetDetail);
+	static bool GetWPWorldGUID(FAssetDetail& AssetDetail);
 
 	static FSoftObjectPath CreateSoftObjectPathByPackage(UPackage* Package);
 	static FName GetAssetTypeByPackage(UPackage* Package);
@@ -140,14 +142,16 @@ public:
 	UFUNCTION(BlueprintPure, BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool CombineAssetsDetailAsFAssetDepenInfo(const TArray<FAssetDetail>& InAssetsDetailList,FAssetDependenciesInfo& OutAssetInfo);
 
-	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
+	static FString GetCookedPathByLongPackageName(	const FString& InProjectAbsDir,const FString& InPlatformName,const FString& InLongPackageName,const FString& OverrideCookedDir);
+	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool ConvLongPackageNameToCookedPath(
 			const FString& InProjectAbsDir,
 			const FString& InPlatformName,
 			const FString& InLongPackageName,
 			TArray<FString>& OutCookedAssetPath,
 			TArray<FString>& OutCookedAssetRelativePath,
-			const FString& OverrideCookedDir
+			const FString& OverrideCookedDir,
+			FCriticalSection& LocalSynchronizationObject
 			);
 	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool MakePakCommandFromAssetDependencies(
@@ -155,9 +159,7 @@ public:
 			const FString& OverrideCookedDir,
 			const FString& InPlatformName,
 			const FAssetDependenciesInfo& InAssetDependencies,
-			//const TArray<FString> &InCookParams,
-			TArray<FString>& OutCookCommand,
-			TFunction<void(const TArray<FString>&,const TArray<FString>&,const FString&,const FString&)> InReceivePakCommand = [](const TArray<FString>&,const TArray<FString>&, const FString&, const FString&) {},
+			TFunction<void(const TArray<FString>&,const TArray<FString>&,const FString&,const FString&,FCriticalSection&)> InReceivePakCommand = [](const TArray<FString>&,const TArray<FString>&, const FString&, const FString&,FCriticalSection&) {},
 			TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset = [](const FString&)->bool{return false;}
 		);
 	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
@@ -166,16 +168,14 @@ public:
 			const FString& OverrideCookedDir,
 			const FString& InPlatformName,
 			const FString& InAssetLongPackageName,
-			//const TArray<FString> &InCookParams,
-			TArray<FString>& OutCookCommand,
-			TFunction<void(const TArray<FString>&, const TArray<FString>&,const FString&, const FString&)>  InReceivePakCommand = [](const TArray<FString>&,const TArray<FString>&, const FString&, const FString&) {},
+			FCriticalSection& LocalSynchronizationObject,
+			TFunction<void(const TArray<FString>&, const TArray<FString>&,const FString&, const FString&,FCriticalSection&)>  InReceivePakCommand = [](const TArray<FString>&,const TArray<FString>&, const FString&, const FString&,FCriticalSection&) {},
 			TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset = [](const FString&)->bool{return false;}
 		);
 	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
 		static bool CombineCookedAssetCommand(
 			const TArray<FString> &InAbsPath,
 			const TArray<FString>& InRelativePath,
-			//const TArray<FString>& InParams,
 			TArray<FString>& OutPakCommand,
 			TArray<FString>& OutIoStoreCommand,
 			TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset = [](const FString&)->bool{return false;}
@@ -218,6 +218,7 @@ public:
 	static void ExcludeContentForAssetDependenciesDetail(FAssetDependenciesInfo& AssetDependencies,const TArray<FString>& ExcludeRules = {TEXT("")},EHotPatcherMatchModEx MatchMod = EHotPatcherMatchModEx::StartWith);
 	
 	static TArray<FString> DirectoriesToStrings(const TArray<FDirectoryPath>& DirectoryPaths);
+	static TSet<FString> SoftObjectPathsToStringsSet(const TArray<FSoftObjectPath>& SoftObjectPaths);
 	static TArray<FString> SoftObjectPathsToStrings(const TArray<FSoftObjectPath>& SoftObjectPaths);
 	static TSet<FName> GetClassesNames(const TArray<UClass*> CLasses);
 	
@@ -262,6 +263,11 @@ public:
 
 	static FString GetAssetPath(const FSoftObjectPath& ObjectPath);
 	static FAssetData GetAssetByObjectPath(FName Path);
+
+	static FString GetBaseFilename(const FString& InPath,ESearchDir::Type SearchMode,bool bRemovePath = true);
+
+	static bool GenerateMD5(const FString& Filename,FName& OutGUID);
+	static bool GenerateMD5(const FString& Filename,FString& OutGUID);
 };
 
 

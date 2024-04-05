@@ -15,7 +15,7 @@ struct HOTPATCHERRUNTIME_API FAssetDependenciesParser : public IAssetDependencie
 		const TSet<FName>& IgnoreTypes,
 		const TArray<FString>& IgnoreFilters,
 		TArray<FString> ForceSkipFilters,
-		const TArray<FString>& ForceSkipPackageNames, bool bDispalyLog
+		const TSet<FString>& ForceSkipPackageNames, bool bDispalyLog
 	);
 	
 	TSet<FName> GatherAssetDependicesInfoRecursively(
@@ -25,7 +25,7 @@ struct HOTPATCHERRUNTIME_API FAssetDependenciesParser : public IAssetDependencie
 		bool bRecursively,
 		const TArray<FString>& IgnoreDirectories,
 		const TArray<FString>& ForceSkipDirectories,
-		const TArray<FString>& IgnorePackageNames,
+		const TSet<FString>& IgnorePackageNames,
 		const TSet<FName>& IgnoreAssetTypes, FScanedCachesType& InScanedCaches
 	);
 protected:
