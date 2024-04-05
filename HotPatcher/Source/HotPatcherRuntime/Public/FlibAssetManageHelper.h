@@ -88,8 +88,10 @@ public:
 	static FString PackagePathToLongPackageName(const FString& PackagePath);
 	
 	static FAssetPackageData* GetPackageDataByPackageName(const FString& InPackageName);
-	UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManagerExEx")
+
 	static bool GetAssetPackageGUID(const FString& InPackageName, FName& OutGUID);
+	static bool GetAssetPackageGUID(FAssetDetail& AssetDetail);
+	static bool GetWPWorldGUID(FAssetDetail& AssetDetail);
 
 	static FSoftObjectPath CreateSoftObjectPathByPackage(UPackage* Package);
 	static FName GetAssetTypeByPackage(UPackage* Package);
@@ -263,6 +265,9 @@ public:
 	static FAssetData GetAssetByObjectPath(FName Path);
 
 	static FString GetBaseFilename(const FString& InPath,ESearchDir::Type SearchMode,bool bRemovePath = true);
+
+	static bool GenerateMD5(const FString& Filename,FName& OutGUID);
+	static bool GenerateMD5(const FString& Filename,FString& OutGUID);
 };
 
 
