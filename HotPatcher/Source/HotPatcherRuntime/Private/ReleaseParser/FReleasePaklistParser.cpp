@@ -56,7 +56,7 @@ void FReleasePaklistParser::Parser(TSharedPtr<FReleaseParserConf> ParserConf, EH
 					FString Extersion = FPaths::GetExtension(LineItem.MountPak,true);
 					bool bIsWPFiles = false;
 				#if UE_VERSION_NEWER_THAN(5,0,0)
-					bIsWPFiles = MountFile.Contains(TEXT("/_Generated_/"));
+					bIsWPFiles = LineItem.MountPak.Contains(TEXT("/_Generated_/"));
 				#endif
 					if(!bIsWPFiles && UFlibPatchParserHelper::GetCookedUassetExtensions().Contains(Extersion))
 					{
