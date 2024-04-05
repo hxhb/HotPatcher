@@ -261,6 +261,14 @@ void UFlibShaderCodeLibraryHelper::CleanShaderWorkerDir()
 	}
 }
 
+#if !UE_VERSION_OLDER_THAN(5,2,0)
+#include "DataDrivenShaderPlatformInfo.h"
+#endif
+bool UFlibShaderCodeLibraryHelper::RHISupportsNativeShaderLibraries(const FStaticShaderPlatform Platform)
+{
+	return RHISupportsNativeShaderLibraries(Platform);;
+}
+
 void UFlibShaderCodeLibraryHelper::CancelMaterialShaderCompile(UMaterialInterface* MaterialInterface)
 {
 	if(MaterialInterface)
