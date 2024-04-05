@@ -145,7 +145,8 @@ bool UFlibAssetManageHelper::GetAssetPackageGUID(FAssetDetail& AssetDetail)
 	if(!GetWPWorldGUID(AssetDetail))
 #endif
 	{
-		return GetAssetPackageGUID(AssetDetail.PackagePath.ToString(),AssetDetail.Guid);
+		FSoftObjectPath PackagePath(AssetDetail.PackagePath);
+		return GetAssetPackageGUID(PackagePath.GetLongPackageName(),AssetDetail.Guid);
 	}
 	return false;
 }
