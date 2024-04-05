@@ -266,7 +266,7 @@ void UFlibShaderCodeLibraryHelper::CleanShaderWorkerDir()
 #endif
 bool UFlibShaderCodeLibraryHelper::RHISupportsNativeShaderLibraries(const FStaticShaderPlatform Platform)
 {
-	return RHISupportsNativeShaderLibraries(Platform);;
+	return ::RHISupportsNativeShaderLibraries(Platform);;
 }
 
 void UFlibShaderCodeLibraryHelper::CancelMaterialShaderCompile(UMaterialInterface* MaterialInterface)

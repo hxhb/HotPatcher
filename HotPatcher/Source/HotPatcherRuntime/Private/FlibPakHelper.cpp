@@ -240,8 +240,12 @@ bool UFlibPakHelper::LoadShaderbytecode(const FString& LibraryName, const FStrin
 		FinalLibraryDir = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*LibraryDir);
 	}
 #endif
-#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION >= 23
-	result = FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
+#if UE_VERSION_NEWER_THAN(4,23,0)
+	result = FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir
+	#if !UE_VERSION_OLDER_THAN(5,3,0)
+	,true
+	#endif
+	);
 #else
 	FShaderCodeLibrary::OpenLibrary(LibraryName, LibraryDir);
 #endif
@@ -271,7 +275,7 @@ void UFlibPakHelper::LoadShaderLibrary(const FString& ScanShaderLibs)
 	if(bExist)
 	{
 		EShaderPlatform ShaderPlatform = FShaderCodeLibrary::GetRuntimeShaderPlatform();
-		bool bIOSPlatform = RHISupportsNativeShaderLibraries(ShaderPlatform);
+		bool bIOSPlatform = ::RHISupportsNativeShaderLibraries(ShaderPlatform);
 		const FString PlatformName = LegacyShaderPlatformToShaderFormat(ShaderPlatform).ToString();
 		// ShaderArchive-Base_EffectTemp-GLSL_ES3_1_ANDROID.ushaderbytecode
 		auto ParseShaderLibName = [](const FString& FileName,const FString& PlatformName)->FString
@@ -281,7 +285,10 @@ void UFlibPakHelper::LoadShaderLibrary(const FString& ScanShaderLibs)
 			{
 				result.RemoveFromStart(TEXT("ShaderArchive-"),ESearchCase::IgnoreCase); // Base_EffectTemp-GLSL_ES3_1_ANDROID.ushaderbytecode
 				result.RemoveFromEnd(TEXT(".ushaderbytecode"),ESearchCase::IgnoreCase); // Base_EffectTemp-GLSL_ES3_1_ANDROID
-				result.RemoveFromEnd(FString::Printf(TEXT("-%s"),*PlatformName),ESearchCase::IgnoreCase); // // Base_EffectTemp
+				while(result.EndsWith(PlatformName))// Base_EffectTemp
+				{
+					result.RemoveFromEnd(FString::Printf(TEXT("-%s"),*PlatformName),ESearchCase::IgnoreCase);
+				}
 			}
 			if(result.EndsWith(TEXT("_sf_metal.metalmap")))
 			{
