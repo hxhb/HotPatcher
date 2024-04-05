@@ -495,7 +495,9 @@ UE_TRACE_EVENT_BEGIN(CUSTOM_LOADTIMER_LOG, CookPackage, NoSync)
 UE_TRACE_EVENT_END()
 #endif
 
+#if !UE_VERSION_OLDER_THAN(5,1,0)
 #include "UObject/ArchiveCookContext.h"
+#endif
 
 bool UFlibHotPatcherCoreHelper::CookPackage(
 	UPackage* Package,
@@ -690,6 +692,7 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 bool UFlibHotPatcherCoreHelper::UseCookCmdlet(UPackage* Package, TMap<ETargetPlatform, ITargetPlatform*> CookPlatforms)
 {
 	bool bUse = false;
+#if WITH_UE5_BY_COOKCMDLT
 	if(IsValid(Package))
 	{
 		bool bPackageIsMap = Package->ContainsMap();
@@ -697,6 +700,7 @@ bool UFlibHotPatcherCoreHelper::UseCookCmdlet(UPackage* Package, TMap<ETargetPla
 		bool bIsWP = World ? World->IsPartitionedWorld(): false;
 		bUse = (bPackageIsMap && World && bIsWP);
 	}
+#endif
 	return bUse;
 }
 
