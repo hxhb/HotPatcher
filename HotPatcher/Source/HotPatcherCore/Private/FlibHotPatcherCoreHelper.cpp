@@ -508,7 +508,10 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	bool bStorageConcurrent
 )
 {
-	// FPackageLocalizationManager::Get().ConditionalUpdateCache();
+	if(!bStorageConcurrent)
+	{
+		FPackageLocalizationManager::Get().ConditionalUpdateCache();
+	}
 #if WITH_UE5_BY_COOKCMDLT
 	if(UseCookCmdlet(Package,CookPlatforms))
 	{
