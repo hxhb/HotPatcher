@@ -141,7 +141,9 @@ bool UFlibAssetManageHelper::GetAssetPackageGUID(const FString& InPackageName, F
 bool UFlibAssetManageHelper::GetAssetPackageGUID(FAssetDetail& AssetDetail)
 {
 	// for WP
+#if UE_VERSION_NEWER_THAN(5,0,0)
 	if(!GetWPWorldGUID(AssetDetail))
+#endif
 	{
 		return GetAssetPackageGUID(AssetDetail.PackagePath.ToString(),AssetDetail.Guid);
 	}
@@ -220,7 +222,6 @@ FName UFlibAssetManageHelper::GetAssetTypeByPackage(UPackage* Package)
 {
 	return UFlibAssetManageHelper::GetAssetType(CreateSoftObjectPathByPackage(Package));
 }
-
 
 FAssetDependenciesInfo UFlibAssetManageHelper::CombineAssetDependencies(const FAssetDependenciesInfo& A, const FAssetDependenciesInfo& B)
 {
