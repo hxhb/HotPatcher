@@ -2498,7 +2498,7 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 	{
 		SCOPED_NAMED_EVENT_TEXT("FlushAsyncLoading And WaitingAsyncTasks",FColor::Red);
 		FlushAsyncLoading();
-		UE_LOG(LogHotPatcherCoreHelper, Display, TEXT("Waiting for async tasks..."));
+		UE_LOG(LogHotPatcherCoreHelper, Verbose, TEXT("Waiting for async tasks..."));
 		FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
 	}
 	
