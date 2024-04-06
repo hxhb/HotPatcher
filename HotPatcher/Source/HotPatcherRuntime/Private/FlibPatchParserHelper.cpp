@@ -620,7 +620,7 @@ TArray<FString> UFlibPatchParserHelper::GetEnabledPluginConfigs(const FString& I
 }
 
 
-TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys)
+TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys,EHashCalculator HashCalculator)
 {
 	TArray<FExternFileInfo> result;
 
@@ -649,8 +649,9 @@ TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const
 
 					FExternFileInfo CurrentFile;
 					CurrentFile.FilePath.FilePath = File;
-
 					CurrentFile.MountPath = RelativeMountPointPath;
+					CurrentFile.GenerateFileHash(HashCalculator);
+					
 					bool bCanAdd = true;
 					if(bWildcard)
 					{

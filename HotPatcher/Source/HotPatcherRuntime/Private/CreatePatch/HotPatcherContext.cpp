@@ -98,6 +98,24 @@ FPlatformExternAssets* FHotPatcherPatchContext::GetPatcherChunkInfoByName(const 
 	}
 }
 
+bool FHotPatcherPatchContext::IsContainInBase(const FString& PlatformName, const FExternFileInfo& AddFile)
+{
+	SCOPED_NAMED_EVENT_TEXT("IsContainInBase",FColor::Red);
+	bool bContain = false;
+	ETargetPlatform Platform;
+	THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
+	const FPlatformExternFiles& BaseVersionExternFiles = UFlibPatchParserHelper::GetAllExFilesByPlatform(BaseVersion.PlatformAssets[Platform],false,GetSettingObject()->GetHashCalculator());
+	for(const auto& BaseFile:BaseVersionExternFiles.ExternFiles)
+	{
+		if(BaseFile.IsSameMount(AddFile))
+		{
+			bContain = true;
+			break;
+		}
+	}
+	return bContain;
+}
+
 bool FHotPatcherPatchContext::AddAsset(const FString ChunkName, const FAssetDetail& AssetDetail)
 {
 	SCOPED_NAMED_EVENT_TEXT("FHotPatcherPatchContext::AddAsset",FColor::Red);

@@ -119,12 +119,15 @@ struct HOTPATCHERRUNTIME_API FHotPatcherPatchContext:public FHotPatcherContext
     }
     FPakFilesMap PakFilesInfoMap;
 
-    void AddExternalFile(const FString& PlatformName,const FString& ChunkName,const FExternFileInfo& AddShaderLib)
+    void AddExternalFile(const FString& PlatformName,const FString& ChunkName,const FExternFileInfo& AddFile)
     {
-        GetPatcherDiffInfoByName(PlatformName)->AddExternalFiles.Add(AddShaderLib);
-        GetPatcherChunkInfoByName(PlatformName,ChunkName)->AddExternFileToPak.Add(AddShaderLib);
+        if(!IsContainInBase(PlatformName,AddFile))
+        {
+            GetPatcherDiffInfoByName(PlatformName)->AddExternalFiles.Add(AddFile);
+            GetPatcherChunkInfoByName(PlatformName,ChunkName)->AddExternFileToPak.Add(AddFile); 
+        }
     }
-
+    bool IsContainInBase(const FString& PlatformName,const FExternFileInfo& AddFile);
     bool AddAsset(const FString ChunkName, const FAssetDetail& AssetDetail);
 };
 

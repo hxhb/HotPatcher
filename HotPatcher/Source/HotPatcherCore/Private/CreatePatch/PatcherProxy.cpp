@@ -561,6 +561,7 @@ namespace PatchWorker
 									UFlibPatchParserHelper::ParserMountPointRegular(Chunk.CookShaderOptions.GetShaderLibMountPointRegular()),
 									FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion)
 									);
+								AddShaderLib.GenerateFileHash(Context.GetSettingObject()->GetHashCalculator());
 							}
 							Context.AddExternalFile(PlatformName,Chunk.ChunkName,AddShaderLib);
 						}
@@ -668,7 +669,7 @@ namespace PatchWorker
 						SingleCookerProxy->Shutdown();
 						SingleCookerProxy->RemoveFromRoot();
 
-#if WITH_UE5 // add WP additional
+#if WITH_UE5_BY_COOKCMDLT // add WP additional
 						TSet<FName> WorldPackages;
 						int32 Size = ChunkAssets.Num();
 						FCriticalSection	LocalSynchronizationObject;
@@ -701,7 +702,7 @@ namespace PatchWorker
 							}
 							if(FPaths::DirectoryExists(DirectoryInfo.DirectoryPath.Path))
 							{
-								const TArray<FExternFileInfo>& WPAdditional = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(TArray<FExternDirectoryInfo>{DirectoryInfo});
+								const TArray<FExternFileInfo>& WPAdditional = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(TArray<FExternDirectoryInfo>{DirectoryInfo},Context.GetSettingObject()->GetHashCalculator());
 								for(const auto& WPAdditionalFile:WPAdditional)
 								{
 									Context.AddExternalFile(PlatformName,Chunk.ChunkName,WPAdditionalFile);

@@ -126,7 +126,7 @@ public:
 	static TArray<FString> GetEnabledPluginConfigs(const FString& InPlatformName);
 
 
-	static TArray<FExternFileInfo> ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys);
+	static TArray<FExternFileInfo> ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys,EHashCalculator HashCalculator);
 	static TArray<FAssetDetail> ParserExFilesInfoAsAssetDetailInfo(const TArray<FExternFileInfo>& InExFiles);
 
 	// get Engine / Project / Plugin ini files
