@@ -61,10 +61,13 @@ void FReleasePakParser::Parser(TSharedPtr<FReleaseParserConf> ParserConf, EHashC
 			FString FinalFilePath = FPaths::Combine(ModuleAbsPath,RelativePath);
 			FPaths::NormalizeFilename(FinalFilePath);
 			FinalFilePath = FinalFilePath.Replace(TEXT("//"),TEXT("/"));
-			currentFile.FilePath.FilePath = FinalFilePath;
-			currentFile.MountPath = MountFile;
-			currentFile.GenerateFileHash(HashCalculator);
-			result.ExternFiles.AddUnique(currentFile);
+			if(FPaths::FileExists(FinalFilePath))
+			{
+				currentFile.SetFilePath(FinalFilePath);
+				currentFile.MountPath = MountFile;
+				currentFile.GenerateFileHash(HashCalculator);
+				result.ExternFiles.AddUnique(currentFile);
+			}
 		}
 	}
 }

@@ -107,12 +107,12 @@ bool FHotPatcherPatchContext::IsContainInBase(const FString& PlatformName, const
 {
 	SCOPED_NAMED_EVENT_TEXT("IsContainInBase",FColor::Red);
 	bool bContain = false;
-	if(BaseVersion.PlatformAssets.IsEmpty())
+	ETargetPlatform Platform;
+	THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
+	if(!BaseVersion.PlatformAssets.Contains(Platform))
 	{
 		return false;
 	}
-	ETargetPlatform Platform;
-	THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
 	const FPlatformExternFiles& BaseVersionExternFiles = UFlibPatchParserHelper::GetAllExFilesByPlatform(BaseVersion.PlatformAssets[Platform],false,GetSettingObject()->GetHashCalculator());
 	for(const auto& BaseFile:BaseVersionExternFiles.ExternFiles)
 	{

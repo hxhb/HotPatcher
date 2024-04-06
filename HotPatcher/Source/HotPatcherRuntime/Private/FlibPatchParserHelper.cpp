@@ -304,11 +304,11 @@ FPlatformExternFiles UFlibPatchParserHelper::GetAllExFilesByPlatform(
 	for (auto& ExFile : InPlatformConf.AddExternFileToPak)
 	{
 		// ignore FPaths::FileExists(ExFile.FilePath.FilePath) 
-		if (!ExFile.FilePath.FilePath.IsEmpty() && !result.ExternFiles.Contains(ExFile))
+		if (!ExFile.GetReplaceMarkdFilePath().IsEmpty() && !result.ExternFiles.Contains(ExFile))
 		{
 			FExternFileInfo CurrentFile = ExFile;
-			CurrentFile.FilePath.FilePath = UFlibPatchParserHelper::ReplaceMarkPath(ExFile.FilePath.FilePath);
-			CurrentFile.MountPath = ExFile.MountPath;
+			// CurrentFile.FilePath.FilePath = UFlibPatchParserHelper::ReplaceMarkPath(ExFile.FilePath.FilePath);
+			// CurrentFile.MountPath = ExFile.MountPath;
 			if (InGeneratedHash)
 			{
 				CurrentFile.GenerateFileHash(HashCalculator);
@@ -645,7 +645,7 @@ TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const
 					FPaths::MakeStandardFilename(RelativeMountPointPath);
 
 					FExternFileInfo CurrentFile;
-					CurrentFile.FilePath.FilePath = File;
+					CurrentFile.SetFilePath(File);
 					CurrentFile.MountPath = RelativeMountPointPath;
 					if(InGeneratedHash)
 					{
@@ -949,9 +949,9 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 						if (!Directory.DirectoryPath.Path.IsEmpty())
 							AllSearchFileFilter.Add(UFlibPatchParserHelper::ReplaceMarkPath(Directory.DirectoryPath.Path));
 					}
-					for (const auto& File : Chunk.AddExternAssetsToPlatform[PlatformIndex].AddExternFileToPak)
+					for (const FExternFileInfo& File : Chunk.AddExternAssetsToPlatform[PlatformIndex].AddExternFileToPak)
 					{
-						AllSearchFileFilter.Add(UFlibPatchParserHelper::ReplaceMarkPath(File.FilePath.FilePath));
+						AllSearchFileFilter.Add(File.GetReplaceMarkdFilePath());
 					}
 				}
 			}
@@ -971,7 +971,7 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 			{
 				for (const auto& SearchItem : SearchBase)
 				{
-					if (SearchItem.FilePath.FilePath.StartsWith(Filter))
+					if (SearchItem.GetReplaceMarkdFilePath().StartsWith(Filter))
 					{
 						FExternFileInfo FileItem = SearchItem;
 						FileItem.Type = Type;
@@ -1135,7 +1135,7 @@ TArray<FPakCommand> UFlibPatchParserHelper::CollectPakCommandByChunk(
 				// 	PakOptionsStr += TEXT(" ") + Param;
 				// }
 				
-				CurrentPakCommand.PakCommands = TArray<FString>{ FString::Printf(TEXT("\"%s\" \"%s\""), *CollectFile.FilePath.FilePath, *CollectFile.MountPath/*,*PakOptionsStr*/) };
+				CurrentPakCommand.PakCommands = TArray<FString>{ FString::Printf(TEXT("\"%s\" \"%s\""), *CollectFile.GetReplaceMarkdFilePath(), *CollectFile.MountPath/*,*PakOptionsStr*/) };
 				CurrentPakCommand.Type = CollectFile.Type;
 				PakCommands.Add(CurrentPakCommand);
 			}
@@ -1558,7 +1558,7 @@ void UFlibPatchParserHelper::ReplacePatherSettingProjectDir(TArray<FPlatformExte
 	{
 		for(auto& ExFile:ExPlatform.AddExternFileToPak)
 		{
-			ExFile.FilePath.FilePath = UFlibPatchParserHelper::ReplaceMarkPath(ExFile.FilePath.FilePath);
+			ExFile.SetFilePath(ExFile.GetFilePath());
 		}
 		for(auto& ExDir:ExPlatform.AddExternDirectoryToPak)
 		{

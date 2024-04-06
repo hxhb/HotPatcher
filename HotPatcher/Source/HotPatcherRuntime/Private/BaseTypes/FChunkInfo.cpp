@@ -117,7 +117,7 @@ TArray<FName> FChunkAssetDescribe::GetExternalFileNames(ETargetPlatform Platform
 		TArray<FName> result;
 		for (const auto& File : InFiles)
 		{
-			result.AddUnique(FName(*File.FilePath.FilePath));
+			result.AddUnique(FName(*File.GetFilePath()));
 		}
 		return result;
 	};

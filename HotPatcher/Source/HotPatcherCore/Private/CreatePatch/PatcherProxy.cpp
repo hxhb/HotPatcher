@@ -556,7 +556,7 @@ namespace PatchWorker
 								FString FileExtersion = FPaths::GetExtension(FilePath,false);
 									
 								AddShaderLib.Type = EPatchAssetType::NEW;
-								AddShaderLib.FilePath.FilePath = FPaths::ConvertRelativePathToFull(FilePath);
+								AddShaderLib.SetFilePath(FPaths::ConvertRelativePathToFull(FilePath));
 								AddShaderLib.MountPath = FPaths::Combine(
 									UFlibPatchParserHelper::ParserMountPointRegular(Chunk.CookShaderOptions.GetShaderLibMountPointRegular()),
 									FString::Printf(TEXT("%s.%s"),*FileName,*FileExtersion)
@@ -745,7 +745,7 @@ namespace PatchWorker
 					{
 						FExternFileInfo AssetRegistryFileInfo;
 						AssetRegistryFileInfo.Type = EPatchAssetType::NEW;
-						AssetRegistryFileInfo.FilePath.FilePath = AssetRegistryPath;
+						AssetRegistryFileInfo.SetFilePath(AssetRegistryPath);
 						AssetRegistryFileInfo.MountPath = FPaths::Combine(
 							UFlibPatchParserHelper::ParserMountPointRegular(Context.GetSettingObject()->GetSerializeAssetRegistryOptions().GetAssetRegistryMountPointRegular())
 							,ChunkAssetRegistryName

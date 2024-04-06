@@ -10,5 +10,16 @@ FString FExternFileInfo::GenerateFileHash(EHashCalculator HashCalculator)
 
 FString FExternFileInfo::GetFileHash(EHashCalculator HashCalculator)const
 {
-	return UFlibPatchParserHelper::FileHash(FilePath.FilePath,HashCalculator);
+	return UFlibPatchParserHelper::FileHash(GetReplaceMarkdFilePath(),HashCalculator);
+}
+
+FString FExternFileInfo::GetReplaceMarkdFilePath() const
+{
+	return UFlibPatchParserHelper::ReplaceMark(FilePath.FilePath);
+}
+
+
+void FExternFileInfo::SetFilePath(const FString& InFilePath)
+{
+	FilePath.FilePath = UFlibPatchParserHelper::MakeMark(InFilePath);
 }

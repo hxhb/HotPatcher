@@ -85,7 +85,7 @@ void FReleasePaklistParser::Parser(TSharedPtr<FReleaseParserConf> ParserConf, EH
 					{
 						// is not-uasset
 						FExternFileInfo ExFile;
-						ExFile.FilePath.FilePath = LineItem.AbsPath;
+						ExFile.SetFilePath(LineItem.AbsPath);
 						ExFile.MountPath = LineItem.MountPak;
 						ExFile.GenerateFileHash(HashCalculator);
 						result.ExternFiles.AddUnique(ExFile);

@@ -27,18 +27,6 @@ public:
 	FExternFileInfo(const FExternFileInfo&) = default;
 	FExternFileInfo& operator=(const FExternFileInfo&) = default;
 
-	FString GenerateFileHash(EHashCalculator HashCalculator = EHashCalculator::MD5);
-	FString GetFileHash(EHashCalculator HashCalculator = EHashCalculator::MD5)const;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion", meta = (RelativeToGameContentDir))
-		FFilePath FilePath;
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-		FString MountPath = TEXT("../../../");
-	UPROPERTY()
-		FString FileHash;
-
-		EPatchAssetType Type = EPatchAssetType::None;
-
 	bool operator==(const FExternFileInfo& Right)const
 	{
 		return MountPath == Right.MountPath;
@@ -53,9 +41,26 @@ public:
 	
 	bool IsAbsSame(const FExternFileInfo& Right)const
 	{
-		bool bIsSamePath = (FilePath.FilePath == Right.FilePath.FilePath);
+		bool bIsSamePath = (GetFilePath() == Right.GetFilePath());
 		bool IsSameHash = (FileHash == Right.FileHash);
 		return (*this == Right) && bIsSamePath &&  IsSameHash;
 	}
+	
+	FString GenerateFileHash(EHashCalculator HashCalculator = EHashCalculator::MD5);
+	FString GetFileHash(EHashCalculator HashCalculator = EHashCalculator::MD5)const;
+	FString GetReplaceMarkdFilePath()const;
+	FString GetFilePath()const{ return FilePath.FilePath; }
+	void SetFilePath(const FString& InFilePath);
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseVersion", meta = (RelativeToGameContentDir))
+		FFilePath FilePath;
+public:
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+		FString MountPath = TEXT("../../../");
+	UPROPERTY()
+		FString FileHash;
+		EPatchAssetType Type = EPatchAssetType::None;
+
 
 };
+
