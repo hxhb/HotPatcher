@@ -28,20 +28,13 @@ void FHotPatcherSettingBase::Init()
 
 TArray<FExternFileInfo> FHotPatcherSettingBase::GetAllExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash)
 {
-	TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectoryByPlatform(InTargetPlatform));
+	TArray<FExternFileInfo> AllExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(GetAddExternDirectoryByPlatform(InTargetPlatform),HashCalculator,InGeneratedHash);
 	
-	for (auto& ExFile : GetAddExternFilesByPlatform(InTargetPlatform))
+	for (auto& ExFile : GetAddExternFilesByPlatform(InTargetPlatform,InGeneratedHash))
 	{
 		if (!AllExternFiles.Contains(ExFile))
 		{
 			AllExternFiles.Add(ExFile);
-		}
-	}
-	if (InGeneratedHash)
-	{
-		for (auto& ExFile : AllExternFiles)
-		{
-			ExFile.GenerateFileHash(GetHashCalculator());
 		}
 	}
 	return AllExternFiles;
@@ -59,7 +52,7 @@ TMap<ETargetPlatform,FPlatformExternFiles> FHotPatcherSettingBase::GetAllPlatfot
 	return result;
 }
 	
-TArray<FExternFileInfo> FHotPatcherSettingBase::GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform)
+TArray<FExternFileInfo> FHotPatcherSettingBase::GetAddExternFilesByPlatform(ETargetPlatform InTargetPlatform,bool InGeneratedHash)
 {
 	TArray<FExternFileInfo> result;
 	for(const auto& Platform:GetAddExternAssetsToPlatform())
@@ -69,7 +62,10 @@ TArray<FExternFileInfo> FHotPatcherSettingBase::GetAddExternFilesByPlatform(ETar
 			for(const auto& File:Platform.AddExternFileToPak)
 			{
 				uint32 index = result.Emplace(File);
-				result[index].FilePath.FilePath = UFlibPatchParserHelper::ReplaceMarkPath(File.FilePath.FilePath);
+				if(InGeneratedHash)
+				{
+					result[index].GenerateFileHash(HashCalculator);
+				}
 			}
 		}
 	}

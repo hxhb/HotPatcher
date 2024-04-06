@@ -18,7 +18,7 @@ enum class EHashCalculator
 };
 
 USTRUCT(BlueprintType)
-struct FExternFileInfo
+struct HOTPATCHERRUNTIME_API FExternFileInfo
 {
 	GENERATED_USTRUCT_BODY()
 

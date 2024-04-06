@@ -299,7 +299,7 @@ FPlatformExternFiles UFlibPatchParserHelper::GetAllExFilesByPlatform(
 	const FPlatformExternAssets& InPlatformConf, bool InGeneratedHash, EHashCalculator HashCalculator)
 {
 	FPlatformExternFiles result;
-	result.ExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(InPlatformConf.AddExternDirectoryToPak);
+	result.ExternFiles = UFlibPatchParserHelper::ParserExDirectoryAsExFiles(InPlatformConf.AddExternDirectoryToPak,HashCalculator,InGeneratedHash);
 
 	for (auto& ExFile : InPlatformConf.AddExternFileToPak)
 	{
@@ -309,14 +309,11 @@ FPlatformExternFiles UFlibPatchParserHelper::GetAllExFilesByPlatform(
 			FExternFileInfo CurrentFile = ExFile;
 			CurrentFile.FilePath.FilePath = UFlibPatchParserHelper::ReplaceMarkPath(ExFile.FilePath.FilePath);
 			CurrentFile.MountPath = ExFile.MountPath;
+			if (InGeneratedHash)
+			{
+				CurrentFile.GenerateFileHash(HashCalculator);
+			}
 			result.ExternFiles.Add(CurrentFile);
-		}
-	}
-	if (InGeneratedHash)
-	{
-		for (auto& ExFile : result.ExternFiles)
-		{
-			ExFile.GenerateFileHash(HashCalculator);
 		}
 	}
 	return result;
@@ -620,7 +617,7 @@ TArray<FString> UFlibPatchParserHelper::GetEnabledPluginConfigs(const FString& I
 }
 
 
-TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys,EHashCalculator HashCalculator)
+TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys,EHashCalculator HashCalculator,bool InGeneratedHash)
 {
 	TArray<FExternFileInfo> result;
 
@@ -641,7 +638,7 @@ TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const
 			if (UFlibAssetManageHelper::FindFilesRecursive(DirAbsPath, DirectoryAllFiles, true))
 			{
 				int32 ParentDirectoryIndex = DirAbsPath.Len();
-				for (const auto& File : DirectoryAllFiles)
+				for (const FString& File : DirectoryAllFiles)
 				{
 					FString RelativeParentPath = UKismetStringLibrary::GetSubstring(File, ParentDirectoryIndex, File.Len() - ParentDirectoryIndex);
 					FString RelativeMountPointPath = FPaths::Combine(DirectoryItem.MountPoint, RelativeParentPath);
@@ -650,8 +647,10 @@ TArray<FExternFileInfo> UFlibPatchParserHelper::ParserExDirectoryAsExFiles(const
 					FExternFileInfo CurrentFile;
 					CurrentFile.FilePath.FilePath = File;
 					CurrentFile.MountPath = RelativeMountPointPath;
-					CurrentFile.GenerateFileHash(HashCalculator);
-					
+					if(InGeneratedHash)
+					{
+						CurrentFile.GenerateFileHash(HashCalculator);
+					}
 					bool bCanAdd = true;
 					if(bWildcard)
 					{
@@ -1531,6 +1530,25 @@ FString UFlibPatchParserHelper::ReplaceMarkPath(const FString& Src)
 	FString result = UFlibPatchParserHelper::ReplaceMark(Src);
 	FPaths::MakeStandardFilename(result);
 	result = FPaths::ConvertRelativePathToFull(result);
+	return result;
+}
+
+FString UFlibPatchParserHelper::MakeMark(const FString& Src)
+{
+	TMap<FString,FString> MarkMap = UFlibPatchParserHelper::GetReplacePathMarkMap();
+	TArray<FString> MarkKeys;
+	MarkMap.GetKeys(MarkKeys);
+		
+	FString result = Src;
+	for(const auto& Key:MarkKeys)
+	{
+		FString ReplacedMark = FPaths::ConvertRelativePathToFull(*MarkMap.Find(Key));
+		if(Src.Contains(ReplacedMark))
+		{
+			result = result.Replace(*ReplacedMark,*Key);
+			break;
+		}
+	}
 	return result;
 }
 

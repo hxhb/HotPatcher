@@ -126,7 +126,7 @@ public:
 	static TArray<FString> GetEnabledPluginConfigs(const FString& InPlatformName);
 
 
-	static TArray<FExternFileInfo> ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys,EHashCalculator HashCalculator);
+	static TArray<FExternFileInfo> ParserExDirectoryAsExFiles(const TArray<FExternDirectoryInfo>& InExternDirectorys,EHashCalculator HashCalculator,bool InGeneratedHash = true);
 	static TArray<FAssetDetail> ParserExFilesInfoAsAssetDetailInfo(const TArray<FExternFileInfo>& InExFiles);
 
 	// get Engine / Project / Plugin ini files
@@ -181,6 +181,7 @@ public:
 	static TMap<FString,FString> GetReplacePathMarkMap();
 	static FString ReplaceMark(const FString& Src);
 	static FString ReplaceMarkPath(const FString& Src);
+	static FString MakeMark(const FString& Src);
 	// [PORJECTDIR] to real path
 	static void ReplacePatherSettingProjectDir(TArray<FPlatformExternAssets>& PlatformAssets);
 

@@ -40,6 +40,11 @@ void FPackageTrackerByDiff::OnPackageCreated(UPackage* Package)
 	}
 }
 
+void FHotPatcherPatchContext::Init()
+{
+	FHotPatcherContext::Init();
+}
+
 FPatchVersionExternDiff* FHotPatcherPatchContext::GetPatcherDiffInfoByName(const FString& PlatformName)
 {
 	ETargetPlatform Platform;
@@ -102,6 +107,10 @@ bool FHotPatcherPatchContext::IsContainInBase(const FString& PlatformName, const
 {
 	SCOPED_NAMED_EVENT_TEXT("IsContainInBase",FColor::Red);
 	bool bContain = false;
+	if(BaseVersion.PlatformAssets.IsEmpty())
+	{
+		return false;
+	}
 	ETargetPlatform Platform;
 	THotPatcherTemplateHelper::GetEnumValueByName(PlatformName,Platform);
 	const FPlatformExternFiles& BaseVersionExternFiles = UFlibPatchParserHelper::GetAllExFilesByPlatform(BaseVersion.PlatformAssets[Platform],false,GetSettingObject()->GetHashCalculator());
