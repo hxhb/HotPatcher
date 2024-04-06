@@ -9,7 +9,7 @@ English Document:[README_EN.md](https://github.com/hxhb/HotPatcher/blob/master/R
 
 在热更新领域，HotPatcher可以管理热更版本和资源打包，能够追踪工程版本的原始资源变动。支持资源版本管理、版本间的差异对比和打包、支持导出多平台的基础包信息、方便地Cook和打包多平台的Patch，并提供了数种开箱即用的包体优化方案，支持迭代打包、丰富的配置化选项，全功能的commandlet支持，可以非常方便地与ci/cd平台相集成。全平台、跨引擎版本（UE4.21 ~ UE5）支持。
 
->目前支持的引擎版本为UE4.21-UE5（已支持UE5.1.0），我创建了个群来讨论UE热更新和HotPatcher插件的问题(QQ群958363331)。
+>目前支持的引擎版本为UE4.21-UE5最新版本(5.3.2)，我创建了个群来讨论UE热更新和HotPatcher插件的问题(QQ群958363331)。
 
 插件文档：[UE资源热更打包工具HotPatcher](https://imzlp.com/posts/17590/)
 
@@ -39,14 +39,17 @@ English Document:[README_EN.md](https://github.com/hxhb/HotPatcher/blob/master/R
 - [基于ZSTD字典的Shader压缩方案](https://imzlp.com/posts/24725/)
 - [虚幻引擎中 Pak 的运行时重组方案](https://imzlp.com/posts/12188/)
 - [一种灵活与非侵入式的基础包拆分方案](https://imzlp.com/posts/24350/)
+- [HotPatcher 的模块化改造和开发规划](https://imzlp.com/posts/30178/)
+- [资源管理：重塑 UE 的包拆分方案](https://imzlp.com/posts/37036/)
 
 **基于HotPatcher的资源管理框架**
 
 ![](https://img.imzlp.com/imgs/zlp/picgo/2021/20220526194731.png)
 
 **应用项目**
-|                              QQ                              |                     Apex Legends Mobile                      | MOSSAI 元宇宙 |
-| :----------------------------------------------------------: | :----------------------------------------------------------: | :-------------: |
-| <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/202207280953994.png" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/202207280956642.webp" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2021/20220607171033.png" height="160" width="160" /> |
+
+|                                               元梦之星                                                |                                                  QQ                                                   |                                          Apex Legends Mobile                                          |                                            WitiSports                                             |                                              MOSSAI                                               | 二之国：交错世界|                                                                                       
+| :-----------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------: |
+| <img src="https://img.imzlp.com/imgs/zlp/picgo/2023/12/15/103025.png" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/202207280953994.webp" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/202207280956642.webp" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2023/12/18/122654.png" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2023/12/18/124705.png" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2024/02/28/103324.png" height="160" width="160" /> |
 
 HotPatcher在大量的UE项目中使用，是目前UE社区中最流行的热更新工具。

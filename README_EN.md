@@ -7,7 +7,7 @@ Chinese Document：[README.md](https://github.com/hxhb/HotPatcher/blob/master/RE
 
 [HotPatcher](https://github.com/hxhb/HotPatcher) is a tool for managing hot update versions and resource packaging. It is used to track changes in the original resources of the project version to create patches. Support resource version management, difference comparison and packaging between versions, support exporting basic package information for multiple platforms, easily cook and package multi-platform Patches, support iterative packaging, rich configuration options, full-featured commandlet support, can be combined with ci/cd platform is integrated.
 
->The currently supported engine version is UE4.21-UE5 (UE5.1.0 is supported). I created a group to discuss UE4 hot update and HotPatcher plug-in issues (QQ group 958363331).
+>The currently supported engine version is UE4.21-UE5 (UE5.3.2 is latst supported). I created a group to discuss UE4 hot update and HotPatcher plug-in issues (QQ group 958363331).
 
 Plug-in documentation: [UE4 resource hot update packaging tool HotPatcher](https://imzlp.com/posts/17590/)
 
@@ -36,14 +36,18 @@ The series of UE4 hot update articles I wrote can be used as a reference for eng
 - [Shader compression scheme based on ZSTD dictionary](https://imzlp.com/posts/24725/)
 - [Runtime reorganization scheme for Pak in Unreal Engine](https://imzlp.com/posts/12188/)
 - [A Flexible and Non-Intrusive Basic Package Splitting Scheme](https://imzlp.com/posts/24350/)
+- [HotPatcher Modular Transformation and Development Planning](https://imzlp.com/posts/30178/)
+- [Resource Management: Reshaping UnrealEngine Subcontracting Solution](https://imzlp.com/posts/37036/)
 
 **Resource management framework based on HotPatcher**
 
 ![](https://img.imzlp.com/imgs/zlp/picgo/2021/20220526194731.png)
 
 **Application project**
-|                              QQ                              |                     Apex Legends Mobile                      | MOSSAI|
-| :----------------------------------------------------------: | :----------------------------------------------------------: | :-------------: |
-| <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/202207280953994.png" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/202207280956642.webp" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2021/20220607171033.png" height="160" width="160" /> |
+
+|                                               元梦之星                                                |                                                  QQ                                                   |                                          Apex Legends Mobile                                          |                                            WitiSports                                             |                                              MOSSAI                                               | 二之国：交错世界|                                                                                       
+| :-----------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------: |
+| <img src="https://img.imzlp.com/imgs/zlp/picgo/2023/12/15/103025.png" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/202207280953994.webp" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/202207280956642.webp" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2023/12/18/122654.png" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2023/12/18/124705.png" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2024/02/28/103324.png" height="160" width="160" /> |
+
 
 HotPatcher is used in a large number of UE projects and is currently the most popular hot update tool in the UE community.
