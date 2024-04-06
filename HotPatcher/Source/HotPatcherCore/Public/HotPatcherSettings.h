@@ -60,6 +60,7 @@ FORCEINLINE UHotPatcherSettings::UHotPatcherSettings(const FObjectInitializer& I
 {
     auto ResetTempSettings = [](FExportPatchSettings& InTempPatchSetting)
     {
+        InTempPatchSetting = FExportPatchSettings{};
         InTempPatchSetting.bByBaseVersion=false;
         // TempPatchSetting.bStorageAssetDependencies = false;
         InTempPatchSetting.bStorageDiffAnalysisResults=false;
