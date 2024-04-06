@@ -498,6 +498,7 @@ void FHotPatcherEditorModule::OnAddToPatchSettings(const FToolMenuContext& MenuC
 		FSoftObjectPath AssetObjectPath;
 		AssetObjectPath.SetPath(UFlibAssetManageHelper::GetObjectPathByAssetData(AssetData));
 		PatchSettingAssetElement.Asset = AssetObjectPath;
+		PatchSettingAssetElement.bAnalysisAssetDependencies = true;
 		AssetsSoftPath.AddUnique(PatchSettingAssetElement);
 	}
 	GPatchSettings->GetAssetScanConfigRef().IncludeSpecifyAssets.Append(AssetsSoftPath);
