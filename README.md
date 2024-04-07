@@ -53,3 +53,11 @@ English Document:[README_EN.md](https://github.com/hxhb/HotPatcher/blob/master/R
 | <img src="https://img.imzlp.com/imgs/zlp/picgo/2023/12/15/103025.png" height="100" width="100" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/202207280953994.webp" height="100" width="100" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/202207280956642.webp" height="100" width="100" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2023/12/18/122654.png" height="100" width="100" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2023/12/18/124705.png" height="100" width="100" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2024/02/28/103324.png" height="100" width="100" /> |
 
 HotPatcher在大量的UE项目中使用，是目前UE社区中最流行的热更新工具。
+
+
+## 捐赠
+如果HotPatcher项目有帮助到你，并希望HotPatcher以后能够做的更好，可以扫描下方的捐赠二维码支持作者。
+
+|                              微信支付                              |                     支付宝                      |
+| :----------------------------------------------------------: | :----------------------------------------------------------: |
+| <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/wechatpay.webp" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/alipay.webp" height="160" width="160" /> |

@@ -51,3 +51,11 @@ The series of UE4 hot update articles I wrote can be used as a reference for eng
 
 
 HotPatcher is used in a large number of UE projects and is currently the most popular hot update tool in the UE community.
+
+
+## Donate
+If the HotPatcher project has helped you and you hope that HotPatcher can do better in the future, you can scan the donation QR code below to support the author.
+
+|                      WechatPay                              |                     Alipay                      |
+| :----------------------------------------------------------: | :----------------------------------------------------------: |
+| <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/wechatpay.webp" height="160" width="160" /> | <img src="https://img.imzlp.com/imgs/zlp/picgo/2022/alipay.webp" height="160" width="160" /> |
