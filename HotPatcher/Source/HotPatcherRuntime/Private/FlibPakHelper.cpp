@@ -3,7 +3,11 @@
 
 #include "FlibPakHelper.h"
 #include "IPlatformFilePak.h"
+#if UE_VERSION_OLDER_THAN(5,0,0)
 #include "HAL/PlatformFilemanager.h"
+#else
+#include "HAL/PlatformFileManager.h"
+#endif
 #include "AssetManager/FFileArrayDirectoryVisitor.hpp"
 #include "HotPatcherLog.h"
 #include "FlibAssetManageHelper.h"
