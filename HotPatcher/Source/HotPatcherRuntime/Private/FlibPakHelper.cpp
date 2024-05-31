@@ -3,7 +3,7 @@
 
 #include "FlibPakHelper.h"
 #include "IPlatformFilePak.h"
-#include "HAL/PlatformFilemanager.h"
+#include "HAL/PlatformFileManager.h"
 #include "AssetManager/FFileArrayDirectoryVisitor.hpp"
 #include "HotPatcherLog.h"
 #include "FlibAssetManageHelper.h"
