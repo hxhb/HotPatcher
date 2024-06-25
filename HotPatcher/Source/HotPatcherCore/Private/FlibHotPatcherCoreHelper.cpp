@@ -962,18 +962,17 @@ FString UFlibHotPatcherCoreHelper::GetUnrealPakBinary()
 #endif
         TEXT("UnrealPak.exe")
     );
-#endif
-
-#if PLATFORM_MAC
+#elif PLATFORM_MAC
 	return FPaths::Combine(
             FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
             TEXT("Binaries"),
             TEXT("Mac"),
             TEXT("UnrealPak")
     );
-#endif
+#else
 
 	return TEXT("");
+#endif
 }
 
 FString UFlibHotPatcherCoreHelper::GetUECmdBinary()
@@ -999,9 +998,7 @@ FString UFlibHotPatcherCoreHelper::GetUECmdBinary()
 	return FPaths::Combine(
         FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
         TEXT("Binaries"),PlatformName,FString::Printf(TEXT("%s%s-Cmd.exe"),*Binary,bIsDevelopment ? TEXT("") : *FString::Printf(TEXT("-%s-%s"),*PlatformName,*ConfigutationName)));
-#endif
-	
-#if PLATFORM_MAC
+#elif PLATFORM_MAC
 #if ENGINE_MAJOR_VERSION < 5 && ENGINE_MINOR_VERSION <= 21
 	return FPaths::Combine(
 			FPaths::ConvertRelativePathToFull(FPaths::EngineDir()),
@@ -1015,8 +1012,9 @@ FString UFlibHotPatcherCoreHelper::GetUECmdBinary()
 			FString::Printf(TEXT("%s%s-Cmd"),*Binary,
 				bIsDevelopment ? TEXT("") : *FString::Printf(TEXT("-Mac-%s"),*ConfigutationName)));
 #endif
-#endif
+#else
 	return TEXT("");
+#endif
 }
 
 
