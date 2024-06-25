@@ -40,6 +40,9 @@
 #include "Internationalization/PackageLocalizationManager.h"
 #include "Misc/ScopeExit.h"
 #include "Misc/EngineVersionComparison.h"
+#if !UE_VERSION_OLDER_THAN(5,4,0)
+#include "AssetCompilingManager.h"
+#endif
 
 DEFINE_LOG_CATEGORY(LogHotPatcherCoreHelper);
 
@@ -307,7 +310,11 @@ FString UFlibHotPatcherCoreHelper::GetProjectCookedDir()
 #include "CookOnTheSide/CookOnTheFlyServer.h"
 #include "HACK_PRIVATE_MEMBER_UTILS.hpp"
 DECL_HACK_PRIVATE_NOCONST_FUNCTION(UCookOnTheFlyServer, FindOrCreatePackageWriter, ICookedPackageWriter&, const ITargetPlatform* TargetPlatform)
-DECL_HACK_PRIVATE_DATA(UCookOnTheFlyServer, TUniquePtr<class FSandboxPlatformFile>, SandboxFile)
+	#if UE_VERSION_OLDER_THAN(5,4,0)
+		DECL_HACK_PRIVATE_DATA(UCookOnTheFlyServer, TUniquePtr<class FSandboxPlatformFile>, SandboxFile)
+	#else
+		DECL_HACK_PRIVATE_DATA(UCookOnTheFlyServer, TUniquePtr<class UE::Cook::FCookSandbox>, SandboxFile)
+	#endif
 #endif
 
 FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetPlatform* TargetPlatform,
@@ -638,7 +645,11 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			PackageArgs.TargetPlatform = Platform.Value;
 			PackageArgs.bSlowTask = false;
 			PackageArgs.FinalTimeStamp = FDateTime::MinValue();
+			#if UE_VERSION_OLDER_THAN(5,4,0)
 			FArchiveCookContext ArchiveCookContext(Package, FArchiveCookContext::ECookType::ECookByTheBook, FArchiveCookContext::ECookingDLC::ECookingDLCNo);
+			#else
+			FArchiveCookContext ArchiveCookContext(Package, UE::Cook::ECookType::ByTheBook, UE::Cook::ECookingDLC::No);
+			#endif
 			FArchiveCookData CookData(*Platform.Value, ArchiveCookContext);
 			PackageArgs.ArchiveCookData = &CookData;
 			
