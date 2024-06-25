@@ -38,7 +38,11 @@ public:
 	virtual FCbObject GetOplogAttachment(FName PackageName, FUtf8StringView AttachmentKey) override;
 	virtual void RemoveCookedPackages(TArrayView<const FName> PackageNamesToRemove) override;
 	virtual void RemoveCookedPackages() override;
+#if UE_VERSION_OLDER_THAN(5,4,0)
 	virtual void MarkPackagesUpToDate(TArrayView<const FName> UpToDatePackages) override;
+#else
+	virtual void UpdatePackageModificationStatus(FName PackageName, bool bIterativelyUnmodified, bool& bInOutShouldIterativelySkip) override;
+#endif
 	virtual bool GetPreviousCookedBytes(const FPackageInfo& Info, FPreviousCookedBytesData& OutData) override;
 #if UE_VERSION_OLDER_THAN(5,3,0)
 	virtual void CompleteExportsArchiveForDiff(const FPackageInfo& Info, FLargeMemoryWriter& ExportsArchive)override;

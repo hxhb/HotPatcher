@@ -57,9 +57,15 @@ void FHotPatcherPackageWriter::RemoveCookedPackages()
 	UPackage::WaitForAsyncFileWrites();
 }
 
+#if UE_VERSION_OLDER_THAN(5,4,0)
 void FHotPatcherPackageWriter::MarkPackagesUpToDate(TArrayView<const FName> UpToDatePackages)
 {
 }
+#else
+void FHotPatcherPackageWriter::UpdatePackageModificationStatus(FName PackageName, bool bIterativelyUnmodified, bool& bInOutShouldIterativelySkip)
+{
+}
+#endif
 
 bool FHotPatcherPackageWriter::GetPreviousCookedBytes(const FPackageInfo& Info, FPreviousCookedBytesData& OutData)
 {
