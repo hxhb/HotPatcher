@@ -23,7 +23,12 @@ FString UFlibReflectionHelper::ExportPropertyToText(UObject* Object, FName Prope
 	FProperty* Property = GetPropertyByName(Object->GetClass(),PropertyName);
 	if(Property)
 	{
+#if UE_VERSION_NEWER_THAN(5,4,0)
+		Property->ExportTextItem_Direct(Value,Property->ContainerPtrToValuePtr<uint8>(Object),nullptr,Object,0);
+#else
 		Property->ExportTextItem(Value,Property->ContainerPtrToValuePtr<uint8>(Object),nullptr,Object,0);
+#endif
+		
 	}
 	return Value;
 }
@@ -33,7 +38,11 @@ bool UFlibReflectionHelper::ImportPropertyValueFromText(UObject* Object, FName P
 	FProperty* Property = GetPropertyByName(Object->GetClass(),PropertyName);
 	if(Property)
 	{
+#if UE_VERSION_NEWER_THAN(5,4,0)
+		Property->ImportText_Direct(*Text,Property->ContainerPtrToValuePtr<uint8>(Object), Object, 0);
+#else
 		Property->ImportText(*Text,Property->ContainerPtrToValuePtr<uint8>(Object),0,Object);
+#endif
 	}
 	return true;
 }

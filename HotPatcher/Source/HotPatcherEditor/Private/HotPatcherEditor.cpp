@@ -173,7 +173,7 @@ void FHotPatcherEditorModule::PluginButtonClicked(const FSHotPatcherContext& Con
 	
 	if (!DockTab.IsValid())
 	{
-		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateLambda([=](const class FSpawnTabArgs& InSpawnTabArgs)
+		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateLambda([=, this](const class FSpawnTabArgs& InSpawnTabArgs)
 		{
 			return SpawnHotPatcherTab(Context);
 		}))
@@ -195,7 +195,7 @@ void FHotPatcherEditorModule::AddMenuExtension(FMenuBuilder& Builder)
 	Builder.AddSubMenu(
 		FText::FromString(TEXT("HotPatcher")),
 		FText::FromString(TEXT("HotPatcher")),
-		FNewMenuDelegate::CreateLambda([=](FMenuBuilder& Menu)
+		FNewMenuDelegate::CreateLambda([=, this](FMenuBuilder& Menu)
 		{
 			Menu.AddWidget(this->HandlePickingModeContextMenu(),FText::FromString(TEXT("")),true);
 		}),
@@ -240,7 +240,7 @@ TSharedRef<SWidget> FHotPatcherEditorModule::HandlePickingModeContextMenu()
 			FText::FromString(TEXT("MAIN")),
 			FText::FromString(TEXT("MAIN")),
 			HotPatcherIcon,
-			FUIAction(FExecuteAction::CreateLambda([=]()
+			FUIAction(FExecuteAction::CreateLambda([=, this]()
 			{
 				this->PluginButtonClicked(Context);
 			})));
@@ -272,7 +272,7 @@ TSharedRef<SWidget> FHotPatcherEditorModule::HandlePickingModeContextMenu()
 						FText::FromString(ActionName),
 						FText::FromString(ActionName),
 						FSlateIcon(),
-						FUIAction(FExecuteAction::CreateLambda([=]()
+						FUIAction(FExecuteAction::CreateLambda([=, this]()
 						{
 							this->PluginButtonClicked(Context);
 						}))
@@ -437,7 +437,7 @@ void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
 		FToolMenuEntry& PlatformEntry = Section.AddSubMenu(FName(*PlatformName),
 			FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(THotPatcherTemplateHelper::GetEnumNameByValue(Platform))),
 			FText(),
-			FNewMenuDelegate::CreateLambda([=](FMenuBuilder& SubMenuBuilder){
+			FNewMenuDelegate::CreateLambda([=, this](FMenuBuilder& SubMenuBuilder){
 				SubMenuBuilder.AddMenuEntry(
 					LOCTEXT("AnalysisDependencies", "AnalysisDependencies"), FText(),
 					FSlateIcon(*StyleSetName,TEXT("WorldBrowser.LevelsMenuBrush")),
@@ -461,7 +461,7 @@ void FHotPatcherEditorModule::MakeHotPatcherPresetsActionsSubMenu(UToolMenu* Men
 		Section.AddSubMenu(FName(*PakConfig.VersionId),
 		FText::Format(LOCTEXT("PakExternal_VersionID", "{0}"), UKismetTextLibrary::Conv_StringToText(PakConfig.VersionId)),
 			FText(),
-			FNewMenuDelegate::CreateLambda([=](FMenuBuilder& SubMenuBuilder)
+			FNewMenuDelegate::CreateLambda([=, this](FMenuBuilder& SubMenuBuilder)
 			{
 				for (ETargetPlatform Platform : GetAllowCookPlatforms())
 				{

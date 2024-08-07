@@ -58,6 +58,12 @@ public:
 	// virtual void WriteBulkData(const FBulkDataInfo& Info, const FIoBuffer& BulkData, const TArray<FFileRegion>& FileRegions) override;
 	// virtual void WriteLinkerAdditionalData(const FLinkerAdditionalDataInfo& Info, const FIoBuffer& Data, const TArray<FFileRegion>& FileRegions) override;
 
+#if UE_VERSION_NEWER_THAN(5,4,0)
+	virtual void UpdatePackageModificationStatus(FName PackageName, bool bIterativelyUnmodified, bool& bInOutShouldIterativelySkip) override
+	{
+	}
+#endif
+		
 private:
 	/** Version of the superclass's per-package record that includes our class-specific data. */
 	struct FRecord : public FPackageWriterRecords::FPackage
