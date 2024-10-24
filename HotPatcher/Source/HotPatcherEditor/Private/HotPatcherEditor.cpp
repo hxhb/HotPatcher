@@ -173,7 +173,11 @@ void FHotPatcherEditorModule::PluginButtonClicked(const FSHotPatcherContext& Con
 	
 	if (!DockTab.IsValid())
 	{
+	#if UE_VERSION_OLDER_THAN(5,4,0)
 		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateLambda([=](const class FSpawnTabArgs& InSpawnTabArgs)
+	#else
+		FGlobalTabmanager::Get()->RegisterNomadTabSpawner(HotPatcherTabName, FOnSpawnTab::CreateLambda([=, this](const class FSpawnTabArgs& InSpawnTabArgs)
+	#endif
 		{
 			return SpawnHotPatcherTab(Context);
 		}))
@@ -195,7 +199,11 @@ void FHotPatcherEditorModule::AddMenuExtension(FMenuBuilder& Builder)
 	Builder.AddSubMenu(
 		FText::FromString(TEXT("HotPatcher")),
 		FText::FromString(TEXT("HotPatcher")),
+	#if UE_VERSION_OLDER_THAN(5,4,0)
 		FNewMenuDelegate::CreateLambda([=](FMenuBuilder& Menu)
+	#else
+		FNewMenuDelegate::CreateLambda([=, this](FMenuBuilder& Menu)
+	#endif
 		{
 			Menu.AddWidget(this->HandlePickingModeContextMenu(),FText::FromString(TEXT("")),true);
 		}),
@@ -240,7 +248,11 @@ TSharedRef<SWidget> FHotPatcherEditorModule::HandlePickingModeContextMenu()
 			FText::FromString(TEXT("MAIN")),
 			FText::FromString(TEXT("MAIN")),
 			HotPatcherIcon,
+	#if UE_VERSION_OLDER_THAN(5,4,0)
 			FUIAction(FExecuteAction::CreateLambda([=]()
+	#else
+			FUIAction(FExecuteAction::CreateLambda([=, this]()
+	#endif
 			{
 				this->PluginButtonClicked(Context);
 			})));
@@ -272,7 +284,11 @@ TSharedRef<SWidget> FHotPatcherEditorModule::HandlePickingModeContextMenu()
 						FText::FromString(ActionName),
 						FText::FromString(ActionName),
 						FSlateIcon(),
+					#if UE_VERSION_OLDER_THAN(5,4,0)
 						FUIAction(FExecuteAction::CreateLambda([=]()
+					#else
+						FUIAction(FExecuteAction::CreateLambda([=, this]()
+					#endif
 						{
 							this->PluginButtonClicked(Context);
 						}))
@@ -437,7 +453,11 @@ void FHotPatcherEditorModule::MakeCookAndPakActionsSubMenu(UToolMenu* Menu)
 		FToolMenuEntry& PlatformEntry = Section.AddSubMenu(FName(*PlatformName),
 			FText::Format(LOCTEXT("Platform", "{0}"), UKismetTextLibrary::Conv_StringToText(THotPatcherTemplateHelper::GetEnumNameByValue(Platform))),
 			FText(),
+		#if UE_VERSION_OLDER_THAN(5,4,0)
 			FNewMenuDelegate::CreateLambda([=](FMenuBuilder& SubMenuBuilder){
+		#else
+			FNewMenuDelegate::CreateLambda([=, this](FMenuBuilder& SubMenuBuilder){
+		#endif
 				SubMenuBuilder.AddMenuEntry(
 					LOCTEXT("AnalysisDependencies", "AnalysisDependencies"), FText(),
 					FSlateIcon(*StyleSetName,TEXT("WorldBrowser.LevelsMenuBrush")),
@@ -461,7 +481,11 @@ void FHotPatcherEditorModule::MakeHotPatcherPresetsActionsSubMenu(UToolMenu* Men
 		Section.AddSubMenu(FName(*PakConfig.VersionId),
 		FText::Format(LOCTEXT("PakExternal_VersionID", "{0}"), UKismetTextLibrary::Conv_StringToText(PakConfig.VersionId)),
 			FText(),
+		#if UE_VERSION_OLDER_THAN(5,4,0)
 			FNewMenuDelegate::CreateLambda([=](FMenuBuilder& SubMenuBuilder)
+		#else
+			FNewMenuDelegate::CreateLambda([=, this](FMenuBuilder& SubMenuBuilder)
+		#endif
 			{
 				for (ETargetPlatform Platform : GetAllowCookPlatforms())
 				{
