@@ -19,6 +19,7 @@
 #include "Widgets/Layout/SExpandableArea.h"
 #include "Widgets/Notifications/SNotificationList.h"
 #include "Async/Async.h"
+#include "Widgets/Input/SButton.h"
 
 
 #define LOCTEXT_NAMESPACE "SProjectCookPage"

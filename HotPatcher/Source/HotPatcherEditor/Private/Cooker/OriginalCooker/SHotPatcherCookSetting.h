@@ -8,6 +8,7 @@
 #include "Widgets/Input/SEditableTextBox.h"
 // project header
 #include "IOriginalCookerChildWidget.h"
+#include "Widgets/Views/SListView.h"
 
 /**
  * Implements the cooked platforms panel.

@@ -44,6 +44,11 @@
 #include "AssetCompilingManager.h"
 #endif
 
+#include "Engine/Texture.h"
+#include "Engine/Texture2D.h"
+#include "Materials/Material.h"
+#include "UObject/UObjectIterator.h"
+
 DEFINE_LOG_CATEGORY(LogHotPatcherCoreHelper);
 
 TArray<FString> UFlibHotPatcherCoreHelper::GetAllCookOption()
@@ -776,10 +781,24 @@ bool UFlibHotPatcherCoreHelper::CookPackagesByCmdlet(
 			}
 		}
 		RealCookedSavePath = RealCookedSavePath.Replace(TEXT("/Cooked/"),TEXT("/CmdletCooked/"));
-		for(const auto& SoftObjectPath:ObjectPaths){ CookActionCallback.OnCookBegin(SoftObjectPath,CookPlatformPair.Key); }
+		if (CookActionCallback.OnAssetCooked)
+		{
+			for(const auto& SoftObjectPath:ObjectPaths){ CookActionCallback.OnCookBegin(SoftObjectPath,CookPlatformPair.Key); }
+		}
+		else
+		{
+			UE_LOG(LogHotPatcher,Error,TEXT("CookActionCallback.OnAssetCooked call back Null"));
+		}
 		bool bCookStatus = CookByCmdlet(LongPackageNames,CookPlatformPair.Key,RealCookedSavePath, bSharedMaterialLibrary);
         ESavePackageResult result = bCookStatus ? ESavePackageResult::Success : ESavePackageResult::Error;
-		for(const auto& SoftObjectPath:ObjectPaths){ CookActionCallback.OnAssetCooked(SoftObjectPath,CookPlatformPair.Key,result); }
+		
+		if (CookActionCallback.OnAssetCooked)
+		{
+			for(const auto& SoftObjectPath:ObjectPaths){ CookActionCallback.OnAssetCooked(SoftObjectPath,CookPlatformPair.Key,result); }
+		}else
+		{
+			UE_LOG(LogHotPatcher,Error,TEXT("CookActionCallback.OnAssetCooked call back Null"));
+		}
 
 		FString CleanCmdletDir = SrcCookedPath.Replace(*PlatformName,TEXT(""));
 		CleanCmdletDir = CleanCmdletDir.Replace(TEXT("/Cooked/"),TEXT("/CmdletCooked/"));
@@ -2688,6 +2707,7 @@ FString UFlibHotPatcherCoreHelper::GetSavePackageResultStr(ESavePackageResult Re
 			Str = TEXT("ReferencedOnlyByEditorOnlyData");
 			break;
 		}
+	default: break;;
 	}
 	return Str;
 }

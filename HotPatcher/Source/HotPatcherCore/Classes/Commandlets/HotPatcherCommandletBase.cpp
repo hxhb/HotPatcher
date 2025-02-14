@@ -8,6 +8,7 @@
 #include "HotPatcherCore.h"
 #include "Misc/FileHelper.h"
 #include "Misc/CommandLine.h"
+#include "Misc/CoreDelegates.h"
 #include "Misc/Paths.h"
 
 #if PLATFORM_WINDOWS && WITH_EDITOR

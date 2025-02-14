@@ -4,6 +4,7 @@
 // engine header
 #include "CoreMinimal.h"
 #include "Engine/EngineTypes.h"
+#include "UObject/Package.h"
 
 enum class EPatchAssetType:uint8
 {

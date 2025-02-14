@@ -28,6 +28,7 @@
 #include "Misc/Paths.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "Misc/Base64.h"
+#include "Misc/ConfigCacheIni.h"
 #include "Misc/FileHelper.h"
 #include "Serialization/LargeMemoryReader.h"
 

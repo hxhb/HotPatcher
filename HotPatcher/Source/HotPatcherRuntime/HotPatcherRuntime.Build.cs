@@ -18,14 +18,14 @@ public class HotPatcherRuntime : ModuleRules
 				Path.Combine(ModuleDirectory,"Public/Templates")
 				// ... add public include paths required here ...
 			}
-			);
+		);
 				
 		
 		PrivateIncludePaths.AddRange(
 			new string[] {
 				// ... add other private include paths required here ...
 			}
-			);
+		);
 
 		if (Target.bBuildEditor)
 		{
@@ -41,15 +41,15 @@ public class HotPatcherRuntime : ModuleRules
 				"CoreUObject",
 				"RHI",
 				"Core",
-                "Projects",
-                "Json",
-                "JsonUtilities",
-                "PakFile",
-                "AssetRegistry",
-                "BinariesPatchFeature"
-                // ... add other public dependencies that you statically link with here ...
+				"Projects",
+				"Json",
+				"JsonUtilities",
+				"PakFile",
+				"AssetRegistry",
+				"BinariesPatchFeature"
+				// ... add other public dependencies that you statically link with here ...
 			}
-			);
+		);
 
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
@@ -90,9 +90,8 @@ public class HotPatcherRuntime : ModuleRules
 		bool bEnableAssetDependenciesDebugLog = true;
 		AddPublicDefinitions("ASSET_DEPENDENCIES_DEBUG_LOG", bEnableAssetDependenciesDebugLog);
 		
-		bool bCustomAssetGUID = false;
+		bool bCustomAssetGUID = Version.MajorVersion > 4;
 
-		if (Version.MajorVersion > 4) { bCustomAssetGUID = true; }
 		if(bCustomAssetGUID)
 		{
 			PublicDefinitions.Add("CUSTOM_ASSET_GUID");	

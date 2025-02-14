@@ -7,6 +7,11 @@
 #include "Widgets/SCompoundWidget.h"
 
 #include "FVersionUpdaterManager.h"
+#include "Components/VerticalBox.h"
+#include "Resources/Version.h"
+#include "Widgets/Images/SImage.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Text/STextBlock.h"
 
 class SChildModWidget : public SCompoundWidget
 {
