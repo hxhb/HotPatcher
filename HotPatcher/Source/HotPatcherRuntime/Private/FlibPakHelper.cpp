@@ -31,6 +31,7 @@
 #include "Misc/CoreDelegates.h"
 #include "Serialization/LargeMemoryReader.h"
 #include "ShaderCodeLibrary.h"
+#include "Misc/App.h"
 #include "Misc/EngineVersionComparison.h"
 
 TSet<FName> UFlibPakHelper::LoadShaderLibraryNames;

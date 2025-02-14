@@ -44,6 +44,10 @@
 #include "AssetCompilingManager.h"
 #endif
 
+#if UE_VERSION_NEWER_THAN(5,5,0)
+#include "ZenCookArtifactReader.h"
+#endif
+
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include "Materials/Material.h"
@@ -352,7 +356,18 @@ FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetP
 	FString WriterDebugName;
 	if (bUseZenLoader)
 	{
+#if UE_VERSION_OLDER_THAN(5,5,0)
 		PackageWriter = new FZenStoreWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform);
+
+#else
+		FZenCookArtifactReader reader = FZenCookArtifactReader(ResolvedProjectPath, 
+												ResolvedMetadataPath,
+												TargetPlatform);
+		TSharedRef<FZenCookArtifactReader> Reader = MakeShareable<FZenCookArtifactReader>(&reader);
+		PackageWriter = new FZenStoreWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform,Reader);
+
+#endif
+		
 		WriterDebugName = TEXT("ZenStore");
 	}
 	else
@@ -1636,7 +1651,7 @@ bool UFlibHotPatcherCoreHelper::SerializeAssetRegistry(IAssetRegistry* AssetRegi
 	AssetRegistry->InitializeTemporaryAssetRegistryState(State, SaveOptions, true);
 	for(const auto& AssetPackagePath:PackagePaths)
 	{
-		if (State.GetAssetByObjectPath(FName(*AssetPackagePath)))
+		if (State.GetAssetByObjectPath(FName(*AssetPackagePath).ToString()))
 		{
 			UE_LOG(LogHotPatcherCoreHelper, Warning, TEXT("%s already add to AssetRegistryState!"), *AssetPackagePath);
 			continue;
