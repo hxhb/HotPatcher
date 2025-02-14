@@ -8,6 +8,8 @@
 
 // project header
 #include "IOriginalCookerChildWidget.h"
+#include "Widgets/SCompoundWidget.h"
+#include "Widgets/Views/SListView.h"
 
 /**
  * Implements the cooked Maps panel.

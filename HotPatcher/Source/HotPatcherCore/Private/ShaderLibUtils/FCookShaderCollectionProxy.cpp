@@ -4,6 +4,13 @@
 #include "ShaderLibUtils//FlibShaderCodeLibraryHelper.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Resources/Version.h"
+#include "Misc/EngineVersionComparison.h"
+
+#if UE_VERSION_NEWER_THAN(5,5,0)
+#include "ZenCookArtifactReader.h"
+#endif
+
+
 
 FCookShaderCollectionProxy::FCookShaderCollectionProxy(const TArray<FString>& InPlatformNames,const FString& InLibraryName,bool bInShareShader,bool InIsNative,bool bInMaster,const FString& InSaveBaseDir)
 :PlatformNames(InPlatformNames),LibraryName(InLibraryName),bShareShader(bInShareShader),bIsNative(InIsNative),bMaster(bInMaster),SaveBaseDir(InSaveBaseDir){}
@@ -14,7 +21,17 @@ void FCookShaderCollectionProxy::Init()
 {
 	if(bShareShader)
 	{
+#if UE_VERSION_OLDER_THAN(5,5,0)
 		SHADER_COOKER_CLASS::InitForCooking(bIsNative);
+#else
+
+		/*FZenCookArtifactReader reader = FZenCookArtifactReader(ResolvedProjectPath, 
+												ResolvedMetadataPath,
+												TargetPlatform);
+		TSharedRef<FZenCookArtifactReader> Reader = MakeShareable<FZenCookArtifactReader>(&reader);*/
+		SHADER_COOKER_CLASS::InitForCooking(bIsNative,nullptr);
+#endif
+		
 		for(const auto& PlatformName:PlatformNames)
 		{
 			ITargetPlatform* TargetPlatform = UFlibHotPatcherCoreHelper::GetPlatformByName(PlatformName);

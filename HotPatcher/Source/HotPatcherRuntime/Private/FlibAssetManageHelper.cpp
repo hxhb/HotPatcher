@@ -145,7 +145,7 @@ bool UFlibAssetManageHelper::GetAssetPackageGUID(FAssetDetail& AssetDetail)
 	if(!GetWPWorldGUID(AssetDetail))
 #endif
 	{
-		FSoftObjectPath PackagePath(AssetDetail.PackagePath);
+		FSoftObjectPath PackagePath(AssetDetail.PackagePath.ToString());
 		return GetAssetPackageGUID(PackagePath.GetLongPackageName(),AssetDetail.Guid);
 	}
 	return false;
@@ -157,7 +157,7 @@ bool UFlibAssetManageHelper::GetWPWorldGUID(FAssetDetail& AssetDetail)
 	bool bIsWPMap = false;
 	if(AssetDetail.AssetType.IsEqual(TEXT("World")))
 	{
-		FSoftObjectPath WorldPath(AssetDetail.PackagePath);
+		FSoftObjectPath WorldPath(AssetDetail.PackagePath.ToString());
 		FString Filename = FPackageName::LongPackageNameToFilename(WorldPath.GetLongPackageName(),FPackageName::GetMapPackageExtension());
 		if(FPaths::FileExists(Filename))
 		{
@@ -410,7 +410,7 @@ FAssetDetail UFlibAssetManageHelper::GetAssetDetailByPackageName(const FString& 
 	SCOPED_NAMED_EVENT_TEXT("UFlibAssetManageHelper::GetAssetDetailByPackageName",FColor::Red);
 	FAssetDetail AssetDetail;
 	UAssetManager& AssetManager = UAssetManager::Get();
-	if (AssetManager.IsValid())
+	if (AssetManager.IsInitialized())
 	{
 		FString PackagePath = UFlibAssetManageHelper::LongPackageNameToPackagePath(InPackageName);
 		{
@@ -1775,7 +1775,7 @@ FAssetData UFlibAssetManageHelper::GetAssetByObjectPath(FName Path)
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 	IAssetRegistry* AssetRegistry = &AssetRegistryModule.Get();
 #if WITH_UE5
-	return  AssetRegistry->GetAssetByObjectPath(FSoftObjectPath{Path}, true);
+	return  AssetRegistry->GetAssetByObjectPath(FSoftObjectPath{Path.ToString()}, true);
 #else
 	return  AssetRegistry->GetAssetByObjectPath(Path, true);
 #endif

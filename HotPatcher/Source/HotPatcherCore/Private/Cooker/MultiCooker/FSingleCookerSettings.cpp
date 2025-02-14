@@ -1,5 +1,6 @@
 #include "Cooker/MultiCooker/FSingleCookerSettings.h"
 #include "FlibPatchParserHelper.h"
+#include "Engine/World.h"
 
 FSingleCookerSettings::FSingleCookerSettings()
 {

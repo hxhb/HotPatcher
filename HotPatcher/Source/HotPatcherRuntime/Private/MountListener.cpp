@@ -3,6 +3,11 @@
 #include "MountListener.h"
 #include "FlibPakHelper.h"
 #include "IPlatformFilePak.h"
+#include "Misc/CoreDelegates.h"
+
+#if !WITH_EDITOR
+#include "HAL/PlatformFileManager.h"
+#endif
 
 DECLARE_LOG_CATEGORY_CLASS(LogMountListener, Log, All);
 
@@ -14,7 +19,11 @@ void UMountListener::Init()
 {
     if(!HasAnyFlags(RF_ClassDefaultObject))
     {
-#if ENGINE_MAJOR_VERSION >4 || ENGINE_MINOR_VERSION >=26
+#if (ENGINE_MAJOR_VERSION ==5 && ENGINE_MINOR_VERSION >3)
+    	FCoreDelegates::GetOnPakFileMounted2().AddLambda([this](const IPakFile& PakFile){this->OnMountPak(*PakFile.PakGetPakFilename(),0);});
+#elif  (ENGINE_MAJOR_VERSION ==5 && ENGINE_MINOR_VERSION <=3)
+    	FCoreDelegates::OnPakFileMounted2.AddLambda([this](const IPakFile& PakFile){this->OnMountPak(*PakFile.PakGetPakFilename(),0);});
+#elif (ENGINE_MAJOR_VERSION =4 && ENGINE_MINOR_VERSION >=26)
     	FCoreDelegates::OnPakFileMounted2.AddLambda([this](const IPakFile& PakFile){this->OnMountPak(*PakFile.PakGetPakFilename(),0);});
 #endif
 

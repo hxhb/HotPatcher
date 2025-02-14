@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Cooker/MultiCooker/FSingleCookerSettings.h"
 #include "Cooker/MultiCooker/SingleCookerProxy.h"
+#include "Engine/Engine.h"
 #include "HAL/ExceptionHandling.h"
 #include "Misc/FileHelper.h"
 #include "Misc/CommandLine.h"

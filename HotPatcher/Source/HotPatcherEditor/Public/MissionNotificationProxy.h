@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "Widgets/Notifications/SNotificationList.h"
+#include "Templates/SharedPointer.h"
 #include "MissionNotificationProxy.generated.h"
 
 class FProcWorkerThread;
@@ -28,7 +30,7 @@ public:
 	virtual void SetMissionNotifyText(const FText& RunningText,const FText& CancelText,const FText& SuccessedText,const FText& FaildText);
 	FMissionCanceled MissionCanceled;
 protected:
-	TWeakPtr<SNotificationItem> PendingProgressPtr;
+	TWeakPtr<SNotificationItem,ESPMode::ThreadSafe> PendingProgressPtr;
 	bool bRunning = false;
 	FText RunningNotifyText;
 	FText RunningNofityCancelText;

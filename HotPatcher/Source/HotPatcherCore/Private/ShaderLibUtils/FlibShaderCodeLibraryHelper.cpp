@@ -7,8 +7,10 @@
 
 #include "ShaderCompiler.h"
 #include "IPlatformFileSandboxWrapper.h"
+#include "MaterialShared.h"
 #include "Interfaces/IPluginManager.h"
 #include "Interfaces/ITargetPlatform.h"
+#include "Materials/Material.h"
 #include "Misc/EngineVersionComparison.h"
 
 #define REMAPPED_PLUGINS TEXT("RemappedPlugins")

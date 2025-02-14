@@ -149,7 +149,7 @@ namespace PatchWorker
 		static bool IsAssetContainIn(const FAssetDependenciesInfo& InAssetInfo,const FAssetDetail& InAssetDetail)
 		{
 			bool bContainInBaseVersion = false;
-			FSoftObjectPath SoftObjectPath{InAssetDetail.PackagePath};
+			FSoftObjectPath SoftObjectPath{InAssetDetail.PackagePath.ToString()};
 			FAssetDetail BaseAssetDetail;
 			bool bHasInBase = InAssetInfo.GetAssetDetailByPackageName(SoftObjectPath.GetLongPackageName(),BaseAssetDetail);
 			if(bHasInBase)
@@ -651,7 +651,7 @@ namespace PatchWorker
 						const FCookCluster& AdditionalCluster = SingleCookerProxy->GetPackageTrackerAsCluster(false);
 						for(const auto& AssetDetail:AdditionalCluster.AssetDetails)
 						{
-							FSoftObjectPath ObjectPath{AssetDetail.PackagePath};
+							FSoftObjectPath ObjectPath{AssetDetail.PackagePath.ToString()};
 							bool bContainInBaseVersion = FTrackPackageAction::IsAssetContainIn(Context.BaseVersion.AssetInfo,AssetDetail);
 							
 							FString ReceiveReason;
@@ -686,7 +686,7 @@ namespace PatchWorker
 						{
 							FExternDirectoryInfo DirectoryInfo;
 							{
-								FSoftObjectPath ObjectPath{WorldPackage};
+								FSoftObjectPath ObjectPath{WorldPackage.ToString()};
 								// abs
 								FString WorldCookedPath = UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(StorageCookedDir,ObjectPath.GetLongPackageName(), PlatformName);
 								FString EndWith = FPaths::GetExtension(WorldCookedPath,true);
