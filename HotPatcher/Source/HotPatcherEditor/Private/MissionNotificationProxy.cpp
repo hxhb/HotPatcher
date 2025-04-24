@@ -9,6 +9,7 @@
 #include "Framework/Notifications/NotificationManager.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
 #include "Widgets/Notifications/SNotificationList.h"
+#include "Framework/Docking/TabManager.h"//Engine\Source\Runtime\Slate\Public\Framework\Docking\TabManager.h
 DEFINE_LOG_CATEGORY_STATIC(LogMissionNotificationProxy, All, All);
 
 #define LOCTEXT_NAMESPACE "MissionNotificationPorxy"
@@ -66,7 +67,8 @@ void UMissionNotificationProxy::SpawnRuningMissionNotification(FProcWorkerThread
         FNotificationInfo Info(MissionProxy->RunningNotifyText);
 
         Info.bFireAndForget = false;
-		Info.Hyperlink = FSimpleDelegate::CreateStatic([](){ FGlobalTabmanager::Get()->InvokeTab(FName("OutputLog")); });
+		//Info.Hyperlink = FSimpleDelegate::CreateStatic([](){ FGlobalTabmanager::Get()->InvokeTab(FName("OutputLog")); });
+        
         Info.HyperlinkText = LOCTEXT("ShowOutputLogHyperlink", "Show Output Log");
         Info.ButtonDetails.Add(FNotificationButtonInfo(MissionProxy->RunningNofityCancelText, FText(),
             FSimpleDelegate::CreateLambda([MissionProxy]() {MissionProxy->CancelMission(); }),
