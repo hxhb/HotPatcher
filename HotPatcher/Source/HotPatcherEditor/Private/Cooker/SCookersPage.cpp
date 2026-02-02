@@ -10,6 +10,8 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SExpandableArea.h"
 #include "HotPatcherEditor.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SComboButton.h"
 #define LOCTEXT_NAMESPACE "SProjectCookerPage"
 
 

@@ -3,6 +3,8 @@
 
 #include "FlibPakHelper.h"
 #include "IPlatformFilePak.h"
+#include "Misc/EngineVersionComparison.h"
+
 #if UE_VERSION_OLDER_THAN(5,0,0)
 #include "HAL/PlatformFilemanager.h"
 #else
@@ -29,6 +31,7 @@
 #include "Misc/CoreDelegates.h"
 #include "Serialization/LargeMemoryReader.h"
 #include "ShaderCodeLibrary.h"
+#include "Misc/App.h"
 #include "Misc/EngineVersionComparison.h"
 
 TSet<FName> UFlibPakHelper::LoadShaderLibraryNames;

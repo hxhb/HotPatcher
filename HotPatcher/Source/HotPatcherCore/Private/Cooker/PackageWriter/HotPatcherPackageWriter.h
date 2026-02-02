@@ -2,6 +2,8 @@
 #include "CoreMinimal.h"
 #include "Resources/Version.h"
 #include "Misc/EngineVersionComparison.h"
+#include "AssetRegistry/AssetRegistryState.h"
+
 #if WITH_PACKAGE_CONTEXT && ENGINE_MAJOR_VERSION > 4
 #include "Serialization/PackageWriter.h"
 #include "PackageWriterToSharedBuffer.h"

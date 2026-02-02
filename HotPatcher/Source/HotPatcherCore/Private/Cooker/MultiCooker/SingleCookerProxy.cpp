@@ -14,6 +14,7 @@
 #include "Engine/Engine.h"
 #include "Misc/ScopeExit.h"
 #include "Engine/AssetManager.h"
+#include "Engine/StaticMesh.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Misc/EngineVersionComparison.h"
 #if WITH_PACKAGE_CONTEXT
@@ -662,7 +663,14 @@ FCookActionResultEvent USingleCookerProxy::GetOnPackageSavedCallback()
 	SCOPED_NAMED_EVENT_TEXT("GetOnPackageSavedCallback",FColor::Red);
 	const FCookActionResultEvent PackageSavedCallback = [this](const FSoftObjectPath& PackagePath,ETargetPlatform Platform,ESavePackageResult Result)
 	{
-		OnAssetCooked.Broadcast(PackagePath,Platform,Result);
+		if (OnAssetCooked.IsBound())
+		{
+			OnAssetCooked.Broadcast(PackagePath,Platform,Result);
+		}
+		else
+		{
+			UE_LOG(LogHotPatcher,Warning,TEXT("[GetOnPackageSavedCallback] OnAssetCooked Failed!"));
+		}
 	};
 	return PackageSavedCallback;
 }
@@ -671,7 +679,10 @@ FCookActionEvent USingleCookerProxy::GetOnCookAssetBeginCallback()
 {
 	const FCookActionEvent CookAssetBegin = [this](const FSoftObjectPath& PackagePath,ETargetPlatform Platform)
 	{
-		OnCookAssetBegin.Broadcast(PackagePath,Platform);
+		if (OnCookAssetBegin.IsBound())
+		{
+			OnCookAssetBegin.Broadcast(PackagePath,Platform);
+		}
 	};
 	return CookAssetBegin;
 }

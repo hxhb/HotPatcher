@@ -5,6 +5,7 @@
 #include "Templates/SharedPointer.h"
 #include "IDetailsView.h"
 #include "PropertyEditorModule.h"
+#include "Widgets/Layout/SExpandableArea.h"
 #include "Widgets/Text/SMultiLineEditableText.h"
 
 

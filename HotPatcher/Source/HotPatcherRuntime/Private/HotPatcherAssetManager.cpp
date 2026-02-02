@@ -4,6 +4,7 @@
 #include "HotPatcherAssetManager.h"
 
 #include "HotPatcherLog.h"
+#include "Misc/CommandLine.h"
 
 void UHotPatcherAssetManager::ScanPrimaryAssetTypesFromConfig()
 {

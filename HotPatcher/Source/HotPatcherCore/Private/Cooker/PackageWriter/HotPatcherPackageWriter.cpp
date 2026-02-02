@@ -1,6 +1,10 @@
 
 #include "Cooker/PackageWriter/HotPatcherPackageWriter.h"
 
+#include "HAL/FileManager.h"
+#include "Misc/Paths.h"
+#include "Serialization/MemoryWriter.h"
+
 #if WITH_PACKAGE_CONTEXT && ENGINE_MAJOR_VERSION > 4
 #include "AssetRegistry/IAssetRegistry.h"
 #include "Async/Async.h"

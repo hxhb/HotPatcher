@@ -12,6 +12,7 @@
 #include "Resources/Version.h"
 #include "CoreGlobals.h"
 #include "HttpManager.h"
+#include "Misc/ConfigCacheIni.h"
 
 FProjectVersionDesc FCountServerlessWrapper::MakeCurrentProject()
 {

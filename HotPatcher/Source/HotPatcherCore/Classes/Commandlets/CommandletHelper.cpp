@@ -5,6 +5,7 @@
 #include "FlibPatchParserHelper.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
 #include "HotPatcherLog.h"
+#include "Async/TaskGraphInterfaces.h"
 #include "Engine/Engine.h"
 
 void CommandletHelper::ReceiveMsg(const FString& InMsgType,const FString& InMsg)

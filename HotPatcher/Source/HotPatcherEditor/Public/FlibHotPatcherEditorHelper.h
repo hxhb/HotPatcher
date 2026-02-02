@@ -6,6 +6,7 @@
 #include "IDesktopPlatform.h"
 #include "CoreMinimal.h"
 #include "Framework/Notifications/NotificationManager.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 #include "Widgets/Notifications/SNotificationList.h"
 #include "FlibHotPatcherEditorHelper.generated.h"
 

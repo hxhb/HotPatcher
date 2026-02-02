@@ -5,6 +5,7 @@
 #include "ShaderCodeLibrary.h"
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Materials/MaterialInterface.h"
 #include "FlibShaderCodeLibraryHelper.generated.h"
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26

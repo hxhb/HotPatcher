@@ -3,6 +3,7 @@
 #include "CmdHandler.h"
 #include "Misc/CommandLine.h"
 #include "Misc/ConfigCacheIni.h"
+#include "Modules/ModuleManager.h"
 
 DEFINE_LOG_CATEGORY(LogCmdHandler);
 

@@ -111,7 +111,7 @@ struct FCookCluster
     bool bCacheDDCOnly = false;
 
     UPROPERTY()
-    ECookClusterType ClusterType;
+    ECookClusterType ClusterType = ECookClusterType::Normal;
 public: // for advanced cook
     UPROPERTY()
     bool bShaderCluster = false;
@@ -236,6 +236,18 @@ public:
     int32 GetClassAssetNumOfPerCluster(UClass* Class);
     
 public: // delegate
+    FSingleCookActionEvent GetOnCookAssetBeginEvent()
+    {
+        return OnCookAssetBegin;
+    }
+
+    FSingleCookResultEvent GetOnCookAssetCookedEvent()
+    {
+        return OnAssetCooked;
+    }
+    
+private:
+
     FSingleCookerEvent OnCookBegin;
     FSingleCookerEvent OnCookFinished;
     FSingleCookActionEvent OnCookAssetBegin;
