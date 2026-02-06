@@ -159,7 +159,7 @@ public:
 			const FString& OverrideCookedDir,
 			const FString& InPlatformName,
 			const FAssetDependenciesInfo& InAssetDependencies,
-			TFunction<void(const TArray<FString>&,const TArray<FString>&,const FString&,const FString&,FCriticalSection&)> InReceivePakCommand = [](const TArray<FString>&,const TArray<FString>&, const FString&, const FString&,FCriticalSection&) {},
+			TFunction<void(const TArray<FString>&,const TArray<FString>&,const FString&,const FString&,FCriticalSection&)> InReceivePakCommand,
 			TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset = [](const FString&)->bool{return false;}
 		);
 	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
@@ -169,7 +169,7 @@ public:
 			const FString& InPlatformName,
 			const FString& InAssetLongPackageName,
 			FCriticalSection& LocalSynchronizationObject,
-			TFunction<void(const TArray<FString>&, const TArray<FString>&,const FString&, const FString&,FCriticalSection&)>  InReceivePakCommand = [](const TArray<FString>&,const TArray<FString>&, const FString&, const FString&,FCriticalSection&) {},
+			TFunction<void(const TArray<FString>&, const TArray<FString>&,const FString&, const FString&,FCriticalSection&)>  InReceivePakCommand,
 			TFunction<bool(const FString& CookedAssetsAbsPath)> IsIoStoreAsset = [](const FString&)->bool{return false;}
 		);
 	// UFUNCTION(BlueprintCallable, Category = "GWorld|Flib|AssetManager")
