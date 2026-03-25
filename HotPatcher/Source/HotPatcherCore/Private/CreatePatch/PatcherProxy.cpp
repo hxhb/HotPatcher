@@ -34,7 +34,7 @@
 #include "Misc/DataDrivenPlatformInfoRegistry.h"
 #include "Serialization/ArrayWriter.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
-
+#include "Misc/EngineVersionComparison.h"
 #if WITH_IO_STORE_SUPPORT
 #include "IoStoreUtilities.h"
 #endif
@@ -149,7 +149,11 @@ namespace PatchWorker
 		static bool IsAssetContainIn(const FAssetDependenciesInfo& InAssetInfo,const FAssetDetail& InAssetDetail)
 		{
 			bool bContainInBaseVersion = false;
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+			FSoftObjectPath SoftObjectPath{InAssetDetail.PackagePath.ToString()};
+#else
 			FSoftObjectPath SoftObjectPath{InAssetDetail.PackagePath};
+#endif
 			FAssetDetail BaseAssetDetail;
 			bool bHasInBase = InAssetInfo.GetAssetDetailByPackageName(SoftObjectPath.GetLongPackageName(),BaseAssetDetail);
 			if(bHasInBase)
@@ -651,7 +655,11 @@ namespace PatchWorker
 						const FCookCluster& AdditionalCluster = SingleCookerProxy->GetPackageTrackerAsCluster(false);
 						for(const auto& AssetDetail:AdditionalCluster.AssetDetails)
 						{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+							FSoftObjectPath ObjectPath{AssetDetail.PackagePath.ToString()};
+#else
 							FSoftObjectPath ObjectPath{AssetDetail.PackagePath};
+#endif
 							bool bContainInBaseVersion = FTrackPackageAction::IsAssetContainIn(Context.BaseVersion.AssetInfo,AssetDetail);
 							
 							FString ReceiveReason;
@@ -686,7 +694,11 @@ namespace PatchWorker
 						{
 							FExternDirectoryInfo DirectoryInfo;
 							{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,1,0)
+								FSoftObjectPath ObjectPath{WorldPackage.ToString()};
+#else
 								FSoftObjectPath ObjectPath{WorldPackage};
+#endif	
 								// abs
 								FString WorldCookedPath = UFlibHotPatcherCoreHelper::GetAssetCookedSavePath(StorageCookedDir,ObjectPath.GetLongPackageName(), PlatformName);
 								FString EndWith = FPaths::GetExtension(WorldCookedPath,true);

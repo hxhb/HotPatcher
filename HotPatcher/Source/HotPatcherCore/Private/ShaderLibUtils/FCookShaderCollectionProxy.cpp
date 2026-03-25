@@ -1,9 +1,15 @@
 #include "Cooker/MultiCooker/FCookShaderCollectionProxy.h"
 #include "FlibHotPatcherCoreHelper.h"
+#include "Misc/EngineVersionComparison.h"
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,5,0)
+#include "LayeredCookArtifactReader.h"
+#include "LooseFilesCookArtifactReader.h"
+#endif
 #include "Cooker/MultiCooker/FlibHotCookerHelper.h"
 #include "ShaderLibUtils//FlibShaderCodeLibraryHelper.h"
 #include "Interfaces/ITargetPlatform.h"
 #include "Resources/Version.h"
+
 
 FCookShaderCollectionProxy::FCookShaderCollectionProxy(const TArray<FString>& InPlatformNames,const FString& InLibraryName,bool bInShareShader,bool InIsNative,bool bInMaster,const FString& InSaveBaseDir)
 :PlatformNames(InPlatformNames),LibraryName(InLibraryName),bShareShader(bInShareShader),bIsNative(InIsNative),bMaster(bInMaster),SaveBaseDir(InSaveBaseDir){}
@@ -14,7 +20,16 @@ void FCookShaderCollectionProxy::Init()
 {
 	if(bShareShader)
 	{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,5,0)
+		TUniquePtr<FLayeredCookArtifactReader> AllContextArtifactReader = MakeUnique<FLayeredCookArtifactReader>();
+		TSharedPtr<FLooseFilesCookArtifactReader> SharedLooseFilesCookArtifactReader = MakeShared<FLooseFilesCookArtifactReader>();
+		AllContextArtifactReader->AddLayer(SharedLooseFilesCookArtifactReader.ToSharedRef());
+
+		SHADER_COOKER_CLASS::InitForCooking(bIsNative, AllContextArtifactReader.Get());
+#else
 		SHADER_COOKER_CLASS::InitForCooking(bIsNative);
+#endif
+		
 		for(const auto& PlatformName:PlatformNames)
 		{
 			ITargetPlatform* TargetPlatform = UFlibHotPatcherCoreHelper::GetPlatformByName(PlatformName);

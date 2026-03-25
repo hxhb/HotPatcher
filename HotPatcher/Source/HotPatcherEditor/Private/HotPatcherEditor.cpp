@@ -520,7 +520,11 @@ void FHotPatcherEditorModule::OnAddToPatchSettings(const FToolMenuContext& MenuC
 	{
 		FPatcherSpecifyAsset PatchSettingAssetElement;
 		FSoftObjectPath AssetObjectPath;
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+		AssetObjectPath.SetPath(UFlibAssetManageHelper::GetObjectPathByAssetData(AssetData).ToString());
+#else
 		AssetObjectPath.SetPath(UFlibAssetManageHelper::GetObjectPathByAssetData(AssetData));
+#endif
 		PatchSettingAssetElement.Asset = AssetObjectPath;
 		PatchSettingAssetElement.bAnalysisAssetDependencies = true;
 		AssetsSoftPath.AddUnique(PatchSettingAssetElement);

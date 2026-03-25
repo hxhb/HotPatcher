@@ -37,9 +37,13 @@
 #include "Misc/CoreMisc.h"
 #include "DerivedDataCacheInterface.h"
 #include "HotPatcherRuntime.h"
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+#include "LayeredCookArtifactReader.h"
+#include "LooseFilesCookArtifactReader.h"
+#include "ZenCookArtifactReader.h"
+#endif
 #include "Internationalization/PackageLocalizationManager.h"
 #include "Misc/ScopeExit.h"
-#include "Misc/EngineVersionComparison.h"
 #if !UE_VERSION_OLDER_THAN(5,4,0)
 #include "AssetCompilingManager.h"
 #endif
@@ -347,7 +351,16 @@ FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetP
 	FString WriterDebugName;
 	if (bUseZenLoader)
 	{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+		TSharedRef<FLayeredCookArtifactReader> LayeredReader = MakeShared<FLayeredCookArtifactReader>();
+		TSharedRef<FZenCookArtifactReader> ZenReader = MakeShared<FZenCookArtifactReader>(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform);
+		TSharedPtr<FLooseFilesCookArtifactReader> SharedLooseFilesCookArtifactReader = MakeShared<FLooseFilesCookArtifactReader>();
+		LayeredReader->AddLayer(SharedLooseFilesCookArtifactReader.ToSharedRef());
+		LayeredReader->AddLayer(ZenReader);
+		PackageWriter = new FZenStoreWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform, LayeredReader);
+#else
 		PackageWriter = new FZenStoreWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform);
+#endif
 		WriterDebugName = TEXT("ZenStore");
 	}
 	else
@@ -638,6 +651,25 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 	                                                );
 #else
 			FSavePackageArgs PackageArgs;
+			
+#if UE_VERSION_OLDER_THAN(5,4,0)
+			FArchiveCookContext ArchiveCookContext(Package, FArchiveCookContext::ECookType::ECookByTheBook, FArchiveCookContext::ECookingDLC::ECookingDLCNo);
+#else
+			FArchiveCookContext ArchiveCookContext(Package, UE::Cook::ECookType::ByTheBook, UE::Cook::ECookingDLC::No);
+#endif
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+			FArchiveCookData CookData(*Platform.Value, ArchiveCookContext);
+			PackageArgs.ArchiveCookData = &CookData;
+			PackageArgs.TopLevelFlags = CookedFlags;
+			PackageArgs.SaveFlags = SaveFlags;
+			PackageArgs.bForceByteSwapping = false;	
+			PackageArgs.bWarnOfLongFilename = false;
+			PackageArgs.bSlowTask = false;
+			PackageArgs.FinalTimeStamp = FDateTime::MinValue();
+			PackageArgs.Error = GError;
+			PackageArgs.SavePackageContext = CurrentPlatformPackageContext;
+			PackageArgs.bSlowTask = false;
+#else
 			PackageArgs.TopLevelFlags = CookedFlags;
 			PackageArgs.SaveFlags = SaveFlags;
 			PackageArgs.Error = GError;
@@ -645,13 +677,9 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 			PackageArgs.TargetPlatform = Platform.Value;
 			PackageArgs.bSlowTask = false;
 			PackageArgs.FinalTimeStamp = FDateTime::MinValue();
-			#if UE_VERSION_OLDER_THAN(5,4,0)
-			FArchiveCookContext ArchiveCookContext(Package, FArchiveCookContext::ECookType::ECookByTheBook, FArchiveCookContext::ECookingDLC::ECookingDLCNo);
-			#else
-			FArchiveCookContext ArchiveCookContext(Package, UE::Cook::ECookType::ByTheBook, UE::Cook::ECookingDLC::No);
-			#endif
-			FArchiveCookData CookData(*Platform.Value, ArchiveCookContext);
-			PackageArgs.ArchiveCookData = &CookData;
+			PackageArgs.ArchiveCookData = &CookData;			
+#endif
+			
 			
 			FSavePackageResultStruct Result = GEditor->Save(Package,nullptr, *CookedSavePath, PackageArgs);
 #endif
@@ -685,7 +713,11 @@ bool UFlibHotPatcherCoreHelper::CookPackage(
 				// TODO: Reenable BuildDefinitionList once FCbPackage support for empty FCbObjects is in
 				//Info.Attachments.Add({ "BuildDefinitionList", BuildDefinitionList });
 				Info.WriteOptions = IPackageWriter::EWriteOptions::Write;
-				if (!!(SaveFlags & SAVE_ComputeHash))
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+				if (!!(SaveFlags))
+#else
+				if (!!(SaveFlags & SAVE_ComputeHash))	
+#endif
 				{
 					Info.WriteOptions |= IPackageWriter::EWriteOptions::ComputeHash;
 				}
@@ -1617,7 +1649,11 @@ bool UFlibHotPatcherCoreHelper::SerializeAssetRegistry(IAssetRegistry* AssetRegi
 	AssetRegistry->InitializeTemporaryAssetRegistryState(State, SaveOptions, true);
 	for(const auto& AssetPackagePath:PackagePaths)
 	{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+		if (State.GetAssetByObjectPath(AssetPackagePath))
+#else
 		if (State.GetAssetByObjectPath(FName(*AssetPackagePath)))
+#endif
 		{
 			UE_LOG(LogHotPatcherCoreHelper, Warning, TEXT("%s already add to AssetRegistryState!"), *AssetPackagePath);
 			continue;
@@ -1846,14 +1882,25 @@ FProjectPackageAssetCollection UFlibHotPatcherCoreHelper::ImportProjectSettingsP
 	
 	{
 		// allow the game to fill out the asset registry, as well as get a list of objects to always cook
-		TArray<FString> FilesInPathStrings;
 		PRAGMA_DISABLE_DEPRECATION_WARNINGS;
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+		TConstArrayView<const ITargetPlatform*> Platforms;
+		TArray<FName> FilesInPathStrings;
+		TArray<FName> InOutPackagesToNeverCook;
+		FGameDelegates::Get().GetModifyCookDelegate().Broadcast(Platforms, FilesInPathStrings, InOutPackagesToNeverCook);
+#else
+		TArray<FString> FilesInPathStrings;
 		FGameDelegates::Get().GetCookModificationDelegate().ExecuteIfBound(FilesInPathStrings);
+#endif
 		PRAGMA_ENABLE_DEPRECATION_WARNINGS;
 		for(const auto& BuildFilename:FilesInPathStrings)
 		{
 			FString OutPackageName;
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+			if (FPackageName::TryConvertFilenameToLongPackageName(FPaths::ConvertRelativePathToFull(BuildFilename.ToString()), OutPackageName))
+#else
 			if (FPackageName::TryConvertFilenameToLongPackageName(FPaths::ConvertRelativePathToFull(BuildFilename), OutPackageName))
+#endif
 			{
 				AddSoftObjectPath(OutPackageName);
 			}
@@ -2383,8 +2430,19 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
 #endif
     				}
     				{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+    					FObjectSaveContextData ContextData;
+						ContextData.SaveFlags = SaveFlags;
+						FObjectPreSaveContext PreContext(ContextData);
+    					FObjectPreSaveRootContext PreRootContext(ContextData);
+    					World->PreSaveRoot(PreRootContext);
+    					FObjectPostSaveRootContext PostRootContext(ContextData);
+    					WorldsToPostSaveRoot.Add(World, PostRootContext.IsCleanupRequired());
+#else
     					bool bCleanupIsRequired = World->PreSaveRoot(TEXT(""));
     					WorldsToPostSaveRoot.Add(World, bCleanupIsRequired);
+#endif
+    					
     				}
     				GIsCookerLoadingPackage = false;
     			}
@@ -2419,7 +2477,14 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
     					SCOPED_NAMED_EVENT_TEXT("Export PreSave",FColor::Red);
     					GIsCookerLoadingPackage = true;
     					{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+    						FObjectSaveContextData ContextData;
+    						ContextData.TargetPlatform = Platform;
+    						FObjectPreSaveContext Context(ContextData);
+    						ExportObj->PreSave(Context);
+#else
     						ExportObj->PreSave(Platform);
+#endif
     					}
     					GIsCookerLoadingPackage = false;
     				}
@@ -2471,7 +2536,16 @@ void UFlibHotPatcherCoreHelper::CacheForCookedPlatformData(
 #endif
 			UWorld* World = WorldIt.Key();
 			check(World);
-			World->PostSaveRoot(WorldIt.Value());
+			
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+			FObjectSaveContextData Data;
+			FObjectPreSaveRootContext PreContext(Data);
+			PreContext.SetCleanupRequired(WorldIt.Value());
+			FObjectPostSaveRootContext PostContext(Data);
+			World->PostSaveRoot(PostContext);
+#else
+			World->PostSaveRoot(WorldIt.Value());	
+#endif
 		}
 	}
 	
@@ -2569,8 +2643,13 @@ void UFlibHotPatcherCoreHelper::WaitObjectsCachePlatformDataComplete(TSet<UObjec
 uint32 UFlibHotPatcherCoreHelper::GetCookSaveFlag(UPackage* Package, bool bUnversioned, bool bStorageConcurrent,
                                                   bool CookLinkerDiff)
 {
+	
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+	uint32 SaveFlags = SAVE_KeepGUID | SAVE_Async | (bUnversioned ? SAVE_Unversioned : 0);
+#else
 	uint32 SaveFlags = SAVE_KeepGUID | SAVE_Async| SAVE_ComputeHash | (bUnversioned ? SAVE_Unversioned : 0);
-
+#endif
+	
 #if ENGINE_MAJOR_VERSION >4 || ENGINE_MINOR_VERSION >25
 	// bool CookLinkerDiff = false;
 	if(CookLinkerDiff)

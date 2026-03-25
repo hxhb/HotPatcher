@@ -145,7 +145,11 @@ bool UFlibAssetManageHelper::GetAssetPackageGUID(FAssetDetail& AssetDetail)
 	if(!GetWPWorldGUID(AssetDetail))
 #endif
 	{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+		FSoftObjectPath PackagePath(AssetDetail.PackagePath.ToString());
+#else
 		FSoftObjectPath PackagePath(AssetDetail.PackagePath);
+#endif
 		return GetAssetPackageGUID(PackagePath.GetLongPackageName(),AssetDetail.Guid);
 	}
 	return false;
@@ -157,7 +161,11 @@ bool UFlibAssetManageHelper::GetWPWorldGUID(FAssetDetail& AssetDetail)
 	bool bIsWPMap = false;
 	if(AssetDetail.AssetType.IsEqual(TEXT("World")))
 	{
-		FSoftObjectPath WorldPath(AssetDetail.PackagePath);
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+		FSoftObjectPath WorldPath(AssetDetail.PackagePath.ToString());
+#else
+		FSoftObjectPath WorldPath(AssetDetail.PackagePath);	
+#endif
 		FString Filename = FPackageName::LongPackageNameToFilename(WorldPath.GetLongPackageName(),FPackageName::GetMapPackageExtension());
 		if(FPaths::FileExists(Filename))
 		{
@@ -1484,11 +1492,16 @@ TArray<UPackage*> UFlibAssetManageHelper::LoadPackagesForCooking(const TArray<FS
 	{
 		if(!bStorageConcurrent && Package->IsFullyLoaded())
 		{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)		
+			FMetaData& MetaData = Package->GetMetaData();
+			MetaData.RemoveMetaDataOutsidePackage(Package);
+#else
 			UMetaData* MetaData = Package->GetMetaData();
 			if(MetaData)
 			{
 				MetaData->RemoveMetaDataOutsidePackage();
 			}
+#endif
 		}
 		// Precache the metadata so we don't risk rehashing the map in the parallelfor below
 		if(bStorageConcurrent)
@@ -1775,7 +1788,11 @@ FAssetData UFlibAssetManageHelper::GetAssetByObjectPath(FName Path)
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 	IAssetRegistry* AssetRegistry = &AssetRegistryModule.Get();
 #if WITH_UE5
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+	return  AssetRegistry->GetAssetByObjectPath(FSoftObjectPath{Path.ToString()}, true);
+#else
 	return  AssetRegistry->GetAssetByObjectPath(FSoftObjectPath{Path}, true);
+#endif
 #else
 	return  AssetRegistry->GetAssetByObjectPath(Path, true);
 #endif

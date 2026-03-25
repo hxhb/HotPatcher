@@ -6,6 +6,7 @@
 #include "Async/Async.h"
 #include "Serialization/LargeMemoryWriter.h"
 #include "UObject/SavePackage.h"
+#include "AssetRegistry/AssetRegistryState.h"
 
 void FHotPatcherPackageWriter::Initialize(const FCookInfo& Info){}
 
@@ -40,7 +41,8 @@ void FHotPatcherPackageWriter::EndCook(
 
 TUniquePtr<FAssetRegistryState> FHotPatcherPackageWriter::LoadPreviousAssetRegistry()
 {
-	return TUniquePtr<FAssetRegistryState>();
+	//return TUniquePtr<FAssetRegistryState>();
+	return MakeUnique<FAssetRegistryState>();
 }
 
 FCbObject FHotPatcherPackageWriter::GetOplogAttachment(FName PackageName, FUtf8StringView AttachmentKey)

@@ -12,6 +12,7 @@
 #include "Resources/Version.h"
 #include "CoreGlobals.h"
 #include "HttpManager.h"
+#include "Misc/EngineVersionComparison.h"
 
 FProjectVersionDesc FCountServerlessWrapper::MakeCurrentProject()
 {
@@ -67,7 +68,11 @@ void FCountServerlessWrapper::Processor()
 void FCountServerlessWrapper::RequestObjectID()
 {
 	CancelRequest(ObjectIDRequest);
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+	// use GEngineIni
+#else
 	FHttpModule::Get().SetHttpTimeout(5.0);
+#endif
 	ObjectIDRequest = FHttpModule::Get().CreateRequest();
 	ObjectIDRequest->OnProcessRequestComplete().BindRaw(this, &FCountServerlessWrapper::OnObjectIdReceived);
 	ObjectIDRequest->SetURL(RequestInfo.Host);

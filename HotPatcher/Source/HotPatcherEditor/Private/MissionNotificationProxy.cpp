@@ -3,8 +3,7 @@
 
 #include "MissionNotificationProxy.h"
 
-
-
+#include "HotPatcherEditor.h"
 #include "Async/Async.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "ThreadUtils/FProcWorkerThread.hpp"
