@@ -194,5 +194,9 @@ public class HotPatcherCore : ModuleRules
 			"CURRENT_PATCH_ID=0",
 			"REMOTE_VERSION_FILE=\"https://imzlp.com/opensource/version.json\""
 		});
-	}
+		PrivateDefinitions.AddRange(new string[]
+		{
+            "DEBUG=1"
+        });
+    }
 }

@@ -5,6 +5,7 @@
 #if WITH_PACKAGE_CONTEXT && ENGINE_MAJOR_VERSION > 4
 #include "Serialization/PackageWriter.h"
 #include "PackageWriterToSharedBuffer.h"
+#include "AssetRegistry/AssetRegistryState.h"
 
 class FHotPatcherPackageWriter:public TPackageWriterToSharedBuffer<ICookedPackageWriter>
 {

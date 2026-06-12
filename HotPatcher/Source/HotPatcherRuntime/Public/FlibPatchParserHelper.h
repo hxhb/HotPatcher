@@ -57,6 +57,10 @@ public:
 		bool InIncludeHasRefAssetsOnly = false,
 		bool bInAnalysisFilterDependencies = true, EHashCalculator HashCalculator = EHashCalculator::NoHash
 	);
+	//����Diff���� ����ʲ� ���õĻ�ȡ
+	static FHotPatcherVersion DiffAssetByChunk(const FPatchVersionDiff& Diff ,const FChunkInfo& InChunkInfo, bool bInAnalysisFilterDependencies = true, EHashCalculator HashCalculator = EHashCalculator::NoHash );
+
+
 	static void RunAssetScanner(FAssetScanConfig ScanConfig,FHotPatcherVersion& ExportVersion);
 	static void ExportExternAssetsToPlatform(const TArray<FPlatformExternAssets>& AddExternAssetsToPlatform, FHotPatcherVersion& ExportVersion, bool bGenerateHASH, EHashCalculator
 	                                         HashCalculator);

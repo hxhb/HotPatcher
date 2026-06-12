@@ -38,6 +38,9 @@
 #include "DerivedDataCacheInterface.h"
 #include "HotPatcherRuntime.h"
 #include "Internationalization/PackageLocalizationManager.h"
+#if WITH_UE5
+#include "ZenCookArtifactReader.h"
+#endif
 #include "Misc/ScopeExit.h"
 #include "Misc/EngineVersionComparison.h"
 #if !UE_VERSION_OLDER_THAN(5,4,0)
@@ -347,7 +350,11 @@ FSavePackageContext* UFlibHotPatcherCoreHelper::CreateSaveContext(const ITargetP
 	FString WriterDebugName;
 	if (bUseZenLoader)
 	{
+#if ENGINE_MAJOR_VERSION <= 5 && ENGINE_MINOR_VERSION < 5
 		PackageWriter = new FZenStoreWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform);
+#else
+		PackageWriter = new FZenStoreWriter(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform, MakeShareable(new FZenCookArtifactReader(ResolvedProjectPath, ResolvedMetadataPath, TargetPlatform)));
+#endif
 		WriterDebugName = TEXT("ZenStore");
 	}
 	else
@@ -1617,7 +1624,11 @@ bool UFlibHotPatcherCoreHelper::SerializeAssetRegistry(IAssetRegistry* AssetRegi
 	AssetRegistry->InitializeTemporaryAssetRegistryState(State, SaveOptions, true);
 	for(const auto& AssetPackagePath:PackagePaths)
 	{
+#if ENGINE_MAJOR_VERSION <= 5 && ENGINE_MINOR_VERSION < 5
 		if (State.GetAssetByObjectPath(FName(*AssetPackagePath)))
+#else
+		if (State.GetAssetByObjectPath(FSoftObjectPath(*AssetPackagePath)))
+#endif
 		{
 			UE_LOG(LogHotPatcherCoreHelper, Warning, TEXT("%s already add to AssetRegistryState!"), *AssetPackagePath);
 			continue;

@@ -31,6 +31,8 @@
 #include "Misc/FileHelper.h"
 #include "Serialization/LargeMemoryReader.h"
 
+
+
 TArray<FString> UFlibPatchParserHelper::GetAvailableMaps(FString GameName, bool IncludeEngineMaps, bool IncludePluginMaps, bool Sorted)
 {
 	const FString WildCard = FString::Printf(TEXT("*%s"), *FPackageName::GetMapPackageExtension());
@@ -925,10 +927,10 @@ FChunkAssetDescribe UFlibPatchParserHelper::CollectFChunkAssetsDescribeByChunk(
 {
 	SCOPED_NAMED_EVENT_TEXT("CollectFChunkAssetsDescribeByChunk",FColor::Red);
 	FChunkAssetDescribe ChunkAssetDescribe;
-	
+
 	{
-		ChunkAssetDescribe.AddAssets = DiffInfo.AssetDiffInfo.AddAssetDependInfo; // CollectChunkAssets(AddAssetsRef, AssetFilterPaths);
-		ChunkAssetDescribe.ModifyAssets = DiffInfo.AssetDiffInfo.ModifyAssetDependInfo; //CollectChunkAssets(ModifyAssetsRef, AssetFilterPaths);
+		ChunkAssetDescribe.AddAssets = DiffInfo.AssetDiffInfo.AddAssetDependInfo;
+		ChunkAssetDescribe.ModifyAssets = DiffInfo.AssetDiffInfo.ModifyAssetDependInfo;
 		ChunkAssetDescribe.Assets = UFlibAssetManageHelper::CombineAssetDependencies(ChunkAssetDescribe.AddAssets, ChunkAssetDescribe.ModifyAssets);
 	}
 
@@ -1192,6 +1194,80 @@ FHotPatcherVersion UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
 
 	bool CalcHash = HashCalculator == EHashCalculator::NoHash ? false : true;
 	ExportExternAssetsToPlatform(InChunkInfo.AddExternAssetsToPlatform,ExportVersion,CalcHash,HashCalculator);
+
+	return ExportVersion;
+}
+
+FHotPatcherVersion UFlibPatchParserHelper::DiffAssetByChunk(const FPatchVersionDiff& Diff, const FChunkInfo& InChunkInfo, bool bInAnalysisFilterDependencies, EHashCalculator HashCalculator)
+{
+	SCOPED_NAMED_EVENT_TEXT("DiffAssetByChunk", FColor::Red);
+	FHotPatcherVersion ExportVersion;
+
+	FHotPatcherVersion ChunkVersion = UFlibPatchParserHelper::ExportReleaseVersionInfoByChunk(
+		TEXT(""), TEXT(""), TEXT(""),
+		InChunkInfo,
+		false,
+		bInAnalysisFilterDependencies,
+		HashCalculator
+	);
+
+	TSet<FString> ChunkAssetSet;
+	for (const auto& Asset : ChunkVersion.AssetInfo.GetAssetDetails())
+	{
+		ChunkAssetSet.Add(UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString()));
+	}
+
+	auto AppendDiffAssetIfMatched = [&ExportVersion, &ChunkAssetSet](const TArray<FAssetDetail>& InAssets)
+	{
+		for (const auto& Asset : InAssets)
+		{
+			FString LongPackageName = UFlibAssetManageHelper::PackagePathToLongPackageName(Asset.PackagePath.ToString());
+			if (ChunkAssetSet.Contains(LongPackageName))
+			{
+				ExportVersion.AssetInfo.AddAssetsDetail(Asset);
+			}
+		}
+	};
+
+	AppendDiffAssetIfMatched(Diff.AssetDiffInfo.AddAssetDependInfo.GetAssetDetails());
+	AppendDiffAssetIfMatched(Diff.AssetDiffInfo.ModifyAssetDependInfo.GetAssetDetails());
+
+	for (const auto& PlatformConfig : InChunkInfo.AddExternAssetsToPlatform)
+	{
+		if (!Diff.PlatformExternDiffInfo.Contains(PlatformConfig.TargetPlatform))
+		{
+			continue;
+		}
+
+		const FPatchVersionExternDiff& PlatformDiff = Diff.PlatformExternDiffInfo[PlatformConfig.TargetPlatform];
+		FPlatformExternAssets PlatformAssets;
+		PlatformAssets.TargetPlatform = PlatformConfig.TargetPlatform;
+
+		TSet<FString> ChunkExternFiles;
+		for (const auto& File : PlatformConfig.AddExternFileToPak)
+		{
+			ChunkExternFiles.Add(File.GetReplaceMarkdFilePath());
+		}
+
+		auto CollectMatchedExternFiles = [&PlatformAssets, &ChunkExternFiles](const TArray<FExternFileInfo>& InFiles)
+		{
+			for (const auto& File : InFiles)
+			{
+				if (ChunkExternFiles.Contains(File.GetReplaceMarkdFilePath()))
+				{
+					PlatformAssets.AddExternFileToPak.AddUnique(File);
+				}
+			}
+		};
+
+		CollectMatchedExternFiles(PlatformDiff.AddExternalFiles);
+		CollectMatchedExternFiles(PlatformDiff.ModifyExternalFiles);
+
+		if (PlatformAssets.AddExternFileToPak.Num())
+		{
+			ExportVersion.PlatformAssets.Add(PlatformConfig.TargetPlatform, PlatformAssets);
+		}
+	}
 
 	return ExportVersion;
 }

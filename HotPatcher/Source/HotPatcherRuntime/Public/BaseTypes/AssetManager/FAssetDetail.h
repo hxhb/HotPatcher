@@ -31,6 +31,11 @@ struct HOTPATCHERRUNTIME_API FAssetDetail
 	{
 		return !PackagePath.IsNone() && !AssetType.IsNone() && !Guid.IsNone();
 	}
+	
+	friend uint32 GetTypeHash(const FAssetDetail& Data)
+	{
+		return GetTypeHash(Data.Guid);
+	}
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		FName PackagePath;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

@@ -19,7 +19,19 @@ int32 UHotPatcherCommandlet::Main(const FString& Params)
 #if WITH_UE5
 	PRIVATE_GIsRunningCookCommandlet = true;
 #endif
-	
+
+#if WITH_EDITOR&&DEBUG  // 或 #if !UE_BUILD_SHIPPING
+	// 等待调试器附加（调试时去掉或宏屏蔽）
+	UE_LOG(LogHotPatcherCommandlet, Display, TEXT("Waiting for debugger to attach..."));
+	while (!FPlatformMisc::IsDebuggerPresent())
+	{
+		FPlatformProcess::Sleep(0.2f);
+	}
+	UE_LOG(LogHotPatcherCommandlet, Display, TEXT("Debugger attached, continue"));
+#endif	
+
+
+
 	Super::Main(Params);
 
 	FCommandLine::Append(TEXT(" -buildmachine"));

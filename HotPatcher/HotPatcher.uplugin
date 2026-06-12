@@ -37,7 +37,7 @@
 		},
 		{
 			"Name": "CmdHandler",
-			"Type": "Developer",
+			"Type": "DeveloperTool",
 			"LoadingPhase": "PostConfigInit"
 		}
 	]

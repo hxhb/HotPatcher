@@ -110,6 +110,11 @@ struct HOTPATCHERRUNTIME_API FHotPatcherPatchContext:public FHotPatcherContext
 
     UPROPERTY(EditAnywhere)
     TArray<FPakCommand> AdditionalFileToPak;
+
+    // Common chunk resolution cache
+    TMap<FString, FChunkAssetDescribe> ChunkDescribeCache;
+    FChunkAssetDescribe CommonChunkDescribe;
+    FString CommonChunkName = TEXT("Common");
     
     // every pak file info
     // TArray<FPakFileProxy> PakFileProxys;

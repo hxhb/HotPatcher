@@ -66,7 +66,7 @@ void UMissionNotificationProxy::SpawnRuningMissionNotification(FProcWorkerThread
         FNotificationInfo Info(MissionProxy->RunningNotifyText);
 
         Info.bFireAndForget = false;
-		Info.Hyperlink = FSimpleDelegate::CreateStatic([](){ FGlobalTabmanager::Get()->InvokeTab(FName("OutputLog")); });
+		Info.Hyperlink = FSimpleDelegate::CreateStatic([](){ FGlobalTabmanager::Get()->TryInvokeTab(FTabId("OutputLog")); });
         Info.HyperlinkText = LOCTEXT("ShowOutputLogHyperlink", "Show Output Log");
         Info.ButtonDetails.Add(FNotificationButtonInfo(MissionProxy->RunningNofityCancelText, FText(),
             FSimpleDelegate::CreateLambda([MissionProxy]() {MissionProxy->CancelMission(); }),
